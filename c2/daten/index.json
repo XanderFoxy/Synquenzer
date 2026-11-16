@@ -1,0 +1,683 @@
+{
+ "version": 1,
+ "erzeugt": "2026-11-16T14:15:41.939Z",
+ "bereiche": {
+  "grammatik": [
+   {
+    "id": "drill-feste-wendungen",
+    "datei": "grammatik/drill-feste-wendungen.json",
+    "titel": "Drill: Feste Wendungen und Kollokationen",
+    "niveau": "C2",
+    "uebungen": 66,
+    "dauer_min": 40
+   },
+   {
+    "id": "drill-genus-kasus",
+    "datei": "grammatik/drill-genus-kasus.json",
+    "titel": "Drill: Genus und Kasus",
+    "niveau": "C1",
+    "uebungen": 62,
+    "dauer_min": 37
+   },
+   {
+    "id": "drill-praepositionen",
+    "datei": "grammatik/drill-praepositionen.json",
+    "titel": "Drill: Präpositionen und Rektion",
+    "niveau": "C1",
+    "uebungen": 60,
+    "dauer_min": 36
+   },
+   {
+    "id": "drill-satzklammer",
+    "datei": "grammatik/drill-satzklammer.json",
+    "titel": "Drill: Satzklammer und Verbstellung",
+    "niveau": "C2",
+    "uebungen": 60,
+    "dauer_min": 36
+   },
+   {
+    "id": "g01",
+    "datei": "grammatik/g01.json",
+    "titel": "Genus sicher bestimmen",
+    "niveau": "C1",
+    "uebungen": 35,
+    "dauer_min": 21
+   },
+   {
+    "id": "g02",
+    "datei": "grammatik/g02.json",
+    "titel": "Kasus und Deklination",
+    "niveau": "C1",
+    "uebungen": 32,
+    "dauer_min": 19
+   },
+   {
+    "id": "g03",
+    "datei": "grammatik/g03.json",
+    "titel": "Adjektivdeklination in komplexen Nominalgruppen",
+    "niveau": "C1",
+    "uebungen": 33,
+    "dauer_min": 20
+   },
+   {
+    "id": "g04",
+    "datei": "grammatik/g04.json",
+    "titel": "Rektion der Verben: Dativ, Akkusativ, Genitiv",
+    "niveau": "C1",
+    "uebungen": 35,
+    "dauer_min": 21
+   },
+   {
+    "id": "g05",
+    "datei": "grammatik/g05.json",
+    "titel": "Feste Präpositionen und Pronominaladverbien",
+    "niveau": "C1",
+    "uebungen": 30,
+    "dauer_min": 18
+   },
+   {
+    "id": "g06",
+    "datei": "grammatik/g06.json",
+    "titel": "Präpositionen mit Genitiv und präpositionale Wendungen",
+    "niveau": "C1",
+    "uebungen": 30,
+    "dauer_min": 18
+   },
+   {
+    "id": "g07",
+    "datei": "grammatik/g07.json",
+    "titel": "Nomen-Verb-Verbindungen",
+    "niveau": "C1",
+    "uebungen": 32,
+    "dauer_min": 19
+   },
+   {
+    "id": "g08",
+    "datei": "grammatik/g08.json",
+    "titel": "Feste Wendungen und Kollokationen",
+    "niveau": "C2",
+    "uebungen": 30,
+    "dauer_min": 18
+   },
+   {
+    "id": "g09",
+    "datei": "grammatik/g09.json",
+    "titel": "Satzklammer und Mittelfeld",
+    "niveau": "C1",
+    "uebungen": 31,
+    "dauer_min": 19
+   },
+   {
+    "id": "g10",
+    "datei": "grammatik/g10.json",
+    "titel": "Verbletztstellung in langen Satzgefügen",
+    "niveau": "C2",
+    "uebungen": 33,
+    "dauer_min": 20
+   },
+   {
+    "id": "g11",
+    "datei": "grammatik/g11.json",
+    "titel": "Relativsätze",
+    "niveau": "C1",
+    "uebungen": 34,
+    "dauer_min": 20
+   },
+   {
+    "id": "g12",
+    "datei": "grammatik/g12.json",
+    "titel": "Konnektoren und zweiteilige Konjunktionen",
+    "niveau": "C1",
+    "uebungen": 34,
+    "dauer_min": 20
+   },
+   {
+    "id": "g13",
+    "datei": "grammatik/g13.json",
+    "titel": "Passiv und Passiversatz",
+    "niveau": "C1",
+    "uebungen": 36,
+    "dauer_min": 22
+   },
+   {
+    "id": "g14",
+    "datei": "grammatik/g14.json",
+    "titel": "Konjunktiv II",
+    "niveau": "C1",
+    "uebungen": 36,
+    "dauer_min": 22
+   },
+   {
+    "id": "g15",
+    "datei": "grammatik/g15.json",
+    "titel": "Konjunktiv I und Redewiedergabe",
+    "niveau": "C1",
+    "uebungen": 36,
+    "dauer_min": 22
+   },
+   {
+    "id": "g16",
+    "datei": "grammatik/g16.json",
+    "titel": "Subjektive Modalverben und Modalitätsverben",
+    "niveau": "C2",
+    "uebungen": 36,
+    "dauer_min": 22
+   },
+   {
+    "id": "g17",
+    "datei": "grammatik/g17.json",
+    "titel": "Erweiterte Partizipialattribute",
+    "niveau": "C2",
+    "uebungen": 36,
+    "dauer_min": 22
+   },
+   {
+    "id": "g18",
+    "datei": "grammatik/g18.json",
+    "titel": "Nominal- und Verbalstil",
+    "niveau": "C2",
+    "uebungen": 36,
+    "dauer_min": 22
+   },
+   {
+    "id": "g19",
+    "datei": "grammatik/g19.json",
+    "titel": "Infinitivkonstruktionen",
+    "niveau": "C1",
+    "uebungen": 34,
+    "dauer_min": 20
+   },
+   {
+    "id": "g20",
+    "datei": "grammatik/g20.json",
+    "titel": "Adverbiale Nebensätze für Fortgeschrittene",
+    "niveau": "C2",
+    "uebungen": 36,
+    "dauer_min": 22
+   },
+   {
+    "id": "g21",
+    "datei": "grammatik/g21.json",
+    "titel": "Zeitverhältnisse und Tempusgebrauch",
+    "niveau": "C1",
+    "uebungen": 30,
+    "dauer_min": 18
+   },
+   {
+    "id": "g22",
+    "datei": "grammatik/g22.json",
+    "titel": "Verweise im Text: es, Pronomen, Pronominaladverbien",
+    "niveau": "C1",
+    "uebungen": 34,
+    "dauer_min": 20
+   },
+   {
+    "id": "g23",
+    "datei": "grammatik/g23.json",
+    "titel": "Modalpartikeln",
+    "niveau": "C2",
+    "uebungen": 36,
+    "dauer_min": 22
+   },
+   {
+    "id": "g24",
+    "datei": "grammatik/g24.json",
+    "titel": "Wortbildung und Fremdwörter",
+    "niveau": "C2",
+    "uebungen": 35,
+    "dauer_min": 21
+   }
+  ],
+  "hoeren": [
+   {
+    "id": "h1-bergdorf-linsen",
+    "datei": "hoeren/h1-bergdorf-linsen.json",
+    "titel": "Radioausschnitte: Besucherlenkung, Linsen, Übersetzen, Erzählcafé",
+    "teil": "Teil 1",
+    "art": "Radiobeitrag",
+    "abspielen": 1,
+    "aufgaben": 15,
+    "dauer_s": 187
+   },
+   {
+    "id": "h1-depot-viertagewoche",
+    "datei": "hoeren/h1-depot-viertagewoche.json",
+    "titel": "Kurzmeldungen: Museumsdepot, Viertagewoche, Wahlalter, Hörbuch",
+    "teil": "Teil 1",
+    "art": "Kurzmeldungen",
+    "abspielen": 1,
+    "aufgaben": 15,
+    "dauer_s": 176
+   },
+   {
+    "id": "h1-sprachnachricht-bibliothek",
+    "datei": "hoeren/h1-sprachnachricht-bibliothek.json",
+    "titel": "Radioausschnitte: Sprachnachrichten, Nachtbibliothek, Langeweile, Reparaturcafé",
+    "teil": "Teil 1",
+    "art": "Radiobeitrag",
+    "abspielen": 1,
+    "aufgaben": 15,
+    "dauer_s": 197
+   },
+   {
+    "id": "h2-landleben-auto",
+    "datei": "hoeren/h2-landleben-auto.json",
+    "titel": "Gespräch: Aufs Land ziehen – und das Auto?",
+    "teil": "Teil 2",
+    "art": "Gespräch",
+    "abspielen": 1,
+    "aufgaben": 8,
+    "dauer_s": 181
+   },
+   {
+    "id": "h2-pflichtjahr",
+    "datei": "hoeren/h2-pflichtjahr.json",
+    "titel": "Gespräch: Ein soziales Pflichtjahr für alle?",
+    "teil": "Teil 2",
+    "art": "Gespräch",
+    "abspielen": 1,
+    "aufgaben": 8,
+    "dauer_s": 158
+   },
+   {
+    "id": "h2-sabbatjahr",
+    "datei": "hoeren/h2-sabbatjahr.json",
+    "titel": "Gespräch: Ein Jahr Auszeit?",
+    "teil": "Teil 2",
+    "art": "Gespräch",
+    "abspielen": 1,
+    "aufgaben": 8,
+    "dauer_s": 150
+   },
+   {
+    "id": "h3-anglizismen",
+    "datei": "hoeren/h3-anglizismen.json",
+    "titel": "Interview: Stirbt das Deutsche an den Anglizismen?",
+    "teil": "Teil 3",
+    "art": "Interview",
+    "abspielen": 2,
+    "aufgaben": 9,
+    "dauer_s": 198
+   },
+   {
+    "id": "h3-globalisierung",
+    "datei": "hoeren/h3-globalisierung.json",
+    "titel": "Interview: Das Ende der Globalisierung?",
+    "teil": "Teil 3",
+    "art": "Interview",
+    "abspielen": 2,
+    "aufgaben": 9,
+    "dauer_s": 173
+   },
+   {
+    "id": "h3-selbstvermessung",
+    "datei": "hoeren/h3-selbstvermessung.json",
+    "titel": "Interview: Das Armband, das alles weiß",
+    "teil": "Teil 3",
+    "art": "Interview",
+    "abspielen": 2,
+    "aufgaben": 9,
+    "dauer_s": 161
+   },
+   {
+    "id": "h3-stadtklima",
+    "datei": "hoeren/h3-stadtklima.json",
+    "titel": "Interview: Wenn die Stadt nachts nicht abkühlt",
+    "teil": "Teil 3",
+    "art": "Interview",
+    "abspielen": 2,
+    "aufgaben": 9,
+    "dauer_s": 147
+   }
+  ],
+  "lesen": [
+   {
+    "id": "l1-denkmaeler",
+    "datei": "lesen/l1-denkmaeler.json",
+    "titel": "Stürzen oder erklären? Vom Umgang mit umstrittenen Denkmälern",
+    "art": "Kommentar",
+    "teil": "Teil 1 – Kommentar, Mehrfachauswahl",
+    "aufgaben": 11,
+    "zeit_min": 16
+   },
+   {
+    "id": "l1-noten",
+    "datei": "lesen/l1-noten.json",
+    "titel": "Die trügerische Ruhe der Ziffer",
+    "art": "Kommentar",
+    "teil": "Teil 1 – Kommentar, Mehrfachauswahl",
+    "aufgaben": 11,
+    "zeit_min": 18
+   },
+   {
+    "id": "l2-ehrenamt",
+    "datei": "lesen/l2-ehrenamt.json",
+    "titel": "Engagement auf Zeit: Wie sich das Ehrenamt verändert",
+    "art": "Sachtext",
+    "teil": "Teil 2 – Sachtext, Aussagen den Absätzen zuordnen",
+    "aufgaben": 9,
+    "zeit_min": 15
+   },
+   {
+    "id": "l2-unfertig",
+    "datei": "lesen/l2-unfertig.json",
+    "titel": "Lob des Unfertigen",
+    "art": "Kommentar",
+    "teil": "Teil 2 – Essay, Überschriften zuordnen",
+    "aufgaben": 9,
+    "zeit_min": 12
+   },
+   {
+    "id": "l3-papier",
+    "datei": "lesen/l3-papier.json",
+    "titel": "Was Papier erzählt – zu Besuch in einer Restaurierungswerkstatt",
+    "art": "Sachtext",
+    "teil": "Teil 3 – Reportage, Abschnitte in Lücken einsetzen",
+    "aufgaben": 9,
+    "zeit_min": 15
+   },
+   {
+    "id": "l4-kurse",
+    "datei": "lesen/l4-kurse.json",
+    "titel": "Vier Angebote für Wortgewandte",
+    "art": "Sachtext",
+    "teil": "Teil 4 – vier Kurztexte, schnelles Lesen",
+    "aufgaben": 8,
+    "zeit_min": 10
+   },
+   {
+    "id": "lit-fontane-effi",
+    "datei": "lesen/lit-fontane-effi.json",
+    "titel": "Theodor Fontane: Effi Briest (Anfang)",
+    "art": "Literatur",
+    "teil": "Literatur – gemeinfreier Auszug (Training für Interpretation und Rezension)",
+    "aufgaben": 9,
+    "zeit_min": 14
+   },
+   {
+    "id": "lit-heine-harzreise",
+    "datei": "lesen/lit-heine-harzreise.json",
+    "titel": "Heinrich Heine: Die Harzreise (Göttingen)",
+    "art": "Literatur",
+    "teil": "Literatur – gemeinfreier Auszug (Training für Interpretation und Rezension)",
+    "aufgaben": 9,
+    "zeit_min": 14
+   },
+   {
+    "id": "lit-kafka-gesetz",
+    "datei": "lesen/lit-kafka-gesetz.json",
+    "titel": "Franz Kafka: Vor dem Gesetz",
+    "art": "Literatur",
+    "teil": "Literatur – gemeinfreier Auszug (Training für Interpretation und Rezension)",
+    "aufgaben": 10,
+    "zeit_min": 12
+   },
+   {
+    "id": "lit-kleist-kohlhaas",
+    "datei": "lesen/lit-kleist-kohlhaas.json",
+    "titel": "Heinrich von Kleist: Michael Kohlhaas (Anfang)",
+    "art": "Literatur",
+    "teil": "Literatur – gemeinfreier Auszug (Training für Interpretation und Rezension)",
+    "aufgaben": 10,
+    "zeit_min": 15
+   },
+   {
+    "id": "lit-mann-kroeger",
+    "datei": "lesen/lit-mann-kroeger.json",
+    "titel": "Thomas Mann: Tonio Kröger (Gespräch im Atelier)",
+    "art": "Literatur",
+    "teil": "Literatur – gemeinfreier Auszug (Training für Interpretation und Rezension)",
+    "aufgaben": 9,
+    "zeit_min": 15
+   },
+   {
+    "id": "lit-tucholsky-neudeutsch",
+    "datei": "lesen/lit-tucholsky-neudeutsch.json",
+    "titel": "Kurt Tucholsky: Neudeutsch",
+    "art": "Literatur",
+    "teil": "Literatur – gemeinfreier Auszug (Training für Interpretation und Rezension)",
+    "aufgaben": 9,
+    "zeit_min": 14
+   }
+  ],
+  "themen": [
+   {
+    "id": "t01",
+    "datei": "themen/t01.json",
+    "thema": "Klimaschutz und Verantwortung",
+    "titel": "Klimaschutz und Verantwortung",
+    "woerter_muster": 194
+   },
+   {
+    "id": "t02",
+    "datei": "themen/t02.json",
+    "thema": "Künstliche Intelligenz",
+    "titel": "Künstliche Intelligenz",
+    "woerter_muster": 189
+   },
+   {
+    "id": "t03",
+    "datei": "themen/t03.json",
+    "thema": "Datenschutz und Privatsphäre",
+    "titel": "Datenschutz und Privatsphäre",
+    "woerter_muster": 181
+   },
+   {
+    "id": "t04",
+    "datei": "themen/t04.json",
+    "thema": "Soziale Medien und Debattenkultur",
+    "titel": "Soziale Medien und Debattenkultur",
+    "woerter_muster": 189
+   },
+   {
+    "id": "t05",
+    "datei": "themen/t05.json",
+    "thema": "Globalisierung",
+    "titel": "Globalisierung",
+    "woerter_muster": 187
+   },
+   {
+    "id": "t06",
+    "datei": "themen/t06.json",
+    "thema": "Arbeitswelt im Wandel",
+    "titel": "Arbeitswelt im Wandel",
+    "woerter_muster": 190
+   },
+   {
+    "id": "t07",
+    "datei": "themen/t07.json",
+    "thema": "Bildung und lebenslanges Lernen",
+    "titel": "Bildung und lebenslanges Lernen",
+    "woerter_muster": 196
+   },
+   {
+    "id": "t08",
+    "datei": "themen/t08.json",
+    "thema": "Heimat und Zugehörigkeit",
+    "titel": "Heimat und Zugehörigkeit",
+    "woerter_muster": 187
+   },
+   {
+    "id": "t09",
+    "datei": "themen/t09.json",
+    "thema": "Sprache im Wandel",
+    "titel": "Sprache im Wandel",
+    "woerter_muster": 198
+   },
+   {
+    "id": "t10",
+    "datei": "themen/t10.json",
+    "thema": "Demografischer Wandel",
+    "titel": "Demografischer Wandel",
+    "woerter_muster": 199
+   },
+   {
+    "id": "t11",
+    "datei": "themen/t11.json",
+    "thema": "Gesundheit und Selbstoptimierung",
+    "titel": "Gesundheit und Selbstoptimierung",
+    "woerter_muster": 188
+   },
+   {
+    "id": "t12",
+    "datei": "themen/t12.json",
+    "thema": "Konsum und Nachhaltigkeit",
+    "titel": "Konsum und Nachhaltigkeit",
+    "woerter_muster": 197
+   },
+   {
+    "id": "t13",
+    "datei": "themen/t13.json",
+    "thema": "Wohnen in Stadt und Land",
+    "titel": "Wohnen in Stadt und Land",
+    "woerter_muster": 196
+   },
+   {
+    "id": "t14",
+    "datei": "themen/t14.json",
+    "thema": "Mobilität der Zukunft",
+    "titel": "Mobilität der Zukunft",
+    "woerter_muster": 187
+   },
+   {
+    "id": "t15",
+    "datei": "themen/t15.json",
+    "thema": "Ernährung",
+    "titel": "Ernährung",
+    "woerter_muster": 199
+   },
+   {
+    "id": "t16",
+    "datei": "themen/t16.json",
+    "thema": "Kunst und Kulturförderung",
+    "titel": "Kunst und Kulturförderung",
+    "woerter_muster": 190
+   },
+   {
+    "id": "t17",
+    "datei": "themen/t17.json",
+    "thema": "Lesen im digitalen Zeitalter",
+    "titel": "Lesen im digitalen Zeitalter",
+    "woerter_muster": 187
+   },
+   {
+    "id": "t18",
+    "datei": "themen/t18.json",
+    "thema": "Wissenschaft und Ethik",
+    "titel": "Wissenschaft und Ethik",
+    "woerter_muster": 184
+   },
+   {
+    "id": "t19",
+    "datei": "themen/t19.json",
+    "thema": "Tourismus",
+    "titel": "Tourismus",
+    "woerter_muster": 203
+   },
+   {
+    "id": "t20",
+    "datei": "themen/t20.json",
+    "thema": "Ehrenamt und Zusammenhalt",
+    "titel": "Ehrenamt und Zusammenhalt",
+    "woerter_muster": 212
+   },
+   {
+    "id": "t21",
+    "datei": "themen/t21.json",
+    "thema": "Glück, Erfolg und Leistungsdruck",
+    "titel": "Glück, Erfolg und Leistungsdruck",
+    "woerter_muster": 198
+   },
+   {
+    "id": "t22",
+    "datei": "themen/t22.json",
+    "thema": "Familie und Rollenbilder",
+    "titel": "Familie und Rollenbilder",
+    "woerter_muster": 190
+   },
+   {
+    "id": "t23",
+    "datei": "themen/t23.json",
+    "thema": "Erinnerungskultur",
+    "titel": "Erinnerungskultur",
+    "woerter_muster": 202
+   },
+   {
+    "id": "t24",
+    "datei": "themen/t24.json",
+    "thema": "Demokratie und Beteiligung",
+    "titel": "Demokratie und Beteiligung",
+    "woerter_muster": 207
+   }
+  ],
+  "wortschatz": [
+   {
+    "id": "fremdwoerter",
+    "datei": "wortschatz/fremdwoerter.json",
+    "art": "fremdwoerter",
+    "titel": "Fremdwörter",
+    "eintraege": 303,
+    "uebungen_datei": "wortschatz/uebungen-fremdwoerter.json",
+    "uebungen": 60
+   },
+   {
+    "id": "genus-drill",
+    "datei": "wortschatz/genus-drill.json",
+    "art": "genus",
+    "titel": "Genus-Drill",
+    "eintraege": 203,
+    "uebungen_datei": "wortschatz/uebungen-genus-drill.json",
+    "uebungen": 60
+   },
+   {
+    "id": "nomen-verb",
+    "datei": "wortschatz/nomen-verb.json",
+    "art": "nomen-verb",
+    "titel": "Nomen-Verb-Verbindungen",
+    "eintraege": 152,
+    "uebungen_datei": "wortschatz/uebungen-nomen-verb.json",
+    "uebungen": 62
+   },
+   {
+    "id": "redewendungen",
+    "datei": "wortschatz/redewendungen.json",
+    "art": "redewendungen",
+    "titel": "Redewendungen",
+    "eintraege": 150,
+    "uebungen_datei": "wortschatz/uebungen-redewendungen.json",
+    "uebungen": 60
+   },
+   {
+    "id": "rektion",
+    "datei": "wortschatz/rektion.json",
+    "art": "rektion",
+    "titel": "Rektion: Verb, Adjektiv, Nomen + Präposition",
+    "eintraege": 203,
+    "uebungen_datei": "wortschatz/uebungen-rektion.json",
+    "uebungen": 64
+   }
+  ]
+ },
+ "sammlungen": {
+  "redemittel": {
+   "datei": "themen/redemittel.json",
+   "titel": "Redemittel C1/C2",
+   "anzahl": 179
+  },
+  "warum-c2": {
+   "datei": "themen/warum-c2.json",
+   "titel": "Warum ich Deutsch auf C2-Niveau lerne",
+   "anzahl": 20
+  }
+ },
+ "zahlen": {
+  "grammatik_uebungen": 1058,
+  "hoeren_aufgaben": 105,
+  "hoeren_minuten": 28.8,
+  "lesen_texte": 12,
+  "lesen_aufgaben": 113,
+  "themen": 24,
+  "wortschatz_eintraege": 1011,
+  "wortschatz_uebungen": 306
+ }
+}

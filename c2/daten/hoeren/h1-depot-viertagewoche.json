@@ -1,0 +1,220 @@
+{
+ "id": "h1-depot-viertagewoche",
+ "titel": "Kurzmeldungen: Museumsdepot, Viertagewoche, Wahlalter, Hörbuch",
+ "teil": "Teil 1",
+ "art": "Kurzmeldungen",
+ "stimmen": [
+  "Nachrichtensprecherin",
+  "Reporter",
+  "Inhaberin einer Tischlerei",
+  "Kommentator",
+  "Moderatorin",
+  "Literaturkritiker"
+ ],
+ "audio": "audio/h1-depot-viertagewoche.mp3",
+ "dauer_s": 176,
+ "abspielen": 1,
+ "anleitung": "Sie hören vier kurze Radioausschnitte, jeden nur einmal. Lesen Sie vorher die Aussagen. Entscheiden Sie beim Hören: Stimmt die Aussage mit dem Text überein (Ja) oder nicht (Nein)?",
+ "transkript": [
+  {
+   "sprecher": "Ansage",
+   "text": "Ausschnitt 1."
+  },
+  {
+   "sprecher": "Nachrichtensprecherin",
+   "text": "Das Landesmuseum in Kronstedt zeigt ab dem kommenden Monat, was normalerweise niemand zu sehen bekommt: sein Depot. Der weitaus größte Teil der Sammlung lagert dort in Regalen und Schubladen, weil die Ausstellungsräume schlicht zu klein sind. Besucherinnen und Besucher können das Depot künftig an zwei Nachmittagen pro Woche besichtigen, in kleinen Gruppen und ausschließlich mit Führung. Die Museumsleitung verspricht sich davon vor allem Verständnis dafür, dass Museen nicht nur ausstellen, sondern auch bewahren und forschen. Kritik kommt vom Förderverein: Er befürchtet, empfindliche Objekte könnten durch die zusätzlichen Besuche Schaden nehmen."
+  },
+  {
+   "sprecher": "Ansage",
+   "text": "Ausschnitt 2."
+  },
+  {
+   "sprecher": "Reporter",
+   "text": "Vier Tage arbeiten, drei Tage frei – und das bei vollem Lohn. Was in vielen Großunternehmen noch Zukunftsmusik ist, praktiziert eine Tischlerei im Allgäu seit einem Jahr. Die Wochenarbeitszeit wurde allerdings nur leicht gesenkt; dafür sind die einzelnen Arbeitstage länger. Inhaberin Martina Seidl zieht eine gemischte Bilanz."
+  },
+  {
+   "sprecher": "Inhaberin einer Tischlerei",
+   "text": "Bewerbungen bekommen wir seitdem so viele wie nie zuvor – das ist für mich der eigentliche Gewinn. Krankmeldungen gibt es auch weniger. Aber ich will nichts schönreden: Für unsere Kunden ist es manchmal schwierig, dass freitags niemand ans Telefon geht. Daran arbeiten wir noch."
+  },
+  {
+   "sprecher": "Ansage",
+   "text": "Ausschnitt 3."
+  },
+  {
+   "sprecher": "Kommentator",
+   "text": "Ein Kommentar von Jens Albrecht. Wer mit sechzehn eine Ausbildung beginnen, Steuern zahlen und den Führerschein fürs Moped machen darf, dem kann man schwerlich erklären, warum er über die Zukunft seiner Stadt nicht mitbestimmen soll. Das Argument, Jugendliche seien besonders leicht zu beeinflussen, überzeugt mich wenig – als wären Erwachsene dagegen gefeit. Allerdings: Ein niedrigeres Wahlalter allein ist noch keine Beteiligung. Wer es ernst meint, muss auch an den Schulen mehr politische Bildung ermöglichen. Sonst bleibt die Reform ein Symbol – gut gemeint, aber folgenlos."
+  },
+  {
+   "sprecher": "Ansage",
+   "text": "Ausschnitt 4."
+  },
+  {
+   "sprecher": "Moderatorin",
+   "text": "In unserer Rubrik ‚Nachgefragt‘ heute die Frage einer Hörerin: Zählt ein Hörbuch eigentlich als gelesen? Wir haben den Literaturkritiker Beat Imhof gefragt."
+  },
+  {
+   "sprecher": "Literaturkritiker",
+   "text": "Ich finde die Frage, ehrlich gesagt, etwas verkrampft. Natürlich ist Hören etwas anderes als Lesen: Man kann nicht so leicht zurückblättern, und das Tempo bestimmt die Sprecherin, nicht ich. Bei einem verschachtelten Roman merke ich das deutlich. Aber weniger wert? Das würde ich nie sagen. Literatur war über Jahrhunderte etwas, das man vorgelesen bekam. Wer also im Zug ein Hörbuch hört, steht in einer sehr alten Tradition – auch wenn er das vielleicht gar nicht weiß."
+  }
+ ],
+ "aufgaben": [
+  {
+   "id": "a1",
+   "typ": "rf",
+   "aussage": "Ausschnitt 1: Im Depot lagert nur ein kleiner Teil der Sammlung.",
+   "wert": false,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "„Der weitaus größte Teil der Sammlung lagert dort“."
+  },
+  {
+   "id": "a2",
+   "typ": "rf",
+   "aussage": "Ausschnitt 1: Das Depot kann nur im Rahmen einer Führung besichtigt werden.",
+   "wert": true,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "„in kleinen Gruppen und ausschließlich mit Führung“"
+  },
+  {
+   "id": "a3",
+   "typ": "rf",
+   "aussage": "Ausschnitt 1: Der Förderverein unterstützt die Öffnung des Depots ohne Vorbehalte.",
+   "wert": false,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "„Kritik kommt vom Förderverein“."
+  },
+  {
+   "id": "a4",
+   "typ": "rf",
+   "aussage": "Ausschnitt 2: Die Beschäftigten der Tischlerei arbeiten seit der Umstellung deutlich weniger Stunden pro Woche.",
+   "wert": false,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "„Die Wochenarbeitszeit wurde allerdings nur leicht gesenkt“."
+  },
+  {
+   "id": "a5",
+   "typ": "rf",
+   "aussage": "Ausschnitt 2: Den wichtigsten Vorteil sieht die Inhaberin darin, leichter neue Mitarbeitende zu finden.",
+   "wert": true,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "„Bewerbungen bekommen wir seitdem so viele wie nie zuvor – das ist für mich der eigentliche Gewinn.“"
+  },
+  {
+   "id": "a6",
+   "typ": "rf",
+   "aussage": "Ausschnitt 2: Sie räumt ein, dass die Erreichbarkeit für Kunden unter dem Modell leidet.",
+   "wert": true,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "„Für unsere Kunden ist es manchmal schwierig, dass freitags niemand ans Telefon geht.“"
+  },
+  {
+   "id": "a7",
+   "typ": "rf",
+   "aussage": "Ausschnitt 3: Der Kommentator hält es für kaum begründbar, Sechzehnjährigen das Wahlrecht zu verweigern.",
+   "wert": true,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "„dem kann man schwerlich erklären, warum er über die Zukunft seiner Stadt nicht mitbestimmen soll“"
+  },
+  {
+   "id": "a8",
+   "typ": "rf",
+   "aussage": "Ausschnitt 3: Er teilt die Sorge, Jugendliche ließen sich besonders leicht beeinflussen.",
+   "wert": false,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "Das Argument „überzeugt mich wenig – als wären Erwachsene dagegen gefeit“."
+  },
+  {
+   "id": "a9",
+   "typ": "rf",
+   "aussage": "Ausschnitt 3: Seiner Meinung nach reicht es nicht aus, nur das Wahlalter zu senken.",
+   "wert": true,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "„Ein niedrigeres Wahlalter allein ist noch keine Beteiligung.“"
+  },
+  {
+   "id": "a10",
+   "typ": "rf",
+   "aussage": "Ausschnitt 4: Der Kritiker hält Hörbücher für weniger wertvoll als gedruckte Bücher.",
+   "wert": false,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "„Aber weniger wert? Das würde ich nie sagen.“"
+  },
+  {
+   "id": "a11",
+   "typ": "rf",
+   "aussage": "Ausschnitt 4: Er weist darauf hin, dass man beim Hören das Tempo nicht selbst bestimmt.",
+   "wert": true,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "„das Tempo bestimmt die Sprecherin, nicht ich“"
+  },
+  {
+   "id": "a12",
+   "typ": "rf",
+   "aussage": "Ausschnitt 4: Seiner Meinung nach eignen sich verschachtelte Romane besonders gut zum Hören.",
+   "wert": false,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "Gerade dort spürt er den Nachteil: „Bei einem verschachtelten Roman merke ich das deutlich.“"
+  },
+  {
+   "id": "t1",
+   "typ": "rfn",
+   "aussage": "Die Führungen durch das Depot sind kostenlos.",
+   "wert": "nicht im Text",
+   "erklaerung": "Über Eintritt oder Kosten sagt die Meldung nichts.",
+   "nur_training": true
+  },
+  {
+   "id": "t2",
+   "typ": "rfn",
+   "aussage": "In der Tischlerei gibt es seit der Umstellung weniger Krankmeldungen.",
+   "wert": "richtig",
+   "erklaerung": "„Krankmeldungen gibt es auch weniger.“",
+   "nur_training": true
+  },
+  {
+   "id": "t3",
+   "typ": "luecke",
+   "satz": "Kommentar: Der Autor fordert mehr politische ___ an den Schulen.",
+   "loesungen": [
+    "Bildung"
+   ],
+   "erklaerung": "„muss auch an den Schulen mehr politische Bildung ermöglichen“",
+   "nur_training": true
+  }
+ ]
+}

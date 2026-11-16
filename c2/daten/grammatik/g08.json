@@ -1,0 +1,409 @@
+{
+ "id": "g08",
+ "titel": "Feste Wendungen und Kollokationen",
+ "niveau": "C2",
+ "nr": 8,
+ "gruppe": "A",
+ "baustelle": true,
+ "pruefungsbezug": [
+  "S2",
+  "P1",
+  "P2",
+  "H2"
+ ],
+ "tafel": [
+  "Kollokationen gehören zusammen: eine Rolle spielen, einen Beitrag leisten, Fragen aufwerfen, Bedenken äußern, einen Kompromiss schließen.",
+  "Idiome: Die Bedeutung ergibt sich nicht aus den Teilen – auf der Hand liegen = offensichtlich sein.",
+  "Die Form ist fest: Artikel, Präposition und Zahl lassen sich nicht ändern – auf der Hand, nicht „auf die Hand“.",
+  "Zwillingsformeln: ab und zu, nach und nach, klipp und klar, gang und gäbe, mit Fug und Recht.",
+  "Zeit: Das ist lange her. – seit Jahren – über kurz oder lang – in absehbarer Zeit.",
+  "Stil: Idiome machen Reden lebendig; im Leserbrief setzt man sie sparsam und passend ein."
+ ],
+ "beispiele": [
+  "Die Vorteile des Vorschlags liegen auf der Hand, die Kosten fallen dagegen kaum ins Gewicht.",
+  "Die Studie wirft eine Reihe unbequemer Fragen auf.",
+  "Was vor zwanzig Jahren die Ausnahme war, ist heute gang und gäbe.",
+  "Die Autorin bringt das Dilemma der modernen Medizin in einem einzigen Satz auf den Punkt."
+ ],
+ "fallen": [
+  {
+   "falsch": "auf die Hand liegen",
+   "richtig": "auf der Hand liegen",
+   "warum": "Idiome sind fest – auch der Kasus."
+  },
+  {
+   "falsch": "einen Beitrag machen",
+   "richtig": "einen Beitrag leisten",
+   "warum": "Zum Nomen gehört ein bestimmtes Verb."
+  },
+  {
+   "falsch": "Das spielt keine Bedeutung.",
+   "richtig": "Das spielt keine Rolle. / Das hat keine Bedeutung.",
+   "warum": "Zwei Kollokationen wurden vermischt."
+  },
+  {
+   "falsch": "seit lange her",
+   "richtig": "Das ist lange her.",
+   "warum": "Die Wendung „lange her sein“ steht ohne „seit“."
+  }
+ ],
+ "uebungen": [
+  {
+   "id": "u02",
+   "typ": "luecke",
+   "satz": "Verglichen mit dem Nutzen fallen die Kosten kaum ins ___.",
+   "loesungen": [
+    "Gewicht"
+   ],
+   "hinweis": "Nomen",
+   "erklaerung": "„ins Gewicht fallen“ = bedeutsam sein."
+  },
+  {
+   "id": "u03",
+   "typ": "luecke",
+   "satz": "Diese Behauptung ist völlig aus der ___ gegriffen.",
+   "loesungen": [
+    "Luft"
+   ],
+   "hinweis": "Nomen",
+   "erklaerung": "„aus der Luft gegriffen“ = frei erfunden, ohne Grundlage."
+  },
+  {
+   "id": "u04",
+   "typ": "luecke",
+   "satz": "Sie hat das Problem in wenigen Sätzen auf den ___ gebracht.",
+   "loesungen": [
+    "Punkt"
+   ],
+   "hinweis": "Nomen",
+   "erklaerung": "„etwas auf den Punkt bringen“ = knapp und treffend formulieren."
+  },
+  {
+   "id": "u05",
+   "typ": "luecke",
+   "satz": "Bei der Reform sind die Interessen der Pflegekräfte unter den ___ gefallen.",
+   "loesungen": [
+    "Tisch"
+   ],
+   "hinweis": "Nomen",
+   "erklaerung": "„unter den Tisch fallen“ = nicht berücksichtigt werden."
+  },
+  {
+   "id": "u06",
+   "typ": "luecke",
+   "satz": "Die Studie ___ eine Reihe unbequemer Fragen auf.",
+   "loesungen": [
+    "wirft"
+   ],
+   "hinweis": "Verb, Präsens",
+   "erklaerung": "„Fragen aufwerfen“ = Fragen entstehen lassen."
+  },
+  {
+   "id": "u08",
+   "typ": "luecke",
+   "satz": "Mit ihrer Forschung hat sie einen wichtigen Beitrag zur Demenzforschung ___.",
+   "loesungen": [
+    "geleistet"
+   ],
+   "hinweis": "Partizip II",
+   "erklaerung": "„einen Beitrag leisten“."
+  },
+  {
+   "id": "u09",
+   "typ": "luecke",
+   "satz": "Nach zähen Verhandlungen ___ die Parteien einen Kompromiss.",
+   "loesungen": [
+    "schlossen",
+    "fanden",
+    "erzielten",
+    "erreichten"
+   ],
+   "hinweis": "Verb, Präteritum",
+   "erklaerung": "„einen Kompromiss schließen“ oder „finden“."
+  },
+  {
+   "id": "u10",
+   "typ": "luecke",
+   "satz": "Was früher die Ausnahme war, ist heute gang und ___.",
+   "loesungen": [
+    "gäbe"
+   ],
+   "hinweis": "Zwillingsformel",
+   "erklaerung": "„gang und gäbe“ = allgemein üblich."
+  },
+  {
+   "id": "u11",
+   "typ": "luecke",
+   "satz": "Man kann mit Fug und ___ behaupten, dass dieser Roman ein Meilenstein ist.",
+   "loesungen": [
+    "Recht"
+   ],
+   "hinweis": "Zwillingsformel",
+   "erklaerung": "„mit Fug und Recht“ = mit voller Berechtigung."
+  },
+  {
+   "id": "u12",
+   "typ": "luecke",
+   "satz": "Wer die Fehler der eigenen Partei verzeiht und die der anderen anprangert, misst mit zweierlei ___.",
+   "loesungen": [
+    "Maß"
+   ],
+   "hinweis": "Nomen",
+   "erklaerung": "„mit zweierlei Maß messen“ = ungleich, ungerecht urteilen."
+  },
+  {
+   "id": "u13",
+   "typ": "luecke",
+   "satz": "Über kurz oder ___ wird sich das Unternehmen neu aufstellen müssen.",
+   "loesungen": [
+    "lang"
+   ],
+   "hinweis": "Adjektiv",
+   "erklaerung": "„über kurz oder lang“ = früher oder später."
+  },
+  {
+   "id": "u14",
+   "typ": "luecke",
+   "satz": "Bei der maroden Brücke besteht dringender ___.",
+   "loesungen": [
+    "Handlungsbedarf"
+   ],
+   "hinweis": "Kompositum: man muss handeln",
+   "erklaerung": "Kollokation: Es besteht dringender Handlungsbedarf."
+  },
+  {
+   "id": "u15",
+   "typ": "auswahl",
+   "frage": "Was bedeutet „etwas auf die lange Bank schieben“?",
+   "optionen": [
+    "etwas hinauszögern",
+    "etwas sorgfältig planen",
+    "etwas öffentlich machen"
+   ],
+   "richtig": 0,
+   "erklaerung": "Gemeint ist: eine Sache immer wieder aufschieben."
+  },
+  {
+   "id": "u16",
+   "typ": "auswahl",
+   "frage": "„In der Anhörung ___ die Sachverständige schwerwiegende Bedenken.“",
+   "optionen": [
+    "sagte",
+    "äußerte",
+    "sprach"
+   ],
+   "richtig": 1,
+   "erklaerung": "Die Kollokation lautet „Bedenken äußern“."
+  },
+  {
+   "id": "u17",
+   "typ": "auswahl",
+   "frage": "Welche Wendung bedeutet „sehr deutlich, unmissverständlich“?",
+   "optionen": [
+    "nach und nach",
+    "klipp und klar",
+    "ab und zu"
+   ],
+   "richtig": 1,
+   "erklaerung": "„ab und zu“ = manchmal, „nach und nach“ = allmählich."
+  },
+  {
+   "id": "u18",
+   "typ": "auswahl",
+   "frage": "„Endlich hat sie ihm reinen ___ eingeschenkt.“",
+   "optionen": [
+    "Saft",
+    "Wein",
+    "Wasser"
+   ],
+   "richtig": 1,
+   "erklaerung": "„jemandem reinen Wein einschenken“ = jemandem offen die Wahrheit sagen."
+  },
+  {
+   "id": "u19",
+   "typ": "auswahl",
+   "frage": "Was bedeutet „jemandem den Rücken stärken“?",
+   "optionen": [
+    "jemanden schonen",
+    "jemanden kritisieren",
+    "jemanden unterstützen"
+   ],
+   "richtig": 2,
+   "erklaerung": "Wer jemandem den Rücken stärkt, gibt ihm Rückhalt."
+  },
+  {
+   "id": "u21",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "eine Rolle",
+     "spielen"
+    ],
+    [
+     "einen Beitrag",
+     "leisten"
+    ],
+    [
+     "eine Frage",
+     "aufwerfen"
+    ],
+    [
+     "Bedenken",
+     "äußern"
+    ],
+    [
+     "einen Kompromiss",
+     "schließen"
+    ],
+    [
+     "eine Wende",
+     "nehmen"
+    ]
+   ],
+   "erklaerung": "Kollokationen: Zum Nomen gehört ein bestimmtes Verb."
+  },
+  {
+   "id": "u22",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "ab und",
+     "zu"
+    ],
+    [
+     "nach und",
+     "nach"
+    ],
+    [
+     "gang und",
+     "gäbe"
+    ],
+    [
+     "klipp und",
+     "klar"
+    ],
+    [
+     "Hab und",
+     "Gut"
+    ],
+    [
+     "mit Fug und",
+     "Recht"
+    ]
+   ],
+   "erklaerung": "Zwillingsformeln sind fest; die Reihenfolge lässt sich nicht umkehren."
+  },
+  {
+   "id": "u23",
+   "typ": "sortieren",
+   "teile": [
+    "in einem einzigen Satz",
+    "Die Autorin",
+    "das Dilemma",
+    "auf den Punkt",
+    "der modernen Medizin",
+    "bringt"
+   ],
+   "loesung": "Die Autorin bringt das Dilemma der modernen Medizin in einem einzigen Satz auf den Punkt.",
+   "loesungen": [
+    "Die Autorin bringt in einem einzigen Satz das Dilemma der modernen Medizin auf den Punkt."
+   ],
+   "erklaerung": "„auf den Punkt“ bildet mit „bringt“ die Satzklammer und steht am Ende."
+  },
+  {
+   "id": "u24",
+   "typ": "sortieren",
+   "teile": [
+    "bleibt",
+    "Ob",
+    "die Kosten",
+    "wirklich",
+    "abzuwarten",
+    "fallen,",
+    "ins Gewicht"
+   ],
+   "loesung": "Ob die Kosten wirklich ins Gewicht fallen, bleibt abzuwarten.",
+   "erklaerung": "Der ob-Satz steht im Vorfeld; „ins Gewicht“ steht direkt vor dem Verb."
+  },
+  {
+   "id": "u27",
+   "typ": "fehler",
+   "satz": "Die Studie wirft eine ganze Reihe von Fragen hoch.",
+   "fehler": "hoch",
+   "korrektur": "auf",
+   "erklaerung": "„Fragen aufwerfen“."
+  },
+  {
+   "id": "u28",
+   "typ": "fehler",
+   "satz": "Die Wünsche der Pflegekräfte sind bei der Reform unter den Tisch gegangen.",
+   "fehler": "gegangen",
+   "korrektur": "gefallen",
+   "erklaerung": "„unter den Tisch fallen“."
+  },
+  {
+   "id": "u29",
+   "typ": "fehler",
+   "satz": "Sie hat einen wichtigen Beitrag zu dieser Debatte gemacht.",
+   "fehler": "gemacht",
+   "korrektur": "geleistet",
+   "erklaerung": "„einen Beitrag leisten“."
+  },
+  {
+   "id": "u30",
+   "typ": "fehler",
+   "satz": "Das Gespräch nahm plötzlich eine unerwartete Kurve.",
+   "fehler": "Kurve",
+   "korrektur": [
+    "Wendung",
+    "Wende"
+   ],
+   "erklaerung": "„eine (unerwartete) Wendung nehmen“."
+  },
+  {
+   "id": "u31",
+   "typ": "fehler",
+   "satz": "Nach Jahren des Schweigens hat er ihr endlich reines Wasser eingeschenkt.",
+   "fehler": "reines Wasser",
+   "korrektur": "reinen Wein",
+   "erklaerung": "„jemandem reinen Wein einschenken“."
+  },
+  {
+   "id": "u34",
+   "typ": "rf",
+   "aussage": "„Etwas aus dem Stegreif sagen“ bedeutet, ohne Vorbereitung zu sprechen.",
+   "wert": true,
+   "erklaerung": "„aus dem Stegreif“ = spontan, unvorbereitet."
+  },
+  {
+   "id": "u36",
+   "typ": "umformen",
+   "ausgang": "Gewerkschaft und Arbeitgeber einigten sich auf einen Kompromiss.",
+   "anweisung": "Verwenden Sie „einen Kompromiss schließen“.",
+   "loesungen": [
+    "Gewerkschaft und Arbeitgeber schlossen einen Kompromiss."
+   ],
+   "erklaerung": "„sich einigen auf“ → „einen Kompromiss schließen“."
+  },
+  {
+   "id": "u37",
+   "typ": "luecke",
+   "satz": "Die neue Studie wirft ein schlechtes ___ auf die Arbeitsbedingungen in der Branche.",
+   "loesungen": [
+    "Licht"
+   ],
+   "hinweis": "Nomen",
+   "erklaerung": "„ein schlechtes Licht auf etwas werfen“: etwas negativ erscheinen lassen."
+  },
+  {
+   "id": "u38",
+   "typ": "luecke",
+   "satz": "Der Vorschlag der Opposition stieß bei der Regierung auf taube ___.",
+   "loesungen": [
+    "Ohren"
+   ],
+   "hinweis": "Nomen, Plural",
+   "erklaerung": "„auf taube Ohren stoßen“: kein Gehör finden, ignoriert werden."
+  }
+ ]
+}

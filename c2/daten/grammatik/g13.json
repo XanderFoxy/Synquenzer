@@ -1,0 +1,475 @@
+{
+ "id": "g13",
+ "titel": "Passiv und Passiversatz",
+ "niveau": "C1",
+ "nr": 13,
+ "gruppe": "B",
+ "baustelle": false,
+ "pruefungsbezug": [
+  "S1",
+  "L1"
+ ],
+ "kurz": "Vorgangs- und Zustandspassiv, Passiv mit Modalverben, Ersatzformen: sein + zu, sich lassen, Adjektive auf -bar und -lich, bekommen-Passiv.",
+ "tafel": [
+  "Vorgangspassiv: werden + Partizip II – der Vorgang zählt: Der Antrag wird geprüft.",
+  "Zustandspassiv: sein + Partizip II – das Ergebnis zählt: Der Antrag ist geprüft.",
+  "Perfekt Passiv: ist + Partizip II + worden (nie „geworden“): Der Antrag ist geprüft worden.",
+  "Mit Modalverb: Partizip II + werden + Modalverb: Der Antrag muss geprüft werden. – Perfekt: hat geprüft werden müssen.",
+  "Ersatz mit „können“-Bedeutung: sich lassen + Infinitiv (ohne zu), Adjektiv auf -bar/-lich: Das lässt sich lösen. = Das ist lösbar.",
+  "Ersatz mit „müssen“ oder „können“: sein + zu + Infinitiv: Die Gebühr ist sofort zu zahlen.",
+  "bekommen-Passiv: Das Dativobjekt wird Subjekt: Sie bekommt das Buch geschenkt.",
+  "Urheber mit „von“ + Dativ, Mittel oder Vermittler mit „durch“ + Akkusativ."
+ ],
+ "beispiele": [
+  "Die Ergebnisse der Studie sind bisher nicht veröffentlicht worden.",
+  "Der Schaden ist kaum noch zu beheben.",
+  "Diese Frage lässt sich nicht pauschal beantworten.",
+  "Die Ursache des Fehlers war lange nicht erkennbar.",
+  "Die Teilnehmerinnen bekamen ihre Zertifikate per Post zugeschickt."
+ ],
+ "fallen": [
+  {
+   "falsch": "Der Brief ist gestern geschrieben geworden.",
+   "richtig": "Der Brief ist gestern geschrieben worden.",
+   "warum": "Im Perfekt Passiv heißt das Partizip von „werden“ nur „worden“."
+  },
+  {
+   "falsch": "Das Problem lässt sich leicht zu lösen.",
+   "richtig": "Das Problem lässt sich leicht lösen.",
+   "warum": "Nach „sich lassen“ folgt der Infinitiv ohne „zu“."
+  },
+  {
+   "falsch": "Das Formular ist bis Freitag abzugeben werden.",
+   "richtig": "Das Formular ist bis Freitag abzugeben.",
+   "warum": "„sein + zu“ ersetzt das ganze Passiv mit Modalverb, „werden“ fällt weg."
+  },
+  {
+   "falsch": "Ich wurde von ihm geholfen.",
+   "richtig": "Mir wurde von ihm geholfen.",
+   "warum": "„helfen“ regiert den Dativ, der Dativ bleibt im Passiv erhalten; es gibt kein Subjekt."
+  }
+ ],
+ "uebungen": [
+  {
+   "id": "u01",
+   "typ": "luecke",
+   "satz": "Der Vertrag ___ gestern von beiden Seiten unterschrieben.",
+   "loesungen": [
+    "wurde"
+   ],
+   "hinweis": "Präteritum",
+   "erklaerung": "Vorgangspassiv im Präteritum: wurde + Partizip II."
+  },
+  {
+   "id": "u02",
+   "typ": "luecke",
+   "satz": "Die Ergebnisse sind bis heute nicht veröffentlicht ___.",
+   "loesungen": [
+    "worden"
+   ],
+   "erklaerung": "Perfekt Passiv: sein + Partizip II + worden – nicht „geworden“."
+  },
+  {
+   "id": "u03",
+   "typ": "luecke",
+   "satz": "Diese Frage lässt ___ nicht pauschal beantworten.",
+   "loesungen": [
+    "sich"
+   ],
+   "erklaerung": "sich lassen + Infinitiv bedeutet „kann … werden“: Die Frage kann nicht pauschal beantwortet werden."
+  },
+  {
+   "id": "u04",
+   "typ": "luecke",
+   "satz": "Die Anträge sind bis spätestens Ende Mai ___.",
+   "loesungen": [
+    "einzureichen"
+   ],
+   "hinweis": "einreichen",
+   "erklaerung": "sein + zu + Infinitiv; bei trennbaren Verben steht „zu“ zwischen Präfix und Stamm."
+  },
+  {
+   "id": "u05",
+   "typ": "luecke",
+   "satz": "Seit Jahren ___ über eine Reform des Systems diskutiert, doch geschehen ist wenig.",
+   "loesungen": [
+    "wird",
+    "wurde"
+   ],
+   "hinweis": "Passiv ohne Subjekt",
+   "erklaerung": "Unpersönliches Passiv: Es gibt kein Subjekt, das Verb steht in der 3. Person Singular."
+  },
+  {
+   "id": "u06",
+   "typ": "luecke",
+   "satz": "Nach ihrer Bewerbung ___ sie innerhalb einer Woche eine Zusage zugeschickt.",
+   "loesungen": [
+    "bekam",
+    "erhielt",
+    "kriegte"
+   ],
+   "hinweis": "bekommen-Passiv, Präteritum",
+   "erklaerung": "bekommen-Passiv: Die Person, die etwas erhält (sonst Dativ), wird Subjekt: Man schickte ihr eine Zusage zu. → Sie bekam eine Zusage zugeschickt."
+  },
+  {
+   "id": "u07",
+   "typ": "luecke",
+   "satz": "Das Gebäude wurde ___ ein Feuer schwer beschädigt.",
+   "loesungen": [
+    "durch"
+   ],
+   "erklaerung": "„ein Feuer“ steht im Akkusativ – das verlangt „durch“ (Mittel, Ursache). Mit „von“ hieße es „von einem Feuer“."
+  },
+  {
+   "id": "u08",
+   "typ": "luecke",
+   "satz": "Die Entscheidung wurde ___ der Geschäftsführerin selbst getroffen.",
+   "loesungen": [
+    "von"
+   ],
+   "erklaerung": "Die handelnde Person wird mit „von“ + Dativ angeschlossen („von der“)."
+  },
+  {
+   "id": "u09",
+   "typ": "luecke",
+   "satz": "Das Dokument ___ schon seit Tagen unterschrieben, aber niemand hat es abgeschickt.",
+   "loesungen": [
+    "ist",
+    "war"
+   ],
+   "hinweis": "Zustand",
+   "erklaerung": "Zustandspassiv: sein + Partizip II beschreibt das Ergebnis eines abgeschlossenen Vorgangs."
+  },
+  {
+   "id": "u10",
+   "typ": "luecke",
+   "satz": "Der Fehler hätte viel früher entdeckt werden ___.",
+   "loesungen": [
+    "müssen",
+    "können",
+    "sollen"
+   ],
+   "hinweis": "Modalverb im Infinitiv",
+   "erklaerung": "Passiv mit Modalverb im Konjunktiv II der Vergangenheit: hätte + Partizip II + werden + Modalverb im Infinitiv (Ersatzinfinitiv)."
+  },
+  {
+   "id": "u11",
+   "typ": "auswahl",
+   "frage": "Welche Form ersetzt „Das Gerät kann nicht repariert werden.“ korrekt?",
+   "optionen": [
+    "Das Gerät ist nicht zu reparieren werden.",
+    "Das Gerät ist nicht reparierbar.",
+    "Das Gerät ist nicht reparierlich.",
+    "Das Gerät lässt sich nicht zu reparieren."
+   ],
+   "richtig": 1,
+   "erklaerung": "„-bar“ bildet aus vielen transitiven Verben ein Adjektiv mit „kann … werden“. „sein + zu“ und „sich lassen“ funktionieren nur ohne „werden“ bzw. ohne „zu“."
+  },
+  {
+   "id": "u12",
+   "typ": "auswahl",
+   "frage": "„Die Unterlagen sind vollständig einzureichen.“ bedeutet:",
+   "optionen": [
+    "Die Unterlagen sind bereits vollständig eingereicht.",
+    "Die Unterlagen müssen vollständig eingereicht werden.",
+    "Die Unterlagen könnten vollständig eingereicht worden sein.",
+    "Die Unterlagen werden gerade vollständig eingereicht."
+   ],
+   "richtig": 1,
+   "erklaerung": "„sein + zu“ drückt hier eine Pflicht aus (müssen). Je nach Kontext kann es auch „können“ bedeuten, nie aber einen Zustand."
+  },
+  {
+   "id": "u13",
+   "typ": "auswahl",
+   "frage": "Welcher Satz steht im Zustandspassiv?",
+   "optionen": [
+    "Die Fenster sind seit gestern geputzt.",
+    "Die Fenster sind gestern geputzt worden.",
+    "Die Fenster wurden gestern geputzt.",
+    "Die Fenster werden gerade geputzt."
+   ],
+   "richtig": 0,
+   "erklaerung": "Zustandspassiv: sein + Partizip II ohne „worden“. „seit gestern“ betont den andauernden Zustand."
+  },
+  {
+   "id": "u14",
+   "typ": "auswahl",
+   "frage": "Welcher Satz ist korrekt?",
+   "optionen": [
+    "Die Teilnehmenden wurden mitgeteilt, dass der Kurs ausfällt.",
+    "Den Teilnehmenden wurde mitgeteilt, dass der Kurs ausfällt.",
+    "Die Teilnehmenden wurde mitgeteilt, dass der Kurs ausfällt.",
+    "Den Teilnehmenden wurden mitgeteilt, dass der Kurs ausfällt."
+   ],
+   "richtig": 1,
+   "erklaerung": "„jemandem etwas mitteilen“: Der Dativ bleibt im Passiv. Subjekt ist der dass-Satz, daher steht das Verb im Singular."
+  },
+  {
+   "id": "u15",
+   "typ": "auswahl",
+   "frage": "Welcher Satz im Perfekt ist richtig?",
+   "optionen": [
+    "Die Frist ist nicht einhalten worden können.",
+    "Die Frist hat nicht eingehalten werden können.",
+    "Die Frist hat nicht eingehalten werden gekonnt.",
+    "Die Frist ist nicht eingehalten werden gekonnt."
+   ],
+   "richtig": 1,
+   "erklaerung": "Passiv mit Modalverb im Perfekt: hat + Partizip II + werden + Modalverb im Infinitiv (Ersatzinfinitiv statt „gekonnt“)."
+  },
+  {
+   "id": "u16",
+   "typ": "auswahl",
+   "frage": "Welches Adjektiv bedeutet „kann nicht vermieden werden“?",
+   "optionen": [
+    "vermeidlos",
+    "unvermeidsam",
+    "unvermeidig",
+    "unvermeidlich"
+   ],
+   "richtig": 3,
+   "erklaerung": "„unvermeidlich“ (auch: unvermeidbar) – Adjektive auf -lich und -bar ersetzen ein Passiv mit „können“."
+  },
+  {
+   "id": "u17",
+   "typ": "umformen",
+   "ausgang": "Man kann diese Behauptung nicht beweisen.",
+   "anweisung": "Formulieren Sie mit „sich lassen“.",
+   "loesungen": [
+    "Diese Behauptung lässt sich nicht beweisen."
+   ],
+   "erklaerung": "sich lassen + Infinitiv ohne „zu“; das Akkusativobjekt wird Subjekt."
+  },
+  {
+   "id": "u18",
+   "typ": "umformen",
+   "ausgang": "Man muss die Sicherheitsregeln unbedingt beachten.",
+   "anweisung": "Formulieren Sie mit „sein + zu“.",
+   "loesungen": [
+    "Die Sicherheitsregeln sind unbedingt zu beachten."
+   ],
+   "erklaerung": "sein + zu + Infinitiv ersetzt „muss … werden“."
+  },
+  {
+   "id": "u19",
+   "typ": "umformen",
+   "ausgang": "Man kann seine Handschrift kaum lesen.",
+   "anweisung": "Formulieren Sie mit einem Adjektiv auf -lich oder -bar.",
+   "loesungen": [
+    "Seine Handschrift ist kaum leserlich.",
+    "Seine Handschrift ist kaum lesbar."
+   ],
+   "erklaerung": "„leserlich“ sagt man vor allem von Handschrift, „lesbar“ allgemein. Beide ersetzen „kann gelesen werden“."
+  },
+  {
+   "id": "u20",
+   "typ": "umformen",
+   "ausgang": "Die Kommission hat den Bericht noch nicht veröffentlicht.",
+   "anweisung": "Formulieren Sie im Passiv Perfekt mit Urheber.",
+   "loesungen": [
+    "Der Bericht ist von der Kommission noch nicht veröffentlicht worden.",
+    "Der Bericht ist noch nicht von der Kommission veröffentlicht worden."
+   ],
+   "erklaerung": "Perfekt Passiv: ist + Partizip II + worden; der Urheber steht mit „von“ + Dativ."
+  },
+  {
+   "id": "u21",
+   "typ": "umformen",
+   "ausgang": "Man schenkte ihr zum Abschied ein Buch.",
+   "anweisung": "Formulieren Sie mit dem bekommen-Passiv.",
+   "loesungen": [
+    "Sie bekam zum Abschied ein Buch geschenkt.",
+    "Zum Abschied bekam sie ein Buch geschenkt."
+   ],
+   "erklaerung": "Die Person im Dativ (ihr) wird Subjekt (sie), „bekommen“ trägt Tempus und Person."
+  },
+  {
+   "id": "u22",
+   "typ": "umformen",
+   "ausgang": "Man musste das Konzert wegen des Sturms absagen.",
+   "anweisung": "Formulieren Sie im Passiv mit Modalverb.",
+   "loesungen": [
+    "Das Konzert musste wegen des Sturms abgesagt werden.",
+    "Wegen des Sturms musste das Konzert abgesagt werden."
+   ],
+   "erklaerung": "Modalverb + Partizip II + werden: musste … abgesagt werden."
+  },
+  {
+   "id": "u23",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "Der Schaden ist behebbar.",
+     "Der Schaden kann behoben werden."
+    ],
+    [
+     "Die Gebühr ist sofort zu zahlen.",
+     "Die Gebühr muss sofort gezahlt werden."
+    ],
+    [
+     "Das Ergebnis lässt sich nicht vorhersagen.",
+     "Das Ergebnis kann nicht vorhergesagt werden."
+    ],
+    [
+     "Die Tür ist abgeschlossen.",
+     "Jemand hat sie abgeschlossen, jetzt ist sie zu."
+    ],
+    [
+     "Mir wurde widersprochen.",
+     "Jemand hat mir widersprochen."
+    ]
+   ],
+   "erklaerung": "Ersatzformen und Zustandspassiv in ihre Grundbedeutung übersetzen."
+  },
+  {
+   "id": "u24",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "etwas kann man nicht erklären",
+     "unerklärlich"
+    ],
+    [
+     "etwas kann man essen",
+     "essbar"
+    ],
+    [
+     "etwas kann man nicht ersetzen",
+     "unersetzlich"
+    ],
+    [
+     "etwas kann man verstehen",
+     "verständlich"
+    ],
+    [
+     "etwas kann man nicht bezahlen",
+     "unbezahlbar"
+    ]
+   ],
+   "erklaerung": "Adjektive auf -bar und -lich mit passivischer Bedeutung („kann … werden“)."
+  },
+  {
+   "id": "u25",
+   "typ": "sortieren",
+   "teile": [
+    "Der Antrag",
+    "hätte",
+    "müssen",
+    "bearbeitet",
+    "längst",
+    "werden"
+   ],
+   "loesung": "Der Antrag hätte längst bearbeitet werden müssen.",
+   "loesungen": [
+    "Längst hätte der Antrag bearbeitet werden müssen."
+   ],
+   "erklaerung": "Passiv mit Modalverb im Konjunktiv II der Vergangenheit: hätte + Partizip II + werden + Modalverb."
+  },
+  {
+   "id": "u26",
+   "typ": "sortieren",
+   "teile": [
+    "behoben",
+    "worden",
+    "Ich weiß nicht,",
+    "inzwischen",
+    "ob",
+    "die Fehler",
+    "sind"
+   ],
+   "loesung": "Ich weiß nicht, ob die Fehler inzwischen behoben worden sind.",
+   "loesungen": [
+    "Ich weiß nicht, ob inzwischen die Fehler behoben worden sind."
+   ],
+   "erklaerung": "Perfekt Passiv im Nebensatz: Partizip II + worden + sind am Ende."
+  },
+  {
+   "id": "u27",
+   "typ": "sortieren",
+   "teile": [
+    "werden",
+    "darf",
+    "In diesem Raum",
+    "nicht",
+    "telefoniert"
+   ],
+   "loesung": "In diesem Raum darf nicht telefoniert werden.",
+   "erklaerung": "Unpersönliches Passiv mit Modalverb: Die Ortsangabe besetzt das Vorfeld, es gibt kein Subjekt."
+  },
+  {
+   "id": "u28",
+   "typ": "sortieren",
+   "teile": [
+    "abschätzen",
+    "lassen sich",
+    "nur schwer",
+    "Die Kosten"
+   ],
+   "loesung": "Die Kosten lassen sich nur schwer abschätzen.",
+   "loesungen": [
+    "Nur schwer lassen sich die Kosten abschätzen."
+   ],
+   "erklaerung": "sich lassen + Infinitiv: Der Infinitiv bildet die rechte Satzklammer."
+  },
+  {
+   "id": "u29",
+   "typ": "fehler",
+   "satz": "Das Formular muss bis Freitag ausgefüllt worden.",
+   "fehler": "worden",
+   "korrektur": "werden",
+   "erklaerung": "Passiv mit Modalverb: Infinitiv Passiv = Partizip II + werden."
+  },
+  {
+   "id": "u30",
+   "typ": "fehler",
+   "satz": "Den Kunden wurden versprochen, dass die Lieferung pünktlich kommt.",
+   "fehler": "wurden",
+   "korrektur": "wurde",
+   "erklaerung": "Subjekt ist der dass-Satz, das Verb steht daher im Singular. „den Kunden“ ist Dativ."
+  },
+  {
+   "id": "u31",
+   "typ": "fehler",
+   "satz": "Der Fehler lässt sich leicht zu beheben.",
+   "fehler": "zu beheben",
+   "korrektur": "beheben",
+   "erklaerung": "Nach „sich lassen“ steht der Infinitiv ohne „zu“."
+  },
+  {
+   "id": "u32",
+   "typ": "fehler",
+   "satz": "Die Ausstellung ist letzte Woche feierlich eröffnet geworden.",
+   "fehler": "geworden",
+   "korrektur": "worden",
+   "erklaerung": "Im Perfekt Passiv steht „worden“, nicht „geworden“."
+  },
+  {
+   "id": "u33",
+   "typ": "rf",
+   "aussage": "„Die Tür ist geöffnet.“ beschreibt einen Zustand, „Die Tür wird geöffnet.“ einen Vorgang.",
+   "wert": true,
+   "erklaerung": "Zustandspassiv (sein) und Vorgangspassiv (werden) unterscheiden sich in der Bedeutung."
+  },
+  {
+   "id": "u34",
+   "typ": "rf",
+   "aussage": "„Die Aufgabe ist zu lösen.“ kann je nach Kontext „muss gelöst werden“ oder „kann gelöst werden“ bedeuten.",
+   "wert": true,
+   "erklaerung": "„sein + zu“ ist doppeldeutig; der Kontext entscheidet zwischen Pflicht und Möglichkeit."
+  },
+  {
+   "id": "u35",
+   "typ": "rf",
+   "aussage": "Im Passiv mit „helfen“ wird das Dativobjekt zum Subjekt: „Ich wurde geholfen.“",
+   "wert": false,
+   "erklaerung": "Richtig ist „Mir wurde geholfen.“ – der Dativ bleibt, das Passiv ist subjektlos."
+  },
+  {
+   "id": "u36",
+   "typ": "rf",
+   "aussage": "Die handelnde Person wird im Passiv mit „von“ angeschlossen, ein Mittel oder Vermittler meist mit „durch“.",
+   "wert": true,
+   "erklaerung": "von + Dativ für den Urheber, durch + Akkusativ für Mittel, Ursache oder Vermittler."
+  }
+ ]
+}

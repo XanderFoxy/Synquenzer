@@ -1,0 +1,766 @@
+{
+ "id": "drill-satzklammer",
+ "titel": "Drill: Satzklammer und Verbstellung",
+ "niveau": "C2",
+ "kurz": "Lange Sätze sicher bauen: Verb an Position 2, Verb am Ende, Ersatzinfinitiv, Passiv und Modalverben.",
+ "tafel": [
+  "Hauptsatz: finites Verb an Position 2, der Rest des Prädikats am Ende.",
+  "Nebensatz: finites Verb am Ende; bei Modalverb im Perfekt (Ersatzinfinitiv) steht das Hilfsverb vor den Infinitiven.",
+  "Nebensatz oder Infinitivsatz im Vorfeld: dann sofort das finite Verb des Hauptsatzes.",
+  "Ohne wenn: Hätte die Stadt früher gehandelt, wäre … – das finite Verb steht an Position 1.",
+  "Fragesatz mit w-Wort als Nebensatz: …, warum niemand protestiert hat."
+ ],
+ "beispiele": [
+  "Wäre das Gutachten früher veröffentlicht worden, hätte man den Skandal verhindern können.",
+  "Der Bericht hätte längst veröffentlicht werden müssen.",
+  "Die Übersetzung, an der sie drei Jahre gearbeitet hatte, erschien im Frühjahr."
+ ],
+ "fallen": [
+  {
+   "falsch": "Ich glaube, dass sie hat recht.",
+   "richtig": "Ich glaube, dass sie recht hat.",
+   "warum": "Im dass-Satz steht das Verb am Ende."
+  },
+  {
+   "falsch": "Wenn ich Zeit hätte, ich würde mehr lesen.",
+   "richtig": "Wenn ich Zeit hätte, würde ich mehr lesen.",
+   "warum": "Der Nebensatz besetzt das Vorfeld."
+  },
+  {
+   "falsch": "Das Gebäude muss werden saniert.",
+   "richtig": "Das Gebäude muss saniert werden.",
+   "warum": "Passivinfinitiv: Partizip + werden am Ende."
+  }
+ ],
+ "uebungen": [
+  {
+   "id": "u01",
+   "typ": "sortieren",
+   "teile": [
+    "verabschiedet",
+    "trotz massiver Proteste",
+    "hat",
+    "das Gesetz",
+    "Die Regierung"
+   ],
+   "loesung": "Die Regierung hat das Gesetz trotz massiver Proteste verabschiedet.",
+   "loesungen": [
+    "Die Regierung hat trotz massiver Proteste das Gesetz verabschiedet."
+   ],
+   "erklaerung": "Perfekt: hat … verabschiedet; Objekt und Angabe im Mittelfeld."
+  },
+  {
+   "id": "u02",
+   "typ": "sortieren",
+   "teile": [
+    "des Wahlrechts",
+    "eine Reform",
+    "wird",
+    "Seit Jahrzehnten",
+    "diskutiert",
+    "über"
+   ],
+   "loesung": "Seit Jahrzehnten wird über eine Reform des Wahlrechts diskutiert.",
+   "erklaerung": "Unpersönliches Passiv: Vorfeld, „wird“ an Position 2, Partizip am Ende."
+  },
+  {
+   "id": "u03",
+   "typ": "sortieren",
+   "teile": [
+    "veröffentlichen",
+    "unter einem Pseudonym",
+    "wollte",
+    "Die Autorin",
+    "den Roman",
+    "ursprünglich"
+   ],
+   "loesung": "Die Autorin wollte den Roman ursprünglich unter einem Pseudonym veröffentlichen.",
+   "loesungen": [
+    "Die Autorin wollte ursprünglich den Roman unter einem Pseudonym veröffentlichen."
+   ],
+   "erklaerung": "Modalverb an Position 2, Infinitiv am Ende."
+  },
+  {
+   "id": "u04",
+   "typ": "sortieren",
+   "teile": [
+    "bis Ende März",
+    "wegen des großen Andrangs",
+    "verlängert",
+    "wird",
+    "Die Ausstellung"
+   ],
+   "loesung": "Die Ausstellung wird wegen des großen Andrangs bis Ende März verlängert.",
+   "loesungen": [
+    "Die Ausstellung wird bis Ende März wegen des großen Andrangs verlängert."
+   ],
+   "erklaerung": "Vorgangspassiv Präsens: wird … verlängert."
+  },
+  {
+   "id": "u05",
+   "typ": "sortieren",
+   "teile": [
+    "betreten,",
+    "begann",
+    "sie",
+    "hatte",
+    "zu applaudieren",
+    "Kaum",
+    "das Publikum",
+    "den Saal"
+   ],
+   "loesung": "Kaum hatte sie den Saal betreten, begann das Publikum zu applaudieren.",
+   "erklaerung": "„Kaum“ im Vorfeld mit Verbzweitstellung; der erste Satz besetzt dann das Vorfeld des zweiten."
+  },
+  {
+   "id": "u06",
+   "typ": "sortieren",
+   "teile": [
+    "Wäre",
+    "können",
+    "worden,",
+    "das Gutachten",
+    "hätte",
+    "früher",
+    "man",
+    "veröffentlicht",
+    "verhindern",
+    "den Skandal"
+   ],
+   "loesung": "Wäre das Gutachten früher veröffentlicht worden, hätte man den Skandal verhindern können.",
+   "erklaerung": "Bedingungssatz ohne „wenn“ im Passiv: finites Verb an Position 1; im Hauptsatz folgt sofort „hätte“, am Ende „verhindern können“."
+  },
+  {
+   "id": "u07",
+   "typ": "sortieren",
+   "teile": [
+    "fraglich",
+    "ist",
+    "wird,",
+    "fertig",
+    "das Projekt",
+    "rechtzeitig",
+    "Ob"
+   ],
+   "loesung": "Ob das Projekt rechtzeitig fertig wird, ist fraglich.",
+   "erklaerung": "Der ob-Satz ist Subjekt im Vorfeld, danach das finite Verb."
+  },
+  {
+   "id": "u08",
+   "typ": "sortieren",
+   "teile": [
+    "bleibt",
+    "Was",
+    "die Studie",
+    "belegt,",
+    "eigentlich",
+    "unklar"
+   ],
+   "loesung": "Was die Studie eigentlich belegt, bleibt unklar.",
+   "erklaerung": "Indirekter Fragesatz im Vorfeld: Verb am Ende, dann „bleibt“."
+  },
+  {
+   "id": "u09",
+   "typ": "sortieren",
+   "teile": [
+    "haben",
+    "zu",
+    "Er bestreitet,",
+    "die Unterlagen",
+    "gesehen",
+    "jemals"
+   ],
+   "loesung": "Er bestreitet, die Unterlagen jemals gesehen zu haben.",
+   "erklaerung": "Infinitiv Perfekt: gesehen zu haben – „zu“ steht vor dem Hilfsverb."
+  },
+  {
+   "id": "u10",
+   "typ": "sortieren",
+   "teile": [
+    "ein Stipendium",
+    "bekommen",
+    "im nächsten Jahr",
+    "zu",
+    "Sie hofft,"
+   ],
+   "loesung": "Sie hofft, im nächsten Jahr ein Stipendium zu bekommen.",
+   "loesungen": [
+    "Sie hofft, ein Stipendium im nächsten Jahr zu bekommen."
+   ],
+   "erklaerung": "Im Infinitivsatz steht „zu“ direkt vor dem Infinitiv am Ende."
+  },
+  {
+   "id": "u11",
+   "typ": "sortieren",
+   "teile": [
+    "ließ",
+    "den Bericht",
+    "prüfen",
+    "von externen Fachleuten",
+    "Die Ministerin"
+   ],
+   "loesung": "Die Ministerin ließ den Bericht von externen Fachleuten prüfen.",
+   "loesungen": [
+    "Die Ministerin ließ von externen Fachleuten den Bericht prüfen."
+   ],
+   "erklaerung": "„lassen“ + Infinitiv: Der Infinitiv steht am Ende."
+  },
+  {
+   "id": "u12",
+   "typ": "sortieren",
+   "teile": [
+    "hätte",
+    "längst",
+    "müssen",
+    "veröffentlicht",
+    "werden",
+    "Der Bericht"
+   ],
+   "loesung": "Der Bericht hätte längst veröffentlicht werden müssen.",
+   "erklaerung": "Konjunktiv II der Vergangenheit, Passiv mit Modalverb: hätte … veröffentlicht werden müssen."
+  },
+  {
+   "id": "u13",
+   "typ": "sortieren",
+   "teile": [
+    "sanieren",
+    "Man",
+    "rechtzeitig",
+    "nicht",
+    "hat",
+    "die Brücke",
+    "lassen"
+   ],
+   "loesung": "Man hat die Brücke nicht rechtzeitig sanieren lassen.",
+   "erklaerung": "Perfekt von „lassen“ mit Infinitiv: Ersatzinfinitiv „sanieren lassen“ statt „gelassen“."
+  },
+  {
+   "id": "u14",
+   "typ": "sortieren",
+   "teile": [
+    "werden",
+    "Die Bürger",
+    "über das Ergebnis",
+    "sofort",
+    "informiert",
+    "werden"
+   ],
+   "loesung": "Die Bürger werden über das Ergebnis sofort informiert werden.",
+   "loesungen": [
+    "Die Bürger werden sofort über das Ergebnis informiert werden."
+   ],
+   "erklaerung": "Futur Passiv: werden … informiert werden."
+  },
+  {
+   "id": "u15",
+   "typ": "sortieren",
+   "teile": [
+    "Ich weiß nicht,",
+    "hätte",
+    "sollen",
+    "ob",
+    "ich",
+    "halten",
+    "den Vortrag"
+   ],
+   "loesung": "Ich weiß nicht, ob ich den Vortrag hätte halten sollen.",
+   "erklaerung": "Ersatzinfinitiv im Nebensatz: hätte + halten + sollen."
+  },
+  {
+   "id": "u16",
+   "typ": "sortieren",
+   "teile": [
+    "weiter",
+    "die Zinsen",
+    "steigen",
+    "dass",
+    "Es wird erwartet,",
+    "werden",
+    "im kommenden Jahr"
+   ],
+   "loesung": "Es wird erwartet, dass die Zinsen im kommenden Jahr weiter steigen werden.",
+   "erklaerung": "Futur im Nebensatz: Infinitiv vor „werden“ am Ende."
+  },
+  {
+   "id": "u17",
+   "typ": "sortieren",
+   "teile": [
+    "das Problem",
+    "kennt,",
+    "nicht",
+    "nicht",
+    "kann",
+    "man",
+    "Wenn",
+    "die Ursachen",
+    "man",
+    "lösen"
+   ],
+   "loesung": "Wenn man die Ursachen nicht kennt, kann man das Problem nicht lösen.",
+   "erklaerung": "Nebensatz im Vorfeld (Verb am Ende), dann Modalverb an Position 2, Infinitiv am Ende."
+  },
+  {
+   "id": "u18",
+   "typ": "sortieren",
+   "teile": [
+    "Eltern",
+    "werden",
+    "gefördert",
+    "stärker",
+    "Die Kinder,",
+    "wenig",
+    "verdienen,",
+    "deren",
+    "sollen"
+   ],
+   "loesung": "Die Kinder, deren Eltern wenig verdienen, sollen stärker gefördert werden.",
+   "erklaerung": "Eingeschobener Relativsatz mit Verb am Ende; Hauptsatz: Passiv mit Modalverb."
+  },
+  {
+   "id": "u19",
+   "typ": "sortieren",
+   "teile": [
+    "würde,",
+    "Dass",
+    "erwartet",
+    "er",
+    "hatte",
+    "niemand",
+    "zurücktreten"
+   ],
+   "loesung": "Dass er zurücktreten würde, hatte niemand erwartet.",
+   "erklaerung": "dass-Satz im Vorfeld, danach sofort das finite Verb (hatte)."
+  },
+  {
+   "id": "u20",
+   "typ": "sortieren",
+   "teile": [
+    "erschien",
+    "gearbeitet",
+    "sie",
+    "hatte,",
+    "der",
+    "im Frühjahr",
+    "an",
+    "drei Jahre",
+    "Die Übersetzung,"
+   ],
+   "loesung": "Die Übersetzung, an der sie drei Jahre gearbeitet hatte, erschien im Frühjahr.",
+   "erklaerung": "Relativsatz mit Präposition schließt seine Klammer (gearbeitet hatte), dann folgt das Verb des Hauptsatzes."
+  },
+  {
+   "id": "u21",
+   "typ": "sortieren",
+   "teile": [
+    "Nicht",
+    "die Regierung,",
+    "sondern",
+    "entscheiden",
+    "über den Haushalt",
+    "das Parlament",
+    "muss"
+   ],
+   "loesung": "Nicht die Regierung, sondern das Parlament muss über den Haushalt entscheiden.",
+   "erklaerung": "„nicht …, sondern …“ bildet ein einziges Satzglied im Vorfeld."
+  },
+  {
+   "id": "u22",
+   "typ": "sortieren",
+   "teile": [
+    "die Krise",
+    "der Druck",
+    "auf die Regierung",
+    "wird",
+    "länger",
+    "dauert,",
+    "umso",
+    "größer",
+    "Je"
+   ],
+   "loesung": "Je länger die Krise dauert, umso größer wird der Druck auf die Regierung.",
+   "erklaerung": "je-Teil: Verb am Ende; umso-Teil: Komparativ, dann sofort das Verb."
+  },
+  {
+   "id": "u23",
+   "typ": "sortieren",
+   "teile": [
+    "zu",
+    "man",
+    "auf später",
+    "sie",
+    "die Probleme",
+    "Statt",
+    "lösen,",
+    "verschiebt"
+   ],
+   "loesung": "Statt die Probleme zu lösen, verschiebt man sie auf später.",
+   "erklaerung": "Infinitivsatz mit „statt … zu“ im Vorfeld, danach das finite Verb."
+  },
+  {
+   "id": "u24",
+   "typ": "sortieren",
+   "teile": [
+    "verdrängt",
+    "will",
+    "verhindern,",
+    "werden",
+    "alteingesessene Geschäfte",
+    "Die Stadt",
+    "dass"
+   ],
+   "loesung": "Die Stadt will verhindern, dass alteingesessene Geschäfte verdrängt werden.",
+   "erklaerung": "Hauptsatz mit Modalverb, dann dass-Satz mit Passiv am Ende."
+  },
+  {
+   "id": "u25",
+   "typ": "sortieren",
+   "teile": [
+    "verändert",
+    "das Verhalten",
+    "hat",
+    "dass",
+    "hat",
+    "Die Forscherin",
+    "sich",
+    "nachgewiesen,",
+    "der Tiere"
+   ],
+   "loesung": "Die Forscherin hat nachgewiesen, dass sich das Verhalten der Tiere verändert hat.",
+   "loesungen": [
+    "Die Forscherin hat nachgewiesen, dass das Verhalten der Tiere sich verändert hat."
+   ],
+   "erklaerung": "Im dass-Satz steht das Reflexivpronomen meist früh; das finite Verb am Ende."
+  },
+  {
+   "id": "u26",
+   "typ": "fehler",
+   "satz": "Gestern die Kommission hat ihren Abschlussbericht vorgelegt.",
+   "fehler": "die Kommission hat",
+   "korrektur": "hat die Kommission",
+   "erklaerung": "Nach dem Vorfeld folgt das finite Verb."
+  },
+  {
+   "id": "u27",
+   "typ": "fehler",
+   "satz": "Ich glaube, dass sie in diesem Punkt hat recht.",
+   "fehler": "hat recht",
+   "korrektur": "recht hat",
+   "erklaerung": "Im dass-Satz steht das finite Verb am Ende."
+  },
+  {
+   "id": "u28",
+   "typ": "fehler",
+   "satz": "Weil die Mieten steigen, viele Familien ziehen aufs Land.",
+   "fehler": "viele Familien ziehen",
+   "korrektur": "ziehen viele Familien",
+   "erklaerung": "Der Nebensatz besetzt das Vorfeld, danach das Verb.",
+   "grundlage": true
+  },
+  {
+   "id": "u29",
+   "typ": "fehler",
+   "satz": "Er schreibt, dass er kann morgen nicht kommen.",
+   "fehler": "kann morgen nicht kommen",
+   "korrektur": "morgen nicht kommen kann",
+   "erklaerung": "Im Nebensatz steht das Modalverb am Ende."
+  },
+  {
+   "id": "u30",
+   "typ": "fehler",
+   "satz": "Die Autorin hat angekündigt, dass sie wird einen zweiten Band schreiben.",
+   "fehler": "wird einen zweiten Band schreiben",
+   "korrektur": "einen zweiten Band schreiben wird",
+   "erklaerung": "Futur im Nebensatz: „wird“ am Ende."
+  },
+  {
+   "id": "u31",
+   "typ": "fehler",
+   "satz": "Kaum hatte das Konzert begonnen, der Strom fiel aus.",
+   "fehler": "der Strom fiel",
+   "korrektur": "fiel der Strom",
+   "erklaerung": "Der erste Satz besetzt das Vorfeld, danach das finite Verb."
+  },
+  {
+   "id": "u32",
+   "typ": "fehler",
+   "satz": "Obwohl er hätte es wissen müssen, schwieg er.",
+   "fehler": "hätte es wissen müssen",
+   "korrektur": "es hätte wissen müssen",
+   "erklaerung": "Ersatzinfinitiv: Das Pronomen steht im Mittelfeld vor dem Verbkomplex."
+  },
+  {
+   "id": "u33",
+   "typ": "fehler",
+   "satz": "Wir müssen dieses Problem lösen jetzt.",
+   "fehler": "lösen jetzt",
+   "korrektur": "jetzt lösen",
+   "erklaerung": "Der Infinitiv schließt die Klammer; die Zeitangabe steht davor.",
+   "grundlage": true
+  },
+  {
+   "id": "u34",
+   "typ": "fehler",
+   "satz": "Die Sitzung fängt heute erst an um zehn Uhr.",
+   "fehler": "an um zehn Uhr",
+   "korrektur": "um zehn Uhr an",
+   "erklaerung": "Das Präfix „an“ steht am Ende der Satzklammer."
+  },
+  {
+   "id": "u35",
+   "typ": "fehler",
+   "satz": "Sie hat den Roman nicht zu Ende lesen gekonnt.",
+   "fehler": "lesen gekonnt",
+   "korrektur": "lesen können",
+   "erklaerung": "Modalverb mit Infinitiv im Perfekt: Ersatzinfinitiv „können“ statt „gekonnt“."
+  },
+  {
+   "id": "u36",
+   "typ": "fehler",
+   "satz": "Das marode Gebäude muss dringend werden saniert.",
+   "fehler": "werden saniert",
+   "korrektur": "saniert werden",
+   "erklaerung": "Passivinfinitiv: Partizip + werden."
+  },
+  {
+   "id": "u37",
+   "typ": "fehler",
+   "satz": "Ich frage mich, warum hat niemand protestiert.",
+   "fehler": "hat niemand protestiert",
+   "korrektur": "niemand protestiert hat",
+   "erklaerung": "Indirekter Fragesatz: Verb am Ende."
+  },
+  {
+   "id": "u38",
+   "typ": "fehler",
+   "satz": "Der Vorschlag, den hat die Kommission vorgelegt, ist umstritten.",
+   "fehler": "hat die Kommission vorgelegt",
+   "korrektur": "die Kommission vorgelegt hat",
+   "erklaerung": "Im Relativsatz steht das finite Verb am Ende."
+  },
+  {
+   "id": "u39",
+   "typ": "fehler",
+   "satz": "Es ist wichtig, dass man die Quellen genau prüft und vergleicht sie.",
+   "fehler": "vergleicht sie",
+   "korrektur": "sie vergleicht",
+   "erklaerung": "Auch der zweite Teil des dass-Satzes ist Nebensatz: Verb am Ende."
+  },
+  {
+   "id": "u40",
+   "typ": "fehler",
+   "satz": "Wenn ich mehr Zeit hätte, ich würde mehr lesen.",
+   "fehler": "ich würde",
+   "korrektur": "würde ich",
+   "erklaerung": "Der Nebensatz besetzt das Vorfeld; danach steht das finite Verb.",
+   "grundlage": true
+  },
+  {
+   "id": "u41",
+   "typ": "luecke",
+   "satz": "Die Ergebnisse ___ erst nach Abschluss der Prüfung veröffentlicht werden.",
+   "loesungen": [
+    "sollen"
+   ],
+   "hinweis": "sollen, Präsens",
+   "erklaerung": "Modalverb an Position 2, Passivinfinitiv (veröffentlicht werden) am Ende."
+  },
+  {
+   "id": "u42",
+   "typ": "luecke",
+   "satz": "Ich bin sicher, dass sie die Prüfung bestehen ___.",
+   "loesungen": [
+    "wird"
+   ],
+   "hinweis": "werden, Präsens",
+   "erklaerung": "Futur im Nebensatz: „wird“ ganz am Ende."
+  },
+  {
+   "id": "u43",
+   "typ": "luecke",
+   "satz": "Er bedauert, dass er die Chance nicht ___ nutzen können.",
+   "loesungen": [
+    "hat"
+   ],
+   "hinweis": "haben, Präsens",
+   "erklaerung": "Ersatzinfinitiv: „hat“ steht vor „nutzen können“."
+  },
+  {
+   "id": "u44",
+   "typ": "luecke",
+   "satz": "Die Zeitung berichtet, dass der Minister zum Rücktritt gedrängt ___ sei.",
+   "loesungen": [
+    "worden"
+   ],
+   "hinweis": "Hilfsverb",
+   "erklaerung": "Passiv Perfekt im Konjunktiv I: gedrängt worden sei."
+  },
+  {
+   "id": "u45",
+   "typ": "luecke",
+   "satz": "Wenn das Wetter mitspielt, ___ das Fest im Park statt.",
+   "loesungen": [
+    "findet"
+   ],
+   "hinweis": "stattfinden, Präsens",
+   "erklaerung": "Nebensatz im Vorfeld, dann das finite Verb; „statt“ am Ende."
+  },
+  {
+   "id": "u46",
+   "typ": "luecke",
+   "satz": "Hätten wir die Warnungen ernst genommen, ___ uns viel erspart geblieben.",
+   "loesungen": [
+    "wäre"
+   ],
+   "hinweis": "sein, Konjunktiv II",
+   "erklaerung": "Nach dem Bedingungssatz ohne „wenn“ folgt sofort das finite Verb des Hauptsatzes."
+  },
+  {
+   "id": "u47",
+   "typ": "luecke",
+   "satz": "Die Daten, die gestern veröffentlicht ___ sind, zeigen einen klaren Trend.",
+   "loesungen": [
+    "worden"
+   ],
+   "hinweis": "Hilfsverb",
+   "erklaerung": "Passiv Perfekt im Relativsatz: veröffentlicht worden sind."
+  },
+  {
+   "id": "u48",
+   "typ": "luecke",
+   "satz": "Niemand weiß, ob der Vertrag jemals unterzeichnet ___.",
+   "loesungen": [
+    "wird"
+   ],
+   "hinweis": "werden, Präsens",
+   "erklaerung": "Passiv Präsens im Nebensatz: unterzeichnet wird."
+  },
+  {
+   "id": "u49",
+   "typ": "auswahl",
+   "frage": "Welcher Satz ist korrekt?",
+   "optionen": [
+    "Morgen wird bekannt gegeben das Ergebnis.",
+    "Morgen wird das Ergebnis bekannt gegeben.",
+    "Morgen das Ergebnis wird bekannt gegeben."
+   ],
+   "richtig": 1,
+   "erklaerung": "Verb an Position 2, Partizip am Ende."
+  },
+  {
+   "id": "u50",
+   "typ": "auswahl",
+   "frage": "Welcher Nebensatz ist korrekt?",
+   "optionen": [
+    "…, weil die Brücke hätte saniert werden müssen.",
+    "…, weil die Brücke saniert werden müssen hätte.",
+    "…, weil die Brücke hätte saniert müssen werden."
+   ],
+   "richtig": 0,
+   "erklaerung": "Ersatzinfinitiv mit Passiv: hätte + saniert werden + müssen."
+  },
+  {
+   "id": "u51",
+   "typ": "auswahl",
+   "frage": "Welcher Satz ist korrekt?",
+   "optionen": [
+    "Sie sagte, dass sie könne morgen nicht kommen.",
+    "Sie sagte, dass sie morgen nicht könne kommen.",
+    "Sie sagte, dass sie morgen nicht kommen könne."
+   ],
+   "richtig": 2,
+   "erklaerung": "Im dass-Satz steht das Modalverb am Ende."
+  },
+  {
+   "id": "u52",
+   "typ": "auswahl",
+   "frage": "Welcher Satz ist korrekt?",
+   "optionen": [
+    "Ohne zögern zu, unterschrieb sie den Vertrag.",
+    "Ohne zu zögern, unterschrieb sie den Vertrag.",
+    "Ohne zu zögern, sie unterschrieb den Vertrag."
+   ],
+   "richtig": 1,
+   "erklaerung": "Infinitivsatz im Vorfeld, danach das finite Verb."
+  },
+  {
+   "id": "u53",
+   "typ": "auswahl",
+   "frage": "Wo steht das finite Verb in einem Bedingungssatz ohne „wenn“?",
+   "optionen": [
+    "an Position 2",
+    "am Ende",
+    "an Position 1"
+   ],
+   "richtig": 2,
+   "erklaerung": "Hätte ich Zeit, käme ich mit."
+  },
+  {
+   "id": "u54",
+   "typ": "auswahl",
+   "frage": "Welcher Satz ist korrekt?",
+   "optionen": [
+    "Das Buch, das ich habe dir empfohlen, ist vergriffen.",
+    "Das Buch, das ich dir empfohlen habe, ist vergriffen.",
+    "Das Buch, das ich dir habe empfohlen, ist vergriffen."
+   ],
+   "richtig": 1,
+   "erklaerung": "Ohne Modalverb steht das finite Verb im Relativsatz ganz am Ende."
+  },
+  {
+   "id": "u55",
+   "typ": "umformen",
+   "ausgang": "Es regnete. Trotzdem fand das Konzert statt.",
+   "anweisung": "Verbinden Sie die Sätze mit „obwohl“ und beginnen Sie mit dem Nebensatz.",
+   "loesungen": [
+    "Obwohl es regnete, fand das Konzert statt."
+   ],
+   "erklaerung": "Nebensatz im Vorfeld, danach sofort das finite Verb."
+  },
+  {
+   "id": "u56",
+   "typ": "umformen",
+   "ausgang": "Wenn die Stadt die Pläne früher veröffentlicht hätte, hätte es weniger Widerstand gegeben.",
+   "anweisung": "Formen Sie den Bedingungssatz ohne „wenn“ um.",
+   "loesungen": [
+    "Hätte die Stadt die Pläne früher veröffentlicht, hätte es weniger Widerstand gegeben."
+   ],
+   "erklaerung": "Ohne „wenn“ rückt das finite Verb an Position 1."
+  },
+  {
+   "id": "u57",
+   "typ": "umformen",
+   "ausgang": "Die Stadt muss die Schule sanieren.",
+   "anweisung": "Formen Sie den Satz ins Passiv um.",
+   "loesungen": [
+    "Die Schule muss von der Stadt saniert werden.",
+    "Die Schule muss saniert werden."
+   ],
+   "erklaerung": "Passiv mit Modalverb: muss … saniert werden."
+  },
+  {
+   "id": "u58",
+   "typ": "umformen",
+   "ausgang": "Sie hat die Einladung nicht annehmen dürfen.",
+   "anweisung": "Beginnen Sie mit „Es tut ihr leid, dass“.",
+   "loesungen": [
+    "Es tut ihr leid, dass sie die Einladung nicht hat annehmen dürfen."
+   ],
+   "erklaerung": "Ersatzinfinitiv im Nebensatz: hat + annehmen + dürfen."
+  },
+  {
+   "id": "u59",
+   "typ": "rf",
+   "aussage": "Im Bedingungssatz ohne „wenn“ steht das finite Verb an Position 1: Hätte ich Zeit, käme ich mit.",
+   "wert": true,
+   "erklaerung": "Danach folgt im Hauptsatz sofort das finite Verb."
+  },
+  {
+   "id": "u60",
+   "typ": "rf",
+   "aussage": "Im Infinitivsatz steht „zu“ hinter dem Infinitiv: Er versuchte, das Problem lösen zu.",
+   "wert": false,
+   "erklaerung": "„zu“ steht vor dem Infinitiv: …, das Problem zu lösen.",
+   "grundlage": true
+  }
+ ]
+}

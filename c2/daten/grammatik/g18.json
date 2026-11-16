@@ -1,0 +1,495 @@
+{
+ "id": "g18",
+ "titel": "Nominal- und Verbalstil",
+ "niveau": "C2",
+ "nr": 18,
+ "gruppe": "B",
+ "baustelle": false,
+ "pruefungsbezug": [
+  "S1",
+  "L2"
+ ],
+ "kurz": "Nebensätze nominalisieren und Nominalgruppen in Nebensätze auflösen, passende Präpositionen im Nominalstil (wegen, trotz, bei, durch, nach).",
+ "tafel": [
+  "Nominalstil: Verb wird Nomen, das Subjekt wird Genitiv oder Possessivartikel: Die Firma expandiert. → die Expansion der Firma.",
+  "Akkusativobjekt → Genitivattribut: das Haus renovieren → die Renovierung des Hauses.",
+  "Präpositionalobjekt bleibt mit Präposition: an einem Kurs teilnehmen → die Teilnahme an einem Kurs.",
+  "Adverb → Adjektiv: Sie reagierte schnell. → ihre schnelle Reaktion.",
+  "weil → wegen/aufgrund, obwohl → trotz, wenn/als → bei, nachdem → nach, bevor → vor, indem → durch, um … zu → zur/für.",
+  "Verbalstil lockert auf: Nomen → Verb, Genitiv → Subjekt oder Objekt, Präposition → Subjunktion.",
+  "Pronomen → Possessivartikel: dass er zurücktrat → sein Rücktritt."
+ ],
+ "beispiele": [
+  "Nach dem Abschluss ihres Studiums zog sie nach Wien.",
+  "Trotz intensiver Bemühungen wurde keine Einigung erzielt.",
+  "Bei der Planung des Projekts wurden mehrere Fehler gemacht.",
+  "Zur Verbesserung der Luftqualität wurden Fahrverbote verhängt.",
+  "Durch die Einführung neuer Technik wurde die Firma konkurrenzfähiger."
+ ],
+ "fallen": [
+  {
+   "falsch": "Nach Abschluss von ihrem Studium …",
+   "richtig": "Nach (dem) Abschluss ihres Studiums …",
+   "warum": "Im Nominalstil steht das Attribut im Genitiv."
+  },
+  {
+   "falsch": "Durch das Lesen viel Bücher …",
+   "richtig": "Durch das Lesen vieler Bücher …",
+   "warum": "Genitiv Plural ohne Artikel: Das Adjektiv zeigt den Kasus (-er)."
+  },
+  {
+   "falsch": "Wegen er krank war, …",
+   "richtig": "Weil er krank war, … / Wegen seiner Krankheit …",
+   "warum": "„wegen“ ist eine Präposition und leitet keinen Nebensatz ein."
+  },
+  {
+   "falsch": "die Teilnahme von ihm an dem Kurs",
+   "richtig": "seine Teilnahme am Kurs",
+   "warum": "Das Subjekt wird zum Possessivartikel, nicht zu „von“ + Pronomen."
+  }
+ ],
+ "uebungen": [
+  {
+   "id": "u01",
+   "typ": "luecke",
+   "satz": "___ dem Abschluss ihres Studiums zog sie nach Wien.",
+   "loesungen": [
+    "Nach"
+   ],
+   "hinweis": "nachdem → ?",
+   "erklaerung": "„nachdem“ wird im Nominalstil zu „nach“ + Dativ."
+  },
+  {
+   "id": "u02",
+   "typ": "luecke",
+   "satz": "___ intensiver Bemühungen fand man keine Lösung.",
+   "loesungen": [
+    "Trotz"
+   ],
+   "hinweis": "obwohl → ?",
+   "erklaerung": "„obwohl“ wird zu „trotz“ + Genitiv."
+  },
+  {
+   "id": "u03",
+   "typ": "luecke",
+   "satz": "___ der Planung des Projekts wurden mehrere Fehler gemacht.",
+   "loesungen": [
+    "Bei",
+    "Während"
+   ],
+   "erklaerung": "„bei“ (oder „während“) + Dativ/Genitiv steht für „als“ bzw. „während man plante“."
+  },
+  {
+   "id": "u04",
+   "typ": "luecke",
+   "satz": "___ Verbesserung der Luftqualität wurden Fahrverbote verhängt.",
+   "loesungen": [
+    "Zur"
+   ],
+   "hinweis": "um … zu → ?",
+   "erklaerung": "Zweck im Nominalstil: zu + Artikel = „zur“ (zu der)."
+  },
+  {
+   "id": "u05",
+   "typ": "luecke",
+   "satz": "___ Nichteinhaltung der Regeln droht eine Geldstrafe.",
+   "loesungen": [
+    "Bei"
+   ],
+   "hinweis": "wenn → ?",
+   "erklaerung": "Bedingung im Nominalstil: „bei“ + Dativ (= wenn man die Regeln nicht einhält)."
+  },
+  {
+   "id": "u06",
+   "typ": "luecke",
+   "satz": "Die Firma wurde ___ die Einführung neuer Technik konkurrenzfähiger.",
+   "loesungen": [
+    "durch"
+   ],
+   "hinweis": "indem → ?",
+   "erklaerung": "„indem“ wird zu „durch“ + Akkusativ."
+  },
+  {
+   "id": "u07",
+   "typ": "luecke",
+   "satz": "___ Beginn der Veranstaltung müssen alle Plätze reserviert sein.",
+   "loesungen": [
+    "Vor"
+   ],
+   "hinweis": "bevor → ?",
+   "erklaerung": "„bevor“ wird zu „vor“ + Dativ."
+  },
+  {
+   "id": "u08",
+   "typ": "luecke",
+   "satz": "___ seiner Krankheit konnte er nicht an der Sitzung teilnehmen.",
+   "loesungen": [
+    "Wegen",
+    "Aufgrund",
+    "Auf Grund",
+    "Infolge"
+   ],
+   "hinweis": "weil → ?",
+   "erklaerung": "Grund im Nominalstil: wegen, aufgrund oder infolge + Genitiv."
+  },
+  {
+   "id": "u09",
+   "typ": "luecke",
+   "satz": "Die ___ des Hauses dauerte zwei Jahre.",
+   "loesungen": [
+    "Renovierung"
+   ],
+   "hinweis": "renovieren",
+   "erklaerung": "Nominalisierung auf -ung; das Akkusativobjekt wird Genitivattribut."
+  },
+  {
+   "id": "u10",
+   "typ": "luecke",
+   "satz": "Sein plötzlicher ___ überraschte alle.",
+   "loesungen": [
+    "Rücktritt"
+   ],
+   "hinweis": "zurücktreten",
+   "erklaerung": "Nominalisierung ohne Endung: zurücktreten → der Rücktritt."
+  },
+  {
+   "id": "u11",
+   "typ": "auswahl",
+   "frage": "„Weil die Nachfrage stark gestiegen ist, …“ – welche Nominalisierung ist korrekt?",
+   "optionen": [
+    "Trotz des starken Anstiegs der Nachfrage …",
+    "Wegen des stark Anstiegs der Nachfrage …",
+    "Wegen des starken Anstiegs der Nachfrage …",
+    "Wegen die Nachfrage stark gestiegen …"
+   ],
+   "richtig": 2,
+   "erklaerung": "weil → wegen + Genitiv; das Adverb „stark“ wird zum Adjektiv „starken“."
+  },
+  {
+   "id": "u12",
+   "typ": "auswahl",
+   "frage": "„bei der Ankunft des Zuges“ bedeutet:",
+   "optionen": [
+    "nachdem der Zug abgefahren war",
+    "als der Zug ankam",
+    "bevor der Zug ankam",
+    "obwohl der Zug ankam"
+   ],
+   "richtig": 1,
+   "erklaerung": "„bei“ + Nomen entspricht „als“ (einmalig) oder „wenn“."
+  },
+  {
+   "id": "u13",
+   "typ": "auswahl",
+   "frage": "Welche Präposition entspricht „indem“?",
+   "optionen": [
+    "durch",
+    "trotz",
+    "wegen",
+    "bei"
+   ],
+   "richtig": 0,
+   "erklaerung": "indem (Art und Weise, Mittel) → durch + Akkusativ."
+  },
+  {
+   "id": "u14",
+   "typ": "auswahl",
+   "frage": "„Nach seiner Rückkehr aus Japan …“ – welcher Verbalstil ist korrekt?",
+   "optionen": [
+    "Nachdem er aus Japan zurückgekehrt war, …",
+    "Nachdem er aus Japan zurückkehrt, …",
+    "Nach er aus Japan zurückkehrte, …",
+    "Bevor er aus Japan zurückkehrte, …"
+   ],
+   "richtig": 0,
+   "erklaerung": "„nach“ → „nachdem“ mit Vorzeitigkeit (Plusquamperfekt)."
+  },
+  {
+   "id": "u15",
+   "typ": "auswahl",
+   "frage": "Welche Nominalisierung von „Die Regierung entscheidet über die Reform.“ ist korrekt?",
+   "optionen": [
+    "die Entscheidung über die Regierung der Reform",
+    "die Entscheidung der Regierung über die Reform",
+    "die Entscheidung von der Regierung von der Reform",
+    "die Entscheidung der Regierung der Reform"
+   ],
+   "richtig": 1,
+   "erklaerung": "Subjekt → Genitiv, Präpositionalobjekt bleibt mit „über“."
+  },
+  {
+   "id": "u16",
+   "typ": "auswahl",
+   "frage": "„Trotz mehrfacher Warnungen …“ entspricht:",
+   "optionen": [
+    "Obwohl mehrfach gewarnt worden war, …",
+    "Damit mehrfach gewarnt wird, …",
+    "Wenn mehrfach gewarnt wird, …",
+    "Weil mehrfach gewarnt worden war, …"
+   ],
+   "richtig": 0,
+   "erklaerung": "trotz ↔ obwohl (Gegengrund)."
+  },
+  {
+   "id": "u17",
+   "typ": "umformen",
+   "ausgang": "Nachdem sie ihr Studium abgeschlossen hatte, zog sie nach Wien.",
+   "anweisung": "Formulieren Sie im Nominalstil.",
+   "loesungen": [
+    "Nach dem Abschluss ihres Studiums zog sie nach Wien.",
+    "Nach Abschluss ihres Studiums zog sie nach Wien.",
+    "Nach ihrem Studienabschluss zog sie nach Wien.",
+    "Nach dem Studienabschluss zog sie nach Wien."
+   ],
+   "erklaerung": "nachdem → nach + Dativ; das Objekt „ihr Studium“ wird Genitiv „ihres Studiums“."
+  },
+  {
+   "id": "u18",
+   "typ": "umformen",
+   "ausgang": "Obwohl die Kosten hoch sind, wird das Projekt fortgesetzt.",
+   "anweisung": "Formulieren Sie mit „trotz“.",
+   "loesungen": [
+    "Trotz der hohen Kosten wird das Projekt fortgesetzt.",
+    "Trotz hoher Kosten wird das Projekt fortgesetzt."
+   ],
+   "erklaerung": "obwohl → trotz + Genitiv; das prädikative Adjektiv wird Attribut."
+  },
+  {
+   "id": "u19",
+   "typ": "umformen",
+   "ausgang": "Wegen der Erkrankung der Sängerin fiel das Konzert aus.",
+   "anweisung": "Formulieren Sie mit „weil“.",
+   "loesungen": [
+    "Weil die Sängerin erkrankt war, fiel das Konzert aus.",
+    "Das Konzert fiel aus, weil die Sängerin erkrankt war.",
+    "Weil die Sängerin krank war, fiel das Konzert aus.",
+    "Das Konzert fiel aus, weil die Sängerin krank war.",
+    "Weil die Sängerin erkrankte, fiel das Konzert aus.",
+    "Das Konzert fiel aus, weil die Sängerin erkrankte."
+   ],
+   "erklaerung": "wegen → weil; das Genitivattribut „der Sängerin“ wird Subjekt."
+  },
+  {
+   "id": "u20",
+   "typ": "umformen",
+   "ausgang": "Bei schlechtem Wetter findet die Veranstaltung im Saal statt.",
+   "anweisung": "Formulieren Sie mit „wenn“.",
+   "loesungen": [
+    "Wenn das Wetter schlecht ist, findet die Veranstaltung im Saal statt.",
+    "Die Veranstaltung findet im Saal statt, wenn das Wetter schlecht ist."
+   ],
+   "erklaerung": "bei → wenn; das Adjektiv wird prädikativ."
+  },
+  {
+   "id": "u21",
+   "typ": "umformen",
+   "ausgang": "Um die Qualität zu sichern, werden alle Texte zweimal geprüft.",
+   "anweisung": "Formulieren Sie im Nominalstil mit „zur“.",
+   "loesungen": [
+    "Zur Sicherung der Qualität werden alle Texte zweimal geprüft.",
+    "Zur Qualitätssicherung werden alle Texte zweimal geprüft.",
+    "Alle Texte werden zur Sicherung der Qualität zweimal geprüft.",
+    "Alle Texte werden zur Qualitätssicherung zweimal geprüft."
+   ],
+   "erklaerung": "um … zu → zur + Nomen auf -ung; das Objekt wird Genitiv."
+  },
+  {
+   "id": "u22",
+   "typ": "umformen",
+   "ausgang": "Durch die regelmäßige Wiederholung des Stoffs verbesserten sich ihre Noten.",
+   "anweisung": "Formulieren Sie mit „dadurch, dass“.",
+   "loesungen": [
+    "Dadurch, dass sie den Stoff regelmäßig wiederholte, verbesserten sich ihre Noten.",
+    "Ihre Noten verbesserten sich dadurch, dass sie den Stoff regelmäßig wiederholte.",
+    "Dadurch, dass der Stoff regelmäßig wiederholt wurde, verbesserten sich ihre Noten.",
+    "Ihre Noten verbesserten sich dadurch, dass der Stoff regelmäßig wiederholt wurde.",
+    "Dadurch, dass sie den Stoff regelmäßig wiederholt hatte, verbesserten sich ihre Noten.",
+    "Ihre Noten verbesserten sich dadurch, dass sie den Stoff regelmäßig wiederholt hatte."
+   ],
+   "erklaerung": "„indem“ passt hier nicht, weil die Subjekte verschieden sind (sie – ihre Noten); „dadurch, dass“ geht immer."
+  },
+  {
+   "id": "u23",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "weil",
+     "wegen"
+    ],
+    [
+     "obwohl",
+     "trotz"
+    ],
+    [
+     "nachdem",
+     "nach"
+    ],
+    [
+     "bevor",
+     "vor"
+    ],
+    [
+     "indem",
+     "durch"
+    ],
+    [
+     "wenn (Bedingung)",
+     "bei"
+    ]
+   ],
+   "erklaerung": "Subjunktion im Verbalstil, Präposition im Nominalstil."
+  },
+  {
+   "id": "u24",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "entscheiden",
+     "die Entscheidung"
+    ],
+    [
+     "abreisen",
+     "die Abreise"
+    ],
+    [
+     "zunehmen",
+     "die Zunahme"
+    ],
+    [
+     "verzichten",
+     "der Verzicht"
+    ],
+    [
+     "beitragen",
+     "der Beitrag"
+    ],
+    [
+     "teilnehmen",
+     "die Teilnahme"
+    ]
+   ],
+   "erklaerung": "Nicht jede Nominalisierung endet auf -ung: Genus und Form muss man lernen."
+  },
+  {
+   "id": "u25",
+   "typ": "sortieren",
+   "teile": [
+    "einigten sich",
+    "langen Verhandlungen",
+    "die Parteien",
+    "Nach",
+    "auf einen Kompromiss"
+   ],
+   "loesung": "Nach langen Verhandlungen einigten sich die Parteien auf einen Kompromiss.",
+   "loesungen": [
+    "Die Parteien einigten sich nach langen Verhandlungen auf einen Kompromiss."
+   ],
+   "erklaerung": "Die Nominalgruppe „nach langen Verhandlungen“ kann als Ganzes im Vorfeld stehen."
+  },
+  {
+   "id": "u26",
+   "typ": "sortieren",
+   "teile": [
+    "keine Einigung erzielt",
+    "der Beteiligten",
+    "intensiver",
+    "wurde",
+    "Trotz",
+    "Bemühungen"
+   ],
+   "loesung": "Trotz intensiver Bemühungen der Beteiligten wurde keine Einigung erzielt.",
+   "erklaerung": "trotz + Genitiv; im Hauptsatz folgt das Verb an Position 2."
+  },
+  {
+   "id": "u27",
+   "typ": "sortieren",
+   "teile": [
+    "anhaltender",
+    "Proteste",
+    "Wegen",
+    "das Bauprojekt gestoppt",
+    "wurde",
+    "der Anwohner"
+   ],
+   "loesung": "Wegen anhaltender Proteste der Anwohner wurde das Bauprojekt gestoppt.",
+   "erklaerung": "wegen + Genitiv; ohne Artikel zeigt das Adjektiv den Genitiv Plural (-er)."
+  },
+  {
+   "id": "u28",
+   "typ": "sortieren",
+   "teile": [
+    "der Daten",
+    "fiel",
+    "der Auswertung",
+    "Bei",
+    "den Forschenden",
+    "ein Fehler auf"
+   ],
+   "loesung": "Bei der Auswertung der Daten fiel den Forschenden ein Fehler auf.",
+   "loesungen": [
+    "Den Forschenden fiel bei der Auswertung der Daten ein Fehler auf."
+   ],
+   "erklaerung": "bei + Dativ + Genitivattribut; das Präfix „auf“ bildet die rechte Satzklammer."
+  },
+  {
+   "id": "u29",
+   "typ": "fehler",
+   "satz": "Wegen er krank war, sagte er die Reise ab.",
+   "fehler": "Wegen",
+   "korrektur": "Weil",
+   "erklaerung": "„wegen“ ist eine Präposition; für einen Nebensatz braucht man „weil“."
+  },
+  {
+   "id": "u30",
+   "typ": "fehler",
+   "satz": "Nach Abschluss von seinem Studium arbeitete er im Ausland.",
+   "fehler": "von seinem Studium",
+   "korrektur": "seines Studiums",
+   "erklaerung": "Im Nominalstil steht das Attribut im Genitiv."
+  },
+  {
+   "id": "u31",
+   "typ": "fehler",
+   "satz": "Durch das Lesen viel Bücher erweiterte sie ihren Wortschatz.",
+   "fehler": "viel",
+   "korrektur": "vieler",
+   "erklaerung": "Genitiv Plural ohne Artikel: vieler Bücher."
+  },
+  {
+   "id": "u32",
+   "typ": "fehler",
+   "satz": "Trotz des schlechten Wetter fand das Fest im Freien statt.",
+   "fehler": "Wetter",
+   "korrektur": "Wetters",
+   "erklaerung": "Genitiv maskulin/neutral: -s (des Wetters)."
+  },
+  {
+   "id": "u33",
+   "typ": "rf",
+   "aussage": "Im Nominalstil wird das Akkusativobjekt meist zum Genitivattribut: das Haus renovieren → die Renovierung des Hauses.",
+   "wert": true,
+   "erklaerung": "Akkusativobjekt → Genitiv, Präpositionalobjekt bleibt mit Präposition."
+  },
+  {
+   "id": "u34",
+   "typ": "rf",
+   "aussage": "„bei“ kann sowohl „wenn“ als auch „als“ entsprechen: bei Regen, bei seiner Ankunft.",
+   "wert": true,
+   "erklaerung": "Bedingung (wenn) oder einmaliger Zeitpunkt (als)."
+  },
+  {
+   "id": "u35",
+   "typ": "rf",
+   "aussage": "Nominalstil ist in der gesprochenen Alltagssprache häufiger als in Fachtexten.",
+   "wert": false,
+   "erklaerung": "Nominalstil ist typisch für Fach-, Behörden- und Pressetexte."
+  },
+  {
+   "id": "u36",
+   "typ": "rf",
+   "aussage": "„indem“ wird im Nominalstil meist zu „trotz“.",
+   "wert": false,
+   "erklaerung": "indem → durch; trotz entspricht „obwohl“."
+  }
+ ]
+}

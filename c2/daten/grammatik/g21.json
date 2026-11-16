@@ -1,0 +1,412 @@
+{
+ "id": "g21",
+ "titel": "Zeitverhältnisse und Tempusgebrauch",
+ "niveau": "C1",
+ "nr": 21,
+ "gruppe": "B",
+ "baustelle": true,
+ "pruefungsbezug": [
+  "S2",
+  "P1"
+ ],
+ "kurz": "als, wenn, nachdem, seit(dem), bis, ehe, sobald, solange; Zeitenfolge mit Plusquamperfekt, Futur II als Vermutung; seit und vor richtig verwenden (seit Langem, vor langer Zeit).",
+ "tafel": [
+  "als: einmalig in der Vergangenheit – wenn: wiederholt (immer wenn) oder in Gegenwart und Zukunft.",
+  "nachdem: vorzeitig – Plusquamperfekt + Präteritum oder Perfekt + Präsens.",
+  "seit(dem): Beginn in der Vergangenheit, dauert bis jetzt – meist Präsens: Seit ich hier wohne, …",
+  "bevor/ehe: danach; bis: Endpunkt; sobald: sofort danach; solange: gleich lange; während: gleichzeitig.",
+  "seit + Dativ für eine Dauer bis heute (seit drei Jahren, seit Langem) – vor + Dativ für einen Zeitpunkt (vor drei Jahren, vor langer Zeit).",
+  "Das ist lange her. – nie: seit lange her.",
+  "Vermutung: Futur I für die Gegenwart (Sie wird im Büro sein), Futur II für die Vergangenheit (Er wird den Zug verpasst haben)."
+ ],
+ "beispiele": [
+  "Nachdem sie die Prüfung bestanden hatte, feierte sie mit Freunden.",
+  "Seit ich jeden Tag lese, verstehe ich viel mehr.",
+  "Als ich in Wien ankam, regnete es.",
+  "Wenn ich nach Hause komme, koche ich zuerst einen Tee.",
+  "Das ist schon lange her – ich habe das Buch vor zehn Jahren gelesen."
+ ],
+ "fallen": [
+  {
+   "falsch": "seit lange her",
+   "richtig": "Das ist lange her. / seit Langem",
+   "warum": "„her“ steht mit „sein“: Das ist lange her. „seit“ braucht den Dativ: seit Langem."
+  },
+  {
+   "falsch": "Wenn ich gestern nach Hause kam, …",
+   "richtig": "Als ich gestern nach Hause kam, …",
+   "warum": "Einmalig in der Vergangenheit: als."
+  },
+  {
+   "falsch": "Nachdem sie gegessen hat, ging sie spazieren.",
+   "richtig": "Nachdem sie gegessen hatte, ging sie spazieren.",
+   "warum": "Zeitenfolge: Plusquamperfekt vor Präteritum."
+  },
+  {
+   "falsch": "Ich habe ihn seit drei Jahren gesehen.",
+   "richtig": "Ich habe ihn vor drei Jahren gesehen.",
+   "warum": "Zeitpunkt in der Vergangenheit: vor; Dauer bis jetzt: seit."
+  }
+ ],
+ "uebungen": [
+  {
+   "id": "u02",
+   "typ": "luecke",
+   "satz": "Immer ___ ich nach Hause komme, koche ich zuerst einen Tee.",
+   "loesungen": [
+    "wenn"
+   ],
+   "erklaerung": "Wiederholung: (immer) wenn."
+  },
+  {
+   "id": "u04",
+   "typ": "luecke",
+   "satz": "Ich habe sie ___ drei Jahren zum letzten Mal gesehen.",
+   "loesungen": [
+    "vor"
+   ],
+   "erklaerung": "Zeitpunkt in der Vergangenheit: vor + Dativ."
+  },
+  {
+   "id": "u05",
+   "typ": "luecke",
+   "satz": "Wir wohnen ___ drei Jahren in dieser Wohnung.",
+   "loesungen": [
+    "seit"
+   ],
+   "erklaerung": "Dauer von der Vergangenheit bis jetzt: seit + Dativ, Verb im Präsens."
+  },
+  {
+   "id": "u07",
+   "typ": "luecke",
+   "satz": "Sie beschäftigt sich schon seit ___ mit diesem Thema.",
+   "loesungen": [
+    "Langem",
+    "langem"
+   ],
+   "hinweis": "Adverb, Dativ",
+   "erklaerung": "seit Langem (auch: seit langem) = schon lange."
+  },
+  {
+   "id": "u08",
+   "typ": "luecke",
+   "satz": "___ du mit der Arbeit fertig bist, ruf mich bitte an.",
+   "loesungen": [
+    "Sobald",
+    "Wenn",
+    "Sowie"
+   ],
+   "hinweis": "sofort danach",
+   "erklaerung": "sobald: Die zweite Handlung folgt unmittelbar."
+  },
+  {
+   "id": "u09",
+   "typ": "luecke",
+   "satz": "Er ist noch nicht da? Er ___ den Zug verpasst haben.",
+   "loesungen": [
+    "wird"
+   ],
+   "hinweis": "Futur II",
+   "erklaerung": "Futur II als Vermutung über Vergangenes: wird + Partizip II + haben."
+  },
+  {
+   "id": "u10",
+   "typ": "luecke",
+   "satz": "___ ich hier wohne, fahre ich jeden Tag mit dem Fahrrad.",
+   "loesungen": [
+    "Seit",
+    "Seitdem",
+    "Solange"
+   ],
+   "hinweis": "Beginn in der Vergangenheit",
+   "erklaerung": "seit(dem) + Präsens: Der Zustand dauert bis jetzt."
+  },
+  {
+   "id": "u11",
+   "typ": "auswahl",
+   "frage": "Welcher Satz ist korrekt?",
+   "optionen": [
+    "Wenn ich ein Kind war, wohnten wir am Meer.",
+    "Wann ich ein Kind war, wohnten wir am Meer.",
+    "Als ich ein Kind war, wohnten wir am Meer.",
+    "Als ich ein Kind bin, wohnten wir am Meer."
+   ],
+   "richtig": 2,
+   "erklaerung": "Ein Zeitraum in der Vergangenheit, der einmalig ist: als."
+  },
+  {
+   "id": "u13",
+   "typ": "auswahl",
+   "frage": "Welche Zeitenfolge passt zu „nachdem“?",
+   "optionen": [
+    "Nachdem er essen wird, ging er spazieren.",
+    "Nachdem er aß, war er spazieren gegangen.",
+    "Nachdem er gegessen hatte, ging er spazieren.",
+    "Nachdem er gegessen hat, ging er spazieren."
+   ],
+   "richtig": 2,
+   "erklaerung": "Plusquamperfekt im Nebensatz, Präteritum im Hauptsatz."
+  },
+  {
+   "id": "u14",
+   "typ": "auswahl",
+   "frage": "„Er wird jetzt schon zu Hause sein.“ bedeutet:",
+   "optionen": [
+    "Ich vermute, dass er jetzt zu Hause ist.",
+    "Er ist sicher nicht zu Hause.",
+    "Er war gestern zu Hause.",
+    "Er kommt später nach Hause."
+   ],
+   "richtig": 0,
+   "erklaerung": "Futur I mit „jetzt“ oder „schon“ = Vermutung über die Gegenwart."
+  },
+  {
+   "id": "u15",
+   "typ": "auswahl",
+   "frage": "___ ich diesen Brief lese, fällt mir alles wieder ein. (jedes Mal)",
+   "optionen": [
+    "Wenn",
+    "Wann",
+    "Nachdem",
+    "Als"
+   ],
+   "richtig": 0,
+   "erklaerung": "Wiederholung in der Gegenwart: wenn."
+  },
+  {
+   "id": "u16",
+   "typ": "auswahl",
+   "frage": "Welche Präposition passt? „Er hat ___ einer Woche gekündigt.“ (Zeitpunkt in der Vergangenheit)",
+   "optionen": [
+    "seit",
+    "vor",
+    "nach",
+    "her"
+   ],
+   "richtig": 1,
+   "erklaerung": "Zeitpunkt in der Vergangenheit: vor + Dativ."
+  },
+  {
+   "id": "u17",
+   "typ": "umformen",
+   "ausgang": "Sie beendete das Studium. Danach zog sie nach Hamburg.",
+   "anweisung": "Verbinden Sie mit „nachdem“.",
+   "loesungen": [
+    "Nachdem sie das Studium beendet hatte, zog sie nach Hamburg.",
+    "Sie zog nach Hamburg, nachdem sie das Studium beendet hatte."
+   ],
+   "erklaerung": "Vorzeitigkeit: Plusquamperfekt im Nebensatz."
+  },
+  {
+   "id": "u18",
+   "typ": "umformen",
+   "ausgang": "Er kommt nach Hause. Gleich danach ruft er seine Mutter an.",
+   "anweisung": "Verbinden Sie mit „sobald“.",
+   "loesungen": [
+    "Sobald er nach Hause kommt, ruft er seine Mutter an.",
+    "Er ruft seine Mutter an, sobald er nach Hause kommt.",
+    "Sobald er nach Hause gekommen ist, ruft er seine Mutter an.",
+    "Er ruft seine Mutter an, sobald er nach Hause gekommen ist."
+   ],
+   "erklaerung": "sobald: unmittelbare Folge; Präsens (oder Perfekt für Vorzeitigkeit)."
+  },
+  {
+   "id": "u19",
+   "typ": "umformen",
+   "ausgang": "Wir müssen noch die Tickets kaufen. Erst dann fahren wir los.",
+   "anweisung": "Verbinden Sie mit „bevor“.",
+   "loesungen": [
+    "Bevor wir losfahren, müssen wir noch die Tickets kaufen.",
+    "Wir müssen noch die Tickets kaufen, bevor wir losfahren."
+   ],
+   "erklaerung": "bevor: Die Handlung im Nebensatz kommt später."
+  },
+  {
+   "id": "u20",
+   "typ": "umformen",
+   "ausgang": "Sie wohnt jetzt in Köln. Seitdem ist sie glücklicher.",
+   "anweisung": "Verbinden Sie mit „seit“.",
+   "loesungen": [
+    "Seit sie in Köln wohnt, ist sie glücklicher.",
+    "Sie ist glücklicher, seit sie in Köln wohnt.",
+    "Seitdem sie in Köln wohnt, ist sie glücklicher.",
+    "Sie ist glücklicher, seitdem sie in Köln wohnt."
+   ],
+   "erklaerung": "seit(dem) + Präsens: Der Zustand dauert an."
+  },
+  {
+   "id": "u21",
+   "typ": "umformen",
+   "ausgang": "Vermutlich hat sie die Nachricht schon gelesen.",
+   "anweisung": "Formulieren Sie mit Futur II.",
+   "loesungen": [
+    "Sie wird die Nachricht schon gelesen haben."
+   ],
+   "erklaerung": "Futur II drückt eine Vermutung über Vergangenes aus."
+  },
+  {
+   "id": "u22",
+   "typ": "umformen",
+   "ausgang": "Bis zu ihrer Rückkehr kümmert sich der Nachbar um die Katze.",
+   "anweisung": "Formulieren Sie mit „bis“ als Subjunktion.",
+   "loesungen": [
+    "Bis sie zurückkehrt, kümmert sich der Nachbar um die Katze.",
+    "Bis sie zurückkommt, kümmert sich der Nachbar um die Katze.",
+    "Der Nachbar kümmert sich um die Katze, bis sie zurückkehrt.",
+    "Der Nachbar kümmert sich um die Katze, bis sie zurückkommt."
+   ],
+   "erklaerung": "„bis zu“ + Nomen → „bis“ + Nebensatz."
+  },
+  {
+   "id": "u23",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "Als ich klein war,",
+     "verbrachte ich jeden Sommer bei meiner Großmutter."
+    ],
+    [
+     "Wenn ich Zeit habe,",
+     "gehe ich gern ins Museum."
+    ],
+    [
+     "Seit ich Yoga mache,",
+     "schlafe ich viel besser als früher."
+    ],
+    [
+     "Nachdem ich das Buch gelesen hatte,",
+     "sah ich mir die Verfilmung an."
+    ],
+    [
+     "Bevor du gehst,",
+     "schließ bitte das Fenster."
+    ]
+   ],
+   "erklaerung": "Zeitform und Bedeutung von Neben- und Hauptsatz müssen zusammenpassen."
+  },
+  {
+   "id": "u24",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "seit drei Jahren",
+     "Dauer bis heute"
+    ],
+    [
+     "vor drei Jahren",
+     "Zeitpunkt in der Vergangenheit"
+    ],
+    [
+     "in drei Jahren",
+     "Zeitpunkt in der Zukunft"
+    ],
+    [
+     "nach drei Jahren",
+     "Zeitpunkt nach Ablauf einer Frist"
+    ],
+    [
+     "für drei Jahre",
+     "geplante Dauer"
+    ]
+   ],
+   "erklaerung": "Zeitangaben mit Präposition: seit, vor, in, nach, für."
+  },
+  {
+   "id": "u25",
+   "typ": "sortieren",
+   "teile": [
+    "wir",
+    "der Regen",
+    "aufgehört",
+    "spazieren",
+    "gingen",
+    "Nachdem",
+    "hatte,"
+   ],
+   "loesung": "Nachdem der Regen aufgehört hatte, gingen wir spazieren.",
+   "erklaerung": "Nebensatz zuerst, dann im Hauptsatz sofort das Verb."
+  },
+  {
+   "id": "u26",
+   "typ": "sortieren",
+   "teile": [
+    "viel mehr",
+    "verstehe",
+    "ich",
+    "ich",
+    "lese,",
+    "Seit",
+    "jeden Tag"
+   ],
+   "loesung": "Seit ich jeden Tag lese, verstehe ich viel mehr.",
+   "erklaerung": "seit + Präsens im Nebensatz; danach Verb an Position 1 des Hauptsatzes."
+  },
+  {
+   "id": "u27",
+   "typ": "sortieren",
+   "teile": [
+    "der Zug",
+    "Als",
+    "wir",
+    "war",
+    "ankamen,",
+    "schon weg",
+    "am Bahnhof"
+   ],
+   "loesung": "Als wir am Bahnhof ankamen, war der Zug schon weg.",
+   "erklaerung": "als + Präteritum für ein einmaliges Ereignis."
+  },
+  {
+   "id": "u29",
+   "typ": "fehler",
+   "satz": "Wenn ich gestern nach Hause kam, war niemand da.",
+   "fehler": "Wenn",
+   "korrektur": "Als",
+   "erklaerung": "Einmaliges Ereignis in der Vergangenheit: als."
+  },
+  {
+   "id": "u30",
+   "typ": "fehler",
+   "satz": "Ich habe ihn seit drei Jahren in Berlin getroffen.",
+   "fehler": "seit",
+   "korrektur": "vor",
+   "erklaerung": "Zeitpunkt in der Vergangenheit: vor."
+  },
+  {
+   "id": "u31",
+   "typ": "fehler",
+   "satz": "Nachdem sie gefrühstückt hat, verließ sie das Haus.",
+   "fehler": "hat",
+   "korrektur": "hatte",
+   "erklaerung": "Zeitenfolge: Plusquamperfekt vor Präteritum."
+  },
+  {
+   "id": "u33",
+   "typ": "rf",
+   "aussage": "„als“ verwendet man für ein einmaliges Ereignis in der Vergangenheit.",
+   "wert": true,
+   "erklaerung": "Als ich ankam, … – einmalig."
+  },
+  {
+   "id": "u34",
+   "typ": "rf",
+   "aussage": "„seit“ steht mit dem Akkusativ: seit einen Monat.",
+   "wert": false,
+   "erklaerung": "seit + Dativ: seit einem Monat."
+  },
+  {
+   "id": "u35",
+   "typ": "rf",
+   "aussage": "Mit dem Futur II kann man eine Vermutung über Vergangenes ausdrücken.",
+   "wert": true,
+   "erklaerung": "Sie wird es vergessen haben."
+  },
+  {
+   "id": "u36",
+   "typ": "rf",
+   "aussage": "Nach „nachdem“ steht meist dieselbe Zeitform wie im Hauptsatz.",
+   "wert": false,
+   "erklaerung": "Nachdem verlangt Vorzeitigkeit: Plusquamperfekt + Präteritum oder Perfekt + Präsens."
+  }
+ ]
+}

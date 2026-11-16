@@ -1,0 +1,481 @@
+{
+ "id": "g12",
+ "titel": "Konnektoren und zweiteilige Konjunktionen",
+ "niveau": "C1",
+ "nr": 12,
+ "gruppe": "A",
+ "baustelle": false,
+ "pruefungsbezug": [
+  "L3",
+  "S1",
+  "S2"
+ ],
+ "tafel": [
+  "Konjunktionen (und, aber, oder, denn, sondern) stehen auf Position 0: Das Verb bleibt an Position 2 – …, denn sie war krank.",
+  "Subjunktionen (weil, da, obwohl, dass, damit, sodass, während, indem) leiten Nebensätze ein: Verb am Ende.",
+  "Konjunktionaladverbien (deshalb, trotzdem, dennoch, folglich, allerdings) besetzen das Vorfeld: Deshalb bleibt sie. – oder stehen im Mittelfeld: Sie bleibt deshalb.",
+  "Zweiteilig: zwar … aber, entweder … oder, weder … noch, sowohl … als auch, nicht nur … sondern auch, je … desto/umso.",
+  "Bedeutung: Grund (weil, denn, deshalb), Gegengrund (obwohl, trotzdem), Folge (sodass, folglich), Zweck (damit), Mittel (indem), Gegensatz (während, wohingegen).",
+  "sondern nur nach einer Verneinung: nicht …, sondern …"
+ ],
+ "beispiele": [
+  "Zwar ist der Entwurf ambitioniert, aber er lässt viele Fragen offen.",
+  "Je besser man vorbereitet ist, desto gelassener geht man in die Prüfung.",
+  "Sie lernte die Sprache, indem sie täglich Zeitung las.",
+  "Die Partei hat die Wahl verloren, trotzdem hält sie an ihrem Kurs fest."
+ ],
+ "fallen": [
+  {
+   "falsch": "…, weil sie war krank.",
+   "richtig": "…, weil sie krank war.",
+   "warum": "Nach „weil“ steht das Verb am Ende."
+  },
+  {
+   "falsch": "…, deshalb wir müssen sparen.",
+   "richtig": "…, deshalb müssen wir sparen.",
+   "warum": "„deshalb“ besetzt das Vorfeld: Verb an Position 2."
+  },
+  {
+   "falsch": "weder … oder",
+   "richtig": "weder … noch",
+   "warum": "Zweiteilige Konnektoren sind fest."
+  },
+  {
+   "falsch": "nicht langweilig, aber anregend",
+   "richtig": "nicht langweilig, sondern anregend",
+   "warum": "Nach einer Verneinung berichtigt „sondern“."
+  }
+ ],
+ "uebungen": [
+  {
+   "id": "u01",
+   "typ": "luecke",
+   "satz": "Das Projekt ist ___ teuer, aber es wird sich langfristig lohnen.",
+   "loesungen": [
+    "zwar"
+   ],
+   "hinweis": "Konnektor",
+   "erklaerung": "„zwar … aber“: Man räumt etwas ein und setzt etwas dagegen."
+  },
+  {
+   "id": "u02",
+   "typ": "luecke",
+   "satz": "Die Studie überzeugt ___ durch ihre Methode als auch durch ihre klare Sprache.",
+   "loesungen": [
+    "sowohl"
+   ],
+   "hinweis": "Konnektor",
+   "erklaerung": "„sowohl … als auch“ = beides."
+  },
+  {
+   "id": "u03",
+   "typ": "luecke",
+   "satz": "Der Roman ist ___ spannend noch gut geschrieben.",
+   "loesungen": [
+    "weder"
+   ],
+   "hinweis": "Konnektor",
+   "erklaerung": "„weder … noch“ = nicht das eine und nicht das andere."
+  },
+  {
+   "id": "u04",
+   "typ": "luecke",
+   "satz": "___ früher man sich anmeldet, desto günstiger ist die Tagung.",
+   "loesungen": [
+    "Je"
+   ],
+   "hinweis": "Konnektor",
+   "erklaerung": "„je + Komparativ …, desto + Komparativ …“"
+  },
+  {
+   "id": "u05",
+   "typ": "luecke",
+   "satz": "Die Messwerte waren unvollständig; ___ ließ sich die Hypothese nicht überprüfen.",
+   "loesungen": [
+    "deshalb",
+    "daher",
+    "folglich",
+    "somit",
+    "deswegen",
+    "darum",
+    "also"
+   ],
+   "hinweis": "Konnektor: Folge",
+   "erklaerung": "Konjunktionaladverb im Vorfeld, danach das Verb (ließ)."
+  },
+  {
+   "id": "u06",
+   "typ": "luecke",
+   "satz": "Sie lernte die Sprache, ___ sie täglich Zeitungen und Romane las.",
+   "loesungen": [
+    "indem"
+   ],
+   "hinweis": "Konnektor: Mittel",
+   "erklaerung": "„indem“ nennt das Mittel oder die Art und Weise: Wie? – Indem …"
+  },
+  {
+   "id": "u07",
+   "typ": "luecke",
+   "satz": "Er gab sich gelassen, ___ er innerlich vor Wut kochte.",
+   "loesungen": [
+    "obwohl",
+    "obgleich",
+    "wenngleich"
+   ],
+   "hinweis": "Konnektor: Gegengrund",
+   "erklaerung": "Konzessiver Nebensatz: Verb am Ende."
+  },
+  {
+   "id": "u08",
+   "typ": "luecke",
+   "satz": "In den Städten steigen die Mieten, ___ die Löhne seit Jahren stagnieren.",
+   "loesungen": [
+    "während",
+    "wohingegen"
+   ],
+   "hinweis": "Konnektor: Gegensatz",
+   "erklaerung": "„während“ oder „wohingegen“ stellen zwei Sachverhalte gegenüber."
+  },
+  {
+   "id": "u09",
+   "typ": "luecke",
+   "satz": "Die Bibliothek verlängerte ihre Öffnungszeiten, ___ auch Berufstätige sie nutzen können.",
+   "loesungen": [
+    "damit"
+   ],
+   "hinweis": "Konnektor: Zweck",
+   "erklaerung": "„damit“ bei unterschiedlichen Subjekten (die Bibliothek – Berufstätige)."
+  },
+  {
+   "id": "u10",
+   "typ": "luecke",
+   "satz": "Der Vortrag war ___ lehrreich, sondern auch unterhaltsam.",
+   "loesungen": [
+    "nicht nur"
+   ],
+   "hinweis": "zwei Wörter",
+   "erklaerung": "„nicht nur …, sondern auch …“"
+  },
+  {
+   "id": "u11",
+   "typ": "luecke",
+   "satz": "Es regnete stundenlang, ___ das Konzert abgesagt werden musste.",
+   "loesungen": [
+    "sodass",
+    "so dass"
+   ],
+   "hinweis": "Konnektor: Folge",
+   "erklaerung": "„sodass“ leitet einen Folgesatz ein; Verb am Ende."
+  },
+  {
+   "id": "u12",
+   "typ": "luecke",
+   "satz": "Sie war völlig erschöpft, ___ arbeitete sie bis Mitternacht weiter.",
+   "loesungen": [
+    "trotzdem",
+    "dennoch",
+    "gleichwohl",
+    "doch"
+   ],
+   "hinweis": "Konnektor: Gegengrund",
+   "erklaerung": "Konjunktionaladverb im Vorfeld des zweiten Hauptsatzes, danach das Verb."
+  },
+  {
+   "id": "u14",
+   "typ": "auswahl",
+   "frage": "Welcher Satz ist korrekt?",
+   "optionen": [
+    "Sie blieb zu Hause, denn sie erkältet war.",
+    "Sie blieb zu Hause, denn sie war erkältet.",
+    "Sie blieb zu Hause, denn war sie erkältet."
+   ],
+   "richtig": 1,
+   "erklaerung": "„denn“ steht auf Position 0, danach normale Hauptsatzstellung."
+  },
+  {
+   "id": "u15",
+   "typ": "auswahl",
+   "frage": "Welcher Satz ist korrekt?",
+   "optionen": [
+    "Die Kosten sind hoch, deshalb wir verschieben das Projekt.",
+    "Die Kosten sind hoch, deshalb verschieben wir das Projekt.",
+    "Die Kosten sind hoch, deshalb wir das Projekt verschieben."
+   ],
+   "richtig": 1,
+   "erklaerung": "„deshalb“ besetzt das Vorfeld: Verb an Position 2."
+  },
+  {
+   "id": "u16",
+   "typ": "auswahl",
+   "frage": "„Er hat nicht angerufen, ___ eine lange E-Mail geschrieben.“",
+   "optionen": [
+    "sondern",
+    "doch",
+    "aber"
+   ],
+   "richtig": 0,
+   "erklaerung": "Nach einer Verneinung berichtigt „sondern“."
+  },
+  {
+   "id": "u17",
+   "typ": "auswahl",
+   "frage": "Welcher Konnektor drückt einen Gegensatz aus?",
+   "optionen": [
+    "wohingegen",
+    "indem",
+    "folglich"
+   ],
+   "richtig": 0,
+   "erklaerung": "„folglich“ = Folge, „indem“ = Mittel."
+  },
+  {
+   "id": "u18",
+   "typ": "auswahl",
+   "frage": "„___ die Datenlage dünn ist, lassen sich vorsichtige Schlüsse ziehen.“",
+   "optionen": [
+    "Obwohl",
+    "Damit",
+    "Weil"
+   ],
+   "richtig": 0,
+   "erklaerung": "Gegengrund: Trotz dünner Daten sind Schlüsse möglich."
+  },
+  {
+   "id": "u19",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "zwar",
+     "aber"
+    ],
+    [
+     "weder",
+     "noch"
+    ],
+    [
+     "sowohl",
+     "als auch"
+    ],
+    [
+     "entweder",
+     "oder"
+    ],
+    [
+     "je",
+     "desto"
+    ],
+    [
+     "nicht nur",
+     "sondern auch"
+    ]
+   ],
+   "erklaerung": "Zweiteilige Konnektoren gehören fest zusammen."
+  },
+  {
+   "id": "u20",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "weil",
+     "Grund"
+    ],
+    [
+     "obwohl",
+     "Gegengrund"
+    ],
+    [
+     "sodass",
+     "Folge"
+    ],
+    [
+     "damit",
+     "Zweck"
+    ],
+    [
+     "indem",
+     "Mittel, Art und Weise"
+    ],
+    [
+     "wohingegen",
+     "Gegensatz"
+    ]
+   ],
+   "erklaerung": "Wer die Bedeutung kennt, findet in Lesen Teil 3 die passende Lücke schneller."
+  },
+  {
+   "id": "u21",
+   "typ": "sortieren",
+   "teile": [
+    "offen",
+    "ambitioniert,",
+    "aber",
+    "er",
+    "ist",
+    "Zwar",
+    "viele Fragen",
+    "lässt",
+    "der Entwurf"
+   ],
+   "loesung": "Zwar ist der Entwurf ambitioniert, aber er lässt viele Fragen offen.",
+   "loesungen": [
+    "Zwar ist der Entwurf ambitioniert, aber viele Fragen lässt er offen."
+   ],
+   "erklaerung": "„zwar“ im Vorfeld, Verb an Position 2; nach „aber“ (Position 0) normale Hauptsatzstellung."
+  },
+  {
+   "id": "u22",
+   "typ": "sortieren",
+   "teile": [
+    "trotzdem",
+    "die Wahl",
+    "sie",
+    "verloren,",
+    "fest",
+    "hat",
+    "Die Partei",
+    "an ihrem Kurs",
+    "hält"
+   ],
+   "loesung": "Die Partei hat die Wahl verloren, trotzdem hält sie an ihrem Kurs fest.",
+   "loesungen": [
+    "Die Partei hat die Wahl verloren, sie hält trotzdem an ihrem Kurs fest."
+   ],
+   "erklaerung": "„trotzdem“ im Vorfeld: Verb direkt danach; im Mittelfeld ist es ebenfalls möglich."
+  },
+  {
+   "id": "u23",
+   "typ": "sortieren",
+   "teile": [
+    "Je",
+    "desto",
+    "geht",
+    "man",
+    "ist,",
+    "vorbereitet",
+    "in die Prüfung",
+    "man",
+    "gelassener",
+    "besser"
+   ],
+   "loesung": "Je besser man vorbereitet ist, desto gelassener geht man in die Prüfung.",
+   "erklaerung": "je-Teil mit Verb am Ende, desto-Teil mit Verb direkt nach dem Komparativ.",
+   "loesungen": [
+    "Je besser vorbereitet man ist, desto gelassener geht man in die Prüfung."
+   ]
+  },
+  {
+   "id": "u24",
+   "typ": "sortieren",
+   "teile": [
+    "sich",
+    "sein Kreislauf",
+    "damit",
+    "stabilisiert",
+    "empfahl",
+    "Die Ärztin",
+    "viel Bewegung,",
+    "ihm"
+   ],
+   "loesung": "Die Ärztin empfahl ihm viel Bewegung, damit sich sein Kreislauf stabilisiert.",
+   "loesungen": [
+    "Die Ärztin empfahl ihm viel Bewegung, damit sein Kreislauf sich stabilisiert."
+   ],
+   "erklaerung": "„damit“ leitet einen Zwecksatz ein, das Verb steht am Ende."
+  },
+  {
+   "id": "u25",
+   "typ": "fehler",
+   "satz": "Sie kam nicht zur Sitzung, weil sie war krank.",
+   "fehler": "sie war krank",
+   "korrektur": "sie krank war",
+   "erklaerung": "Nach „weil“ steht das finite Verb am Ende."
+  },
+  {
+   "id": "u26",
+   "typ": "fehler",
+   "satz": "Der Plan ist teuer, deshalb wir müssen sparen.",
+   "fehler": "wir müssen",
+   "korrektur": "müssen wir",
+   "erklaerung": "„deshalb“ besetzt das Vorfeld: Verb an Position 2."
+  },
+  {
+   "id": "u28",
+   "typ": "fehler",
+   "satz": "Sowohl die Opposition als die Regierung lehnten den Vorschlag ab.",
+   "fehler": "als",
+   "korrektur": "als auch",
+   "erklaerung": "„sowohl … als auch“."
+  },
+  {
+   "id": "u29",
+   "typ": "fehler",
+   "satz": "Je mehr sie las, umso mehr Fragen sich stellten.",
+   "fehler": "sich stellten",
+   "korrektur": "stellten sich",
+   "erklaerung": "Nach „umso“ + Komparativ (+ Nomen) folgt sofort das Verb."
+  },
+  {
+   "id": "u30",
+   "typ": "fehler",
+   "satz": "Die Ausstellung war keineswegs langweilig, aber im Gegenteil äußerst anregend.",
+   "fehler": "aber",
+   "korrektur": "sondern",
+   "erklaerung": "Nach einer Verneinung berichtigt „sondern“."
+  },
+  {
+   "id": "u31",
+   "typ": "rf",
+   "aussage": "Nach „denn“ steht das Verb wie im Hauptsatz an Position 2.",
+   "wert": true,
+   "erklaerung": "„denn“ zählt nicht als Satzglied (Position 0)."
+  },
+  {
+   "id": "u32",
+   "typ": "rf",
+   "aussage": "„trotzdem“ ist eine Subjunktion; das Verb steht danach am Ende.",
+   "wert": false,
+   "erklaerung": "„trotzdem“ ist ein Konjunktionaladverb: Trotzdem hält sie an ihrem Kurs fest."
+  },
+  {
+   "id": "u33",
+   "typ": "rf",
+   "aussage": "Mit „nicht …, sondern …“ wird eine verneinte Aussage berichtigt.",
+   "wert": true,
+   "erklaerung": "Nicht der Autor, sondern die Übersetzerin erhielt den Preis."
+  },
+  {
+   "id": "u34",
+   "typ": "umformen",
+   "ausgang": "Das Konzept ist originell. Es ist schwer umzusetzen.",
+   "anweisung": "Verbinden Sie die Sätze mit „zwar … aber“.",
+   "loesungen": [
+    "Das Konzept ist zwar originell, aber es ist schwer umzusetzen.",
+    "Zwar ist das Konzept originell, aber es ist schwer umzusetzen.",
+    "Das Konzept ist zwar originell, aber schwer umzusetzen."
+   ],
+   "erklaerung": "„zwar“ im Mittelfeld oder im Vorfeld; nach „aber“ Hauptsatzstellung."
+  },
+  {
+   "id": "u35",
+   "typ": "umformen",
+   "ausgang": "Weil die Nachfrage gestiegen ist, erhöht der Verlag die Auflage.",
+   "anweisung": "Verwenden Sie „deshalb“.",
+   "loesungen": [
+    "Die Nachfrage ist gestiegen, deshalb erhöht der Verlag die Auflage.",
+    "Die Nachfrage ist gestiegen. Deshalb erhöht der Verlag die Auflage.",
+    "Die Nachfrage ist gestiegen, der Verlag erhöht deshalb die Auflage."
+   ],
+   "erklaerung": "„deshalb“ besetzt das Vorfeld (Verb danach) oder steht im Mittelfeld."
+  },
+  {
+   "id": "u36",
+   "typ": "umformen",
+   "ausgang": "Er spricht Englisch. Er spricht auch Französisch.",
+   "anweisung": "Verbinden Sie die Sätze mit „sowohl … als auch“.",
+   "loesungen": [
+    "Er spricht sowohl Englisch als auch Französisch."
+   ],
+   "erklaerung": "„sowohl … als auch“ verbindet hier zwei Objekte."
+  }
+ ]
+}

@@ -1,0 +1,424 @@
+{
+ "id": "g09",
+ "titel": "Satzklammer und Mittelfeld",
+ "niveau": "C1",
+ "nr": 9,
+ "gruppe": "A",
+ "baustelle": true,
+ "pruefungsbezug": [
+  "S2",
+  "P1"
+ ],
+ "tafel": [
+  "Hauptsatz: Das finite Verb steht an Position 2, Partizip, Infinitiv oder Präfix am Ende – die Satzklammer.",
+  "Vorfeld: genau ein Satzglied, auch ein langes: Nach langem Zögern hat sie …",
+  "Mittelfeld: Pronomen zuerst (Nominativ – Akkusativ – Dativ: sie es ihm), dann Nomen; zwei Nomen meist Dativ vor Akkusativ.",
+  "Angaben nach der Faustregel te-ka-mo-lo: temporal – kausal – modal – lokal.",
+  "nicht verneint den ganzen Satz direkt vor dem Klammerende; vor einem Satzteil verneint es nur diesen (nicht gestern, sondern heute).",
+  "Ausklammerung: Vergleiche mit als oder wie dürfen hinter dem Klammerende stehen: Sie hat schneller reagiert als erwartet."
+ ],
+ "beispiele": [
+  "Nach langem Zögern hat sie mir das Buch endlich zurückgegeben.",
+  "Wegen des Streiks ist die Ministerin gestern mit dem Zug nach Brüssel gereist.",
+  "Die Kuratorin hat es ihm schon dreimal erklärt.",
+  "Die Ergebnisse wurden schneller veröffentlicht als erwartet."
+ ],
+ "fallen": [
+  {
+   "falsch": "Gestern ich habe den Artikel gelesen.",
+   "richtig": "Gestern habe ich den Artikel gelesen.",
+   "warum": "Nach dem Vorfeld folgt sofort das finite Verb."
+  },
+  {
+   "falsch": "Sie erklärte den Studierenden es.",
+   "richtig": "Sie erklärte es den Studierenden.",
+   "warum": "Pronomen stehen im Mittelfeld vor Nomen."
+  },
+  {
+   "falsch": "Er lehnte ab den Vorschlag.",
+   "richtig": "Er lehnte den Vorschlag ab.",
+   "warum": "Das trennbare Präfix schließt die Klammer am Ende."
+  },
+  {
+   "falsch": "Trotzdem er hat zugesagt.",
+   "richtig": "Trotzdem hat er zugesagt.",
+   "warum": "„trotzdem“ ist ein Adverb im Vorfeld, kein Nebensatzeinleiter."
+  }
+ ],
+ "uebungen": [
+  {
+   "id": "u01",
+   "typ": "sortieren",
+   "teile": [
+    "mir",
+    "endlich",
+    "das Buch",
+    "nach langem Zögern",
+    "sie",
+    "Gestern",
+    "zurückgegeben",
+    "hat"
+   ],
+   "loesung": "Gestern hat sie mir das Buch nach langem Zögern endlich zurückgegeben.",
+   "loesungen": [
+    "Gestern hat sie mir nach langem Zögern endlich das Buch zurückgegeben."
+   ],
+   "erklaerung": "Verb an Position 2, Pronomen früh im Mittelfeld, Partizip am Ende."
+  },
+  {
+   "id": "u02",
+   "typ": "sortieren",
+   "teile": [
+    "Wegen des Streiks",
+    "ist",
+    "gestern",
+    "mit dem Zug",
+    "die Ministerin",
+    "gereist",
+    "nach Brüssel"
+   ],
+   "loesung": "Wegen des Streiks ist die Ministerin gestern mit dem Zug nach Brüssel gereist.",
+   "loesungen": [
+    "Wegen des Streiks ist gestern die Ministerin mit dem Zug nach Brüssel gereist."
+   ],
+   "erklaerung": "Im Mittelfeld: temporal (gestern) – modal (mit dem Zug) – lokal (nach Brüssel)."
+  },
+  {
+   "id": "u03",
+   "typ": "sortieren",
+   "teile": [
+    "hat",
+    "Sie",
+    "ihm",
+    "schon dreimal",
+    "es",
+    "erklärt"
+   ],
+   "loesung": "Sie hat es ihm schon dreimal erklärt.",
+   "erklaerung": "Zwei Pronomen: Akkusativ vor Dativ (es ihm)."
+  },
+  {
+   "id": "u04",
+   "typ": "sortieren",
+   "teile": [
+    "den Roman",
+    "aufgelegt",
+    "hat",
+    "nicht",
+    "Der Verlag",
+    "neu",
+    "wegen der hohen Kosten"
+   ],
+   "loesung": "Der Verlag hat den Roman wegen der hohen Kosten nicht neu aufgelegt.",
+   "loesungen": [
+    "Der Verlag hat wegen der hohen Kosten den Roman nicht neu aufgelegt."
+   ],
+   "erklaerung": "Satznegation: „nicht“ steht vor dem Klammerende (neu aufgelegt)."
+  },
+  {
+   "id": "u05",
+   "typ": "sortieren",
+   "teile": [
+    "die Unterlagen",
+    "Ihnen",
+    "inzwischen",
+    "man",
+    "zugeschickt?",
+    "Hat"
+   ],
+   "loesung": "Hat man Ihnen die Unterlagen inzwischen zugeschickt?",
+   "loesungen": [
+    "Hat man Ihnen inzwischen die Unterlagen zugeschickt?"
+   ],
+   "erklaerung": "Ja/Nein-Frage: Das finite Verb steht an Position 1, das Partizip am Ende."
+  },
+  {
+   "id": "u06",
+   "typ": "sortieren",
+   "teile": [
+    "schneller",
+    "veröffentlicht",
+    "Die Ergebnisse",
+    "wurden",
+    "als erwartet"
+   ],
+   "loesung": "Die Ergebnisse wurden schneller veröffentlicht als erwartet.",
+   "loesungen": [
+    "Die Ergebnisse wurden schneller als erwartet veröffentlicht."
+   ],
+   "erklaerung": "Vergleiche dürfen ausgeklammert werden, also hinter dem Partizip stehen."
+  },
+  {
+   "id": "u07",
+   "typ": "sortieren",
+   "teile": [
+    "nur bei schönem Wetter",
+    "sie",
+    "Mit dem Rad",
+    "zur Arbeit",
+    "fährt"
+   ],
+   "loesung": "Mit dem Rad fährt sie nur bei schönem Wetter zur Arbeit.",
+   "erklaerung": "Das Vorfeld ist besetzt (mit dem Rad), das Verb folgt an Position 2; die lokale Angabe steht am Ende des Mittelfelds."
+  },
+  {
+   "id": "u08",
+   "typ": "sortieren",
+   "teile": [
+    "die Kommission",
+    "unterzeichnen",
+    "voraussichtlich",
+    "Den Vertrag",
+    "wird",
+    "erst nächste Woche"
+   ],
+   "loesung": "Den Vertrag wird die Kommission voraussichtlich erst nächste Woche unterzeichnen.",
+   "erklaerung": "Objekt im Vorfeld; Futur: „wird“ an Position 2, Infinitiv am Ende."
+  },
+  {
+   "id": "u09",
+   "typ": "fehler",
+   "satz": "Gestern ich habe den Artikel noch einmal gründlich gelesen.",
+   "fehler": "ich habe",
+   "korrektur": "habe ich",
+   "erklaerung": "Nach dem Vorfeld (Gestern) folgt sofort das finite Verb."
+  },
+  {
+   "id": "u10",
+   "typ": "fehler",
+   "satz": "Die Autorin hat das Manuskript abgegeben gestern.",
+   "fehler": "abgegeben gestern",
+   "korrektur": "gestern abgegeben",
+   "erklaerung": "Das Partizip schließt die Satzklammer; Angaben stehen davor im Mittelfeld."
+  },
+  {
+   "id": "u11",
+   "typ": "fehler",
+   "satz": "Trotzdem er hat die Stelle angenommen.",
+   "fehler": "er hat",
+   "korrektur": "hat er",
+   "erklaerung": "„trotzdem“ besetzt das Vorfeld, danach kommt das Verb."
+  },
+  {
+   "id": "u12",
+   "typ": "fehler",
+   "satz": "Die Dozentin erklärte den Studierenden es noch einmal.",
+   "fehler": "den Studierenden es",
+   "korrektur": "es den Studierenden",
+   "erklaerung": "Pronomen stehen im Mittelfeld vor Nomen."
+  },
+  {
+   "id": "u13",
+   "typ": "fehler",
+   "satz": "Morgen wir fahren früh los, um den Stau zu vermeiden.",
+   "fehler": "wir fahren",
+   "korrektur": "fahren wir",
+   "erklaerung": "Nach dem Vorfeld (Morgen) steht das finite Verb an Position 2."
+  },
+  {
+   "id": "u14",
+   "typ": "fehler",
+   "satz": "Der Intendant lehnte ab den Vorschlag der Dramaturgin.",
+   "fehler": "ab den Vorschlag",
+   "korrektur": "den Vorschlag ab",
+   "erklaerung": "Das trennbare Präfix „ab“ steht am Ende der Klammer."
+  },
+  {
+   "id": "u15",
+   "typ": "luecke",
+   "satz": "Nach langem Zögern ___ die Jury dem Debütanten den Preis zugesprochen.",
+   "loesungen": [
+    "hat"
+   ],
+   "hinweis": "haben, Präsens",
+   "erklaerung": "Das finite Hilfsverb steht an Position 2, das Partizip am Ende."
+  },
+  {
+   "id": "u17",
+   "typ": "luecke",
+   "satz": "Die Kommission ___ vor, die Frist um zwei Monate zu verlängern.",
+   "loesungen": [
+    "schlägt"
+   ],
+   "hinweis": "vorschlagen, Präsens",
+   "erklaerung": "Der Verbstamm steht an Position 2, „vor“ am Klammerende vor dem Infinitivsatz."
+  },
+  {
+   "id": "u18",
+   "typ": "luecke",
+   "satz": "Seit der Reform ___ deutlich mehr Studierende ihr Studium in der Regelstudienzeit ab.",
+   "loesungen": [
+    "schließen"
+   ],
+   "hinweis": "abschließen, Präsens",
+   "erklaerung": "Vorfeld „Seit der Reform“, dann das finite Verb; „ab“ steht am Ende."
+  },
+  {
+   "id": "u19",
+   "typ": "luecke",
+   "satz": "Nach den Protesten ___ die Regierung die umstrittene Reform vorerst zurück.",
+   "loesungen": [
+    "nimmt"
+   ],
+   "hinweis": "zurücknehmen, Präsens",
+   "erklaerung": "Klammer: nimmt … zurück."
+  },
+  {
+   "id": "u20",
+   "typ": "auswahl",
+   "frage": "Welcher Satz ist korrekt?",
+   "optionen": [
+    "Gestern hat er es ihr gegeben.",
+    "Gestern er hat es ihr gegeben.",
+    "Gestern hat er ihr es gegeben."
+   ],
+   "richtig": 0,
+   "erklaerung": "Verb an Position 2; Pronomen: Akkusativ (es) vor Dativ (ihr)."
+  },
+  {
+   "id": "u21",
+   "typ": "auswahl",
+   "frage": "Welcher Satz verneint den ganzen Satz?",
+   "optionen": [
+    "Sie hat den Vertrag nicht unterschrieben.",
+    "Sie nicht hat den Vertrag unterschrieben.",
+    "Sie hat nicht den Vertrag unterschrieben."
+   ],
+   "richtig": 0,
+   "erklaerung": "Satznegation: „nicht“ vor dem Klammerende. „nicht den Vertrag“ verneint nur das Objekt (… sondern das Protokoll)."
+  },
+  {
+   "id": "u22",
+   "typ": "auswahl",
+   "frage": "Welcher Satz folgt der Faustregel temporal – kausal – modal – lokal?",
+   "optionen": [
+    "Er kam völlig erschöpft im Büro wegen des Staus gestern an.",
+    "Er kam im Büro gestern völlig erschöpft wegen des Staus an.",
+    "Er kam gestern wegen des Staus völlig erschöpft im Büro an."
+   ],
+   "richtig": 2,
+   "erklaerung": "gestern (temporal) – wegen des Staus (kausal) – völlig erschöpft (modal) – im Büro (lokal)."
+  },
+  {
+   "id": "u23",
+   "typ": "auswahl",
+   "frage": "Was darf hinter dem Klammerende stehen (Ausklammerung)?",
+   "optionen": [
+    "das Akkusativobjekt",
+    "ein Vergleich mit „als“ oder „wie“",
+    "das Subjekt"
+   ],
+   "richtig": 1,
+   "erklaerung": "Ausgeklammert werden vor allem Vergleiche und lange Präpositionalgruppen."
+  },
+  {
+   "id": "u24",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "Vorfeld",
+     "Nach langem Zögern"
+    ],
+    [
+     "linke Klammer",
+     "hat"
+    ],
+    [
+     "Mittelfeld",
+     "sie mir das Buch endlich"
+    ],
+    [
+     "rechte Klammer",
+     "zurückgegeben"
+    ]
+   ],
+   "erklaerung": "Der Satz „Nach langem Zögern hat sie mir das Buch endlich zurückgegeben“ in seinen Feldern."
+  },
+  {
+   "id": "u25",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "Ich habe das Buch nicht gelesen.",
+     "Satznegation"
+    ],
+    [
+     "Nicht ich habe das Buch gelesen, sondern mein Bruder.",
+     "Sondernegation: Subjekt"
+    ],
+    [
+     "Ich habe nicht das Buch gelesen, sondern den Film gesehen.",
+     "Sondernegation: Objekt"
+    ],
+    [
+     "Ich habe das Buch nicht gestern gelesen, sondern heute.",
+     "Sondernegation: Zeitangabe"
+    ]
+   ],
+   "erklaerung": "Die Stellung von „nicht“ zeigt, was verneint wird."
+  },
+  {
+   "id": "u26",
+   "typ": "rf",
+   "aussage": "Im Vorfeld kann nur ein einziges Satzglied stehen, auch wenn es sehr lang ist.",
+   "wert": true,
+   "erklaerung": "Beispiel: „Die von der Kommission seit Monaten geforderte Reform“ ist ein einziges Satzglied."
+  },
+  {
+   "id": "u27",
+   "typ": "rf",
+   "aussage": "Im Mittelfeld stehen Nomen vor Pronomen: Er hat dem Kollegen es gegeben.",
+   "wert": false,
+   "erklaerung": "Umgekehrt: Pronomen zuerst – Er hat es dem Kollegen gegeben."
+  },
+  {
+   "id": "u28",
+   "typ": "rf",
+   "aussage": "Trennbare Präfixe stehen im Hauptsatz am Ende der Satzklammer: Die Sitzung fängt um neun an.",
+   "wert": true,
+   "erklaerung": "Das Präfix bildet die rechte Klammer."
+  },
+  {
+   "id": "u29",
+   "typ": "umformen",
+   "ausgang": "Ich habe den Artikel gestern im Zug gelesen.",
+   "anweisung": "Stellen Sie „gestern“ ins Vorfeld.",
+   "loesungen": [
+    "Gestern habe ich den Artikel im Zug gelesen."
+   ],
+   "erklaerung": "Nach dem Vorfeld folgt das finite Verb, dann das Subjekt."
+  },
+  {
+   "id": "u30",
+   "typ": "umformen",
+   "ausgang": "Die Kuratorin hat dem Publikum das Gemälde erklärt.",
+   "anweisung": "Ersetzen Sie beide Objekte durch Pronomen.",
+   "loesungen": [
+    "Die Kuratorin hat es ihm erklärt."
+   ],
+   "erklaerung": "Zwei Pronomen: Akkusativ vor Dativ."
+  },
+  {
+   "id": "u31",
+   "typ": "umformen",
+   "ausgang": "Die Firma hat das Angebot abgelehnt.",
+   "anweisung": "Verneinen Sie den ganzen Satz mit „nicht“.",
+   "loesungen": [
+    "Die Firma hat das Angebot nicht abgelehnt."
+   ],
+   "erklaerung": "Satznegation steht vor dem Klammerende."
+  },
+  {
+   "id": "u32",
+   "typ": "umformen",
+   "ausgang": "Das Ministerium veröffentlicht den Bericht.",
+   "anweisung": "Setzen Sie den Satz ins Perfekt und ergänzen Sie „erst nach der Wahl“.",
+   "loesungen": [
+    "Das Ministerium hat den Bericht erst nach der Wahl veröffentlicht.",
+    "Erst nach der Wahl hat das Ministerium den Bericht veröffentlicht.",
+    "Das Ministerium hat erst nach der Wahl den Bericht veröffentlicht."
+   ],
+   "erklaerung": "Perfekt: hat … veröffentlicht; die Zeitangabe steht im Mittelfeld oder im Vorfeld."
+  }
+ ]
+}

@@ -1,0 +1,450 @@
+{
+ "id": "g10",
+ "titel": "Verbletztstellung in langen Satzgefügen",
+ "niveau": "C2",
+ "nr": 10,
+ "gruppe": "A",
+ "baustelle": true,
+ "pruefungsbezug": [
+  "S2",
+  "L3"
+ ],
+ "tafel": [
+  "Nebensatz: Das finite Verb steht ganz am Ende – …, weil sie den Antrag rechtzeitig gestellt hat.",
+  "Verbkomplex: Partizip oder Infinitiv – Passivhilfsverb – finites Verb: …, dass der Bericht veröffentlicht worden ist.",
+  "Ersatzinfinitiv: Modalverb im Perfekt oder Konjunktiv II der Vergangenheit → das finite Hilfsverb steht VOR den Infinitiven: …, dass sie hätte kommen sollen.",
+  "Eingebettete Nebensätze schließen ihre eigene Klammer: …, dass der Autor, der das Buch geschrieben hat, anonym bleiben will.",
+  "Nebensatz im Vorfeld: Danach folgt sofort das finite Verb des Hauptsatzes – Weil es regnete, fiel das Konzert aus.",
+  "Nach desto oder umso + Komparativ steht das Verb direkt dahinter: desto rätselhafter wird er."
+ ],
+ "beispiele": [
+  "Ich wusste nicht, dass er die Arbeit noch einmal hätte schreiben müssen.",
+  "Es ist nicht auszuschließen, dass die Daten manipuliert worden sein könnten.",
+  "Die Studie zeigt, dass Kinder, denen viel vorgelesen wird, später leichter lesen lernen.",
+  "Je gründlicher man sich mit dem Text beschäftigt, desto rätselhafter wird er."
+ ],
+ "fallen": [
+  {
+   "falsch": "…, dass er die Arbeit schreiben müssen hätte.",
+   "richtig": "…, dass er die Arbeit hätte schreiben müssen.",
+   "warum": "Ersatzinfinitiv: Das finite Hilfsverb steht vor beiden Infinitiven."
+  },
+  {
+   "falsch": "…, dass er den Haushalt wird kürzen.",
+   "richtig": "…, dass er den Haushalt kürzen wird.",
+   "warum": "Ohne Modalverb gilt die normale Regel: finites Verb am Ende."
+  },
+  {
+   "falsch": "Weil die Bibliothek renoviert wird, sie bleibt geschlossen.",
+   "richtig": "Weil die Bibliothek renoviert wird, bleibt sie geschlossen.",
+   "warum": "Der Nebensatz besetzt das Vorfeld, danach kommt das Verb."
+  },
+  {
+   "falsch": "desto günstiger es wird",
+   "richtig": "desto günstiger wird es",
+   "warum": "Nach „desto“ + Komparativ steht das Verb sofort."
+  }
+ ],
+ "uebungen": [
+  {
+   "id": "u01",
+   "typ": "sortieren",
+   "teile": [
+    "hätte",
+    "die Arbeit",
+    "schreiben",
+    "noch einmal",
+    "Ich wusste nicht,",
+    "dass",
+    "müssen",
+    "er"
+   ],
+   "loesung": "Ich wusste nicht, dass er die Arbeit noch einmal hätte schreiben müssen.",
+   "erklaerung": "Ersatzinfinitiv: „hätte“ steht vor „schreiben müssen“."
+  },
+  {
+   "id": "u02",
+   "typ": "sortieren",
+   "teile": [
+    "hätte",
+    "dass",
+    "nie",
+    "er",
+    "das Manuskript",
+    "dürfen",
+    "ablehnen",
+    "Der Verlag räumte ein,"
+   ],
+   "loesung": "Der Verlag räumte ein, dass er das Manuskript nie hätte ablehnen dürfen.",
+   "erklaerung": "Konjunktiv II der Vergangenheit mit Modalverb: hätte + Infinitiv + Modalverb im Infinitiv."
+  },
+  {
+   "id": "u03",
+   "typ": "sortieren",
+   "teile": [
+    "sind",
+    "Bis heute ist unklar,",
+    "vernichtet",
+    "die Akten",
+    "worden",
+    "von wem"
+   ],
+   "loesung": "Bis heute ist unklar, von wem die Akten vernichtet worden sind.",
+   "erklaerung": "Passiv Perfekt im Nebensatz: Partizip – worden – sind."
+  },
+  {
+   "id": "u04",
+   "typ": "sortieren",
+   "teile": [
+    "war,",
+    "die Referentin",
+    "zu spät",
+    "kam",
+    "der Zug",
+    "ausgefallen",
+    "Weil"
+   ],
+   "loesung": "Weil der Zug ausgefallen war, kam die Referentin zu spät.",
+   "erklaerung": "Nebensatz im Vorfeld, dann sofort das finite Verb des Hauptsatzes (kam)."
+  },
+  {
+   "id": "u05",
+   "typ": "sortieren",
+   "teile": [
+    "er",
+    "beschäftigt,",
+    "desto",
+    "Je gründlicher",
+    "mit dem Text",
+    "rätselhafter",
+    "wird",
+    "sich",
+    "man"
+   ],
+   "loesung": "Je gründlicher man sich mit dem Text beschäftigt, desto rätselhafter wird er.",
+   "erklaerung": "je-Teil: Verb am Ende; desto-Teil: Komparativ, dann sofort das Verb."
+  },
+  {
+   "id": "u06",
+   "typ": "sortieren",
+   "teile": [
+    "denen",
+    "vorgelesen",
+    "Die Studie zeigt,",
+    "viel",
+    "lesen",
+    "lernen",
+    "später leichter",
+    "dass",
+    "Kinder,",
+    "wird,"
+   ],
+   "loesung": "Die Studie zeigt, dass Kinder, denen viel vorgelesen wird, später leichter lesen lernen.",
+   "erklaerung": "Der Relativsatz ist eingebettet und schließt seine eigene Klammer (vorgelesen wird); erst dann endet der dass-Satz (lesen lernen)."
+  },
+  {
+   "id": "u07",
+   "typ": "sortieren",
+   "teile": [
+    "Obwohl",
+    "sie",
+    "es",
+    "hätte",
+    "schwieg",
+    "wissen",
+    "können,",
+    "sie"
+   ],
+   "loesung": "Obwohl sie es hätte wissen können, schwieg sie.",
+   "erklaerung": "Ersatzinfinitiv im vorangestellten Nebensatz; danach Verb an Position 2."
+  },
+  {
+   "id": "u08",
+   "typ": "sortieren",
+   "teile": [
+    "das Museum",
+    "die Sammlung",
+    "behalten",
+    "ob",
+    "Es ist fraglich,",
+    "wird",
+    "können"
+   ],
+   "loesung": "Es ist fraglich, ob das Museum die Sammlung wird behalten können.",
+   "loesungen": [
+    "Es ist fraglich, ob das Museum die Sammlung behalten können wird."
+   ],
+   "erklaerung": "Futur mit Modalverb im Nebensatz: üblich ist „wird behalten können“, möglich auch „behalten können wird“."
+  },
+  {
+   "id": "u09",
+   "typ": "sortieren",
+   "teile": [
+    "die Klägerin",
+    "das Urteil",
+    "den Saal",
+    "war,",
+    "verließ",
+    "worden",
+    "Nachdem",
+    "wortlos",
+    "verkündet"
+   ],
+   "loesung": "Nachdem das Urteil verkündet worden war, verließ die Klägerin wortlos den Saal.",
+   "loesungen": [
+    "Nachdem das Urteil verkündet worden war, verließ die Klägerin den Saal wortlos."
+   ],
+   "erklaerung": "Plusquamperfekt Passiv im Nebensatz (verkündet worden war), dann Verb an Position 2."
+  },
+  {
+   "id": "u10",
+   "typ": "sortieren",
+   "teile": [
+    "manipuliert",
+    "worden",
+    "sein",
+    "die Daten",
+    "dass",
+    "könnten",
+    "Es ist nicht auszuschließen,"
+   ],
+   "loesung": "Es ist nicht auszuschließen, dass die Daten manipuliert worden sein könnten.",
+   "erklaerung": "Vermutung über Vergangenes im Passiv: Partizip – worden – sein – Modalverb."
+  },
+  {
+   "id": "u11",
+   "typ": "fehler",
+   "satz": "Die Gutachterin stellte fest, dass man die Statik der Brücke früher berechnen müssen hätte.",
+   "fehler": "berechnen müssen hätte",
+   "korrektur": "hätte berechnen müssen",
+   "erklaerung": "Ersatzinfinitiv: Das finite Hilfsverb steht vor den beiden Infinitiven."
+  },
+  {
+   "id": "u12",
+   "typ": "fehler",
+   "satz": "Der Senat kündigte an, dass er den Haushalt wird kürzen.",
+   "fehler": "wird kürzen",
+   "korrektur": "kürzen wird",
+   "erklaerung": "Ohne Modalverb steht das finite Verb am Ende des Nebensatzes."
+  },
+  {
+   "id": "u13",
+   "typ": "fehler",
+   "satz": "Je mehr Menschen das Angebot nutzen, desto günstiger es wird.",
+   "fehler": "es wird",
+   "korrektur": "wird es",
+   "erklaerung": "Nach „desto“ + Komparativ folgt sofort das Verb."
+  },
+  {
+   "id": "u14",
+   "typ": "fehler",
+   "satz": "Weil die Bibliothek renoviert wird, sie bleibt bis März geschlossen.",
+   "fehler": "sie bleibt",
+   "korrektur": "bleibt sie",
+   "erklaerung": "Der Nebensatz steht im Vorfeld, das finite Verb folgt direkt."
+  },
+  {
+   "id": "u15",
+   "typ": "fehler",
+   "satz": "Sie erzählte, dass sie den Autor, den sie seit Jahren bewundert, endlich hat getroffen.",
+   "fehler": "hat getroffen",
+   "korrektur": "getroffen hat",
+   "erklaerung": "Ohne Modalverb steht das finite Verb am Ende: getroffen hat."
+  },
+  {
+   "id": "u16",
+   "typ": "fehler",
+   "satz": "Er gab zu, dass er den Brief nie gelesen hat wollen.",
+   "fehler": "gelesen hat wollen",
+   "korrektur": "hat lesen wollen",
+   "erklaerung": "Perfekt mit Modalverb: Ersatzinfinitiv „hat lesen wollen“."
+  },
+  {
+   "id": "u17",
+   "typ": "fehler",
+   "satz": "Wir hoffen, dass die Ergebnisse bald können veröffentlicht werden.",
+   "fehler": "können veröffentlicht werden",
+   "korrektur": "veröffentlicht werden können",
+   "erklaerung": "Passiv mit Modalverb im Präsens: Das Modalverb steht ganz am Ende."
+  },
+  {
+   "id": "u18",
+   "typ": "auswahl",
+   "frage": "Welcher Nebensatz ist korrekt?",
+   "optionen": [
+    "…, weil er es nicht hat lesen wollen.",
+    "…, weil er es nicht hat gelesen wollen.",
+    "…, weil er es nicht lesen wollen hat."
+   ],
+   "richtig": 0,
+   "erklaerung": "Ersatzinfinitiv: „hat“ vor zwei Infinitiven (lesen wollen)."
+  },
+  {
+   "id": "u19",
+   "typ": "auswahl",
+   "frage": "Welcher Satz ist korrekt?",
+   "optionen": [
+    "Als die Nachricht kam, war es schon zu spät.",
+    "Als die Nachricht kam, es war schon zu spät.",
+    "Als kam die Nachricht, war es schon zu spät."
+   ],
+   "richtig": 0,
+   "erklaerung": "Nebensatz mit Verb am Ende im Vorfeld, danach das finite Verb."
+  },
+  {
+   "id": "u20",
+   "typ": "auswahl",
+   "frage": "„Es heißt, dass das Gemälde ___.“",
+   "optionen": [
+    "soll gestohlen worden sein",
+    "gestohlen worden sein soll",
+    "gestohlen sein worden soll"
+   ],
+   "richtig": 1,
+   "erklaerung": "Fremde Behauptung über Vergangenes im Passiv; im Nebensatz steht das Modalverb am Ende."
+  },
+  {
+   "id": "u21",
+   "typ": "auswahl",
+   "frage": "Welcher Nebensatz ist korrekt?",
+   "optionen": [
+    "…, obwohl man den Fehler früher hätte bemerken können.",
+    "…, obwohl man den Fehler früher hätte bemerkt können.",
+    "…, obwohl man den Fehler früher bemerken können hätte."
+   ],
+   "richtig": 0,
+   "erklaerung": "Konjunktiv II der Vergangenheit mit Modalverb: hätte + zwei Infinitive."
+  },
+  {
+   "id": "u22",
+   "typ": "luecke",
+   "satz": "Niemand verstand, warum der Antrag abgelehnt ___ war.",
+   "loesungen": [
+    "worden"
+   ],
+   "hinweis": "Hilfsverb",
+   "erklaerung": "Plusquamperfekt Passiv: abgelehnt worden war."
+  },
+  {
+   "id": "u23",
+   "typ": "luecke",
+   "satz": "Ich glaube nicht, dass man das Problem so einfach ___ lösen können.",
+   "loesungen": [
+    "hätte",
+    "wird"
+   ],
+   "hinweis": "Hilfsverb",
+   "erklaerung": "Ersatzinfinitiv: „hätte lösen können“ (Konjunktiv II der Vergangenheit) oder Futur „wird lösen können“; das Hilfsverb steht vor den Infinitiven."
+  },
+  {
+   "id": "u24",
+   "typ": "luecke",
+   "satz": "Je länger die Verhandlungen dauerten, ___ unwahrscheinlicher wurde eine Einigung.",
+   "loesungen": [
+    "desto",
+    "umso"
+   ],
+   "hinweis": "Konnektor",
+   "erklaerung": "„je …, desto/umso …“; nach dem Komparativ folgt sofort das Verb."
+  },
+  {
+   "id": "u25",
+   "typ": "luecke",
+   "satz": "Der Autor, dessen Roman gerade verfilmt ___ ist, lebt zurückgezogen in der Uckermark.",
+   "loesungen": [
+    "worden"
+   ],
+   "hinweis": "Hilfsverb",
+   "erklaerung": "Passiv Perfekt im Relativsatz: verfilmt worden ist."
+  },
+  {
+   "id": "u26",
+   "typ": "umformen",
+   "ausgang": "Die Ministerin hätte zurücktreten müssen. Das meinen viele.",
+   "anweisung": "Beginnen Sie mit „Viele meinen, dass“.",
+   "loesungen": [
+    "Viele meinen, dass die Ministerin hätte zurücktreten müssen."
+   ],
+   "erklaerung": "Im Nebensatz: hätte + zurücktreten + müssen."
+  },
+  {
+   "id": "u27",
+   "typ": "umformen",
+   "ausgang": "Der Vertrag wurde unterzeichnet. Danach begannen die Bauarbeiten.",
+   "anweisung": "Verbinden Sie die Sätze mit „nachdem“ und beginnen Sie mit dem Nebensatz.",
+   "loesungen": [
+    "Nachdem der Vertrag unterzeichnet worden war, begannen die Bauarbeiten."
+   ],
+   "erklaerung": "Vorzeitigkeit: Plusquamperfekt Passiv (unterzeichnet worden war), dann Verb an Position 2."
+  },
+  {
+   "id": "u28",
+   "typ": "umformen",
+   "ausgang": "Man konnte das Unglück nicht verhindern. Das ist tragisch.",
+   "anweisung": "Beginnen Sie mit „Es ist tragisch, dass“.",
+   "loesungen": [
+    "Es ist tragisch, dass man das Unglück nicht verhindern konnte.",
+    "Es ist tragisch, dass das Unglück nicht verhindert werden konnte."
+   ],
+   "erklaerung": "Im Nebensatz steht das Modalverb am Ende."
+  },
+  {
+   "id": "u29",
+   "typ": "umformen",
+   "ausgang": "Er hat den Brief nicht öffnen wollen.",
+   "anweisung": "Beginnen Sie mit „Sie wunderte sich, dass“ und behalten Sie das Perfekt bei.",
+   "loesungen": [
+    "Sie wunderte sich, dass er den Brief nicht hat öffnen wollen."
+   ],
+   "erklaerung": "Ersatzinfinitiv im Nebensatz: hat + öffnen + wollen."
+  },
+  {
+   "id": "u30",
+   "typ": "rf",
+   "aussage": "Beim Ersatzinfinitiv steht das finite Hilfsverb im Nebensatz vor den beiden Infinitiven.",
+   "wert": true,
+   "erklaerung": "Beispiel: …, dass sie hätte kommen sollen."
+  },
+  {
+   "id": "u31",
+   "typ": "rf",
+   "aussage": "Steht ein Nebensatz im Vorfeld, folgt im Hauptsatz zuerst das Subjekt und dann das Verb.",
+   "wert": false,
+   "erklaerung": "Zuerst das Verb: Weil es regnete, fiel das Konzert aus."
+  },
+  {
+   "id": "u32",
+   "typ": "rf",
+   "aussage": "Ein eingebetteter Relativsatz schließt seine eigene Klammer, bevor der übergeordnete Nebensatz weitergeht.",
+   "wert": true,
+   "erklaerung": "…, dass der Autor, der das Buch geschrieben hat, anonym bleiben will."
+  },
+  {
+   "id": "u33",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "…, dass sie kommt.",
+     "Präsens"
+    ],
+    [
+     "…, dass sie gekommen ist.",
+     "Perfekt"
+    ],
+    [
+     "…, dass sie hat kommen müssen.",
+     "Perfekt mit Modalverb"
+    ],
+    [
+     "…, dass sie gekommen sein muss.",
+     "Vermutung über Vergangenes"
+    ],
+    [
+     "…, dass sie hätte kommen müssen.",
+     "Konjunktiv II der Vergangenheit mit Modalverb"
+    ]
+   ],
+   "erklaerung": "Die Reihenfolge der Verben am Satzende verrät Zeit und Modus."
+  }
+ ]
+}

@@ -1,0 +1,43 @@
+// Feinschliff – gezeichnete Symbole (SVG, 24×24, Strichstärke 1.8, Farbe = currentColor). Keine Emojis.
+const s = (inner, extra = '') => `<svg class="sym" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" ${extra}>${inner}</svg>`;
+export const SYM = {
+  hoeren: s('<path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="14" width="4.5" height="6.5" rx="1.6"/><rect x="16.5" y="14" width="4.5" height="6.5" rx="1.6"/>'),
+  lesen: s('<path d="M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5C17 4.5 14 5 12 6.5z"/><path d="M12 6.5v13"/>'),
+  grammatik: s('<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M7 20h10M12 16v4"/><path d="M7 8.5h5M7 11.5h8"/>'),
+  schreiben: s('<path d="M4 20l1-4.2L15.6 5.2a2 2 0 0 1 2.8 0l.4.4a2 2 0 0 1 0 2.8L8.2 19 4 20z"/><path d="M13.5 7.3l3.2 3.2"/>'),
+  sprechen: s('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/>'),
+  wortschatz: s('<rect x="3.5" y="6" width="12" height="14" rx="2"/><path d="M8.5 6V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-3"/><path d="M6.5 15l2.5-6 2.5 6M7.4 13h3.2"/>'),
+  pruefung: s('<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M8.5 11l2 2 4-4M8.5 17h7"/>'),
+  heute: s('<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/>'),
+  bereiche: s('<rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/>'),
+  quiz: s('<path d="M12 3l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.4l-5.2 2.7 1-5.8L3.5 9.2l5.9-.8z"/>'),
+  fortschritt: s('<path d="M4 19V5M4 19h16"/><path d="M7 15l4-4 3 2.5L19.5 8"/>'),
+  mehr: s('<circle cx="5.5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18.5" cy="12" r="1.3"/>'),
+  pflanze: s('<path d="M12 21v-8"/><path d="M12 13c0-4 2.5-6.5 7-6.5 0 4.2-2.6 6.5-7 6.5z"/><path d="M12 15.5C12 12.2 9.8 10 6 10c0 3.4 2.2 5.5 6 5.5z"/><path d="M8 21h8"/>'),
+  ziel: s('<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.8"/><circle cx="12" cy="12" r="1.2"/>'),
+  stern: s('<path d="M12 4l2.2 4.6 5 .7-3.6 3.5.9 5L12 15.4l-4.5 2.4.9-5L4.8 9.3l5-.7z"/>'),
+  play: s('<path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/>'),
+  pause: s('<rect x="7" y="5.5" width="3.5" height="13" rx="1" fill="currentColor"/><rect x="13.5" y="5.5" width="3.5" height="13" rx="1" fill="currentColor"/>'),
+  schloss: s('<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>'),
+  auge: s('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>'),
+  haken: s('<path d="M5 12.5l4.5 4.5L19 7.5"/>'),
+  kreuz: s('<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>'),
+  zurueck: s('<path d="M14.5 5.5L8 12l6.5 6.5"/>'),
+  weiter: s('<path d="M9.5 5.5L16 12l-6.5 6.5"/>'),
+  uhr: s('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'),
+  kopie: s('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>'),
+  glocke: s('<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>'),
+  link: s('<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>'),
+  aufnahme: s('<circle cx="12" cy="12" r="6.5" fill="currentColor"/>'),
+  stopp: s('<rect x="6.5" y="6.5" width="11" height="11" rx="2" fill="currentColor"/>'),
+  tafel: s('<rect x="3" y="4" width="18" height="13" rx="1.5"/><path d="M8 21l2-4M16 21l-2-4"/><path d="M7 9l2 2-2 2M11 13h5"/>'),
+  idee: s('<path d="M9 17.5h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V17h5v-1.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/>'),
+  einstellungen: s('<circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/>'),
+  // Quiz-Kacheln: Form + Farbe, damit sie auch ohne Farbsehen unterscheidbar sind
+  form0: s('<path d="M12 4.5l8 14H4z" fill="currentColor" stroke="none"/>'),
+  form1: s('<path d="M12 3.5l8.5 8.5-8.5 8.5L3.5 12z" fill="currentColor" stroke="none"/>'),
+  form2: s('<circle cx="12" cy="12" r="8" fill="currentColor" stroke="none"/>'),
+  form3: s('<rect x="4.5" y="4.5" width="15" height="15" rx="2" fill="currentColor" stroke="none"/>'),
+};
+// App-Zeichen: geschliffener Stein (Feinschliff)
+export const LOGO = '<svg class="logo" viewBox="0 0 48 48" aria-hidden="true"><path d="M14 8h20l8 11-18 21L6 19z" fill="var(--c-lesen)"/><path d="M14 8l-8 11h36L34 8z" fill="var(--c-schreiben)"/><path d="M6 19h36L24 40z" fill="var(--c-pruefung)" opacity=".9"/><path d="M14 8l4 11 6-11 6 11 4-11M18 19l6 21 6-21" fill="none" stroke="var(--grund)" stroke-width="1.6" stroke-linejoin="round" opacity=".75"/></svg>';

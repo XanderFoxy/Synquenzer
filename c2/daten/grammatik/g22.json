@@ -1,0 +1,436 @@
+{
+ "id": "g22",
+ "titel": "Verweise im Text: es, Pronomen, Pronominaladverbien",
+ "niveau": "C1",
+ "nr": 22,
+ "gruppe": "B",
+ "baustelle": false,
+ "pruefungsbezug": [
+  "L3",
+  "S2"
+ ],
+ "kurz": "es als Platzhalter und Korrelat, Reflexivpronomen im Dativ und Akkusativ (ich merke mir, ich freue mich), Rückverweise mit dies-, derselbe, darauf, dabei.",
+ "tafel": [
+  "Platzhalter-es im Vorfeld: Es kamen viele Gäste. – Es fällt weg, wenn etwas anderes vorn steht: Gestern kamen viele Gäste.",
+  "Korrelat-es für einen dass-Satz oder Infinitiv: Es freut mich, dass … / Ich finde es wichtig, … – steht der Nebensatz vorn, fällt es weg.",
+  "Feste es-Verbindungen bleiben immer: es gibt, es geht um, es handelt sich um, es kommt auf … an.",
+  "Reflexivpronomen im Dativ, wenn schon ein Akkusativ da ist: Ich merke mir den Namen. – sonst meist Akkusativ: Ich freue mich (außer bei Dativ-Verben: Ich helfe mir, ich widerspreche mir).",
+  "Sachen: da(r)- + Präposition (Daran habe ich nicht gedacht.) – Personen: Präposition + Pronomen (an sie).",
+  "Fragen: wo(r)- für Sachen (Worüber sprecht ihr?), Präposition + wen/wem für Personen (Über wen?).",
+  "Rückverweise: dies-, derselbe/dieselbe, Ersterer/Letzterer, solch-."
+ ],
+ "beispiele": [
+  "Es freut mich, dass du gekommen bist.",
+  "Daran hatte ich überhaupt nicht gedacht.",
+  "Ich kann mir das gut vorstellen.",
+  "In dem Bericht geht es um die Zukunft der Pflege.",
+  "Sie hat zwei Angebote erhalten; Letzteres klingt vielversprechender."
+ ],
+ "fallen": [
+  {
+   "falsch": "Ich habe mich das gemerkt.",
+   "richtig": "Ich habe mir das gemerkt.",
+   "warum": "sich etwas merken: Dativ, weil „das“ schon Akkusativ ist."
+  },
+  {
+   "falsch": "Ich denke oft an das.",
+   "richtig": "Ich denke oft daran.",
+   "warum": "Bei Sachen steht in der Standardsprache das Pronominaladverb."
+  },
+  {
+   "falsch": "Gestern es kamen viele Gäste.",
+   "richtig": "Gestern kamen viele Gäste.",
+   "warum": "Das Platzhalter-es fällt weg, wenn das Vorfeld anders besetzt ist."
+  },
+  {
+   "falsch": "Worauf wartest du? (gemeint: auf deine Schwester)",
+   "richtig": "Auf wen wartest du?",
+   "warum": "Bei Personen fragt man mit Präposition + wen/wem."
+  }
+ ],
+ "uebungen": [
+  {
+   "id": "u01",
+   "typ": "luecke",
+   "satz": "___ freut mich sehr, dass du gekommen bist.",
+   "loesungen": [
+    "Es"
+   ],
+   "erklaerung": "Korrelat-es im Vorfeld; es verweist auf den dass-Satz."
+  },
+  {
+   "id": "u02",
+   "typ": "luecke",
+   "satz": "Ich finde ___ wichtig, dass alle mitreden dürfen.",
+   "loesungen": [
+    "es"
+   ],
+   "erklaerung": "Korrelat-es im Mittelfeld: „finden“ braucht ein Objekt, das der dass-Satz füllt."
+  },
+  {
+   "id": "u03",
+   "typ": "luecke",
+   "satz": "Hast du an den Termin gedacht? – Nein, ___ habe ich gar nicht gedacht.",
+   "loesungen": [
+    "daran"
+   ],
+   "erklaerung": "denken an + Sache → daran."
+  },
+  {
+   "id": "u04",
+   "typ": "luecke",
+   "satz": "Ich kann ___ gut vorstellen, wie schwierig das war.",
+   "loesungen": [
+    "mir"
+   ],
+   "erklaerung": "sich etwas vorstellen: Dativ, weil der wie-Satz das Akkusativobjekt ist."
+  },
+  {
+   "id": "u05",
+   "typ": "luecke",
+   "satz": "Wir freuen ___ schon sehr auf den Urlaub.",
+   "loesungen": [
+    "uns"
+   ],
+   "erklaerung": "sich freuen auf: Reflexivpronomen im Akkusativ (1. Person Plural: uns)."
+  },
+  {
+   "id": "u07",
+   "typ": "luecke",
+   "satz": "___ sprecht ihr gerade? – Über das neue Projekt.",
+   "loesungen": [
+    "Worüber"
+   ],
+   "erklaerung": "Frage nach einer Sache mit Präposition: wo(r)- + Präposition."
+  },
+  {
+   "id": "u08",
+   "typ": "luecke",
+   "satz": "Ich habe von Frau Berger lange nichts gehört. Hast du etwas von ___ gehört?",
+   "loesungen": [
+    "ihr"
+   ],
+   "erklaerung": "Bei Personen: Präposition + Personalpronomen (von + Dativ: ihr)."
+  },
+  {
+   "id": "u09",
+   "typ": "luecke",
+   "satz": "Sie hat sich zwei Wohnungen angesehen. ___ ist größer, Letztere aber günstiger.",
+   "loesungen": [
+    "Erstere",
+    "Die Erstere",
+    "Die erste"
+   ],
+   "erklaerung": "Ersterer/Erstere/Ersteres verweist auf das zuerst Genannte, Letzterer auf das zuletzt Genannte."
+  },
+  {
+   "id": "u10",
+   "typ": "luecke",
+   "satz": "Es kommt ganz ___ an, wie man die Frage stellt.",
+   "loesungen": [
+    "darauf"
+   ],
+   "erklaerung": "Feste Verbindung: es kommt auf etwas an → darauf, wie …"
+  },
+  {
+   "id": "u11",
+   "typ": "auswahl",
+   "frage": "Welcher Satz ist korrekt?",
+   "optionen": [
+    "Ich habe mir seinen Namen leider nicht gemerkt.",
+    "Ich habe mich seinen Namen leider nicht gemerkt.",
+    "Ich habe seinen Namen mich leider nicht gemerkt.",
+    "Ich habe mir seines Namens leider nicht gemerkt."
+   ],
+   "richtig": 0,
+   "erklaerung": "sich etwas merken: Reflexivpronomen im Dativ, Objekt im Akkusativ; das Pronomen steht vorn im Mittelfeld."
+  },
+  {
+   "id": "u12",
+   "typ": "auswahl",
+   "frage": "„Ich habe mich sehr ___ geärgert.“ (über die Verspätung)",
+   "optionen": [
+    "worüber",
+    "über ihn",
+    "darüber",
+    "über es"
+   ],
+   "richtig": 2,
+   "erklaerung": "Sache nach Präposition: Pronominaladverb da(r)- + Präposition."
+  },
+  {
+   "id": "u13",
+   "typ": "auswahl",
+   "frage": "Frage nach einer Person: „___ hast du dich beschwert?“ (über den Nachbarn)",
+   "optionen": [
+    "Wovon",
+    "Über was",
+    "Worüber",
+    "Über wen"
+   ],
+   "richtig": 3,
+   "erklaerung": "Personen: Präposition + wen/wem."
+  },
+  {
+   "id": "u14",
+   "typ": "auswahl",
+   "frage": "Welcher Satz ist korrekt?",
+   "optionen": [
+    "Heute gibt es keine Termine mehr.",
+    "Es heute gibt keine Termine mehr.",
+    "Heute gibt keine Termine mehr.",
+    "Heute es gibt keine Termine mehr."
+   ],
+   "richtig": 0,
+   "erklaerung": "„es gibt“ ist fest: Das „es“ bleibt auch, wenn das Vorfeld anders besetzt ist."
+  },
+  {
+   "id": "u15",
+   "typ": "auswahl",
+   "frage": "„Sie hat zwei Brüder, Jan und Tom. ___ studiert Medizin, Letzterer Jura.“",
+   "optionen": [
+    "Erstere",
+    "Ersterer",
+    "Ersten",
+    "Ersteres"
+   ],
+   "richtig": 1,
+   "erklaerung": "Bezug auf einen Bruder (maskulin, Nominativ): Ersterer."
+  },
+  {
+   "id": "u16",
+   "typ": "auswahl",
+   "frage": "„Kannst du ___ das bitte bis morgen überlegen?“",
+   "optionen": [
+    "deiner",
+    "dir",
+    "du",
+    "dich"
+   ],
+   "richtig": 1,
+   "erklaerung": "sich etwas überlegen: Dativ, weil „das“ Akkusativ ist."
+  },
+  {
+   "id": "u17",
+   "typ": "umformen",
+   "ausgang": "Ich habe nicht an die Unterlagen gedacht.",
+   "anweisung": "Ersetzen Sie „an die Unterlagen“ durch ein Pronominaladverb.",
+   "loesungen": [
+    "Ich habe nicht daran gedacht.",
+    "Daran habe ich nicht gedacht."
+   ],
+   "erklaerung": "Sache nach Präposition: da(r)- + Präposition."
+  },
+  {
+   "id": "u18",
+   "typ": "umformen",
+   "ausgang": "Über welches Thema habt ihr diskutiert?",
+   "anweisung": "Fragen Sie mit einem Fragewort mit wo(r)-.",
+   "loesungen": [
+    "Worüber habt ihr diskutiert?"
+   ],
+   "erklaerung": "Frage nach einer Sache: wo(r)- + Präposition."
+  },
+  {
+   "id": "u19",
+   "typ": "umformen",
+   "ausgang": "Dass er abgesagt hat, ärgert mich.",
+   "anweisung": "Beginnen Sie mit „Es“.",
+   "loesungen": [
+    "Es ärgert mich, dass er abgesagt hat."
+   ],
+   "erklaerung": "Steht der dass-Satz hinten, braucht das Vorfeld das Korrelat „es“."
+  },
+  {
+   "id": "u20",
+   "typ": "umformen",
+   "ausgang": "Viele Menschen demonstrierten vor dem Rathaus.",
+   "anweisung": "Beginnen Sie mit dem Platzhalter „Es“.",
+   "loesungen": [
+    "Es demonstrierten viele Menschen vor dem Rathaus."
+   ],
+   "erklaerung": "Das Platzhalter-es besetzt nur das Vorfeld; das Verb richtet sich nach dem Subjekt (viele Menschen → demonstrierten)."
+  },
+  {
+   "id": "u21",
+   "typ": "umformen",
+   "ausgang": "Ich bin mit ihrem Vorschlag einverstanden.",
+   "anweisung": "Ersetzen Sie „mit ihrem Vorschlag“ durch ein Pronominaladverb.",
+   "loesungen": [
+    "Ich bin damit einverstanden.",
+    "Damit bin ich einverstanden."
+   ],
+   "erklaerung": "einverstanden sein mit + Sache → damit."
+  },
+  {
+   "id": "u22",
+   "typ": "umformen",
+   "ausgang": "Der Artikel behandelt die Folgen des Klimawandels.",
+   "anweisung": "Formulieren Sie mit „es geht um“.",
+   "loesungen": [
+    "In dem Artikel geht es um die Folgen des Klimawandels.",
+    "Im Artikel geht es um die Folgen des Klimawandels.",
+    "Es geht in dem Artikel um die Folgen des Klimawandels.",
+    "Es geht im Artikel um die Folgen des Klimawandels."
+   ],
+   "erklaerung": "„es geht um“ ist fest; das Thema steht mit „um“ + Akkusativ."
+  },
+  {
+   "id": "u23",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "Ich stelle",
+     "mir die Situation genau vor."
+    ],
+    [
+     "Ich erinnere",
+     "mich gern an diesen Sommer."
+    ],
+    [
+     "Ich kaufe",
+     "mir morgen ein neues Fahrrad."
+    ],
+    [
+     "Ich beschwere",
+     "mich über den Lärm."
+    ],
+    [
+     "Ich überlege",
+     "mir die Antwort gut."
+    ]
+   ],
+   "erklaerung": "Dativ (mir), wenn schon ein Akkusativobjekt da ist; sonst Akkusativ (mich)."
+  },
+  {
+   "id": "u25",
+   "typ": "sortieren",
+   "teile": [
+    "Daran",
+    "ich",
+    "überhaupt",
+    "hatte",
+    "gedacht",
+    "nicht"
+   ],
+   "loesung": "Daran hatte ich überhaupt nicht gedacht.",
+   "loesungen": [
+    "Ich hatte daran überhaupt nicht gedacht."
+   ],
+   "erklaerung": "Das Pronominaladverb kann im Vorfeld stehen und betont dann den Rückbezug."
+  },
+  {
+   "id": "u26",
+   "typ": "sortieren",
+   "teile": [
+    "Es",
+    "in diesem Buch",
+    "geht",
+    "nach Gerechtigkeit",
+    "die Frage",
+    "um"
+   ],
+   "loesung": "Es geht in diesem Buch um die Frage nach Gerechtigkeit.",
+   "loesungen": [
+    "In diesem Buch geht es um die Frage nach Gerechtigkeit."
+   ],
+   "erklaerung": "„es geht um“ ist fest: Steht etwas anderes vorn, bleibt „es“ im Mittelfeld."
+  },
+  {
+   "id": "u27",
+   "typ": "sortieren",
+   "teile": [
+    "mir",
+    "nicht",
+    "die Nummer",
+    "habe",
+    "Ich",
+    "notiert",
+    "leider"
+   ],
+   "loesung": "Ich habe mir die Nummer leider nicht notiert.",
+   "loesungen": [
+    "Die Nummer habe ich mir leider nicht notiert."
+   ],
+   "erklaerung": "sich etwas notieren: „mir“ (Dativ) steht vorn im Mittelfeld."
+  },
+  {
+   "id": "u28",
+   "typ": "sortieren",
+   "teile": [
+    "Sie",
+    "darüber",
+    "sich",
+    "sehr",
+    "hat",
+    "gefreut"
+   ],
+   "loesung": "Sie hat sich sehr darüber gefreut.",
+   "loesungen": [
+    "Darüber hat sie sich sehr gefreut.",
+    "Sie hat sich darüber sehr gefreut."
+   ],
+   "erklaerung": "sich freuen über → darüber; das Reflexivpronomen steht weit vorn."
+  },
+  {
+   "id": "u29",
+   "typ": "fehler",
+   "satz": "Ich habe mich seinen Namen nicht gemerkt.",
+   "fehler": "mich",
+   "korrektur": "mir",
+   "erklaerung": "sich etwas merken: Dativ, weil „seinen Namen“ Akkusativ ist."
+  },
+  {
+   "id": "u30",
+   "typ": "fehler",
+   "satz": "Er wartet schon seit einer Stunde auf das.",
+   "fehler": "auf das",
+   "korrektur": "darauf",
+   "erklaerung": "Sache nach Präposition: In der Standardsprache steht das Pronominaladverb."
+  },
+  {
+   "id": "u31",
+   "typ": "fehler",
+   "satz": "Gestern es hat den ganzen Tag geregnet.",
+   "fehler": "es hat",
+   "korrektur": "hat es",
+   "erklaerung": "Verb an Position 2; „es“ (fest bei „regnen“) rückt ins Mittelfeld."
+  },
+  {
+   "id": "u32",
+   "typ": "fehler",
+   "satz": "Wovon hast du dich verabschiedet? – Von meiner Kollegin.",
+   "fehler": "Wovon",
+   "korrektur": "Von wem",
+   "erklaerung": "Frage nach einer Person: Präposition + wem."
+  },
+  {
+   "id": "u33",
+   "typ": "rf",
+   "aussage": "„es gibt“ ist eine feste Verbindung; das „es“ bleibt, auch wenn ein anderes Satzglied vorn steht.",
+   "wert": true,
+   "erklaerung": "Heute gibt es Suppe."
+  },
+  {
+   "id": "u34",
+   "typ": "rf",
+   "aussage": "Bei Personen verwendet man Pronominaladverbien wie „darauf“ oder „worüber“.",
+   "wert": false,
+   "erklaerung": "Personen: auf sie, über wen."
+  },
+  {
+   "id": "u35",
+   "typ": "rf",
+   "aussage": "In „Ich wasche mir die Hände.“ steht das Reflexivpronomen im Dativ, weil „die Hände“ schon Akkusativ ist.",
+   "wert": true,
+   "erklaerung": "Mit Akkusativobjekt: Dativ; ohne: Ich wasche mich."
+  },
+  {
+   "id": "u36",
+   "typ": "rf",
+   "aussage": "Das Platzhalter-es im Vorfeld bleibt stehen, auch wenn ein anderes Satzglied das Vorfeld besetzt.",
+   "wert": false,
+   "erklaerung": "Es kamen viele Gäste. → Gestern kamen viele Gäste."
+  }
+ ]
+}

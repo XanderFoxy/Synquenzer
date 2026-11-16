@@ -1,0 +1,474 @@
+{
+ "id": "g24",
+ "titel": "Wortbildung und Fremdwörter",
+ "niveau": "C2",
+ "nr": 24,
+ "gruppe": "B",
+ "baustelle": false,
+ "pruefungsbezug": [
+  "L1",
+  "S1",
+  "S2"
+ ],
+ "kurz": "Trennbare und untrennbare Präfixverben mit Bedeutungsunterschied, Ableitung und Komposition, Genus und Plural von Fremdwörtern (das Museum – die Museen, das Visum – die Visa).",
+ "tafel": [
+  "Trennbar, Präfix betont: Er fährt den Pfosten um. (umfahren = umstoßen) – untrennbar, Stamm betont: Er umfährt den Stau. (= herumfahren)",
+  "Doppelformen mit über-, unter-, um-, durch-, wieder-: übersetzen (Text) / übersetzen (mit der Fähre).",
+  "Untrennbar: Partizip ohne ge- (übersetzt, umfahren) – trennbar: mit ge- (übergesetzt, umgefahren).",
+  "Komposita: Das letzte Wort bestimmt Genus und Grundbedeutung: das Lehrbuch, die Buchhandlung.",
+  "Fugenelemente: Arbeitsplatz, Liebesbrief, Sonnenschein – oft ohne Regel, mitlernen.",
+  "Feminin: -ung, -heit, -keit, -schaft, -ion, -tät – neutral: -chen, -lein, -um, meist -ment – maskulin: -ismus, -ling, -or.",
+  "Fremdwörter mit besonderem Plural: das Museum – die Museen, das Praktikum – die Praktika, das Thema – die Themen, das Visum – die Visa."
+ ],
+ "beispiele": [
+  "Er fährt den Pfosten um. – Er umfährt den Stau.",
+  "Die Fähre setzt uns über. – Sie übersetzt den Roman ins Englische.",
+  "Für ihr Studium musste sie zwei Praktika absolvieren.",
+  "Der Wiederaufbau der Altstadt dauerte Jahrzehnte.",
+  "Das Bildungssystem steht vor großen Herausforderungen."
+ ],
+ "fallen": [
+  {
+   "falsch": "Sie hat den Text übergesetzt.",
+   "richtig": "Sie hat den Text übersetzt.",
+   "warum": "In eine andere Sprache: untrennbar, Partizip ohne ge-."
+  },
+  {
+   "falsch": "die Museums",
+   "richtig": "die Museen",
+   "warum": "Fremdwörter auf -um bilden den Plural meist auf -en oder -a."
+  },
+  {
+   "falsch": "die Praktikums",
+   "richtig": "die Praktika",
+   "warum": "Fremdwörter auf -um bilden den Plural oft auf -a oder -en (das Praktikum – die Praktika, das Museum – die Museen)."
+  },
+  {
+   "falsch": "Er hat den Pfosten umfahren. (gemeint: umgestoßen)",
+   "richtig": "Er hat den Pfosten umgefahren.",
+   "warum": "Umstoßen: trennbar (umgefahren); um etwas herumfahren: untrennbar (umfahren)."
+  }
+ ],
+ "uebungen": [
+  {
+   "id": "u01",
+   "typ": "luecke",
+   "satz": "Die Stadt hat drei große ___.",
+   "loesungen": [
+    "Museen"
+   ],
+   "hinweis": "das Museum, Plural",
+   "erklaerung": "Fremdwörter auf -um: Plural meist auf -en."
+  },
+  {
+   "id": "u02",
+   "typ": "luecke",
+   "satz": "Für ihr Studium musste sie zwei ___ absolvieren.",
+   "loesungen": [
+    "Praktika"
+   ],
+   "hinweis": "das Praktikum, Plural",
+   "erklaerung": "Praktikum → Praktika (lateinischer Plural)."
+  },
+  {
+   "id": "u03",
+   "typ": "luecke",
+   "satz": "Sie hat den Roman aus dem Englischen ___.",
+   "loesungen": [
+    "übersetzt"
+   ],
+   "hinweis": "übersetzen, Partizip II",
+   "erklaerung": "In eine andere Sprache übertragen: untrennbar, kein ge-."
+  },
+  {
+   "id": "u04",
+   "typ": "luecke",
+   "satz": "Der Fährmann hat uns ans andere Ufer ___.",
+   "loesungen": [
+    "übergesetzt"
+   ],
+   "hinweis": "übersetzen, Partizip II",
+   "erklaerung": "Ans andere Ufer bringen: trennbar, Partizip mit ge-."
+  },
+  {
+   "id": "u05",
+   "typ": "luecke",
+   "satz": "Er hat aus Versehen ein Verkehrsschild ___.",
+   "loesungen": [
+    "umgefahren"
+   ],
+   "hinweis": "umfahren = umstoßen",
+   "erklaerung": "Umstoßen: trennbar, Partizip mit ge-."
+  },
+  {
+   "id": "u06",
+   "typ": "luecke",
+   "satz": "Um den Stau zu ___, nahmen wir die Landstraße.",
+   "loesungen": [
+    "umfahren"
+   ],
+   "hinweis": "um etwas herumfahren",
+   "erklaerung": "Untrennbar: „zu“ steht vor dem ganzen Verb (zu umfahren)."
+  },
+  {
+   "id": "u07",
+   "typ": "luecke",
+   "satz": "Wir haben den Stoff vor der Prüfung gründlich ___.",
+   "loesungen": [
+    "wiederholt"
+   ],
+   "hinweis": "wiederholen = noch einmal lernen",
+   "erklaerung": "Untrennbar im Sinne von „noch einmal tun“: wiederholt. Trennbar hieße es „zurückholen“: wiedergeholt."
+  },
+  {
+   "id": "u08",
+   "typ": "luecke",
+   "satz": "___ Freundschaft zwischen den beiden hielt ein Leben lang.",
+   "loesungen": [
+    "Die"
+   ],
+   "hinweis": "Artikel",
+   "erklaerung": "Nomen auf -schaft sind feminin."
+  },
+  {
+   "id": "u09",
+   "typ": "luecke",
+   "satz": "___ Lehrbuch ist schon ziemlich alt, aber immer noch gut.",
+   "loesungen": [
+    "Das"
+   ],
+   "hinweis": "Artikel",
+   "erklaerung": "Das Grundwort „Buch“ bestimmt das Genus: das Lehrbuch."
+  },
+  {
+   "id": "u10",
+   "typ": "luecke",
+   "satz": "Die beiden ___ wurden ausführlich diskutiert.",
+   "loesungen": [
+    "Themen"
+   ],
+   "hinweis": "das Thema, Plural",
+   "erklaerung": "Thema → Themen."
+  },
+  {
+   "id": "u11",
+   "typ": "auswahl",
+   "frage": "„Der Lkw hat den Radfahrer umfahren.“ – Was bedeutet das?",
+   "optionen": [
+    "Er hat den Radfahrer angehalten.",
+    "Er ist hinter dem Radfahrer hergefahren.",
+    "Er ist um den Radfahrer herumgefahren.",
+    "Er hat den Radfahrer umgestoßen."
+   ],
+   "richtig": 2,
+   "erklaerung": "Partizip ohne ge- = untrennbar = herumfahren. „umgestoßen“ hieße „umgefahren“."
+  },
+  {
+   "id": "u12",
+   "typ": "auswahl",
+   "frage": "Welcher Plural von „das Visum“ ist korrekt?",
+   "optionen": [
+    "die Visas",
+    "die Visümer",
+    "die Visums",
+    "die Visa"
+   ],
+   "richtig": 3,
+   "erklaerung": "Visum → Visa (auch: Visen)."
+  },
+  {
+   "id": "u13",
+   "typ": "auswahl",
+   "frage": "Welches Genus hat „Bildungssystem“?",
+   "optionen": [
+    "das",
+    "die",
+    "der"
+   ],
+   "richtig": 0,
+   "erklaerung": "Das Grundwort „System“ ist neutral: das Bildungssystem."
+  },
+  {
+   "id": "u14",
+   "typ": "auswahl",
+   "frage": "„Die Polizei hat das Gebäude ___.“ (von allen Seiten eingeschlossen)",
+   "optionen": [
+    "geumstellt",
+    "umstellt",
+    "umstellen",
+    "umgestellt"
+   ],
+   "richtig": 1,
+   "erklaerung": "Einschließen: untrennbar, Partizip ohne ge-. „umgestellt“ hieße „anders angeordnet“."
+  },
+  {
+   "id": "u15",
+   "typ": "auswahl",
+   "frage": "Welches Suffix bildet maskuline Nomen?",
+   "optionen": [
+    "-heit",
+    "-ismus",
+    "-chen",
+    "-ung"
+   ],
+   "richtig": 1,
+   "erklaerung": "der Realismus, der Journalismus – -ung und -heit sind feminin, -chen neutral."
+  },
+  {
+   "id": "u16",
+   "typ": "auswahl",
+   "frage": "Wie lautet die Mehrzahl des Fremdworts „Lexikon“?",
+   "optionen": [
+    "die Lexikas",
+    "die Lexika",
+    "die Lexikons",
+    "die Lexikonen"
+   ],
+   "richtig": 1,
+   "erklaerung": "Lexikon → Lexika (auch: Lexiken)."
+  },
+  {
+   "id": "u17",
+   "typ": "umformen",
+   "ausgang": "Er stieß mit dem Auto gegen die Laterne, und sie fiel um.",
+   "anweisung": "Formulieren Sie mit „umfahren“ im Perfekt.",
+   "loesungen": [
+    "Er hat die Laterne umgefahren.",
+    "Er hat mit dem Auto die Laterne umgefahren.",
+    "Er hat die Laterne mit dem Auto umgefahren."
+   ],
+   "erklaerung": "Umstoßen: trennbar, Partizip „umgefahren“."
+  },
+  {
+   "id": "u18",
+   "typ": "umformen",
+   "ausgang": "Wir fuhren um die Innenstadt herum.",
+   "anweisung": "Formulieren Sie mit „umfahren“ im Präteritum.",
+   "loesungen": [
+    "Wir umfuhren die Innenstadt."
+   ],
+   "erklaerung": "Herumfahren: untrennbar, die Innenstadt wird Akkusativobjekt."
+  },
+  {
+   "id": "u19",
+   "typ": "umformen",
+   "ausgang": "Man überträgt den Text in fünf Sprachen.",
+   "anweisung": "Formulieren Sie im Passiv mit „übersetzen“.",
+   "loesungen": [
+    "Der Text wird in fünf Sprachen übersetzt."
+   ],
+   "erklaerung": "Untrennbar: Partizip „übersetzt“."
+  },
+  {
+   "id": "u20",
+   "typ": "umformen",
+   "ausgang": "die Planung der Stadt",
+   "anweisung": "Bilden Sie ein Kompositum mit Artikel.",
+   "loesungen": [
+    "die Stadtplanung"
+   ],
+   "erklaerung": "Das Grundwort „Planung“ bestimmt das Genus."
+  },
+  {
+   "id": "u21",
+   "typ": "umformen",
+   "ausgang": "das Datum, das Zentrum, das Album",
+   "anweisung": "Nennen Sie die Pluralformen mit Artikel, durch Kommas getrennt.",
+   "loesungen": [
+    "die Daten, die Zentren, die Alben"
+   ],
+   "erklaerung": "Fremdwörter auf -um: Plural auf -en."
+  },
+  {
+   "id": "u22",
+   "typ": "umformen",
+   "ausgang": "Die Altstadt wurde wieder aufgebaut.",
+   "anweisung": "Nominalisieren Sie mit Genitiv: der …",
+   "loesungen": [
+    "der Wiederaufbau der Altstadt"
+   ],
+   "erklaerung": "wieder aufbauen → der Wiederaufbau (maskulin wie „der Bau“)."
+  },
+  {
+   "id": "u23",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "Sie übersetzt den Brief.",
+     "in eine andere Sprache übertragen"
+    ],
+    [
+     "Die Fähre setzt uns über.",
+     "ans andere Ufer bringen"
+    ],
+    [
+     "Er fährt das Schild um.",
+     "mit dem Fahrzeug umstoßen"
+    ],
+    [
+     "Er umfährt das Hindernis.",
+     "um etwas herumfahren"
+    ],
+    [
+     "Sie wiederholt die Frage.",
+     "noch einmal sagen"
+    ],
+    [
+     "Er holt sein Fahrrad wieder.",
+     "zurückholen"
+    ]
+   ],
+   "erklaerung": "Trennbar und untrennbar: gleiche Bausteine, andere Bedeutung."
+  },
+  {
+   "id": "u24",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "das Museum",
+     "die Museen"
+    ],
+    [
+     "das Praktikum",
+     "die Praktika"
+    ],
+    [
+     "das Thema",
+     "die Themen"
+    ],
+    [
+     "der Atlas",
+     "die Atlanten"
+    ],
+    [
+     "das Konto",
+     "die Konten"
+    ],
+    [
+     "das Lexikon",
+     "die Lexika"
+    ]
+   ],
+   "erklaerung": "Pluralformen häufiger Fremdwörter (bei einigen gibt es auch eingedeutschte Formen: Atlasse, Kontos, Lexiken)."
+  },
+  {
+   "id": "u25",
+   "typ": "sortieren",
+   "teile": [
+    "auf der Ringstraße",
+    "umfuhren",
+    "die Innenstadt",
+    "Wir"
+   ],
+   "loesung": "Wir umfuhren die Innenstadt auf der Ringstraße.",
+   "loesungen": [
+    "Auf der Ringstraße umfuhren wir die Innenstadt.",
+    "Die Innenstadt umfuhren wir auf der Ringstraße."
+   ],
+   "erklaerung": "Untrennbar: Das Verb bleibt ganz an Position 2."
+  },
+  {
+   "id": "u26",
+   "typ": "sortieren",
+   "teile": [
+    "die Mülltonne",
+    "fuhr",
+    "Er",
+    "um",
+    "beim Einparken"
+   ],
+   "loesung": "Er fuhr beim Einparken die Mülltonne um.",
+   "loesungen": [
+    "Beim Einparken fuhr er die Mülltonne um.",
+    "Die Mülltonne fuhr er beim Einparken um."
+   ],
+   "erklaerung": "Trennbar: Das Präfix „um“ steht am Satzende."
+  },
+  {
+   "id": "u27",
+   "typ": "sortieren",
+   "teile": [
+    "ans andere Ufer",
+    "Die Fähre",
+    "setzt",
+    "über",
+    "die Reisenden"
+   ],
+   "loesung": "Die Fähre setzt die Reisenden ans andere Ufer über.",
+   "loesungen": [
+    "Ans andere Ufer setzt die Fähre die Reisenden über.",
+    "Die Reisenden setzt die Fähre ans andere Ufer über."
+   ],
+   "erklaerung": "Trennbar: Das Präfix „über“ bildet die rechte Satzklammer."
+  },
+  {
+   "id": "u28",
+   "typ": "sortieren",
+   "teile": [
+    "das Gedicht",
+    "ins Spanische",
+    "übersetzt",
+    "hat",
+    "Er"
+   ],
+   "loesung": "Er hat das Gedicht ins Spanische übersetzt.",
+   "loesungen": [
+    "Das Gedicht hat er ins Spanische übersetzt.",
+    "Ins Spanische hat er das Gedicht übersetzt."
+   ],
+   "erklaerung": "Untrennbar: Partizip „übersetzt“ ohne ge- am Ende."
+  },
+  {
+   "id": "u29",
+   "typ": "fehler",
+   "satz": "Sie hat den Brief ins Französische übergesetzt.",
+   "fehler": "übergesetzt",
+   "korrektur": "übersetzt",
+   "erklaerung": "In eine andere Sprache: untrennbar, kein ge-."
+  },
+  {
+   "id": "u30",
+   "typ": "fehler",
+   "satz": "In der Stadt gibt es drei sehenswerte Museums.",
+   "fehler": "Museums",
+   "korrektur": "Museen",
+   "erklaerung": "Plural von „Museum“: Museen."
+  },
+  {
+   "id": "u32",
+   "typ": "fehler",
+   "satz": "Die Polizei hat das Haus umgestellt.",
+   "fehler": "umgestellt",
+   "korrektur": "umstellt",
+   "erklaerung": "Einschließen: untrennbar, Partizip ohne ge-."
+  },
+  {
+   "id": "u33",
+   "typ": "rf",
+   "aussage": "Bei untrennbaren Verben ist die Vorsilbe betont.",
+   "wert": false,
+   "erklaerung": "Bei untrennbaren Verben ist der Stamm betont (umFAHren), bei trennbaren das Präfix (UMfahren)."
+  },
+  {
+   "id": "u34",
+   "typ": "rf",
+   "aussage": "Bei Komposita bestimmt das letzte Wort das Genus: die Haustür, das Türschloss.",
+   "wert": true,
+   "erklaerung": "Das Grundwort steht am Ende."
+  },
+  {
+   "id": "u35",
+   "typ": "rf",
+   "aussage": "Nomen auf -ung, -heit, -keit und -schaft sind feminin.",
+   "wert": true,
+   "erklaerung": "die Zeitung, die Freiheit, die Möglichkeit, die Gesellschaft."
+  },
+  {
+   "id": "u36",
+   "typ": "rf",
+   "aussage": "„übersetzen“ im Sinne von „in eine andere Sprache übertragen“ bildet das Partizip „übergesetzt“.",
+   "wert": false,
+   "erklaerung": "Richtig: übersetzt (untrennbar)."
+  }
+ ]
+}

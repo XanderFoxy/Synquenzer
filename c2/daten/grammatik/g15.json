@@ -1,0 +1,492 @@
+{
+ "id": "g15",
+ "titel": "Konjunktiv I und Redewiedergabe",
+ "niveau": "C1",
+ "nr": 15,
+ "gruppe": "B",
+ "baustelle": false,
+ "pruefungsbezug": [
+  "S2",
+  "H3",
+  "L1"
+ ],
+ "kurz": "Indirekte Rede mit Konjunktiv I, Ersatzformen im Konjunktiv II, Redewiedergabe mit laut, zufolge und nach Angaben.",
+ "tafel": [
+  "Konjunktiv I: Infinitivstamm + e-Endungen: er habe, sie komme, es gebe; sein: ich sei, er sei, wir seien.",
+  "Er steht vor allem in der 3. Person Singular: Sie sagt, sie arbeite an einem Roman.",
+  "Gleicht der Konjunktiv I dem Indikativ, nimmt man den Konjunktiv II: Sie sagen, sie hätten keine Zeit (nicht: haben).",
+  "Vergangenheit: habe oder sei + Partizip II: Er sagte, er sei gestern angekommen.",
+  "Zukunft: werde + Infinitiv: Sie erklärte, sie werde zurücktreten.",
+  "Fragen mit „ob“ oder Fragewort, Verb am Ende; Aufforderungen mit „sollen“ oder „mögen“: Er bat, man möge warten.",
+  "Pronomen, Ort und Zeit aus Sicht der Berichtenden anpassen: „Ich komme morgen.“ → er komme am nächsten Tag.",
+  "Ohne Konjunktiv: laut + Dativ/Genitiv, Nomen + zufolge (Dativ), nach Angaben + Genitiv, wie … mitteilte."
+ ],
+ "beispiele": [
+  "Die Autorin sagte, sie arbeite bereits an einem neuen Roman.",
+  "Der Sprecher betonte, man habe alle Vorschriften eingehalten.",
+  "Den Angaben der Polizei zufolge gab es keine Verletzten.",
+  "Die Befragten gaben an, sie hätten kaum Zeit zum Lesen.",
+  "Die Kommission teilte mit, sie werde den Bericht im Herbst vorlegen."
+ ],
+ "fallen": [
+  {
+   "falsch": "Sie sagen, sie haben keine Zeit.",
+   "richtig": "Sie sagen, sie hätten keine Zeit.",
+   "warum": "Konjunktiv I „haben“ gleicht dem Indikativ, deshalb Ersatzform „hätten“."
+  },
+  {
+   "falsch": "Laut dem Bericht zufolge …",
+   "richtig": "Laut dem Bericht … / Dem Bericht zufolge …",
+   "warum": "„laut“ und „zufolge“ bedeuten dasselbe und werden nicht kombiniert."
+  },
+  {
+   "falsch": "Der Minister sagte, ich werde zurücktreten.",
+   "richtig": "Der Minister sagte, er werde zurücktreten.",
+   "warum": "Das Pronomen wird aus Sicht der Berichtenden angepasst."
+  },
+  {
+   "falsch": "Sie fragte, dass ich Zeit habe.",
+   "richtig": "Sie fragte, ob ich Zeit habe.",
+   "warum": "Indirekte Ja-Nein-Fragen werden mit „ob“ eingeleitet."
+  }
+ ],
+ "uebungen": [
+  {
+   "id": "u01",
+   "typ": "luecke",
+   "satz": "Die Ministerin erklärte, sie ___ mit dem Ergebnis zufrieden.",
+   "loesungen": [
+    "sei"
+   ],
+   "hinweis": "sein",
+   "erklaerung": "Konjunktiv I von „sein“ in der 3. Person Singular: sei."
+  },
+  {
+   "id": "u02",
+   "typ": "luecke",
+   "satz": "Der Autor behauptet, er ___ den Roman in nur drei Monaten geschrieben.",
+   "loesungen": [
+    "habe"
+   ],
+   "hinweis": "haben",
+   "erklaerung": "Vergangenheit im Konjunktiv I: habe + Partizip II."
+  },
+  {
+   "id": "u03",
+   "typ": "luecke",
+   "satz": "Die Befragten gaben an, sie ___ zu wenig Zeit für Sport.",
+   "loesungen": [
+    "hätten"
+   ],
+   "hinweis": "haben",
+   "erklaerung": "Konjunktiv I „sie haben“ gleicht dem Indikativ – Ersatzform im Konjunktiv II: hätten."
+  },
+  {
+   "id": "u04",
+   "typ": "luecke",
+   "satz": "Der Sprecher teilte mit, das Unternehmen ___ keine Stellen abbauen.",
+   "loesungen": [
+    "werde"
+   ],
+   "hinweis": "werden",
+   "erklaerung": "Zukunft in der indirekten Rede: werde + Infinitiv."
+  },
+  {
+   "id": "u05",
+   "typ": "luecke",
+   "satz": "___ Angaben der Veranstalter kamen mehr als zehntausend Menschen.",
+   "loesungen": [
+    "Nach",
+    "Laut",
+    "Gemäß"
+   ],
+   "erklaerung": "Redewiedergabe ohne Konjunktiv: nach Angaben + Genitiv."
+  },
+  {
+   "id": "u06",
+   "typ": "luecke",
+   "satz": "Dem Gutachten ___ ist das Gebäude nicht mehr sicher.",
+   "loesungen": [
+    "zufolge",
+    "nach",
+    "gemäß"
+   ],
+   "hinweis": "nachgestellt",
+   "erklaerung": "„zufolge“ (ebenso „nach“, „gemäß“) steht hinter dem Nomen im Dativ."
+  },
+  {
+   "id": "u07",
+   "typ": "luecke",
+   "satz": "Sie fragte, ___ die Bibliothek auch am Sonntag geöffnet sei.",
+   "loesungen": [
+    "ob"
+   ],
+   "erklaerung": "Indirekte Ja-Nein-Frage: ob + Verb am Ende."
+  },
+  {
+   "id": "u08",
+   "typ": "luecke",
+   "satz": "Der Trainer forderte, man ___ die Regeln endlich ernst nehmen.",
+   "loesungen": [
+    "solle",
+    "möge"
+   ],
+   "hinweis": "Modalverb",
+   "erklaerung": "Aufforderung in der indirekten Rede: sollen (neutral) oder mögen (höflich) im Konjunktiv I."
+  },
+  {
+   "id": "u09",
+   "typ": "luecke",
+   "satz": "Er versicherte, er ___ den Brief nie gelesen.",
+   "loesungen": [
+    "habe"
+   ],
+   "erklaerung": "Vergangenheit im Konjunktiv I: habe + Partizip II."
+  },
+  {
+   "id": "u10",
+   "typ": "luecke",
+   "satz": "Die Forscherin betonte, die Ergebnisse ___ noch vorläufig.",
+   "loesungen": [
+    "seien"
+   ],
+   "hinweis": "sein",
+   "erklaerung": "Konjunktiv I von „sein“ im Plural ist eindeutig: seien."
+  },
+  {
+   "id": "u11",
+   "typ": "auswahl",
+   "frage": "Welche Form ist der Konjunktiv I von „können“ (er/sie/es)?",
+   "optionen": [
+    "kann",
+    "könnte",
+    "könnt",
+    "könne"
+   ],
+   "richtig": 3,
+   "erklaerung": "Konjunktiv I: Infinitivstamm + e: könn-e. „könnte“ ist Konjunktiv II."
+  },
+  {
+   "id": "u12",
+   "typ": "auswahl",
+   "frage": "„Wir haben das nicht gewusst“, sagten die Nachbarn. Welche Wiedergabe ist korrekt?",
+   "optionen": [
+    "Die Nachbarn sagten, sie hätten das nicht gewusst.",
+    "Die Nachbarn sagten, wir hätten das nicht gewusst.",
+    "Die Nachbarn sagten, sie haben das nicht gewusst hätten.",
+    "Die Nachbarn sagten, sie seien das nicht gewusst."
+   ],
+   "richtig": 0,
+   "erklaerung": "Pronomen anpassen (wir → sie); „sie haben“ gleicht dem Indikativ, deshalb „hätten“."
+  },
+  {
+   "id": "u13",
+   "typ": "auswahl",
+   "frage": "___ Polizeibericht wurde bei dem Unfall niemand verletzt.",
+   "optionen": [
+    "Laut",
+    "Infolge",
+    "Nach Angabe",
+    "Zufolge"
+   ],
+   "richtig": 0,
+   "erklaerung": "„laut“ kann ohne Artikel vor dem Nomen stehen. „zufolge“ steht nach dem Nomen, „infolge“ bedeutet „als Folge von“."
+  },
+  {
+   "id": "u14",
+   "typ": "auswahl",
+   "frage": "Sie sagte gestern: „Ich komme morgen.“ Wie gibt man das heute korrekt wieder?",
+   "optionen": [
+    "Sie sagte, sie komme heute.",
+    "Sie sagte, ich komme heute.",
+    "Sie sagte, sie komme morgen.",
+    "Sie sagte, sie kommt gestern."
+   ],
+   "richtig": 0,
+   "erklaerung": "Zeitangaben aus heutiger Sicht anpassen: Das „morgen“ von gestern ist heute."
+  },
+  {
+   "id": "u15",
+   "typ": "auswahl",
+   "frage": "Welcher Satz gibt eine vergangene Handlung korrekt wieder?",
+   "optionen": [
+    "Er sagte, er werde schon abgereist.",
+    "Er sagte, er ist schon abgereist gewesen.",
+    "Er sagte, er sei schon abgereist.",
+    "Er sagte, er habe schon abgereist."
+   ],
+   "richtig": 2,
+   "erklaerung": "„abreisen“ bildet das Perfekt mit „sein“: er sei abgereist."
+  },
+  {
+   "id": "u16",
+   "typ": "auswahl",
+   "frage": "Welche Aussage über „zufolge“ stimmt?",
+   "optionen": [
+    "Es steht hinter dem Nomen und verlangt den Akkusativ.",
+    "Es steht immer vor dem Nomen und verlangt den Akkusativ.",
+    "Es wird immer mit „laut“ kombiniert.",
+    "Es steht meist hinter dem Nomen und verlangt dann den Dativ."
+   ],
+   "richtig": 3,
+   "erklaerung": "dem Bericht zufolge, den Angaben zufolge – nachgestellt mit Dativ."
+  },
+  {
+   "id": "u17",
+   "typ": "umformen",
+   "ausgang": "„Ich bin krank und kann nicht kommen“, schrieb sie.",
+   "anweisung": "Geben Sie die Aussage in indirekter Rede wieder.",
+   "loesungen": [
+    "Sie schrieb, sie sei krank und könne nicht kommen.",
+    "Sie schrieb, dass sie krank sei und nicht kommen könne."
+   ],
+   "erklaerung": "Konjunktiv I: sei, könne; Pronomen ich → sie."
+  },
+  {
+   "id": "u18",
+   "typ": "umformen",
+   "ausgang": "„Wir haben keine Fehler gemacht“, erklärten die Verantwortlichen.",
+   "anweisung": "Geben Sie die Aussage in indirekter Rede wieder.",
+   "loesungen": [
+    "Die Verantwortlichen erklärten, sie hätten keine Fehler gemacht.",
+    "Die Verantwortlichen erklärten, dass sie keine Fehler gemacht hätten."
+   ],
+   "erklaerung": "„sie haben“ gleicht dem Indikativ, deshalb Konjunktiv II: hätten."
+  },
+  {
+   "id": "u19",
+   "typ": "umformen",
+   "ausgang": "„Wann beginnt die Veranstaltung?“, fragte der Gast.",
+   "anweisung": "Geben Sie die Frage indirekt mit Konjunktiv I wieder.",
+   "loesungen": [
+    "Der Gast fragte, wann die Veranstaltung beginne."
+   ],
+   "erklaerung": "Indirekte W-Frage: Fragewort + Verb am Ende, Konjunktiv I: beginne."
+  },
+  {
+   "id": "u20",
+   "typ": "umformen",
+   "ausgang": "„Warten Sie bitte draußen!“, sagte die Ärztin zu mir.",
+   "anweisung": "Geben Sie die Aufforderung mit „sollen“ wieder.",
+   "loesungen": [
+    "Die Ärztin sagte, ich solle draußen warten.",
+    "Die Ärztin sagte mir, ich solle draußen warten.",
+    "Die Ärztin sagte zu mir, ich solle draußen warten."
+   ],
+   "erklaerung": "Imperativ in der indirekten Rede: sollen im Konjunktiv I."
+  },
+  {
+   "id": "u21",
+   "typ": "umformen",
+   "ausgang": "Die Polizei teilte mit, dass es keine Verletzten gegeben habe.",
+   "anweisung": "Formulieren Sie mit „laut“ und Indikativ.",
+   "loesungen": [
+    "Laut Polizei hat es keine Verletzten gegeben.",
+    "Laut Polizei gab es keine Verletzten.",
+    "Laut der Polizei hat es keine Verletzten gegeben.",
+    "Laut der Polizei gab es keine Verletzten."
+   ],
+   "erklaerung": "Mit „laut“ ist die Quelle genannt, der Satz selbst steht im Indikativ."
+  },
+  {
+   "id": "u22",
+   "typ": "umformen",
+   "ausgang": "Nach Angaben des Herstellers ist das Gerät sicher.",
+   "anweisung": "Beginnen Sie mit „Der Hersteller gibt an, …“ und verwenden Sie den Konjunktiv I.",
+   "loesungen": [
+    "Der Hersteller gibt an, das Gerät sei sicher.",
+    "Der Hersteller gibt an, dass das Gerät sicher sei."
+   ],
+   "erklaerung": "Redeeinleitung + Konjunktiv I: sei."
+  },
+  {
+   "id": "u23",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "sein",
+     "sei"
+    ],
+    [
+     "haben",
+     "habe"
+    ],
+    [
+     "werden",
+     "werde"
+    ],
+    [
+     "wissen",
+     "wisse"
+    ],
+    [
+     "dürfen",
+     "dürfe"
+    ],
+    [
+     "geben",
+     "gebe"
+    ]
+   ],
+   "erklaerung": "Konjunktiv I, 3. Person Singular: Infinitivstamm + e (Ausnahme: sei)."
+  },
+  {
+   "id": "u24",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "„Ich bin müde.“",
+     "Er sagt, er sei müde."
+    ],
+    [
+     "„Wir sind müde.“",
+     "Sie sagen, sie seien müde."
+    ],
+    [
+     "„Wir haben Hunger.“",
+     "Sie sagen, sie hätten Hunger."
+    ],
+    [
+     "„Ich habe Hunger.“",
+     "Er sagt, er habe Hunger."
+    ],
+    [
+     "„Ich werde müde.“",
+     "Er sagt, er werde müde."
+    ]
+   ],
+   "erklaerung": "„sie haben“ gleicht dem Indikativ und wird zu „hätten“; „seien“ und „habe“ sind eindeutig."
+  },
+  {
+   "id": "u25",
+   "typ": "sortieren",
+   "teile": [
+    "Die Sprecherin",
+    "man",
+    "habe",
+    "eingehalten",
+    "alle Vorschriften",
+    "betonte,"
+   ],
+   "loesung": "Die Sprecherin betonte, man habe alle Vorschriften eingehalten.",
+   "loesungen": [
+    "Die Sprecherin betonte, alle Vorschriften habe man eingehalten."
+   ],
+   "erklaerung": "Indirekte Rede ohne „dass“: Verbzweitstellung mit Konjunktiv I."
+  },
+  {
+   "id": "u26",
+   "typ": "sortieren",
+   "teile": [
+    "das Museum",
+    "geöffnet",
+    "Er fragte,",
+    "sei",
+    "auch montags",
+    "ob"
+   ],
+   "loesung": "Er fragte, ob das Museum auch montags geöffnet sei.",
+   "loesungen": [
+    "Er fragte, ob auch montags das Museum geöffnet sei."
+   ],
+   "erklaerung": "Indirekte Frage mit „ob“: Verb am Ende."
+  },
+  {
+   "id": "u27",
+   "typ": "sortieren",
+   "teile": [
+    "zufolge",
+    "ist",
+    "der Behörde",
+    "unter Kontrolle",
+    "die Lage",
+    "Den Angaben"
+   ],
+   "loesung": "Den Angaben der Behörde zufolge ist die Lage unter Kontrolle.",
+   "loesungen": [
+    "Die Lage ist den Angaben der Behörde zufolge unter Kontrolle."
+   ],
+   "erklaerung": "„zufolge“ steht hinter der Dativgruppe; die ganze Gruppe kann das Vorfeld besetzen."
+  },
+  {
+   "id": "u28",
+   "typ": "sortieren",
+   "teile": [
+    "um die Sache",
+    "werde",
+    "sie",
+    "Sie erklärte,",
+    "kümmern",
+    "sich"
+   ],
+   "loesung": "Sie erklärte, sie werde sich um die Sache kümmern.",
+   "loesungen": [
+    "Sie erklärte, um die Sache werde sie sich kümmern."
+   ],
+   "erklaerung": "Indirekte Rede ohne „dass“: Konjunktiv I „werde“ an Position 2."
+  },
+  {
+   "id": "u29",
+   "typ": "fehler",
+   "satz": "Laut dem Bericht zufolge sind die Preise deutlich gestiegen.",
+   "fehler": "Laut dem Bericht zufolge",
+   "korrektur": [
+    "Laut dem Bericht",
+    "Dem Bericht zufolge"
+   ],
+   "erklaerung": "„laut“ und „zufolge“ nie zusammen verwenden."
+  },
+  {
+   "id": "u30",
+   "typ": "fehler",
+   "satz": "Die Eltern sagten, sie haben keine Zeit für das Treffen.",
+   "fehler": "haben",
+   "korrektur": "hätten",
+   "erklaerung": "„sie haben“ ist nicht vom Indikativ zu unterscheiden, deshalb Konjunktiv II."
+  },
+  {
+   "id": "u31",
+   "typ": "fehler",
+   "satz": "Der Minister kündigte an, ich werde zurücktreten.",
+   "fehler": "ich",
+   "korrektur": "er",
+   "erklaerung": "Pronomen aus der Sicht der Berichtenden: ich → er."
+  },
+  {
+   "id": "u32",
+   "typ": "fehler",
+   "satz": "Die Zeugin sagte aus, sie sei den Täter nicht gesehen.",
+   "fehler": "sei",
+   "korrektur": "habe",
+   "erklaerung": "„sehen“ bildet das Perfekt mit „haben“: sie habe … gesehen."
+  },
+  {
+   "id": "u33",
+   "typ": "rf",
+   "aussage": "In der indirekten Rede verwendet man den Konjunktiv II, wenn der Konjunktiv I nicht vom Indikativ zu unterscheiden ist.",
+   "wert": true,
+   "erklaerung": "z. B. sie haben → sie hätten, wir kommen → wir kämen (oder würden kommen)."
+  },
+  {
+   "id": "u34",
+   "typ": "rf",
+   "aussage": "„Er sagt, er komme morgen.“ zeigt, dass die Berichtende die Aussage für falsch hält.",
+   "wert": false,
+   "erklaerung": "Der Konjunktiv I ist neutral: Er zeigt nur, dass die Aussage wiedergegeben wird."
+  },
+  {
+   "id": "u35",
+   "typ": "rf",
+   "aussage": "Nach „laut“ kann ein Nomen ohne Artikel stehen: laut Polizei.",
+   "wert": true,
+   "erklaerung": "laut Polizei, laut Gesetz – ohne Artikel ist der Kasus nicht sichtbar."
+  },
+  {
+   "id": "u36",
+   "typ": "rf",
+   "aussage": "Indirekte Fragen ohne Fragewort werden mit „dass“ eingeleitet.",
+   "wert": false,
+   "erklaerung": "Ja-Nein-Fragen werden mit „ob“ eingeleitet."
+  }
+ ]
+}

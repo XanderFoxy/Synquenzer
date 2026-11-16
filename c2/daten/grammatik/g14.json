@@ -1,0 +1,483 @@
+{
+ "id": "g14",
+ "titel": "Konjunktiv II",
+ "niveau": "C1",
+ "nr": 14,
+ "gruppe": "B",
+ "baustelle": false,
+ "pruefungsbezug": [
+  "S2",
+  "P2"
+ ],
+ "kurz": "Gegenwart und Vergangenheit, irreale Wünsche, Bedingungen und Vergleiche (als ob), höfliche Bitten, Modalverben im Konjunktiv II der Vergangenheit.",
+ "tafel": [
+  "Gegenwart: würde + Infinitiv; bei sein, haben, Modalverben und häufigen starken Verben die einfache Form: wäre, hätte, könnte, käme, ginge, wüsste.",
+  "Vergangenheit: hätte oder wäre + Partizip II: Ich wäre gekommen. (nie: würde + Partizip II)",
+  "Mit Modalverb: hätte + Infinitiv + Modalverb im Infinitiv: Sie hätte anrufen sollen.",
+  "Im Nebensatz steht „hätte“ vor den beiden Infinitiven: …, dass sie hätte anrufen sollen.",
+  "Bedingung ohne „wenn“: Das Verb rückt an Position 1: Hätte ich das gewusst, wäre ich gekommen.",
+  "Irrealer Vergleich: als ob + Verb am Ende, als + Verb direkt: Er tut, als wüsste er alles.",
+  "Höflichkeit und Wunsch: Könnten Sie …? Ich hätte gern … – Hätte ich doch mehr Zeit!"
+ ],
+ "beispiele": [
+  "Hätte ich mehr Zeit gehabt, hätte ich den Roman zu Ende gelesen.",
+  "An deiner Stelle würde ich das Angebot annehmen.",
+  "Sie tat so, als hätte sie nichts bemerkt.",
+  "Beinahe hätte ich den letzten Zug verpasst.",
+  "Es wäre wünschenswert, dass sich mehr Menschen an der Debatte beteiligten."
+ ],
+ "fallen": [
+  {
+   "falsch": "Wenn ich das gewusst würde, …",
+   "richtig": "Wenn ich das gewusst hätte, …",
+   "warum": "Vergangenheit: hätte/wäre + Partizip II, nicht „würde“ + Partizip II."
+  },
+  {
+   "falsch": "…, dass sie hätte anrufen gesollt.",
+   "richtig": "…, dass sie hätte anrufen sollen.",
+   "warum": "Mit einem Infinitiv davor steht das Modalverb im Infinitiv (Ersatzinfinitiv)."
+  },
+  {
+   "falsch": "Er tut, als er alles wüsste.",
+   "richtig": "Er tut, als wüsste er alles. / Er tut, als ob er alles wüsste.",
+   "warum": "Nach „als“ allein folgt sofort das Verb, nach „als ob“ steht es am Ende."
+  },
+  {
+   "falsch": "An deiner Stelle wurde ich das nicht tun.",
+   "richtig": "An deiner Stelle würde ich das nicht tun.",
+   "warum": "„wurde“ ist Präteritum, „würde“ Konjunktiv II – der Umlaut entscheidet."
+  }
+ ],
+ "uebungen": [
+  {
+   "id": "u01",
+   "typ": "luecke",
+   "satz": "Wenn ich das früher gewusst ___, hätte ich anders entschieden.",
+   "loesungen": [
+    "hätte"
+   ],
+   "erklaerung": "Irreale Bedingung in der Vergangenheit: hätte + Partizip II."
+  },
+  {
+   "id": "u02",
+   "typ": "luecke",
+   "satz": "___ wir uns doch nur rechtzeitig angemeldet!",
+   "loesungen": [
+    "Hätten"
+   ],
+   "hinweis": "irrealer Wunsch",
+   "erklaerung": "Irrealer Wunsch ohne „wenn“: Das Verb steht an erster Stelle, dazu „doch (nur)“."
+  },
+  {
+   "id": "u03",
+   "typ": "luecke",
+   "satz": "Er sieht aus, als ___ er die ganze Nacht nicht geschlafen.",
+   "loesungen": [
+    "hätte"
+   ],
+   "erklaerung": "„als“ + Konjunktiv II direkt danach; Vergangenheit: hätte + Partizip II."
+  },
+  {
+   "id": "u04",
+   "typ": "luecke",
+   "satz": "Ohne deine Hilfe ___ ich die Prüfung nie bestanden.",
+   "loesungen": [
+    "hätte"
+   ],
+   "erklaerung": "„ohne deine Hilfe“ steht für eine irreale Bedingung (wenn du mir nicht geholfen hättest)."
+  },
+  {
+   "id": "u05",
+   "typ": "luecke",
+   "satz": "Du ___ mir ruhig Bescheid sagen können.",
+   "loesungen": [
+    "hättest"
+   ],
+   "erklaerung": "Vorwurf mit Modalverb in der Vergangenheit: hättest + Infinitiv + können."
+  },
+  {
+   "id": "u06",
+   "typ": "luecke",
+   "satz": "An Ihrer Stelle ___ ich mir diese Entscheidung gut überlegen.",
+   "loesungen": [
+    "würde"
+   ],
+   "erklaerung": "Ratschlag: würde + Infinitiv. „wurde“ wäre Präteritum."
+  },
+  {
+   "id": "u07",
+   "typ": "luecke",
+   "satz": "Es sieht so aus, als ob es bald regnen ___.",
+   "loesungen": [
+    "würde",
+    "könnte"
+   ],
+   "hinweis": "Konjunktiv II",
+   "erklaerung": "Nach „als ob“ steht das konjugierte Verb am Ende, im Konjunktiv II."
+  },
+  {
+   "id": "u08",
+   "typ": "luecke",
+   "satz": "Beinahe ___ ich vergessen, dir zu gratulieren.",
+   "loesungen": [
+    "hätte"
+   ],
+   "erklaerung": "„beinahe“ oder „fast“ mit Konjunktiv II der Vergangenheit: Es ist knapp nicht passiert."
+  },
+  {
+   "id": "u09",
+   "typ": "luecke",
+   "satz": "Mir ___ es lieber, wenn wir das Treffen verschieben könnten.",
+   "loesungen": [
+    "wäre"
+   ],
+   "erklaerung": "Höflicher Wunsch: Mir wäre es lieber, wenn …"
+  },
+  {
+   "id": "u10",
+   "typ": "luecke",
+   "satz": "Wenn sie nur ein wenig geduldiger ___!",
+   "loesungen": [
+    "wäre"
+   ],
+   "erklaerung": "Irrealer Wunsch mit „wenn … nur“: Das Verb steht am Ende."
+  },
+  {
+   "id": "u11",
+   "typ": "auswahl",
+   "frage": "Welcher Satz drückt einen irrealen Wunsch in der Vergangenheit aus?",
+   "optionen": [
+    "Würde ich doch nur früher losfahren!",
+    "Wäre ich doch nur früher losgefahren!",
+    "Ich fahre lieber früher los.",
+    "Wäre ich doch nur früher losfahren!"
+   ],
+   "richtig": 1,
+   "erklaerung": "Vergangenheit: wäre + Partizip II (losgefahren). „Würde … losfahren“ wäre ein Wunsch für Gegenwart oder Zukunft."
+  },
+  {
+   "id": "u12",
+   "typ": "auswahl",
+   "frage": "Welche Wortstellung ist im Nebensatz korrekt?",
+   "optionen": [
+    "…, obwohl er es hätte wissen müssen.",
+    "…, obwohl er es wissen müssen hätte.",
+    "…, obwohl er hätte es wissen müssen.",
+    "…, obwohl er es hätte wissen gemusst."
+   ],
+   "richtig": 0,
+   "erklaerung": "Bei zwei Infinitiven steht „hätte“ im Nebensatz vor ihnen, das Modalverb im Infinitiv."
+  },
+  {
+   "id": "u13",
+   "typ": "auswahl",
+   "frage": "Wie heißt das Verb „kommen“ im Konjunktiv II, dritte Person Singular?",
+   "optionen": [
+    "kömme",
+    "käme",
+    "kommte",
+    "kamme"
+   ],
+   "richtig": 1,
+   "erklaerung": "Starke Verben bilden den Konjunktiv II vom Präteritumstamm mit Umlaut: kam → käme."
+  },
+  {
+   "id": "u14",
+   "typ": "auswahl",
+   "frage": "Er redet, ___ er ein Experte wäre.",
+   "optionen": [
+    "als ob",
+    "wie",
+    "ob",
+    "als"
+   ],
+   "richtig": 0,
+   "erklaerung": "Mit Verb am Ende braucht es „als ob“ (oder „als wenn“). Nur „als“ verlangt das Verb direkt dahinter: als wäre er ein Experte."
+  },
+  {
+   "id": "u15",
+   "typ": "auswahl",
+   "frage": "Welcher Satz ist korrekt?",
+   "optionen": [
+    "Hätte man die Warnungen ernst genommen, wäre der Schaden geringer geworden gewesen.",
+    "Hätte man die Warnungen ernst genommen, der Schaden wäre geringer gewesen.",
+    "Hätte man die Warnungen ernst genommen, wäre der Schaden geringer gewesen.",
+    "Wenn man die Warnungen ernst genommen hätte, wäre der Schaden geringer sein."
+   ],
+   "richtig": 2,
+   "erklaerung": "Nach dem vorangestellten Bedingungssatz folgt im Hauptsatz sofort das Verb; Vergangenheit: wäre + gewesen."
+  },
+  {
+   "id": "u16",
+   "typ": "auswahl",
+   "frage": "Ich wünschte, du ___ jetzt hier.",
+   "optionen": [
+    "würdest",
+    "bist",
+    "wärst",
+    "wärst gewesen"
+   ],
+   "richtig": 2,
+   "erklaerung": "Irrealer Wunsch nach „Ich wünschte“: Konjunktiv II Gegenwart (wärst oder wärest)."
+  },
+  {
+   "id": "u17",
+   "typ": "umformen",
+   "ausgang": "Ich habe keine Zeit. Deshalb komme ich nicht mit.",
+   "anweisung": "Bilden Sie einen irrealen Bedingungssatz mit „wenn“.",
+   "loesungen": [
+    "Wenn ich Zeit hätte, käme ich mit.",
+    "Wenn ich Zeit hätte, würde ich mitkommen.",
+    "Ich käme mit, wenn ich Zeit hätte.",
+    "Ich würde mitkommen, wenn ich Zeit hätte."
+   ],
+   "erklaerung": "Die Verneinung kehrt sich um: keine Zeit → Zeit hätte; nicht mitkommen → käme mit."
+  },
+  {
+   "id": "u18",
+   "typ": "umformen",
+   "ausgang": "Er hat den Bus verpasst. Deshalb ist er zu spät gekommen.",
+   "anweisung": "Bilden Sie einen irrealen Bedingungssatz ohne „wenn“.",
+   "loesungen": [
+    "Hätte er den Bus nicht verpasst, wäre er nicht zu spät gekommen.",
+    "Hätte er den Bus nicht verpasst, so wäre er nicht zu spät gekommen."
+   ],
+   "erklaerung": "Ohne „wenn“ steht das Verb an Position 1; im Hauptsatz folgt sofort das Verb (oder „so“ + Verb)."
+  },
+  {
+   "id": "u19",
+   "typ": "umformen",
+   "ausgang": "Leider habe ich mich nicht beworben.",
+   "anweisung": "Formulieren Sie einen irrealen Wunsch mit „doch“.",
+   "loesungen": [
+    "Hätte ich mich doch beworben!",
+    "Hätte ich mich doch nur beworben!",
+    "Hätte ich mich doch bloß beworben!",
+    "Wenn ich mich doch beworben hätte!",
+    "Wenn ich mich doch nur beworben hätte!",
+    "Wenn ich mich doch bloß beworben hätte!"
+   ],
+   "erklaerung": "Irrealer Wunsch in der Vergangenheit: hätte + Partizip II, mit „doch (nur/bloß)“."
+  },
+  {
+   "id": "u20",
+   "typ": "umformen",
+   "ausgang": "Es wäre richtig gewesen, ihn anzurufen, aber du hast es nicht getan.",
+   "anweisung": "Formulieren Sie einen Vorwurf mit „sollen“.",
+   "loesungen": [
+    "Du hättest ihn anrufen sollen."
+   ],
+   "erklaerung": "Vorwurf: hätte + Infinitiv + sollen (Ersatzinfinitiv)."
+  },
+  {
+   "id": "u21",
+   "typ": "umformen",
+   "ausgang": "Er benimmt sich wie der Chef, ist es aber nicht.",
+   "anweisung": "Bilden Sie einen irrealen Vergleich mit „als“ ohne „ob“: Er benimmt sich, …",
+   "loesungen": [
+    "Er benimmt sich, als wäre er der Chef.",
+    "Er benimmt sich, als sei er der Chef."
+   ],
+   "erklaerung": "Nach „als“ folgt das konjugierte Verb direkt. Im irrealen Vergleich ist auch der Konjunktiv I möglich."
+  },
+  {
+   "id": "u22",
+   "typ": "umformen",
+   "ausgang": "Schicken Sie mir die Unterlagen!",
+   "anweisung": "Formulieren Sie eine höfliche Bitte mit „könnten“.",
+   "loesungen": [
+    "Könnten Sie mir die Unterlagen schicken?",
+    "Könnten Sie mir bitte die Unterlagen schicken?",
+    "Könnten Sie mir die Unterlagen bitte schicken?"
+   ],
+   "erklaerung": "Der Konjunktiv II macht die Aufforderung zur höflichen Frage."
+  },
+  {
+   "id": "u23",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "Hätte sie früher gebucht,",
+     "hätte sie weniger bezahlt."
+    ],
+    [
+     "Wäre der Zug pünktlich gewesen,",
+     "hätten wir den Anschluss nicht verpasst."
+    ],
+    [
+     "Wenn du mich gefragt hättest,",
+     "hätte ich dir gern geholfen."
+    ],
+    [
+     "Wenn ich jetzt Urlaub hätte,",
+     "läge ich am Strand."
+    ],
+    [
+     "Könnte ich besser kochen,",
+     "würde ich öfter Gäste einladen."
+    ]
+   ],
+   "erklaerung": "Zeitstufe, Person und Inhalt von Bedingung und Folge müssen zusammenpassen."
+  },
+  {
+   "id": "u24",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "gehen",
+     "ginge"
+    ],
+    [
+     "wissen",
+     "wüsste"
+    ],
+    [
+     "bringen",
+     "brächte"
+    ],
+    [
+     "dürfen",
+     "dürfte"
+    ],
+    [
+     "tun",
+     "täte"
+    ],
+    [
+     "halten",
+     "hielte"
+    ]
+   ],
+   "erklaerung": "Häufige einfache Formen des Konjunktivs II; sie wirken eleganter als „würde“ + Infinitiv."
+  },
+  {
+   "id": "u25",
+   "typ": "sortieren",
+   "teile": [
+    "man",
+    "gehandelt,",
+    "der Schaden",
+    "geringer ausgefallen",
+    "Hätte",
+    "wäre",
+    "früher"
+   ],
+   "loesung": "Hätte man früher gehandelt, wäre der Schaden geringer ausgefallen.",
+   "erklaerung": "Bedingung ohne „wenn“: Verb an Position 1, danach im Hauptsatz sofort das Verb."
+  },
+  {
+   "id": "u26",
+   "typ": "sortieren",
+   "teile": [
+    "hätte",
+    "früher",
+    "anfangen",
+    "ich",
+    "dass",
+    "sollen",
+    "Ich weiß,"
+   ],
+   "loesung": "Ich weiß, dass ich früher hätte anfangen sollen.",
+   "loesungen": [
+    "Ich weiß, dass ich hätte früher anfangen sollen."
+   ],
+   "erklaerung": "Im Nebensatz steht „hätte“ vor den beiden Infinitiven. Die Angabe „früher“ steht meist davor."
+  },
+  {
+   "id": "u27",
+   "typ": "sortieren",
+   "teile": [
+    "als",
+    "er",
+    "gewusst",
+    "hätte",
+    "von allem",
+    "nichts",
+    "Er tut so,"
+   ],
+   "loesung": "Er tut so, als hätte er von allem nichts gewusst.",
+   "loesungen": [
+    "Er tut so, als hätte er nichts von allem gewusst."
+   ],
+   "erklaerung": "„als“ + Verb direkt dahinter, das Partizip am Ende."
+  },
+  {
+   "id": "u28",
+   "typ": "sortieren",
+   "teile": [
+    "ich",
+    "mehr Zeit",
+    "lassen",
+    "würde",
+    "mir",
+    "An deiner Stelle"
+   ],
+   "loesung": "An deiner Stelle würde ich mir mehr Zeit lassen.",
+   "loesungen": [
+    "Ich würde mir an deiner Stelle mehr Zeit lassen.",
+    "Mehr Zeit würde ich mir an deiner Stelle lassen."
+   ],
+   "erklaerung": "Ratschlag mit „würde“ + Infinitiv; das Reflexivpronomen „mir“ steht direkt nach dem Subjekt."
+  },
+  {
+   "id": "u29",
+   "typ": "fehler",
+   "satz": "Wenn sie das gewusst würde, hätte sie anders gehandelt.",
+   "fehler": "gewusst würde",
+   "korrektur": "gewusst hätte",
+   "erklaerung": "Vergangenheit im Konjunktiv II: hätte + Partizip II."
+  },
+  {
+   "id": "u30",
+   "typ": "fehler",
+   "satz": "Du hättest mich vorher anrufen gesollt.",
+   "fehler": "gesollt",
+   "korrektur": "sollen",
+   "erklaerung": "Ersatzinfinitiv: Steht ein Infinitiv davor, wird das Modalverb nicht zum Partizip."
+  },
+  {
+   "id": "u31",
+   "typ": "fehler",
+   "satz": "Ich wünschte, ich habe mehr Zeit für meine Familie.",
+   "fehler": "habe",
+   "korrektur": "hätte",
+   "erklaerung": "Nach „Ich wünschte“ folgt ein irrealer Wunsch im Konjunktiv II."
+  },
+  {
+   "id": "u32",
+   "typ": "fehler",
+   "satz": "An deiner Stelle wurde ich mich sofort bewerben.",
+   "fehler": "wurde",
+   "korrektur": "würde",
+   "erklaerung": "„wurde“ ist Präteritum; der Ratschlag braucht den Konjunktiv II „würde“."
+  },
+  {
+   "id": "u33",
+   "typ": "rf",
+   "aussage": "„Hätte ich Zeit, käme ich mit.“ ist eine korrekte Bedingung ohne „wenn“.",
+   "wert": true,
+   "erklaerung": "Ohne „wenn“ steht das konjugierte Verb an Position 1."
+  },
+  {
+   "id": "u34",
+   "typ": "rf",
+   "aussage": "Nach „als ob“ steht das konjugierte Verb direkt hinter „als ob“.",
+   "wert": false,
+   "erklaerung": "Nach „als ob“ steht es am Ende; nur nach „als“ allein folgt es direkt."
+  },
+  {
+   "id": "u35",
+   "typ": "rf",
+   "aussage": "„Ich hätte gern einen Termin am Montag.“ ist eine höfliche Bitte, keine irreale Aussage.",
+   "wert": true,
+   "erklaerung": "Der Konjunktiv II dient hier der Höflichkeit."
+  },
+  {
+   "id": "u36",
+   "typ": "rf",
+   "aussage": "Die Vergangenheit des Konjunktivs II bildet man mit „würde“ + Partizip II.",
+   "wert": false,
+   "erklaerung": "Richtig: hätte oder wäre + Partizip II (Ich wäre gekommen)."
+  }
+ ]
+}

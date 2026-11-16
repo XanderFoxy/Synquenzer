@@ -1,0 +1,447 @@
+{
+ "id": "g19",
+ "titel": "Infinitivkonstruktionen",
+ "niveau": "C1",
+ "nr": 19,
+ "gruppe": "B",
+ "baustelle": false,
+ "pruefungsbezug": [
+  "S1",
+  "S2"
+ ],
+ "kurz": "zu-Infinitiv nach Verben, Nomen und Adjektiven, um/ohne/(an)statt … zu, Infinitiv Perfekt und Passiv, Korrelat es oder da(r)-.",
+ "tafel": [
+  "zu-Infinitiv nach vielen Verben (versuchen, beschließen, bedauern), Nomen (die Absicht, die Möglichkeit) und Adjektiven (bereit, froh).",
+  "Ohne „zu“: nach Modalverben, lassen, sehen, hören, bleiben, gehen.",
+  "Gleichzeitig: zu tun – vorzeitig: getan zu haben / gegangen zu sein.",
+  "Passiv: geprüft zu werden – Passiv vorzeitig: geprüft worden zu sein.",
+  "um … zu (Zweck), ohne … zu, (an)statt … zu – nur bei gleichem Subjekt, sonst damit / ohne dass / statt dass.",
+  "Korrelat: es (Es ist wichtig, …) oder da(r)- (Ich freue mich darauf, …).",
+  "Trennbare Verben: „zu“ zwischen Präfix und Stamm: anzurufen, aufzuhören."
+ ],
+ "beispiele": [
+  "Sie bedauert, die Chance nicht genutzt zu haben.",
+  "Er verließ den Raum, ohne sich zu verabschieden.",
+  "Ich freue mich darauf, euch bald wiederzusehen.",
+  "Es ist nicht leicht, nach so langer Zeit wieder anzufangen.",
+  "Statt die Ursachen zu bekämpfen, behandelt man nur die Symptome."
+ ],
+ "fallen": [
+  {
+   "falsch": "Ich habe vergessen, dich zu anrufen.",
+   "richtig": "Ich habe vergessen, dich anzurufen.",
+   "warum": "Bei trennbaren Verben steht „zu“ zwischen Präfix und Stamm."
+  },
+  {
+   "falsch": "Sie kann gut zu schwimmen.",
+   "richtig": "Sie kann gut schwimmen.",
+   "warum": "Nach Modalverben steht der Infinitiv ohne „zu“."
+  },
+  {
+   "falsch": "Ich schicke dir die Unterlagen, um sie zu prüfen.",
+   "richtig": "Ich schicke dir die Unterlagen, damit du sie prüfst.",
+   "warum": "Bei verschiedenen Subjekten steht „damit“ statt „um … zu“."
+  },
+  {
+   "falsch": "Er behauptet, die Aufgabe gelöst zu sein.",
+   "richtig": "Er behauptet, die Aufgabe gelöst zu haben.",
+   "warum": "Infinitiv Perfekt mit „haben“ oder „sein“ – wie im Perfekt des Verbs."
+  }
+ ],
+ "uebungen": [
+  {
+   "id": "u01",
+   "typ": "luecke",
+   "satz": "Sie bedauert, die Chance nicht genutzt zu ___.",
+   "loesungen": [
+    "haben"
+   ],
+   "erklaerung": "Vorzeitigkeit: Infinitiv Perfekt (Partizip II + zu haben)."
+  },
+  {
+   "id": "u02",
+   "typ": "luecke",
+   "satz": "Er verließ den Raum, ___ sich zu verabschieden.",
+   "loesungen": [
+    "ohne",
+    "anstatt",
+    "statt"
+   ],
+   "erklaerung": "ohne … zu: Eine erwartete Handlung findet nicht statt. Auch „(an)statt … zu“ ist möglich: Er tut etwas anderes an ihrer Stelle.",
+   "hinweis": "eine erwartete Handlung bleibt aus"
+  },
+  {
+   "id": "u03",
+   "typ": "luecke",
+   "satz": "Ich freue mich ___, euch bald wiederzusehen.",
+   "loesungen": [
+    "darauf"
+   ],
+   "hinweis": "Korrelat",
+   "erklaerung": "sich freuen auf → Korrelat „darauf“ (Vorfreude auf etwas Zukünftiges)."
+  },
+  {
+   "id": "u04",
+   "typ": "luecke",
+   "satz": "Es ist nicht leicht, nach so langer Zeit wieder ___.",
+   "loesungen": [
+    "anzufangen"
+   ],
+   "hinweis": "anfangen",
+   "erklaerung": "Trennbares Verb: an-zu-fangen."
+  },
+  {
+   "id": "u05",
+   "typ": "luecke",
+   "satz": "___ die Ursachen zu bekämpfen, behandelt man nur die Symptome.",
+   "loesungen": [
+    "Statt",
+    "Anstatt"
+   ],
+   "erklaerung": "(an)statt … zu: Eine Handlung ersetzt eine andere, erwartete."
+  },
+  {
+   "id": "u06",
+   "typ": "luecke",
+   "satz": "Der Patient hofft, bald aus dem Krankenhaus entlassen zu ___.",
+   "loesungen": [
+    "werden"
+   ],
+   "erklaerung": "Infinitiv Passiv: Partizip II + zu werden."
+  },
+  {
+   "id": "u07",
+   "typ": "luecke",
+   "satz": "Sie ist froh, die Prüfung endlich hinter sich gebracht zu ___.",
+   "loesungen": [
+    "haben"
+   ],
+   "erklaerung": "Infinitiv Perfekt: „bringen“ bildet das Perfekt mit „haben“."
+  },
+  {
+   "id": "u08",
+   "typ": "luecke",
+   "satz": "Er bestand ___, die Rechnung allein zu bezahlen.",
+   "loesungen": [
+    "darauf"
+   ],
+   "hinweis": "Korrelat",
+   "erklaerung": "bestehen auf → Korrelat „darauf“."
+  },
+  {
+   "id": "u10",
+   "typ": "luecke",
+   "satz": "Der Angeklagte bestreitet, am Tatort gewesen zu ___.",
+   "loesungen": [
+    "sein"
+   ],
+   "erklaerung": "„sein“ bildet das Perfekt mit „sein“: gewesen zu sein."
+  },
+  {
+   "id": "u11",
+   "typ": "auswahl",
+   "frage": "Welcher Satz ist korrekt?",
+   "optionen": [
+    "Ich habe beschlossen, mit dem Rauchen zu aufhören.",
+    "Ich habe beschlossen, mit dem Rauchen aufzuhören haben.",
+    "Ich habe beschlossen, mit dem Rauchen aufzuhören.",
+    "Ich habe beschlossen, mit dem Rauchen aufhören."
+   ],
+   "richtig": 2,
+   "erklaerung": "„beschließen“ verlangt „zu“; bei trennbaren Verben steht es zwischen Präfix und Stamm."
+  },
+  {
+   "id": "u12",
+   "typ": "auswahl",
+   "frage": "„Ich gebe dir das Geld, ___ du dir ein Ticket kaufen kannst.“",
+   "optionen": [
+    "ohne",
+    "statt",
+    "um",
+    "damit"
+   ],
+   "richtig": 3,
+   "erklaerung": "Verschiedene Subjekte (ich – du): „damit“ statt „um … zu“."
+  },
+  {
+   "id": "u13",
+   "typ": "auswahl",
+   "frage": "Welcher Satz drückt Vorzeitigkeit im Passiv aus?",
+   "optionen": [
+    "Er freut sich, auszuwählen.",
+    "Er freut sich, ausgewählt zu sein worden.",
+    "Er freut sich, ausgewählt worden zu sein.",
+    "Er freut sich, ausgewählt zu werden."
+   ],
+   "richtig": 2,
+   "erklaerung": "Infinitiv Perfekt Passiv: Partizip II + worden + zu sein."
+  },
+  {
+   "id": "u15",
+   "typ": "auswahl",
+   "frage": "„Sie ging an mir vorbei, ohne ___.“",
+   "optionen": [
+    "mich grüßen",
+    "mich zu grüßen",
+    "zu mich grüßen",
+    "dass mich zu grüßen"
+   ],
+   "richtig": 1,
+   "erklaerung": "ohne … zu: Objekt vor „zu“ + Infinitiv."
+  },
+  {
+   "id": "u16",
+   "typ": "auswahl",
+   "frage": "Welches Korrelat passt? „Ich habe mich ___ gewöhnt, früh aufzustehen.“",
+   "optionen": [
+    "darauf",
+    "es",
+    "dafür",
+    "daran"
+   ],
+   "richtig": 3,
+   "erklaerung": "sich gewöhnen an → daran."
+  },
+  {
+   "id": "u17",
+   "typ": "umformen",
+   "ausgang": "Er hat sich nicht verabschiedet. Er ist gegangen.",
+   "anweisung": "Verbinden Sie mit „ohne … zu“.",
+   "loesungen": [
+    "Er ist gegangen, ohne sich zu verabschieden.",
+    "Ohne sich zu verabschieden, ist er gegangen."
+   ],
+   "erklaerung": "Gleiches Subjekt: ohne … zu; das Reflexivpronomen steht vor „zu“."
+  },
+  {
+   "id": "u18",
+   "typ": "umformen",
+   "ausgang": "Ich habe den Termin verpasst. Das bedaure ich.",
+   "anweisung": "Formulieren Sie mit einem Infinitivsatz: Ich bedaure, …",
+   "loesungen": [
+    "Ich bedaure, den Termin verpasst zu haben."
+   ],
+   "erklaerung": "Vorzeitigkeit: Infinitiv Perfekt."
+  },
+  {
+   "id": "u19",
+   "typ": "umformen",
+   "ausgang": "Sie lernt Spanisch. Sie möchte in Madrid studieren.",
+   "anweisung": "Verbinden Sie mit „um … zu“.",
+   "loesungen": [
+    "Sie lernt Spanisch, um in Madrid zu studieren.",
+    "Sie lernt Spanisch, um in Madrid studieren zu können.",
+    "Um in Madrid zu studieren, lernt sie Spanisch.",
+    "Um in Madrid studieren zu können, lernt sie Spanisch."
+   ],
+   "erklaerung": "Zweck bei gleichem Subjekt; „möchte“ fällt weg (oder: studieren zu können)."
+  },
+  {
+   "id": "u20",
+   "typ": "umformen",
+   "ausgang": "Er hofft, dass er bald befördert wird.",
+   "anweisung": "Formulieren Sie mit einem Infinitivsatz.",
+   "loesungen": [
+    "Er hofft, bald befördert zu werden."
+   ],
+   "erklaerung": "Gleiches Subjekt: Infinitiv Passiv mit „zu werden“."
+  },
+  {
+   "id": "u21",
+   "typ": "umformen",
+   "ausgang": "Statt dass er sich entschuldigt, macht er anderen Vorwürfe.",
+   "anweisung": "Formulieren Sie mit „(an)statt … zu“.",
+   "loesungen": [
+    "Statt sich zu entschuldigen, macht er anderen Vorwürfe.",
+    "Anstatt sich zu entschuldigen, macht er anderen Vorwürfe.",
+    "Er macht anderen Vorwürfe, statt sich zu entschuldigen.",
+    "Er macht anderen Vorwürfe, anstatt sich zu entschuldigen."
+   ],
+   "erklaerung": "Gleiches Subjekt: (an)statt … zu ist eleganter als „statt dass“."
+  },
+  {
+   "id": "u22",
+   "typ": "umformen",
+   "ausgang": "Es ist wichtig, dass man regelmäßig übt.",
+   "anweisung": "Formulieren Sie mit einem Infinitivsatz.",
+   "loesungen": [
+    "Es ist wichtig, regelmäßig zu üben."
+   ],
+   "erklaerung": "Unpersönliches „man“ fällt im Infinitivsatz weg."
+  },
+  {
+   "id": "u23",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "sich gewöhnen",
+     "daran"
+    ],
+    [
+     "sich entscheiden",
+     "dafür"
+    ],
+    [
+     "sich ärgern",
+     "darüber"
+    ],
+    [
+     "sich verlassen",
+     "darauf"
+    ],
+    [
+     "sich fürchten",
+     "davor"
+    ],
+    [
+     "sich bemühen",
+     "darum"
+    ]
+   ],
+   "erklaerung": "Das Korrelat richtet sich nach der Präposition des Verbs (an, für, über, auf, vor, um)."
+  },
+  {
+   "id": "u24",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "um … zu",
+     "Zweck bei gleichem Subjekt"
+    ],
+    [
+     "damit",
+     "Zweck, auch bei verschiedenen Subjekten"
+    ],
+    [
+     "ohne … zu",
+     "Eine erwartete Handlung bleibt aus."
+    ],
+    [
+     "(an)statt … zu",
+     "Eine Handlung ersetzt eine andere."
+    ],
+    [
+     "Infinitiv Perfekt",
+     "Die Handlung liegt vor dem Hauptsatz."
+    ]
+   ],
+   "erklaerung": "Infinitivkonstruktionen und ihre Bedeutung."
+  },
+  {
+   "id": "u25",
+   "typ": "sortieren",
+   "teile": [
+    "wir",
+    "Statt",
+    "endlich handeln",
+    "diskutieren,",
+    "zu",
+    "sollten"
+   ],
+   "loesung": "Statt zu diskutieren, sollten wir endlich handeln.",
+   "erklaerung": "Steht der Infinitivsatz vorn, folgt im Hauptsatz direkt das Verb."
+  },
+  {
+   "id": "u26",
+   "typ": "sortieren",
+   "teile": [
+    "Er",
+    "zu kommen",
+    "mir",
+    "pünktlich",
+    "hat",
+    "versprochen,"
+   ],
+   "loesung": "Er hat mir versprochen, pünktlich zu kommen.",
+   "erklaerung": "Der Infinitivsatz steht nach der Satzklammer des Hauptsatzes."
+  },
+  {
+   "id": "u27",
+   "typ": "sortieren",
+   "teile": [
+    "Ich",
+    "habe",
+    "um alles",
+    "keine Zeit,",
+    "zu kümmern",
+    "mich"
+   ],
+   "loesung": "Ich habe keine Zeit, mich um alles zu kümmern.",
+   "erklaerung": "Infinitiv nach Nomen (keine Zeit); das Reflexivpronomen steht vorn im Infinitivsatz."
+  },
+  {
+   "id": "u28",
+   "typ": "sortieren",
+   "teile": [
+    "nie",
+    "zu haben",
+    "erhalten",
+    "den Brief",
+    "Sie",
+    "behauptet,"
+   ],
+   "loesung": "Sie behauptet, den Brief nie erhalten zu haben.",
+   "erklaerung": "Infinitiv Perfekt: Partizip II + zu haben am Ende."
+  },
+  {
+   "id": "u29",
+   "typ": "fehler",
+   "satz": "Ich habe vergessen, dich zu anrufen.",
+   "fehler": "zu anrufen",
+   "korrektur": "anzurufen",
+   "erklaerung": "Trennbares Verb: „zu“ steht zwischen Präfix und Stamm."
+  },
+  {
+   "id": "u30",
+   "typ": "fehler",
+   "satz": "Sie kann sehr gut zu tanzen.",
+   "fehler": "zu tanzen",
+   "korrektur": "tanzen",
+   "erklaerung": "Nach Modalverben steht der Infinitiv ohne „zu“."
+  },
+  {
+   "id": "u31",
+   "typ": "fehler",
+   "satz": "Ich leihe dir mein Auto, um du pünktlich ankommst.",
+   "fehler": "um",
+   "korrektur": "damit",
+   "erklaerung": "Verschiedene Subjekte und konjugiertes Verb: „damit“."
+  },
+  {
+   "id": "u32",
+   "typ": "fehler",
+   "satz": "Er behauptet, die Aufgabe allein gelöst zu sein.",
+   "fehler": "sein",
+   "korrektur": "haben",
+   "erklaerung": "„lösen“ bildet das Perfekt mit „haben“: gelöst zu haben."
+  },
+  {
+   "id": "u33",
+   "typ": "rf",
+   "aussage": "Bei „um … zu“ müssen Hauptsatz und Infinitivsatz dasselbe Subjekt haben.",
+   "wert": true,
+   "erklaerung": "Sonst steht „damit“."
+  },
+  {
+   "id": "u34",
+   "typ": "rf",
+   "aussage": "„Er scheint krank zu sein.“ und „Er lässt sich helfen.“ brauchen beide „zu“.",
+   "wert": false,
+   "erklaerung": "„scheinen“ verlangt „zu“, „lassen“ nicht."
+  },
+  {
+   "id": "u35",
+   "typ": "rf",
+   "aussage": "Mit dem Infinitiv Perfekt drückt man aus, dass die Handlung vorher stattgefunden hat.",
+   "wert": true,
+   "erklaerung": "Sie bedauert, gegangen zu sein. – Erst ging sie, dann bedauert sie es."
+  },
+  {
+   "id": "u36",
+   "typ": "rf",
+   "aussage": "Bei trennbaren Verben steht „zu“ vor dem ganzen Verb: zu anfangen.",
+   "wert": false,
+   "erklaerung": "Richtig: anzufangen – „zu“ zwischen Präfix und Stamm."
+  }
+ ]
+}

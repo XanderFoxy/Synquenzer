@@ -1,0 +1,474 @@
+{
+ "id": "g23",
+ "titel": "Modalpartikeln",
+ "niveau": "C2",
+ "nr": 23,
+ "gruppe": "B",
+ "baustelle": false,
+ "pruefungsbezug": [
+  "P2",
+  "H2"
+ ],
+ "kurz": "doch, ja, eben, halt, wohl, schon, eigentlich, mal: Wirkung in Diskussion und Vortrag, Stellung im Mittelfeld.",
+ "tafel": [
+  "Modalpartikeln sind unbetont, stehen im Mittelfeld und nie allein im Vorfeld.",
+  "doch: Widerspruch oder Erinnerung an Bekanntes: Das ist doch klar! – in Aufforderungen freundlich drängend: Komm doch mit!",
+  "ja: Das ist bekannt (Wir wissen ja alle …) oder Staunen (Das ist ja unglaublich!) – nicht in Fragen.",
+  "eben / halt: Man kann es nicht ändern: Das ist eben so. – „halt“ klingt umgangssprachlicher.",
+  "wohl: Vermutung: Sie ist wohl krank. – schon: Beruhigung oder Einräumen: Das wird schon klappen. / Das stimmt schon, aber …",
+  "denn: interessierte Frage: Was ist denn los? – eigentlich: vorsichtige Frage, Themenwechsel: Wie spät ist es eigentlich?",
+  "mal: macht Aufforderungen beiläufig: Hör mal! – Reihenfolge: doch mal, ja doch, denn eigentlich."
+ ],
+ "beispiele": [
+  "Das ist doch genau der Punkt!",
+  "Wir wissen ja alle, wie schwierig die Lage ist.",
+  "Was hast du denn heute vor?",
+  "Das stimmt schon, aber man sollte auch die Kosten bedenken.",
+  "Dann müssen wir eben einen anderen Weg finden."
+ ],
+ "fallen": [
+  {
+   "falsch": "Was ist los denn?",
+   "richtig": "Was ist denn los?",
+   "warum": "Die Partikel steht im Mittelfeld vor der neuen Information."
+  },
+  {
+   "falsch": "Hast du ja morgen Zeit?",
+   "richtig": "Hast du denn morgen Zeit? / Hast du eigentlich morgen Zeit?",
+   "warum": "Unbetontes „ja“ steht nicht in Fragen."
+  },
+  {
+   "falsch": "Komm mal doch vorbei!",
+   "richtig": "Komm doch mal vorbei!",
+   "warum": "Reihenfolge: doch vor mal."
+  }
+ ],
+ "uebungen": [
+  {
+   "id": "u01",
+   "typ": "luecke",
+   "satz": "Du kennst ihn ___! Er kommt immer zu spät.",
+   "loesungen": [
+    "doch",
+    "ja"
+   ],
+   "hinweis": "Erinnerung an Bekanntes",
+   "erklaerung": "doch/ja: Der Sprecher erinnert an etwas, das beide wissen."
+  },
+  {
+   "id": "u02",
+   "typ": "luecke",
+   "satz": "Was ist ___ los? Du siehst so traurig aus.",
+   "loesungen": [
+    "denn"
+   ],
+   "hinweis": "interessierte Frage",
+   "erklaerung": "„denn“ macht die Frage persönlicher und interessierter."
+  },
+  {
+   "id": "u03",
+   "typ": "luecke",
+   "satz": "Komm ___ mal vorbei, wenn du Zeit hast!",
+   "loesungen": [
+    "doch",
+    "ruhig",
+    "einfach"
+   ],
+   "hinweis": "freundliche Aufforderung",
+   "erklaerung": "„doch mal“: freundlich, leicht drängend; „ruhig“: Ermunterung, Erlaubnis; „einfach“: ohne Umstände."
+  },
+  {
+   "id": "u04",
+   "typ": "luecke",
+   "satz": "Das ist ___ unglaublich! So etwas habe ich noch nie gesehen.",
+   "loesungen": [
+    "ja",
+    "doch",
+    "einfach",
+    "wirklich"
+   ],
+   "hinweis": "Staunen",
+   "erklaerung": "„ja“ im Ausrufesatz drückt Staunen aus; „doch“, „einfach“ und „wirklich“ verstärken ebenfalls."
+  },
+  {
+   "id": "u05",
+   "typ": "luecke",
+   "satz": "Wenn der Zug nicht fährt, müssen wir ___ ein Taxi nehmen.",
+   "loesungen": [
+    "eben",
+    "halt"
+   ],
+   "hinweis": "Es lässt sich nicht ändern.",
+   "erklaerung": "eben/halt: Man nimmt eine unabänderliche Lage hin."
+  },
+  {
+   "id": "u06",
+   "typ": "luecke",
+   "satz": "Sie ist heute nicht gekommen. Sie ist ___ krank.",
+   "loesungen": [
+    "wohl"
+   ],
+   "hinweis": "Modalpartikel der Vermutung",
+   "erklaerung": "„wohl“ = vermutlich."
+  },
+  {
+   "id": "u07",
+   "typ": "luecke",
+   "satz": "Keine Sorge, das wird ___ klappen.",
+   "loesungen": [
+    "schon"
+   ],
+   "hinweis": "Beruhigung",
+   "erklaerung": "„schon“ beruhigt: Es wird gut gehen."
+  },
+  {
+   "id": "u08",
+   "typ": "luecke",
+   "satz": "Wie spät ist es ___? Ich habe die Zeit ganz vergessen.",
+   "loesungen": [
+    "eigentlich",
+    "denn"
+   ],
+   "erklaerung": "„eigentlich“ oder „denn“ machen die Frage beiläufiger."
+  },
+  {
+   "id": "u09",
+   "typ": "luecke",
+   "satz": "Hör ___ zu, ich muss dir etwas erzählen!",
+   "loesungen": [
+    "mal",
+    "doch"
+   ],
+   "erklaerung": "„mal“ (oder „doch“) macht den Imperativ weniger hart."
+  },
+  {
+   "id": "u10",
+   "typ": "luecke",
+   "satz": "Das stimmt ___, aber man muss auch die andere Seite sehen.",
+   "loesungen": [
+    "schon",
+    "zwar",
+    "ja"
+   ],
+   "hinweis": "einräumend",
+   "erklaerung": "„schon“ räumt etwas ein, bevor „aber“ widerspricht."
+  },
+  {
+   "id": "u11",
+   "typ": "auswahl",
+   "frage": "Welche Partikel drückt eine Vermutung aus? „Er hat ___ den Bus verpasst.“",
+   "optionen": [
+    "denn",
+    "mal",
+    "wohl",
+    "ja"
+   ],
+   "richtig": 2,
+   "erklaerung": "wohl = vermutlich."
+  },
+  {
+   "id": "u12",
+   "typ": "auswahl",
+   "frage": "Wo steht die Modalpartikel richtig?",
+   "optionen": [
+    "Das hast du gestern schon gesagt doch.",
+    "Das hast du doch gestern schon gesagt.",
+    "Das doch hast du gestern schon gesagt."
+   ],
+   "richtig": 1,
+   "erklaerung": "Modalpartikeln stehen im Mittelfeld, nicht nach der rechten Satzklammer und nicht im Vorfeld."
+  },
+  {
+   "id": "u13",
+   "typ": "auswahl",
+   "frage": "„Was machst du denn hier?“ – Was bewirkt „denn“?",
+   "optionen": [
+    "Es verstärkt eine Drohung.",
+    "Es drückt einen Widerspruch aus.",
+    "Es macht die Frage interessierter und persönlicher.",
+    "Es leitet einen Grund ein."
+   ],
+   "richtig": 2,
+   "erklaerung": "„denn“ in Fragen: Interesse, manchmal Überraschung."
+  },
+  {
+   "id": "u14",
+   "typ": "auswahl",
+   "frage": "„Das ist eben so.“ bedeutet:",
+   "optionen": [
+    "Das ist nur eine Vermutung.",
+    "Das ist eine höfliche Bitte.",
+    "Man kann daran nichts ändern.",
+    "Das ist gerade eben passiert."
+   ],
+   "richtig": 2,
+   "erklaerung": "eben = Es ist nun einmal so."
+  },
+  {
+   "id": "u15",
+   "typ": "auswahl",
+   "frage": "Welche Partikel passt zu einer beiläufigen, freundlichen Bitte? „Kannst du mir ___ helfen?“",
+   "optionen": [
+    "wohl",
+    "mal",
+    "eben",
+    "ja"
+   ],
+   "richtig": 1,
+   "erklaerung": "mal macht Bitten leichter und beiläufiger."
+  },
+  {
+   "id": "u16",
+   "typ": "auswahl",
+   "frage": "In welchem Satz ist „ja“ eine Modalpartikel?",
+   "optionen": [
+    "Ja, das habe ich dir schon gesagt.",
+    "Das habe ich dir ja schon gesagt.",
+    "Hast du es ihm gesagt? – Ja.",
+    "Ja, gern."
+   ],
+   "richtig": 1,
+   "erklaerung": "Im Mittelfeld ist „ja“ Partikel; am Satzanfang oder allein ist es eine Antwort."
+  },
+  {
+   "id": "u17",
+   "typ": "umformen",
+   "ausgang": "Das ist klar, das weißt du auch.",
+   "anweisung": "Drücken Sie das in einem kurzen Satz mit „doch“ aus.",
+   "loesungen": [
+    "Das ist doch klar."
+   ],
+   "erklaerung": "„doch“ erinnert an Bekanntes und klingt leicht vorwurfsvoll."
+  },
+  {
+   "id": "u18",
+   "typ": "umformen",
+   "ausgang": "Komm mit!",
+   "anweisung": "Machen Sie die Aufforderung mit „doch“ und „mal“ freundlicher.",
+   "loesungen": [
+    "Komm doch mal mit!"
+   ],
+   "erklaerung": "Reihenfolge: doch vor mal."
+  },
+  {
+   "id": "u19",
+   "typ": "umformen",
+   "ausgang": "Was ist los?",
+   "anweisung": "Fragen Sie interessiert mit „denn“.",
+   "loesungen": [
+    "Was ist denn los?"
+   ],
+   "erklaerung": "„denn“ steht in der Frage nach dem Verb im Mittelfeld."
+  },
+  {
+   "id": "u20",
+   "typ": "umformen",
+   "ausgang": "Er ist vermutlich schon zu Hause.",
+   "anweisung": "Ersetzen Sie „vermutlich“ durch eine Modalpartikel.",
+   "loesungen": [
+    "Er ist wohl schon zu Hause."
+   ],
+   "erklaerung": "wohl = vermutlich."
+  },
+  {
+   "id": "u21",
+   "typ": "umformen",
+   "ausgang": "Wir wissen alle, dass das nicht einfach ist.",
+   "anweisung": "Betonen Sie mit „ja“, dass es bekannt ist.",
+   "loesungen": [
+    "Wir wissen ja alle, dass das nicht einfach ist.",
+    "Wir alle wissen ja, dass das nicht einfach ist."
+   ],
+   "erklaerung": "„ja“ markiert gemeinsames Wissen."
+  },
+  {
+   "id": "u22",
+   "typ": "umformen",
+   "ausgang": "So ist das Leben, man kann es nicht ändern.",
+   "anweisung": "Formulieren Sie kurz mit „eben“.",
+   "loesungen": [
+    "So ist das Leben eben.",
+    "So ist eben das Leben.",
+    "Das Leben ist eben so."
+   ],
+   "erklaerung": "„eben“ drückt aus, dass man sich damit abfinden muss."
+  },
+  {
+   "id": "u23",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "doch",
+     "Widerspruch oder Erinnerung an Bekanntes"
+    ],
+    [
+     "ja",
+     "Das ist bekannt oder erstaunlich."
+    ],
+    [
+     "wohl",
+     "Vermutung"
+    ],
+    [
+     "denn",
+     "interessierte Frage"
+    ],
+    [
+     "eben",
+     "Man kann es nicht ändern."
+    ],
+    [
+     "mal",
+     "beiläufige, freundliche Aufforderung"
+    ]
+   ],
+   "erklaerung": "Die Grundbedeutung der häufigsten Modalpartikeln."
+  },
+  {
+   "id": "u24",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "Sie wollen jemanden beruhigen.",
+     "Das wird schon gut gehen."
+    ],
+    [
+     "Sie staunen.",
+     "Das ist ja fantastisch!"
+    ],
+    [
+     "Sie fragen interessiert nach.",
+     "Wo warst du denn so lange?"
+    ],
+    [
+     "Sie fordern freundlich auf.",
+     "Setz dich doch!"
+    ],
+    [
+     "Sie vermuten etwas.",
+     "Der Laden hat wohl schon zu."
+    ]
+   ],
+   "erklaerung": "Die Partikel trägt die Haltung des Sprechers."
+  },
+  {
+   "id": "u25",
+   "typ": "sortieren",
+   "teile": [
+    "doch",
+    "ist",
+    "genau",
+    "Das",
+    "der Punkt"
+   ],
+   "loesung": "Das ist doch genau der Punkt.",
+   "erklaerung": "„doch“ steht im Mittelfeld nach dem Verb."
+  },
+  {
+   "id": "u26",
+   "typ": "sortieren",
+   "teile": [
+    "eben",
+    "finden",
+    "einen anderen Weg",
+    "müssen",
+    "Wir"
+   ],
+   "loesung": "Wir müssen eben einen anderen Weg finden.",
+   "erklaerung": "„eben“ steht vor der neuen Information im Mittelfeld."
+  },
+  {
+   "id": "u27",
+   "typ": "sortieren",
+   "teile": [
+    "schon",
+    "Das",
+    "alles",
+    "gehen",
+    "wird",
+    "gut"
+   ],
+   "loesung": "Das wird schon alles gut gehen.",
+   "loesungen": [
+    "Das wird alles schon gut gehen."
+   ],
+   "erklaerung": "„schon“ beruhigt; es steht im Mittelfeld."
+  },
+  {
+   "id": "u28",
+   "typ": "sortieren",
+   "teile": [
+    "Du",
+    "völlig",
+    "hast",
+    "recht",
+    "ja"
+   ],
+   "loesung": "Du hast ja völlig recht.",
+   "erklaerung": "„ja“ (Zustimmung zu Bekanntem) steht direkt nach dem Verb."
+  },
+  {
+   "id": "u29",
+   "typ": "fehler",
+   "satz": "Was ist los denn?",
+   "fehler": "los denn",
+   "korrektur": "denn los",
+   "erklaerung": "Die Partikel steht vor dem Rest des Prädikats im Mittelfeld."
+  },
+  {
+   "id": "u30",
+   "typ": "fehler",
+   "satz": "Hast du ja morgen Zeit?",
+   "fehler": "ja",
+   "korrektur": [
+    "denn",
+    "eigentlich"
+   ],
+   "erklaerung": "Unbetontes „ja“ steht nicht in Fragen."
+  },
+  {
+   "id": "u31",
+   "typ": "fehler",
+   "satz": "Komm mal doch vorbei!",
+   "fehler": "mal doch",
+   "korrektur": "doch mal",
+   "erklaerung": "Feste Reihenfolge: doch mal."
+  },
+  {
+   "id": "u32",
+   "typ": "fehler",
+   "satz": "Das habe ich gesagt dir doch schon.",
+   "fehler": "gesagt dir doch schon",
+   "korrektur": "dir doch schon gesagt",
+   "erklaerung": "Partikeln und Pronomen stehen im Mittelfeld, das Partizip am Ende."
+  },
+  {
+   "id": "u33",
+   "typ": "rf",
+   "aussage": "Modalpartikeln können allein das Vorfeld besetzen.",
+   "wert": false,
+   "erklaerung": "Sie stehen nur im Mittelfeld."
+  },
+  {
+   "id": "u34",
+   "typ": "rf",
+   "aussage": "Unbetontes „ja“ steht nicht in Fragen.",
+   "wert": true,
+   "erklaerung": "In Fragen nimmt man „denn“ oder „eigentlich“."
+  },
+  {
+   "id": "u35",
+   "typ": "rf",
+   "aussage": "„halt“ bedeutet ungefähr dasselbe wie „eben“, wirkt aber umgangssprachlicher.",
+   "wert": true,
+   "erklaerung": "„halt“ ist vor allem im Süden und in der gesprochenen Sprache verbreitet."
+  },
+  {
+   "id": "u36",
+   "typ": "rf",
+   "aussage": "Modalpartikeln verändern den Wahrheitsgehalt eines Satzes.",
+   "wert": false,
+   "erklaerung": "Sie zeigen die Haltung des Sprechers, der Inhalt bleibt gleich."
+  }
+ ]
+}

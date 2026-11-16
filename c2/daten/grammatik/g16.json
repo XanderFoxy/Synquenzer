@@ -1,0 +1,470 @@
+{
+ "id": "g16",
+ "titel": "Subjektive Modalverben und Modalitätsverben",
+ "niveau": "C2",
+ "nr": 16,
+ "gruppe": "B",
+ "baustelle": false,
+ "pruefungsbezug": [
+  "L1",
+  "H3",
+  "S1"
+ ],
+ "kurz": "Vermutung und fremde Behauptung (Er dürfte recht haben. Sie soll sehr reich sein.), Modalitätsverben mit zu (scheinen, drohen, pflegen, vermögen).",
+ "tafel": [
+  "müssen: Ich bin fast sicher. – Er muss krank sein.",
+  "dürfte: wahrscheinlich. – Sie dürfte schon angekommen sein.",
+  "können / könnte: möglich. – Das könnte stimmen. – mögen (gehoben): einräumend. – Das mag sein, aber …",
+  "sollen: Andere behaupten es. – Der Film soll großartig sein.",
+  "wollen: Das Subjekt behauptet es von sich selbst. – Er will nichts gewusst haben.",
+  "Vergangenheit: Modalverb + Infinitiv Perfekt (Partizip II + haben/sein): Sie muss den Zug verpasst haben.",
+  "Modalitätsverben mit zu + Infinitiv: scheinen, drohen, pflegen, vermögen, versprechen: Das Projekt droht zu scheitern."
+ ],
+ "beispiele": [
+  "Er will den Brief nie erhalten haben.",
+  "Die Ministerin soll von den Plänen gewusst haben.",
+  "Das dürfte der Hauptgrund für den Rückgang sein.",
+  "Die alte Brücke droht einzustürzen.",
+  "Er pflegte jeden Morgen eine Stunde zu lesen."
+ ],
+ "fallen": [
+  {
+   "falsch": "Sie muss den Zug verpasst.",
+   "richtig": "Sie muss den Zug verpasst haben.",
+   "warum": "Vermutung über Vergangenes: Modalverb + Partizip II + haben/sein."
+  },
+  {
+   "falsch": "Der Minister will von nichts wissen gehabt.",
+   "richtig": "Der Minister will von nichts gewusst haben.",
+   "warum": "Infinitiv Perfekt = Partizip II + haben."
+  },
+  {
+   "falsch": "Das Wetter scheint besser werden.",
+   "richtig": "Das Wetter scheint besser zu werden.",
+   "warum": "Modalitätsverben verlangen „zu“ + Infinitiv."
+  },
+  {
+   "falsch": "Er hat den Schlüssel verloren haben müssen.",
+   "richtig": "Er muss den Schlüssel verloren haben.",
+   "warum": "Subjektive Modalverben stehen nicht im Perfekt; die Vergangenheit steckt im Infinitiv Perfekt."
+  }
+ ],
+ "uebungen": [
+  {
+   "id": "u01",
+   "typ": "luecke",
+   "satz": "Laut Zeitungsberichten ___ der Politiker Steuern hinterzogen haben.",
+   "loesungen": [
+    "soll"
+   ],
+   "hinweis": "Behauptung anderer",
+   "erklaerung": "sollen = Man sagt, es heißt. Die Quelle sind andere."
+  },
+  {
+   "id": "u02",
+   "typ": "luecke",
+   "satz": "Der Angeklagte ___ zur Tatzeit zu Hause gewesen sein – das behauptet er jedenfalls.",
+   "loesungen": [
+    "will"
+   ],
+   "erklaerung": "wollen = Das Subjekt behauptet es selbst."
+  },
+  {
+   "id": "u03",
+   "typ": "luecke",
+   "satz": "Die marode Brücke droht ___.",
+   "loesungen": [
+    "einzustürzen"
+   ],
+   "hinweis": "einstürzen",
+   "erklaerung": "drohen + zu + Infinitiv = Es besteht die Gefahr. Bei trennbaren Verben steht „zu“ zwischen Präfix und Stamm."
+  },
+  {
+   "id": "u04",
+   "typ": "luecke",
+   "satz": "Sie ___ den Zug verpasst haben, sonst wäre sie längst hier.",
+   "loesungen": [
+    "muss",
+    "wird"
+   ],
+   "hinweis": "fast sicher",
+   "erklaerung": "„muss“ (oder Futur II „wird … haben“) = logische Schlussfolgerung, fast sicher."
+  },
+  {
+   "id": "u05",
+   "typ": "luecke",
+   "satz": "Das ___ sein, aber es ändert nichts an der Sache.",
+   "loesungen": [
+    "mag",
+    "kann",
+    "könnte"
+   ],
+   "hinweis": "gehoben, einräumend",
+   "erklaerung": "„Das mag sein, aber …“ räumt etwas ein, um dann zu widersprechen."
+  },
+  {
+   "id": "u06",
+   "typ": "luecke",
+   "satz": "Der alte Herr ___ morgens zuerst die Zeitung zu lesen.",
+   "loesungen": [
+    "pflegt",
+    "pflegte"
+   ],
+   "hinweis": "Gewohnheit",
+   "erklaerung": "pflegen + zu = etwas gewöhnlich tun."
+  },
+  {
+   "id": "u07",
+   "typ": "luecke",
+   "satz": "Die Verhandlungen scheinen endgültig gescheitert zu ___.",
+   "loesungen": [
+    "sein"
+   ],
+   "erklaerung": "Infinitiv Perfekt mit zu: gescheitert zu sein („scheitern“ bildet das Perfekt mit sein)."
+  },
+  {
+   "id": "u08",
+   "typ": "luecke",
+   "satz": "Der Täter ___ das Land bereits verlassen haben, vermutet die Polizei.",
+   "loesungen": [
+    "dürfte"
+   ],
+   "hinweis": "wahrscheinlich",
+   "erklaerung": "dürfte (Konjunktiv II von „dürfen“) = wahrscheinlich."
+  },
+  {
+   "id": "u09",
+   "typ": "luecke",
+   "satz": "Das Wochenende verspricht sonnig zu ___.",
+   "loesungen": [
+    "werden"
+   ],
+   "erklaerung": "versprechen + zu = Es sieht gut aus, dass …"
+  },
+  {
+   "id": "u10",
+   "typ": "luecke",
+   "satz": "Kaum jemand ___ zu sagen, wie es weitergehen wird.",
+   "loesungen": [
+    "vermag"
+   ],
+   "hinweis": "gehoben für „kann“",
+   "erklaerung": "vermögen + zu = können (gehoben)."
+  },
+  {
+   "id": "u11",
+   "typ": "auswahl",
+   "frage": "„Sie soll sehr reich sein.“ bedeutet:",
+   "optionen": [
+    "Es ist sicher, dass sie sehr reich ist.",
+    "Man sagt, dass sie sehr reich ist.",
+    "Sie hat die Pflicht, reich zu sein.",
+    "Sie behauptet, dass sie sehr reich ist."
+   ],
+   "richtig": 1,
+   "erklaerung": "Subjektives „sollen“ gibt eine Behauptung anderer wieder."
+  },
+  {
+   "id": "u12",
+   "typ": "auswahl",
+   "frage": "„Er will das Geld gefunden haben.“ bedeutet:",
+   "optionen": [
+    "Er möchte das Geld finden.",
+    "Er behauptet, das Geld gefunden zu haben.",
+    "Man sagt, er habe das Geld gefunden.",
+    "Er hat das Geld sicher gefunden."
+   ],
+   "richtig": 1,
+   "erklaerung": "Subjektives „wollen“: Das Subjekt behauptet es von sich – oft mit Zweifel."
+  },
+  {
+   "id": "u13",
+   "typ": "auswahl",
+   "frage": "Welches Modalverb drückt die größte Sicherheit aus? „Er ___ zu Hause sein.“",
+   "optionen": [
+    "dürfte",
+    "mag",
+    "könnte",
+    "muss"
+   ],
+   "richtig": 3,
+   "erklaerung": "Abstufung: muss (fast sicher) – dürfte (wahrscheinlich) – kann/könnte (möglich)."
+  },
+  {
+   "id": "u14",
+   "typ": "auswahl",
+   "frage": "Welcher Satz drückt eine Vermutung über die Vergangenheit aus?",
+   "optionen": [
+    "Er dürfte die Nachricht schon gelesen haben.",
+    "Er dürfte die Nachricht schon lesen.",
+    "Er durfte die Nachricht schon lesen.",
+    "Er hat die Nachricht lesen dürfen."
+   ],
+   "richtig": 0,
+   "erklaerung": "Vermutung über Vergangenes: Modalverb + Infinitiv Perfekt."
+  },
+  {
+   "id": "u15",
+   "typ": "auswahl",
+   "frage": "„Der Damm droht zu brechen.“ bedeutet:",
+   "optionen": [
+    "Der Damm ist bereits gebrochen.",
+    "Jemand droht, den Damm zu zerstören.",
+    "Der Damm wird sicher nicht brechen.",
+    "Es besteht die Gefahr, dass der Damm bricht."
+   ],
+   "richtig": 3,
+   "erklaerung": "drohen + zu + Infinitiv: Etwas Negatives steht unmittelbar bevor."
+  },
+  {
+   "id": "u16",
+   "typ": "auswahl",
+   "frage": "Welche Form ist korrekt?",
+   "optionen": [
+    "Sie scheint die Nachricht nicht erhalten zu haben.",
+    "Sie scheint die Nachricht nicht erhalten haben.",
+    "Sie scheint die Nachricht nicht zu erhalten haben.",
+    "Sie scheint die Nachricht nicht erhalten gehabt zu haben."
+   ],
+   "richtig": 0,
+   "erklaerung": "Infinitiv Perfekt mit zu: Partizip II + zu haben."
+  },
+  {
+   "id": "u17",
+   "typ": "umformen",
+   "ausgang": "Es heißt, dass der Regisseur an einem neuen Film arbeitet.",
+   "anweisung": "Formulieren Sie mit „sollen“.",
+   "loesungen": [
+    "Der Regisseur soll an einem neuen Film arbeiten."
+   ],
+   "erklaerung": "Subjektives „sollen“ ersetzt „Es heißt, dass …“."
+  },
+  {
+   "id": "u18",
+   "typ": "umformen",
+   "ausgang": "Er behauptet, dass er den Unfall nicht verursacht hat.",
+   "anweisung": "Formulieren Sie mit „wollen“.",
+   "loesungen": [
+    "Er will den Unfall nicht verursacht haben."
+   ],
+   "erklaerung": "Subjektives „wollen“ + Infinitiv Perfekt für Vergangenes."
+  },
+  {
+   "id": "u19",
+   "typ": "umformen",
+   "ausgang": "Wahrscheinlich hat sie die Mail übersehen.",
+   "anweisung": "Formulieren Sie mit „dürfte“.",
+   "loesungen": [
+    "Sie dürfte die Mail übersehen haben."
+   ],
+   "erklaerung": "dürfte + Infinitiv Perfekt = wahrscheinlich in der Vergangenheit."
+  },
+  {
+   "id": "u20",
+   "typ": "umformen",
+   "ausgang": "Es sieht so aus, als ob das Projekt scheitert.",
+   "anweisung": "Formulieren Sie mit „drohen“.",
+   "loesungen": [
+    "Das Projekt droht zu scheitern."
+   ],
+   "erklaerung": "drohen + zu + Infinitiv für eine bevorstehende Gefahr."
+  },
+  {
+   "id": "u21",
+   "typ": "umformen",
+   "ausgang": "Ich bin mir sicher, dass er die Wahrheit gesagt hat.",
+   "anweisung": "Formulieren Sie mit „müssen“.",
+   "loesungen": [
+    "Er muss die Wahrheit gesagt haben."
+   ],
+   "erklaerung": "Subjektives „müssen“ + Infinitiv Perfekt = fast sicher."
+  },
+  {
+   "id": "u22",
+   "typ": "umformen",
+   "ausgang": "Es ist möglich, dass die Daten verloren gegangen sind.",
+   "anweisung": "Formulieren Sie mit „können“.",
+   "loesungen": [
+    "Die Daten können verloren gegangen sein.",
+    "Die Daten könnten verloren gegangen sein.",
+    "Die Daten können verlorengegangen sein.",
+    "Die Daten könnten verlorengegangen sein."
+   ],
+   "erklaerung": "können/könnte + Infinitiv Perfekt = möglich. Beide Schreibungen (verloren gegangen / verlorengegangen) sind zulässig."
+  },
+  {
+   "id": "u23",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "Er muss krank sein.",
+     "Ich bin fast sicher, dass er krank ist."
+    ],
+    [
+     "Er dürfte krank sein.",
+     "Wahrscheinlich ist er krank."
+    ],
+    [
+     "Er könnte krank sein.",
+     "Vielleicht ist er krank."
+    ],
+    [
+     "Er soll krank sein.",
+     "Man sagt, dass er krank ist."
+    ],
+    [
+     "Er will krank gewesen sein.",
+     "Er behauptet, dass er krank war."
+    ]
+   ],
+   "erklaerung": "Subjektive Modalverben nach Sicherheit und Quelle der Aussage."
+  },
+  {
+   "id": "u24",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "Das alte Haus droht",
+     "einzustürzen."
+    ],
+    [
+     "Sie pflegte",
+     "sonntags lange zu schlafen."
+    ],
+    [
+     "Er vermochte",
+     "vor Aufregung kaum zu sprechen."
+    ],
+    [
+     "Die Verletzte scheint",
+     "große Schmerzen zu haben."
+    ],
+    [
+     "Der Abend verspricht",
+     "interessant zu werden."
+    ]
+   ],
+   "erklaerung": "Modalitätsverben mit zu: drohen (Gefahr), pflegen (Gewohnheit), vermögen (können), scheinen (Anschein), versprechen (positive Erwartung)."
+  },
+  {
+   "id": "u25",
+   "typ": "sortieren",
+   "teile": [
+    "haben",
+    "den Täter",
+    "Der Zeuge",
+    "will",
+    "genau",
+    "gesehen"
+   ],
+   "loesung": "Der Zeuge will den Täter genau gesehen haben.",
+   "loesungen": [
+    "Den Täter will der Zeuge genau gesehen haben."
+   ],
+   "erklaerung": "Subjektives „wollen“ an Position 2, Infinitiv Perfekt am Ende."
+  },
+  {
+   "id": "u26",
+   "typ": "sortieren",
+   "teile": [
+    "im nächsten Jahr",
+    "steigen",
+    "weiter",
+    "dürften",
+    "Die Preise"
+   ],
+   "loesung": "Die Preise dürften im nächsten Jahr weiter steigen.",
+   "loesungen": [
+    "Im nächsten Jahr dürften die Preise weiter steigen."
+   ],
+   "erklaerung": "dürfte(n) = wahrscheinlich; der Infinitiv steht am Ende."
+  },
+  {
+   "id": "u27",
+   "typ": "sortieren",
+   "teile": [
+    "zu haben",
+    "überstanden",
+    "scheint",
+    "Das Unternehmen",
+    "die Krise"
+   ],
+   "loesung": "Das Unternehmen scheint die Krise überstanden zu haben.",
+   "erklaerung": "scheinen + Infinitiv Perfekt mit zu: überstanden zu haben."
+  },
+  {
+   "id": "u28",
+   "typ": "sortieren",
+   "teile": [
+    "muss",
+    "vergessen",
+    "den Termin",
+    "Sie",
+    "völlig",
+    "haben"
+   ],
+   "loesung": "Sie muss den Termin völlig vergessen haben.",
+   "erklaerung": "Vermutung über Vergangenes: muss + Partizip II + haben."
+  },
+  {
+   "id": "u29",
+   "typ": "fehler",
+   "satz": "Das alte Gebäude droht einstürzen.",
+   "fehler": "einstürzen",
+   "korrektur": "einzustürzen",
+   "erklaerung": "„drohen“ als Modalitätsverb verlangt „zu“ + Infinitiv."
+  },
+  {
+   "id": "u30",
+   "typ": "fehler",
+   "satz": "Der Maler soll das Bild selbst gestohlen hat.",
+   "fehler": "hat",
+   "korrektur": "haben",
+   "erklaerung": "Nach dem Modalverb steht der Infinitiv Perfekt: gestohlen haben."
+  },
+  {
+   "id": "u31",
+   "typ": "fehler",
+   "satz": "Die Verhandlungen scheinen gescheitert zu werden.",
+   "fehler": "werden",
+   "korrektur": "sein",
+   "erklaerung": "„scheitern“ bildet das Perfekt mit „sein“: gescheitert zu sein."
+  },
+  {
+   "id": "u32",
+   "typ": "fehler",
+   "satz": "Laut Augenzeugen will der Fahrer viel zu schnell gefahren sein.",
+   "fehler": "will",
+   "korrektur": "soll",
+   "erklaerung": "Die Behauptung stammt von Dritten (Augenzeugen), daher „soll“. „will“ hieße: Der Fahrer behauptet es selbst."
+  },
+  {
+   "id": "u33",
+   "typ": "rf",
+   "aussage": "„Er dürfte recht haben.“ drückt eine größere Sicherheit aus als „Er könnte recht haben.“",
+   "wert": true,
+   "erklaerung": "dürfte = wahrscheinlich, könnte = möglich."
+  },
+  {
+   "id": "u34",
+   "typ": "rf",
+   "aussage": "„Sie soll die Prüfung bestanden haben.“ heißt: Sie behauptet es selbst.",
+   "wert": false,
+   "erklaerung": "„soll“ gibt die Behauptung anderer wieder; „will“ wäre ihre eigene Behauptung."
+  },
+  {
+   "id": "u35",
+   "typ": "rf",
+   "aussage": "Bei subjektiven Modalverben drückt man Vergangenes mit dem Infinitiv Perfekt aus: Er muss es gewusst haben.",
+   "wert": true,
+   "erklaerung": "Das Modalverb bleibt im Präsens, die Vergangenheit steckt im Infinitiv Perfekt."
+  },
+  {
+   "id": "u36",
+   "typ": "rf",
+   "aussage": "„Er pflegt früh aufzustehen.“ bedeutet, dass er gewöhnlich früh aufsteht.",
+   "wert": true,
+   "erklaerung": "pflegen + zu drückt eine Gewohnheit aus (gehoben)."
+  }
+ ]
+}

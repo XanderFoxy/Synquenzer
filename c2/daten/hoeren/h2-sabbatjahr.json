@@ -1,0 +1,161 @@
+{
+ "id": "h2-sabbatjahr",
+ "titel": "Gespräch: Ein Jahr Auszeit?",
+ "teil": "Teil 2",
+ "art": "Gespräch",
+ "stimmen": [
+  "Carla",
+  "Henrik"
+ ],
+ "audio": "audio/h2-sabbatjahr.mp3",
+ "dauer_s": 150,
+ "abspielen": 1,
+ "anleitung": "Sie hören ein Gespräch zwischen Carla und Henrik, nur einmal. Lesen Sie vorher die Aussagen. Entscheiden Sie beim Hören: Wer vertritt die jeweilige Meinung – Carla, Henrik oder beide?",
+ "transkript": [
+  {
+   "sprecher": "Henrik",
+   "text": "Carla, sag mal, stimmt das, was Tobias erzählt? Du willst ein ganzes Jahr aussetzen?"
+  },
+  {
+   "sprecher": "Carla",
+   "text": "Gerüchte verbreiten sich bei uns schneller als jede Rundmail. Ja, es stimmt. Ich habe ein Sabbatjahr beantragt, und es ist genehmigt. Ab März bin ich weg."
+  },
+  {
+   "sprecher": "Henrik",
+   "text": "Wahnsinn. Und was machst du dann ein ganzes Jahr lang?"
+  },
+  {
+   "sprecher": "Carla",
+   "text": "Das ist ja das Schöne: Ich weiß es noch nicht genau. Ein paar Monate will ich auf jeden Fall in Portugal verbringen, einen Sprachkurs machen, vielleicht ein bisschen wandern. Und ansonsten einfach mal nicht funktionieren müssen."
+  },
+  {
+   "sprecher": "Henrik",
+   "text": "Ich beneide dich, ehrlich. Aber ich könnte das nicht. Ich hätte die ganze Zeit das Gefühl, dass mir die Felle davonschwimmen. Wenn du zurückkommst, sitzt jemand anders auf deinem Projekt, die Software ist eine andere, und alle reden über Dinge, von denen du noch nie gehört hast."
+  },
+  {
+   "sprecher": "Carla",
+   "text": "Das Risiko gibt es, klar. Aber mal ehrlich: Wenn eine Firma nach einem Jahr ohne mich nicht mehr weiß, wofür sie mich braucht, dann sagt das doch mehr über die Firma aus als über mich."
+  },
+  {
+   "sprecher": "Henrik",
+   "text": "Das klingt gut, solange man Mitte dreißig ist und gefragt. Mit Mitte fünfzig sieht das anders aus."
+  },
+  {
+   "sprecher": "Carla",
+   "text": "Da gebe ich dir recht. Genau deshalb mache ich es jetzt und nicht in zwanzig Jahren. Das Geld dafür habe ich mir übrigens drei Jahre lang angespart, indem ich auf einen Teil meines Gehalts verzichtet habe. Das war schon ein Opfer."
+  },
+  {
+   "sprecher": "Henrik",
+   "text": "Siehst du, das ist der Punkt: Das muss man sich erst mal leisten können. Für die meisten ist so ein Jahr doch ein Privileg."
+  },
+  {
+   "sprecher": "Carla",
+   "text": "Natürlich ist es ein Privileg, das bestreite ich ja gar nicht. Aber das heißt doch nicht, dass ich es nicht nutzen sollte. Ich finde eher, dass mehr Betriebe so etwas anbieten müssten, damit es eben kein Privileg bleibt."
+  },
+  {
+   "sprecher": "Henrik",
+   "text": "Schön wär’s. Ich bezweifle nur, dass sich das in kleinen Betrieben überhaupt organisieren lässt. Bei uns in der Abteilung kann ja schon keiner drei Wochen am Stück Urlaub nehmen, ohne dass alles zusammenbricht."
+  },
+  {
+   "sprecher": "Carla",
+   "text": "Das ist aber kein Naturgesetz, sondern schlechte Planung. Wenn eine Abteilung nicht drei Wochen ohne einen einzelnen Menschen auskommt, dann hat sie ein Problem – mit oder ohne Sabbatjahr."
+  },
+  {
+   "sprecher": "Henrik",
+   "text": "Na, sag das mal unserem Chef."
+  },
+  {
+   "sprecher": "Carla",
+   "text": "Hab ich. Deswegen hat es ja auch ein halbes Jahr gedauert, bis er unterschrieben hat."
+  }
+ ],
+ "aufgaben": [
+  {
+   "id": "a1",
+   "typ": "auswahl",
+   "frage": "Wer sagt, er oder sie würde sich während einer langen Auszeit ständig um den eigenen Arbeitsplatz sorgen?",
+   "optionen": [
+    "Carla",
+    "Henrik",
+    "beide"
+   ],
+   "richtig": 1,
+   "erklaerung": "Henrik: „Ich hätte die ganze Zeit das Gefühl, dass mir die Felle davonschwimmen.“"
+  },
+  {
+   "id": "a2",
+   "typ": "auswahl",
+   "frage": "Wer meint, dass das Lebensalter bei der Entscheidung für eine Auszeit eine Rolle spielt?",
+   "optionen": [
+    "Carla",
+    "Henrik",
+    "beide"
+   ],
+   "richtig": 2,
+   "erklaerung": "Henrik: „Mit Mitte fünfzig sieht das anders aus.“ Carla: „Da gebe ich dir recht. Genau deshalb mache ich es jetzt“."
+  },
+  {
+   "id": "a3",
+   "typ": "auswahl",
+   "frage": "Wer fordert, dass mehr Arbeitgeber Auszeiten ermöglichen?",
+   "optionen": [
+    "Carla",
+    "Henrik",
+    "beide"
+   ],
+   "richtig": 0,
+   "erklaerung": "Carla: „dass mehr Betriebe so etwas anbieten müssten“. Henrik hält das für schwer umsetzbar."
+  },
+  {
+   "id": "a4",
+   "typ": "auswahl",
+   "frage": "Wer hält Auszeiten in kleinen Betrieben für schwer umsetzbar?",
+   "optionen": [
+    "Carla",
+    "Henrik",
+    "beide"
+   ],
+   "richtig": 1,
+   "erklaerung": "Henrik: „Ich bezweifle nur, dass sich das in kleinen Betrieben überhaupt organisieren lässt.“"
+  },
+  {
+   "id": "a5",
+   "typ": "auswahl",
+   "frage": "Wer führt Engpässe in der Abteilung auf mangelhafte Organisation zurück?",
+   "optionen": [
+    "Carla",
+    "Henrik",
+    "beide"
+   ],
+   "richtig": 0,
+   "erklaerung": "Carla: „Das ist aber kein Naturgesetz, sondern schlechte Planung.“"
+  },
+  {
+   "id": "t1",
+   "typ": "rfn",
+   "aussage": "Carla bestreitet, dass ein Sabbatjahr ein Privileg ist.",
+   "wert": "falsch",
+   "erklaerung": "„Natürlich ist es ein Privileg, das bestreite ich ja gar nicht.“",
+   "nur_training": true
+  },
+  {
+   "id": "t2",
+   "typ": "rfn",
+   "aussage": "Henrik plant, in eine andere Abteilung zu wechseln.",
+   "wert": "nicht im Text",
+   "erklaerung": "Von einem Wechsel ist keine Rede; Henrik erwähnt seine Abteilung nur, weil dort niemand drei Wochen Urlaub am Stück nehmen kann.",
+   "nur_training": true
+  },
+  {
+   "id": "t3",
+   "typ": "luecke",
+   "satz": "Carla hat das Geld für das Sabbatjahr ___ Jahre lang angespart.",
+   "loesungen": [
+    "drei",
+    "3"
+   ],
+   "erklaerung": "„Das Geld dafür habe ich mir übrigens drei Jahre lang angespart“",
+   "nur_training": true
+  }
+ ]
+}

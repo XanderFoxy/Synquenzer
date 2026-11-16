@@ -1,0 +1,423 @@
+{
+ "id": "g05",
+ "titel": "Feste Präpositionen und Pronominaladverbien",
+ "niveau": "C1",
+ "nr": 5,
+ "gruppe": "A",
+ "baustelle": true,
+ "pruefungsbezug": [
+  "S1",
+  "S2",
+  "P2"
+ ],
+ "tafel": [
+  "Verben, Adjektive und Nomen haben oft eine feste Präposition mit festem Kasus: abhängen von + D, sich verlassen auf + A, stolz auf + A, Interesse an + D.",
+  "Bei an, auf, in, über, vor entscheidet die Verbindung, nicht die Bewegung: sich freuen auf + A, teilnehmen an + D, bestehen auf + D; über fast immer + A.",
+  "Sache: da(r) + Präposition – davon, darauf, daran. Frage: wo(r) + Präposition – worüber, wovon.",
+  "Person: Präposition + Pronomen – auf sie, mit ihm. Frage: auf wen? mit wem?",
+  "Vor einem dass-Satz oder Infinitiv steht oft das Pronominaladverb: Ich bestehe darauf, dass … – Sie hat sich daran gewöhnt, früh aufzustehen.",
+  "Ein r kommt vor Vokal dazu: darauf, woran, darüber; sonst ohne r: dabei, womit, davon."
+ ],
+ "beispiele": [
+  "Der Erfolg der Reform hängt maßgeblich davon ab, ob die Länder mitziehen.",
+  "Worauf es in dieser Debatte wirklich ankommt, bleibt umstritten.",
+  "Die Autorin besteht darauf, dass ihr Name nicht genannt wird.",
+  "Die Kinder freuen sich auf ihre Großmutter – sie warten schon seit Wochen auf sie."
+ ],
+ "fallen": [
+  {
+   "falsch": "von das Projekt",
+   "richtig": "von dem Projekt / davon",
+   "warum": "„von“ verlangt den Dativ; statt „von das“ bei Sachen: davon."
+  },
+  {
+   "falsch": "über das konnten wir uns nicht einigen",
+   "richtig": "darüber konnten wir uns nicht einigen",
+   "warum": "Für eine Sache steht das Pronominaladverb: darüber."
+  },
+  {
+   "falsch": "Ich warte darauf. (gemeint: auf meinen Bruder)",
+   "richtig": "Ich warte auf ihn.",
+   "warum": "Bei Personen: Präposition + Personalpronomen."
+  },
+  {
+   "falsch": "Sie interessiert sich über Architektur.",
+   "richtig": "Sie interessiert sich für Architektur.",
+   "warum": "Die Präposition gehört zum Verb und wird mit ihm gelernt."
+  }
+ ],
+ "uebungen": [
+  {
+   "id": "u02",
+   "typ": "luecke",
+   "satz": "Die Autorin besteht ___, dass ihr Name nicht genannt wird.",
+   "loesungen": [
+    "darauf"
+   ],
+   "hinweis": "Pronominaladverb",
+   "erklaerung": "„bestehen auf“ + Dativ; als Korrelat vor dem dass-Satz: darauf."
+  },
+  {
+   "id": "u03",
+   "typ": "luecke",
+   "satz": "___ hat sich die Kontroverse eigentlich entzündet?",
+   "loesungen": [
+    "Woran"
+   ],
+   "hinweis": "Fragewort",
+   "erklaerung": "„sich entzünden an“; Frage nach einer Sache: Woran?"
+  },
+  {
+   "id": "u04",
+   "typ": "luecke",
+   "satz": "Viele Leser haben sich ___ beschwert, dass die Übersetzung zu frei sei.",
+   "loesungen": [
+    "darüber"
+   ],
+   "hinweis": "Pronominaladverb",
+   "erklaerung": "„sich beschweren über“ → darüber."
+  },
+  {
+   "id": "u05",
+   "typ": "luecke",
+   "satz": "Die Studie zielt ___ ab, verdeckte Vorurteile sichtbar zu machen.",
+   "loesungen": [
+    "darauf"
+   ],
+   "hinweis": "Pronominaladverb",
+   "erklaerung": "„abzielen auf“ → darauf, hier vor einem Infinitiv mit zu."
+  },
+  {
+   "id": "u06",
+   "typ": "luecke",
+   "satz": "Das Publikum reagierte ___ die Provokation mit eisigem Schweigen.",
+   "loesungen": [
+    "auf"
+   ],
+   "hinweis": "Präposition",
+   "erklaerung": "„reagieren auf“ + Akkusativ."
+  },
+  {
+   "id": "u07",
+   "typ": "luecke",
+   "satz": "Die Ministerin warnte eindringlich ___ einer Spaltung der Gesellschaft.",
+   "loesungen": [
+    "vor"
+   ],
+   "hinweis": "Präposition",
+   "erklaerung": "„warnen vor“ + Dativ."
+  },
+  {
+   "id": "u08",
+   "typ": "luecke",
+   "satz": "Die Jury war von dem Debüt so angetan, dass sie sich einstimmig ___ entschied.",
+   "loesungen": [
+    "dafür"
+   ],
+   "hinweis": "Pronominaladverb",
+   "erklaerung": "„sich entscheiden für“ → dafür."
+  },
+  {
+   "id": "u09",
+   "typ": "luecke",
+   "satz": "Die Großmutter kommt nur selten zu Besuch; die Kinder freuen sich schon seit Wochen auf ___.",
+   "loesungen": [
+    "sie"
+   ],
+   "hinweis": "Pronomen",
+   "erklaerung": "Bei Personen kein Pronominaladverb: auf sie (die Großmutter), nicht „darauf“."
+  },
+  {
+   "id": "u10",
+   "typ": "luecke",
+   "satz": "Die Stadt ist zu Recht stolz ___ ihre behutsam restaurierte Altstadt.",
+   "loesungen": [
+    "auf"
+   ],
+   "hinweis": "Präposition",
+   "erklaerung": "„stolz auf“ + Akkusativ."
+  },
+  {
+   "id": "u11",
+   "typ": "luecke",
+   "satz": "Das Interesse ___ klassischer Musik ist bei Jugendlichen größer als vermutet.",
+   "loesungen": [
+    "an"
+   ],
+   "hinweis": "Präposition",
+   "erklaerung": "„das Interesse an“ + Dativ."
+  },
+  {
+   "id": "u12",
+   "typ": "luecke",
+   "satz": "Der Roman handelt ___ einer Frau, die ihre Vergangenheit verschweigt.",
+   "loesungen": [
+    "von"
+   ],
+   "hinweis": "Präposition",
+   "erklaerung": "„handeln von“ + Dativ."
+  },
+  {
+   "id": "u13",
+   "typ": "luecke",
+   "satz": "Die Bevölkerung leidet seit Jahren ___ der hohen Inflation.",
+   "loesungen": [
+    "unter"
+   ],
+   "hinweis": "Präposition",
+   "erklaerung": "„leiden unter“ + Dativ."
+  },
+  {
+   "id": "u14",
+   "typ": "luecke",
+   "satz": "Nach dem Umzug musste sie sich erst ___ gewöhnen, dass die Geschäfte sonntags geschlossen sind.",
+   "loesungen": [
+    "daran"
+   ],
+   "hinweis": "Pronominaladverb",
+   "erklaerung": "„sich gewöhnen an“ → daran."
+  },
+  {
+   "id": "u15",
+   "typ": "auswahl",
+   "frage": "Welche Frage ist standardsprachlich korrekt?",
+   "optionen": [
+    "An was denkst du gerade?",
+    "Worauf denkst du gerade?",
+    "Woran denkst du gerade?"
+   ],
+   "richtig": 2,
+   "erklaerung": "„denken an“ → woran. „An was“ ist umgangssprachlich, „worauf“ passt nicht zum Verb."
+  },
+  {
+   "id": "u17",
+   "typ": "auswahl",
+   "frage": "„Die Kommission besteht ___ zwölf Mitgliedern.“",
+   "optionen": [
+    "aus",
+    "auf",
+    "in"
+   ],
+   "richtig": 0,
+   "erklaerung": "„bestehen aus“ (zusammengesetzt sein); „bestehen auf“ heißt dagegen „fordern“."
+  },
+  {
+   "id": "u19",
+   "typ": "auswahl",
+   "frage": "„Mit ___ hast du über das Projekt gesprochen?“",
+   "optionen": [
+    "wen",
+    "was",
+    "wem"
+   ],
+   "richtig": 2,
+   "erklaerung": "„sprechen mit“ + Dativ; Frage nach einer Person: mit wem."
+  },
+  {
+   "id": "u20",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "sich verlassen",
+     "auf"
+    ],
+    [
+     "abhängen",
+     "von"
+    ],
+    [
+     "sich beschäftigen",
+     "mit"
+    ],
+    [
+     "teilnehmen",
+     "an"
+    ],
+    [
+     "leiden",
+     "unter"
+    ],
+    [
+     "sich fürchten",
+     "vor"
+    ]
+   ],
+   "erklaerung": "Feste Präpositionen lernt man immer zusammen mit dem Verb."
+  },
+  {
+   "id": "u21",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "das Interesse",
+     "an"
+    ],
+    [
+     "die Sehnsucht",
+     "nach"
+    ],
+    [
+     "die Angst",
+     "vor"
+    ],
+    [
+     "der Verzicht",
+     "auf"
+    ],
+    [
+     "die Verantwortung",
+     "für"
+    ],
+    [
+     "der Beitrag",
+     "zu"
+    ]
+   ],
+   "erklaerung": "Auch Nomen haben feste Präpositionen, oft dieselben wie das Verb (verzichten auf → der Verzicht auf)."
+  },
+  {
+   "id": "u22",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "Woran zweifelst du?",
+     "An der Methode."
+    ],
+    [
+     "Worauf wartest du?",
+     "Auf die Ergebnisse."
+    ],
+    [
+     "Wofür setzt du dich ein?",
+     "Für bessere Arbeitsbedingungen."
+    ],
+    [
+     "Womit rechnest du?",
+     "Mit einer Absage."
+    ],
+    [
+     "Wovon hängt das ab?",
+     "Vom Wetter."
+    ]
+   ],
+   "erklaerung": "Das Fragewort mit wo(r)- enthält dieselbe Präposition wie die Antwort."
+  },
+  {
+   "id": "u23",
+   "typ": "sortieren",
+   "teile": [
+    "in dieser Debatte",
+    "es",
+    "Worauf",
+    "ankommt,",
+    "umstritten",
+    "wirklich",
+    "ist"
+   ],
+   "loesung": "Worauf es in dieser Debatte wirklich ankommt, ist umstritten.",
+   "loesungen": [
+    "Worauf es wirklich in dieser Debatte ankommt, ist umstritten."
+   ],
+   "erklaerung": "„ankommen auf“ → worauf; der Nebensatz steht im Vorfeld, danach folgt das Verb (ist)."
+  },
+  {
+   "id": "u24",
+   "typ": "sortieren",
+   "teile": [
+    "öffentlich",
+    "geführt",
+    "werden",
+    "die Verhandlungen",
+    "dass",
+    "Die Gewerkschaft",
+    "bestanden,",
+    "hat",
+    "darauf"
+   ],
+   "loesung": "Die Gewerkschaft hat darauf bestanden, dass die Verhandlungen öffentlich geführt werden.",
+   "erklaerung": "Korrelat „darauf“ im Hauptsatz, im dass-Satz Verb am Ende: geführt werden."
+  },
+  {
+   "id": "u25",
+   "typ": "sortieren",
+   "teile": [
+    "sich",
+    "man",
+    "kann",
+    "Auf ihre Urteile",
+    "verlassen"
+   ],
+   "loesung": "Auf ihre Urteile kann man sich verlassen.",
+   "erklaerung": "Präpositionalobjekt im Vorfeld, dann Verb, Subjekt, Reflexivpronomen; der Infinitiv steht am Ende."
+  },
+  {
+   "id": "u27",
+   "typ": "fehler",
+   "satz": "Wir haben lange über die Kosten gestritten, doch über das konnten wir uns nicht einigen.",
+   "fehler": "über das",
+   "korrektur": "darüber",
+   "erklaerung": "Für eine Sache steht das Pronominaladverb: darüber."
+  },
+  {
+   "id": "u29",
+   "typ": "fehler",
+   "satz": "Seit ihrer Studienzeit interessiert sie sich sehr über moderne Architektur.",
+   "fehler": "über",
+   "korrektur": "für",
+   "erklaerung": "„sich interessieren für“."
+  },
+  {
+   "id": "u30",
+   "typ": "fehler",
+   "satz": "Der Erfolg hängt nicht nur am Talent ab, sondern auch vom Fleiß.",
+   "fehler": "am",
+   "korrektur": "vom",
+   "erklaerung": "„abhängen von“: vom Talent."
+  },
+  {
+   "id": "u32",
+   "typ": "rf",
+   "aussage": "Bei Personen verwendet man kein Pronominaladverb: Ich warte auf ihn, nicht „darauf“, wenn ein Mensch gemeint ist.",
+   "wert": true,
+   "erklaerung": "Pronominaladverbien stehen für Sachen und Sachverhalte."
+  },
+  {
+   "id": "u33",
+   "typ": "rf",
+   "aussage": "In festen Verbindungen steht nach „über“ fast immer der Akkusativ: sprechen über, sich ärgern über, nachdenken über.",
+   "wert": true,
+   "erklaerung": "Wenn „über“ zum Verb gehört, folgt in aller Regel der Akkusativ."
+  },
+  {
+   "id": "u35",
+   "typ": "umformen",
+   "ausgang": "Sie träumt von einer eigenen Buchhandlung.",
+   "anweisung": "Fragen Sie nach „von einer eigenen Buchhandlung“.",
+   "loesungen": [
+    "Wovon träumt sie?"
+   ],
+   "erklaerung": "„träumen von“, Frage nach einer Sache: wo + von = wovon."
+  },
+  {
+   "id": "u36",
+   "typ": "umformen",
+   "ausgang": "Er hat nicht damit gerechnet. Die Jury würde ihn auszeichnen.",
+   "anweisung": "Verbinden Sie die Sätze: Er hat nicht damit gerechnet, dass …",
+   "loesungen": [
+    "Er hat nicht damit gerechnet, dass die Jury ihn auszeichnen würde.",
+    "Er hat nicht damit gerechnet, dass ihn die Jury auszeichnen würde."
+   ],
+   "erklaerung": "Korrelat „damit“ (rechnen mit) + dass-Satz mit Verb am Ende."
+  },
+  {
+   "id": "u37",
+   "typ": "luecke",
+   "satz": "Die Kommission hat sich lange ___ befasst, ob die Regel noch zeitgemäß ist.",
+   "loesungen": [
+    "damit"
+   ],
+   "hinweis": "Pronominaladverb",
+   "erklaerung": "„sich mit etwas befassen“: Der ob-Satz wird mit „damit“ angekündigt."
+  }
+ ]
+}

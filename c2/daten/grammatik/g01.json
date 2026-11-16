@@ -1,0 +1,466 @@
+{
+ "id": "g01",
+ "titel": "Genus sicher bestimmen",
+ "niveau": "C1",
+ "nr": 1,
+ "gruppe": "A",
+ "baustelle": true,
+ "pruefungsbezug": [
+  "S1",
+  "S2",
+  "P1"
+ ],
+ "tafel": [
+  "Das Grundwort (das letzte Glied) bestimmt das Genus: das Buch → das Lehrbuch, die Handlung → die Buchhandlung.",
+  "Feminin (fast ausnahmslos): -ung, -heit, -keit, -schaft, -ion, -tät, -ik, -enz, -anz: die Haltung, die Gelassenheit, die Toleranz.",
+  "Neutral: -chen, -lein, -um und substantivierte Infinitive (das Gremium, das Zögern); meist auch -ment (das Argument, aber: der Moment).",
+  "Maskulin: -ling, -ismus, -or, -ist, Personen auf -ant (der Liebling, der Realismus, der Autor, der Praktikant); bei -e: der Name, der Gedanke, der Glaube, der Wille.",
+  "-nis und -tum: Lernen! die Erkenntnis – das Ergebnis; das Wachstum – der Irrtum, der Reichtum.",
+  "Gleiche Form, andere Bedeutung: der/das Band, der/das Gehalt, der/die Leiter, der/das Verdienst, die/das Steuer.",
+  "Pronomen folgen dem Genus: die App – sie, das Gremium – es, der Ausschuss – er."
+ ],
+ "beispiele": [
+  "Der dritte Band der Werkausgabe versammelt die Briefe aus dem Exil.",
+  "Kritiker vermissen in dem Essay den gedanklichen Gehalt früherer Arbeiten; das Gehalt der Autorin spielt dabei keine Rolle.",
+  "Die Erkenntnis, dass Sprache das Denken prägt, ist älter als das Ergebnis jeder neueren Studie.",
+  "Die Lust am Widerspruch gehört zum Wesen der Wissenschaft."
+ ],
+ "fallen": [
+  {
+   "falsch": "mein Lust",
+   "richtig": "meine Lust",
+   "warum": "„die Lust“ ist feminin, also „meine“."
+  },
+  {
+   "falsch": "der Lehrbuch",
+   "richtig": "das Lehrbuch",
+   "warum": "Das Grundwort „das Buch“ bestimmt das Genus des Kompositums."
+  },
+  {
+   "falsch": "eine App, der mir hilft",
+   "richtig": "eine App, die mir hilft",
+   "warum": "Das Relativpronomen richtet sich nach dem Genus des Bezugsworts: die App → die."
+  },
+  {
+   "falsch": "der Thema",
+   "richtig": "das Thema",
+   "warum": "Fremdwörter auf -ma sind fast immer neutral (das Thema, das Dilemma); Ausnahme: die Firma."
+  },
+  {
+   "falsch": "der Ergebnis",
+   "richtig": "das Ergebnis",
+   "warum": "Bei -nis entscheidet das Wort selbst: das Ergebnis, aber die Erkenntnis."
+  }
+ ],
+ "uebungen": [
+  {
+   "id": "u01",
+   "typ": "luecke",
+   "satz": "Stifter veröffentlichte 1853 ___ Erzählband „Bunte Steine“.",
+   "loesungen": [
+    "seinen"
+   ],
+   "hinweis": "sein-",
+   "erklaerung": "„der Band“ (Buch, Sammlung) ist maskulin, also im Akkusativ „seinen“. „Das Band“ wäre ein Streifen oder eine Verbindung."
+  },
+  {
+   "id": "u02",
+   "typ": "luecke",
+   "satz": "Die Rede zeugte weniger von Hochmut als von ___ Demut, die man dem Redner kaum zugetraut hätte.",
+   "loesungen": [
+    "einer"
+   ],
+   "hinweis": "ein-",
+   "erklaerung": "„Die Demut“ ist feminin wie die Anmut und die Wehmut, obwohl „der Mut“ und „der Hochmut“ maskulin sind. Nach „von“ steht der Dativ: von einer Demut."
+  },
+  {
+   "id": "u03",
+   "typ": "luecke",
+   "satz": "Im Mittelpunkt der Tagung stand ___ Erkenntnis, dass Sprache das Denken prägt.",
+   "loesungen": [
+    "die"
+   ],
+   "hinweis": "d-",
+   "erklaerung": "Die meisten Nomen auf -nis sind neutral (das Ergebnis, das Zeugnis); eine kleinere Gruppe ist feminin (die Erkenntnis, die Kenntnis, die Erlaubnis). „Erkenntnis“ gehört zu dieser Gruppe."
+  },
+  {
+   "id": "u04",
+   "typ": "luecke",
+   "satz": "Erst ___ Ergebnis der zweiten Messreihe bestätigte die Hypothese.",
+   "loesungen": [
+    "das"
+   ],
+   "hinweis": "d-",
+   "erklaerung": "„Das Ergebnis“ ist neutral – anders als „die Erkenntnis“. Bei -nis hilft nur Lernen: das Zeugnis, das Verständnis, das Bedürfnis."
+  },
+  {
+   "id": "u05",
+   "typ": "luecke",
+   "satz": "Der Roman kreist um ___ Schicksal einer Kaufmannsfamilie über vier Generationen.",
+   "loesungen": [
+    "das"
+   ],
+   "hinweis": "d-",
+   "erklaerung": "Nomen auf -sal sind meist neutral: das Schicksal, das Rinnsal (Ausnahmen: die Mühsal, die Trübsal). „um“ verlangt den Akkusativ."
+  },
+  {
+   "id": "u06",
+   "typ": "luecke",
+   "satz": "Es war ___ folgenschwerer Irrtum, die Warnungen der Fachleute zu übergehen.",
+   "loesungen": [
+    "ein"
+   ],
+   "hinweis": "ein-",
+   "erklaerung": "„Der Irrtum“ ist eine Ausnahme bei -tum (sonst neutral: das Wachstum, das Eigentum). Maskulin im Nominativ: ein folgenschwerer Irrtum."
+  },
+  {
+   "id": "u07",
+   "typ": "luecke",
+   "satz": "Nach dem Tod des Verlegers trat seine Tochter ___ Erbe des Hauses an.",
+   "loesungen": [
+    "das"
+   ],
+   "hinweis": "d-",
+   "erklaerung": "„Das Erbe“ ist die Hinterlassenschaft, „der Erbe“ die Person, die erbt. Man tritt das Erbe an."
+  },
+  {
+   "id": "u08",
+   "typ": "luecke",
+   "satz": "Kritiker vermissen in dem Essay ___ gedanklichen Gehalt seiner früheren Arbeiten.",
+   "loesungen": [
+    "den"
+   ],
+   "hinweis": "d-",
+   "erklaerung": "„Der Gehalt“ bedeutet Inhalt, Substanz; „das Gehalt“ ist der Lohn. Akkusativ maskulin: den gedanklichen Gehalt."
+  },
+  {
+   "id": "u09",
+   "typ": "luecke",
+   "satz": "___ Gehalt einer Berufseinsteigerin reicht in vielen Großstädten kaum für die Miete.",
+   "loesungen": [
+    "Das"
+   ],
+   "hinweis": "d-",
+   "erklaerung": "Gemeint ist der Lohn: „das Gehalt“, neutral. „Der Gehalt“ wäre der Inhalt eines Textes."
+  },
+  {
+   "id": "u10",
+   "typ": "luecke",
+   "satz": "Die Regierung will ___ Steuer auf Flugbenzin erhöhen; Kritiker sprechen von Symbolpolitik.",
+   "loesungen": [
+    "die"
+   ],
+   "hinweis": "d-",
+   "erklaerung": "„Die Steuer“ ist die Abgabe an den Staat, „das Steuer“ das Lenkrad."
+  },
+  {
+   "id": "u11",
+   "typ": "luecke",
+   "satz": "Ohne ___ Verdienst der Übersetzerin wäre der Roman hierzulande unbekannt geblieben.",
+   "loesungen": [
+    "das"
+   ],
+   "hinweis": "d-",
+   "erklaerung": "Gemeint ist die Leistung: „das Verdienst“. „Der Verdienst“ ist das Einkommen."
+  },
+  {
+   "id": "u12",
+   "typ": "luecke",
+   "satz": "Wer ___ Pendant zu diesem Begriff im Französischen sucht, wird enttäuscht.",
+   "loesungen": [
+    "das"
+   ],
+   "hinweis": "d-",
+   "erklaerung": "„Das Pendant“ (Gegenstück) ist neutral. Französische Lehnwörter auf -ant ohne Personenbezug sind oft neutral (das Restaurant), Personen auf -ant maskulin (der Praktikant)."
+  },
+  {
+   "id": "u13",
+   "typ": "auswahl",
+   "frage": "Welches Nomen ist feminin?",
+   "optionen": [
+    "Dogma",
+    "Charisma",
+    "Klima",
+    "Firma"
+   ],
+   "richtig": 3,
+   "erklaerung": "Fremdwörter auf -ma sind fast immer neutral (das Dogma, das Charisma, das Klima). „Die Firma“ ist die wichtige Ausnahme."
+  },
+  {
+   "id": "u14",
+   "typ": "auswahl",
+   "frage": "Welcher Satz ist korrekt?",
+   "optionen": [
+    "Der Konsens, der in der Kommission herrschte, war brüchig.",
+    "Der Konsens, die in der Kommission herrschte, war brüchig.",
+    "Das Konsens, das in der Kommission herrschte, war brüchig."
+   ],
+   "richtig": 0,
+   "erklaerung": "„Der Konsens“ ist maskulin; das Relativpronomen übernimmt das Genus: der Konsens, der …"
+  },
+  {
+   "id": "u15",
+   "typ": "auswahl",
+   "frage": "Bis ins hohe Alter bewahrte die Pianistin ___ Anmut.",
+   "optionen": [
+    "ihre",
+    "ihren",
+    "ihr"
+   ],
+   "richtig": 0,
+   "erklaerung": "„Die Anmut“ ist feminin (wie die Demut, die Wehmut). Akkusativ feminin: ihre."
+  },
+  {
+   "id": "u16",
+   "typ": "auswahl",
+   "frage": "„Der Kiefer“ und „die Kiefer“ bezeichnen …",
+   "optionen": [
+    "einen Nadelbaum und einen Gesichtsknochen.",
+    "beide einen Nadelbaum, nur regional verschieden.",
+    "einen Gesichtsknochen und einen Nadelbaum."
+   ],
+   "richtig": 2,
+   "erklaerung": "Der Kiefer ist der Knochen, die Kiefer der Baum. Das Genus unterscheidet die Bedeutung."
+  },
+  {
+   "id": "u17",
+   "typ": "auswahl",
+   "frage": "Welches Nomen ist NICHT maskulin?",
+   "optionen": [
+    "Ende",
+    "Wille",
+    "Gedanke",
+    "Glaube"
+   ],
+   "richtig": 0,
+   "erklaerung": "Die meisten Nomen auf -e sind feminin, maskuline Ausnahmen sind der Gedanke, der Glaube, der Wille, der Name. „Das Ende“ ist neutral."
+  },
+  {
+   "id": "u18",
+   "typ": "auswahl",
+   "frage": "Die Delegation reiste ab, ohne ___ Votum abgegeben zu haben.",
+   "optionen": [
+    "ihr",
+    "ihre",
+    "ihren"
+   ],
+   "richtig": 0,
+   "erklaerung": "„Das Votum“ ist neutral wie alle Fremdwörter auf -um (das Gremium, das Kriterium). Akkusativ neutral: ihr Votum."
+  },
+  {
+   "id": "u19",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "der Leiter",
+     "Person, die eine Einrichtung führt"
+    ],
+    [
+     "die Leiter",
+     "Gerät zum Hinaufsteigen"
+    ],
+    [
+     "der Band",
+     "einzelnes Buch einer Reihe"
+    ],
+    [
+     "das Band",
+     "Streifen aus Stoff"
+    ],
+    [
+     "der See",
+     "Binnengewässer"
+    ],
+    [
+     "die See",
+     "das Meer"
+    ]
+   ],
+   "erklaerung": "Gleiche Form, anderes Genus, andere Bedeutung: Hier entscheidet der Artikel über den Sinn."
+  },
+  {
+   "id": "u20",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "der Verdienst",
+     "Einkommen, Lohn"
+    ],
+    [
+     "das Verdienst",
+     "anerkennenswerte Leistung"
+    ],
+    [
+     "der Moment",
+     "kurzer Augenblick"
+    ],
+    [
+     "das Moment",
+     "ausschlaggebender Faktor"
+    ],
+    [
+     "der Schild",
+     "Schutzwaffe"
+    ],
+    [
+     "das Schild",
+     "Tafel mit Aufschrift"
+    ]
+   ],
+   "erklaerung": "Auch in der gehobenen Sprache unterscheidet das Genus die Bedeutung: „ein entscheidendes Moment“ ist ein Faktor, kein Augenblick."
+  },
+  {
+   "id": "u21",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "Das Gremium tagte bis Mitternacht,",
+     "doch es fand keine Lösung."
+    ],
+    [
+     "Die Kommission tagte bis Mitternacht,",
+     "doch sie fand keine Lösung."
+    ],
+    [
+     "Der Ausschuss tagte bis Mitternacht,",
+     "doch er fand keine Lösung."
+    ],
+    [
+     "Die Delegierten tagten bis Mitternacht,",
+     "doch sie fanden keine Lösung."
+    ]
+   ],
+   "erklaerung": "Das Personalpronomen richtet sich nach dem grammatischen Genus: das Gremium – es, die Kommission – sie, der Ausschuss – er; Plural: sie + Verb im Plural."
+  },
+  {
+   "id": "u22",
+   "typ": "sortieren",
+   "teile": [
+    "die",
+    "Die Ausstellung zeigt eine Skulptur,",
+    "erst nach dem Krieg",
+    "ist",
+    "wiederentdeckt",
+    "worden"
+   ],
+   "loesung": "Die Ausstellung zeigt eine Skulptur, die erst nach dem Krieg wiederentdeckt worden ist.",
+   "erklaerung": "„die Skulptur“ ist feminin, darum das Relativpronomen „die“. Im Nebensatz steht das Verb am Ende: wiederentdeckt worden ist."
+  },
+  {
+   "id": "u23",
+   "typ": "sortieren",
+   "teile": [
+    "entziehen",
+    "kaum",
+    "auch skeptische Leser",
+    "können",
+    "dem",
+    "sich",
+    "Das ist ein Argument,"
+   ],
+   "loesung": "Das ist ein Argument, dem sich auch skeptische Leser kaum entziehen können.",
+   "loesungen": [
+    "Das ist ein Argument, dem auch skeptische Leser sich kaum entziehen können."
+   ],
+   "erklaerung": "„das Argument“ ist neutral; „sich einer Sache entziehen“ verlangt den Dativ: dem. Das Reflexivpronomen steht meist früh im Mittelfeld, das Verb am Ende."
+  },
+  {
+   "id": "u24",
+   "typ": "fehler",
+   "satz": "Die Kommission legte ihr Ergebnis vor, die allerdings niemanden überraschte.",
+   "fehler": "die",
+   "korrektur": "das",
+   "erklaerung": "Das Relativpronomen bezieht sich auf „das Ergebnis“ (neutral): …, das allerdings niemanden überraschte."
+  },
+  {
+   "id": "u25",
+   "typ": "fehler",
+   "satz": "Der Autor verteidigte seinen Thema mit großer Leidenschaft.",
+   "fehler": "seinen",
+   "korrektur": "sein",
+   "erklaerung": "„Das Thema“ ist neutral; im Akkusativ also „sein Thema“."
+  },
+  {
+   "id": "u26",
+   "typ": "fehler",
+   "satz": "Ihre Erkenntnis markierte eine Wende, denn er widerlegte ein jahrhundertealtes Dogma.",
+   "fehler": "er",
+   "korrektur": "sie",
+   "erklaerung": "Das Pronomen verweist auf „die Erkenntnis“ (feminin), also „sie“."
+  },
+  {
+   "id": "u27",
+   "typ": "fehler",
+   "satz": "Der Ausstellung fehlt ein klarer Konzept.",
+   "fehler": "klarer",
+   "korrektur": "klares",
+   "erklaerung": "„Das Konzept“ ist neutral: ein klares Konzept."
+  },
+  {
+   "id": "u28",
+   "typ": "fehler",
+   "satz": "In der Debatte ging es um den Prinzip der Gleichbehandlung.",
+   "fehler": "den",
+   "korrektur": "das",
+   "erklaerung": "„Das Prinzip“ ist neutral; nach „um“ steht der Akkusativ: um das Prinzip."
+  },
+  {
+   "id": "u29",
+   "typ": "fehler",
+   "satz": "Die Firma hat ihren Gewinn verdoppelt; dennoch kündigte es einen Stellenabbau an.",
+   "fehler": "es",
+   "korrektur": "sie",
+   "erklaerung": "„Die Firma“ ist feminin, das Pronomen also „sie“."
+  },
+  {
+   "id": "u30",
+   "typ": "fehler",
+   "satz": "Mein Lust am Lesen ist mit den Jahren eher gewachsen.",
+   "fehler": "Mein",
+   "korrektur": "Meine",
+   "erklaerung": "„Die Lust“ ist feminin: meine Lust."
+  },
+  {
+   "id": "u31",
+   "typ": "rf",
+   "aussage": "„Der Name“, „der Gedanke“ und „der Glaube“ sind maskulin, obwohl sie auf -e enden.",
+   "wert": true,
+   "erklaerung": "Nomen auf -e sind meist feminin, doch es gibt wichtige maskuline Ausnahmen (der Name, der Gedanke, der Glaube, der Wille) und Neutra (das Ende, das Interesse, das Erbe)."
+  },
+  {
+   "id": "u32",
+   "typ": "rf",
+   "aussage": "Bei Komposita bestimmt das erste Wort das Genus: „Buchladen“ ist also neutral wie „das Buch“.",
+   "wert": false,
+   "erklaerung": "Das Grundwort, also das letzte Glied, bestimmt das Genus: der Laden → der Buchladen."
+  },
+  {
+   "id": "u33",
+   "typ": "rf",
+   "aussage": "Substantivierte Infinitive sind immer neutral: das Lesen, das Zögern, das Abwägen.",
+   "wert": true,
+   "erklaerung": "Jeder substantivierte Infinitiv ist neutral, auch in Zusammensetzungen: das Auswendiglernen."
+  },
+  {
+   "id": "u34",
+   "typ": "umformen",
+   "ausgang": "Der Verdienst der Übersetzerin ist unbestritten.",
+   "anweisung": "Gemeint ist ihre Leistung, nicht ihr Einkommen. Korrigieren Sie den Satz.",
+   "loesungen": [
+    "Das Verdienst der Übersetzerin ist unbestritten."
+   ],
+   "erklaerung": "Für eine anerkennenswerte Leistung steht „das Verdienst“; „der Verdienst“ ist das Einkommen."
+  },
+  {
+   "id": "u35",
+   "typ": "umformen",
+   "ausgang": "Die App hilft mir beim Wiederholen. Die App ist kostenlos.",
+   "anweisung": "Verbinden Sie die Sätze mit einem Relativsatz. Beginnen Sie mit „Die App“.",
+   "loesungen": [
+    "Die App, die mir beim Wiederholen hilft, ist kostenlos.",
+    "Die App, die kostenlos ist, hilft mir beim Wiederholen."
+   ],
+   "erklaerung": "„die App“ ist feminin, also Relativpronomen „die“; im Relativsatz steht das Verb am Ende."
+  }
+ ]
+}

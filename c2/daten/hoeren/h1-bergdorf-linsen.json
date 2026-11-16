@@ -1,0 +1,226 @@
+{
+ "id": "h1-bergdorf-linsen",
+ "titel": "Radioausschnitte: Besucherlenkung, Linsen, Übersetzen, Erzählcafé",
+ "teil": "Teil 1",
+ "art": "Radiobeitrag",
+ "stimmen": [
+  "Reporterin",
+  "Bürgermeister",
+  "Kolumnistin",
+  "Reporter",
+  "Übersetzerin",
+  "Moderator",
+  "Lehrerin"
+ ],
+ "audio": "audio/h1-bergdorf-linsen.mp3",
+ "dauer_s": 187,
+ "abspielen": 1,
+ "anleitung": "Sie hören vier kurze Radioausschnitte, jeden nur einmal. Lesen Sie vorher die Aussagen. Entscheiden Sie beim Hören: Stimmt die Aussage mit dem Text überein (Ja) oder nicht (Nein)?",
+ "transkript": [
+  {
+   "sprecher": "Ansage",
+   "text": "Ausschnitt 1."
+  },
+  {
+   "sprecher": "Reporterin",
+   "text": "Im kleinen Alpbrunn stauen sich an schönen Wochenenden die Autos bis hinunter ins Tal. Ab dem nächsten Sommer müssen Tagesgäste, die mit dem Auto anreisen, deshalb vorab einen Parkplatz buchen. Wer mit dem Bus kommt, braucht keine Reservierung. Bürgermeister Andreas Pichler weiß, dass die Regelung nicht allen gefällt."
+  },
+  {
+   "sprecher": "Bürgermeister",
+   "text": "Natürlich sagen manche Wirte: Ihr vertreibt uns die Gäste. Aber was haben wir davon, wenn die Leute zwei Stunden im Stau stehen und dann schimpfend wieder heimfahren? Wir wollen niemanden aussperren. Wir wollen, dass die, die kommen, auch gern wiederkommen. Und die Einheimischen sollen am Sonntag wieder zum Bäcker kommen, ohne sich durch eine Blechlawine zu kämpfen."
+  },
+  {
+   "sprecher": "Ansage",
+   "text": "Ausschnitt 2."
+  },
+  {
+   "sprecher": "Kolumnistin",
+   "text": "Meine Großmutter hätte über das Wort ‚Superfood‘ vermutlich herzlich gelacht. Linsen, Bohnen, Erbsen – das war bei ihr kein Trend, sondern Mittwoch. Heute stehen dieselben Linsen in hübschen Gläsern im Feinkostregal und kosten ein Vielfaches. Die Ernährungsfachleute haben ja recht: Hülsenfrüchte liefern reichlich Eiweiß, sie sättigen lange, und ihr Anbau kommt mit vergleichsweise wenig Dünger aus. Nur das ganze Marketing hätte es wirklich nicht gebraucht. Das Schönste an der Linse ist doch gerade, dass sie so herrlich unspektakulär ist."
+  },
+  {
+   "sprecher": "Ansage",
+   "text": "Ausschnitt 3."
+  },
+  {
+   "sprecher": "Reporter",
+   "text": "Maschinelle Übersetzung ist besser geworden – so viel besser, dass manche schon das Ende eines ganzen Berufsstands vorhersagen. Im Übersetzungsbüro von Claudia Wendt in Leipzig sieht man das gelassener. Gebrauchstexte wie Bedienungsanleitungen lässt man dort längst von der Maschine vorübersetzen."
+  },
+  {
+   "sprecher": "Übersetzerin",
+   "text": "Die Rohfassung ist oft erstaunlich gut. Aber eben nur oft. Gerade da, wo es um Haftung geht, in Verträgen etwa, kann ein einziges falsch übersetztes Wort teuer werden. Unsere Arbeit hat sich verschoben: Wir übersetzen weniger und prüfen mehr. Ob das langfristig weniger Stellen bedeutet? Ich würde lügen, wenn ich sagte, ich wüsste es."
+  },
+  {
+   "sprecher": "Ansage",
+   "text": "Ausschnitt 4."
+  },
+  {
+   "sprecher": "Moderator",
+   "text": "Einmal im Monat treffen sich in einem Seniorenheim in Kassel Schülerinnen und Schüler einer zehnten Klasse mit Bewohnerinnen und Bewohnern zum sogenannten Erzählcafé. Die Jugendlichen fragen, die Älteren erzählen – von der Nachkriegszeit, vom ersten Fernseher, von Liebe und Arbeit. Aufgenommen wird nichts; es geht ums Zuhören. Angestoßen hat das Projekt die Lehrerin Sophie Brandner."
+  },
+  {
+   "sprecher": "Lehrerin",
+   "text": "Ich hatte befürchtet, dass sich die Jugendlichen langweilen. Das Gegenteil war der Fall. Was mich am meisten überrascht hat: Die Älteren fragen inzwischen genauso viel zurück. Wie es heute ist, verliebt zu sein, mit dem Handy in der Tasche – das wollen die wirklich wissen. Es ist kein Geschichtsunterricht daraus geworden, sondern ein Gespräch."
+  }
+ ],
+ "aufgaben": [
+  {
+   "id": "a1",
+   "typ": "rf",
+   "aussage": "Ausschnitt 1: Künftig müssen alle Tagesgäste ihren Besuch in Alpbrunn vorher anmelden.",
+   "wert": false,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "Nur wer mit dem Auto kommt, muss buchen: „Wer mit dem Bus kommt, braucht keine Reservierung.“"
+  },
+  {
+   "id": "a2",
+   "typ": "rf",
+   "aussage": "Ausschnitt 1: Der Bürgermeister weiß, dass einige Gastwirte die Regelung ablehnen.",
+   "wert": true,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "„Natürlich sagen manche Wirte: Ihr vertreibt uns die Gäste.“"
+  },
+  {
+   "id": "a3",
+   "typ": "rf",
+   "aussage": "Ausschnitt 1: Mit der Regelung will der Bürgermeister auch den Alltag der Einheimischen erleichtern.",
+   "wert": true,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "„Und die Einheimischen sollen am Sonntag wieder zum Bäcker kommen“"
+  },
+  {
+   "id": "a4",
+   "typ": "rf",
+   "aussage": "Ausschnitt 2: Für die Großmutter der Sprecherin waren Hülsenfrüchte etwas Alltägliches.",
+   "wert": true,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "„das war bei ihr kein Trend, sondern Mittwoch“"
+  },
+  {
+   "id": "a5",
+   "typ": "rf",
+   "aussage": "Ausschnitt 2: Die Sprecherin bezweifelt, dass Hülsenfrüchte gesund sind.",
+   "wert": false,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "„Die Ernährungsfachleute haben ja recht: Hülsenfrüchte liefern reichlich Eiweiß“"
+  },
+  {
+   "id": "a6",
+   "typ": "rf",
+   "aussage": "Ausschnitt 2: Sie begrüßt es, dass Linsen inzwischen als Trendprodukt vermarktet werden.",
+   "wert": false,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "„Nur das ganze Marketing hätte es wirklich nicht gebraucht.“"
+  },
+  {
+   "id": "a7",
+   "typ": "rf",
+   "aussage": "Ausschnitt 3: Im Büro werden Bedienungsanleitungen zunächst maschinell übersetzt.",
+   "wert": true,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "„Gebrauchstexte wie Bedienungsanleitungen lässt man dort längst von der Maschine vorübersetzen.“"
+  },
+  {
+   "id": "a8",
+   "typ": "rf",
+   "aussage": "Ausschnitt 3: Die Übersetzerin hält maschinelle Übersetzungen von Verträgen für unbedenklich.",
+   "wert": false,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "„in Verträgen etwa, kann ein einziges falsch übersetztes Wort teuer werden“"
+  },
+  {
+   "id": "a9",
+   "typ": "rf",
+   "aussage": "Ausschnitt 3: Sie ist überzeugt, dass in ihrem Beruf langfristig keine Stellen verloren gehen.",
+   "wert": false,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "Sie weiß es nicht: „Ich würde lügen, wenn ich sagte, ich wüsste es.“"
+  },
+  {
+   "id": "a10",
+   "typ": "rf",
+   "aussage": "Ausschnitt 4: Die Gespräche im Erzählcafé werden aufgezeichnet.",
+   "wert": false,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "„Aufgenommen wird nichts; es geht ums Zuhören.“"
+  },
+  {
+   "id": "a11",
+   "typ": "rf",
+   "aussage": "Ausschnitt 4: Die Lehrerin hatte anfangs Zweifel, ob die Jugendlichen sich dafür interessieren würden.",
+   "wert": true,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "„Ich hatte befürchtet, dass sich die Jugendlichen langweilen.“"
+  },
+  {
+   "id": "a12",
+   "typ": "rf",
+   "aussage": "Ausschnitt 4: Inzwischen stellen auch die Älteren den Jugendlichen viele Fragen.",
+   "wert": true,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "„Die Älteren fragen inzwischen genauso viel zurück.“"
+  },
+  {
+   "id": "t1",
+   "typ": "rfn",
+   "aussage": "In Alpbrunn müssen Tagesgäste künftig Eintritt bezahlen.",
+   "wert": "nicht im Text",
+   "erklaerung": "Es geht nur um die Buchung eines Parkplatzes; von Eintritt ist keine Rede.",
+   "nur_training": true
+  },
+  {
+   "id": "t2",
+   "typ": "rfn",
+   "aussage": "Im Übersetzungsbüro wird heute weniger übersetzt und mehr geprüft.",
+   "wert": "richtig",
+   "erklaerung": "„Wir übersetzen weniger und prüfen mehr.“",
+   "nur_training": true
+  },
+  {
+   "id": "t3",
+   "typ": "luecke",
+   "satz": "Erzählcafé: Schülerinnen und Schüler einer ___ Klasse treffen Bewohner eines Seniorenheims.",
+   "loesungen": [
+    "zehnten",
+    "10."
+   ],
+   "erklaerung": "„Schülerinnen und Schüler einer zehnten Klasse“",
+   "nur_training": true
+  }
+ ]
+}

@@ -1,0 +1,404 @@
+{
+ "id": "g02",
+ "titel": "Kasus und Deklination",
+ "niveau": "C1",
+ "nr": 2,
+ "gruppe": "A",
+ "baustelle": true,
+ "pruefungsbezug": [
+  "S1",
+  "S2"
+ ],
+ "tafel": [
+  "Signale: Dativ -m bei maskulin/neutral (dem, einem, meinem), -r bei feminin (der, einer); Dativ Plural: den … -n (den Büchern).",
+  "geben, schicken, empfehlen, zeigen: Person im Dativ, Sache im Akkusativ – Er gibt mir die Videos.",
+  "n-Deklination: die meisten maskulinen Nomen auf -e, v. a. Personen und Tiere (der Kollege, der Löwe; aber der Käse), und Personen auf -ent, -ant, -ist, -at, -oge, dazu Mensch, Herr, Nachbar: außer im Nominativ Singular immer -(e)n.",
+  "Mischformen: der Name – des Namens, der Gedanke – des Gedankens, der Glaube – des Glaubens, das Herz – des Herzens, dem Herzen.",
+  "Genitiv Singular: maskulin/neutral -s oder -es (des Romans, des Diskurses), feminin ohne Endung (der Autorin).",
+  "Eigennamen: Fontanes Romane, die Werke Thomas Manns – ohne Apostroph."
+ ],
+ "beispiele": [
+  "Wir sprachen lange mit dem Präsidenten des Vereins über die Zukunft des Hauses.",
+  "Die Werke Thomas Manns und die Briefe seines Bruders liegen inzwischen in kommentierten Ausgaben vor.",
+  "Die Stadt gedachte der Opfer und errichtete ihnen ein Denkmal.",
+  "Die Bedeutung dieses Gedankens wurde erst Jahrzehnte später erkannt."
+ ],
+ "fallen": [
+  {
+   "falsch": "dass er mich Videos gibt",
+   "richtig": "dass er mir Videos gibt",
+   "warum": "„geben“: Person im Dativ (mir), Sache im Akkusativ (Videos)."
+  },
+  {
+   "falsch": "mit dem Kollege",
+   "richtig": "mit dem Kollegen",
+   "warum": "n-Deklination: alle Formen außer Nominativ Singular enden auf -n."
+  },
+  {
+   "falsch": "die Bedeutung des Gedanken",
+   "richtig": "die Bedeutung des Gedankens",
+   "warum": "Gedanke, Name, Glaube, Wille, Buchstabe: Genitiv auf -ns."
+  },
+  {
+   "falsch": "von das Buch",
+   "richtig": "von dem Buch (davon)",
+   "warum": "„von“ verlangt immer den Dativ; für eine Sache statt „von das“: davon."
+  }
+ ],
+ "uebungen": [
+  {
+   "id": "u01",
+   "typ": "luecke",
+   "satz": "Die Delegation führte ein langes Gespräch mit dem ___ des Verbandes.",
+   "loesungen": [
+    "Präsidenten"
+   ],
+   "hinweis": "Präsident",
+   "erklaerung": "„der Präsident“ gehört zur n-Deklination: dem Präsidenten, des Präsidenten."
+  },
+  {
+   "id": "u02",
+   "typ": "luecke",
+   "satz": "Die Ausstellung widmet sich dem Leben eines jüdischen ___ im Prag der Zwanzigerjahre.",
+   "loesungen": [
+    "Journalisten"
+   ],
+   "hinweis": "Journalist",
+   "erklaerung": "Personen auf -ist folgen der n-Deklination; Genitiv: eines Journalisten."
+  },
+  {
+   "id": "u03",
+   "typ": "luecke",
+   "satz": "Der Aufsatz behandelt die Rolle des religiösen ___ in der Aufklärung.",
+   "loesungen": [
+    "Glaubens"
+   ],
+   "hinweis": "Glaube",
+   "erklaerung": "„der Glaube“ hat im Genitiv -ns: des Glaubens (ebenso des Namens, des Gedankens, des Willens)."
+  },
+  {
+   "id": "u04",
+   "typ": "luecke",
+   "satz": "Im ___ aller Beteiligten danke ich der Stiftung für ihre großzügige Unterstützung.",
+   "loesungen": [
+    "Namen"
+   ],
+   "hinweis": "Name",
+   "erklaerung": "„im Namen“ ist Dativ; „der Name“ bekommt außer im Nominativ ein -n, im Genitiv -ns."
+  },
+  {
+   "id": "u05",
+   "typ": "luecke",
+   "satz": "Gegen jede Vernunft folgte sie der Stimme ihres ___.",
+   "loesungen": [
+    "Herzens"
+   ],
+   "hinweis": "Herz",
+   "erklaerung": "„das Herz“ ist unregelmäßig: des Herzens, dem Herzen, aber Akkusativ das Herz."
+  },
+  {
+   "id": "u06",
+   "typ": "luecke",
+   "satz": "Die Biografie eines ___ zu schreiben, verlangt besondere Distanz.",
+   "loesungen": [
+    "Zeitgenossen"
+   ],
+   "hinweis": "Zeitgenosse",
+   "erklaerung": "Maskuline Personenbezeichnungen auf -e gehören zur n-Deklination: eines Zeitgenossen."
+  },
+  {
+   "id": "u07",
+   "typ": "luecke",
+   "satz": "Das Ministerium hat ___ Antrag auf Förderung stattgegeben.",
+   "loesungen": [
+    "unserem"
+   ],
+   "hinweis": "unser-",
+   "erklaerung": "„einer Sache stattgeben“ verlangt den Dativ: unserem Antrag."
+  },
+  {
+   "id": "u08",
+   "typ": "luecke",
+   "satz": "Die Stiftung vergibt Stipendien an Studierende aus allen ___.",
+   "loesungen": [
+    "Ländern"
+   ],
+   "hinweis": "Land, Plural",
+   "erklaerung": "Im Dativ Plural bekommt das Nomen ein -n: aus allen Ländern."
+  },
+  {
+   "id": "u09",
+   "typ": "luecke",
+   "satz": "Die Dozentin hat ___ die Aufzeichnung ihrer Vorlesung geschickt.",
+   "loesungen": [
+    "mir"
+   ],
+   "hinweis": "ich",
+   "erklaerung": "„jemandem etwas schicken“: Person im Dativ (mir), Sache im Akkusativ."
+  },
+  {
+   "id": "u10",
+   "typ": "luecke",
+   "satz": "Die Opposition warf ___ Minister vor, die Öffentlichkeit getäuscht zu haben.",
+   "loesungen": [
+    "dem"
+   ],
+   "hinweis": "d-",
+   "erklaerung": "„jemandem etwas vorwerfen“: Person im Dativ."
+  },
+  {
+   "id": "u11",
+   "typ": "luecke",
+   "satz": "Die Regisseurin erinnerte ___ Publikum an die Ursprünge des Stoffes.",
+   "loesungen": [
+    "das"
+   ],
+   "hinweis": "d-",
+   "erklaerung": "„jemanden an etwas erinnern“: Person im Akkusativ – nicht im Dativ."
+  },
+  {
+   "id": "u12",
+   "typ": "luecke",
+   "satz": "Die Wirkung des ___ übertraf die Erwartungen des Verlags bei Weitem.",
+   "loesungen": [
+    "Essays"
+   ],
+   "hinweis": "Essay",
+   "erklaerung": "Maskuline und neutrale Nomen bekommen im Genitiv Singular -s: des Essays."
+  },
+  {
+   "id": "u13",
+   "typ": "auswahl",
+   "frage": "Wir haben lange mit ___ über den Lärm gesprochen.",
+   "optionen": [
+    "dem Nachbar",
+    "dem Nachbarn",
+    "den Nachbar"
+   ],
+   "richtig": 1,
+   "erklaerung": "„der Nachbar“ gehört zur n-Deklination: dem Nachbarn."
+  },
+  {
+   "id": "u14",
+   "typ": "auswahl",
+   "frage": "Die Rede ___ war der Höhepunkt des Festakts.",
+   "optionen": [
+    "des Bundespräsidenten",
+    "des Bundespräsident",
+    "des Bundespräsidents"
+   ],
+   "richtig": 0,
+   "erklaerung": "n-Deklination auch im Kompositum: des Bundespräsidenten."
+  },
+  {
+   "id": "u15",
+   "typ": "auswahl",
+   "frage": "Die Werke ___ sind in mehr als vierzig Sprachen übersetzt worden.",
+   "optionen": [
+    "des Thomas Mann",
+    "Thomas Manns",
+    "von Thomas Mann's"
+   ],
+   "richtig": 1,
+   "erklaerung": "Eigennamen ohne Artikel bekommen im Genitiv ein -s, ohne Apostroph: Thomas Manns."
+  },
+  {
+   "id": "u16",
+   "typ": "auswahl",
+   "frage": "Er gilt als einer ___ Denker seiner Generation.",
+   "optionen": [
+    "den einflussreichsten",
+    "die einflussreichsten",
+    "der einflussreichsten"
+   ],
+   "richtig": 2,
+   "erklaerung": "„einer der …“ verlangt den Genitiv Plural: einer der einflussreichsten Denker."
+  },
+  {
+   "id": "u17",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "der Name",
+     "des Namens"
+    ],
+    [
+     "der Mensch",
+     "des Menschen"
+    ],
+    [
+     "das Herz",
+     "des Herzens"
+    ],
+    [
+     "der Herr",
+     "des Herrn"
+    ],
+    [
+     "der Autor",
+     "des Autors"
+    ],
+    [
+     "der Philosoph",
+     "des Philosophen"
+    ]
+   ],
+   "erklaerung": "Genitiv Singular: Mensch, Herr und Philosoph folgen der n-Deklination, Name und Herz sind Mischformen, „der Autor“ ist stark (des Autors)."
+  },
+  {
+   "id": "u18",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "Die Stadt gedachte",
+     "der Opfer des Krieges."
+    ],
+    [
+     "Die Stadt half",
+     "den Opfern des Hochwassers."
+    ],
+    [
+     "Die Stadt entschädigte",
+     "die Opfer des Hochwassers."
+    ],
+    [
+     "Die Stadt errichtete",
+     "den Opfern ein Denkmal."
+    ]
+   ],
+   "erklaerung": "gedenken + Genitiv, helfen + Dativ, entschädigen + Akkusativ, jemandem etwas errichten: Dativ der Person und Akkusativ der Sache."
+  },
+  {
+   "id": "u19",
+   "typ": "sortieren",
+   "teile": [
+    "den Preis für seinen ersten Entwurf",
+    "Die Stiftung",
+    "dem jungen Architekten",
+    "verlieh"
+   ],
+   "loesung": "Die Stiftung verlieh dem jungen Architekten den Preis für seinen ersten Entwurf.",
+   "loesungen": [
+    "Die Stiftung verlieh den Preis für seinen ersten Entwurf dem jungen Architekten."
+   ],
+   "erklaerung": "Bei zwei Nomen steht der Dativ meist vor dem Akkusativ; die umgekehrte Folge betont die Person."
+  },
+  {
+   "id": "u20",
+   "typ": "sortieren",
+   "teile": [
+    "es",
+    "verziehen",
+    "hat",
+    "dem Autor",
+    "Der Verlag",
+    "bis heute nicht"
+   ],
+   "loesung": "Der Verlag hat es dem Autor bis heute nicht verziehen.",
+   "erklaerung": "Ein Pronomen steht vor dem Nomen im Mittelfeld (es dem Autor); das Partizip schließt die Satzklammer."
+  },
+  {
+   "id": "u21",
+   "typ": "sortieren",
+   "teile": [
+    "Erst nach dem Tod",
+    "erschien",
+    "sein letzter Roman",
+    "des Dichters"
+   ],
+   "loesung": "Erst nach dem Tod des Dichters erschien sein letzter Roman.",
+   "erklaerung": "Das Genitivattribut steht hinter seinem Nomen (der Tod des Dichters); das Verb steht an Position 2."
+  },
+  {
+   "id": "u22",
+   "typ": "fehler",
+   "satz": "Die Kommission hat den Bericht gestern dem Präsident übergeben.",
+   "fehler": "Präsident",
+   "korrektur": "Präsidenten",
+   "erklaerung": "n-Deklination: dem Präsidenten."
+  },
+  {
+   "id": "u23",
+   "typ": "fehler",
+   "satz": "Wir haben gestern lange mit unserem Nachbar über seine Pläne gesprochen.",
+   "fehler": "Nachbar",
+   "korrektur": "Nachbarn",
+   "erklaerung": "„Nachbar“ gehört zur n-Deklination: mit unserem Nachbarn."
+  },
+  {
+   "id": "u24",
+   "typ": "fehler",
+   "satz": "Die Autorin dankte ihren Lektor für die geduldige Zusammenarbeit.",
+   "fehler": "ihren",
+   "korrektur": "ihrem",
+   "erklaerung": "„danken“ verlangt den Dativ: ihrem Lektor."
+  },
+  {
+   "id": "u25",
+   "typ": "fehler",
+   "satz": "Am Ende des Gesprächs hat er mich die Unterlagen gegeben.",
+   "fehler": "mich",
+   "korrektur": "mir",
+   "erklaerung": "„geben“: Person im Dativ, also mir."
+  },
+  {
+   "id": "u26",
+   "typ": "fehler",
+   "satz": "Die Handlung des Romans ist rasch erzählt, die Wirkung des Roman dagegen kaum zu überschätzen.",
+   "fehler": "Roman",
+   "korrektur": "Romans",
+   "erklaerung": "Genitiv Singular maskulin: des Romans."
+  },
+  {
+   "id": "u27",
+   "typ": "fehler",
+   "satz": "Die Bedeutung dieses Gedanken wurde erst Jahrzehnte später erkannt.",
+   "fehler": "Gedanken",
+   "korrektur": "Gedankens",
+   "erklaerung": "„der Gedanke“ hat im Genitiv -ns: dieses Gedankens."
+  },
+  {
+   "id": "u28",
+   "typ": "rf",
+   "aussage": "„Der Herr“ wird im Singular so dekliniert: der Herr, den Herrn, dem Herrn, des Herrn.",
+   "wert": true,
+   "erklaerung": "„Herr“ gehört zur n-Deklination, im Singular nur mit -n; im Plural: die Herren."
+  },
+  {
+   "id": "u29",
+   "typ": "rf",
+   "aussage": "Im Dativ Plural bekommt ein Nomen ein -n, wenn die Pluralform nicht schon auf -n oder -s endet.",
+   "wert": true,
+   "erklaerung": "mit den Kindern, in den Büchern – aber: mit den Frauen, in den Autos."
+  },
+  {
+   "id": "u30",
+   "typ": "rf",
+   "aussage": "„Der Autor“ gehört zur n-Deklination: Das Buch gehört dem Autoren.",
+   "wert": false,
+   "erklaerung": "„Autor“ wird stark dekliniert: dem Autor, des Autors; nur der Plural lautet die Autoren."
+  },
+  {
+   "id": "u31",
+   "typ": "umformen",
+   "ausgang": "Die Romane von Fontane werden bis heute im Unterricht gelesen.",
+   "anweisung": "Ersetzen Sie „von Fontane“ durch einen vorangestellten Genitiv.",
+   "loesungen": [
+    "Fontanes Romane werden bis heute im Unterricht gelesen.",
+    "Fontanes Romane werden im Unterricht bis heute gelesen."
+   ],
+   "erklaerung": "Eigennamen im Genitiv stehen gern vor dem Nomen: Fontanes Romane (ohne Artikel, ohne Apostroph)."
+  },
+  {
+   "id": "u32",
+   "typ": "umformen",
+   "ausgang": "Die Forscherin bekam für ihre Entdeckung einen renommierten Preis.",
+   "anweisung": "Formen Sie um. Beginnen Sie mit „Man verlieh“.",
+   "loesungen": [
+    "Man verlieh der Forscherin für ihre Entdeckung einen renommierten Preis.",
+    "Man verlieh der Forscherin einen renommierten Preis für ihre Entdeckung."
+   ],
+   "erklaerung": "„jemandem etwas verleihen“: Person im Dativ (der Forscherin), Sache im Akkusativ (einen Preis)."
+  }
+ ]
+}

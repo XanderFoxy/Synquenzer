@@ -1,0 +1,20 @@
+{
+ "schreiben_korrektur": {
+  "titel": "Schreiben: Korrektur auf C2-Niveau",
+  "wozu": "Fügt Aufgabe und deinen Text ein. In der Claude-App einfügen und senden.",
+  "quelle": "recherche (Korrektur-Vorlage)",
+  "text": "Du bist eine erfahrene Prüferin für das Goethe-Zertifikat C2 (Großes Deutsches Sprachdiplom). Korrigiere meinen Text unten streng, aber ermutigend, nach C2-Maßstab. Antworte auf Deutsch.\n\nAufgabe, zu der ich geschrieben habe: {AUFGABE}\n\nBitte gehe in dieser Reihenfolge vor:\n\n1. Gesamteindruck in zwei Sätzen: Was gelingt schon auf C2-Niveau?\n\n2. Bewertung nach vier Kriterien, je 0–5 Punkte mit einem Satz Begründung:\n   a) Aufgabenerfüllung (alle Punkte der Aufgabe behandelt, Textsorte und Adressat getroffen, Umfang)\n   b) Kohärenz und Textaufbau (Gliederung, Absätze, Verknüpfungen, roter Faden)\n   c) Wortschatz (Spektrum, Präzision, Idiomatik, Register, Nomen-Verb-Verbindungen)\n   d) Strukturen (Grammatik, Satzbau, Satzklammer, Vielfalt komplexer Sätze)\n\n3. Fehlertabelle mit den Spalten: Nr. | Original | Korrektur | Regel in einem Satz | Kategorie.\n   Kategorien: Genus/Artikel – Kasus/Endung – Präposition/Rektion – feste Wendung – Nomen-Verb-Verbindung – Satzklammer/Wortstellung – Wortwahl – Rechtschreibung/Zeichensetzung – Stil/Register.\n   Liste jeden Fehler einzeln. Erfinde keine Fehler. Wenn eine Stelle nur stilistisch verbesserbar ist, schreibe „Stil“ dazu. Wenn du unsicher bist, sage es.\n\n4. Meine drei häufigsten Fehlerkategorien mit je einem kurzen Merksatz „wie an der Tafel“.\n\n5. Drei Formulierungen auf C2-Niveau, die meinen Text aufwerten würden (Redemittel, Konnektoren, Nomen-Verb-Verbindungen), jeweils mit einem Beispielsatz, der zu meinem Thema passt.\n\n6. Schreibe nur zwei bis drei meiner Sätze als Musterfassung neu – nicht den ganzen Text –, damit ich den Rest selbst überarbeite.\n\n7. Mini-Übung: fünf Lückensätze zu meiner häufigsten Fehlerkategorie; die Lösungen bitte erst ganz am Ende unter „Lösungen“.\n\nMein Text:\n{TEXT}"
+ },
+ "sprechen_feedback": {
+  "titel": "Sprechen: Rückmeldung zu deinem Vortrag",
+  "wozu": "Diktiere deinen Vortrag (z. B. mit der Diktierfunktion), füge ihn unten ein und sende alles an die Claude-App.",
+  "text": "Du bist eine erfahrene Prüferin für das Goethe-Zertifikat C2 (Sprechen). Unten steht die Abschrift meines Vortrags, diktiert und daher ohne perfekte Zeichensetzung. Antworte auf Deutsch.\n\nAufgabe: {AUFGABE}\n\n1. Was gelingt schon auf C2-Niveau? (zwei Sätze)\n2. Aufbau: Sind Einleitung, Hauptteil und Schluss erkennbar? Was fehlt?\n3. Fehler einzeln mit Korrektur und Regel in einem Satz (Genus, Kasus, Präpositionen, feste Wendungen, Satzklammer, Wortwahl). Erfinde keine Fehler.\n4. Drei Redemittel, mit denen mein Vortrag souveräner klingt, jeweils mit Beispielsatz zu meinem Thema.\n5. Zwei Nachfragen, wie sie eine Prüferin stellen würde.\n\nAbschrift meines Vortrags:\n{TEXT}",
+  "quelle": "eigene Vorlage (Prüfungskriterien Sprechen C2)"
+ },
+ "buch_quintessenz": {
+  "titel": "Buch-Quintessenz",
+  "wozu": "Ein Buch auf seine Kernidee bringen – ohne Vokabellisten.",
+  "text": "Ich lerne Deutsch auf C2-Niveau. Bitte bringe das Buch „[Titel und Autor eintragen]“ auf seine Quintessenz – auf Deutsch, in klarer, anspruchsvoller Sprache, ohne Vokabellisten.\n\n1. Die Kernidee in drei Sätzen.\n2. Die zentrale Spannung oder Frage des Buches.\n3. Drei Schlüsselstellen oder Wendepunkte, jeweils mit einem Satz zur Bedeutung.\n4. Zwei Deutungen, die sich widersprechen, und was jeweils für sie spricht.\n5. Drei Diskussionsfragen, über die ich auf C2-Niveau sprechen oder schreiben kann.\n6. Ein kurzer Absatz (ca. 120 Wörter) als Muster für eine Buchbesprechung.",
+  "quelle": "eigene Vorlage"
+ }
+}

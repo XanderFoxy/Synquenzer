@@ -1,0 +1,496 @@
+{
+ "id": "g20",
+ "titel": "Adverbiale Nebensätze für Fortgeschrittene",
+ "niveau": "C2",
+ "nr": 20,
+ "gruppe": "B",
+ "baustelle": false,
+ "pruefungsbezug": [
+  "S1",
+  "S2",
+  "L3"
+ ],
+ "kurz": "Feinere Subjunktionen: zumal, indem, dadurch dass, sofern, es sei denn, insofern … als, ohne dass, (an)statt dass, wenngleich, obgleich.",
+ "tafel": [
+  "zumal: zusätzlicher, verstärkender Grund: Ich bleibe zu Hause, zumal es regnet.",
+  "indem: Mittel bei gleichem Subjekt – dadurch, dass: Mittel, auch bei verschiedenen Subjekten.",
+  "sofern: Bedingung, Einschränkung (gehoben für „falls“): sofern nichts dazwischenkommt.",
+  "es sei denn: Ausnahme, danach Hauptsatz oder dass-Satz: Wir fahren, es sei denn, es regnet.",
+  "insofern … als: Einschränkung auf einen Gesichtspunkt: Das ist insofern richtig, als …",
+  "ohne dass / (an)statt dass: bei verschiedenen Subjekten statt „ohne … zu“ / „statt … zu“.",
+  "obgleich, obschon, wenngleich, wiewohl: gehoben für „obwohl“.",
+  "zu + Adjektiv, als dass + Konjunktiv II: Er ist zu müde, als dass er noch arbeiten könnte."
+ ],
+ "beispiele": [
+  "Sie lernt Vokabeln, indem sie jeden Tag zehn Minuten liest.",
+  "Wir verschieben das Treffen, zumal noch nicht alle Unterlagen vorliegen.",
+  "Der Vorschlag ist insofern sinnvoll, als er die Kosten senkt.",
+  "Er hat die Stelle bekommen, ohne sich offiziell beworben zu haben.",
+  "Die Aufgabe ist zu schwierig, als dass man sie in einer Stunde lösen könnte."
+ ],
+ "fallen": [
+  {
+   "falsch": "Wir gehen spazieren, es sei denn, regnet es.",
+   "richtig": "Wir gehen spazieren, es sei denn, es regnet.",
+   "warum": "Nach „es sei denn“ folgt ein Hauptsatz mit Verb an Position 2 oder ein dass-Satz."
+  },
+  {
+   "falsch": "Das ist insofern richtig, dass …",
+   "richtig": "Das ist insofern richtig, als …",
+   "warum": "„insofern“ verlangt „als“."
+  },
+  {
+   "falsch": "Er ist zu jung, dass er das verstehen könnte.",
+   "richtig": "Er ist zu jung, als dass er das verstehen könnte.",
+   "warum": "Nach „zu“ + Adjektiv steht „als dass“."
+  },
+  {
+   "falsch": "Indem es regnete, blieben wir zu Hause.",
+   "richtig": "Da es regnete, blieben wir zu Hause.",
+   "warum": "„indem“ nennt ein Mittel, keinen Grund."
+  }
+ ],
+ "uebungen": [
+  {
+   "id": "u01",
+   "typ": "luecke",
+   "satz": "Sie verbessert ihr Deutsch, ___ sie täglich Zeitung liest.",
+   "loesungen": [
+    "indem"
+   ],
+   "hinweis": "Mittel",
+   "erklaerung": "indem: Wie erreicht sie es? – durch tägliches Lesen."
+  },
+  {
+   "id": "u02",
+   "typ": "luecke",
+   "satz": "Ich nehme das Angebot nicht an, ___ ich ohnehin kaum Zeit habe.",
+   "loesungen": [
+    "zumal"
+   ],
+   "hinweis": "zusätzlicher Grund",
+   "erklaerung": "zumal: Der Grund verstärkt eine Entscheidung, die schon feststeht."
+  },
+  {
+   "id": "u03",
+   "typ": "luecke",
+   "satz": "Wir treffen uns morgen um zehn, es sei ___, es regnet.",
+   "loesungen": [
+    "denn"
+   ],
+   "erklaerung": "„es sei denn“ nennt eine Ausnahme."
+  },
+  {
+   "id": "u04",
+   "typ": "luecke",
+   "satz": "Die Studie ist insofern bemerkenswert, ___ sie erstmals Langzeitdaten auswertet.",
+   "loesungen": [
+    "als"
+   ],
+   "erklaerung": "insofern … als: Die Aussage gilt unter diesem Gesichtspunkt."
+  },
+  {
+   "id": "u05",
+   "typ": "luecke",
+   "satz": "Er hat das Haus verkauft, ___ seine Familie davon wusste.",
+   "loesungen": [
+    "ohne dass"
+   ],
+   "hinweis": "zwei Wörter",
+   "erklaerung": "Verschiedene Subjekte (er – seine Familie): „ohne dass“ statt „ohne … zu“."
+  },
+  {
+   "id": "u06",
+   "typ": "luecke",
+   "satz": "___ nichts dazwischenkommt, ist das Projekt im Mai fertig.",
+   "loesungen": [
+    "Sofern",
+    "Falls",
+    "Wenn",
+    "Soweit"
+   ],
+   "hinweis": "gehoben für „falls“",
+   "erklaerung": "sofern: Bedingung, oft mit einschränkendem Sinn."
+  },
+  {
+   "id": "u07",
+   "typ": "luecke",
+   "satz": "Der Text ist zu lang, ___ man ihn in zehn Minuten lesen könnte.",
+   "loesungen": [
+    "als dass"
+   ],
+   "hinweis": "zwei Wörter",
+   "erklaerung": "zu + Adjektiv, als dass + Konjunktiv II: Die Folge tritt nicht ein."
+  },
+  {
+   "id": "u08",
+   "typ": "luecke",
+   "satz": "___ er erschöpft war, arbeitete er bis spät in die Nacht.",
+   "loesungen": [
+    "Obwohl",
+    "Obgleich",
+    "Obschon",
+    "Wenngleich",
+    "Wiewohl"
+   ],
+   "hinweis": "Gegengrund",
+   "erklaerung": "Konzessiv: obwohl und die gehobenen Varianten obgleich, obschon, wenngleich, wiewohl."
+  },
+  {
+   "id": "u09",
+   "typ": "luecke",
+   "satz": "___ sie zu Hause angekommen war, klingelte das Telefon.",
+   "loesungen": [
+    "Kaum dass",
+    "Sobald"
+   ],
+   "hinweis": "unmittelbar danach",
+   "erklaerung": "„kaum dass“ und „sobald“: Die zweite Handlung folgt sofort auf die erste."
+  },
+  {
+   "id": "u10",
+   "typ": "luecke",
+   "satz": "Die Unfallgefahr lässt sich verringern, ___ die Straßen besser beleuchtet werden.",
+   "loesungen": [
+    "dadurch, dass",
+    "indem",
+    "wenn"
+   ],
+   "hinweis": "Mittel",
+   "erklaerung": "Mittel: „dadurch, dass“ (oder „indem“); „wenn“ betont die Bedingung."
+  },
+  {
+   "id": "u11",
+   "typ": "auswahl",
+   "frage": "Welche Subjunktion nennt einen zusätzlichen, verstärkenden Grund?",
+   "optionen": [
+    "zumal",
+    "sofern",
+    "indem",
+    "wenngleich"
+   ],
+   "richtig": 0,
+   "erklaerung": "zumal = besonders weil, noch dazu weil."
+  },
+  {
+   "id": "u12",
+   "typ": "auswahl",
+   "frage": "„Wir fahren ans Meer, es sei denn, ___.“",
+   "optionen": [
+    "das Wetter schlecht wird",
+    "dass das Wetter wird schlecht",
+    "das Wetter wird schlecht",
+    "wird das Wetter schlecht"
+   ],
+   "richtig": 2,
+   "erklaerung": "Nach „es sei denn“ ohne „dass“: Hauptsatzstellung, Verb an Position 2."
+  },
+  {
+   "id": "u13",
+   "typ": "auswahl",
+   "frage": "Was leistet „insofern … als“?",
+   "optionen": [
+    "Es nennt das Mittel einer Handlung.",
+    "Es schränkt eine Aussage auf einen bestimmten Gesichtspunkt ein.",
+    "Es nennt einen Zweck.",
+    "Es nennt einen Gegengrund."
+   ],
+   "richtig": 1,
+   "erklaerung": "Der Plan ist insofern gut, als er Zeit spart = in dieser Hinsicht gut."
+  },
+  {
+   "id": "u14",
+   "typ": "auswahl",
+   "frage": "Welcher Satz ist korrekt?",
+   "optionen": [
+    "Sie ist gegangen, ohne jemand es zu bemerken.",
+    "Sie ist gegangen, ohne zu jemand es bemerkt.",
+    "Sie ist gegangen, ohne dass jemand es bemerkt hat.",
+    "Sie ist gegangen, ohne dass jemand es zu bemerken."
+   ],
+   "richtig": 2,
+   "erklaerung": "Verschiedene Subjekte: „ohne dass“ + konjugiertes Verb am Ende."
+  },
+  {
+   "id": "u15",
+   "typ": "auswahl",
+   "frage": "„Er ist viel zu stolz, ___ er um Hilfe bitten würde.“",
+   "optionen": [
+    "sodass",
+    "damit",
+    "als dass",
+    "dass"
+   ],
+   "richtig": 2,
+   "erklaerung": "zu + Adjektiv, als dass: Die Folge bleibt aus."
+  },
+  {
+   "id": "u16",
+   "typ": "auswahl",
+   "frage": "Welche Subjunktion ist gehoben und bedeutet „obwohl“?",
+   "optionen": [
+    "zumal",
+    "wenngleich",
+    "indem",
+    "sofern"
+   ],
+   "richtig": 1,
+   "erklaerung": "wenngleich, obgleich, obschon, wiewohl = obwohl (gehoben)."
+  },
+  {
+   "id": "u17",
+   "typ": "umformen",
+   "ausgang": "Sie liest jeden Tag. So erweitert sie ihren Wortschatz.",
+   "anweisung": "Verbinden Sie mit „indem“.",
+   "loesungen": [
+    "Sie erweitert ihren Wortschatz, indem sie jeden Tag liest.",
+    "Indem sie jeden Tag liest, erweitert sie ihren Wortschatz."
+   ],
+   "erklaerung": "„indem“ nennt das Mittel; der Satz mit dem Ziel ist der Hauptsatz."
+  },
+  {
+   "id": "u18",
+   "typ": "umformen",
+   "ausgang": "Er hat gekündigt. Sein Chef hat davon nichts gewusst.",
+   "anweisung": "Verbinden Sie mit „ohne dass“.",
+   "loesungen": [
+    "Er hat gekündigt, ohne dass sein Chef davon gewusst hat.",
+    "Er hat gekündigt, ohne dass sein Chef davon wusste.",
+    "Er hat gekündigt, ohne dass sein Chef etwas davon gewusst hat.",
+    "Er hat gekündigt, ohne dass sein Chef etwas davon wusste.",
+    "Ohne dass sein Chef davon gewusst hat, hat er gekündigt.",
+    "Ohne dass sein Chef davon wusste, hat er gekündigt."
+   ],
+   "erklaerung": "„ohne dass“ enthält schon die Verneinung – „nichts“ fällt weg."
+  },
+  {
+   "id": "u19",
+   "typ": "umformen",
+   "ausgang": "Wir kommen, außer wenn es einen Streik gibt.",
+   "anweisung": "Formulieren Sie mit „es sei denn“.",
+   "loesungen": [
+    "Wir kommen, es sei denn, es gibt einen Streik.",
+    "Wir kommen, es sei denn, dass es einen Streik gibt."
+   ],
+   "erklaerung": "Nach „es sei denn“: Hauptsatz oder dass-Satz."
+  },
+  {
+   "id": "u20",
+   "typ": "umformen",
+   "ausgang": "Die Aufgabe ist sehr schwer. Niemand kann sie allein lösen.",
+   "anweisung": "Verbinden Sie mit „zu … als dass“.",
+   "loesungen": [
+    "Die Aufgabe ist zu schwer, als dass man sie allein lösen könnte.",
+    "Die Aufgabe ist zu schwer, als dass jemand sie allein lösen könnte.",
+    "Die Aufgabe ist zu schwer, als dass sie jemand allein lösen könnte."
+   ],
+   "erklaerung": "„als dass“ enthält die Verneinung: niemand → man/jemand; Konjunktiv II."
+  },
+  {
+   "id": "u21",
+   "typ": "umformen",
+   "ausgang": "Der Plan ist gut, aber nur in einer Hinsicht: Er spart Zeit.",
+   "anweisung": "Formulieren Sie mit „insofern … als“.",
+   "loesungen": [
+    "Der Plan ist insofern gut, als er Zeit spart.",
+    "Der Plan ist insoweit gut, als er Zeit spart."
+   ],
+   "erklaerung": "insofern steht im Hauptsatz, „als“ leitet den Nebensatz ein."
+  },
+  {
+   "id": "u22",
+   "typ": "umformen",
+   "ausgang": "Er schweigt. Er sollte eigentlich die Wahrheit sagen.",
+   "anweisung": "Verbinden Sie mit „(an)statt … zu“.",
+   "loesungen": [
+    "Er schweigt, anstatt die Wahrheit zu sagen.",
+    "Er schweigt, statt die Wahrheit zu sagen.",
+    "Anstatt die Wahrheit zu sagen, schweigt er.",
+    "Statt die Wahrheit zu sagen, schweigt er."
+   ],
+   "erklaerung": "Gleiches Subjekt: (an)statt … zu."
+  },
+  {
+   "id": "u23",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "zumal",
+     "zusätzlicher Grund"
+    ],
+    [
+     "indem",
+     "Mittel oder Art und Weise"
+    ],
+    [
+     "sofern",
+     "Bedingung"
+    ],
+    [
+     "es sei denn",
+     "Ausnahme"
+    ],
+    [
+     "wenngleich",
+     "Gegengrund"
+    ],
+    [
+     "als dass",
+     "ausbleibende Folge nach „zu“ + Adjektiv"
+    ]
+   ],
+   "erklaerung": "Die Bedeutung der gehobenen Subjunktionen."
+  },
+  {
+   "id": "u24",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "Sie spart viel Geld,",
+     "indem sie mit dem Rad zur Arbeit fährt."
+    ],
+    [
+     "Ich bleibe heute zu Hause,",
+     "zumal ich ohnehin erkältet bin."
+    ],
+    [
+     "Der Ausflug findet statt,",
+     "es sei denn, es stürmt."
+    ],
+    [
+     "Das Ergebnis ist insofern erfreulich,",
+     "als die Kosten gesunken sind."
+    ],
+    [
+     "Er ist zu müde,",
+     "als dass er noch Auto fahren sollte."
+    ]
+   ],
+   "erklaerung": "Mittel, zusätzlicher Grund, Ausnahme, Einschränkung, ausbleibende Folge."
+  },
+  {
+   "id": "u25",
+   "typ": "sortieren",
+   "teile": [
+    "fit,",
+    "schwimmt",
+    "hält sich",
+    "täglich",
+    "er",
+    "Er",
+    "indem"
+   ],
+   "loesung": "Er hält sich fit, indem er täglich schwimmt.",
+   "erklaerung": "indem + Verb am Ende; der Nebensatz nennt das Mittel."
+  },
+  {
+   "id": "u26",
+   "typ": "sortieren",
+   "teile": [
+    "ist",
+    "die Reise,",
+    "verschieben",
+    "zumal",
+    "Wir",
+    "das Wetter",
+    "unsicher"
+   ],
+   "loesung": "Wir verschieben die Reise, zumal das Wetter unsicher ist.",
+   "erklaerung": "„zumal“ leitet einen Nebensatz ein: Verb am Ende."
+  },
+  {
+   "id": "u27",
+   "typ": "sortieren",
+   "teile": [
+    "es",
+    "im Freien",
+    "findet",
+    "statt,",
+    "Das Konzert",
+    "es sei denn,",
+    "regnet"
+   ],
+   "loesung": "Das Konzert findet im Freien statt, es sei denn, es regnet.",
+   "erklaerung": "Nach „es sei denn“ Hauptsatzstellung: es regnet."
+  },
+  {
+   "id": "u28",
+   "typ": "sortieren",
+   "teile": [
+    "tragen könnte",
+    "als dass",
+    "sie",
+    "Die Kiste",
+    "allein",
+    "ist",
+    "man",
+    "zu schwer,"
+   ],
+   "loesung": "Die Kiste ist zu schwer, als dass man sie allein tragen könnte.",
+   "erklaerung": "als dass + Konjunktiv II am Ende; Pronomen „sie“ vorn im Mittelfeld."
+  },
+  {
+   "id": "u29",
+   "typ": "fehler",
+   "satz": "Wir fahren morgen los, es sei denn, regnet es.",
+   "fehler": "regnet es",
+   "korrektur": "es regnet",
+   "erklaerung": "Nach „es sei denn“ ohne „dass“ steht das Verb an Position 2."
+  },
+  {
+   "id": "u30",
+   "typ": "fehler",
+   "satz": "Das Angebot ist insofern interessant, dass es sehr günstig ist.",
+   "fehler": "dass",
+   "korrektur": "als",
+   "erklaerung": "„insofern“ verlangt „als“."
+  },
+  {
+   "id": "u31",
+   "typ": "fehler",
+   "satz": "Er ist zu erschöpft, dass er weiterarbeiten könnte.",
+   "fehler": "dass",
+   "korrektur": "als dass",
+   "erklaerung": "Nach „zu“ + Adjektiv: „als dass“."
+  },
+  {
+   "id": "u32",
+   "typ": "fehler",
+   "satz": "Indem es stark regnete, sagten wir den Ausflug ab.",
+   "fehler": "Indem",
+   "korrektur": [
+    "Weil",
+    "Da"
+   ],
+   "erklaerung": "„indem“ nennt ein Mittel; für den Grund braucht man „weil“ oder „da“."
+  },
+  {
+   "id": "u33",
+   "typ": "rf",
+   "aussage": "„zumal“ nennt einen zusätzlichen Grund, der die Aussage verstärkt.",
+   "wert": true,
+   "erklaerung": "Ich bleibe hier, zumal es schon spät ist."
+  },
+  {
+   "id": "u34",
+   "typ": "rf",
+   "aussage": "Nach „es sei denn“ kann ein Hauptsatz oder ein dass-Satz folgen.",
+   "wert": true,
+   "erklaerung": "…, es sei denn, es regnet. / …, es sei denn, dass es regnet."
+  },
+  {
+   "id": "u35",
+   "typ": "rf",
+   "aussage": "„ohne dass“ verwendet man nur, wenn Haupt- und Nebensatz dasselbe Subjekt haben.",
+   "wert": false,
+   "erklaerung": "Gerade bei verschiedenen Subjekten braucht man „ohne dass“; bei gleichem Subjekt ist „ohne … zu“ üblicher."
+  },
+  {
+   "id": "u36",
+   "typ": "rf",
+   "aussage": "„wenngleich“ ist eine umgangssprachliche Variante von „weil“.",
+   "wert": false,
+   "erklaerung": "„wenngleich“ ist gehoben und bedeutet „obwohl“."
+  }
+ ]
+}

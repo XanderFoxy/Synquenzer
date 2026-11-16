@@ -1,0 +1,433 @@
+{
+ "id": "g11",
+ "titel": "Relativsätze",
+ "niveau": "C1",
+ "nr": 11,
+ "gruppe": "A",
+ "baustelle": true,
+ "pruefungsbezug": [
+  "S1",
+  "S2"
+ ],
+ "tafel": [
+  "Genus und Zahl kommen vom Bezugswort, der Kasus vom Relativsatz: der Roman, den ich lese – die Autorin, der ich schrieb.",
+  "Besondere Formen: Dativ Plural denen; Genitiv dessen (maskulin, neutral), deren (feminin, Plural).",
+  "Nach dessen/deren folgt das Nomen ohne Artikel, ein Adjektiv endet stark: deren neues Buch.",
+  "Eine Präposition steht vor dem Relativpronomen: das Thema, über das wir sprachen.",
+  "was nach alles, etwas, nichts, das Beste und nach einem ganzen Satz: Er kam pünktlich, was selten ist. Mit Präposition: wo(r)- – alles, worüber wir sprachen.",
+  "wer … (der), was … (das): Wer A sagt, muss auch B sagen.",
+  "Im Relativsatz steht das finite Verb am Ende. Statt der/die/das ist auch welcher/welche/welches möglich (gehoben, selten)."
+ ],
+ "beispiele": [
+  "Das ist eine App, die mir beim Wiederholen wirklich hilft.",
+  "Die Autorin, deren Roman gerade verfilmt wird, lebt zurückgezogen in Triest.",
+  "Alles, worüber wir gestern gesprochen haben, bleibt unter uns.",
+  "Sie erhielt den Preis, was selbst ihre Kritiker ohne Zögern anerkannten."
+ ],
+ "fallen": [
+  {
+   "falsch": "eine App, der mir hilft",
+   "richtig": "eine App, die mir hilft",
+   "warum": "„die App“ ist feminin; Subjekt im Relativsatz: Nominativ „die“."
+  },
+  {
+   "falsch": "die Stiftung, dessen Vorsitzende",
+   "richtig": "die Stiftung, deren Vorsitzende",
+   "warum": "Feminines Bezugswort: deren."
+  },
+  {
+   "falsch": "alles, das ich weiß",
+   "richtig": "alles, was ich weiß",
+   "warum": "Nach „alles“ steht „was“."
+  },
+  {
+   "falsch": "die Kinder, den wir halfen",
+   "richtig": "die Kinder, denen wir halfen",
+   "warum": "Dativ Plural: denen."
+  }
+ ],
+ "uebungen": [
+  {
+   "id": "u01",
+   "typ": "luecke",
+   "satz": "Das ist eine App, ___ mir beim Wiederholen wirklich hilft.",
+   "loesungen": [
+    "die",
+    "welche"
+   ],
+   "hinweis": "Relativpronomen",
+   "erklaerung": "„die App“ ist feminin, im Relativsatz Subjekt: die."
+  },
+  {
+   "id": "u02",
+   "typ": "luecke",
+   "satz": "Die Autorin, ___ Roman gerade verfilmt wird, lebt zurückgezogen in Triest.",
+   "loesungen": [
+    "deren"
+   ],
+   "hinweis": "Relativpronomen, Genitiv",
+   "erklaerung": "Feminines Bezugswort, Genitiv: deren Roman."
+  },
+  {
+   "id": "u03",
+   "typ": "luecke",
+   "satz": "Der Philosoph, ___ Thesen heftig umstritten sind, hält morgen einen Vortrag.",
+   "loesungen": [
+    "dessen"
+   ],
+   "hinweis": "Relativpronomen, Genitiv",
+   "erklaerung": "Maskulines Bezugswort, Genitiv: dessen Thesen."
+  },
+  {
+   "id": "u04",
+   "typ": "luecke",
+   "satz": "Die Studierenden, ___ wir ein Stipendium vermittelt haben, bedanken sich herzlich.",
+   "loesungen": [
+    "denen",
+    "welchen"
+   ],
+   "hinweis": "Relativpronomen",
+   "erklaerung": "„jemandem etwas vermitteln“: Dativ Plural – denen."
+  },
+  {
+   "id": "u05",
+   "typ": "luecke",
+   "satz": "Das Thema, über ___ wir gestern diskutiert haben, wird uns noch lange beschäftigen.",
+   "loesungen": [
+    "das",
+    "welches"
+   ],
+   "hinweis": "Relativpronomen",
+   "erklaerung": "„diskutieren über“ + Akkusativ; „das Thema“ ist neutral: über das."
+  },
+  {
+   "id": "u06",
+   "typ": "luecke",
+   "satz": "Alles, ___ sie über die Epoche weiß, hat sie aus Romanen gelernt.",
+   "loesungen": [
+    "was"
+   ],
+   "hinweis": "Relativwort",
+   "erklaerung": "Nach „alles“ steht „was“."
+  },
+  {
+   "id": "u07",
+   "typ": "luecke",
+   "satz": "Das Beste, ___ man über dieses Buch sagen kann, ist seine Kürze.",
+   "loesungen": [
+    "was"
+   ],
+   "hinweis": "Relativwort",
+   "erklaerung": "Nach einem substantivierten Superlativ (das Beste) steht „was“."
+  },
+  {
+   "id": "u08",
+   "typ": "luecke",
+   "satz": "Er bestand die Prüfung auf Anhieb, ___ niemand erwartet hatte.",
+   "loesungen": [
+    "was"
+   ],
+   "hinweis": "Relativwort",
+   "erklaerung": "Weiterführender Relativsatz: „was“ bezieht sich auf den ganzen Satz."
+  },
+  {
+   "id": "u09",
+   "typ": "luecke",
+   "satz": "Es gibt nichts, ___ sie sich mehr freut als auf ein freies Wochenende.",
+   "loesungen": [
+    "worauf"
+   ],
+   "hinweis": "Relativwort mit Präposition",
+   "erklaerung": "„sich freuen auf“; Bezug „nichts“ → wo(r) + auf = worauf."
+  },
+  {
+   "id": "u10",
+   "typ": "luecke",
+   "satz": "___ die Wahrheit sagt, braucht ein schnelles Pferd.",
+   "loesungen": [
+    "Wer"
+   ],
+   "hinweis": "Relativwort",
+   "erklaerung": "„wer“ leitet einen Relativsatz ohne Bezugswort ein (Sprichwort)."
+  },
+  {
+   "id": "u11",
+   "typ": "luecke",
+   "satz": "Die Kollegin, mit ___ ich das Projekt geleitet habe, ist inzwischen Professorin.",
+   "loesungen": [
+    "der",
+    "welcher"
+   ],
+   "hinweis": "Relativpronomen",
+   "erklaerung": "„mit“ + Dativ, feminin: mit der."
+  },
+  {
+   "id": "u12",
+   "typ": "luecke",
+   "satz": "Der Verein, ___ Mitglieder überwiegend ehrenamtlich arbeiten, feiert sein hundertjähriges Bestehen.",
+   "loesungen": [
+    "dessen"
+   ],
+   "hinweis": "Relativpronomen, Genitiv",
+   "erklaerung": "Maskulines Bezugswort: dessen Mitglieder."
+  },
+  {
+   "id": "u13",
+   "typ": "luecke",
+   "satz": "In dem Jahr, ___ die Mauer fiel, wurde sie eingeschult.",
+   "loesungen": [
+    "als",
+    "in dem"
+   ],
+   "hinweis": "Relativwort",
+   "erklaerung": "Nach Zeitangaben: „als“ (Vergangenheit) oder „in dem“; „wo“ ist hier umgangssprachlich."
+  },
+  {
+   "id": "u14",
+   "typ": "auswahl",
+   "frage": "„Das ist die Kollegin, ___ ich das Buch geliehen habe.“",
+   "optionen": [
+    "der",
+    "deren",
+    "die"
+   ],
+   "richtig": 0,
+   "erklaerung": "„jemandem etwas leihen“: Dativ feminin – der."
+  },
+  {
+   "id": "u15",
+   "typ": "auswahl",
+   "frage": "„Die Firma, ___ Gründer heute im Ausland lebt, …“",
+   "optionen": [
+    "deren",
+    "dessen",
+    "der"
+   ],
+   "richtig": 0,
+   "erklaerung": "„die Firma“ ist feminin: deren Gründer."
+  },
+  {
+   "id": "u16",
+   "typ": "auswahl",
+   "frage": "„Er sagte die Lesung kurzfristig ab, ___ sich die Veranstalter sehr ärgerten.“",
+   "optionen": [
+    "worüber",
+    "über die",
+    "über was"
+   ],
+   "richtig": 0,
+   "erklaerung": "„sich ärgern über“, Bezug auf den ganzen Satz: worüber."
+  },
+  {
+   "id": "u17",
+   "typ": "auswahl",
+   "frage": "„Das Haus, ___ ich aufgewachsen bin, steht nicht mehr.“",
+   "optionen": [
+    "in dem",
+    "in den",
+    "in das"
+   ],
+   "richtig": 0,
+   "erklaerung": "Ort (wo?): in + Dativ, neutral: in dem."
+  },
+  {
+   "id": "u18",
+   "typ": "auswahl",
+   "frage": "„Wer A sagt, ___ muss auch B sagen.“",
+   "optionen": [
+    "den",
+    "was",
+    "der"
+   ],
+   "richtig": 2,
+   "erklaerung": "Nach „wer“ wird im Hauptsatz mit „der“ (Nominativ) wieder aufgenommen."
+  },
+  {
+   "id": "u19",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "die Frau, der ich half",
+     "Dativ"
+    ],
+    [
+     "die Frau, die mir half",
+     "Nominativ"
+    ],
+    [
+     "die Frau, die ich traf",
+     "Akkusativ"
+    ],
+    [
+     "die Frau, deren Sohn ich kenne",
+     "Genitiv"
+    ]
+   ],
+   "erklaerung": "Der Kasus des Relativpronomens hängt vom Verb im Relativsatz ab."
+  },
+  {
+   "id": "u20",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "der Verleger,",
+     "den alle fürchteten"
+    ],
+    [
+     "das Buch,",
+     "das alle lobten"
+    ],
+    [
+     "die Leser,",
+     "denen das Ende missfiel"
+    ],
+    [
+     "die Autorin,",
+     "deren Debüt alle lobten"
+    ]
+   ],
+   "erklaerung": "Genus und Zahl vom Bezugswort, Kasus vom Relativsatz."
+  },
+  {
+   "id": "u21",
+   "typ": "sortieren",
+   "teile": [
+    "vergriffen",
+    "lange",
+    "in den Kinos",
+    "war",
+    "dessen",
+    "läuft,",
+    "gerade",
+    "Verfilmung",
+    "Der Roman,"
+   ],
+   "loesung": "Der Roman, dessen Verfilmung gerade in den Kinos läuft, war lange vergriffen.",
+   "loesungen": [
+    "Der Roman, dessen Verfilmung in den Kinos gerade läuft, war lange vergriffen."
+   ],
+   "erklaerung": "Genitiv „dessen“ + Nomen; im Relativsatz steht das Verb am Ende, danach geht der Hauptsatz mit dem Verb weiter."
+  },
+  {
+   "id": "u22",
+   "typ": "sortieren",
+   "teile": [
+    "über",
+    "Das ist genau der Punkt,",
+    "wir",
+    "sprechen",
+    "müssen",
+    "den",
+    "noch einmal"
+   ],
+   "loesung": "Das ist genau der Punkt, über den wir noch einmal sprechen müssen.",
+   "erklaerung": "Präposition vor dem Relativpronomen; Modalverb am Ende."
+  },
+  {
+   "id": "u23",
+   "typ": "sortieren",
+   "teile": [
+    "selbst ihre Kritiker",
+    "was",
+    "ohne Zögern",
+    "Sie erhielt den Preis,",
+    "anerkannten"
+   ],
+   "loesung": "Sie erhielt den Preis, was selbst ihre Kritiker ohne Zögern anerkannten.",
+   "erklaerung": "Weiterführender Relativsatz mit „was“; das Verb steht am Ende."
+  },
+  {
+   "id": "u24",
+   "typ": "fehler",
+   "satz": "Gesucht wird eine Übersetzung, der dem Original möglichst nahekommt.",
+   "fehler": "der",
+   "korrektur": "die",
+   "erklaerung": "„die Übersetzung“ ist feminin, im Relativsatz Subjekt: die."
+  },
+  {
+   "id": "u25",
+   "typ": "fehler",
+   "satz": "Die Stiftung, dessen Vorsitzende zurückgetreten ist, sucht eine Nachfolge.",
+   "fehler": "dessen",
+   "korrektur": "deren",
+   "erklaerung": "„die Stiftung“ ist feminin: deren."
+  },
+  {
+   "id": "u26",
+   "typ": "fehler",
+   "satz": "Das ist alles, das ich über den Fall weiß.",
+   "fehler": "das",
+   "korrektur": "was",
+   "erklaerung": "Nach „alles“ steht „was“."
+  },
+  {
+   "id": "u27",
+   "typ": "fehler",
+   "satz": "Die Kinder, den wir Bücher geschenkt haben, haben sich sehr gefreut.",
+   "fehler": "den",
+   "korrektur": "denen",
+   "erklaerung": "„jemandem etwas schenken“: Dativ Plural – denen."
+  },
+  {
+   "id": "u28",
+   "typ": "fehler",
+   "satz": "Er hat sein Studium abgebrochen, das seine Eltern sehr enttäuschte.",
+   "fehler": "das",
+   "korrektur": "was",
+   "erklaerung": "Bezug auf den ganzen Satz: weiterführendes „was“."
+  },
+  {
+   "id": "u29",
+   "typ": "fehler",
+   "satz": "Das ist das Thema, über was wir gestern gesprochen haben.",
+   "fehler": "was",
+   "korrektur": "das",
+   "erklaerung": "Bei einem Nomen als Bezugswort: Präposition + Relativpronomen – über das."
+  },
+  {
+   "id": "u30",
+   "typ": "rf",
+   "aussage": "Nach „alles“, „etwas“ und „nichts“ steht das Relativwort „was“.",
+   "wert": true,
+   "erklaerung": "alles, was …; etwas, was …; nichts, was …"
+  },
+  {
+   "id": "u31",
+   "typ": "rf",
+   "aussage": "„deren“ steht bei femininen Bezugswörtern und im Plural, „dessen“ bei maskulinen und neutralen.",
+   "wert": true,
+   "erklaerung": "die Autorin, deren …; der Autor, dessen …; die Autoren, deren …"
+  },
+  {
+   "id": "u33",
+   "typ": "umformen",
+   "ausgang": "Ich habe den Film gestern gesehen. Der Film hat mich tief bewegt.",
+   "anweisung": "Verbinden Sie die Sätze mit einem Relativsatz. Beginnen Sie mit „Der Film“.",
+   "loesungen": [
+    "Der Film, den ich gestern gesehen habe, hat mich tief bewegt."
+   ],
+   "erklaerung": "Akkusativ maskulin: den; Verb am Ende des Relativsatzes."
+  },
+  {
+   "id": "u34",
+   "typ": "umformen",
+   "ausgang": "Die Autorin stellt heute ihr Buch vor. Ihr Debüt war ein Bestseller.",
+   "anweisung": "Verbinden Sie die Sätze mit einem Relativsatz. Beginnen Sie mit „Die Autorin“.",
+   "loesungen": [
+    "Die Autorin, deren Debüt ein Bestseller war, stellt heute ihr Buch vor.",
+    "Die Autorin, deren Debüt ein Bestseller war, stellt ihr Buch heute vor."
+   ],
+   "erklaerung": "„ihr Debüt“ wird zu „deren Debüt“."
+  },
+  {
+   "id": "u35",
+   "typ": "umformen",
+   "ausgang": "Er kam zu spät. Das ärgerte alle.",
+   "anweisung": "Verbinden Sie die Sätze mit einem weiterführenden Relativsatz.",
+   "loesungen": [
+    "Er kam zu spät, was alle ärgerte."
+   ],
+   "erklaerung": "„was“ bezieht sich auf den ganzen vorangehenden Satz."
+  }
+ ]
+}

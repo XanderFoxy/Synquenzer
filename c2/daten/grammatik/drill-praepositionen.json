@@ -1,0 +1,779 @@
+{
+ "id": "drill-praepositionen",
+ "titel": "Drill: Präpositionen und Rektion",
+ "niveau": "C1",
+ "kurz": "Kurz-Drill zu festen Präpositionen nach Verb, Adjektiv und Nomen, Kasus nach Präpositionen und präpositionalen Fügungen wie „in der Prüfung“ oder „unter Druck“.",
+ "tafel": [
+  "Feste Präpositionen gehören zum Wort – immer mit Kasus lernen: sich interessieren für + Akk., Interesse an + Dat.",
+  "Wechselpräpositionen (an, auf, hinter, in, neben, über, unter, vor, zwischen): wohin? → Akkusativ, wo? → Dativ.",
+  "Immer Dativ: aus, bei, mit, nach, seit, von, zu – immer Akkusativ: durch, für, gegen, ohne, um.",
+  "Genitiv in der Schriftsprache: wegen, trotz, während, aufgrund, anhand, innerhalb, mithilfe.",
+  "Feste Fügungen: in der Prüfung, auf Deutsch, im Deutschen, unter Druck stehen, im Vergleich zu, in diesem Zusammenhang.",
+  "Sachen nach Präposition: da(r)- + Präposition (davon, darüber) – nie „von das“."
+ ],
+ "beispiele": [
+  "Ich interessiere mich sehr für die deutsche Sprache.",
+  "In der Prüfung hat sie sich nicht aus der Ruhe bringen lassen.",
+  "Im Vergleich zum Vorjahr sind die Mieten gestiegen.",
+  "Davon habe ich lange geträumt."
+ ],
+ "fallen": [
+  {
+   "falsch": "unter Prüfung",
+   "richtig": "in der Prüfung",
+   "warum": "Fester Ausdruck mit „in“ + Dativ (auch: bei der Prüfung, während der Prüfung)."
+  },
+  {
+   "falsch": "mich nicht unter Druck fühlen",
+   "richtig": "mich nicht unter Druck gesetzt fühlen",
+   "warum": "Die feste Verbindung heißt „jemanden unter Druck setzen“; das Gefühl beschreibt man mit dem Partizip."
+  },
+  {
+   "falsch": "Interesse auf die deutsche Sprache",
+   "richtig": "Interesse an der deutschen Sprache / Interesse für die deutsche Sprache",
+   "warum": "„Interesse“ steht mit „an“ + Dativ (oder „für“ + Akkusativ), nie mit „auf“."
+  },
+  {
+   "falsch": "von das",
+   "richtig": "davon / von dem",
+   "warum": "Für Sachen steht das Pronominaladverb; als Artikel heißt es „von dem“ (vom)."
+  }
+ ],
+ "uebungen": [
+  {
+   "id": "u01",
+   "typ": "luecke",
+   "satz": "Ich habe mich schon immer ___ die deutsche Sprache interessiert.",
+   "loesungen": [
+    "für"
+   ],
+   "erklaerung": "sich interessieren für + Akkusativ (nicht: auf)."
+  },
+  {
+   "id": "u02",
+   "typ": "luecke",
+   "satz": "Ihr Interesse ___ der deutschen Sprache ist über die Jahre gewachsen.",
+   "loesungen": [
+    "an"
+   ],
+   "erklaerung": "das Interesse an + Dativ („der deutschen Sprache“ ist Dativ)."
+  },
+  {
+   "id": "u03",
+   "typ": "luecke",
+   "satz": "___ der Prüfung war ich so nervös, dass ich die erste Frage zweimal lesen musste.",
+   "loesungen": [
+    "In",
+    "Bei",
+    "Während"
+   ],
+   "erklaerung": "Feste Fügung: in der Prüfung (auch: bei/während der Prüfung) – nicht „unter Prüfung“.",
+   "grundlage": true
+  },
+  {
+   "id": "u05",
+   "typ": "luecke",
+   "satz": "Wie sagt man das ___ Deutsch?",
+   "loesungen": [
+    "auf"
+   ],
+   "erklaerung": "auf Deutsch (in einer Sprache sprechen oder schreiben)."
+  },
+  {
+   "id": "u06",
+   "typ": "luecke",
+   "satz": "___ Deutschen gibt es drei grammatische Geschlechter.",
+   "loesungen": [
+    "Im"
+   ],
+   "erklaerung": "im Deutschen = in der deutschen Sprache (als System)."
+  },
+  {
+   "id": "u07",
+   "typ": "luecke",
+   "satz": "Sie ist zu Recht stolz ___ ihre Fortschritte.",
+   "loesungen": [
+    "auf"
+   ],
+   "erklaerung": "stolz auf + Akkusativ."
+  },
+  {
+   "id": "u08",
+   "typ": "luecke",
+   "satz": "Er ist ___ die Organisation des Kongresses verantwortlich.",
+   "loesungen": [
+    "für"
+   ],
+   "erklaerung": "verantwortlich für + Akkusativ."
+  },
+  {
+   "id": "u09",
+   "typ": "luecke",
+   "satz": "Der Erfolg hängt stark ___ einer guten Vorbereitung ab.",
+   "loesungen": [
+    "von"
+   ],
+   "erklaerung": "abhängen von + Dativ."
+  },
+  {
+   "id": "u10",
+   "typ": "luecke",
+   "satz": "Wir müssen stärker ___ die Bedürfnisse älterer Menschen Rücksicht nehmen.",
+   "loesungen": [
+    "auf"
+   ],
+   "erklaerung": "Rücksicht nehmen auf + Akkusativ."
+  },
+  {
+   "id": "u11",
+   "typ": "luecke",
+   "satz": "Die Kommission hat ausdrücklich ___ den Bericht der Expertengruppe Bezug genommen.",
+   "loesungen": [
+    "auf"
+   ],
+   "erklaerung": "Bezug nehmen auf + Akkusativ."
+  },
+  {
+   "id": "u12",
+   "typ": "luecke",
+   "satz": "Viele Pendler leiden ___ den ständigen Zugausfällen.",
+   "loesungen": [
+    "unter"
+   ],
+   "erklaerung": "leiden unter + Dativ (äußere Belastung); leiden an = an einer Krankheit."
+  },
+  {
+   "id": "u13",
+   "typ": "luecke",
+   "satz": "Die Maßnahmen haben erheblich ___ einer Verbesserung der Luftqualität beigetragen.",
+   "loesungen": [
+    "zu"
+   ],
+   "erklaerung": "beitragen zu + Dativ."
+  },
+  {
+   "id": "u14",
+   "typ": "luecke",
+   "satz": "Sie hat sich ___ eine Stelle als Übersetzerin beworben.",
+   "loesungen": [
+    "um"
+   ],
+   "erklaerung": "sich bewerben um + Akkusativ (die Stelle), bei + Dativ (die Firma).",
+   "grundlage": true
+  },
+  {
+   "id": "u15",
+   "typ": "luecke",
+   "satz": "In seinem Essay setzt er sich kritisch ___ den Folgen der Digitalisierung auseinander.",
+   "loesungen": [
+    "mit"
+   ],
+   "erklaerung": "sich auseinandersetzen mit + Dativ."
+  },
+  {
+   "id": "u16",
+   "typ": "luecke",
+   "satz": "Der Verlag legt großen Wert ___ sorgfältige Übersetzungen.",
+   "loesungen": [
+    "auf"
+   ],
+   "erklaerung": "Wert legen auf + Akkusativ."
+  },
+  {
+   "id": "u17",
+   "typ": "luecke",
+   "satz": "Die Ausstellung besteht ___ drei Teilen.",
+   "loesungen": [
+    "aus"
+   ],
+   "erklaerung": "bestehen aus = sich zusammensetzen aus; bestehen auf = etwas fordern."
+  },
+  {
+   "id": "u18",
+   "typ": "luecke",
+   "satz": "___ diesem Zusammenhang möchte ich auf eine aktuelle Studie hinweisen.",
+   "loesungen": [
+    "In"
+   ],
+   "erklaerung": "Feste Fügung: in diesem Zusammenhang."
+  },
+  {
+   "id": "u19",
+   "typ": "luecke",
+   "satz": "___ Vergleich zum Vorjahr sind die Preise deutlich gestiegen.",
+   "loesungen": [
+    "Im"
+   ],
+   "erklaerung": "Feste Fügung: im Vergleich zu (+ Dativ)."
+  },
+  {
+   "id": "u20",
+   "typ": "luecke",
+   "satz": "___ diesen Umständen ist eine Einigung kaum möglich.",
+   "loesungen": [
+    "Unter"
+   ],
+   "erklaerung": "Feste Fügung: unter diesen Umständen."
+  },
+  {
+   "id": "u21",
+   "typ": "luecke",
+   "satz": "Das war keine Absicht, das ist mir ___ Versehen passiert.",
+   "loesungen": [
+    "aus"
+   ],
+   "erklaerung": "aus Versehen = unabsichtlich; mit Absicht = absichtlich.",
+   "grundlage": true
+  },
+  {
+   "id": "u22",
+   "typ": "luecke",
+   "satz": "___ Hilfe eines Wörterbuchs konnte sie den alten Brief entziffern.",
+   "loesungen": [
+    "Mit"
+   ],
+   "erklaerung": "mit Hilfe (auch: mithilfe) + Genitiv."
+  },
+  {
+   "id": "u23",
+   "typ": "luecke",
+   "satz": "___ der vorliegenden Daten lässt sich die These nicht belegen.",
+   "loesungen": [
+    "Anhand",
+    "Aufgrund",
+    "Auf Grund",
+    "Angesichts"
+   ],
+   "hinweis": "Genitiv",
+   "erklaerung": "anhand (= mit Hilfe von), aufgrund oder angesichts + Genitiv."
+  },
+  {
+   "id": "u24",
+   "typ": "luecke",
+   "satz": "___ der nächsten zwei Wochen erhalten Sie eine schriftliche Antwort.",
+   "loesungen": [
+    "Innerhalb",
+    "Binnen"
+   ],
+   "erklaerung": "innerhalb + Genitiv: in diesem Zeitraum."
+  },
+  {
+   "id": "u25",
+   "typ": "luecke",
+   "satz": "Die Bibliothek ist ___ Montag bis Samstag geöffnet.",
+   "loesungen": [
+    "von"
+   ],
+   "erklaerung": "von … bis: Anfang und Ende eines Zeitraums."
+  },
+  {
+   "id": "u26",
+   "typ": "luecke",
+   "satz": "Die neue Regelung gilt ___ dem 1. Januar.",
+   "loesungen": [
+    "ab",
+    "seit"
+   ],
+   "erklaerung": "ab (Zukunft oder allgemein) oder seit (schon begonnen) + Dativ."
+  },
+  {
+   "id": "u27",
+   "typ": "luecke",
+   "satz": "Wir haben uns ___ Wochenende in Leipzig getroffen.",
+   "loesungen": [
+    "am"
+   ],
+   "erklaerung": "Tage und Wochenende: am (an dem)."
+  },
+  {
+   "id": "u28",
+   "typ": "luecke",
+   "satz": "Wir treffen uns ___ acht Uhr vor dem Theater.",
+   "loesungen": [
+    "um",
+    "gegen"
+   ],
+   "erklaerung": "Uhrzeit: um (genau) oder gegen (ungefähr)."
+  },
+  {
+   "id": "u29",
+   "typ": "luecke",
+   "satz": "Nach dem Umzug stellte sie die alten Bücher ___ das oberste Regal.",
+   "loesungen": [
+    "in",
+    "auf"
+   ],
+   "hinweis": "wohin?",
+   "erklaerung": "Wechselpräposition mit Richtung: Akkusativ (das oberste Regal)."
+  },
+  {
+   "id": "u30",
+   "typ": "luecke",
+   "satz": "Die alten Bücher stehen jetzt ___ obersten Regal.",
+   "loesungen": [
+    "im"
+   ],
+   "hinweis": "wo?",
+   "erklaerung": "Wechselpräposition ohne Richtung: Dativ – in dem → im."
+  },
+  {
+   "id": "u32",
+   "typ": "auswahl",
+   "frage": "Welche Präposition passt? „Sie hat keine Angst mehr ___ der Prüfung.“",
+   "optionen": [
+    "über",
+    "von",
+    "vor",
+    "für"
+   ],
+   "richtig": 2,
+   "erklaerung": "Angst haben vor + Dativ."
+  },
+  {
+   "id": "u33",
+   "typ": "auswahl",
+   "frage": "„Wir sind sehr ___ Ihre Antwort gespannt.“",
+   "optionen": [
+    "nach",
+    "für",
+    "auf",
+    "über"
+   ],
+   "richtig": 2,
+   "erklaerung": "gespannt sein auf + Akkusativ."
+  },
+  {
+   "id": "u34",
+   "typ": "auswahl",
+   "frage": "Welcher Satz ist korrekt?",
+   "optionen": [
+    "Auf der Prüfung war ich erstaunlich ruhig.",
+    "Unter der Prüfung war ich erstaunlich ruhig.",
+    "An der Prüfung war ich erstaunlich ruhig.",
+    "In der Prüfung war ich erstaunlich ruhig."
+   ],
+   "richtig": 3,
+   "erklaerung": "Feste Fügung: in der Prüfung.",
+   "grundlage": true
+  },
+  {
+   "id": "u35",
+   "typ": "auswahl",
+   "frage": "Welcher Kasus folgt auf „aufgrund“?",
+   "optionen": [
+    "Dativ",
+    "Akkusativ",
+    "Nominativ",
+    "Genitiv"
+   ],
+   "richtig": 3,
+   "erklaerung": "aufgrund + Genitiv: aufgrund des Wetters."
+  },
+  {
+   "id": "u37",
+   "typ": "auswahl",
+   "frage": "„Er bedankte sich ___ uns ___ die Einladung.“",
+   "optionen": [
+    "bei … für",
+    "für … bei",
+    "an … für",
+    "bei … über"
+   ],
+   "richtig": 0,
+   "erklaerung": "sich bei jemandem (Dativ) für etwas (Akkusativ) bedanken."
+  },
+  {
+   "id": "u38",
+   "typ": "auswahl",
+   "frage": "„Sie legte die Unterlagen ___ Schreibtisch.“ (Richtung)",
+   "optionen": [
+    "im",
+    "auf dem",
+    "auf den",
+    "am"
+   ],
+   "richtig": 2,
+   "erklaerung": "wohin? → Akkusativ: auf den Schreibtisch.",
+   "grundlage": true
+  },
+  {
+   "id": "u39",
+   "typ": "auswahl",
+   "frage": "Welche Präposition gehört zu „verzichten“?",
+   "optionen": [
+    "von",
+    "an",
+    "auf",
+    "für"
+   ],
+   "richtig": 2,
+   "erklaerung": "verzichten auf + Akkusativ."
+  },
+  {
+   "id": "u40",
+   "typ": "auswahl",
+   "frage": "„Sie engagiert sich seit Jahren ___ den Schutz der Wälder.“",
+   "optionen": [
+    "über",
+    "an",
+    "um",
+    "für"
+   ],
+   "richtig": 3,
+   "erklaerung": "sich engagieren für + Akkusativ."
+  },
+  {
+   "id": "u41",
+   "typ": "auswahl",
+   "frage": "Welche Verbindung ist korrekt?",
+   "optionen": [
+    "die Kritik an der Reform",
+    "die Kritik über die Reform",
+    "die Kritik für die Reform",
+    "die Kritik auf die Reform"
+   ],
+   "richtig": 0,
+   "erklaerung": "Kritik an + Dativ."
+  },
+  {
+   "id": "u42",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "sich beschäftigen",
+     "mit"
+    ],
+    [
+     "sich bewerben",
+     "um"
+    ],
+    [
+     "sich verlassen",
+     "auf"
+    ],
+    [
+     "teilnehmen",
+     "an"
+    ],
+    [
+     "sich fürchten",
+     "vor"
+    ],
+    [
+     "abhängen",
+     "von"
+    ]
+   ],
+   "erklaerung": "Verben mit fester Präposition."
+  },
+  {
+   "id": "u43",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "stolz",
+     "auf"
+    ],
+    [
+     "zufrieden",
+     "mit"
+    ],
+    [
+     "verantwortlich",
+     "für"
+    ],
+    [
+     "abhängig",
+     "von"
+    ],
+    [
+     "interessiert",
+     "an"
+    ],
+    [
+     "erstaunt",
+     "über"
+    ]
+   ],
+   "erklaerung": "Adjektive mit fester Präposition."
+  },
+  {
+   "id": "u44",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "die Angst",
+     "vor"
+    ],
+    [
+     "der Einfluss",
+     "auf"
+    ],
+    [
+     "die Teilnahme",
+     "an"
+    ],
+    [
+     "die Suche",
+     "nach"
+    ],
+    [
+     "der Beitrag",
+     "zu"
+    ],
+    [
+     "die Auseinandersetzung",
+     "mit"
+    ]
+   ],
+   "erklaerung": "Nomen mit fester Präposition."
+  },
+  {
+   "id": "u45",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "unter Zeitdruck",
+     "mit sehr wenig Zeit"
+    ],
+    [
+     "aus Versehen",
+     "nicht absichtlich"
+    ],
+    [
+     "im Voraus",
+     "schon vorher"
+    ],
+    [
+     "auf Anhieb",
+     "beim ersten Versuch"
+    ],
+    [
+     "in Kürze",
+     "bald"
+    ],
+    [
+     "ohne Weiteres",
+     "problemlos"
+    ]
+   ],
+   "erklaerung": "Feste Fügungen mit Präposition."
+  },
+  {
+   "id": "u46",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "Sie hängt das Gemälde",
+     "an die Wand."
+    ],
+    [
+     "Das Gemälde hängt",
+     "an der Wand."
+    ],
+    [
+     "Er setzt sich",
+     "auf das Sofa."
+    ],
+    [
+     "Er sitzt",
+     "auf dem Sofa."
+    ],
+    [
+     "Sie legt den Vertrag",
+     "in die Schublade."
+    ],
+    [
+     "Der Vertrag liegt",
+     "in der Schublade."
+    ]
+   ],
+   "erklaerung": "Wechselpräpositionen: Richtung (wohin?) → Akkusativ, Ort (wo?) → Dativ."
+  },
+  {
+   "id": "u47",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "anhand",
+     "mit Hilfe von"
+    ],
+    [
+     "hinsichtlich",
+     "in Bezug auf"
+    ],
+    [
+     "anstelle",
+     "statt"
+    ],
+    [
+     "zugunsten",
+     "zum Vorteil von"
+    ],
+    [
+     "infolge",
+     "als Folge von"
+    ],
+    [
+     "mangels",
+     "weil etwas fehlt"
+    ]
+   ],
+   "erklaerung": "Präpositionen mit Genitiv und ihre Bedeutung."
+  },
+  {
+   "id": "u48",
+   "typ": "fehler",
+   "satz": "Ich interessiere mich sehr auf die deutsche Literatur.",
+   "fehler": "auf",
+   "korrektur": "für",
+   "erklaerung": "sich interessieren für + Akkusativ."
+  },
+  {
+   "id": "u49",
+   "typ": "fehler",
+   "satz": "Unter der Prüfung habe ich vor Aufregung alles vergessen.",
+   "fehler": "Unter",
+   "korrektur": [
+    "In",
+    "Bei",
+    "Während"
+   ],
+   "erklaerung": "Feste Fügung: in (bei, während) der Prüfung."
+  },
+  {
+   "id": "u52",
+   "typ": "fehler",
+   "satz": "Sie hat lange über das nachgedacht.",
+   "fehler": "über das",
+   "korrektur": "darüber",
+   "erklaerung": "Sache nach Präposition: Pronominaladverb."
+  },
+  {
+   "id": "u53",
+   "typ": "fehler",
+   "satz": "Wegen dem schlechten Wetter wurde das Spiel abgesagt.",
+   "fehler": "dem schlechten Wetter",
+   "korrektur": "des schlechten Wetters",
+   "erklaerung": "In der Schriftsprache steht „wegen“ mit dem Genitiv."
+  },
+  {
+   "id": "u54",
+   "typ": "fehler",
+   "satz": "Die Konferenz findet im nächsten Montag statt.",
+   "fehler": "im",
+   "korrektur": "am",
+   "erklaerung": "Wochentage: am."
+  },
+  {
+   "id": "u55",
+   "typ": "fehler",
+   "satz": "Wir sind sehr gespannt für das Ergebnis.",
+   "fehler": "für",
+   "korrektur": "auf",
+   "erklaerung": "gespannt sein auf + Akkusativ."
+  },
+  {
+   "id": "u56",
+   "typ": "umformen",
+   "ausgang": "Ich habe Angst davor, dass ich in der Prüfung etwas vergesse.",
+   "anweisung": "Formulieren Sie mit einem Infinitivsatz.",
+   "loesungen": [
+    "Ich habe Angst davor, in der Prüfung etwas zu vergessen."
+   ],
+   "erklaerung": "Gleiches Subjekt: Infinitiv mit zu; das Korrelat „davor“ bleibt."
+  },
+  {
+   "id": "u57",
+   "typ": "umformen",
+   "ausgang": "Weil es stark regnete, wurde das Konzert abgesagt.",
+   "anweisung": "Formulieren Sie mit „aufgrund“.",
+   "loesungen": [
+    "Aufgrund des starken Regens wurde das Konzert abgesagt.",
+    "Auf Grund des starken Regens wurde das Konzert abgesagt.",
+    "Das Konzert wurde aufgrund des starken Regens abgesagt.",
+    "Das Konzert wurde auf Grund des starken Regens abgesagt."
+   ],
+   "erklaerung": "aufgrund + Genitiv; „stark regnen“ → „der starke Regen“."
+  },
+  {
+   "id": "u59",
+   "typ": "umformen",
+   "ausgang": "Sie ist an der deutschen Sprache sehr interessiert.",
+   "anweisung": "Formulieren Sie mit „sich interessieren“.",
+   "loesungen": [
+    "Sie interessiert sich sehr für die deutsche Sprache.",
+    "Für die deutsche Sprache interessiert sie sich sehr."
+   ],
+   "erklaerung": "interessiert an + Dativ → sich interessieren für + Akkusativ."
+  },
+  {
+   "id": "u61",
+   "typ": "sortieren",
+   "teile": [
+    "setzt sich",
+    "bessere Arbeitsbedingungen",
+    "für",
+    "ein",
+    "seit Jahren",
+    "Sie"
+   ],
+   "loesung": "Sie setzt sich seit Jahren für bessere Arbeitsbedingungen ein.",
+   "erklaerung": "sich einsetzen für + Akkusativ; das Präfix „ein“ steht am Ende."
+  },
+  {
+   "id": "u62",
+   "typ": "rf",
+   "aussage": "„sich interessieren“ steht mit „für“ + Akkusativ, das Nomen „Interesse“ meist mit „an“ + Dativ.",
+   "wert": true,
+   "erklaerung": "Ich interessiere mich für Literatur. – Mein Interesse an Literatur."
+  },
+  {
+   "id": "u63",
+   "typ": "rf",
+   "aussage": "Nach „unter“ steht bei einer Ortsangabe (wo?) der Akkusativ.",
+   "wert": false,
+   "erklaerung": "Ort (wo?) → Dativ: unter dem Tisch; Richtung (wohin?) → Akkusativ: unter den Tisch."
+  },
+  {
+   "id": "u64",
+   "typ": "luecke",
+   "satz": "Die Kosten für die Sanierung belaufen sich ___ rund zwei Millionen Euro.",
+   "loesungen": [
+    "auf"
+   ],
+   "hinweis": "sich belaufen …",
+   "erklaerung": "„sich belaufen auf + Akk.“: einen Betrag erreichen."
+  },
+  {
+   "id": "u65",
+   "typ": "luecke",
+   "satz": "Die zähen Verhandlungen mündeten schließlich ___ einen tragfähigen Kompromiss.",
+   "loesungen": [
+    "in"
+   ],
+   "hinweis": "münden …",
+   "erklaerung": "„münden in + Akk.“: in etwas übergehen, zu etwas führen."
+  },
+  {
+   "id": "u66",
+   "typ": "luecke",
+   "satz": "Ihre Übersetzungen zeichnen sich ___ große Genauigkeit aus.",
+   "loesungen": [
+    "durch"
+   ],
+   "hinweis": "sich auszeichnen …",
+   "erklaerung": "„sich auszeichnen durch + Akk.“: durch eine Eigenschaft hervorstechen."
+  },
+  {
+   "id": "u67",
+   "typ": "luecke",
+   "satz": "Der Verband verwahrte sich entschieden ___ den Vorwurf der Einflussnahme.",
+   "loesungen": [
+    "gegen"
+   ],
+   "hinweis": "sich verwahren …",
+   "erklaerung": "„sich verwahren gegen + Akk.“: etwas entschieden zurückweisen."
+  }
+ ]
+}

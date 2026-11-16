@@ -1,0 +1,414 @@
+{
+ "id": "g07",
+ "titel": "Nomen-Verb-Verbindungen",
+ "niveau": "C1",
+ "nr": 7,
+ "gruppe": "A",
+ "baustelle": true,
+ "pruefungsbezug": [
+  "S1",
+  "S2"
+ ],
+ "tafel": [
+  "Das Nomen trägt die Bedeutung, das Verb ist fast leer: eine Entscheidung treffen = entscheiden, Kritik üben = kritisieren.",
+  "Aktiv und Passiv: zur Diskussion stellen / stehen, zur Verfügung stellen / stehen, unter Druck setzen / stehen.",
+  "Beginn und Zustand: in Kraft treten / sein, in Gang kommen / setzen, zur Sprache kommen / bringen.",
+  "Die Präposition bleibt: Einfluss nehmen auf, Stellung nehmen zu, Wert legen auf, Bezug nehmen auf.",
+  "Das Verb ist fest: eine Entscheidung treffen (nicht machen), Stellung nehmen (nicht stellen), in Betracht ziehen (nicht nehmen).",
+  "Verneinung: keine Rücksicht nehmen, aber: nicht zur Verfügung stehen."
+ ],
+ "beispiele": [
+  "Die Opposition übte scharfe Kritik an dem Gesetzentwurf.",
+  "Das neue Gesetz tritt am 1. Januar in Kraft.",
+  "Den Studierenden steht ab sofort ein neuer Lesesaal zur Verfügung.",
+  "Ich fühle mich von den ständigen Nachfragen unter Druck gesetzt."
+ ],
+ "fallen": [
+  {
+   "falsch": "eine Entscheidung machen",
+   "richtig": "eine Entscheidung treffen",
+   "warum": "Das Funktionsverb ist fest."
+  },
+  {
+   "falsch": "Stellung stellen",
+   "richtig": "Stellung nehmen (zu)",
+   "warum": "„Stellung nehmen zu“ = sich äußern."
+  },
+  {
+   "falsch": "mich unter Druck fühlen",
+   "richtig": "mich unter Druck gesetzt fühlen",
+   "warum": "Weniger idiomatisch; stilsicher ist „sich unter Druck gesetzt fühlen“ (aus „jemanden unter Druck setzen“)."
+  },
+  {
+   "falsch": "Wert legen an",
+   "richtig": "Wert legen auf",
+   "warum": "Die Präposition gehört fest zur Verbindung."
+  }
+ ],
+ "uebungen": [
+  {
+   "id": "u01",
+   "typ": "luecke",
+   "satz": "Die Opposition ___ scharfe Kritik an dem Gesetzentwurf.",
+   "loesungen": [
+    "übte"
+   ],
+   "hinweis": "Funktionsverb, Präteritum",
+   "erklaerung": "„Kritik üben an“ = kritisieren."
+  },
+  {
+   "id": "u02",
+   "typ": "luecke",
+   "satz": "Das neue Gesetz ___ am 1. Januar in Kraft.",
+   "loesungen": [
+    "tritt"
+   ],
+   "hinweis": "Funktionsverb, Präsens",
+   "erklaerung": "„in Kraft treten“ = gültig werden; „in Kraft sein“ = gültig sein."
+  },
+  {
+   "id": "u03",
+   "typ": "luecke",
+   "satz": "Die Ministerin wollte zu den Vorwürfen keine Stellung ___.",
+   "loesungen": [
+    "nehmen"
+   ],
+   "hinweis": "Funktionsverb, Infinitiv",
+   "erklaerung": "„Stellung nehmen zu“ = sich äußern."
+  },
+  {
+   "id": "u04",
+   "typ": "luecke",
+   "satz": "Die Ergebnisse der Studie ___ die bisherige Lehrmeinung infrage.",
+   "loesungen": [
+    "stellen"
+   ],
+   "hinweis": "Funktionsverb, Präsens",
+   "erklaerung": "„infrage stellen“ = bezweifeln."
+  },
+  {
+   "id": "u05",
+   "typ": "luecke",
+   "satz": "Den Studierenden ___ ab sofort ein neuer Lesesaal zur Verfügung.",
+   "loesungen": [
+    "steht"
+   ],
+   "hinweis": "Funktionsverb, Präsens",
+   "erklaerung": "„zur Verfügung stehen“ (passivisch): Der Lesesaal kann benutzt werden."
+  },
+  {
+   "id": "u06",
+   "typ": "luecke",
+   "satz": "Nach monatelangem Stillstand sind die Verhandlungen endlich in Gang ___.",
+   "loesungen": [
+    "gekommen"
+   ],
+   "hinweis": "Partizip II",
+   "erklaerung": "„in Gang kommen“ = beginnen; „in Gang setzen“ = etwas beginnen lassen."
+  },
+  {
+   "id": "u07",
+   "typ": "luecke",
+   "satz": "Die Stadtverwaltung versprach, bei der Planung auf die Anwohner Rücksicht zu ___.",
+   "loesungen": [
+    "nehmen"
+   ],
+   "hinweis": "Funktionsverb, Infinitiv",
+   "erklaerung": "„Rücksicht nehmen auf“."
+  },
+  {
+   "id": "u08",
+   "typ": "luecke",
+   "satz": "In ihrem Vortrag ___ die Referentin mehrfach Bezug auf Hannah Arendt.",
+   "loesungen": [
+    "nahm"
+   ],
+   "hinweis": "Funktionsverb, Präteritum",
+   "erklaerung": "„Bezug nehmen auf“ = sich beziehen auf."
+  },
+  {
+   "id": "u09",
+   "typ": "luecke",
+   "satz": "Die Frage der Finanzierung kam in der Sitzung gar nicht zur ___.",
+   "loesungen": [
+    "Sprache"
+   ],
+   "hinweis": "Nomen",
+   "erklaerung": "„zur Sprache kommen“ = besprochen werden."
+  },
+  {
+   "id": "u10",
+   "typ": "luecke",
+   "satz": "Mit seinem Rücktritt ___ der Minister die Konsequenzen aus dem Skandal.",
+   "loesungen": [
+    "zog"
+   ],
+   "hinweis": "Funktionsverb, Präteritum",
+   "erklaerung": "„die Konsequenzen ziehen aus“."
+  },
+  {
+   "id": "u11",
+   "typ": "luecke",
+   "satz": "Die Kommission ___ zu dem Schluss, dass die Grenzwerte gesenkt werden müssen.",
+   "loesungen": [
+    "kam"
+   ],
+   "hinweis": "Funktionsverb, Präteritum",
+   "erklaerung": "„zu dem Schluss kommen“ = folgern."
+  },
+  {
+   "id": "u12",
+   "typ": "luecke",
+   "satz": "Der Antrag wurde gestern zur Abstimmung ___.",
+   "loesungen": [
+    "gestellt",
+    "gebracht"
+   ],
+   "hinweis": "Partizip II",
+   "erklaerung": "„zur Abstimmung stellen“ und „zur Abstimmung bringen“ sind beide üblich."
+  },
+  {
+   "id": "u13",
+   "typ": "luecke",
+   "satz": "Der Vorschlag ___ bei den Mitgliedern auf breite Zustimmung.",
+   "loesungen": [
+    "stieß"
+   ],
+   "hinweis": "Funktionsverb, Präteritum",
+   "erklaerung": "„auf Zustimmung (oder Ablehnung) stoßen“."
+  },
+  {
+   "id": "u14",
+   "typ": "auswahl",
+   "frage": "Welche Verbindung ist passivisch?",
+   "optionen": [
+    "etwas infrage stellen",
+    "zur Diskussion stellen",
+    "zur Diskussion stehen"
+   ],
+   "richtig": 2,
+   "erklaerung": "„stehen“ beschreibt den Zustand, ohne Handelnden: Der Plan steht zur Diskussion = wird diskutiert."
+  },
+  {
+   "id": "u15",
+   "typ": "auswahl",
+   "frage": "„Wir müssen bis Freitag eine Entscheidung ___.“",
+   "optionen": [
+    "tun",
+    "treffen",
+    "machen"
+   ],
+   "richtig": 1,
+   "erklaerung": "Die feste Verbindung lautet „eine Entscheidung treffen“."
+  },
+  {
+   "id": "u16",
+   "typ": "auswahl",
+   "frage": "„Die Verlegerin ___ großen Wert auf sorgfältige Übersetzungen.“",
+   "optionen": [
+    "stellt",
+    "setzt",
+    "legt"
+   ],
+   "richtig": 2,
+   "erklaerung": "„Wert legen auf“ = für wichtig halten."
+  },
+  {
+   "id": "u17",
+   "typ": "auswahl",
+   "frage": "Was bedeutet „etwas in Betracht ziehen“?",
+   "optionen": [
+    "etwas ablehnen",
+    "etwas als Möglichkeit berücksichtigen",
+    "etwas genau betrachten"
+   ],
+   "richtig": 1,
+   "erklaerung": "„in Betracht ziehen“ = erwägen."
+  },
+  {
+   "id": "u19",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "eine Entscheidung treffen",
+     "entscheiden"
+    ],
+    [
+     "Kritik üben",
+     "kritisieren"
+    ],
+    [
+     "in Erwägung ziehen",
+     "erwägen"
+    ],
+    [
+     "zum Ausdruck bringen",
+     "ausdrücken"
+    ],
+    [
+     "Einfluss nehmen",
+     "beeinflussen"
+    ],
+    [
+     "eine Frage stellen",
+     "fragen"
+    ]
+   ],
+   "erklaerung": "Die Nomen-Verb-Verbindung klingt formeller als das einfache Verb."
+  },
+  {
+   "id": "u20",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "Abschied",
+     "nehmen"
+    ],
+    [
+     "Kritik",
+     "üben"
+    ],
+    [
+     "Wert",
+     "legen"
+    ],
+    [
+     "Anklage",
+     "erheben"
+    ],
+    [
+     "Bilanz",
+     "ziehen"
+    ],
+    [
+     "Maßnahmen",
+     "ergreifen"
+    ]
+   ],
+   "erklaerung": "Zum Nomen gehört ein festes Verb; es lässt sich nicht austauschen."
+  },
+  {
+   "id": "u21",
+   "typ": "sortieren",
+   "teile": [
+    "zur Diskussion",
+    "erneut",
+    "den Entwurf",
+    "nach heftigen Protesten",
+    "Die Regierung",
+    "hat",
+    "gestellt"
+   ],
+   "loesung": "Die Regierung hat den Entwurf nach heftigen Protesten erneut zur Diskussion gestellt.",
+   "loesungen": [
+    "Die Regierung hat nach heftigen Protesten den Entwurf erneut zur Diskussion gestellt."
+   ],
+   "erklaerung": "Der Nominalteil (zur Diskussion) steht direkt vor dem Verb am Satzende."
+  },
+  {
+   "id": "u23",
+   "typ": "sortieren",
+   "teile": [
+    "treten",
+    "wird",
+    "erst im Herbst",
+    "voraussichtlich",
+    "Das Gesetz",
+    "in Kraft"
+   ],
+   "loesung": "Das Gesetz wird voraussichtlich erst im Herbst in Kraft treten.",
+   "erklaerung": "Futur: „wird“ an Position 2, „in Kraft treten“ als Einheit am Ende."
+  },
+  {
+   "id": "u24",
+   "typ": "fehler",
+   "satz": "Der Ausschuss hat in dieser Frage eine wichtige Entscheidung gemacht.",
+   "fehler": "gemacht",
+   "korrektur": "getroffen",
+   "erklaerung": "Die feste Verbindung lautet „eine Entscheidung treffen“."
+  },
+  {
+   "id": "u25",
+   "typ": "fehler",
+   "satz": "Die Ministerin stellte zu den Vorwürfen ausführlich Stellung.",
+   "fehler": "stellte",
+   "korrektur": "nahm",
+   "erklaerung": "„Stellung nehmen zu“."
+  },
+  {
+   "id": "u26",
+   "typ": "fehler",
+   "satz": "Wir sollten auch diese Möglichkeit in Betracht nehmen.",
+   "fehler": "nehmen",
+   "korrektur": "ziehen",
+   "erklaerung": "„in Betracht ziehen“."
+  },
+  {
+   "id": "u27",
+   "typ": "fehler",
+   "satz": "Die Bürgerinnen und Bürger legen großen Wert an Transparenz.",
+   "fehler": "an",
+   "korrektur": "auf",
+   "erklaerung": "„Wert legen auf“."
+  },
+  {
+   "id": "u28",
+   "typ": "fehler",
+   "satz": "Das neue Gesetz kommt am 1. Juli in Kraft.",
+   "fehler": "kommt",
+   "korrektur": "tritt",
+   "erklaerung": "„in Kraft treten“."
+  },
+  {
+   "id": "u29",
+   "typ": "fehler",
+   "satz": "Diese Frage stellt sich heute nicht zur Debatte.",
+   "fehler": "stellt sich",
+   "korrektur": "steht",
+   "erklaerung": "„zur Debatte stehen“ = diskutiert werden."
+  },
+  {
+   "id": "u30",
+   "typ": "rf",
+   "aussage": "„etwas zur Verfügung stellen“ ist aktivisch, „zur Verfügung stehen“ passivisch.",
+   "wert": true,
+   "erklaerung": "Mit „stellen“ handelt jemand, mit „stehen“ wird ein Zustand beschrieben."
+  },
+  {
+   "id": "u31",
+   "typ": "rf",
+   "aussage": "In Nomen-Verb-Verbindungen kann man das Verb frei austauschen, solange der Sinn klar bleibt.",
+   "wert": false,
+   "erklaerung": "Das Verb ist fest: Kritik üben, nicht „Kritik machen“."
+  },
+  {
+   "id": "u32",
+   "typ": "rf",
+   "aussage": "Viele Nomen-Verb-Verbindungen lassen sich durch ein einfaches Verb ersetzen: eine Entscheidung treffen = entscheiden.",
+   "wert": true,
+   "erklaerung": "Genau das wird in Schreiben Teil 1 oft verlangt – in beide Richtungen."
+  },
+  {
+   "id": "u33",
+   "typ": "umformen",
+   "ausgang": "Die Regierung entschied schließlich, das Projekt zu stoppen.",
+   "anweisung": "Verwenden Sie „eine Entscheidung treffen“.",
+   "loesungen": [
+    "Die Regierung traf schließlich die Entscheidung, das Projekt zu stoppen.",
+    "Schließlich traf die Regierung die Entscheidung, das Projekt zu stoppen."
+   ],
+   "erklaerung": "„entscheiden“ → „die Entscheidung treffen“; der Infinitiv mit zu bleibt."
+  },
+  {
+   "id": "u34",
+   "typ": "umformen",
+   "ausgang": "Viele Bürger kritisierten das Vorhaben scharf.",
+   "anweisung": "Verwenden Sie „Kritik üben an“.",
+   "loesungen": [
+    "Viele Bürger übten scharfe Kritik an dem Vorhaben.",
+    "Viele Bürger übten scharfe Kritik am Vorhaben."
+   ],
+   "erklaerung": "Aus dem Adverb „scharf“ wird ein Attribut: scharfe Kritik."
+  }
+ ]
+}

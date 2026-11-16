@@ -1,0 +1,476 @@
+{
+ "id": "g17",
+ "titel": "Erweiterte Partizipialattribute",
+ "niveau": "C2",
+ "nr": 17,
+ "gruppe": "B",
+ "baustelle": false,
+ "pruefungsbezug": [
+  "L2",
+  "S1"
+ ],
+ "kurz": "Partizip I und II als erweitertes Attribut, Gerundiv (die zu lösende Aufgabe), Umformung in Relativsätze und zurück.",
+ "tafel": [
+  "Partizip I (Infinitiv + d): aktiv und gleichzeitig: die steigenden Mieten = die Mieten, die steigen.",
+  "Partizip II transitiver Verben: passiv, meist abgeschlossen: das veröffentlichte Buch = das Buch, das veröffentlicht wurde.",
+  "Partizip II von Verben mit „sein“: aktiv, abgeschlossen: der angekommene Zug = der Zug, der angekommen ist.",
+  "Alles, was zum Partizip gehört, steht zwischen Artikel und Partizip: die seit Jahren steigenden Mieten.",
+  "Reihenfolge wie im Nebensatz: Das Partizip steht am Ende, direkt vor dem Nomen.",
+  "Gerundiv: zu + Partizip I = muss/kann … werden: die zu lösende Aufgabe.",
+  "Das Partizip wird wie ein Adjektiv dekliniert: ein nicht zu unterschätzendes Problem."
+ ],
+ "beispiele": [
+  "Die seit Jahren steigenden Mieten belasten viele Familien.",
+  "Der vor einer Woche veröffentlichte Bericht sorgt für Diskussionen.",
+  "Die noch zu klärenden Fragen werden morgen besprochen.",
+  "Das von der Regierung angekündigte Gesetz ist umstritten.",
+  "Ein nicht zu unterschätzendes Problem ist der Mangel an Fachkräften."
+ ],
+ "fallen": [
+  {
+   "falsch": "der gestern angekommende Zug",
+   "richtig": "der gestern angekommene Zug",
+   "warum": "Abgeschlossenes bei Verben mit „sein“: Partizip II."
+  },
+  {
+   "falsch": "die zu lösen Aufgabe",
+   "richtig": "die zu lösende Aufgabe",
+   "warum": "Gerundiv: zu + Partizip I mit Adjektivendung."
+  },
+  {
+   "falsch": "die steigenden seit Jahren Mieten",
+   "richtig": "die seit Jahren steigenden Mieten",
+   "warum": "Die Erweiterung steht vor dem Partizip, das Partizip direkt vor dem Nomen."
+  },
+  {
+   "falsch": "die in Berlin gelebten Künstler",
+   "richtig": "die in Berlin lebenden Künstler",
+   "warum": "Verben mit „haben“ ohne Akkusativobjekt bilden kein Partizip-II-Attribut."
+  }
+ ],
+ "uebungen": [
+  {
+   "id": "u01",
+   "typ": "luecke",
+   "satz": "Die seit Jahren ___ Mieten belasten viele Familien.",
+   "loesungen": [
+    "steigenden"
+   ],
+   "hinweis": "steigen",
+   "erklaerung": "Partizip I = aktiv und gleichzeitig: die Mieten, die seit Jahren steigen."
+  },
+  {
+   "id": "u02",
+   "typ": "luecke",
+   "satz": "Der vor einer Woche ___ Bericht sorgt für Diskussionen.",
+   "loesungen": [
+    "veröffentlichte"
+   ],
+   "hinweis": "veröffentlichen",
+   "erklaerung": "Partizip II = passiv und abgeschlossen: der Bericht, der veröffentlicht wurde."
+  },
+  {
+   "id": "u03",
+   "typ": "luecke",
+   "satz": "Die noch zu ___ Fragen besprechen wir morgen.",
+   "loesungen": [
+    "klärenden"
+   ],
+   "hinweis": "klären",
+   "erklaerung": "Gerundiv: die Fragen, die noch geklärt werden müssen."
+  },
+  {
+   "id": "u04",
+   "typ": "luecke",
+   "satz": "Die in der Altstadt ___ Familien protestieren gegen den Lärm.",
+   "loesungen": [
+    "lebenden"
+   ],
+   "hinweis": "leben",
+   "erklaerung": "Partizip I: die Familien, die in der Altstadt leben."
+  },
+  {
+   "id": "u05",
+   "typ": "luecke",
+   "satz": "Der gestern Abend ___ Zug hatte drei Stunden Verspätung.",
+   "loesungen": [
+    "angekommene"
+   ],
+   "hinweis": "ankommen",
+   "erklaerung": "„ankommen“ bildet das Perfekt mit „sein“: der Zug, der angekommen ist."
+  },
+  {
+   "id": "u06",
+   "typ": "luecke",
+   "satz": "Wir danken allen an der Planung ___ Personen.",
+   "loesungen": [
+    "beteiligten"
+   ],
+   "hinweis": "beteiligen",
+   "erklaerung": "„beteiligt“ (sich beteiligen → beteiligt sein) mit Adjektivendung nach „allen“: -en."
+  },
+  {
+   "id": "u07",
+   "typ": "luecke",
+   "satz": "Man sollte die damit ___ Risiken nicht unterschätzen.",
+   "loesungen": [
+    "verbundenen"
+   ],
+   "hinweis": "verbinden",
+   "erklaerung": "die Risiken, die damit verbunden sind – Partizip II als Attribut."
+  },
+  {
+   "id": "u08",
+   "typ": "luecke",
+   "satz": "Das von vielen Fachleuten seit Langem ___ Gesetz tritt endlich in Kraft.",
+   "loesungen": [
+    "geforderte"
+   ],
+   "hinweis": "fordern",
+   "erklaerung": "das Gesetz, das seit Langem gefordert wird – Partizip II, Endung nach „das“: -e."
+  },
+  {
+   "id": "u09",
+   "typ": "luecke",
+   "satz": "Die ständig ___ Zahl der Anfragen überfordert das Team.",
+   "loesungen": [
+    "wachsende"
+   ],
+   "hinweis": "wachsen",
+   "erklaerung": "Partizip I: die Zahl, die ständig wächst."
+  },
+  {
+   "id": "u10",
+   "typ": "luecke",
+   "satz": "Ein nicht zu ___ Problem ist der Personalmangel.",
+   "loesungen": [
+    "unterschätzendes"
+   ],
+   "hinweis": "unterschätzen",
+   "erklaerung": "Gerundiv mit starker Endung nach „ein“ (Neutrum, Nominativ): -es."
+  },
+  {
+   "id": "u11",
+   "typ": "auswahl",
+   "frage": "Welche Umformung von „die Mieten, die seit Jahren steigen“ ist korrekt?",
+   "optionen": [
+    "die seit Jahren steigenden Mieten",
+    "die seit Jahren gestiegenen Mieten",
+    "die steigenden seit Jahren Mieten",
+    "die seit Jahren zu steigenden Mieten"
+   ],
+   "richtig": 0,
+   "erklaerung": "Gleichzeitig und aktiv: Partizip I; die Erweiterung steht vor dem Partizip."
+  },
+  {
+   "id": "u12",
+   "typ": "auswahl",
+   "frage": "„die zu prüfenden Unterlagen“ bedeutet:",
+   "optionen": [
+    "die Unterlagen, die prüfen sollen",
+    "die Unterlagen, die gerade prüfen",
+    "die Unterlagen, die schon geprüft wurden",
+    "die Unterlagen, die geprüft werden müssen"
+   ],
+   "richtig": 3,
+   "erklaerung": "Gerundiv: zu + Partizip I = passiv mit „müssen“ oder „können“."
+  },
+  {
+   "id": "u13",
+   "typ": "auswahl",
+   "frage": "Welches Attribut ist korrekt?",
+   "optionen": [
+    "der gestern angekommende Zug",
+    "der gestern angekommenen Zug",
+    "der gestern ankommende Zug",
+    "der gestern angekommene Zug"
+   ],
+   "richtig": 3,
+   "erklaerung": "Abgeschlossen und mit „sein“ gebildet: Partizip II; nach „der“ Endung -e."
+  },
+  {
+   "id": "u14",
+   "typ": "auswahl",
+   "frage": "Welcher Relativsatz entspricht „das von der Regierung angekündigte Gesetz“?",
+   "optionen": [
+    "das Gesetz, das von der Regierung ankündigt",
+    "das Gesetz, das die Regierung ankündigen wird",
+    "das Gesetz, das von der Regierung angekündigt wurde",
+    "das Gesetz, das die Regierung ankündigt hat"
+   ],
+   "richtig": 2,
+   "erklaerung": "Partizip II transitiver Verben = Passiv; „von“ nennt den Urheber."
+  },
+  {
+   "id": "u15",
+   "typ": "auswahl",
+   "frage": "Welches Partizip passt? „die bei dem Unfall ___ Personen“",
+   "optionen": [
+    "verletzten",
+    "verletzenden",
+    "verletzende",
+    "zu verletzenden"
+   ],
+   "richtig": 0,
+   "erklaerung": "Die Personen wurden verletzt: Partizip II, Endung nach „die“ im Plural: -en."
+  },
+  {
+   "id": "u16",
+   "typ": "auswahl",
+   "frage": "Welcher Satz enthält ein Gerundiv?",
+   "optionen": [
+    "Die zu erwartenden Kosten sind hoch.",
+    "Die erwarteten Kosten sind hoch.",
+    "Man erwartet hohe Kosten.",
+    "Die Kosten sind zu erwarten."
+   ],
+   "richtig": 0,
+   "erklaerung": "Gerundiv = zu + Partizip I als Attribut vor dem Nomen."
+  },
+  {
+   "id": "u17",
+   "typ": "umformen",
+   "ausgang": "Die Studie, die gestern veröffentlicht wurde, widerspricht früheren Ergebnissen.",
+   "anweisung": "Ersetzen Sie den Relativsatz durch ein Partizipialattribut.",
+   "loesungen": [
+    "Die gestern veröffentlichte Studie widerspricht früheren Ergebnissen."
+   ],
+   "erklaerung": "Passiv im Relativsatz → Partizip II; „gestern“ wandert vor das Partizip."
+  },
+  {
+   "id": "u18",
+   "typ": "umformen",
+   "ausgang": "Die Kinder, die im Garten spielen, sind sehr laut.",
+   "anweisung": "Ersetzen Sie den Relativsatz durch ein Partizipialattribut.",
+   "loesungen": [
+    "Die im Garten spielenden Kinder sind sehr laut."
+   ],
+   "erklaerung": "Aktiv und gleichzeitig → Partizip I."
+  },
+  {
+   "id": "u19",
+   "typ": "umformen",
+   "ausgang": "Die Fragen, die noch geklärt werden müssen, besprechen wir morgen.",
+   "anweisung": "Ersetzen Sie den Relativsatz durch ein Gerundiv.",
+   "loesungen": [
+    "Die noch zu klärenden Fragen besprechen wir morgen."
+   ],
+   "erklaerung": "„müssen geklärt werden“ → zu + Partizip I: zu klärend."
+  },
+  {
+   "id": "u20",
+   "typ": "umformen",
+   "ausgang": "die von allen Seiten scharf kritisierte Entscheidung",
+   "anweisung": "Lösen Sie das Attribut in einen Relativsatz auf.",
+   "loesungen": [
+    "die Entscheidung, die von allen Seiten scharf kritisiert wurde",
+    "die Entscheidung, die von allen Seiten scharf kritisiert worden ist",
+    "die Entscheidung, die von allen Seiten scharf kritisiert wird",
+    "die Entscheidung, die alle Seiten scharf kritisiert haben"
+   ],
+   "erklaerung": "Partizip II transitiver Verben → Passiv im Relativsatz (oder aktiv mit „alle Seiten“ als Subjekt)."
+  },
+  {
+   "id": "u21",
+   "typ": "umformen",
+   "ausgang": "die seit Monaten leer stehenden Wohnungen",
+   "anweisung": "Lösen Sie das Attribut in einen Relativsatz auf.",
+   "loesungen": [
+    "die Wohnungen, die seit Monaten leer stehen",
+    "die Wohnungen, die seit Monaten leerstehen"
+   ],
+   "erklaerung": "Partizip I → aktiver Relativsatz im Präsens."
+  },
+  {
+   "id": "u22",
+   "typ": "umformen",
+   "ausgang": "Der Politiker, der zurückgetreten ist, gab ein Interview.",
+   "anweisung": "Ersetzen Sie den Relativsatz durch ein Partizipialattribut.",
+   "loesungen": [
+    "Der zurückgetretene Politiker gab ein Interview."
+   ],
+   "erklaerung": "„zurücktreten“ bildet das Perfekt mit „sein“ → Partizip II mit aktiver Bedeutung."
+  },
+  {
+   "id": "u23",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "die schlafenden Kinder",
+     "die Kinder, die schlafen"
+    ],
+    [
+     "die geweckten Kinder",
+     "die Kinder, die geweckt wurden"
+    ],
+    [
+     "die eingeschlafenen Kinder",
+     "die Kinder, die eingeschlafen sind"
+    ],
+    [
+     "die zu weckenden Kinder",
+     "die Kinder, die geweckt werden müssen"
+    ],
+    [
+     "die aufwachenden Kinder",
+     "die Kinder, die gerade aufwachen"
+    ]
+   ],
+   "erklaerung": "Partizip I, Partizip II (passiv und mit „sein“) und Gerundiv in Relativsätze übersetzen."
+  },
+  {
+   "id": "u24",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "ein überzeugender Redner",
+     "ein Redner, der andere überzeugt"
+    ],
+    [
+     "ein überzeugter Anhänger",
+     "ein Anhänger, der von etwas überzeugt ist"
+    ],
+    [
+     "eine spannende Geschichte",
+     "eine Geschichte, die Spannung erzeugt"
+    ],
+    [
+     "eine gespannte Zuhörerin",
+     "eine Zuhörerin, die neugierig wartet"
+    ],
+    [
+     "ein entscheidender Moment",
+     "ein Moment, in dem sich etwas entscheidet"
+    ],
+    [
+     "eine entschiedene Haltung",
+     "eine Haltung, die klar und fest ist"
+    ]
+   ],
+   "erklaerung": "Partizip I wirkt nach außen (aktiv), Partizip II beschreibt einen Zustand."
+  },
+  {
+   "id": "u25",
+   "typ": "sortieren",
+   "teile": [
+    "seit Wochen",
+    "andauernden",
+    "das Land verändert",
+    "Proteste",
+    "haben",
+    "Die"
+   ],
+   "loesung": "Die seit Wochen andauernden Proteste haben das Land verändert.",
+   "erklaerung": "Artikel – Erweiterung – Partizip – Nomen."
+  },
+  {
+   "id": "u26",
+   "typ": "sortieren",
+   "teile": [
+    "Bericht",
+    "von der Kommission",
+    "enthält",
+    "zahlreiche Empfehlungen",
+    "Der",
+    "vorgelegte"
+   ],
+   "loesung": "Der von der Kommission vorgelegte Bericht enthält zahlreiche Empfehlungen.",
+   "loesungen": [
+    "Zahlreiche Empfehlungen enthält der von der Kommission vorgelegte Bericht."
+   ],
+   "erklaerung": "Die Erweiterung „von der Kommission“ steht zwischen Artikel und Partizip."
+  },
+  {
+   "id": "u27",
+   "typ": "sortieren",
+   "teile": [
+    "zu",
+    "werden",
+    "klärenden",
+    "morgen besprochen",
+    "noch",
+    "Fragen",
+    "Die"
+   ],
+   "loesung": "Die noch zu klärenden Fragen werden morgen besprochen.",
+   "erklaerung": "Gerundiv: noch + zu + Partizip I direkt vor dem Nomen."
+  },
+  {
+   "id": "u28",
+   "typ": "sortieren",
+   "teile": [
+    "Personen",
+    "allen",
+    "Wir",
+    "an dem Projekt",
+    "danken",
+    "beteiligten"
+   ],
+   "loesung": "Wir danken allen an dem Projekt beteiligten Personen.",
+   "loesungen": [
+    "Allen an dem Projekt beteiligten Personen danken wir."
+   ],
+   "erklaerung": "Die Ergänzung „an dem Projekt“ gehört zum Partizip und steht davor."
+  },
+  {
+   "id": "u29",
+   "typ": "fehler",
+   "satz": "Der gestern angekommende Zug war völlig überfüllt.",
+   "fehler": "angekommende",
+   "korrektur": "angekommene",
+   "erklaerung": "Abgeschlossen und mit „sein“ gebildet: Partizip II (angekommen) + Endung."
+  },
+  {
+   "id": "u30",
+   "typ": "fehler",
+   "satz": "Die zu lösen Aufgaben sind sehr komplex.",
+   "fehler": "lösen",
+   "korrektur": "lösenden",
+   "erklaerung": "Gerundiv: zu + Partizip I + Adjektivendung."
+  },
+  {
+   "id": "u31",
+   "typ": "fehler",
+   "satz": "Die schnell wachsenen Städte brauchen mehr Wohnungen.",
+   "fehler": "wachsenen",
+   "korrektur": "wachsenden",
+   "erklaerung": "Partizip I: Infinitiv + d: wachsend → wachsenden."
+  },
+  {
+   "id": "u32",
+   "typ": "fehler",
+   "satz": "Die in Berlin gelebten Künstler stellen gemeinsam aus.",
+   "fehler": "gelebten",
+   "korrektur": "lebenden",
+   "erklaerung": "„leben“ bildet das Perfekt mit „haben“ und hat kein Akkusativobjekt – nur das Partizip I ist möglich."
+  },
+  {
+   "id": "u33",
+   "typ": "rf",
+   "aussage": "Das Partizip I hat aktive Bedeutung und drückt Gleichzeitigkeit aus.",
+   "wert": true,
+   "erklaerung": "die lesende Frau = die Frau, die (gerade) liest."
+  },
+  {
+   "id": "u34",
+   "typ": "rf",
+   "aussage": "„die zu erledigende Arbeit“ bedeutet „die Arbeit, die erledigt worden ist“.",
+   "wert": false,
+   "erklaerung": "Gerundiv: die Arbeit, die erledigt werden muss."
+  },
+  {
+   "id": "u35",
+   "typ": "rf",
+   "aussage": "Im erweiterten Partizipialattribut steht das Partizip direkt vor dem Nomen.",
+   "wert": true,
+   "erklaerung": "Alle Erweiterungen stehen davor: die seit Jahren steigenden Mieten."
+  },
+  {
+   "id": "u36",
+   "typ": "rf",
+   "aussage": "Jedes Partizip II kann als Attribut verwendet werden, auch „geschlafen“: das geschlafene Kind.",
+   "wert": false,
+   "erklaerung": "Verben mit „haben“ ohne Akkusativobjekt (schlafen, arbeiten) bilden kein Partizip-II-Attribut: das schlafende Kind."
+  }
+ ]
+}

@@ -1,0 +1,225 @@
+{
+ "id": "h1-sprachnachricht-bibliothek",
+ "titel": "Radioausschnitte: Sprachnachrichten, Nachtbibliothek, Langeweile, Reparaturcafé",
+ "teil": "Teil 1",
+ "art": "Radiobeitrag",
+ "stimmen": [
+  "Glossenautor",
+  "Reporterin",
+  "Bibliotheksleiter",
+  "Moderatorin",
+  "Psychologin",
+  "Moderator",
+  "Helfer im Reparaturcafé"
+ ],
+ "audio": "audio/h1-sprachnachricht-bibliothek.mp3",
+ "dauer_s": 197,
+ "abspielen": 1,
+ "anleitung": "Sie hören vier kurze Radioausschnitte, jeden nur einmal. Lesen Sie vorher die Aussagen. Entscheiden Sie beim Hören: Stimmt die Aussage mit dem Text überein (Ja) oder nicht (Nein)?",
+ "transkript": [
+  {
+   "sprecher": "Ansage",
+   "text": "Ausschnitt 1."
+  },
+  {
+   "sprecher": "Glossenautor",
+   "text": "Ich gestehe: Ich gehöre zu den Menschen, die Sprachnachrichten verschicken. Und zwar lange. Meine Freunde nennen sie inzwischen ‚Podcasts mit genau einem Hörer‘. Neulich habe ich meiner Schwester eine Nachricht geschickt, die gut sieben Minuten dauerte – es ging um die Frage, ob wir unserer Mutter zum Geburtstag Blumen oder ein Buch schenken. Ihre Antwort kam drei Stunden später und bestand aus einem einzigen Wort: ‚Buch.‘ Ich habe daraus etwas gelernt. Nicht etwa, dass ich mich kürzer fassen sollte – das wäre ja zu einfach –, sondern dass man das Entscheidende offenbar ganz ans Ende stellen muss. Wer bis dahin durchhält, hat es sich schließlich verdient."
+  },
+  {
+   "sprecher": "Ansage",
+   "text": "Ausschnitt 2."
+  },
+  {
+   "sprecher": "Reporterin",
+   "text": "Wer in Hagenbrück abends um zehn noch ein Buch ausleihen will, steht künftig nicht mehr vor verschlossenen Türen. Die Stadtbibliothek hat ihre Öffnungszeiten auf die späten Abendstunden und auf den Sonntag ausgedehnt – allerdings ohne zusätzliches Personal. Hinein kommt man mit dem Bibliotheksausweis, ausgeliehen und zurückgegeben wird an Automaten. Beraten wird in diesen Stunden niemand. Bibliotheksleiter Ulrich Brandt betont, das sei kein Sparmodell."
+  },
+  {
+   "sprecher": "Bibliotheksleiter",
+   "text": "Die offenen Stunden sind ein Zusatzangebot, mehr nicht. Wir haben dafür keine einzige Stelle gestrichen – im Gegenteil: Tagsüber brauchen wir unsere Leute dringender denn je, weil die Fragen immer anspruchsvoller werden. Und ganz ehrlich: Ich war am Anfang skeptischer als die meisten im Stadtrat."
+  },
+  {
+   "sprecher": "Ansage",
+   "text": "Ausschnitt 3."
+  },
+  {
+   "sprecher": "Moderatorin",
+   "text": "Langeweile hat keinen guten Ruf. Die Psychologin Hanna Wiegand hält das für ein Missverständnis."
+  },
+  {
+   "sprecher": "Psychologin",
+   "text": "Langeweile ist zunächst einmal ein Signal: Das, was ich gerade tue, erfüllt mich nicht. Das ist unangenehm, aber durchaus nützlich. Problematisch wird es erst, wenn wir dieses Signal sofort zum Schweigen bringen – und genau das tun wir, sobald wir zum Handy greifen. Dann fehlt nämlich die kurze Phase, in der der Kopf anfängt, eigene Ideen zu entwickeln. Ich will damit nicht behaupten, dass jeder, der sich langweilt, automatisch kreativ wird. Aber wer sich nie langweilt, vergibt eine Chance."
+  },
+  {
+   "sprecher": "Ansage",
+   "text": "Ausschnitt 4."
+  },
+  {
+   "sprecher": "Moderator",
+   "text": "Und zum Schluss unser Verbrauchertipp. Der Toaster streikt, der Reißverschluss klemmt – also weg damit? Nicht unbedingt. In vielen Städten gibt es inzwischen Reparaturcafés, in denen Ehrenamtliche zusammen mit den Besitzern defekte Dinge unter die Lupe nehmen. Eine Garantie auf die Reparatur gibt es dort freilich nicht. Und wer ein Gerät mitbringt, für das noch die Herstellergarantie gilt, wird meist zunächst zum Händler geschickt – wer selbst schraubt, setzt diesen Anspruch nämlich unter Umständen aufs Spiel. Peter Lorenz, der seit Jahren in einem solchen Café mithilft, hat noch einen Rat:"
+  },
+  {
+   "sprecher": "Helfer im Reparaturcafé",
+   "text": "Bringen Sie, wenn es irgend geht, das Netzteil und die Bedienungsanleitung mit. Sonst suchen wir die halbe Zeit nach dem passenden Kabel. Und erwarten Sie keine Wunder: Längst nicht alles bekommen wir wieder hin. Aber auch dann wissen die Leute wenigstens, woran es lag."
+  }
+ ],
+ "aufgaben": [
+  {
+   "id": "a1",
+   "typ": "rf",
+   "aussage": "Ausschnitt 1: Der Sprecher gibt zu, dass seine Sprachnachrichten oft sehr lang sind.",
+   "wert": true,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "„Ich gestehe: Ich gehöre zu den Menschen, die Sprachnachrichten verschicken. Und zwar lange.“"
+  },
+  {
+   "id": "a2",
+   "typ": "rf",
+   "aussage": "Ausschnitt 1: Seine Schwester reagierte mit einer ebenso ausführlichen Antwort.",
+   "wert": false,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "Ihre Antwort „bestand aus einem einzigen Wort“."
+  },
+  {
+   "id": "a3",
+   "typ": "rf",
+   "aussage": "Ausschnitt 1: Er hat sich vorgenommen, sich künftig kürzer zu fassen.",
+   "wert": false,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "Ironisch: „Nicht etwa, dass ich mich kürzer fassen sollte – das wäre ja zu einfach“."
+  },
+  {
+   "id": "a4",
+   "typ": "rf",
+   "aussage": "Ausschnitt 2: In den zusätzlichen Öffnungszeiten gibt es keine Beratung.",
+   "wert": true,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "„Beraten wird in diesen Stunden niemand.“"
+  },
+  {
+   "id": "a5",
+   "typ": "rf",
+   "aussage": "Ausschnitt 2: Um die längeren Öffnungszeiten zu finanzieren, wurden Stellen eingespart.",
+   "wert": false,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "„Wir haben dafür keine einzige Stelle gestrichen“."
+  },
+  {
+   "id": "a6",
+   "typ": "rf",
+   "aussage": "Ausschnitt 2: Der Bibliotheksleiter stand dem Vorhaben anfangs zurückhaltender gegenüber als viele Stadträte.",
+   "wert": true,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "„Ich war am Anfang skeptischer als die meisten im Stadtrat.“"
+  },
+  {
+   "id": "a7",
+   "typ": "rf",
+   "aussage": "Ausschnitt 3: Die Psychologin sieht in Langeweile einen Hinweis darauf, dass eine Tätigkeit nicht befriedigt.",
+   "wert": true,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "„Langeweile ist zunächst einmal ein Signal: Das, was ich gerade tue, erfüllt mich nicht.“"
+  },
+  {
+   "id": "a8",
+   "typ": "rf",
+   "aussage": "Ausschnitt 3: Sie rät dazu, Langeweile möglichst schnell zu vertreiben.",
+   "wert": false,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "Im Gegenteil: „Problematisch wird es erst, wenn wir dieses Signal sofort zum Schweigen bringen“."
+  },
+  {
+   "id": "a9",
+   "typ": "rf",
+   "aussage": "Ausschnitt 3: Ihrer Ansicht nach macht Langeweile jeden Menschen kreativer.",
+   "wert": false,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "„Ich will damit nicht behaupten, dass jeder, der sich langweilt, automatisch kreativ wird.“"
+  },
+  {
+   "id": "a10",
+   "typ": "rf",
+   "aussage": "Ausschnitt 4: Im Reparaturcafé untersuchen Ehrenamtliche die Gegenstände gemeinsam mit deren Besitzern.",
+   "wert": true,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "„in denen Ehrenamtliche zusammen mit den Besitzern defekte Dinge unter die Lupe nehmen“"
+  },
+  {
+   "id": "a11",
+   "typ": "rf",
+   "aussage": "Ausschnitt 4: Geräte mit gültiger Herstellergarantie werden im Reparaturcafé bevorzugt repariert.",
+   "wert": false,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "Sie werden „meist zunächst zum Händler geschickt“."
+  },
+  {
+   "id": "a12",
+   "typ": "rf",
+   "aussage": "Ausschnitt 4: Der Helfer empfiehlt, Zubehör wie das Netzteil mitzubringen.",
+   "wert": true,
+   "beschriftung": [
+    "Ja",
+    "Nein"
+   ],
+   "erklaerung": "„Bringen Sie, wenn es irgend geht, das Netzteil und die Bedienungsanleitung mit.“"
+  },
+  {
+   "id": "t1",
+   "typ": "rfn",
+   "aussage": "Die Bibliothek in Hagenbrück ist künftig auch an Feiertagen geöffnet.",
+   "wert": "nicht im Text",
+   "erklaerung": "Genannt werden nur die späten Abendstunden und der Sonntag; über Feiertage sagt der Text nichts.",
+   "nur_training": true
+  },
+  {
+   "id": "t2",
+   "typ": "rfn",
+   "aussage": "Die Psychologin warnt davor, Kindern zu früh ein Handy zu geben.",
+   "wert": "nicht im Text",
+   "erklaerung": "Kinder kommen im Ausschnitt nicht vor; sie spricht nur allgemein davon, dass „wir zum Handy greifen“.",
+   "nur_training": true
+  },
+  {
+   "id": "t3",
+   "typ": "luecke",
+   "satz": "Reparaturcafé: Eine ___ auf die Reparatur gibt es nicht.",
+   "loesungen": [
+    "Garantie"
+   ],
+   "erklaerung": "„Eine Garantie auf die Reparatur gibt es dort freilich nicht.“",
+   "nur_training": true
+  }
+ ]
+}

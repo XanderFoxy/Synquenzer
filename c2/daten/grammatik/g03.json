@@ -1,0 +1,420 @@
+{
+ "id": "g03",
+ "titel": "Adjektivdeklination in komplexen Nominalgruppen",
+ "niveau": "C1",
+ "nr": 3,
+ "gruppe": "A",
+ "baustelle": false,
+ "pruefungsbezug": [
+  "S2",
+  "L1"
+ ],
+ "tafel": [
+  "Zeigt der Artikel das Signal (der, dieser, jeder, alle, beide), endet das Adjektiv schwach auf -e oder -en: alle eingereichten Beiträge.",
+  "Fehlt das Signal (ein, kein, mein im Nom. mask. und Nom./Akk. neutr.), trägt es das Adjektiv: ein junger Mann, ein neues Buch.",
+  "Ohne Artikel, nach Zahlen und nach viele, wenige, einige, mehrere: starke Endung wie der Artikel – die Arbeit vieler junger Forscher.",
+  "Genitiv Singular mask./neutr. ohne Artikel: -en, weil das Nomen das -s trägt – trotz starken Regens.",
+  "Mehrere Adjektive hintereinander bekommen dieselbe Endung: mit großer, ehrlicher Freude.",
+  "Substantivierte Adjektive und Partizipien werden wie Adjektive dekliniert: der Reisende, ein Reisender, viele Reisende; etwas Neues, alles Gute.",
+  "Nach dessen und deren steht die starke Endung: deren furioses Debüt, dessen verstorbener Vater."
+ ],
+ "beispiele": [
+  "Die Ansichten vieler junger Erwachsener zur Wehrpflicht haben sich spürbar gewandelt.",
+  "Trotz anhaltenden Widerstands wurde das umstrittene Bauprojekt genehmigt.",
+  "Der Preis geht an eine Autorin, deren furioses Debüt die Kritik gespalten hat.",
+  "Unter den Reisenden befanden sich auffallend viele Studierende."
+ ],
+ "fallen": [
+  {
+   "falsch": "die Arbeit zweier jungen Forscherinnen",
+   "richtig": "die Arbeit zweier junger Forscherinnen",
+   "warum": "Nach Zahlen im Genitiv (zweier, dreier) steht die starke Endung."
+  },
+  {
+   "falsch": "etwas neues",
+   "richtig": "etwas Neues",
+   "warum": "Nach etwas, nichts, viel, wenig wird das Adjektiv großgeschrieben und stark dekliniert."
+  },
+  {
+   "falsch": "dessen verstorbene Vater",
+   "richtig": "dessen verstorbener Vater",
+   "warum": "dessen und deren geben kein Signal an das Adjektiv weiter: starke Endung."
+  },
+  {
+   "falsch": "bei schlechten Wetter",
+   "richtig": "bei schlechtem Wetter",
+   "warum": "Dativ neutral ohne Artikel: Das Adjektiv trägt das Signal -m."
+  }
+ ],
+ "uebungen": [
+  {
+   "id": "u01",
+   "typ": "luecke",
+   "satz": "Die Ansichten vieler ___ Erwachsener zur Wehrpflicht haben sich gewandelt.",
+   "loesungen": [
+    "junger"
+   ],
+   "hinweis": "jung",
+   "erklaerung": "Nach „viele, einige, mehrere“ wird das Adjektiv stark dekliniert, mit derselben Endung: vieler junger Erwachsener."
+  },
+  {
+   "id": "u02",
+   "typ": "luecke",
+   "satz": "Trotz ___ Regens fand das Konzert unter freiem Himmel statt.",
+   "loesungen": [
+    "starken"
+   ],
+   "hinweis": "stark",
+   "erklaerung": "Genitiv Singular maskulin ohne Artikel: Das Nomen trägt das -s, das Adjektiv endet auf -en."
+  },
+  {
+   "id": "u03",
+   "typ": "luecke",
+   "satz": "Beide ___ Gutachten kommen zu demselben Schluss.",
+   "loesungen": [
+    "unabhängigen"
+   ],
+   "hinweis": "unabhängig",
+   "erklaerung": "Nach „beide“ steht die schwache Endung -en, wie nach „die“."
+  },
+  {
+   "id": "u04",
+   "typ": "luecke",
+   "satz": "Manche ___ Kritiker hielten den Roman für ein Machwerk.",
+   "loesungen": [
+    "zeitgenössischen",
+    "zeitgenössische"
+   ],
+   "hinweis": "zeitgenössisch",
+   "erklaerung": "Nach „manche“ im Plural ist die schwache Endung (-en) üblich, die starke (-e) kommt aber ebenfalls vor; beides gilt als korrekt."
+  },
+  {
+   "id": "u05",
+   "typ": "luecke",
+   "satz": "Unter den ___ befanden sich auffallend viele Studierende.",
+   "loesungen": [
+    "Reisenden"
+   ],
+   "hinweis": "reisend, substantiviert",
+   "erklaerung": "Substantivierte Partizipien werden wie Adjektive dekliniert: Dativ Plural nach Artikel: den Reisenden."
+  },
+  {
+   "id": "u06",
+   "typ": "luecke",
+   "satz": "Ein ___ des Archivs hat das verschollene Manuskript zufällig entdeckt.",
+   "loesungen": [
+    "Angestellter"
+   ],
+   "hinweis": "angestellt, substantiviert",
+   "erklaerung": "Nach „ein“ fehlt im Nominativ maskulin das Signal, also trägt es das substantivierte Partizip: ein Angestellter."
+  },
+  {
+   "id": "u07",
+   "typ": "luecke",
+   "satz": "Die Zeitung berichtete über etwas ___, das selbst Fachleute verblüffte.",
+   "loesungen": [
+    "Neues"
+   ],
+   "hinweis": "neu",
+   "erklaerung": "Nach „etwas“ wird das Adjektiv großgeschrieben und stark dekliniert: etwas Neues."
+  },
+  {
+   "id": "u08",
+   "typ": "luecke",
+   "satz": "Nach zähen, ___ Verhandlungen einigten sich die Tarifparteien.",
+   "loesungen": [
+    "wochenlangen"
+   ],
+   "hinweis": "wochenlang",
+   "erklaerung": "Mehrere Adjektive ohne Artikel bekommen dieselbe starke Endung: Dativ Plural -en."
+  },
+  {
+   "id": "u09",
+   "typ": "luecke",
+   "satz": "Die Ergebnisse dieser ___ Studie sind umstritten.",
+   "loesungen": [
+    "groß angelegten",
+    "großangelegten"
+   ],
+   "hinweis": "groß angelegt",
+   "erklaerung": "Nach „dieser“ (Genitiv feminin) steht die schwache Endung -en."
+  },
+  {
+   "id": "u10",
+   "typ": "luecke",
+   "satz": "Er sprach mit ___ Offenheit über seine Fehler.",
+   "loesungen": [
+    "entwaffnender"
+   ],
+   "hinweis": "entwaffnend",
+   "erklaerung": "Dativ feminin ohne Artikel: Das Adjektiv übernimmt das Signal -r."
+  },
+  {
+   "id": "u11",
+   "typ": "luecke",
+   "satz": "Der Preis geht an eine junge Autorin, deren ___ Debüt die Kritik begeistert hat.",
+   "loesungen": [
+    "furioses"
+   ],
+   "hinweis": "furios",
+   "erklaerung": "Nach „deren“ steht die starke Endung, denn „deren“ zeigt kein Signal für das Nomen: deren furioses Debüt."
+  },
+  {
+   "id": "u12",
+   "typ": "luecke",
+   "satz": "Alle ___ Beiträge erscheinen im Herbst in einem Sammelband.",
+   "loesungen": [
+    "eingereichten"
+   ],
+   "hinweis": "eingereicht",
+   "erklaerung": "Nach „alle“ endet das Adjektiv auf -en."
+  },
+  {
+   "id": "u13",
+   "typ": "auswahl",
+   "frage": "Welche Form ist korrekt?",
+   "optionen": [
+    "die Arbeit zweier jungen Forscherinnen",
+    "die Arbeit zweier junger Forscherinnen",
+    "die Arbeit zwei junger Forscherinnen"
+   ],
+   "richtig": 1,
+   "erklaerung": "Der Genitiv von „zwei“ lautet „zweier“; danach steht die starke Endung: junger."
+  },
+  {
+   "id": "u14",
+   "typ": "auswahl",
+   "frage": "Welche Form ist korrekt?",
+   "optionen": [
+    "mit einen Bekannten",
+    "mit einem Bekannter",
+    "mit einem Bekannten"
+   ],
+   "richtig": 2,
+   "erklaerung": "„ein Bekannter“ wird wie ein Adjektiv dekliniert: Dativ nach „einem“ schwach: einem Bekannten."
+  },
+  {
+   "id": "u15",
+   "typ": "auswahl",
+   "frage": "„Zum Abschied wünschen wir Ihnen alles ___!“",
+   "optionen": [
+    "Guten",
+    "Gutes",
+    "Gute"
+   ],
+   "richtig": 2,
+   "erklaerung": "Nach „alles“ steht die schwache Endung: alles Gute. Nach „etwas“ dagegen stark: etwas Gutes."
+  },
+  {
+   "id": "u16",
+   "typ": "auswahl",
+   "frage": "„Die Zahl der ___ ist im letzten Quartal gestiegen.“",
+   "optionen": [
+    "Arbeitsloser",
+    "Arbeitslose",
+    "Arbeitslosen"
+   ],
+   "richtig": 2,
+   "erklaerung": "Genitiv Plural nach „der“: schwache Endung -en."
+  },
+  {
+   "id": "u17",
+   "typ": "auswahl",
+   "frage": "Welche Nominalgruppe ist richtig dekliniert?",
+   "optionen": [
+    "mit großer, ehrlichen Freude",
+    "mit großen, ehrlichen Freude",
+    "mit großer, ehrlicher Freude"
+   ],
+   "richtig": 2,
+   "erklaerung": "Mehrere Adjektive ohne Artikel: beide stark, Dativ feminin -er."
+  },
+  {
+   "id": "u18",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "der Abgeordnete",
+     "ein Abgeordneter"
+    ],
+    [
+     "die Abgeordnete",
+     "eine Abgeordnete"
+    ],
+    [
+     "die Abgeordneten",
+     "einige Abgeordnete"
+    ],
+    [
+     "das Neue",
+     "etwas Neues"
+    ],
+    [
+     "dem Fremden",
+     "einem Fremden"
+    ]
+   ],
+   "erklaerung": "Substantivierte Adjektive behalten die Adjektivendungen: Mit Signal im Artikel schwach, ohne Signal stark."
+  },
+  {
+   "id": "u19",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "ein verlässlicher",
+     "Freund"
+    ],
+    [
+     "ein verlässliches",
+     "Bündnis"
+    ],
+    [
+     "eine verlässliche",
+     "Grundlage"
+    ],
+    [
+     "zwei verlässliche",
+     "Quellen"
+    ]
+   ],
+   "erklaerung": "Die Endung verrät Genus und Zahl: -er maskulin, -es neutral, -e feminin nach „eine“ und Plural ohne Artikel."
+  },
+  {
+   "id": "u20",
+   "typ": "sortieren",
+   "teile": [
+    "würdigt",
+    "einer lange vergessenen",
+    "Die Ausstellung",
+    "jüdischen Malerin",
+    "das Werk"
+   ],
+   "loesung": "Die Ausstellung würdigt das Werk einer lange vergessenen jüdischen Malerin.",
+   "erklaerung": "Genitivattribut hinter dem Nomen; „lange vergessenen“ und „jüdischen“ enden nach „einer“ beide auf -en."
+  },
+  {
+   "id": "u21",
+   "typ": "sortieren",
+   "teile": [
+    "hatten",
+    "tatsächlich",
+    "den umstrittenen Roman",
+    "der geladenen Gäste",
+    "Nur wenige",
+    "gelesen"
+   ],
+   "loesung": "Nur wenige der geladenen Gäste hatten den umstrittenen Roman tatsächlich gelesen.",
+   "loesungen": [
+    "Nur wenige der geladenen Gäste hatten tatsächlich den umstrittenen Roman gelesen."
+   ],
+   "erklaerung": "„wenige der geladenen Gäste“: Genitiv Plural nach „der“ schwach (-en). Satzklammer: hatten … gelesen."
+  },
+  {
+   "id": "u22",
+   "typ": "sortieren",
+   "teile": [
+    "steigende Mieten",
+    "verdrängen",
+    "Seit Jahren",
+    "aus den Innenstädten",
+    "alteingesessene Bewohner"
+   ],
+   "loesung": "Seit Jahren steigende Mieten verdrängen alteingesessene Bewohner aus den Innenstädten.",
+   "loesungen": [
+    "Seit Jahren steigende Mieten verdrängen aus den Innenstädten alteingesessene Bewohner.",
+    "Seit Jahren verdrängen steigende Mieten alteingesessene Bewohner aus den Innenstädten."
+   ],
+   "erklaerung": "Ohne Artikel enden die Adjektive stark: steigende Mieten, alteingesessene Bewohner."
+  },
+  {
+   "id": "u23",
+   "typ": "fehler",
+   "satz": "Die Teilnehmer diskutierten die Thesen eines bekannten amerikanischer Soziologen.",
+   "fehler": "amerikanischer",
+   "korrektur": "amerikanischen",
+   "erklaerung": "Nach „eines“ enden alle Adjektive gleich: eines bekannten amerikanischen Soziologen."
+  },
+  {
+   "id": "u24",
+   "typ": "fehler",
+   "satz": "Im Zentrum steht ein junger Mann, dessen verstorbene Vater ein Verlagshaus geleitet hat.",
+   "fehler": "verstorbene",
+   "korrektur": "verstorbener",
+   "erklaerung": "Nach „dessen“ steht die starke Endung: dessen verstorbener Vater."
+  },
+  {
+   "id": "u25",
+   "typ": "fehler",
+   "satz": "Die Stadt kümmert sich um die Unterbringung der Geflüchtete.",
+   "fehler": "Geflüchtete",
+   "korrektur": "Geflüchteten",
+   "erklaerung": "Genitiv Plural nach „der“: der Geflüchteten."
+  },
+  {
+   "id": "u26",
+   "typ": "fehler",
+   "satz": "Der Vortrag bot nichts wesentlich Neue.",
+   "fehler": "Neue",
+   "korrektur": "Neues",
+   "erklaerung": "Nach „nichts“ stark: nichts Neues."
+  },
+  {
+   "id": "u27",
+   "typ": "fehler",
+   "satz": "Bei schlechten Wetter wird die Lesung in den großen Saal verlegt.",
+   "fehler": "schlechten",
+   "korrektur": "schlechtem",
+   "erklaerung": "Dativ neutral ohne Artikel: bei schlechtem Wetter."
+  },
+  {
+   "id": "u28",
+   "typ": "fehler",
+   "satz": "Alle beteiligte Institute haben dem Entwurf zugestimmt.",
+   "fehler": "beteiligte",
+   "korrektur": "beteiligten",
+   "erklaerung": "Nach „alle“: schwache Endung -en."
+  },
+  {
+   "id": "u29",
+   "typ": "rf",
+   "aussage": "Nach „mehrere“ wird das Adjektiv stark dekliniert: die Ergebnisse mehrerer neuer Studien.",
+   "wert": true,
+   "erklaerung": "„mehrere“ verhält sich wie ein Adjektiv ohne Artikel; das folgende Adjektiv hat dieselbe Endung."
+  },
+  {
+   "id": "u30",
+   "typ": "rf",
+   "aussage": "Nach „etwas“ und „nichts“ schreibt man das Adjektiv klein: etwas neues.",
+   "wert": false,
+   "erklaerung": "Es wird großgeschrieben, weil es substantiviert ist: etwas Neues, nichts Besonderes."
+  },
+  {
+   "id": "u31",
+   "typ": "rf",
+   "aussage": "Nach „alle“ endet das Adjektiv im Plural auf -en: alle neuen Mitglieder.",
+   "wert": true,
+   "erklaerung": "„alle“ gibt das Signal wie „die“, daher schwache Endung."
+  },
+  {
+   "id": "u32",
+   "typ": "umformen",
+   "ausgang": "Die Mieten steigen seit Jahren. Sie verdrängen viele Familien aus der Innenstadt.",
+   "anweisung": "Machen Sie aus dem ersten Satz ein Partizipialattribut.",
+   "loesungen": [
+    "Die seit Jahren steigenden Mieten verdrängen viele Familien aus der Innenstadt.",
+    "Seit Jahren steigende Mieten verdrängen viele Familien aus der Innenstadt."
+   ],
+   "erklaerung": "Partizip I als Attribut: die seit Jahren steigenden Mieten (mit Artikel schwach), ohne Artikel: steigende Mieten."
+  },
+  {
+   "id": "u33",
+   "typ": "umformen",
+   "ausgang": "Die Menschen, die erkrankt sind, werden in einer Spezialklinik behandelt.",
+   "anweisung": "Ersetzen Sie „Die Menschen, die erkrankt sind,“ durch ein substantiviertes Partizip.",
+   "loesungen": [
+    "Die Erkrankten werden in einer Spezialklinik behandelt."
+   ],
+   "erklaerung": "Partizip II substantiviert: die Erkrankten (schwach nach „die“)."
+  }
+ ]
+}
