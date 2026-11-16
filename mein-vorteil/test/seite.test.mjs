@@ -748,7 +748,8 @@ test('Weiterleitungsseite an falscher Stelle (als /Synquenzer/ aus einem fremden
 test('als Home-Bildschirm-App: startet ohne Netz aus dem eigenen Service Worker', { skip: ohnePw }, async () => {
   const { ctx, page, fehler, zustand } = await oeffne({ satz: 'v2', sw: 'allow' });
   await page.waitForFunction(async () => (await navigator.serviceWorker.ready).active?.state === 'activated');
-  await page.waitForFunction(async () => !!(await caches.open('mein-vorteil-3').then(c => c.match('./'))));
+  // Cache-Name wechselt mit jeder Fassung (mein-vorteil-N): den aktuellen nehmen
+  await page.waitForFunction(async () => { const k = (await caches.keys()).find(n => /^mein-vorteil-\d+$/.test(n)); return !!(k && await caches.open(k).then(c => c.match('./'))); });
   await ctx.setOffline(true);
   zustand.offline = true;
   await page.reload();

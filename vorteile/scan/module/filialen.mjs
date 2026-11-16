@@ -22,7 +22,7 @@ export const STANDARD = {
   laender: ['DE-SN', 'DE-TH', 'DE-ST', 'DE-BB'],
   bbox: [50.15, 11.6, 51.75, 15.1], // Süd, West, Nord, Ost: Sachsen mit gut 30 km Rand
   nahKm: 10,
-  umkreisKm: 15,
+  umkreisKm: 10, // wie nahKm: mit 15 käme REWE (Leisnig, 15 km) in Döbeln wieder dazu (Roh-Lauf 43843865340)
   minFilialen: 20, // weniger = Abfrage kaputt (echt: weit über 1000 im Gebiet)
 };
 

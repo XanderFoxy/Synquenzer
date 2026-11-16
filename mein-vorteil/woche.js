@@ -18,7 +18,16 @@
    Sprung-Leiste mit Zähler. Ohne Vergleichspreis im Prospekt, aber mit Vergleichspreis desselben Artikels aus einem früheren
    Prospekt: „geschätzt“ (hellgraue Plakette „≈ −n %“). Merken: Haken an der Kachel (oder lange drücken) – gemerkt im
    localStorage (mein-vorteil-woche-gemerkt) und als Liste an den Radar (ntfy-Thema MERK_THEMA, öffentlich wie das Push-Thema,
-   niemand abonniert es); der Radar erinnert per Push am ersten Gültigkeitstag ab 7 Uhr. */
+   niemand abonniert es); der Radar erinnert per Push am ersten Gültigkeitstag ab 7 Uhr.
+   Xander 16.11.2026 (Märkte vor Ort): „Es sollen Märkte sein, die wirklich in Döbeln sind … sonst ausblenden … Besser noch:
+   anhand von GPS … je nachdem, von wo ich die App öffne – nur die Märkte zeigen, die für diese Gegend in Frage kommen.“
+   Ohne Standort gilt Döbeln: ein Markt zählt, wenn seine nächste Filiale bis NAH_KM liegt (Radar: maerkte.<id>.nah/filiale aus
+   kaufDA oder OpenStreetMap). Die übrigen (z. B. REWE: keine Filiale in Döbeln) stehen erst nach Tipp auf „weitere Märkte“ da.
+   „Standort verwenden“ fragt – nur nach diesem Tipp – den Browser nach der Position; sie bleibt auf dem Gerät (localStorage
+   mein-vorteil-woche-standort, auf etwa 1 km gerundet) und wird nirgends hingeschickt (kein IP-Dienst). Dann lädt die Seite die
+   Filial-Liste filialen.json (Radar, OpenStreetMap; Kopie im Ordner als Ersatz) und zeigt nur Märkte mit Filiale bis
+   UMKREIS_KM um die Position. Beim nächsten Öffnen wird neu geortet, wenn der Browser die Freigabe schon hat (ohne Frage).
+   Die Prospekte bleiben die für Döbeln – liegt die Position weiter als WEIT_KM weg, steht das dabei. „Döbeln“ = vergessen. */
 (function () {
   'use strict';
   const URL_STANDARD = 'https://raw.githubusercontent.com/XanderFoxy/Synquenzer/vorteile-daten/vorteile/data/knaller.json';
@@ -33,6 +42,15 @@
   const LANG_MS = 550; // lange drücken = merken
   const ALT_STUNDEN = 36, HINWEIS_STUNDEN = 12;
   // Reihenfolge und Namen, falls die Datei keine Märkte nennt (gleich wie vorteile/config.json module.knaller.maerkte)
+  // Märkte vor Ort (Xander 16.11.2026): Döbeln (kaufDA-Stadtmitte), Filial-Liste vom Radar, Kopie im Ordner als Ersatz
+  const DOEBELN = { name: 'Döbeln', lat: 51.1211, lon: 13.1229 };
+  // Umkreis mit Standort wie für Döbeln 10 km: mit 15 km käme REWE (Leisnig, 15 km Luftlinie laut OSM) in Döbeln wieder dazu
+  const NAH_KM = 10, UMKREIS_KM = 10, WEIT_KM = 25;
+  const FIL_URL = 'https://raw.githubusercontent.com/XanderFoxy/Synquenzer/vorteile-daten/vorteile/data/filialen.json';
+  const FIL_LOKAL = 'filialen.json';
+  const FIL_FRISCH_TAGE = 3;
+  const ORT_SPEICHER = 'mein-vorteil-woche-standort';
+  const WEITERE_SPEICHER = 'mein-vorteil-woche-weitere';
   const MAERKTE = [['aldi-nord', 'Aldi Nord'], ['lidl', 'Lidl'], ['kaufland', 'Kaufland'], ['netto', 'Netto'], ['penny', 'Penny'], ['rewe', 'REWE'], ['marktkauf', 'Marktkauf']];
 
   // --- kleine Helfer ---------------------------------------------------------------------------------------------------
@@ -98,6 +116,52 @@
       region: typeof a.region === 'string' ? a.region.trim().slice(0, 40) : '',
     };
   }
+  function filialeNorm(f) {
+    if (!f || typeof f !== 'object') return null;
+    const km = zahl(f.km);
+    const adresse = typeof f.adresse === 'string' ? f.adresse.replace(/\s+/g, ' ').trim().slice(0, 60) : '';
+    return km != null && km >= 0 ? { km, adresse, quelle: typeof f.quelle === 'string' ? f.quelle.slice(0, 30) : '' } : null;
+  }
+  function kmZwischen(a, b) {
+    const r = Math.PI / 180;
+    const h = Math.sin((b.lat - a.lat) * r / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin((b.lon - a.lon) * r / 2) ** 2;
+    return 6371 * 2 * Math.asin(Math.min(1, Math.sqrt(h)));
+  }
+  const kmText = v => (v < 20 ? String(Math.round(v * 10) / 10) : String(Math.round(v))).replace('.', ',');
+  const gueltigePos = p => p && Number.isFinite(p.lat) && Number.isFinite(p.lon) && Math.abs(p.lat) <= 90 && Math.abs(p.lon) <= 180;
+  const rund2 = v => Math.round(v * 100) / 100; // ~1 km: genug für „bis 10 km“, mehr bleibt nicht gespeichert
+  // Filial-Liste (Radar-Modul filialen): { maerkte: { <id>: [[lat, lon, adresse], …] } } – tolerant, sonst null
+  function filialenNorm(d) {
+    if (!d || typeof d !== 'object' || !d.maerkte || typeof d.maerkte !== 'object') return null;
+    const maerkte = {};
+    let n = 0;
+    for (const [id, l] of Object.entries(d.maerkte)) {
+      if (!/^[a-z0-9-]{1,30}$/.test(id) || !Array.isArray(l)) continue;
+      maerkte[id] = l.filter(f => Array.isArray(f) && Number.isFinite(f[0]) && Number.isFinite(f[1])).map(f => [f[0], f[1], typeof f[2] === 'string' ? f[2].slice(0, 60) : '']);
+      n += maerkte[id].length;
+    }
+    if (!n) return null;
+    return { maerkte, stand: typeof d.osmStand === 'string' ? d.osmStand : typeof d.aktualisiert === 'string' ? d.aktualisiert : null };
+  }
+  // Lage eines Markts: { nah, km, adresse } – mit Standort aus der Filial-Liste (bis UMKREIS_KM), sonst Döbeln laut Radar.
+  // Ohne jeden Beleg wird nichts ausgeblendet; „weder Filiale noch Prospekt für Döbeln“ (ältere Dateien, z. B. REWE nur mit
+  // Chemnitzer Prospekt) zählt als nicht in der Nähe.
+  function lageVon(m, n, pos, fil) {
+    if (pos && fil) {
+      const l = fil.maerkte[m.id];
+      if (!Array.isArray(l)) return { nah: true, km: null, adresse: '', unbekannt: true };
+      let best = null;
+      for (const f of l) { const d = kmZwischen(pos, { lat: f[0], lon: f[1] }); if (!best || d < best.km) best = { km: d, adresse: f[2] }; }
+      return best ? { nah: best.km <= UMKREIS_KM, km: best.km, adresse: best.adresse } : { nah: false, km: null, adresse: '' };
+    }
+    const f = m.filiale;
+    if (typeof m.nah === 'boolean') return { nah: m.nah, km: f ? f.km : null, adresse: f ? f.adresse : '' };
+    if (f) return { nah: f.km <= NAH_KM, km: f.km, adresse: f.adresse };
+    if (m.keinMarkt) return { nah: false, km: null, adresse: '' };
+    if (m.ort && n.ort && m.ort !== n.ort) return { nah: false, km: null, adresse: '' };
+    return { nah: true, km: null, adresse: '', unbekannt: true };
+  }
+
   function normalisiere(d, jetzt = Date.now()) {
     const m = d && typeof d.maerkte === 'object' && d.maerkte && !Array.isArray(d.maerkte) ? d.maerkte : {};
     const namen = new Map(MAERKTE);
@@ -109,7 +173,9 @@
     // ort = Prospekt-Ort dieses Markts (Radar ab 16.11.2026: Döbeln, Chemnitz, Leipzig oder „bundesweit (Berlin)“)
     const maerkte = [...namen.entries()].map(([id, name]) => ({ id, name, link: sicher(m[id]?.link), alt: m[id]?.alt === true,
       ort: typeof m[id]?.ort === 'string' ? m[id].ort.trim().slice(0, 40) : '', keinMarkt: m[id]?.keinMarkt === true,
-      gesamt: Number.isInteger(m[id]?.gesamt) ? m[id].gesamt : null, gelesen: Number.isInteger(m[id]?.gelesen) ? m[id].gelesen : null }));
+      gesamt: Number.isInteger(m[id]?.gesamt) ? m[id].gesamt : null, gelesen: Number.isInteger(m[id]?.gelesen) ? m[id].gelesen : null,
+      // nächste Filiale von Döbeln (Radar: kaufDA oder OpenStreetMap) und nah = bis 10 km (fehlt bei älteren Dateien)
+      filiale: filialeNorm(m[id]?.filiale), nah: typeof m[id]?.nah === 'boolean' ? m[id].nah : null }));
     const status = d && typeof d.status === 'object' && d.status ? d.status : {};
     return {
       aktualisiert: typeof d?.aktualisiert === 'string' ? d.aktualisiert : null,
@@ -201,8 +267,13 @@
   }
 
   // --- Zeichnen -----------------------------------------------------------------------------------------------------------
-  const S = { el: null, url: URL_STANDARD, n: null, roh: '', laedt: false, gestoert: false, nichtDa: false, stufe: 30, markt: 'alle' };
+  const S = { el: null, url: URL_STANDARD, n: null, roh: '', laedt: false, gestoert: false, nichtDa: false, stufe: 30, markt: 'alle',
+    weitere: false, pos: null, fil: null, ortSucht: false, ortFehler: '', lagen: new Map() };
   const nachMarkt = (arr, m) => (m === 'alle' ? arr : arr.filter(a => a.markt === m));
+  const istNah = id => S.lagen.get(id)?.nah !== false;
+  // was gezeigt wird: ohne „weitere Märkte“ nur Angebote der Märkte in der Nähe
+  const basis = () => (S.weitere ? S.n.angebote : S.n.angebote.filter(a => istNah(a.markt)));
+  const mitStandort = () => !!(S.pos && S.fil);
   const abStufe = (arr, st) => arr.filter(a => a.pct >= st);
   const marktName = id => S.n?.maerkte.find(x => x.id === id)?.name || id;
   function initialen(s) { return String(s || '').split(/[\s-]+/).filter(w => /^[\p{L}\d]/u.test(w)).slice(0, 2).map(w => w[0].toUpperCase()).join(''); }
@@ -274,24 +345,24 @@
   }
   // Sprung-Leiste: Gilt jetzt · Kommt diese Woche · Ab Montag · Gemerkt – mit Zählern, tippen = hinscrollen
   function sprungHtml() {
-    const { jetzt, woche, naechste } = teileAuf(abStufe(nachMarkt(S.n.angebote, S.markt), S.stufe));
+    const { jetzt, woche, naechste } = teileAuf(abStufe(nachMarkt(basis(), S.markt), S.stufe));
     const g = gemerktListe().length;
     if (!woche.length && !naechste.length && !g) return '';
     const b = (ziel, name, n, kl = '') => (n ? `<button type="button" class="wo-sprung${kl}" data-wo-sprung="${ziel}">${esc(name)}<span class="wo-n">${n}</span></button>` : '');
     return `<div class="wo-spruenge" aria-label="Springen zu">${b('wo-g-jetzt', 'Gilt jetzt', jetzt.length)}${b('wo-g-kommt', 'Kommt diese Woche', woche.length, ' wo-sprung-kommt')}${b('wo-g-naechste', 'Ab Montag', naechste.length, ' wo-sprung-kommt')}${b('wo-g-gemerkt', 'Gemerkt', g)}</div>`;
   }
   function leerHtml() {
-    const imMarkt = nachMarkt(S.n.angebote, S.markt);
+    const imMarkt = nachMarkt(basis(), S.markt);
     const wo = S.markt === 'alle' ? '' : ` bei ${marktName(S.markt)}`;
     const tiefer = STUFEN.filter(s => s < S.stufe).map(s => [s, abStufe(imMarkt, s).length]).filter(([, n]) => n > 0).pop();
     if (tiefer) return `<div class="wo-leer"><p>Gerade nichts ab ${S.stufe} %${esc(wo)} – ab ${tiefer[0]} % gibt es ${tiefer[1]}.</p><button type="button" class="wo-knopf" data-wo-stufe="${tiefer[0]}">Ab ${tiefer[0]} % zeigen</button></div>`;
-    const andere = S.markt !== 'alle' && abStufe(S.n.angebote, S.stufe).length;
+    const andere = S.markt !== 'alle' && abStufe(basis(), S.stufe).length;
     if (andere) return `<div class="wo-leer"><p>Gerade nichts ab ${S.stufe} %${esc(wo)}.</p><button type="button" class="wo-knopf" data-wo-markt="alle">Alle Märkte zeigen (${andere})</button></div>`;
     const st = Object.values(S.n.status).some(q => q && q.ok === false) ? ' Eine Quelle ist gerade gestört.' : '';
     return `<div class="wo-leer"><p>Gerade keine Angebote ab ${S.stufe} %${esc(wo)} in den Prospekten.${esc(st)}</p></div>`;
   }
   function listeHtml() {
-    const arr = abStufe(nachMarkt(S.n.angebote, S.markt), S.stufe);
+    const arr = abStufe(nachMarkt(basis(), S.markt), S.stufe);
     return gemerktHtml() + (arr.length ? gruppenHtml(arr) : leerHtml());
   }
   function standHtml() {
@@ -303,25 +374,48 @@
     return `<p class="wo-stand${alt || S.gestoert ? ' wo-alt' : ''}">Stand: ${esc((st || 'unbekannt') + zusatz)}</p>`;
   }
   function stufenHtml() {
-    const imMarkt = nachMarkt(S.n.angebote, S.markt);
+    const imMarkt = nachMarkt(basis(), S.markt);
     return `<div class="wo-stufen" role="radiogroup" aria-label="Rabatt ab">${STUFEN.map(s => {
       const an = s === S.stufe;
       return `<button type="button" class="wo-stufe" role="radio" aria-checked="${an}" tabindex="${an ? 0 : -1}" data-wo-stufe="${s}">ab ${s} %<span class="wo-n">${abStufe(imMarkt, s).length}</span></button>`;
     }).join('')}</div>`;
   }
   function maerkteHtml() {
-    const ab = abStufe(S.n.angebote, S.stufe);
-    const chips = [['alle', 'Alle', ab.length], ...S.n.maerkte.map(m => [m.id, m.name, nachMarkt(ab, m.id).length])];
+    const ab = abStufe(basis(), S.stufe);
+    const chips = [['alle', 'Alle', ab.length], ...S.n.maerkte.filter(m => S.weitere || istNah(m.id)).map(m => [m.id, m.name, nachMarkt(ab, m.id).length])];
     return `<div class="wo-chips" role="tablist" aria-label="Märkte">${chips.map(([id, name, n]) => {
       const an = id === S.markt;
-      return `<button type="button" class="wo-chip${n ? '' : ' wo-null'}" role="tab" aria-selected="${an}" tabindex="${an ? 0 : -1}" data-wo-markt="${esc(id)}" aria-controls="wo-liste">${esc(name)}<span class="wo-n">${n}</span></button>`;
+      return `<button type="button" class="wo-chip${n ? '' : ' wo-null'}${id !== 'alle' && !istNah(id) ? ' wo-fern' : ''}" role="tab" aria-selected="${an}" tabindex="${an ? 0 : -1}" data-wo-markt="${esc(id)}" aria-controls="wo-liste">${esc(name)}<span class="wo-n">${n}</span></button>`;
     }).join('')}</div>`;
+  }
+  const PIN = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.3" fill="currentColor"/></svg>';
+  // Leiste „Märkte vor Ort“: wo gezählt wird, Standort verwenden / neu orten / Döbeln, „weitere Märkte“, ausgeblendete Märkte
+  function ortHtml() {
+    const mit = mitStandort();
+    const fern = S.n.maerkte.filter(m => !istNah(m.id));
+    const weg = S.pos ? kmZwischen(S.pos, DOEBELN) : 0;
+    const wo = mit ? `Märkte mit Filiale bis ${UMKREIS_KM} km um deinen Standort${weg > 2 ? ` (${kmText(weg)} km von Döbeln)` : ''}`
+      : `Märkte mit Filiale bis ${NAH_KM} km um Döbeln`;
+    const knoepfe = [];
+    if (S.ortSucht) knoepfe.push('<button type="button" class="wo-ortknopf wo-haupt" disabled>Standort wird bestimmt …</button>');
+    else if (S.pos) knoepfe.push('<button type="button" class="wo-ortknopf" data-wo-ort="neu">Neu orten</button>', '<button type="button" class="wo-ortknopf" data-wo-ort="aus">Döbeln</button>');
+    else knoepfe.push(`<button type="button" class="wo-ortknopf wo-haupt" data-wo-ort="an">${PIN}Standort verwenden</button>`);
+    if (fern.length) knoepfe.push(`<button type="button" class="wo-ortknopf" data-wo-weitere="1" aria-pressed="${S.weitere}">weitere Märkte<span class="wo-n">${fern.length}</span></button>`);
+    const hinweise = [];
+    if (fern.length) {
+      const t = fern.map(m => { const l = S.lagen.get(m.id); return `${m.name}${l && l.km != null ? ` (nächste ${kmText(l.km)} km${l.adresse && l.km <= 30 ? `, ${l.adresse}` : ''})` : ''}`; }).join(', ');
+      hinweise.push(`<p class="wo-ort-hinweis">Keine Filiale in der Nähe: ${esc(t)}${S.weitere ? ' – gestrichelt dabei.' : ' – ausgeblendet.'}</p>`);
+    }
+    if (S.ortFehler) hinweise.push(`<p class="wo-ort-hinweis wo-warn" role="status">${esc(S.ortFehler)}</p>`);
+    if (mit && weg > WEIT_KM) hinweise.push(`<p class="wo-ort-hinweis wo-warn">Die Prospekte gelten für Döbeln – an deinem Standort können Angebote und Preise abweichen.</p>`);
+    if (S.pos) hinweise.push(`<p class="wo-ort-hinweis">Der Standort bleibt auf diesem Gerät${S.fil?.stand ? ` · Filialen laut OpenStreetMap, Stand ${esc(standText(S.fil.stand) || '')}` : ''}.</p>`);
+    return `<div class="wo-ort"><p class="wo-ort-text">${PIN}<span>${esc(wo)}</span></p><div class="wo-ort-knoepfe">${knoepfe.join('')}</div>${hinweise.join('')}</div>`;
   }
   function fussHtml() {
     const ort = S.n.standort && S.n.standort !== 'bundesweit' ? `Prospekte ${S.n.standort}` : 'Prospekte bundesweit';
     // Prospekt für den eigenen Ort (Döbeln) oder nicht – Märkte aus Nachbarstadt/bundesweit sichtbar nennen
     const lokal = !!S.n.standort && S.n.standort === S.n.ort;
-    const fremd = S.n.maerkte.filter(m => m.ort && m.ort !== S.n.ort && !m.keinMarkt);
+    const fremd = S.n.maerkte.filter(m => m.ort && m.ort !== S.n.ort && !m.keinMarkt && (S.weitere || istNah(m.id)));
     const ohneMarkt = S.n.maerkte.filter(m => m.keinMarkt).map(m => m.name);
     const ortText = lokal ? `Prospekte für ${S.n.ort} von kaufDA – einzelne Filialen können abweichen.` : `${ort} von kaufDA – ob es das in ${S.n.ort} gibt, im Markt oder in der App prüfen.`;
     const k = S.n.status.kaufda && typeof S.n.status.kaufda === 'object' ? S.n.status.kaufda : null;
@@ -348,10 +442,11 @@
         : 'Wochen-Knaller gerade nicht erreichbar. Später noch einmal auf ↻ tippen.'}</p>`;
       return;
     }
-    if (S.markt !== 'alle' && !S.n.maerkte.some(m => m.id === S.markt)) S.markt = 'alle';
+    S.lagen = new Map(S.n.maerkte.map(m => [m.id, lageVon(m, S.n, S.pos, S.fil)]));
+    if (S.markt !== 'alle' && (!S.n.maerkte.some(m => m.id === S.markt) || (!S.weitere && !istNah(S.markt)))) S.markt = 'alle';
     const alt = el.querySelector('.wo-chips');
     const links = alt ? alt.scrollLeft : null;
-    el.innerHTML = `<div class="wo">${standHtml()}${stufenHtml()}${maerkteHtml()}${sprungHtml()}`
+    el.innerHTML = `<div class="wo">${standHtml()}${stufenHtml()}${ortHtml()}${maerkteHtml()}${sprungHtml()}`
       + `<div class="wo-liste" id="wo-liste" role="tabpanel">${listeHtml()}</div>${fussHtml()}</div>`;
     const leiste = el.querySelector('.wo-chips');
     if (links != null) leiste.scrollLeft = links; else zeigeChip(leiste, S.markt);
@@ -419,11 +514,81 @@
     });
   }
 
+  // --- Standort (nur nach Tipp) + Filial-Liste -----------------------------------------------------------------------------
+  let filLaedt = null;
+  function filialenLaden() {
+    if (S.fil) return Promise.resolve(true);
+    if (filLaedt) return filLaedt;
+    filLaedt = (async () => {
+      let d = null;
+      try { const c = await caches.open(CACHE); const r = await c.match(FIL_URL); if (r) d = filialenNorm(JSON.parse(await r.text())); } catch {}
+      const t = d && zeitVon(d.stand);
+      if (!d || t == null || Date.now() - t > FIL_FRISCH_TAGE * 864e5) {
+        for (const u of [S.filUrl || FIL_URL, FIL_LOKAL]) {
+          try {
+            const text = await hol(u);
+            const n = filialenNorm(JSON.parse(text));
+            if (n) { d = n; if (u !== FIL_LOKAL) { try { const c = await caches.open(CACHE); await c.put(FIL_URL, new Response(text, { headers: { 'content-type': 'application/json' } })); } catch {} } break; }
+          } catch {}
+        }
+      }
+      S.fil = d;
+      filLaedt = null;
+      return !!d;
+    })();
+    return filLaedt;
+  }
+  function posSetzen(p) {
+    S.pos = { lat: rund2(p.lat), lon: rund2(p.lon) };
+    merk(ORT_SPEICHER, { v: 1, lat: S.pos.lat, lon: S.pos.lon, t: new Date().toISOString() });
+  }
+  function posVergessen() {
+    S.pos = null; S.ortFehler = '';
+    try { localStorage.removeItem(ORT_SPEICHER); } catch {}
+  }
+  // still = beim Öffnen mit schon erteilter Freigabe: Fehler ändern nichts (der letzte Ort bleibt)
+  function orten(still) {
+    const geo = typeof navigator !== 'undefined' && navigator.geolocation;
+    if (!geo) { if (!still) { S.ortFehler = 'Dieser Browser kann den Standort nicht bestimmen – es gilt Döbeln.'; zeichne(); } return; }
+    if (!still) { S.ortSucht = true; S.ortFehler = ''; zeichne(); }
+    geo.getCurrentPosition(p => {
+      const q = { lat: p.coords.latitude, lon: p.coords.longitude };
+      if (!gueltigePos(q)) { S.ortSucht = false; zeichne(); return; }
+      posSetzen(q);
+      filialenLaden().then(ok => {
+        S.ortSucht = false;
+        if (!ok) S.ortFehler = 'Filial-Liste gerade nicht erreichbar – es gilt Döbeln.';
+        zeichne();
+      });
+    }, e => {
+      S.ortSucht = false;
+      if (!still) {
+        if (e && e.code === 1) posVergessen(); // vor dem Hinweis: posVergessen leert ihn
+        S.ortFehler = e && e.code === 1 ? 'Standort nicht freigegeben – es gilt Döbeln. Freigeben lässt er sich in den Einstellungen des Browsers.'
+          : 'Standort gerade nicht bestimmbar – es gilt Döbeln.';
+      }
+      zeichne();
+    }, { enableHighAccuracy: false, timeout: 15000, maximumAge: 10 * 60e3 });
+  }
+  function ortStart() {
+    const p = lies(ORT_SPEICHER, null);
+    if (!p || !gueltigePos(p)) return;
+    S.pos = { lat: rund2(p.lat), lon: rund2(p.lon) };
+    filialenLaden().then(ok => { if (!ok) S.ortFehler = 'Filial-Liste gerade nicht erreichbar – es gilt Döbeln.'; if (S.n) zeichne(); });
+    // neu orten nur, wenn der Browser die Freigabe schon hat – keine Frage beim Öffnen
+    try {
+      navigator.permissions?.query({ name: 'geolocation' }).then(st => { if (st && st.state === 'granted' && S.pos) orten(true); }, () => {});
+    } catch {}
+  }
+
   function start(el, opt) {
     if (!el) return;
     if (S.el === el) { lade(); return; }
     S.el = el;
     if (opt && opt.url) S.url = opt.url;
+    if (opt && opt.filialenUrl) S.filUrl = opt.filialenUrl;
+    S.weitere = lies(WEITERE_SPEICHER, false) === true;
+    ortStart();
     const st = Number(lies(STUFE_SPEICHER, 30));
     S.stufe = STUFEN.includes(st) ? st : 30;
     const m = lies(MARKT_SPEICHER, 'alle');
@@ -446,6 +611,13 @@
       if (S.lang && ev.target.closest('.wo-kachel')) { ev.preventDefault(); S.lang = false; return; } // lange gedrückt = gemerkt, nicht öffnen
       const s = ev.target.closest('[data-wo-stufe]');
       if (s) { setzeStufe(Number(s.dataset.woStufe)); return; }
+      const w = ev.target.closest('[data-wo-weitere]');
+      if (w) { S.weitere = !S.weitere; merk(WEITERE_SPEICHER, S.weitere); zeichne(); return; }
+      const o = ev.target.closest('[data-wo-ort]');
+      if (o) {
+        if (o.dataset.woOrt === 'aus') { posVergessen(); zeichne(); } else orten(false);
+        return;
+      }
       const m = ev.target.closest('button[data-wo-markt]');
       if (m) setzeMarkt(m.dataset.woMarkt);
     });
@@ -519,6 +691,20 @@
   display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
 }
 .wo-chip.wo-null { color: var(--leise); }
+.wo-chip.wo-fern { border-style: dashed; }
+.wo-ort { margin: 10px 0 0; padding: 8px 10px 10px; border: 1px solid var(--linie); border-radius: 14px; background: var(--karte); }
+.wo-ort-text { margin: 2px 2px 8px; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+.wo-ort-text svg { flex: none; color: var(--akzent); }
+.wo-ort-knoepfe { display: flex; flex-wrap: wrap; gap: 8px; }
+.wo-ortknopf {
+  min-height: 44px; min-width: 44px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--linie); background: transparent;
+  color: var(--text); font: inherit; font-size: 14.5px; font-weight: 650; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+}
+.wo-ortknopf.wo-haupt { border-color: var(--akzent); color: var(--akzent); }
+.wo-ortknopf[aria-pressed="true"] { background: var(--akzent); border-color: var(--akzent); color: var(--akzent-text); }
+.wo-ortknopf:disabled { opacity: .7; cursor: default; }
+.wo-ort-hinweis { margin: 8px 2px 0; font-size: 13px; color: var(--leise); }
+.wo-ort-hinweis.wo-warn { color: var(--warm); }
 .wo-chip[aria-selected="true"] { background: var(--akzent); border-color: var(--akzent); color: var(--akzent-text); }
 .wo-n {
   font-size: 12px; font-weight: 700; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px;
@@ -609,6 +795,6 @@ a.wo-kachel:active { background: var(--flaeche); }
     start, lade,
     get gestartet() { return !!S.el; },
     // für Tests (ohne Browser): reine Funktionen
-    _intern: { normalisiere, angebotNorm, wochenEnde, merkTeile, MERK_BYTES, kachel: a => kachel(a), fuss: n => { const vor = S.n; S.n = n; try { return fussHtml(); } finally { S.n = vor; } }, STUFEN, CSS: () => CSS },
+    _intern: { normalisiere, angebotNorm, lageVon, filialenNorm, kmZwischen, NAH_KM, UMKREIS_KM, wochenEnde, merkTeile, MERK_BYTES, kachel: a => kachel(a), fuss: n => { const vor = S.n; S.n = n; try { return fussHtml(); } finally { S.n = vor; } }, STUFEN, CSS: () => CSS },
   };
 })();
