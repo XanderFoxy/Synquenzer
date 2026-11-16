@@ -11,7 +11,7 @@ import { macheRegelWache, agentAus, agbGrund, REGEL_TEXT, regelQuellen } from '.
 import { schnittstellenPausen, cacheAufraeumen } from './lib/schnittstellen.mjs';
 import { rohOrdner, macheMitschnitt } from './lib/roh.mjs';
 import { tageBis } from './lib/text.mjs';
-import { modulFaellig } from './faellig.mjs';
+import { modulFaellig, verbucheModul, neuversuchNachtragen, neuversuchBereinigen, hostRuheBereinigen, hostRuheMerken, hostRuheRest } from './faellig.mjs';
 import { plane, verbuche, sende, KATEGORIEN, alsGemeldet, planeAdvent, verbucheAdvent } from './benachrichtigen.mjs';
 import deals from './module/deals.mjs';
 import erleben from './module/erleben.mjs';
@@ -51,7 +51,13 @@ const mitZeitlimit = (p, ms, name) => Promise.race([p, new Promise((_, rej) => s
 export async function lauf({ cfg, wunschliste, filmListen = null, essenListen = null, dateienVorher = {}, vorher, zustand, holeText: holeRoh, env = {}, jetzt = new Date(), alle = false, log = () => {}, regelWache = true, schnittstellenCache = false, schnittstellen = undefined }) {
   const jetztMs = new Date(jetzt).getTime();
   zustand ||= {};
-  zustand.lauf ||= {};
+  if (!zustand.lauf || typeof zustand.lauf !== 'object' || Array.isArray(zustand.lauf)) zustand.lauf = {};
+  // beschädigte Neuversuche/Host-Ruhen weg bzw. gekappt (Gegenprüfung MV8, N3), abgelaufene Host-Ruhen weg
+  neuversuchBereinigen(cfg, zustand, new Date(jetztMs));
+  hostRuheBereinigen(zustand, jetztMs);
+  // Übergang MV8: Fehlversuch aus der Zeit vor der Neuversuch-Regel (als „gelaufen“ gemerkt) -> Neuversuch nachtragen
+  const nachgetragen = neuversuchNachtragen(cfg, zustand, vorher);
+  if (nachgetragen.length) log(`Neuversuch nachgetragen (alter Fehlversuch): ${nachgetragen.join(', ')}`);
   // Regel-Wache (MV6, 16.11.2026): JEDER Abruf eines Moduls geht erst durch Nutzungsbedingungen (abruf.agbVerbot: gar kein
   // Abruf) und robots.txt des Hosts (vor dem ersten Abruf je Host; verboten -> Quelle übersprungen + Hinweis, keine Störung).
   // Anlass: Bereich Unterricht las Reddit (robots.txt „Disallow: /“, HTTP 429) und Freelancer.com (AGB) ohne diese Prüfung.
@@ -62,6 +68,35 @@ export async function lauf({ cfg, wunschliste, filmListen = null, essenListen = 
     ...(schnittstellen ? { schnittstellen } : {}), // nur Tests: [] = ohne Ausnahme (reine robots-Regel)
   });
   const wache = holeText.wache || null;
+  // Retry-After je Modul (MV8): macheAbruf hängt den Wunsch der Quelle an den Fehler (e.retryAfterMs); behält das Modul
+  // deswegen nur den letzten Stand, wartet der Neuversuch mindestens so lange (faellig.mjs, verbucheModul).
+  // Ruhe je Host (Gegenprüfung MV8, M1/N1): Retry-After über abruf.retryAfterMaxMs (60 s) -> zustand.hostRuhe; bis dahin fragt
+  // kein Modul diesen Host (auch nicht im selben Lauf), die übrigen Quellen eines Bereichs laufen normal weiter.
+  // Eine Funktion für alle Module (wie wache.modul): gleiche holeText-Funktion = gemeinsamer Feed-Speicher (gemeinsam.mjs)
+  const retryAfter = new Map();
+  let modulJetzt = null;
+  const t0Lauf = Date.now();
+  const nun = () => jetztMs + (Date.now() - t0Lauf); // Lauf-Zeit + Dauer bis hier (Ruhe zählt ab der echten Antwort)
+  const ruheAb = cfg.abruf?.retryAfterMaxMs ?? 60000;
+  const merkeRa = (name, ms) => { if (name) retryAfter.set(name, Math.max(retryAfter.get(name) || 0, ms)); };
+  const holeModul = Object.assign(async (url, opts) => {
+    const name = modulJetzt;
+    let host = null;
+    try { host = new URL(url).host.toLowerCase(); } catch { /* keine Adresse: holeText meldet den Fehler */ }
+    const rest = host ? hostRuheRest(zustand, host, nun()) : 0;
+    if (rest > 0) {
+      merkeRa(name, rest);
+      throw Object.assign(new Error(`${host} bat um Pause (Retry-After) bis ${new Date(nun() + rest).toISOString().slice(0, 16).replace('T', ' ')} UTC`), { retryAfterMs: rest, hostRuhe: true });
+    }
+    try { return await holeText(url, opts); }
+    catch (e) {
+      if (Number.isFinite(e?.retryAfterMs) && e.retryAfterMs > 0) {
+        merkeRa(name, e.retryAfterMs);
+        if (host && e.retryAfterMs > ruheAb) hostRuheMerken(zustand, host, e.retryAfterMs, nun());
+      }
+      throw e;
+    }
+  }, { wache });
   const kategorien = {};
   const status = {};
   const dateien = {};
@@ -72,7 +107,8 @@ export async function lauf({ cfg, wunschliste, filmListen = null, essenListen = 
     // letzten Stand übernehmen – auch nicht, wenn das Modul diesmal nicht dran ist oder abstürzt
     const alt = (vorher?.kategorien?.[name] || []).filter(e => !(e?.extra?.gesuch && !e.extra.fundort && agbGrund(e.link, cfg.abruf?.agbVerbot || [])));
     if (!m || m.aktiv === false) { kategorien[name] = []; status[name] = { ok: true, aus: true }; continue; }
-    const faellig = alle || modulFaellig(m, zustand.lauf[name], jetztMs); // gleiche Regel wie die Vorprüfung im Workflow
+    const nv = zustand.neuversuch?.[name] || null;
+    const faellig = alle || modulFaellig(m, zustand.lauf[name], jetztMs, nv); // gleiche Regel wie die Vorprüfung im Workflow
     if (!faellig) {
       kategorien[name] = alt;
       status[name] = { ...(vorher?.status?.[name] || {}), uebersprungen: true };
@@ -80,9 +116,12 @@ export async function lauf({ cfg, wunschliste, filmListen = null, essenListen = 
     }
     const t0 = Date.now();
     if (wache) wache.modul = name;
+    modulJetzt = name;
+    // noch nie gelaufen (kein Erfolg, kein Fehlversuch mit Einträgen): erster guter Lauf meldet nichts nach (keine Push-Flut)
+    const nieGelaufen = !zustand.lauf[name] && (!nv || nv.neu === true);
     try {
       const filialenDatei = dateien.filialen || dateienVorher?.filialen || null;
-      const r = await mitZeitlimit(fn({ holeText, cfg, wunschliste, zustand, env, jetzt, filmListen, essenListen, filialenDatei, vorherDatei: dateienVorher?.[name] ?? null }), 240000, name);
+      const r = await mitZeitlimit(fn({ holeText: holeModul, cfg, wunschliste, zustand, env, jetzt, filmListen, essenListen, filialenDatei, vorherDatei: dateienVorher?.[name] ?? null }), 240000, name);
       if (r.datei) dateien[name] = r.datei;
       // Regel-Sperren (AGB/robots.txt) sind keine Störung: aus den Fehlern in die Hinweise, je Host ein Satz
       const gesperrt = [...(wache?.jeModul.get(name)?.values() || [])].map(g => `${g.regel === 'agb' ? 'Nutzungsbedingungen' : 'robots.txt'} von ${g.host}: nicht gelesen – ${g.grund}`);
@@ -104,18 +143,33 @@ export async function lauf({ cfg, wunschliste, filmListen = null, essenListen = 
       // Module, die eine gesperrte Quelle schon selbst auslassen (Nebenverdienst: Freelancer.com), melden sie in r.regelSperren
       for (const h of [].concat(r.regelSperren || [])) if (typeof h === 'string' && quellen.length < 10 && !quellen.some(q => q.host === h)) quellen.push({ host: h, art: 'gesperrt' });
       status[name] = { ok: !r.fehler.length, anzahl: r.eintraege.length, ...(quellen.length ? { quellen } : {}), ...(r.zahl && Number.isFinite(r.zahl.n) ? { zahl: { n: r.zahl.n, wort: String(r.zahl.wort || '').slice(0, 30) } } : {}), fehler: r.fehler.slice(0, 10), ms: Date.now() - t0, stand: new Date(jetztMs).toISOString(), ...(r.hinweise?.length ? { hinweise: r.hinweise.slice(0, 10) } : {}), ...(r.gesperrt?.length ? { gesperrt: r.gesperrt.slice(0, 10) } : {}), ...(r.kurz ? { kurz: r.kurz } : {}) };
-      if (!zustand.lauf[name] && zustand.gemeldet && !kaputt) neueModule.push(name);
-      zustand.lauf[name] = new Date(jetztMs).toISOString();
+      if (nieGelaufen && zustand.gemeldet && !kaputt) neueModule.push(name);
+      // Quellen-Fehler, nur letzter Stand (alte Einträge/alte Datei) -> Neuversuch statt „gelaufen“ (MV8, faellig.mjs).
+      // r.letzterStand: das Modul behält selbst den letzten Stand und meldet das nur als Hinweis (Filialen, Essen-OSM)
+      const fehlversuch = kaputt || r.fehler.length > 0 || r.letzterStand === true;
+      // nur letzter Stand = nichts Frisches (kaputt, oder letzterStand ohne Einträge/Datei wie Filialen). Sonst (Teil-Fehler,
+      // Essen mit altem OSM-Stand) hält ein Retry-After den Bereich höchstens bis zu seinem Takt an (Gegenprüfung MV8, M1)
+      const nurLetzterStand = kaputt || (r.letzterStand === true && !r.eintraege.length && !r.datei);
+      const nvNeu = verbucheModul(zustand, name, m, { ok: !fehlversuch, retryAfterMs: retryAfter.get(name), neu: nieGelaufen && kaputt, nurLetzterStand }, new Date(jetztMs));
+      if (nvNeu) status[name].neuversuch = nvNeu.ab;
     } catch (e) {
       const msg = String(e.message || e);
       // ganz gesperrt (AGB/robots.txt): kein Fehler, aber auch keine alten Einträge aus dieser Quelle
       const quellen = regelQuellen(wache, name);
       const q = quellen.length ? { quellen } : {};
-      if (REGEL_TEXT.test(msg)) { kategorien[name] = []; status[name] = { ok: true, anzahl: 0, fehler: [], hinweise: [msg.slice(0, 300)], ms: Date.now() - t0, ...q }; }
-      else { kategorien[name] = alt; status[name] = { ok: false, anzahl: 0, fehler: [msg], ms: Date.now() - t0, ...q }; }
+      if (REGEL_TEXT.test(msg)) {
+        kategorien[name] = []; status[name] = { ok: true, anzahl: 0, fehler: [], hinweise: [msg.slice(0, 300)], ms: Date.now() - t0, ...q };
+        verbucheModul(zustand, name, m, { ok: true }, new Date(jetztMs)); // Regel-Sperre ist keine Störung: normaler Takt
+      } else {
+        kategorien[name] = alt; status[name] = { ok: false, anzahl: 0, fehler: [msg], ms: Date.now() - t0, ...q };
+        // Absturz/Zeitlimit: wie ein Quellen-Fehler -> Neuversuch (vorher: gar nichts gemerkt = jeder Start ein neuer Versuch)
+        const ra = Math.max(retryAfter.get(name) || 0, Number.isFinite(e?.retryAfterMs) ? e.retryAfterMs : 0) || null;
+        status[name].neuversuch = verbucheModul(zustand, name, m, { ok: false, retryAfterMs: ra, neu: nieGelaufen }, new Date(jetztMs)).ab;
+      }
     }
     if (wache) wache.modul = null;
-    log(`${name}: ${status[name].ok ? 'ok' : 'FEHLER'} ${kategorien[name].length} Einträge ${(status[name].fehler || []).slice(0, 2).join(' | ')}`);
+    modulJetzt = null;
+    log(`${name}: ${status[name].ok ? 'ok' : 'FEHLER'} ${kategorien[name].length} Einträge ${(status[name].fehler || []).slice(0, 2).join(' | ')}${status[name].neuversuch ? ` – Neuversuch ab ${status[name].neuversuch}` : ''}`);
   }
   // Schnittstellen-Cache: Abgelaufenes raus, Größe begrenzen; Zahlen des Laufs (Abrufe/gemerkt je Host) in den Zustand
   cacheAufraeumen(zustand, jetztMs);

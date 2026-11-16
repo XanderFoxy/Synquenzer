@@ -5,6 +5,8 @@
 // Retry-After (429/503, Prüfung MV7 Befund 2): Wartezeit des Dienstes gilt für die Wiederholung; verlangt er mehr als
 // abruf.retryAfterMaxMs (Standard 60 s), keine Wiederholung in diesem Lauf. darfWiederholen() (Regel-Wache, Schnittstellen):
 // false = keine Wiederholung (Obergrenze je Lauf erreicht).
+// Fehler mit Retry-After-Kopf tragen den Wunsch als e.retryAfterMs (MV8): der Radar wartet mit dem Neuversuch des Moduls
+// mindestens so lange (faellig.mjs) – die Drosselung hier bleibt unverändert.
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
@@ -47,7 +49,12 @@ export function macheAbruf(abruf, fetchImpl = globalThis.fetch) {
           }
         }
         const text = await r.text();
-        if (!r.ok) throw new Error(`HTTP ${r.status} bei ${host}`);
+        if (!r.ok) {
+          const fehler = new Error(`HTTP ${r.status} bei ${host}`);
+          const ra = retryAfterMs(r.headers?.get?.('retry-after'));
+          if (ra != null) fehler.retryAfterMs = ra;
+          throw fehler;
+        }
         return text;
       } catch (e) {
         if (e.name === 'AbortError') throw new Error(`Zeitüberschreitung bei ${host}`);

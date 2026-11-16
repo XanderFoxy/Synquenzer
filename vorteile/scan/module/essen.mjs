@@ -325,5 +325,6 @@ export default async function essen({ holeText, cfg, jetzt = new Date(), zustand
   };
   const kurz = `${lokale.length + weitere.length} Lokale bis ${radiusKm} km · ${mitZeiten} mit Öffnungszeiten${neu.length ? ` · ${neu.length} neu` : ''}`;
   if (alt) hinweise.push('OpenStreetMap gerade nicht erreichbar – letzter Stand');
-  return { eintraege, fehler, hinweise, datei, kurz, zahl: { n: lokale.length + weitere.length, wort: 'Lokale' } };
+  // letzterStand: OSM fiel aus, alter Stand bleibt -> Neuversuch statt „gelaufen“ (MV8; Essen-Takt 3 h, früher wird es nie)
+  return { eintraege, fehler, hinweise, ...(alt ? { letzterStand: true } : {}), datei, kurz, zahl: { n: lokale.length + weitere.length, wort: 'Lokale' } };
 }

@@ -171,7 +171,8 @@ export default async function filialen({ holeText, cfg, jetzt = new Date(), zust
   const summe = z => Object.values(z || {}).reduce((s, x) => s + (Number.isFinite(x) ? x : Array.isArray(x) ? x.length : 0), 0);
   if (!f) {
     if (!vorherDatei?.maerkte) return { eintraege: [], fehler, hinweise };
-    return { eintraege: [], fehler, hinweise: [...hinweise, 'letzter Stand bleibt'], datei: null, kurz: vorherDatei.kurz || '', zahl: { n: summe(vorherDatei.zahlen || vorherDatei.maerkte), wort: 'Filialen (letzter Stand)' } };
+    // letzterStand: Neuversuch nach 3/6/12 h statt erst im Wochen-Takt (MV8, main.mjs/faellig.mjs)
+    return { eintraege: [], fehler, hinweise: [...hinweise, 'letzter Stand bleibt'], letzterStand: true, datei: null, kurz: vorherDatei.kurz || '', zahl: { n: summe(vorherDatei.zahlen || vorherDatei.maerkte), wort: 'Filialen (letzter Stand)' } };
   }
   const z = m.zentrum;
   const vonZentrum = naechste(f, z, m.nahKm);

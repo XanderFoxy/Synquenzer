@@ -96,6 +96,26 @@ Wer mehr will, trägt bei einem Gerät die Geizhals-Adresse ein (wird höchstens
   Deutschunterricht mit Gesuchen 3 h, Erleben/Musik/Tests 6 h, Nebenverdienst 12 h; Remotive darin höchstens alle 6 h).
   Die Regel steht in `scan/faellig.mjs` und gilt für die Vorprüfung im Workflow und den Lauf gleich.
   Fällt eine Quelle aus, laufen die anderen weiter; die alten Einträge bleiben stehen.
+- **Neuversuch nach Quellen-Fehler** (seit 16.11.2026, MV8; Anlass: Lauf 43892154739, Overpass 502 + Ausweich-Server
+  Zeitlimit – die Filialen behielten den letzten Stand, galten aber als gelaufen und wären erst nach 168 h wieder dran).
+  Behält ein Bereich wegen eines Quellen-Fehlers nur den letzten Stand (Fehler im Status, alte Einträge behalten, Modul
+  meldet `letzterStand` wie Filialen/Essen-OSM, oder Absturz), gilt er **nicht** als gelaufen: `zustand.lauf` bleibt der
+  letzte Erfolg, dazu `zustand.neuversuch.<bereich> = { ab, n, seit, retryAfterS? }`. Neuversuch nach **3 h**, beim
+  2. Fehlschlag in Folge nach **6 h**, beim 3. nach **12 h**, danach im normalen Takt – nie später als der normale Takt
+  (Bereiche mit 1–3 h Takt bleiben also bei ihrem Takt). Verlangt die Quelle per `Retry-After` mehr, gilt das für den
+  ganzen Bereich nur, wenn er wirklich **nur** den letzten Stand hat (höchstens 24 h bzw. der normale Takt, wenn der länger
+  ist; `lib/http.mjs` hängt den Wert an den Fehler, die Drosselung dort bleibt gleich). Hat er frische Einträge aus anderen
+  Quellen (Teil-Fehler, Essen mit altem OSM-Stand), hält ihn ein `Retry-After` höchstens bis zu seinem Takt an. Den Server
+  selbst schützt die **Ruhe je Host**: über 60 s `Retry-After` (`abruf.retryAfterMaxMs`) → `zustand.hostRuhe.<host>` (ISO,
+  höchstens 24 h); bis dahin fragt kein Bereich diesen Host, auch nicht im selben Lauf (Filialen und Essen teilen sich
+  overpass-api.de) – der Abruf endet sofort mit „<host> bat um Pause (Retry-After) bis …“. Ein manueller Lauf „alle“
+  vor dem gemerkten Neuversuch zählt keine Stufe hoch (er schiebt den Neuversuch nur nach hinten); beschädigte Einträge in
+  `neuversuch`/`hostRuhe` fallen weg bzw. werden auf max(Takt, 24 h) gekappt. Erfolg → normaler Takt, Zähler weg. Geprüft wird nur bei den Starts des Zeitplans (Vorprüfung) –
+  nie öfter, also kein Overpass-Dauerfeuer. Die Seite zeigt weiter „letzter Stand“ wie bisher; `status.<bereich>.neuversuch`
+  nennt nur zusätzlich die Zeit des nächsten Versuchs. Regel-Sperren (robots.txt/Nutzungsbedingungen) sind keine Störung
+  und laufen im normalen Takt. Übergang: hat ein älterer Lauf einen Fehlversuch noch als „gelaufen“ gemerkt
+  (`lauf` = `status.stand` mit „letzter Stand“/Störung, so am 16.11. 15:03 bei Filialen und Essen), tragen Vorprüfung und Lauf
+  den Neuversuch einmal nach (`neuversuchNachtragen`). Tests: `scan/test/neuversuch.test.mjs`.
 - `scan/rechnen.mjs` – die Deal-Mathe. `scan/benachrichtigen.mjs` – Sofort/Zusammenfassung, Dedupe, Tageslimit.
 - `scan/module/*.mjs` – ein Modul pro Bereich. `scan/lib/` – Abruf (höflich: eigener User-Agent, Pause pro Server), RSS, Text.
   Gleiches Muster und gleiches Datenformat wie `schnaeppchen/scan/` und `konzerte/scan/`.
@@ -229,7 +249,7 @@ mydealz-Box-Tipps in `filme.json` bekommen `vorher`/`ersparnis`, wenn der Deal-T
 { version: 1, aktualisiert: ISO, ort, namen: { <bereich>: Anzeigename },
   sofort: [id …],                       // Sofort-würdige Einträge, nach wert sortiert
   kategorien: { deals: [Eintrag …], erleben, reisen, musik, nebenverdienst, tests, praemien, filme, remix, auftritte, unterricht },
-  status: { <bereich>: { ok, anzahl, fehler: [Text …], ms, stand, uebersprungen?, hinweise?: [Text …] } } }
+  status: { <bereich>: { ok, anzahl, fehler: [Text …], ms, stand, uebersprungen?, hinweise?: [Text …], neuversuch?: ISO } } }
 ```
 
 | Feld (Eintrag) | Typ | Bedeutung |
@@ -253,7 +273,7 @@ mydealz-Box-Tipps in `filme.json` bekommen `vorher`/`ersparnis`, wenn der Deal-T
 | `preis`, `preisVorher`, `vorherQuelle`, `ersparnisEuro`, `ersparnisProzent` | Zahl/Text \| null | nur bei Einträgen mit Preis (Deals, Reisen, Erleben, Musik-Geräte). `ersparnisProzent` ganzzahlig 0–100, `ersparnisEuro` auf Cent; ohne gesicherten Altpreis alle drei `null` |
 | `extra` | Objekt (optional) | je Bereich: Deals `{ schritte, pro100, ersparnis (0–1), shop, produkt, angebotTitel, packung, normalQuelle }`; Preisfehler `{ shop, versand, temperatur, geprueft }`; Musik-Geräte `{ geraet, preis, tiefst }`; Nebenverdienst `{ art }`; **Remix/Auftritte/Unterricht** (Vertrag 08.11.2026) `{ ort, km (ab Döbeln, null = unbekannt/online), frist (ISO \| null), bewerbung: { art: 'formular'\|'mail'\|'seite', ziel }, quelle, typ, online, bewerbenAls: { name, warum }, sortWert, fundort?, saison?, saisonOffen?, linkOk? }` – Remix zusätzlich `{ art: 'remix', stems, passt, genreTreffer, eingereicht? }`, Gig `{ termin }`, Unterricht `{ arbeitgeber, refnr, seit }`, Gesuch (`typ: 'gesuch'`) `{ gesuch: true, was ('nachhilfe'\|'korrektur'\|'uebersetzung'\|'konversation'\|'pruefung'\|'behoerde'\|'bewerbung'), auszug }`; `linkPruefen: true` = Fundort-Adresse nicht durch einen Abruf belegt (Zeile „Link prüfen“). `fundort: true` = feste Adresse ohne Datum (läuft nie ab, steht unter den frischen Funden) |
 
-`zustand.json` (nur für den Radar): `lauf`, `gemeldet`, `sofortTage`, `digestTag`, `musik` (Preisverlauf Geräte),
+`zustand.json` (nur für den Radar): `lauf` (letzter erfolgreicher Lauf je Bereich), `neuversuch` (nach Quellen-Fehler, siehe Technik), `hostRuhe` (Retry-After je Host), `gemeldet`, `sofortTage`, `digestTag`, `musik` (Preisverlauf Geräte),
 `dealSeiten` (geprüfte Deal-Seiten, 7 Tage).
 
 ## Ausflüge & Aktionen (Modul `events`, seit 16.11.2026)

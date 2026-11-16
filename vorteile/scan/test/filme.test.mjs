@@ -304,7 +304,8 @@ test('Modul nicht fällig -> keine neue Datei, alte filme.json bleibt; erster Fi
     // Radar lief schon, Filme ist neu: nichts nachmelden
     const zp = join(dir, 'zustand.json');
     const zz = JSON.parse(await readFile(zp, 'utf8'));
-    delete zz.lauf.filme; zz.filme = {}; zz.gemeldet = { alt: '2026-11-01T00:00:00Z' }; zz.sofortTage = {};
+    // neu = weder Lauf noch Neuversuch gemerkt (MV8: ein Fehlversuch mit Einträgen zählt als schon gelaufen)
+    delete zz.lauf.filme; if (zz.neuversuch) delete zz.neuversuch.filme; zz.filme = {}; zz.gemeldet = { alt: '2026-11-01T00:00:00Z' }; zz.sofortTage = {};
     await writeFile(zp, JSON.stringify(zz));
     const r3 = await main(['--fixtures', '--data', dir, '--jetzt', '2026-11-07T19:00:00Z', '--modus', 'digest']);
     assert.ok(!r3.plan.sofort.some(s => s.e.kategorie === 'filme'));
