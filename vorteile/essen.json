@@ -118,7 +118,7 @@
     { "wert": 1.2, "max": 5, "anzahl": 55, "quelle": "Restaurant Guru", "url": "https://de.restaurantguru.com/Dobeln", "stand": "2026-11-16" }
    ],
    "leuteSagen": null,
-   "hinweise": ["einziges griechisches Lokal in Döbeln, das wir gefunden haben – sehr schwach bewertet; ob noch geöffnet, zeigt OpenStreetMap"],
+   "hinweise": ["sehr schwach bewertet – weitere griechische Lokale in Döbeln und Umgebung (noch ohne Bewertung) zeigt der Filter „Griechisch“"],
    "geprueft": "2026-11-16"
   },
   {
@@ -155,38 +155,38 @@
    "geprueft": "2026-11-16"
   },
   {
-   "id": "kette-dominos", "kette": "Domino's", "brand": "Domino's", "filiale": "Freiberg, Fischerstraße 1", "ort": "Freiberg", "km": 28,
+   "id": "kette-dominos", "kette": "Domino's", "brand": "Domino's", "filiale": "Riesa, Doktor-Scheider-Straße 36", "ort": "Riesa", "km": 24,
    "lieferung": false, "lieferungText": "Kein Domino's in Döbeln; die Lieferando-Seite für Döbeln führt keinen. Domino's liefert nur im Umkreis der Filiale – Döbeln liegt weit außerhalb.",
    "aktionen": ["dominos-app", "dominos-abhol-muster"],
-   "quellen": [ { "name": "Lieferando", "url": "https://www.lieferando.de/en/takeaway/doebeln" }, { "name": "Domino's", "url": "https://www.dominos.de/en" } ],
+   "quellen": [ { "name": "OpenStreetMap", "url": "https://www.openstreetmap.org/node/309324393" }, { "name": "Lieferando", "url": "https://www.lieferando.de/en/takeaway/doebeln" }, { "name": "Domino's", "url": "https://www.dominos.de/en" } ],
    "geprueft": "2026-11-16"
   },
   {
-   "id": "kette-burgerking", "kette": "Burger King", "brand": "Burger King", "filiale": "Raststätte Dresdner Tor Süd (A 4), Wilsdruff", "ort": "Wilsdruff", "km": 31,
+   "id": "kette-burgerking", "kette": "Burger King", "brand": "Burger King", "filiale": "Riesa, Glogauer Straße 2", "ort": "Riesa", "km": 23,
    "lieferung": false, "lieferungText": "Keine Filiale in Döbeln gefunden.",
    "aktionen": ["bk-coupons", "bk-kronen", "bk-feedback"],
-   "quellen": [ { "name": "ortsdienst.de", "url": "https://www.ortsdienst.de/sachsen/doebeln/burger-king/" } ],
+   "quellen": [ { "name": "OpenStreetMap", "url": "https://www.openstreetmap.org/node/6444717686" }, { "name": "ortsdienst.de", "url": "https://www.ortsdienst.de/sachsen/doebeln/burger-king/" } ],
    "geprueft": "2026-11-16"
   },
   {
-   "id": "kette-kfc", "kette": "KFC", "brand": "KFC", "filiale": "Dresden, Trompeterstraße 5", "ort": "Dresden", "km": 44,
+   "id": "kette-kfc", "kette": "KFC", "brand": "KFC", "filiale": "Chemnitz", "ort": "Chemnitz", "km": 33,
    "lieferung": false, "lieferungText": "Keine Filiale in Döbeln gefunden.",
    "aktionen": ["kfc-deals"],
-   "quellen": [ { "name": "ortsdienst.de", "url": "https://www.ortsdienst.de/sachsen/doebeln/kfc/" } ],
+   "quellen": [ { "name": "OpenStreetMap", "url": "https://www.openstreetmap.org/node/6683828902" }, { "name": "ortsdienst.de", "url": "https://www.ortsdienst.de/sachsen/doebeln/kfc/" } ],
    "geprueft": "2026-11-16"
   },
   {
-   "id": "kette-subway", "kette": "Subway", "brand": "Subway", "filiale": "Röhrsdorf bei Chemnitz, Ringstraße 3c", "ort": "Chemnitz", "km": 33,
+   "id": "kette-subway", "kette": "Subway", "brand": "Subway", "filiale": "Riesa, Nossener Straße 50", "ort": "Riesa", "km": 23,
    "lieferung": false, "lieferungText": "Keine Filiale in Döbeln gefunden.",
    "aktionen": ["subway-sub-des-tages", "subway-rewards", "subway-app-gutscheine"],
-   "quellen": [ { "name": "kaufDA", "url": "https://www.kaufda.de/Filialen/Doebeln/Fast-Food/v-c24" } ],
+   "quellen": [ { "name": "OpenStreetMap", "url": "https://www.openstreetmap.org/node/730554414" }, { "name": "kaufDA", "url": "https://www.kaufda.de/Filialen/Doebeln/Fast-Food/v-c24" } ],
    "geprueft": "2026-11-16"
   },
   {
-   "id": "kette-pizzahut", "kette": "Pizza Hut", "brand": "Pizza Hut", "filiale": "Leipzig", "ort": "Leipzig", "km": 57,
+   "id": "kette-pizzahut", "kette": "Pizza Hut", "brand": "Pizza Hut", "filiale": "Dresden", "ort": "Dresden", "km": 44,
    "lieferung": false, "lieferungText": "Keine Filiale in der Nähe.",
    "aktionen": ["pizzahut-unlimited"],
-   "quellen": [ { "name": "Pizza Hut", "url": "https://www.pizzahut.de/" } ],
+   "quellen": [ { "name": "OpenStreetMap", "url": "https://www.openstreetmap.org/node/4118603592" }, { "name": "Pizza Hut", "url": "https://www.pizzahut.de/" } ],
    "geprueft": "2026-11-16"
   }
  ]

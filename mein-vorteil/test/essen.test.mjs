@@ -31,6 +31,7 @@ const CHIPS = ['heute', 'ketten', 'pizza', 'ayce', 'xxl', 'gratis'];
 const ALLE_CHIPS = ['heute', 'lokale', 'regel', 'ketten', 'pizza', 'ayce', 'xxl', 'gratis'];
 const LOK = JSON.parse(readFileSync(join(WURZEL, 'vorteile', 'essen.json'), 'utf8'));
 const LOK_RADAR = readFileSync(join(FIX, 'essen-lokale-radar.json'), 'utf8');
+const KONFIG = JSON.parse(readFileSync(join(WURZEL, 'vorteile', 'config.json'), 'utf8'));
 
 function modul() {
   const speicher = {};
@@ -296,7 +297,9 @@ async function oeffne({ breite = 428, hoehe = 926, pfad = '/mein-vorteil/#essen'
     viewport: { width: breite, height: hoehe }, deviceScaleFactor: foto ? 2 : 1, isMobile: true, hasTouch: true,
     locale: 'de-DE', timezoneId: 'Europe/Berlin', colorScheme: 'dark', serviceWorkers: 'block',
   });
-  const fremd = [];
+  const fremd = [], merkPosts = [];
+  // Merkliste (Stern) geht an das ntfy-Thema der Seite – mitschreiben statt senden
+  await ctx.route('https://ntfy.sh/**', route => { merkPosts.push({ url: route.request().url(), method: route.request().method(), body: route.request().postData() }); return route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*' }, contentType: 'application/json', body: '{}' }); });
   await ctx.route('https://raw.githubusercontent.com/**', async route => {
     const rest = new URL(route.request().url()).pathname.replace(/^\/XanderFoxy\/Synquenzer\//, '');
     const kopf = { 'access-control-allow-origin': '*' };
@@ -312,7 +315,7 @@ async function oeffne({ breite = 428, hoehe = 926, pfad = '/mein-vorteil/#essen'
     if (u.host === 'api.crypto.com') { const i = u.searchParams.get('instrument_name'); return json({ code: 0, result: { data: [{ i, a: i === 'BTC_EUR' ? '60000' : '2000', c: '0.01' }] } }); }
     return route.fulfill({ status: 404, headers: cors, body: '' });
   });
-  await ctx.route(/^https:\/\/(?!raw\.githubusercontent\.com|api\.coingecko\.com|api\.crypto\.com|api\.exchange\.coinbase\.com)/, route => { fremd.push(route.request().url()); return route.fulfill({ status: 204, body: '' }); });
+  await ctx.route(/^https:\/\/(?!raw\.githubusercontent\.com|ntfy\.sh\/|api\.coingecko\.com|api\.crypto\.com|api\.exchange\.coinbase\.com)/, route => { fremd.push(route.request().url()); return route.fulfill({ status: 204, body: '' }); });
   const page = await ctx.newPage();
   const fehler = [];
   page.on('console', m => { if (m.type() === 'error') fehler.push(m.text()); });
@@ -321,7 +324,7 @@ async function oeffne({ breite = 428, hoehe = 926, pfad = '/mein-vorteil/#essen'
   await page.goto(basis + pfad);
   await page.waitForFunction(() => !/lädt|Lade/.test(document.getElementById('stand').textContent), null, { timeout: 10000 });
   if (pfad.endsWith('#essen')) await essDa(page);
-  return { ctx, page, fehler, fremd };
+  return { ctx, page, fehler, fremd, merkPosts };
 }
 const essDa = page => page.waitForFunction(() => document.querySelector('#p-essen .ess-chips, #p-essen .ess-leer') && !/Lade Essen/.test(document.getElementById('p-essen').textContent), null, { timeout: 10000 });
 const nbsp = s => s.replace(/[  ]/g, ' ');
@@ -578,12 +581,22 @@ test('Regelmäßig: je Wochentag die festen Muster (Mi Play Off, Monchi, Schnitz
   assert.doesNotMatch(tag('2026-11-19'), /Mythos|Peter's Pause|Kartoffelhaus/, 'fast täglich nicht in jeder Zeile');
   assert.ok(r.immer.some(e => /Mythos Palace/.test(e.titel)) && r.immer.some(e => /Kartoffelhaus/.test(e.titel)));
   assert.deepEqual(plain(r.tage[0].zu), ['Al Dente'], 'Ruhetag aus OpenStreetMap (Mo off)');
+  // Prüfer B5: OSM lässt Ruhetage meist weg – nicht genannte Tage sind zu (wie „heute Ruhetag“ an der Karte)
+  const ohneOff = { ...L, lokale: [{ ...L.lokale.find(l => l.id === 'doe-al-dente'), oeffnung: 'Tu-Su 11:30-14:00,17:00-22:00' }] };
+  const r2 = I.regelTage(N, ohneOff, J('2026-11-16T11:00:00Z'));
+  assert.deepEqual(plain(r2.tage[0].zu), ['Al Dente'], 'Mo fehlt in den Öffnungszeiten = Ruhetag');
+  assert.deepEqual(plain(r2.tage[1].zu), []);
+  assert.equal(I.oeffnungJetzt(I.oeffnungPlan('Tu-Su 11:30-14:00,17:00-22:00'), J('2026-11-16T11:00:00Z')).text, 'heute Ruhetag');
+  // weitere Lokale kommen knapp ohne id: id aus der OSM-Kennung (Stern/Anker bleiben stabil)
+  assert.deepEqual(plain(L.weitere.map(w => w.id)).sort(), ['osm-node-1003', 'osm-node-1006', 'osm-way-2001']);
+  assert.equal(I.normLokale({ lokale: [], weitere: [{ name: 'Ohne Kennung' }, { name: 'Böse', osm: 'node/1"><x' }] }).weitere.length, 0);
 });
 
 for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
   test(`Lokale + Regelmäßig im Browser: Filter, Merken, Karte/Apple-Karten, Ketten, Layout (${lage})`, { skip: ohnePw }, async () => {
     abrufe.length = 0;
-    const { ctx, page, fehler, fremd } = await oeffne({ breite, hoehe, foto: true, jetzt: '2026-11-17T12:00:00Z', lokale: LOK_RADAR }); // Di 13:00 Berlin
+    const { ctx, page, fehler, fremd, merkPosts } = await oeffne({ breite, hoehe, foto: true, jetzt: '2026-11-17T12:00:00Z', lokale: LOK_RADAR }); // Di 13:00 Berlin
+    assert.deepEqual(merkPosts, [], 'ohne Gemerktes nichts an ntfy');
     await waehle(page, 'lokale');
     await page.waitForSelector('#ess-liste .ess-lok');
     let t = nbsp(await page.locator('#ess-liste').innerText());
@@ -621,14 +634,24 @@ for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
     await page.screenshot({ path: join(FOTOS, `essen-lokale-ayce-${lage}.png`) });
     await pruefeLayout(page, `${lage} Lokale AYCE`);
     await page.locator('[data-ess-f="ayce"]').click();
+    // bis 70 km: ehrlich sagen, dass OSM-Lokale nur bis 30 km reichen (Prüfer B1)
+    await page.locator('[data-ess-f="km"][data-ess-v="70"]').click();
+    assert.match(nbsp(await page.locator('#ess-liste .ess-standzeile').first().innerText()), /bis 70 km \(Lokale bis 30 km, weiter weg nur All-you-can-eat und XXL\)/);
+    await page.locator('[data-ess-f="km"][data-ess-v="30"]').click();
     // Merken: Stern, bleibt nach Neuladen, Filter „Gemerkt“
     const stern = page.locator('#ess-lok-doe-namaste .ess-merk');
     await stern.click();
     assert.equal(await stern.getAttribute('aria-pressed'), 'true');
     assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('mein-vorteil-essen-gemerkt'))), ['doe-namaste']);
+    // Prüfer B3: der Stern geht als Liste an den Radar (ntfy-Thema wie vorteile/config.json module.essen.merkThema)
+    await page.waitForFunction(() => JSON.parse(localStorage.getItem('mein-vorteil-essen-gemerkt-gesendet') || '{}').offen === false);
+    assert.equal(merkPosts.length, 1);
+    assert.equal(merkPosts[0].method, 'POST');
+    assert.equal(merkPosts[0].url, `https://ntfy.sh/${KONFIG.module.essen.merkThema}`);
+    assert.deepEqual(JSON.parse(merkPosts[0].body), { v: 1, essen: ['doe-namaste'] });
     await page.locator('[data-ess-f="merk"]').click();
     assert.deepEqual(await page.locator('#ess-liste .ess-lok[data-ess-lok] .ess-titel').allInnerTexts(), ['Namaste · Indisches Restaurant']);
-    assert.match(nbsp(await page.locator('#ess-liste').innerText()), /Gemerkt nur auf diesem iPhone/);
+    assert.match(nbsp(await page.locator('#ess-liste').innerText()), /Erinnerung per Push am All-you-can-eat- oder Aktionstag eines gemerkten Lokals/);
     await page.locator('[data-ess-f="merk"]').click();
     // Ketten in der Nähe
     await page.locator('#ess-liste details.ess-auf > summary', { hasText: 'Ketten in der Nähe' }).click();
@@ -636,6 +659,12 @@ for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
     assert.match(dom, /Domino's[\s\S]*nächste: Freiberg · 2[78] km[\s\S]*keine Lieferung nach Döbeln/);
     assert.match(dom, /Aktionen:[\s\S]*Abhol-Pizza/);
     assert.match(nbsp(await page.locator('#ess-kette-kette-kfc').innerText()), /nächste: Chemnitz/);
+    // Prüfer B2: Filiale ohne Ort in OSM -> kein Ort aus der gepflegten Liste (dort Dresden/Leipzig), Hinweis statt falscher Adresse
+    const ph = nbsp(await page.locator('#ess-kette-kette-pizzahut').innerText());
+    assert.match(ph, /nächste: 44 km/);
+    assert.doesNotMatch(ph, /Leipzig|Dresden/);
+    assert.match(ph, /Filiale: Pizza Hut \(Adresse fehlt in OpenStreetMap – siehe Karte\)/);
+    assert.match(await page.locator('#ess-kette-kette-pizzahut .ess-fuss a').first().getAttribute('href'), /mlat=51\.04476&mlon=13\.73691/);
     await pruefeLayout(page, `${lage} Ketten`);
     await page.locator('#ess-kette-kette-dominos [data-ess-chip="pizza"]').click();
     await page.waitForFunction(() => document.getElementById('ess-liste')?.getAttribute('aria-labelledby') === 'ess-c-pizza');
@@ -654,6 +683,7 @@ for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
     await waehle(page, 'lokale');
     await page.waitForSelector('#ess-lok-doe-namaste');
     assert.equal(await page.locator('#ess-lok-doe-namaste .ess-merk').getAttribute('aria-pressed'), 'true');
+    assert.equal(merkPosts.length, 1, 'nach Neuladen kein zweites Senden (letzte Meldung jünger als 6 h)');
     assert.ok(!abrufe.includes('../vorteile/essen.json'));
     assert.deepEqual(fremd.filter(u => !/^https:\/\/raw\.githubusercontent\.com/.test(u)), []);
     assert.deepEqual(fehler, []);

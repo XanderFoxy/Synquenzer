@@ -216,11 +216,17 @@
   // was die Leute sagen, in der Nähe von Döbeln; wann All-you-can-eat; Ketten wie Domino's – gibt es einen in der Nähe;
   // wiederkehrende Muster zum Planen“). Daten: vom Radar (vorteile-daten …/essen.json: gepflegte Liste + OpenStreetMap mit
   // Öffnungszeiten, weitere Lokale, nächste Filiale je Kette); fehlt die Datei, die gepflegte Liste (../vorteile/essen.json).
-  // Erst beim ersten Öffnen von „Lokale“ oder „Regelmäßig“ geholt (lazy). Merken: nur auf diesem Gerät (localStorage).
+  // Erst beim ersten Öffnen von „Lokale“ oder „Regelmäßig“ geholt (lazy). Merken: auf diesem Gerät (localStorage) und als
+  // Liste der ids an den Radar (ntfy-Thema MERK_URL, öffentlich wie das Push-Thema; niemand abonniert es) – der Radar erinnert
+  // per Push am All-you-can-eat- oder Aktionstag eines gemerkten Lokals (Prüfer 16.11.2026: vorher nur auf dem Gerät).
   const LOKALE_URLS = ['https://raw.githubusercontent.com/XanderFoxy/Synquenzer/vorteile-daten/vorteile/data/essen.json', '../vorteile/essen.json'];
   const LOK_ABLAGE = 'essen-lokale.json'; // Schlüssel in der Ablage „mv-essen“ (relativ zur Seite)
   const FILTER_SPEICHER = 'mein-vorteil-essen-filter';
   const MERK_SPEICHER = 'mein-vorteil-essen-gemerkt';
+  const MERK_GESENDET = 'mein-vorteil-essen-gemerkt-gesendet'; // { zeit, offen }
+  // gleich wie vorteile/config.json module.essen.merkThema; Nachricht { v: 1, essen: [ids] } (ntfy.sh hält sie 12 h, der Radar
+  // merkt sich die letzte Liste) – darum beim Öffnen erneut, wenn die letzte Meldung älter als 6 h ist
+  const MERK_URL = 'https://ntfy.sh/xander-schnaeppchen-b5cbf4442aaa9734f3-merken';
   const LOK_ZEIGEN = 30; // so viele Karten sofort, der Rest auf Tipp
   const KUECHE_NAME = {
     italienisch: 'Italienisch', pizza: 'Pizza', griechisch: 'Griechisch', indisch: 'Indisch', tuerkisch: 'Türkisch', doener: 'Döner',
@@ -253,7 +259,9 @@
     const ids = new Set();
     const eins = (l, osmNur) => {
       if (!l || typeof l !== 'object') return null;
-      const id = typeof l.id === 'string' && /^[a-z0-9-]{2,80}$/.test(l.id) ? l.id : null;
+      // weitere Lokale aus OSM kommen ohne id (knapp): id aus der OSM-Kennung
+      const id = typeof l.id === 'string' && /^[a-z0-9-]{2,80}$/.test(l.id) ? l.id
+        : osmNur && typeof l.osm === 'string' && /^(node|way|relation)\/\d{1,15}$/.test(l.osm) ? `osm-${l.osm.replace('/', '-')}` : null;
       const name = text(l.name, 90);
       if (!id || !name || ids.has(id)) return null;
       ids.add(id);
@@ -404,7 +412,8 @@
         z.push({ art, was, wo: e.ort ? `${e.ortZusatz || e.ort}${e.km != null ? ` · ${e.km} km` : ''}` : e.region.includes('bundesweit') ? 'teilnehmende Filialen' : '', zeit: e.zeit?.text || '', id: e.id });
       }
       for (const l of lok ? lok.lokale : []) if (l.ayce && l.ayce.wochentage.includes(wt) && l.ayce.wochentage.length < 7) z.push({ art: 'All-you-can-eat', was: l.name, wo: `${l.ort}${l.km != null ? ` · ${kmText(l.km)}` : ''}`, zeit: l.ayce.text, id: l.id });
-      const zu = nah.filter(l => { const p = oeffnungPlan(l.oeffnung); return p && Array.isArray(p[wt]) && !p[wt].length; }).map(l => l.name);
+      // OSM-Öffnungszeiten: nicht genannte Tage sind zu (Al Dente ohne „Tu“) – wie „heute Ruhetag“ an der Karte (Prüfer B5)
+      const zu = nah.filter(l => { const p = oeffnungPlan(l.oeffnung); return p && !(p[wt] || []).length; }).map(l => l.name);
       tage.push({ iso, wt, z, zu });
     }
     const immer = da.filter(e => oft(e) && (e.rubrik !== 'ketten' || e.ort)).sort((a, b) => (a.rubrik !== 'ayce') - (b.rubrik !== 'ayce') || (a.km ?? 0) - (b.km ?? 0));
@@ -588,12 +597,13 @@
     const titel = id => { const e = S.n?.eintraege.find(x => x.id === id); return e && !vorbei(e, j.iso) ? e.titel : null; };
     const k = ks.map(c => {
       const n = c.naechste;
-      const wo = n ? `${n.name}${n.adresse ? `, ${n.adresse}` : n.ort ? `, ${n.ort}` : ''}` : c.filiale;
+      // Ort nur aus OSM (nie der gepflegte Ort einer anderen Filiale – Prüfer B2: KFC in Chemnitz stand als „Dresden“ da)
+      const wo = n ? `${n.name}${n.adresse ? `, ${n.adresse}` : n.ort ? `, ${n.ort}` : ' (Adresse fehlt in OpenStreetMap – siehe Karte)'}` : c.filiale;
       const km = n ? n.km : c.km;
       const akt = c.aktionen.map(titel).filter(Boolean);
       const ziel = n && n.lat != null ? { name: n.name, lat: n.lat, lon: n.lon } : { name: c.kette, adresse: c.filiale };
       return `<article class="ess-karte ess-lok" id="ess-kette-${esc(c.id)}"><h3 class="ess-titel">${esc(c.kette)}</h3>`
-        + `<p class="ess-marken"><span class="ess-region">nächste: ${esc(n?.ort || c.ort)}${km != null ? ` · ${kmText(km)}` : ''}</span>`
+        + `<p class="ess-marken"><span class="ess-region">nächste: ${[n ? n.ort : c.ort, km != null ? kmText(km) : ''].filter(Boolean).map(esc).join(' · ')}</span>`
         + `<span class="${c.lieferung ? 'ess-jetzt' : 'ess-alt'}">${c.lieferung === true ? 'liefert nach Döbeln' : c.lieferung === false ? 'keine Lieferung nach Döbeln' : 'Lieferung unklar'}</span></p>`
         + `<p class="ess-zeile"><b>Filiale:</b> ${esc(wo)}</p>`
         + (c.lieferungText ? `<p class="ess-zeile">${esc(c.lieferungText)}</p>` : '')
@@ -613,13 +623,13 @@
     const l = filtereLokale(alle, f, j, gemerkt);
     const zeigen = S.lokMehr ? l : l.slice(0, LOK_ZEIGEN);
     const weit = f.ayce || f.xxl ? Math.max(f.km, WEIT_KM) : f.km;
-    const kopf = `<p class="ess-standzeile">${l.length} von ${alle.length} Lokalen · bis ${weit} km${f.ayce || f.xxl ? ' (All-you-can-eat/XXL: bis Leipzig, Chemnitz, Dresden)' : ''}`
+    const kopf = `<p class="ess-standzeile">${l.length} von ${alle.length} Lokalen · bis ${weit} km${f.ayce || f.xxl ? ' (All-you-can-eat/XXL: bis Leipzig, Chemnitz, Dresden)' : weit > 30 ? ' (Lokale bis 30 km, weiter weg nur All-you-can-eat und XXL)' : ''}`
       + ` · ${S.lok.live && S.lok.osmStand ? `Öffnungszeiten OpenStreetMap, Stand ${tmj(S.lok.osmStand)}` : 'Öffnungszeiten folgen mit dem nächsten Radar-Lauf'}</p>`;
     const neu = S.lok.neu.length ? `<p class="ess-hinweis-box"><b>Neu bei OpenStreetMap:</b> ${S.lok.neu.slice(0, 6).map(x => esc(`${x.name} (${x.ort || 'Umgebung'}${x.km != null ? `, ${kmText(x.km)}` : ''})`)).join(' · ')}</p>` : '';
     const weg = S.lok.weg.length ? `<p class="ess-hinweis-box"><b>Nicht mehr bei OpenStreetMap</b> (vielleicht geschlossen): ${S.lok.weg.slice(0, 6).map(x => esc(x.name)).join(' · ')}</p>` : '';
     const leer = !l.length ? `<p class="ess-leer">${f.merk ? 'Noch nichts gemerkt – tippe auf den Stern an einem Lokal.' : 'Mit diesen Filtern nichts gefunden.'}</p>${f.km < 70 && !f.merk ? '<p class="ess-woanders"><button type="button" class="ess-link" data-ess-f="km" data-ess-v="70">Bis 70 km zeigen</button></p>' : ''}` : '';
     const mehr = l.length > zeigen.length ? `<p class="ess-woanders"><button type="button" class="ess-link" data-ess-lok-mehr>${l.length - zeigen.length} weitere zeigen</button></p>` : '';
-    const privat = gemerkt.size ? '<p class="ess-unter">Gemerkt nur auf diesem iPhone. Push am All-you-can-eat-Tag: Claude sagen, welches Lokal.</p>' : '';
+    const privat = gemerkt.size ? '<p class="ess-unter">Erinnerung per Push am All-you-can-eat- oder Aktionstag eines gemerkten Lokals (9–17 Uhr). Lokale ohne feste Aktionstage bleiben nur gemerkt.</p>' : '';
     return filterHtml(f) + kopf + neu + weg + zeigen.map(x => lokKarte(x, j, gemerkt)).join('') + leer + mehr + privat + kettenHtml(j)
       + '<p class="ess-hinweis">Bewertungen: so, wie die Portale sie am genannten Tag zeigten – sie ändern sich. „Leute sagen“ fasst sichtbare Bewertungstexte in eigenen Worten zusammen. Karten- und Öffnungsdaten: OpenStreetMap-Mitwirkende (Lizenz ODbL).</p>';
   }
@@ -650,9 +660,22 @@
     if (g.has(id)) g.delete(id); else g.add(id);
     S.gemerkt = [...g].slice(-200);
     merk(MERK_SPEICHER, S.gemerkt);
+    merkSenden();
     const b = S.el.querySelector(`[data-ess-merk="${id}"]`);
     if (b && !S.filter.merk) { const an = g.has(id); b.setAttribute('aria-pressed', String(an)); b.setAttribute('aria-label', b.getAttribute('aria-label').replace(/ (nicht mehr merken|merken)$/, an ? ' nicht mehr merken' : ' merken')); }
     else zeichne();
+  }
+  /** gemerkte ids an den Radar (ntfy). Ohne Netz: beim nächsten Öffnen erneut. Leere Liste wird auch gemeldet (alles entmerkt). */
+  function merkSenden(nurWennAlt) {
+    const st = lies(MERK_GESENDET, null) || {};
+    if (nurWennAlt && !st.offen && (!S.gemerkt.length || Date.now() - (Number(st.zeit) || 0) < 6 * 3600e3)) return;
+    merk(MERK_GESENDET, { zeit: Number(st.zeit) || 0, offen: true });
+    const body = JSON.stringify({ v: 1, essen: S.gemerkt.slice(-60) });
+    try {
+      if (typeof fetch !== 'function' || S.opt.merkSenden === false) return;
+      fetch(S.opt.merkUrl || MERK_URL, { method: 'POST', body, keepalive: true, headers: { 'content-type': 'text/plain' } })
+        .then(r => { if (r.ok) merk(MERK_GESENDET, { zeit: Date.now(), offen: false }); }).catch(() => {});
+    } catch {}
   }
   function chipHtml(k, j) {
     const an = k === S.chip;
@@ -776,6 +799,7 @@
     if (fl && typeof fl === 'object') S.filter = { ...FILTER_LEER, kueche: KUECHE_FILTER.some(x => x[0] === fl.kueche) ? fl.kueche : '', km: UMKREIS.includes(fl.km) ? fl.km : 30, bew: [4, 4.5].includes(fl.bew) ? fl.bew : 0, offen: fl.offen === true, ayce: fl.ayce === true, xxl: fl.xxl === true, merk: fl.merk === true, sort: fl.sort === 'nah' ? 'nah' : 'beste' };
     const gm = lies(MERK_SPEICHER, []);
     S.gemerkt = Array.isArray(gm) ? gm.filter(x => typeof x === 'string' && /^[a-z0-9-]{2,80}$/.test(x)) : [];
+    merkSenden(true); // ntfy hält 12 h: alle 6 h (beim Öffnen) erneut, und was offline nicht ankam
     const c = lies(CHIP_SPEICHER, 'heute');
     S.chip = typeof c === 'string' ? c : 'heute';
     S.ablage = ausAblage().then(roh => {

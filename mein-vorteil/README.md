@@ -127,11 +127,14 @@ Bewertung und was die Leute sagen, in der Nähe von Döbeln; wann All-you-can-ea
 zum Planen“). Chip **Lokale**: Filter Küche, Umkreis (5/15/30/70 km), Bewertung ab 4,0/4,5, Heute offen, All-you-can-eat und
 XXL (dann bis 70 km), Gemerkt; Beste zuerst (wenige Stimmen zur Mitte gezogen) oder Nächste zuerst. Karte: Küche, Ort · km,
 heute offen/Ruhetag (OSM-Öffnungszeiten), Bewertungen mit Portal/Stimmen/Stand, „Leute sagen“, Karte (OpenStreetMap) und Apple
-Karten, Merken-Stern (`mein-vorteil-essen-gemerkt`, nur auf dem Gerät), „Ketten in der Nähe“ (nächste Filiale, Lieferung nach
-Döbeln, Aktionen mit Sprung in den passenden Chip). Daten erst beim Öffnen: Radar-Datei `vorteile-daten/vorteile/data/essen.json`,
+Karten, Merken-Stern (`mein-vorteil-essen-gemerkt`; die ids gehen als `{ v: 1, essen: [...] }` an das ntfy-Thema
+`…-merken` = `vorteile/config.json` `module.essen.merkThema`, beim Öffnen erneut, wenn älter als 6 h – der Radar erinnert am
+All-you-can-eat- oder Aktionstag), „Ketten in der Nähe“ (nächste Filiale laut OSM – fehlt dort der Ort, kein Ort aus der
+gepflegten Liste; Lieferung nach Döbeln, Aktionen mit Sprung in den passenden Chip). Lokale aus OSM: alle bis 30 km (ohne id in
+der Datei, die Seite bildet `osm-<typ>-<nr>`); bei „bis 70 km“ sagt die Kopfzeile, dass darüber nur All-you-can-eat/XXL kommen. Daten erst beim Öffnen: Radar-Datei `vorteile-daten/vorteile/data/essen.json`,
 sonst die gepflegte Liste `../vorteile/essen.json`; letzter Stand in `mv-essen` (Schlüssel `essen-lokale.json`). Filter in
 `mein-vorteil-essen-filter`. Chip **Regelmäßig**: 7 Tage ab heute mit festen Wochentagen aus allen Bereichen (All-you-can-eat,
-Tagesessen, Ketten-Aktionen, Subway-Tagesplan, Ruhetage der Lokale bis 15 km), „Fast täglich“ einmal darunter.
+Tagesessen, Ketten-Aktionen, Subway-Tagesplan, Ruhetage der Lokale bis 15 km – in OSM nicht genannte Tage sind zu), „Fast täglich“ einmal darunter.
 
 **Reiter „Spartricks“ (seit 15.11.2026, `spartricks.js` + `spartricks.json`):** komprimiertes Wissen aus drei Recherchen
 (Geld zurück, Einkaufen & Gratis, Geburtstag & Freizeit; 133 Einträge → 94 Tipps: Doppelte vereint, Prämien-Themen Strom/Bank/Konto
