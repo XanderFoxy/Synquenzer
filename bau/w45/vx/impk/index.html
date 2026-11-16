@@ -110720,7 +110720,9 @@ function imp1Core() {
   /* IMPK-BEGIN · Gesang-Tempo (IMP2B Offen 3): bei Vokal-Melodien lag das Tempo 0,4–0,5 BPM zu hoch (120 → 120,54, Projekt 121).
      Ursache: das Ende eines Tons (Pegel fällt, Leck im Spektrum) gibt eine Fluss-Spitze ~70 ms vor dem nächsten Einsatz; die 80-ms-Sperre
      verwirft dann den echten Einsatz und zählt das Tonende (5 von 17 Einsätzen um −73…−82 ms, dazu Spitzen im Ausklang).
-     Hier: (a) Spitze mit fallendem Pegel (40 ms danach < ½ × 40 ms davor) ist ein Ausklang, kein Einsatz – sie zählt nicht und sperrt nichts;
+     Hier: (a) Spitze mit fallendem Pegel (40 ms danach < ½ × 40 ms davor), auf die binnen 100 ms eine stärkere Spitze folgt, ist ein Ausklang
+     vor dem nächsten Einsatz – sie zählt nicht und sperrt nichts. Ohne stärkere Spitze danach bleibt sie wie bisher (IMPK-Prüfung: sonst
+     verlor ein leiserer Ton nach einem lauteren seinen Einsatz, langsame Lieder kippten auf 2×);
      (b) Lage zwischen den Rahmen per Parabel verfeinert (±½ Rahmen). Nur der Gesang-Weg benutzt die Einsätze (ons). */
   function impkPeaks(o, fps, fe) {
     const n = o.length, r = Math.round(fps * .05), w = Math.round(fps * 1), k = Math.max(2, Math.round(fps * .04)), out = [];
@@ -110733,7 +110735,7 @@ function imp1Core() {
       if (!mx) continue;
       const a = Math.max(0, i - w), b = Math.min(n, i + w), c = b - a, m = (cs[b] - cs[a]) / c, sd = Math.sqrt(Math.max(0, (cq[b] - cq[a]) / c - m * m));
       if (v < m + .5 * sd || i - last < fps * .08) continue;
-      if (fe) { const b0 = Math.max(0, i - k), a1 = Math.min(n, i + 1 + k), eb = (ce[i] - ce[b0]) / Math.max(1, i - b0), ea = (ce[a1] - ce[i + 1]) / Math.max(1, a1 - i - 1); if (ea < .5 * eb) continue; }   // (a) Ausklang
+      if (fe) { const b0 = Math.max(0, i - k), a1 = Math.min(n, i + 1 + k), eb = (ce[i] - ce[b0]) / Math.max(1, i - b0), ea = (ce[a1] - ce[i + 1]) / Math.max(1, a1 - i - 1); if (ea < .5 * eb) { let sf = false; for (let j = i + 1, e = Math.min(n - 1, i + Math.round(fps * .1)); j <= e; j++) if (o[j] > v) { sf = true; break; } if (sf) continue; } }   // (a) Ausklang vor stärkerem Einsatz
       const p = o[i - 1], q = o[i + 1], dn = p - 2 * v + q, dl = dn < 0 ? Math.max(-.5, Math.min(.5, .5 * (p - q) / dn)) : 0;   // (b) Parabel
       out.push({t: (i + dl) / fps, w: v}); last = i;
     }
@@ -111129,11 +111131,12 @@ function imp1Css() {
   document.head.appendChild(s);
 }
 /* IMPK-BEGIN · Import-Blatt (IMP2 Nebenbefund 6): nach ½× fragte das Blatt „60 oder 60?“ mit zwei gleichen Knöpfen – die Vorschläge ½×/2×
-   hingen am erkannten Tempo, nicht am gewählten. Jetzt: gewähltes Tempo zuerst, dann die übrigen Kandidaten (erkannt, ½×, 2×), jeder
-   ganze Wert nur einmal → nach ½× „60 oder 121?“. Im Ausgangszustand (gewählt = erkannt) dieselbe Frage wie vorher. */
+   hingen am erkannten Tempo, nicht am gewählten. Jetzt: dieselbe Liste wie vorher (½×, 2× des erkannten Tempos); nur ein Vorschlag, der auf
+   das gewählte Tempo rundet, wird durch das erkannte Tempo ersetzt; jeder ganze Wert nur einmal → nach ½× „60 oder 121?“, nach 2× „168 oder
+   42 / 84?“. Ausgangszustand, +, − und Tippen zeigen genau die alte Frage (IMPK-Prüfung: kein zusätzlicher Knopf). */
 function impkAsk(c) {
-  const r = (c && c.r) || {}, seen = new Set([Math.round(c.bpm)]), out = [];
-  for (const v of [r.bpm].concat(r.alt || [])) { if (!(v >= 40 && v <= 240)) continue; const k = Math.round(v); if (seen.has(k)) continue; seen.add(k); out.push(v); }
+  const r = (c && c.r) || {}, cb = Math.round(c.bpm), seen = new Set([cb]), out = [];
+  for (const a of r.alt || []) { if (!(a >= 40 && a <= 240)) continue; const v = Math.round(a) === cb && r.bpm >= 40 && r.bpm <= 240 ? r.bpm : a, k = Math.round(v); if (seen.has(k)) continue; seen.add(k); out.push(v); }
   return out;
 }
 /* IMPK-END */

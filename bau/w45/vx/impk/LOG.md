@@ -10,3 +10,4 @@
 - 06:05 Regression: imp1 48/48, rv1 52/53 (#14 Stück 31 links = IMP2B-Bezugsfehler, Basis mit Tempo 120,33 zeigt dasselbe: reg-rv1s-basis-14.log), rv1k 53/53, beg1 57/59 (Prüfung 5 wie Basis + Block-Zählung zählt IMPK-Zeilen), impk-test 3: C2 unter Last daneben → Lauf 4 ohne Parallel-Last, Last: 5.82 4.93 3.74
 - 06:08 impk-test Lauf 4 (ohne Parallel-Last): OK 10/10; NOTES fertig; Ende. md5 index c0ac5b118bf3564d08a2c897dc2d5de4, Last: 9.37 6.66 4.62
 - 06:45 Prüfung/Nachbesserung Start (Befunde: Ausklang-Filter, impkAsk +/−/Tippen, rv1 52/53); Sicherung index.vor-pruef.html (c0ac5b11…), Last: 4.55 10.87 13.17
+- 06:55 Befund 1 nachgeprüft (Ursache: gestrichene Ausklang-Spitze sperrt im ±50-ms-Maximum-Test weiter; Lücken-Kriterium half nicht, 'stärkere Spitze folgt' 0 schlechter) → block-tempo.js; Befund 2 → block-ui.js (Basis-Liste, nur gleicher Wert ersetzt); impk-frage-test 144 OK (alt 50 FEHLER); index d89d27f4…, Last: 22.70 17.52 14.76
