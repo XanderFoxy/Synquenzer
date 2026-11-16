@@ -174,7 +174,7 @@ export function oeffne(plan, opt) {
   const sicht = () => { if (document.visibilityState === 'hidden') pause('hidden'); };
   const lage = () => { f.groesse(kreisPx()); letzteSek = -1; zeileNeu(); };
   document.addEventListener('visibilitychange', sicht); addEventListener('resize', lage);
-  ton.beiStoerung = () => pause('ton');
+  ton.beiStoerung = () => {};   // 0.1.2.1: eine Ton-Störung (iOS „interrupted“) hält die Übung nicht mehr an – das Bild führt weiter, der Ton kommt beim nächsten Tipp zurück
   aktiv = { uhr, plan, pause, weiter, kuerze, beenden, f, get zustand() { return zustand; }, get an() { return an; }, _nachZaehlen: null };
   function los() { uhr.starte(plan); zustand = 'laeuft'; ton.starte(uhr, uhr.plan); }
   zaehleEin(los);

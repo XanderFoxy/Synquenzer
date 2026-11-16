@@ -80,8 +80,8 @@ export const ton = {
     if (TEST) return true;
     try { if (navigator.audioSession) navigator.audioSession.type = musik ? 'ambient' : 'playback'; } catch {}
     try {
-      if (!ctx || ctx.state === 'closed' || (ctx.state !== 'running' && ctx.state !== 'suspended')) { if (ctx) try { ctx.close(); } catch {} ctx = neuerKontext(); wind = null; }
-      if (ctx && ctx.state !== 'running') ctx.resume();
+      if (!ctx || ctx.state === 'closed') { ctx = neuerKontext(); wind = null; }   // 0.1.2.1: bei „interrupted“ nicht immer neue Kontexte anlegen
+      if (ctx && ctx.state !== 'running') { const r = ctx.resume(); if (r && r.catch) r.catch(() => {}); }
       if (haupt) haupt.gain.value = einst.laut * 0.4;
       if (einst.ansage && window.speechSynthesis) { const u = new SpeechSynthesisUtterance(''); u.volume = 0; speechSynthesis.speak(u); }
     } catch { return false; }
