@@ -14,6 +14,7 @@ export const speicher = {
   messwert(id, w) { const m = speicher.messwerte(); (m[id] = m[id] || []).push(w); schreib('messwerte', m); return m; },
   training: () => lies('training', null),
   setzeTraining(t) { schreib('training', t); return t; },
+  wert: (k, std) => lies(k, std), setzeWert(k, v) { schreib(k, v); return v; },   // 020-ziele: ziel, selbst, zielwahl, zvor, erinnerung, health (nur auf dem Gerät)
   singen4w: () => lies('singen4w', null),
   setzeSingen4w(s) { schreib('singen4w', s); return s; },
   schluessel() { const k = []; try { for (let i = 0; i < localStorage.length; i++) { const n = localStorage.key(i); if (n && n.startsWith(P)) k.push(n); } } catch {} return k.sort(); },

@@ -1,15 +1,17 @@
 // Atem – Service Worker. 0.1.4: Schale zuerst aus dem Cache (kein Warten aufs Netz nach dem Aktualisieren),
 // eine Fassung pro Cache: neu nur über eine neue sw.js, die beim Einrichten JEDE Datei gegen ihre Prüfsumme prüft (PRUEF).
 // Versionswechsel: SCHALE und VERSION in app.js zusammen hochzählen; nach jeder Änderung an app/: node test/sw-pruefsummen.mjs (daten-test prüft beides).
-const SCHALE = 'atem-schale-v7';   // v7: 0.1.6 (Stimme + Meditation), v6 = 0.1.5
-const V = '0.1.6';   // 016
+const SCHALE = 'atem-schale-v8';   // v8: 0.2.0 (Layout, Figur, Zähltöne, Ziele, Italienisch), v7 = 0.1.6, v6 = 0.1.5
+const V = '0.2.0';   // 020
 // 016: + stimme.js, meditation.js, meditation-seite.js; Audio stimme/… NICHT (eigener Cache atem-stimme-v1, lädt bei Bedarf)
+// 020: + layout (Rahmen/Token), figur (stilisierte Figur), signale (Zähltöne), ziele (Ziele/Programm/Fortschritt/Erinnerung/Health)
 const DATEIEN = ['./', './index.html', './app.js', './symbole.js', './daten.js', './wissen.js', './plan.js', './uhr.js', './training.js',
   './sitzung.js', './fuehrung.js', './anatomie.js', './vorschau.js', './ton.js', './musik.js', './speicher.js', './manifest.webmanifest', './icon.svg', './icon-180.png',
   './icon-192.png', './icon-512.png',
-  './stimme.js', './meditation.js', './meditation-seite.js'];
+  './stimme.js', './meditation.js', './meditation-seite.js',
+  './layout.js', './figur.js', './signale.js', './ziele.js', './ziele-daten.js', './fortschritt.js', './erinnerung.js', './health.js'];
 // SHA-256, erste 16 Zeichen – ERZEUGT von test/sw-pruefsummen.mjs, nicht von Hand ändern
-const PRUEF = {'./':'c6a7d0f1e666ef7d', './index.html':'c6a7d0f1e666ef7d', './app.js':'b56724eb98ff0ce8', './symbole.js':'9db8e66221ca81bd', './daten.js':'306bb5ab261a5f82', './wissen.js':'1161763c05ab2ad4', './plan.js':'43babcbde603722b', './uhr.js':'bd85cbf3b5666388', './training.js':'354c65e339c6f68e', './sitzung.js':'1ecedfef490100c6', './fuehrung.js':'c30046c3d0586d58', './anatomie.js':'ec855eea6366ed16', './vorschau.js':'c7e2d5cc96ab14c4', './ton.js':'d1b025873181ff1b', './musik.js':'bee2f65b966f967e', './speicher.js':'f5dfbd78f65fcb21', './manifest.webmanifest':'de4a2d00f5c421dd', './icon.svg':'300072b0d1558b2a', './icon-180.png':'7e9a7bb31569bcbe', './icon-192.png':'345935289c33d11f', './icon-512.png':'cde2cd0b942bef9d', './stimme.js':'0d0fd922e907ce08', './meditation.js':'3f3458cae6411ede', './meditation-seite.js':'9fe09a86ded8a43f'};
+const PRUEF = {'./':'fed878fa085f88e2', './index.html':'fed878fa085f88e2', './app.js':'16ccf532c8d67cfb', './symbole.js':'9db8e66221ca81bd', './daten.js':'306bb5ab261a5f82', './wissen.js':'1161763c05ab2ad4', './plan.js':'43babcbde603722b', './uhr.js':'bd85cbf3b5666388', './training.js':'354c65e339c6f68e', './sitzung.js':'ca4b8a08a24a1839', './fuehrung.js':'c30046c3d0586d58', './anatomie.js':'ec855eea6366ed16', './vorschau.js':'f1583a7733cb2582', './ton.js':'f0ed4e5b280e7ce3', './musik.js':'bee2f65b966f967e', './speicher.js':'0329adcf2fae1f49', './manifest.webmanifest':'de4a2d00f5c421dd', './icon.svg':'300072b0d1558b2a', './icon-180.png':'7e9a7bb31569bcbe', './icon-192.png':'345935289c33d11f', './icon-512.png':'cde2cd0b942bef9d', './stimme.js':'685e6e6f068a1452', './meditation.js':'0cb0309be89670ef', './meditation-seite.js':'236e619345f6e97c', './layout.js':'641535447564315b', './figur.js':'b5062c3721f68917', './signale.js':'03b3c134c5039093', './ziele.js':'fe67a72f9a2171de', './ziele-daten.js':'86b23c98176df27c', './fortschritt.js':'00e3f7d6af5277a0', './erinnerung.js':'b9ed6bc653e6cfba', './health.js':'d7c51b477e607527'};
 // 016 Anfang: Stimmen (stimme/<sp>/…) in einem eigenen Cache – nie in der Schale (die wird bei jedem Versionswechsel gelöscht).
 // Dateien mit Hash im Namen: erst Cache, sonst Netz, nur vollständige 200 ablegen; *.json: erst Netz, offline aus dem Cache;
 // Range-Anfragen nicht abfangen. speicher.allesLoeschen() löscht atem-stimme-* mit (alle atem-* außer der Schale).

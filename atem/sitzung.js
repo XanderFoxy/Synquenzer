@@ -75,9 +75,11 @@ export function oeffne(plan, opt) {
       : s.runden ? 'Runde ' + s.runde + '/' + s.runden + (s.zuege && s.zug ? ' · Zug ' + s.zug + '/' + s.zuege : '') : s.zuege ? 'Zug ' + s.zug + '/' + s.zuege : '';
   }
   const zeileNeu = () => { if (kk && uhr.plan) zeile(uhr.zustand().schritt); };
-  if (einst.figur !== false) import('./anatomie.js').then((m) => { if (!aktiv || aktiv.uhr !== uhr) return; an = m.erzeugeAnatomie(el.anat, { ansicht: einst.ansicht || 'seite', modus: gross ? 'gross' : 'klein', daten: { MUSKELN } }); figurRuhe(); }).catch(() => { el.anat.classList.add('aus'); });
+  if (einst.figur !== false) import('./figur.js').then((m) => {   // 020-figur: stilisierte Figur (gleiche Schnittstelle)
+  if (!aktiv || aktiv.uhr !== uhr) return; an = m.erzeugeAnatomie(el.anat, { ansicht: einst.ansicht || 'seite', modus: gross ? 'gross' : 'klein', daten: { MUSKELN } }); figurRuhe(); }).catch(() => { el.anat.classList.add('aus'); });
   ton.einstellen({ art: einst.ton || 'klang', laut: einst.laut ?? 0.6, sekunden: !!einst.sekunden, ansage: einst.ansage === 'stimme' ? 'stimme' : !!einst.ansage, musikAn: !!(einst.eigeneMusik && einst.musikName), musikLaut: einst.musikLaut ?? 0.5 });   // 016: 'stimme' = echte Stimme (stimme.js)
   ton.entsperren(einst.musik);
+  if (ton.zaehltoene) ton.zaehltoene(); ton.einstellen({ signale: einst.signale, signaleLaut: einst.signaleLaut });   // 020-klang: Zähltöne laden (3 s Einzählen) + Stil/Lautstärke (ohne Wahl: Standard)
   holeWake();
   async function holeWake() { try { if (navigator.wakeLock && document.visibilityState === 'visible') { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); } } catch { wake = null; } }
   const lasseWake = () => { try { if (wake) wake.release(); } catch {} wake = null; };

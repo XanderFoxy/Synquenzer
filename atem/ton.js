@@ -1,6 +1,8 @@
 // Atem – Ton (KONZEPT §7). Das Bild führt, der Ton hilft. Im Testmodus (?test=1) nur Protokoll, kein AudioContext.
 const TEST = typeof location !== 'undefined' && /[?&]test=1/.test(location.search);
 const HZ = { ein: 392, ein2: 494, aus: 294, halten: 330 };
+let Z = null, zProbe = null;   // 020-klang: Zähltöne (signale.js), erst bei Bedarf geladen
+const zLade = () => (Z ? Promise.resolve(Z) : import('./signale.js').then((m) => { zProbe = m.probe; return (Z = m.signale); }, () => null));
 let ctx = null, haupt = null, einst = { art: 'klang', laut: 0.6, sekunden: false, ansage: false }, planer = null, geplant = new Map(), proto = [], wind = null, rausch = null;
 // Ansage (0.1.3.1): je Lauf (starte…halt) jeder Schritt höchstens einmal (Schlüssel Schritt + Startzeit), Timer gemerkt und beim Anhalten gelöscht
 let lauf = 0, ansageT = new Map(), gesagt = new Map(), letzteU = null, glocken = new Map(), knoten = null;   // glocken: vorausgeplante Glocken je Schritt
@@ -60,6 +62,7 @@ function planeSchritt(i, at) {
   const s = planRef.schritte[i]; if (!s) return;
   const dauer = (s.ms || 0) / 1000, schnell = planRef.technik === 'wach' || planRef.technik === 'kraft';
   if (einst.art === 'aus') return;
+  const zt = !!Z && Z.nimmt(i, planRef, einst);   // 020-klang: vormerken, geplant am Ende von takt()
   if (einst.art === 'wind' && ctx && wind) {
     const g = wind.g.gain, f = wind.f.frequency, ende = at + Math.max(0.05, dauer);
     g.setTargetAtTime(s.art === 'ein' || s.art === 'ein2' ? 0.5 : s.art === 'aus' ? 0.35 : 0, at, 0.08);
@@ -70,7 +73,7 @@ function planeSchritt(i, at) {
   if (schnell && s.zug > 0 && s.abschnitt === 'uebung') { if (s.art === 'ein') tick(at); if (s.zug === 1 && s.art !== 'ein') glocke(at, HZ.ein, -6, 0.8); return; }
   if (s.abschnitt === 'ruhe' || s.abschnitt === 'wechsel') { glocke(at, HZ.aus, -6); glocke(at + 0.25, HZ.ein, -6); return; }
   if (dauer < 1.5 && s.ms != null) return;
-  if (s.art === 'ein') glocke(at, HZ.ein); else if (s.art === 'ein2') glocke(at, HZ.ein2, 0, 0.4); else if (s.art === 'aus') glocke(at, HZ.aus);
+  if (zt) { /* 020-klang */ } else if (s.art === 'ein') glocke(at, HZ.ein); else if (s.art === 'ein2') glocke(at, HZ.ein2, 0, 0.4); else if (s.art === 'aus') glocke(at, HZ.aus);
   else if (s.art.startsWith('halten')) glocke(at, HZ.halten, -8);
   if (einst.sekunden && s.art.startsWith('halten') && dauer >= 3) for (let k = 1; k < dauer; k++) tick(at + k, -20);
 }
@@ -90,9 +93,10 @@ function takt() {
     const at = ctx ? ctx.currentTime + (st - jetzt) / 1000 - ausgleich : 0;
     knoten = st > jetzt ? [] : null; planeSchritt(i, Math.max(ctx ? ctx.currentTime : 0, at)); if (knoten && knoten.length) glocken.set(i, knoten); knoten = null;
     const w = sagWort(plan, i);
-    if (einst.ansage === 'stimme' && ton.stimme) { ton.stimme.schritt(i, plan, st, jetzt, at, ctx, w); continue; }   // 016: echte Stimme (stimme.js); w = Wort-Regel sagWort 0.1.5
+    if (einst.ansage === 'stimme' && ton.stimme) { const e = ton.stimme.schritt(i, plan, st, jetzt, at, ctx, w); if (Z) Z.wort(i, e); continue; }   // 020-klang: Sprite-Wort freihalten |   // 016: echte Stimme (stimme.js); w = Wort-Regel sagWort 0.1.5
     if (!einst.ansage || plan.modus === 'messen' || !w || gesagt.has(i) || gesagt.get(i - 1) === w) continue;   // gleiches Wort direkt davor: schweigen
     gesagt.set(i, w); clearTimeout(ansageT.get(i));
+    if (Z) Z.wort(i, 'system');   // 020-klang
     const soll = Math.max(jetzt, st - 250), meinLauf = lauf;
     ansageT.set(i, setTimeout(() => {
       ansageT.delete(i);
@@ -101,6 +105,7 @@ function takt() {
       ansage(w);
     }, soll - jetzt));
   }
+  if (Z) Z.plane({ ctx, ziel: haupt, jetzt, ausgleich, plan, lauf, log: (e) => proto.push(e) });   // 020-klang
 }
 // 0.1.5 Probehören (Klang-Wahl wie Klingelton-Auswahl): eigener Proben-Zweig im vorhandenen Kontext; neuer Tipp blendet die alte Probe in 50 ms aus
 let probeG = null, probeQ = [];
@@ -161,10 +166,11 @@ export const ton = {
     wachSeit = performance.now(); ton.entsperren(musikZ);
   },
   zustand: () => (TEST ? 'test' : ctx ? ctx.state : 'kein'),
-  einstellen(e) { einst = { ...einst, ...e }; if (ton.stimme) ton.stimme.einstellen(einst); /* 016 */ if (haupt && ctx) haupt.gain.setTargetAtTime(einst.laut * 0.4, ctx.currentTime, 0.05); if (mQuelle && mGain && ctx && 'musikLaut' in e) mGain.gain.setTargetAtTime(musikZiel(), ctx.currentTime, 0.1); },
+  einstellen(e) { einst = { ...einst, ...e }; if (e.art === 'aus' && Z && Z.still) Z.still(ctx, uhrRef && uhrRef.plan ? uhrRef.zeit() : null); /* 020-nb M3: Zähltöne sofort aus */ if (ton.stimme) ton.stimme.einstellen(einst); /* 016 */ if (haupt && ctx) haupt.gain.setTargetAtTime(einst.laut * 0.4, ctx.currentTime, 0.05); if (mQuelle && mGain && ctx && 'musikLaut' in e) mGain.gain.setTargetAtTime(musikZiel(), ctx.currentTime, 0.1); },
   starte(uhr, plan) { uhrRef = uhr; planRef = plan; lauf++; ansageWeg(); geplant = new Map(); gesagt = new Map(); glocken = new Map(); if (ton.stimme) ton.stimme.starte(uhr); /* 016 */ if (einst.art === 'wind') windStart(); clearInterval(planer); planer = setInterval(takt, 100); takt(); if (einst.musikAn && (mPuffer || TEST)) musikAn(false); },
   neuPlanen() {   // nur Schritte, deren Startzeit sich geändert hat (Atmen-/Stopp-Knopf), neu planen – nie den gerade laufenden noch einmal
     const p = uhrRef && uhrRef.plan; if (!p) return;
+    if (Z) Z.neuPlanen(p, uhrRef.zeit(), ctx);   // 020-klang
     for (const [i, st] of geplant) if (p.start[i] !== st) {
       geplant.delete(i); if (ansageT.has(i)) { gesagt.delete(i); clearTimeout(ansageT.get(i)); ansageT.delete(i); }   // schon gesprochen: nicht noch einmal
       for (const g of glocken.get(i) || []) try { g.disconnect(); } catch {}   // Glocke zur alten Startzeit abschalten (sonst zwei Glocken)
@@ -175,10 +181,12 @@ export const ton = {
   },
   halt() {
     clearInterval(planer); planer = null;
+    if (Z) Z.halt(ctx, uhrRef && uhrRef.plan ? uhrRef.zeit() : null);   // 020-klang
     if (ctx && haupt) { const t = ctx.currentTime; haupt.gain.cancelScheduledValues(t); haupt.gain.setValueAtTime(haupt.gain.value, t); haupt.gain.linearRampToValueAtTime(0, t + 0.05); const h = haupt; setTimeout(() => { try { h.disconnect(); } catch {} }, 120); haupt = ctx.createGain(); haupt.gain.value = einst.laut * 0.4; haupt.connect(ctx.destination); }
     wind = null; geplant = new Map(); gesagt = new Map(); glocken = new Map(); lauf++; ansageWeg(); musikAus(); if (ton.stimme) ton.stimme.halt();   // 016
     try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch {}
   },
+  zaehltoene: zLade,   // 020-klang
   ende() { if (TEST) { proto.push({ art: 'ende', t_ms: uhrRef ? uhrRef.zeit() : 0 }); return; } if (!ctx || einst.art === 'aus') return; const t = ctx.currentTime + 0.05; glocke(t, 294); glocke(t + 0.3, 392); glocke(t + 0.6, 494); },
   async pruefen() {
     if (TEST) { for (const a of ['ein', 'halten', 'aus']) proto.push({ art: 'pruefen', hz: HZ[a], t_ms: 0 }); return { ok: true, zustand: 'test', latenz_ms: 0 }; }
@@ -194,6 +202,7 @@ export const ton = {
     const g = ctx.createGain(); g.gain.value = 1; g.connect(haupt); probeG = g; const t = ctx.currentTime + 0.03;
     if (art === 'klang') { glocke(t, HZ.ein, 0, 1.2, g); glocke(t + 1.2, HZ.aus, 0, 1.2, g); }
     else if (art === 'glocke') glocke(t, HZ.ein, -4, 0.8, g);
+    else if (/^(zaehlen|wechsel)/.test(art) && zProbe) zProbe(ctx, g, t, { ...einst, signale: art.replace('_kurz', '') }, art.endsWith('_kurz'));   // 020-klang
     else if (art === 'wind') {
       const s = ctx.createBufferSource(); s.buffer = rauschen(); s.loop = true; const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 0.8; const v = ctx.createGain(); v.gain.value = 0;
       s.connect(f); f.connect(v); v.connect(g);

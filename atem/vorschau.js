@@ -16,7 +16,8 @@ export async function vorschau(karte, quelle, { modus = 'klein', ansicht } = {})
   let plan = holePlan();
   if (!karte.isConnected) return;
   const host = $('.vs-fig', karte), knopf = $('#vs-los', karte), wort = $('.vs-wort', karte); if (!host || !knopf || !plan) return;
-  let A; try { A = await import('./anatomie.js'); } catch { karte.remove(); return; }
+  let A; try { A = await import('./figur.js'); }   // 020-figur
+  catch { karte.remove(); return; }
   if (!host.isConnected) return;
   const e = speicher.einst(), titel = wort.textContent; let dauer = vorschauDauer(plan);
   const an = A.erzeugeAnatomie(host, { ansicht: ansicht || e.ansicht || 'seite', modus, daten: { MUSKELN } });

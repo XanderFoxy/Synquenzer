@@ -5,7 +5,7 @@
 // Fehlt ein Clip (offline, nicht im Cache): diesen Satz spricht die Systemstimme zur selben Zeit („Systemstimme“).
 export const CACHE = 'atem-stimme-v1';
 export const LAENGEN = ['kurz', 'normal', 'lang'];
-const LANG = { de: 'de-DE', en: 'en-GB', ar: 'ar-EG' };
+const LANG = { de: 'de-DE', en: 'en-GB', ar: 'ar-EG', it: 'it-IT' };   // 020: + Italienisch
 const VORAUS_S = 20, VORAB = 3, PARALLEL = 3;
 const db = (d) => Math.pow(10, (d || 0) / 20);
 

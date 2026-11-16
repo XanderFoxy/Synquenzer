@@ -5,14 +5,16 @@ import { speicher } from './speicher.js';
 import { baue, baueProgramm, wortFuer, grenzen } from './plan.js';
 import * as TRN from './training.js';
 import { ton } from './ton.js';   // statisch: der Ton entsteht im Tipp auf Start, vor jedem await (iOS)
+import * as LAY from './layout.js';   // 020-layout: Navigation, Heute, Fortschritt, Mehr, Hinweise
+let ZM = null; const zmLade = () => import('./signale.js').then((m) => { ZM = m; if (ton.zaehltoene) ton.zaehltoene(); return m; }, () => null);   // 020-klang: Zähltöne erst bei Bedarf
 
-export const VERSION = '0.1.6';   // 016
+export const VERSION = '0.2.0';   // 020
 const TEST = /[?&]test=1/.test(location.search);
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const dauerText = (T) => T.dauer ? T.dauer.standard + ' min' : T.zyklen ? T.zyklen.standard + '×' : T.modus === 'tabelle' ? 'ca. 15 min' : T.modus === 'messen' ? '1–3 min' : T.ablauf ? einheit(T.ablauf.runden, 'runden') : '';
 const RISIKO_HOCH = (T) => T.risiko === 'hoch' || T.risiko === 'mittel';
-const KEIN_ERSATZ = '<p class="fuss">Kein Ersatz für ärztlichen Rat.</p>';
+const KEIN_ERSATZ = '';   // 020-layout: „Kein Ersatz für ärztlichen Rat“ steht nur noch in Mehr (Fußzeile) und unter der Ziel-Wahl (DESIGN §6)
 // 0.1.4: Herkunft je Übung/Karte (Buch nur als Thema, ohne Autorennamen)
 const HERK = { buch: 'Aus dem Buch „Atem“', buch_zusatz: 'Thema aus dem Buch „Atem“, Studien zusätzlich recherchiert', recherche: 'Zusätzlich recherchiert (nicht aus dem Buch)' };
 const HERK_K = { buch: 'aus dem Buch', buch_zusatz: 'Buch-Thema + Studien', recherche: 'zusätzlich recherchiert' };
@@ -25,6 +27,8 @@ const SPERR_MS = 400, SPERR_PX = 40;
 let tipp = { t: -1e9, x: 0, y: 0 }, sperre = null;
 const tippSperre = () => { if (performance.now() - tipp.t < SPERR_MS) sperre = { ...tipp }; };
 const sitzungModul = () => SZ || (SZ = import('./sitzung.js').then((m) => { SZda = true; return m; }, (e) => { SZ = null; throw e; }));   // Fehlschlag nicht merken (Funkloch)
+let ZIELE = null; const zieleModul = () => import('./ziele.js').then((m) => (ZIELE = m));   // 020-ziele: Ziele/Programm/Fortschritt/Erinnerung (lädt nach dem ersten Bild)
+(window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => { zieleModul().then((Z) => Z.leerlauf()).catch(() => {}); });   // 020-ziele: Erinnerung nachplanen (nur wenn an und fällig; erinnerung.js lädt erst dann)
 const wissenModul = () => WISSEN || (WISSEN = import('./wissen.js').catch((e) => { WISSEN = null; throw e; }));
 // 016 Anfang: Meditation (meditation-seite.js, erst beim Öffnen geladen) + „Stimme sagt den Takt“ (stimme.js). alt=true beim Start: die frühere
 // iPhone-Ansage (ansage true) wird zur echten Stimme; ohne Sprite/Netz spricht stimme.js weiter mit der Systemstimme (Rückfall).
@@ -39,14 +43,15 @@ const hauptBeleg = (T) => { const e = Object.entries(T.beleg || {}); return e.le
 // ---------- Rahmen ----------
 const REITER = [['start', 'Start', 'start'], ['training', 'Training', 'training'], ['uebungen', 'Übungen', 'uebungen'], ['singen', 'Singen', 'singen'], ['wissen', 'Wissen', 'wissen']];
 function rahmen() {
-  $('#leiste').innerHTML = REITER.map(([id, n, s]) => `<a href="#${id}" data-r="${id}">${sym(s)}<span>${n}</span></a>`).join('');
-  $('#kopf').innerHTML = `<button class="knopf-ico" id="zurueck" aria-label="Zurück">${sym('zurueck')}</button><h1 id="titel">Atem</h1><a class="knopf-ico" href="#einstellungen" aria-label="Einstellungen">${sym('zahnrad')}</a>`;
+  $('#leiste').innerHTML = LAY.leisteHtml(); LAY.einrichten();   // 020-layout: Heute · Üben · Meditation · Fortschritt · Mehr (REITER oben bleibt ungenutzt)
+  $('#kopf').innerHTML = `<button class="knopf-ico" id="zurueck" aria-label="Zurück">${sym('zurueck')}</button><h1 id="titel">Atem</h1>`;   // 020-layout: Zahnrad entfällt (Mehr)
   $('#zurueck').onclick = () => { if (history.length > 1) history.back(); else location.hash = '#start'; };
 }
 function seite(titel, html, reiter, tiefe = 1) {
   const ti = $('#titel'); ti.textContent = titel; ti.removeAttribute('dir'); ti.removeAttribute('lang');   // 016-nb N5: Meditation setzt dir/lang selbst
   $('#zurueck').style.visibility = tiefe > 1 ? 'visible' : 'hidden';
-  document.querySelectorAll('#leiste a').forEach((a) => a.classList.toggle('an', a.dataset.r === reiter));
+  document.body.dataset.tiefe = tiefe; const ziel = LAY.zielFuer(location.hash);   // 020-layout: Display-Titel auf den 5 Zielen, leuchtendes Ziel aus dem Hash
+  document.querySelectorAll('#leiste a').forEach((a) => { const an = a.dataset.r === ziel; a.classList.toggle('an', an); if (an) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
   const i = $('#inhalt'); i.innerHTML = html; i.scrollTop = 0;
 }
 
@@ -57,18 +62,17 @@ function blatt(html, binde) {
 }
 const BILDER = [['wasserAus', 'Nie im oder am Wasser, nicht in der Wanne'], ['lenkradAus', 'Nie beim Fahren'], ['sitzen', 'Nur sitzend oder liegend'], ['spirale', 'Schwindel oder Kribbeln: sofort normal atmen']];
 function erststart() {
-  const bilder = ['sitzen', 'wasserAus', 'lenkradAus', 'spirale', 'telefon'];
-  return blatt(`<h2>Bevor du anfängst</h2><ul class="sicher-liste">${SICHERHEIT.erststart_text.map((t, i) => `<li>${sym(bilder[i] || 'warnung', 'gross')}<span>${esc(t)}</span></li>`).join('')}</ul>
-    <button class="knopf haupt voll" data-w="ok">Verstanden</button><p class="leise mitte">Alles bleibt auf deinem Gerät.</p>`).then(() => speicher.setzeSicherheit({ erst: new Date().toISOString() }));
+  return blatt(LAY.erstHtml(SICHERHEIT, esc)).then(() => speicher.setzeSicherheit({ erst: new Date().toISOString() }));   // 020-layout: einmal ruhig, 3 Punkte; alle Punkte in Mehr › Hinweise
 }
 async function sicherheitsBlatt(T) {
   const si = speicher.sicherheit(), erstes = !(si.lang_gesehen || {})[T.id];
   const liegend = T.modus === 'tabelle' || T.id === 'bestwert';
   const lang = T.risiko === 'hoch' && erstes;
   const text = lang ? [...SICHERHEIT.riskante_techniken_hinweis, SICHERHEIT.warum_wasser] : [SICHERHEIT.kurz_vor_riskanter_uebung];
-  const w = await blatt(`<h2>${sym('warnung', 'warn')} Sicherheit</h2><div class="bilder">${BILDER.map(([s, t]) => `<div>${sym(s, 'gross')}<span>${t}</span></div>`).join('')}</div>
+  // 020-layout: ruhige Form B – Überschrift „Kurz vorab“ (kein Warndreieck), „Zurück“ statt „Abbrechen“; Texte unverändert
+  const w = await blatt(`<h2>Kurz vorab</h2><div class="bilder">${BILDER.map(([s, t]) => `<div>${sym(s, 'gross')}<span>${t}</span></div>`).join('')}</div>
     ${text.map((t) => `<p>${esc(t)}</p>`).join('')}<p class="leise">Nicht bei: ${esc(SICHERHEIT.ausschluss.join(', '))}.</p>
-    <div class="zwei"><button class="knopf" data-w="nein">Abbrechen</button><button class="knopf haupt" data-w="ja">${liegend ? 'Verstanden – ich liege' : 'Verstanden – ich sitze/liege'}</button></div>`);
+    <div class="zwei"><button class="knopf" data-w="nein">Zurück</button><button class="knopf haupt" data-w="ja">${liegend ? 'Verstanden – ich liege' : 'Verstanden – ich sitze/liege'}</button></div>`);
   if (w !== 'ja') return false;
   if (lang) speicher.setzeSicherheit({ lang_gesehen: { ...(si.lang_gesehen || {}), [T.id]: new Date().toISOString() } });
   return true;
@@ -76,22 +80,26 @@ async function sicherheitsBlatt(T) {
 
 // ---------- Start ----------
 function kachel(id, name, ziel, href) { return `<a class="kachel" href="${href}">${sym(id)}<b>${esc(name)}</b><span>${esc(ziel || '')}</span></a>`; }
-function zeigeStart() {
-  const e = speicher.einst(), letzte = e.letzte && TECHNIKEN[e.letzte];
-  const tr = speicher.training(); let trK = '';
-  if (tr && tr.start && !tr.fertig) { const h = heuteTraining(); if (h) trK = `<a class="karte trk" href="#training"><b>Heute im Training</b><span>Woche ${h.woche} · ${h.einheiten.filter((x) => x.erledigt).length} von ${h.einheiten.length} erledigt</span></a>`; }
-  seite('Atem', `<div class="start-links"><h2 class="gross">Wie geht's dir?</h2>
-    <button class="knopf schnell" id="schnell">${sym('play')} 1 Minute runterkommen</button>
-    ${M016.karte}${letzte && letzte.id !== 'seufzer' ? `<a class="knopf zweit" href="#uebung/${letzte.id}">Weiter mit: ${esc(letzte.name)}</a>` : ''}${trK}</div>
-    <div class="kacheln">${kachel('nicht_gut', "Mir geht's nicht gut", 'Notfall-Hinweise und sanfte Hilfe', '#lage/nicht_gut')}
-    ${REIHENFOLGE.map((id) => kachel(id, SITUATIONEN[id].name, SITUATIONEN[id].ziel_ui, '#lage/' + id)).join('')}</div>${KEIN_ERSATZ}`, 'start', 1);
-  $('#schnell').onclick = () => starte(TECHNIKEN.seufzer, { variante: 'kurz' }, 'frei');
+// 020-layout Anfang: Heute ersetzt die alte Startseite (Lage-Kacheln jetzt oben in Üben). Kontext für layout.js / ziele.js:
+const LCTX = () => ({ seite, blatt, esc, sym, speicher, TECHNIKEN, SITUATIONEN, REIHENFOLGE, SICHERHEIT, VERSION, dauerText, route, heuteTraining, starteUebung,   // 020: + blatt/starteUebung für ziele.js
+  starteTraining: (x) => starte(TECHNIKEN[x.technik], { variante: x.variante, dauer_min: x.dauer_min, stufe: x.stufe, bestwert_s: x.bestwert_s, letzte_halten_s: x.letzte_halten_s, laengen: speicher.einst().laengen }, 'training', null, { baustein: x.baustein, stufe: x.stufe }) });
+function zeigeStart() { LAY.zeigeHeute(LCTX()); $('#schnell').onclick = () => starte(TECHNIKEN.seufzer, { variante: 'kurz' }, 'frei'); }
+// 020-layout Ende
+// 020-ziele: Ein-Tipp-Start aus Heute (Ton im Tipp: starte() ohne await davor); gesperrte/intensive Übungen und solche mit Hinweiszeile öffnen ihre Seite
+function starteUebung(id, o = {}, quelle = 'frei') {
+  const T = TECHNIKEN[id]; if (!T) return;
+  if (TRN.gesperrt(T, { training: speicher.training(), sicherheit: speicher.sicherheit() }) || RISIKO_HOCH(T) || T.warnung === 'zeile' || T.modus !== 'takt' && T.modus !== 'runden') { location.hash = '#uebung/' + id; return; }   // Hinweiszeile bleibt an ihrem Ort (Übungsseite)
+  const gz = grenzen(T, { d: o.min, v: o.v });
+  starte(T, { variante: o.v || null, dauer_min: gz.dauer_min ?? (T.dauer ? T.dauer.standard : null), zyklen: gz.zyklen, runden: gz.runden, laengen: speicher.einst().laengen || {} }, quelle);
 }
-function zeigeNichtGut() {
-  seite("Mir geht's nicht gut", `<div class="karte notfall"><b>Sofort 112 bei:</b><ul>${SICHERHEIT.notruf_112.map((t) => `<li>${esc(t)}</li>`).join('')}</ul><a class="knopf gefahr voll" href="tel:112">${sym('telefon')} 112 anrufen</a></div>
-    <details class="karte"><summary>Ärztlich abklären, wenn …</summary><ul>${SICHERHEIT.aerztlich_abklaeren.map((t) => `<li>${esc(t)}</li>`).join('')}</ul></details>
+const ZCTX = () => ({ seite, blatt, esc, sym, speicher, TECHNIKEN, VERSION, starteUebung, route });   // 020-ziele
+function zeigeNichtGut() {   // 020: 112-Knopf oben in der Karte – auch quer ohne Scrollen sichtbar
+  seite('Gerade nicht gut?', `<p class="akut-satz">Erst einmal: langsam ausatmen. Wir machen das zusammen.</p><button class="knopf haupt voll" id="schnell">1 Minute runterkommen</button>
+    <div class="karte notfall"><a class="knopf gefahr voll" href="tel:112">${sym('telefon')} 112 anrufen</a><b>Sofort 112 bei:</b><ul>${SICHERHEIT.notruf_112.map((t) => `<li>${esc(t)}</li>`).join('')}</ul></div>
+    <details class="karte"><summary>Wann ärztlich abklären?</summary><ul>${SICHERHEIT.aerztlich_abklaeren.map((t) => `<li>${esc(t)}</li>`).join('')}</ul></details>
     <h3>Was ist los?</h3><div class="kacheln">${['akut_unruhe', 'spannungskopfschmerz', 'uebelkeit', 'schmerz', 'energie', 'stress'].map((id) => kachel(id, SITUATIONEN[id].name, SITUATIONEN[id].ziel_ui, '#lage/' + id)).join('')}</div>
-    <p class="leise">Atemübungen ersetzen keinen ärztlichen Rat.</p>`, 'start', 2);
+    `, 'start', 2);
+  $('#schnell').onclick = () => starte(TECHNIKEN.seufzer, { variante: 'kurz' }, 'frei');   // 020-layout
 }
 function belegReihe(beleg) { return Object.entries(beleg || {}).map(([k, s]) => abzeichen(s, ZIELNAMEN[k] || k.replace(/_/g, ' '))).join(' '); }
 function zeigeLage(id) {
@@ -100,10 +108,11 @@ function zeigeLage(id) {
   const warn = L.warnzeichen ? `<div class="karte notfall warnkarte"><b>${sym('warnung', 'warn')} Erst prüfen: Warnzeichen</b><ul>${L.warnzeichen.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
     <a class="knopf gefahr voll" href="tel:112">${sym('telefon')} 112 anrufen</a>${id === 'spannungskopfschmerz' ? '<p>Gegen akute Kopfschmerzen ist Atmen nicht als wirksam belegt. Es kann beim Entspannen helfen.</p>' : ''}</div>` : '';
   const emp = L.empfehlung.slice().sort((a, b) => (RISIKO_HOCH(TECHNIKEN[a.technik]) ? 1 : 0) - (RISIKO_HOCH(TECHNIKEN[b.technik]) ? 1 : 0));
+  // 020-layout: in den Zeilen neutrale Marke „intensiv“ statt Warndreieck
   const zeile = (e, i) => { const T = TECHNIKEN[e.technik], hb = hauptBeleg(T), d = e.dauer_min ? e.dauer_min + ' min' : e.zyklen ? e.zyklen + ' Zyklen' : e.runden ? einheit(e.runden, 'runden') : dauerText(T);
     const href = `#uebung/${T.id}?l=${id}${e.dauer_min ? '&d=' + e.dauer_min : ''}${e.zyklen ? '&z=' + e.zyklen : ''}${e.variante ? '&v=' + e.variante : ''}${e.runden ? '&r=' + e.runden : ''}`;
     return i === 0 ? `<div class="karte empf1"><b>${esc(T.name)}</b><p>${esc(e.warum || e.hinweis || e.dazu || T.kurz)}</p>${hb ? abzeichen(hb[1], ZIELNAMEN[hb[0]] || hb[0]) : ''}${herk(T.herkunft)}<a class="knopf haupt voll" href="${href}&s=1">Start · ${d}</a></div>`
-      : `<a class="zeile" href="${href}"><span><b>${esc(T.name)}</b> ${RISIKO_HOCH(T) ? sym('warnung', 'warn') : ''}<small>${esc(e.warum || e.hinweis || e.dazu || T.kurz)} · <i>${HERK_K[T.herkunft] || ''}</i></small></span><span class="rechts">${d}${hb ? abzeichen(hb[1]) : ''}</span></a>`; };
+      : `<a class="zeile" href="${href}"><span><b>${esc(T.name)}</b>${RISIKO_HOCH(T) ? LAY.INTENSIV : ''}<small>${esc(e.warum || e.hinweis || e.dazu || T.kurz)} · <i>${HERK_K[T.herkunft] || ''}</i></small></span><span class="rechts">${d}${hb ? abzeichen(hb[1]) : ''}</span></a>`; };
   seite(L.name, `<div class="zweispaltig"><div><p class="ziel">${esc(L.ziel_ui)}</p><div class="belege">${belegReihe(L.beleg)}</div><p class="leise">${esc(L.beleg_ui)}</p>${warn}</div>
     <div>${L.nicht_empfohlen_wenn ? `<p class="hinweis">${sym('warnung', 'warn')} Nicht bei: ${esc(L.nicht_empfohlen_wenn.join(', '))}</p>` : ''}<h3>Empfohlen</h3>${emp.map(zeile).join('')}${L.hinweis_ui ? `<p class="hinweis">${esc(L.hinweis_ui)}</p>` : ''}${L.regelmaessig ? `<p class="hinweis">${esc(L.regelmaessig)}</p>` : ''}
     ${L.nicht_empfohlen.length ? `<p class="leise">Hier nicht empfohlen: ${L.nicht_empfohlen.map((t) => esc(TECHNIKEN[t] ? TECHNIKEN[t].name : t)).join(', ')}</p>` : ''}
@@ -112,14 +121,15 @@ function zeigeLage(id) {
 }
 
 // ---------- Übungen ----------
-const FILTER = [['alle', 'Alle'], ['beruhigen', 'Beruhigen'], ['aktivieren', 'Aktivieren'], ['messen', 'Messen'], ['anhalten', 'Anhalte-Training'], ['singen', 'Singen']];
+const FILTER = [['alle', 'Alle'], ['beruhigen', 'Beruhigen'], ['aktivieren', 'Aktivieren'], ['messen', 'Messen'], ['singen', 'Singen'], ['anhalten', 'Anhalten']];   // 020-layout: Reihenfolge/Wörter nach DESIGN §4
 let filter = 'alle';
 function zeigeUebungen() {
   const e = speicher.einst(), tr = speicher.training(), si = speicher.sicherheit();
   const liste = Object.values(TECHNIKEN).filter((T) => (filter === 'alle' || T.gruppe === filter) && (T.gruppe !== 'geraet' || e.geraet));
-  seite('Übungen', `<div class="chips" role="tablist">${FILTER.map(([id, n]) => `<button class="chip ${filter === id ? 'an' : ''}" data-f="${id}">${n}</button>`).join('')}</div>
-    <div class="liste2">${liste.map((T) => { const hb = hauptBeleg(T), g = TRN.gesperrt(T, { training: tr, sicherheit: si });
-      return `<a class="zeile ${g ? 'grau' : ''}" href="#uebung/${T.id}"><span><b>${esc(T.name)}</b> ${RISIKO_HOCH(T) ? sym('warnung', 'warn') : ''}<small>${esc(g || T.kurz)}</small></span><span class="rechts">${dauerText(T)}${hb ? abzeichen(hb[1]) : ''}</span></a>`; }).join('')}
+  // 020-layout: Lage-Kacheln oben (früher Startseite), Wirkungs-Symbol, Beleg-LEDs, neutrale Marke „intensiv“, Anzahl
+  seite('Üben', `${LAY.lageReihe(LCTX())}<div class="chips" role="tablist">${FILTER.map(([id, n]) => `<button class="chip ${filter === id ? 'an' : ''}" data-f="${id}">${n}</button>`).join('')}</div>
+    <p class="anzahl">${liste.length} Übungen</p><div class="liste2">${liste.map((T) => { const hb = hauptBeleg(T), g = TRN.gesperrt(T, { training: tr, sicherheit: si });
+      return `<a class="zeile ${g ? 'grau' : ''}" href="#uebung/${T.id}"><span class="zl">${LAY.wirkSym(T)}<span><b>${esc(T.name)}</b>${RISIKO_HOCH(T) ? LAY.INTENSIV : ''}<small>${esc(g || dauerText(T))}</small></span></span><span class="rechts">${hb ? LAY.leds(hb[1], true) : ''}</span></a>`; }).join('')}
     ${filter === 'singen' || filter === 'alle' ? Object.values(PROGRAMME).filter((p) => p.schritte).map((p) => `<a class="zeile" href="#programm/${p.id}"><span><b>${esc(p.name)}</b><small>Programm · ${p.schritte.length} Übungen</small></span><span class="rechts">${sym('weiter')}</span></a>`).join('') : ''}</div>`, 'uebungen', 1);
   $('#inhalt').querySelectorAll('[data-f]').forEach((b) => (b.onclick = () => { filter = b.dataset.f; zeigeUebungen(); }));
 }
@@ -137,6 +147,7 @@ function zeigeUebung(id, q) {
   const T = TECHNIKEN[id]; if (!T) return zeigeUebungen();
   if (speicher.einst().ansage === 'stimme') setTimeout(stimmeVor, 600);   // 016-nb B4: Takt-Stimme erst hier vorbereiten (nach dem ersten Bild der Übungsseite)
   const o = optAusHash(q), e = speicher.einst(), tr = speicher.training(), si = speicher.sicherheit();
+  if (ton.zaehltoene) ton.zaehltoene();   // 020-klang: Zähltöne schon auf der Übungsseite laden
   const gz = grenzen(T, o);   // 0.1.4: d/z/r aus dem Link nur innerhalb der Grenzen („Nicht verlängerbar“ gilt auch für #uebung/kraft?r=6)
   const st = { variante: o.v || null, dauer_min: gz.dauer_min ?? (T.dauer ? T.dauer.standard : null), zyklen: gz.zyklen, runden: gz.runden, laengen: e.laengen || {} };
   if (T.modus === 'tabelle') { const pb = letzterBestwert(); st.bestwert_s = pb ? pb.s : null; st.stufe = (tr && tr.stufen && tr.stufen[T.id === 'co2_tabelle' ? 'B-CO2' : 'B-O2']) || 1; }
@@ -147,24 +158,32 @@ function zeigeUebung(id, q) {
     $('#abl').innerHTML = plan ? ablaufLeiste(plan) : '<p class="hinweis">Erst den Anhalte-Bestwert messen – die Zeiten werden daraus berechnet.</p>';
     if ($('#dauerw')) $('#dauerw').textContent = st.zyklen ? st.zyklen + ' Zyklen' : st.dauer_min + ' min';
     document.querySelectorAll('#stufen .chip').forEach((c) => c.classList.toggle('an', SF[c.dataset.st] === stW()));
+    LAY.losText(plan);   // 020-layout: „Starten · 5 min“
     return plan;
   };
   const verlauf = T.messwert ? verlaufSvg(speicher.messwerte()[T.messwert] || [], T.messwert === 'M-AF' ? 'n' : 's') : '';
   const SF = T.stufen, stW = () => !SF ? null : SF.einheit === 'runden' ? st.runden || T.ablauf.runden : SF.einheit === 'zyklen' ? st.zyklen || T.zyklen.standard : st.dauer_min;
-  seite(T.name, `<div class="zweispaltig"><div><p>${esc(T.kurz)}</p><p class="leise">${esc(T.wirkung_ui)}</p>${herk(T.herkunft)}<div id="abl"></div>
-    ${SF ? `<div class="chips stufen" id="stufen">${[['kurz', 'Kurz'], ['normal', 'Normal'], ['lang', 'Lang']].map(([k, n]) => `<button class="chip" data-st="${k}" ${SF[k] == null ? 'disabled' : ''}>${n}${SF[k] != null ? ' ' + einheit(SF[k], SF.einheit) : ''}</button>`).join('')}</div>
-    <p class="leise">${esc(SF.grund || 'Lieber jeden Tag kurz als selten lang.')} <a class="link" href="#wissen/T-DAUER">Muss ich lange üben?</a></p>` : ''}
-    ${T.dauer || T.zyklen ? `<div class="stepper"><button class="knopf-ico" data-s="-">${sym('minus')}</button><b id="dauerw"></b><button class="knopf-ico" data-s="+">${sym('plus')}</button></div>` : ''}
-    ${T.varianten.filter((v) => v.phasen || v.dauer).length ? `<div class="chips">${[{ id: '', name: 'Standard' }, ...T.varianten.filter((v) => v.phasen || v.dauer)].map((v) => `<button class="chip ${(st.variante || '') === v.id ? 'an' : ''}" data-v="${v.id}">${esc(v.name)}</button>`).join('')}</div>` : ''}
-    ${offenLaenge ? `<label class="schieber">Ausatmen ${offenLaenge.s.min}–${offenLaenge.s.max} s <input type="range" min="${offenLaenge.s.min}" max="${offenLaenge.s.max}" step="1" value="${(e.laengen || {})[T.id] || offenLaenge.s.min}" id="laenge"></label>` : ''}
-    ${T.anleitung.length ? `<ol class="anleitung">${T.anleitung.map((a) => `<li>${esc(a)}</li>`).join('')}</ol>` : ''}
-    <p class="haltung">${haltungSym(T.haltung, T.liegend)} ${esc(T.haltung)}</p>${verlauf}${T.modus === 'messen' || RISIKO_HOCH(T) ? '' : vorschauHtml('So bewegt sich der Körper')}</div>
-    <div><h3>Was Studien zeigen</h3><div class="belege">${belegReihe(T.beleg)}</div>${T.beleg_ui ? `<p class="leise">${esc(T.beleg_ui)}</p>` : ''}
-    ${T.risiken.length ? `<h3>Risiken</h3><ul>${T.risiken.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>` : ''}
-    ${T.hinweis_zeile ? `<p class="hinweis">${sym('warnung', 'warn')} ${esc(T.hinweis_zeile)}</p>` : ''}
-    ${new Date().getHours() >= 21 && (T.modus === 'tabelle' || T.id === 'bestwert') ? '<p class="hinweis">Anhalte-Übungen machen wach – lieber nicht kurz vor dem Schlafen.</p>' : ''}
-    <button class="link" id="quellen">Quellen (${T.quellen.length})</button><div id="qliste"></div>
-    ${g ? `<p class="hinweis gesperrt">${esc(g)}</p>` : ''}<button class="knopf haupt voll startknopf" id="los" ${g ? 'disabled' : ''}>Start</button></div></div>${KEIN_ERSATZ}`, 'uebungen', 2);
+  // 020-layout Anfang: Info-Seite nach DESIGN §4 (ein Satz, 3 Fakten, Kurz/Normal/Lang, höchstens ein ruhiger Hinweis, Rest unter „Mehr zur Übung“). Alle ids bleiben.
+  const hinweisEins = g ? '' : new Date().getHours() >= 21 && (T.modus === 'tabelle' || T.id === 'bestwert') ? LAY.ruhig('Anhalte-Übungen machen wach – lieber nicht kurz vor dem Schlafen.')
+    : RISIKO_HOCH(T) ? LAY.ruhig('Nur im Sitzen oder Liegen – nicht im Wasser, nicht beim Fahren.') : T.hinweis_zeile ? LAY.ruhig(esc(T.hinweis_zeile))
+    : T.gruppe === 'beruhigen' && T.modus !== 'messen' ? LAY.ruhig('Wird dir leicht schwindlig, atme einfach normal weiter.') : '';
+  const teile = { T, esc, g, hb: hauptBeleg(T), dauer: dauerText(T), verlauf,
+    vorschau: T.modus === 'messen' || RISIKO_HOCH(T) ? '' : vorschauHtml(''),
+    stufen: SF ? `<div class="chips stufen" id="stufen">${[['kurz', 'Kurz'], ['normal', 'Normal'], ['lang', 'Lang']].map(([k, n]) => `<button class="chip" data-st="${k}" ${SF[k] == null ? 'disabled' : ''}>${n}${SF[k] != null ? '<br><small>' + (SF.einheit === 'min' ? SF[k] : einheit(SF[k], SF.einheit)) + '</small>' : ''}</button>`).join('')}</div>` : '',
+    stepper: (T.dauer || T.zyklen) ? `${SF ? '<h3>Eigene Dauer</h3>' : ''}<div class="stepper"><button class="knopf-ico" data-s="-" aria-label="Kürzer">${sym('minus')}</button><b id="dauerw"></b><button class="knopf-ico" data-s="+" aria-label="Länger">${sym('plus')}</button></div>` : '',
+    varianten: T.varianten.filter((v) => v.phasen || v.dauer).length ? `<div class="chips">${[{ id: '', name: 'Standard' }, ...T.varianten.filter((v) => v.phasen || v.dauer)].map((v) => `<button class="chip ${(st.variante || '') === v.id ? 'an' : ''}" data-v="${v.id}">${esc(v.name)}</button>`).join('')}</div>` : '',
+    laenge: offenLaenge ? `<label class="schieber">Ausatmen ${offenLaenge.s.min}–${offenLaenge.s.max} s <input type="range" min="${offenLaenge.s.min}" max="${offenLaenge.s.max}" step="1" value="${(e.laengen || {})[T.id] || offenLaenge.s.min}" id="laenge"></label>` : '',
+    hinweis: hinweisEins, haltung: '',
+    mehrInhalt: `${SF ? '%STEPPER%' : ''}%VARIANTEN%${T.anleitung.length ? `<h3>So geht's</h3><ol class="anleitung">${T.anleitung.map((a) => `<li>${esc(a)}</li>`).join('')}</ol>` : ''}<p class="haltung">${haltungSym(T.haltung, T.liegend)} ${esc(T.haltung)}</p>
+      <h3>Was Studien zeigen</h3><p class="leise">${esc(T.wirkung_ui)}</p><div class="belege">${belegReihe(T.beleg)}</div>${T.beleg_ui ? `<p class="leise">${esc(T.beleg_ui)}</p>` : ''}
+      ${SF ? `<p class="leise">${esc(SF.grund || 'Lieber jeden Tag kurz als selten lang.')} <a class="link" href="#wissen/T-DAUER">Muss ich lange üben?</a></p>` : ''}
+      ${T.risiken.length ? `<h3>Gut zu wissen</h3><ul>${T.risiken.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>` : ''}
+      ${RISIKO_HOCH(T) ? `<p class="leise">Nicht bei: ${esc(SICHERHEIT.ausschluss.join(', '))}.</p>` : ''}${herk(T.herkunft)}
+      <button class="link" id="quellen">Quellen (${T.quellen.length})</button><div id="qliste"></div>` };
+  if (SF) { teile.mehrInhalt = teile.mehrInhalt.replace('%STEPPER%', teile.stepper); teile.stepper = ''; }
+  teile.mehrInhalt = teile.mehrInhalt.replace('%VARIANTEN%', teile.varianten ? '<h3>Varianten</h3>' + teile.varianten : ''); teile.varianten = '';   // Varianten unter „mehr“   // feine Dauer unter „mehr“, Kurz/Normal/Lang sichtbar
+  seite(T.name, LAY.infoHtml(teile), 'uebungen', 2);
+  // 020-layout Ende
   let plan = male();
   const merkeWahl = () => {   // Wahl im Link merken: übersteht das Aktualisieren (ohne neuen Verlaufseintrag)
     const p = new URLSearchParams(q || ''); p.delete('s');
@@ -182,7 +201,7 @@ function zeigeUebung(id, q) {
   if ($('#laenge')) $('#laenge').oninput = (ev) => { st.laengen = { ...st.laengen, [T.id]: +ev.target.value }; plan = male(); speicher.setzeEinst({ laengen: st.laengen }); };
   if (T.zyklen && !T.dauer && !st.zyklen) { st.zyklen = T.zyklen.standard; plan = male(); }
   if (T.modus !== 'messen' && !RISIKO_HOCH(T)) vorschau(() => plan, { ansicht: T.id === 'wechsel' ? 'vorn' : undefined });
-  if (o.s === '1') history.replaceState(null, '', location.hash.replace(/&s=1/, ''));   // Autostart nur einmal
+  if (o.s === '1') { const p = new URLSearchParams(q || ''); p.delete('s'); const r = p.toString(); history.replaceState(null, '', location.hash.split('?')[0] + (r ? '?' + r : '')); }   // Autostart nur einmal (020-nb H1: auch „?s=1“ aus „Jetzt starten“)
   if (o.s === '1' && !g && !RISIKO_HOCH(T)) starte(T, st, o.l ? 'lage:' + o.l : 'frei', plan);
 }
 function quellenListe(ids, Q) { return `<ul class="quellen">${ids.map((id) => Q[id]).filter(Boolean).map((q) => `<li><a href="${esc(q.link)}" target="_blank" rel="noopener">${esc(q.kurz)}</a> <small>${esc(q.art || '')}${q.jahr ? ' · ' + q.jahr : ''}</small></li>`).join('')}</ul><p class="leise">Links brauchen Internet.</p>`; }
@@ -243,7 +262,7 @@ async function endeSitzung(erg, ui, st, extra) {
   const frage = riskant ? `<p><b>Hattest du Schwindel, Kribbeln, Sehflimmern oder Ähnliches?</b></p><div class="zwei"><button class="knopf" data-z="nein">Nein</button><button class="knopf" data-z="ja">Ja</button></div>` : '';
   const anstr = plan.tabelle ? `<label class="schieber">Wie anstrengend? <b id="anw">5</b> <input type="range" min="0" max="10" value="5" id="anstr"></label>` : '';
   const titel = ende === 'abbruch' ? 'Atme ruhig und normal. Bleib sitzen.' : ende === 'fertig' ? 'Fertig · ' + Math.floor(ist_s / 60) + ':' + String(Math.round(ist_s % 60)).padStart(2, '0') + ' min' : 'Beendet';
-  ui.zeigeBlatt(`<h2>${titel}</h2>${messText}${anstr}${frage}<div id="zantw"></div><div class="zwei"><button class="knopf" data-e="nochmal">Nochmal</button><button class="knopf haupt" data-e="fertig">Fertig</button></div>`);
+  ui.zeigeBlatt(`<h2>${titel}</h2>${messText}${anstr}${frage}${ZIELE ? ZIELE.endeHtml(eintrag) : ''}<div id="zantw"></div><div class="zwei"><button class="knopf" data-e="nochmal">Nochmal</button><button class="knopf haupt" data-e="fertig">Fertig</button></div>`);
   const host = $('#sitzung'); let zeichen = null, angegeben = false;
   await new Promise((ok) => {
     host.onclick = (ev) => {
@@ -253,6 +272,7 @@ async function endeSitzung(erg, ui, st, extra) {
     };
     const a = $('#anstr'); if (a) a.oninput = () => { angegeben = true; $('#anw').textContent = a.value; };
   });
+  if (ZIELE) ZIELE.nachEnde(eintrag);   // 020-ziele: freiwillige Anspannung/Leichtigkeit (nur auf dem Gerät)
   if ($('#anstr') && angegeben) eintrag.anstrengung = +$('#anstr').value;
   if (eintrag.tabelle) { const su = (f) => eintrag.tabelle.reduce((x, r) => x + r[f], 0); eintrag.anteil = Math.round(100 * su('ist_s') / su('halten_s')) / 100; }
   if (zeichen != null) eintrag.zeichen = zeichen;
@@ -373,9 +393,11 @@ async function zeigeWissen(id) {
 
 // ---------- Einstellungen ----------
 function zeigeEinstellungen() {
+  if (!ZM) zmLade().then((m) => { if (m && location.hash.startsWith('#einstellungen')) zeigeEinstellungen(); });   // 020-klang: Zähltöne-Zeile nach dem Laden zeigen
   const e = speicher.einst(), tr = speicher.training();
   const sch = (k, n) => `<label class="schalter"><span>${n}</span><input type="checkbox" data-k="${k}" ${e[k] ? 'checked' : ''}></label>`;
   seite('Einstellungen', `<div class="zweispaltig"><div><div class="karte"><b>Ton</b><div class="chips">${['klang', 'wind', 'aus'].map((t) => `<button class="chip ${e.ton === t ? 'an' : ''}" data-ton="${t}" aria-pressed="${e.ton === t}">${{ klang: 'Klang', wind: 'Wind', aus: 'Aus' }[t]}</button>`).join('')}</div>
+      ${ZM ? ZM.zaehlKarte(e, sym) : '<div id="zaehltoene"></div>' /* 020-klang */}
       <p class="leise probe" id="probetext"><span class="pkreis" aria-hidden="true"></span><span id="probewort">Tippen = Probehören</span></p>
       <label class="schieber">Lautstärke <input type="range" min="0" max="1" step="0.05" value="${e.laut}" data-k="laut"></label>${sch('sekunden', 'Leises Ticken beim Halten')}${sch('musik', 'Zur eigenen Musik')}${M016.schalter(e)}
       <a class="zeile" href="#musik" id="musikzeile"><span><b>Eigene Musik</b><small>${e.eigeneMusik && e.musikName ? 'An: ' + esc(e.musikName) : e.musikName ? 'Aus: ' + esc(e.musikName) : 'Ein ruhiges Stück von deinem Gerät unter die Übung legen'}</small></span><span class="rechts">${sym('weiter')}</span></a>
@@ -385,19 +407,21 @@ function zeigeEinstellungen() {
       ${tr ? `<label class="schalter"><span>Ausschlussgrund angegeben</span><input type="checkbox" id="ausschl" ${tr.ausschluss ? 'checked' : ''}></label>` : ''}</div></div>
     <div><div class="karte"><b>Sicherheit</b><button class="knopf zweit voll" id="sichlesen">Sicherheitshinweise lesen</button><a class="knopf gefahr voll" href="tel:112">${sym('telefon')} Notfall: 112</a></div>
     <div class="karte"><b>Daten</b><button class="knopf zweit voll" id="export">Sichern (Datei)</button><label class="knopf zweit voll">Wiederherstellen<input type="file" accept="application/json,.json" id="import" hidden></label><button class="knopf zweit voll" id="loeschen">Alles löschen</button><p class="leise">Die Home-Bildschirm-App hat einen eigenen Speicher, getrennt von Safari.</p></div>
-    <div class="karte"><b>Über</b><p>Version ${VERSION} · <span id="offline">${navigator.serviceWorker && navigator.serviceWorker.controller ? 'Offline bereit' : 'Offline noch nicht bereit'}</span></p><p>Keine Daten verlassen dein Gerät.</p><a class="link" href="#wissen/quellen">Quellen</a></div></div></div>`, 'start', 2);
+    <div class="karte"><b>Über</b><p>Version ${VERSION} · <span id="offline">${navigator.serviceWorker && navigator.serviceWorker.controller ? 'Offline bereit' : 'Offline noch nicht bereit'}</span></p><p>Keine Gesundheitsdaten verlassen dein Gerät. Nur mit Erinnerung gehen Thema, Uhrzeit, Satz und App-Adresse an den Erinnerungsdienst (wie bei jedem Abruf auch deine IP-Adresse).</p><a class="link" href="#wissen/quellen">Quellen</a></div></div></div>`, 'start', 2);
   const i = $('#inhalt');
   i.querySelectorAll('[data-k]').forEach((x) => (x.onchange = () => {
     speicher.setzeEinst({ [x.dataset.k]: x.type === 'checkbox' ? x.checked : +x.value });
     if (x.dataset.k === 'laut') { ton.entsperren(speicher.einst().musik); ton.einstellen({ laut: +x.value }); ton.probe('glocke'); }   // beim Loslassen: kurze Glocke in neuer Lautstärke
+    if (x.dataset.k === 'signaleLaut') { const e3 = speicher.einst(), s3 = ZM ? ZM.stilVon(e3) : 'zaehlen'; ton.entsperren(e3.musik); ton.einstellen({ signaleLaut: +x.value }); ton.probe((s3 === 'aus' ? 'zaehlen' : s3) + '_kurz'); }   // 020-klang: kurz hören (2 s ein + 3 s aus)
   }));
   i.onclick = async (ev) => {
     const b = ev.target.closest('button'); if (!b) return;
+    if (ZM && ZM.zaehlKlick(b, { ton, speicher })) return;   // 020-klang: Zähltöne wählen / vorhören
     if (b.dataset.ton) {   // 0.1.5: wählen UND sofort Probe hören (wie Klingelton-Auswahl); kein neues Neuzeichnen der Seite (Ton läuft weiter)
       const t = b.dataset.ton, e2 = speicher.setzeEinst({ ton: t });
-      ton.entsperren(e2.musik); ton.einstellen({ art: t, laut: e2.laut }); ton.probe(t);
+      ton.entsperren(e2.musik); ton.einstellen({ art: t, laut: e2.laut }); const zt = ZM && t === 'klang' && ZM.stilVon(e2) !== 'aus' ? ZM.stilVon(e2) : ''; ton.probe(zt ? zt + '_kurz' : t);   // 020-klang: mit Zähltönen klingt „Klang“ so (kurz)
       i.querySelectorAll('[data-ton]').forEach((c) => { c.classList.toggle('an', c === b); c.setAttribute('aria-pressed', c === b); });
-      const pt = $('#probetext'), pw = $('#probewort'); if (pt && pw) { pw.textContent = t === 'aus' ? 'Ohne Ton – Kreis und Figur führen allein.' : t === 'wind' ? 'Wind: rauscht beim Einatmen auf, beim Ausatmen ab.' : 'Klang: eine Glocke beim Einatmen, eine tiefere beim Ausatmen.'; pt.classList.remove('puls'); void pt.offsetWidth; pt.classList.add('puls'); }
+      const pt = $('#probetext'), pw = $('#probewort'); if (pt && pw) { pw.textContent = zt ? ZM.TEXT[zt] : t === 'aus' ? 'Ohne Ton – Kreis und Figur führen allein.' : t === 'wind' ? 'Wind: rauscht beim Einatmen auf, beim Ausatmen ab.' : 'Klang: eine Glocke beim Einatmen, eine tiefere beim Ausatmen.'; pt.classList.remove('puls'); void pt.offsetWidth; pt.classList.add('puls'); }
     }
     else if (b.dataset.ans) { speicher.setzeEinst({ ansicht: b.dataset.ans }); zeigeEinstellungen(); }
     else if (b.id === 'tonpruef') { const { ton } = await import('./ton.js'); ton.einstellen({ art: 'klang', laut: speicher.einst().laut }); const r = await ton.pruefen(); $('#tonerg').innerHTML = `<p>Hörst du drei Töne?</p><div class="zwei"><button class="knopf" id="tja">Ja</button><button class="knopf" id="tnein">Nein</button></div>`; $('#tonerg').dataset.zustand = r.zustand; }
@@ -428,6 +452,7 @@ async function allesLoeschen() {
   if (w1 !== 'j') return;
   const w2 = await blatt('<h2>Wirklich alles löschen?</h2><div class="zwei"><button class="knopf" data-w="n">Abbrechen</button><button class="knopf gefahr" data-w="j">Endgültig löschen</button></div>');
   if (w2 !== 'j') return;
+  try { await (await import('./erinnerung.js')).ausschalten(); } catch {}   // 020-ziele: geplante Erinnerungen beim Dienst streichen
   await speicher.allesLoeschen(); location.hash = '#start'; location.reload();
 }
 
@@ -453,7 +478,7 @@ function route() {
     case 'musik': return zeigeMusik();
     case 'meditation': return zeigeMeditation(b);   // 016
     case 'sicherheit': erststart(); return zeigeStart();
-    default: return zeigeStart();
+    default: if (LAY.zeige(a, b, LCTX())) return; return zeigeStart();   // 020-layout: fortschritt, mehr, hinweise + 020-ziele: ziel/erinnerung/health über layout.js (ZIELE_MODUL)
   }
 }
 rahmen(); addEventListener('hashchange', route); route();
@@ -477,5 +502,5 @@ addEventListener('pageshow', (e) => { if (e.persisted && neuLaden && frei()) loc
 window.atem = { VERSION, test: TEST ? {
   plan: () => letzteSitzung && letzteSitzung.uhr && letzteSitzung.uhr.plan, zustand: () => letzteSitzung && letzteSitzung.uhr && letzteSitzung.uhr.plan ? letzteSitzung.uhr.zustand() : null,
   sitzung: () => letzteSitzung, tonProtokoll: async () => (await import('./ton.js')).ton.protokoll(), speicher: () => ({ einst: speicher.einst(), sicherheit: speicher.sicherheit(), protokoll: speicher.protokoll(), messwerte: speicher.messwerte(), training: speicher.training() }),
-  heute: (d) => heuteTraining(d ? new Date(d) : new Date()), baue: (id, o) => baue(TECHNIKEN[id], o || {}), speicherObj: speicher
+  heute: (d) => heuteTraining(d ? new Date(d) : new Date()), ziele: () => zieleModul() /* 020-ziele */, baue: (id, o) => baue(TECHNIKEN[id], o || {}), speicherObj: speicher
 } : undefined };

@@ -3,14 +3,15 @@
 // Entscheidung wie ton.js 0.1.3.1/0.1.4 (ansage-test): je Lauf jeder Schritt höchstens einmal (Schlüssel Schritt + Startzeit),
 // gleiches Wort direkt davor → still, Schritt < 2 s → still (Kurzwort 1,2–2 s nur mit kurzwort:true), „messen“ → still,
 // zu spät (Hintergrund, Last) → still, Anhalten/Pause löscht alles Geplante, verschobene Schritte neu, Gesprochenes nie noch einmal.
-const LANG = { de: 'de-DE', en: 'en-GB', ar: 'ar-EG' };
+const LANG = { de: 'de-DE', en: 'en-GB', ar: 'ar-EG', it: 'it-IT' };   // 020: + Italienisch
 const ID = { ein: 'ein', ein2: 'ein2', halten_voll: 'halten_voll', halten_leer: 'halten_leer', aus: 'aus' };   // dieselben Phasen wie heute
 const KURZ = { ein: 'ein_kurz', aus: 'aus_kurz', halten_voll: 'halten_voll_kurz', halten_leer: 'halten_leer_kurz' };
 // Systemstimme: kurze Wörter (Sprach-Verzögerung); „Leer halten“ statt nur „Halten“ (texte/<sp>.json → ansagen)
 const SYS = {
   de: { ein: 'Ein', ein2: 'Noch etwas', halten_voll: 'Halten', halten_leer: 'Leer halten', aus: 'Aus', ein_kurz: 'Ein', aus_kurz: 'Aus', halten_voll_kurz: 'Halten', halten_leer_kurz: 'Leer' },
   en: { ein: 'In', ein2: 'Sip in', halten_voll: 'Hold', halten_leer: 'Hold empty', aus: 'Out', ein_kurz: 'In', aus_kurz: 'Out', halten_voll_kurz: 'Hold', halten_leer_kurz: 'Empty' },
-  ar: { ein: 'شهيق', ein2: 'زِدْ شهيقًا', halten_voll: 'احبِسْ', halten_leer: 'احبِسْ فارغًا', aus: 'زفير', ein_kurz: 'شهيق', aus_kurz: 'زفير', halten_voll_kurz: 'احبِسْ', halten_leer_kurz: 'فراغ' }
+  ar: { ein: 'شهيق', ein2: 'زِدْ شهيقًا', halten_voll: 'احبِسْ', halten_leer: 'احبِسْ فارغًا', aus: 'زفير', ein_kurz: 'شهيق', aus_kurz: 'زفير', halten_voll_kurz: 'احبِسْ', halten_leer_kurz: 'فراغ' },
+  it: {"ein": "Inspira", "ein2": "Ancora un po'", "halten_voll": "Trattieni", "halten_leer": "Trattieni a vuoto", "aus": "Espira", "ein_kurz": "Dentro", "aus_kurz": "Fuori", "halten_voll_kurz": "Trattieni", "halten_leer_kurz": "Vuoto"}   // 020: Italienisch (texte/it.json → ansagen)
 };
 const gleich = (a, b) => a && b && a.replace('_kurz', '') === b.replace('_kurz', '');
 export const sprachen = () => Object.keys(LANG);
@@ -75,7 +76,8 @@ export function erzeugeAnsager(o = {}) {
         if (ms && (wann - at) * 1000 + w.dauer_ms > ms - rand && id !== ID[s.art]) return null;   // Kurzwort muss 300 ms (Regel 0.1.5: 100 ms) vor Schrittende fertig sein
         const q = ctx.createBufferSource(); q.buffer = sprite.buf; q.connect(ausgang(ctx));
         q.start(wann, (w.ab_ms + sprite.onset) / 1000, w.dauer_ms / 1000);
-        const e = { q, st, wann, ctx, lauf }; offen.set(i, e); q.onended = () => { if (offen.get(i) === e) offen.delete(i); };
+        const e = { q, st, wann, ctx, lauf, dauer_ms: w.dauer_ms };   // 020-klang: Wortlänge für das Zählton-Fenster
+        offen.set(i, e); q.onended = () => { if (offen.get(i) === e) offen.delete(i); };
         log({ art: 'wort', weg: 'sprite', i, id, st, wann, at, jetzt, sp });
         return e;
       }
