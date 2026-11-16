@@ -221,7 +221,7 @@ function kommStellen(o, id) { const e = id.replace(/[-]/g, '\\-'); return (o.mat
 /* KOMM-P (Prüfung 16.11., Befund 1/3): der Wächter oben zählt nur Stellen mit dem Block-Namen. Eine NEUE Text-Suche an einer
    BESTEHENDEN Zugriffs-Stelle (z. B. mkwEval sucht zusätzlich einen Kommentar-Text) blieb unbemerkt. Darum zusätzlich:
    (1) Zugriffs-Funktionen = jede Funktion, die einen KOMM-Block-Namen als Zeichenkette nennt; dazu die Funktionen, die sie mit
-       dem Namen als Argument aufruft (formLoad → blockLoad), und – wenn sie den Text zurückgibt (… textContent) – ihre Aufrufer
+       dem Namen oder dem gelesenen Text als Argument aufruft (formLoad → blockLoad, loadWorklet → SynthHost.load), und – wenn sie den Text zurückgibt (… textContent) – ihre Aufrufer
        im selben Umfeld (MDX: src() → load).
    (2) In diesen Funktionen (samt inneren Funktionen) jede Such-Zeichenkette / jeden Such-Regex (indexOf, includes, split, replace,
        match, search, exec, test, new RegExp …; auch über eine const im Umfeld) auf Quell-Block und gekürztem Block nachrechnen:
@@ -256,15 +256,17 @@ function kommSammeln(ast, src, opt, info) {
   const besuch = (n, p) => {
     if (!n || typeof n.type !== 'string') return;
     const fn = n.type === 'FunctionDeclaration' || n.type === 'FunctionExpression' || n.type === 'ArrowFunctionExpression';
-    if (fn) { const r = {name: fnName(n, p), a: n.start, b: n.end, sk, lits: [], ids: new Set(), mitId: [], ret: false, consts: {}, eltern: stapel[stapel.length - 1], zeile: z0 + n.loc.start.line};
+    if (fn) { const r = {name: fnName(n, p), methode: !n.id && !!p && p.type !== 'VariableDeclarator', a: n.start, b: n.end, sk, lits: [], ids: new Set(), mitId: [], ret: false, consts: {}, eltern: stapel[stapel.length - 1], zeile: z0 + n.loc.start.line};
       if (n.type === 'ArrowFunctionExpression' && n.expression && src.slice(n.body.start, n.body.end).includes('textContent')) r.ret = true;
       stapel.push(r); KOMM_P.fn.push(r); }
     const top = stapel[stapel.length - 1], wo = z0 + (n.loc ? n.loc.start.line : 0);
     if (n.type === 'Literal' && typeof n.value === 'string') { const v = n.value.replace(/^#/, ''); if (ids.includes(v)) top.ids.add(v); }
     else if (n.type === 'ReturnStatement' && n.argument && src.slice(n.argument.start, n.argument.end).includes('textContent')) top.ret = true;
-    else if (n.type === 'VariableDeclarator' && n.id.type === 'Identifier') { const L = kommLit(n.init); if (L) top.consts[n.id.name] = L; }
+    else if (n.type === 'VariableDeclarator' && n.id.type === 'Identifier') { const L = kommLit(n.init); if (L) top.consts[n.id.name] = L; if (n.init && src.slice(n.init.start, n.init.end).includes('textContent')) (top.textVars || (top.textVars = new Set())).add(n.id.name); }
     else if (n.type === 'CallExpression' || n.type === 'NewExpression') {
       const c = n.callee, a0 = n.arguments[0];
+      const gibt = n.arguments.some(x => x.type === 'Identifier' && stapel.some(r => r.textVars && r.textVars.has(x.name)));   // Text als Argument weitergereicht (loadWorklet → SynthHost.load)
+      if (gibt && (c.type === 'Identifier' || c.type === 'MemberExpression' && !c.computed)) (top.mitText || (top.mitText = [])).push(c.type === 'Identifier' ? c.name : '.' + c.property.name);
       if (c.type === 'Identifier') {
         if (n.type === 'CallExpression') KOMM_P.rufe.push({name: c.name, sk, pos: n.start});
         if (n.arguments.some(x => x.type === 'Literal' && ids.includes(x.value))) top.mitId.push(c.name);
@@ -291,7 +293,7 @@ function kommPruefen() {
   for (const w of KOMM_P.wurzeln) if (w.ids.size) fail([...w.ids].join(', ') + ': Block-Name auf oberster Ebene eines Skripts (' + w.name + ') – Zugriff von Hand prüfen, dann KOMM-P erweitern');
   for (const r of KOMM_P.fn) for (const id of r.ids) {
     add(r, id);
-    for (const c of r.mitId) for (const f of KOMM_P.fn) if (f.name === c) add(f, id);
+    for (const c of r.mitId.concat(r.mitText || [])) for (const f of KOMM_P.fn) if (c[0] === '.' ? f.methode && '.' + f.name === c : !f.methode && f.name === c) add(f, id);   // X.m(text) → nur Methoden m, f(text) → nur freie f
     if (r.ret && r.name) { const P = r.eltern; for (const k of KOMM_P.rufe) if (k.name === r.name && k.sk === r.sk && k.pos >= P.a && k.pos < P.b && !(k.pos >= r.a && k.pos < r.b)) { const f = innen(k.sk, k.pos); if (f) add(f, id); } }
   }
   const zahl = (s, v) => s.split(v).length - 1;
