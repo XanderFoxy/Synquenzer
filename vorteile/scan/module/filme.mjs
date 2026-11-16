@@ -74,14 +74,30 @@ export const STANDARD = {
   knuellerFrischTage: 14, // Box/Staffel: der gesenkte Preis gilt erst seit weniger als so vielen Tagen
   angebotMinPct: 10, // Boxen/andere Serien „im Angebot“: mindestens so viel % unter dem üblichen (bzw. frisch unter dem letzten) Preis
   neuEntdecktTage: 3, // Staffel aus den Serien-Charts, so kurz erst beobachtet: „neu entdeckt, noch ohne Preisvergleich“
+  // Breite Suche (Xander 16.11.2026: „wirklich alles, was wirklich da ist“): Top 200 JE GENRE (Filme und Staffeln, filme.json
+  // charts.breit) – nur ZUSÄTZLICH zum bisherigen Weg. Der bisherige Weg sieht genau dieselben Daten wie vorher (Top 100 der
+  // bisherigen Genres); neue Treffer werden angehängt, Doppel fallen weg, und alte Treffer verdrängt nie ein neuer (eigene Kappen).
+  breitMaxCharts: 18, // Genre-Charts pro Lauf (am längsten nicht geholte zuerst; der Rest im nächsten Lauf)
+  breitMaxLookups: 4, // Lookup-Abrufe für Kandidaten (je lookupMax Nummern)
+  breitGesamtMax: 40, // alle Apple-Abrufe des Laufs zusammen (bisheriger Weg + breit)
+  breitBisSek: 150, // danach keine breiten Abrufe mehr (main bricht ein Modul nach 240 s ab)
+  breitQualiAbrufe: 6, // Wikidata-Abfragen (Qualität) nur für neue Kandidaten, nach denen des bisherigen Wegs
+  breitQualiBisSek: 200,
+  breitMerkTage: 1, // Kandidaten eines Genres, das in diesem Lauf nicht dran war, so lange weiter prüfen (Preis per Lookup)
+  breitLeerTage: 7, // Genre ohne Einträge (gibt es im deutschen Store nicht) so lange ruhen lassen
+  breitVergessenTage: 30, // Chart-Preis-Historie (zf.breit.p) danach löschen
+  breitMaxFuer399: 100, // „Für 3,99 €“ gesamt (die bisherigen Treffer zählen weiter gegen maxGruppe und werden nie verdrängt)
+  breitMaxGruppe: 60, // Action/Comedy gesamt
+  breitMaxAngebot: 120, // „angebot“ gesamt
+  breitMaxSerien: 30, // Staffeln mit echter Senkung aus den Genre-Charts
 };
 
 export const sucheUrl = (term, staffel = false, limit = STANDARD.sucheLimit, land = 'de') =>
   `${APPLE}/search?term=${encodeURIComponent(term)}&country=${land}&media=${staffel ? 'tvShow' : 'movie'}&entity=${staffel ? 'tvSeason' : 'movie'}&limit=${staffel ? 50 : limit}`;
 export const lookupUrl = (ids, land = 'de') => `${APPLE}/lookup?id=${ids.map(i => String(i).replace(/^itunes:/, '')).join(',')}&country=${land}`;
-export const chartUrl = genre => `${APPLE}/de/rss/topmovies/limit=100/genre=${genre}/json`;
+export const chartUrl = (genre, limit = 100) => `${APPLE}/de/rss/topmovies/limit=${limit}/genre=${genre}/json`;
 // Serien-Charts (Legacy-RSS „toptvseasons“, gleiches Format wie topmovies; ohne Genre = alle Serien) – Format im Roh-Lauf prüfen
-export const serienChartUrl = genre => `${APPLE}/de/rss/toptvseasons/limit=100${genre ? `/genre=${genre}` : ''}/json`;
+export const serienChartUrl = (genre, limit = 100) => `${APPLE}/de/rss/toptvseasons/limit=${limit}${genre ? `/genre=${genre}` : ''}/json`;
 // Reihenfolge der Gruppen in filme.json (die Seite zeigt: Wunschliste · Für 3,99 € · Action & Thriller · Comedy · 80er & Klassiker
 // · Disney · Serien; „angebot“ und „neu“ bleiben für ältere Fassungen der Seite)
 // „boxen“ (15.11.2026) steht hinten: ältere Seiten kennen die Gruppe nicht und lassen sie weg
@@ -958,10 +974,17 @@ export default async function filme(ctx) {
   const alleCharts = []; // alle Chart-Einträge dieses Laufs (Weg „charts“: Apple-Nummern per Titel/Jahr-Abgleich)
   const kinderIds = new Set(), kinderReihen = new Set(); // alle Titel der Kinder-Charts (auch teure: chartTreffer kennt nur Neues und Angebote)
   const neuGrenze = new Date(new Date(jetzt).getTime() - neuMonate * 30.44 * 864e5);
+  // breite Suche: dieselben Feeds mit Top 200 (kein Abruf extra); der bisherige Weg bekommt genau die Top 100 wie vorher,
+  // Platz 101–200 gehen nur an die breite Suche (Schritt 4d)
+  const breitCfg = chartCfg.breit && typeof chartCfg.breit === 'object' && chartCfg.breit.aktiv !== false ? chartCfg.breit : null;
+  const breitLimit = breitCfg ? Math.min(200, Math.max(100, Number(breitCfg.limit) || 200)) : 100;
+  const breitRest = []; // { e, g } Platz 101–200 der bisherigen Genres
   for (const g of [...chartsNeu.map(x => ({ ...x, neu: true })), ...chartsAngebot.map(x => ({ ...x, neu: false }))]) {
     let eintraege;
     try {
-      eintraege = leseCharts(await apple(chartUrl(g.id)));
+      const roh = leseCharts(await apple(chartUrl(g.id, breitLimit)));
+      eintraege = roh.filter(e => e.pos <= 100);
+      for (const e of roh) if (e.pos > 100) breitRest.push({ e, g });
       status['apple-charts'].anzahl += eintraege.length;
       alleCharts.push(...eintraege);
       if (kinderCharts.has(Number(g.id))) for (const e of eintraege) { kinderIds.add(e.id); const r = kinderReihe(e.titel); if (r) kinderReihen.add(r); }
@@ -1430,6 +1453,139 @@ export default async function filme(ctx) {
   // k fehlt (vor dem 15.11.2026 gemerkt) = unbekannt; kommt mit der nächsten regulären Abfrage (qualiTage), kein Abruf extra
   const qualiVon = id => { const q = zf.quali[nr(id)]; return q ? { l: q.l, horror: q.h === 1, kinder: 'k' in q ? q.k === 1 : null, rt: q.rt ?? null, jahr: q.j ?? null } : null; };
 
+  // 4d) Breite Suche (Xander 16.11.2026: „wirklich alles, was wirklich da ist“): Top 200 JE GENRE – Filme (topmovies) und
+  //     Staffeln (toptvseasons), Genres in filme.json charts.breit. Nur ZUSÄTZLICH: läuft nach allen Schritten des bisherigen
+  //     Wegs (Abrufe, Qualität), mit eigenem Budget (breitGesamtMax Apple-Abrufe im ganzen Lauf, breitBisSek). Der Chart-Preis
+  //     (Kauf) ist der Vorfilter; der Lookup (bis lookupMax Nummern je Abruf) holt nur Kandidaten: Filme ≤ angebotPreisAktion,
+  //     Action/Comedy ≤ angebotMax, Filme ohne Preis, Gesenktes laut eigener Chart-Preis-Historie (zf.breit.p). Staffeln nur
+  //     mit echter Senkung gegenüber dem zuvor selbst gesehenen Chart-Preis. Genres rotieren (am längsten nicht geholte zuerst).
+  const bst = { ok: true, anzahl: 0, fehler: [], charts: 0, ruhen: 0, offen: 0, abrufe: 0, kandidaten: 0, lookups: 0, filme: 0, staffeln: 0, quali: 0, genres: [] };
+  status['apple-breit'] = bst;
+  const breitIds = new Set(); // Filme, die nur die breite Suche gefunden hat (Kappen, Push-Reihenfolge)
+  const breitVergleich = new Map(); // id -> { vorher, hoch } aus der eigenen Chart-Preis-Historie
+  const breitStaffeln = []; // { id, vorher }
+  if (breitCfg) {
+    const zb = (zf.breit ||= {});
+    zb.g ||= {}; zb.p ||= {};
+    const tagNr = Math.round(tagMs(tag) / 864e5);
+    const vorAbrufe = appleAbrufe;
+    const breitZeit = () => Date.now() - start > m.breitBisSek * 1000;
+    const altGenres = new Set([...chartsNeu, ...chartsAngebot].map(g => Number(g.id)));
+    const serienEigen = new Set(posten.filter(p => p.serie).flatMap(p => liste(zf.ids[p.key]?.ids)));
+    const genres = [...liste(breitCfg.filme).map(g => ({ ...g, art: 'film' })), ...liste(breitCfg.serien).map(g => ({ ...g, art: 'staffel' }))]
+      .filter(g => Number.isInteger(Number(g?.id)) && !(g.art === 'film' && (horrorIds.has(Number(g.id)) || altGenres.has(Number(g.id)))))
+      .map(g => ({ ...g, key: `${g.art === 'film' ? 'f' : 's'}${g.id}` }))
+      .sort((a, b) => String(zb.g[a.key]?.t || '').localeCompare(String(zb.g[b.key]?.t || '')));
+    // Chart-Preis merken (kompakt): [Preis ct, höchster ct, vorheriger anderer ct (0 = keiner), erster Tag, letzter Tag, Tag seit Preis]
+    const merkP = e => {
+      if (e?.preis == null) return zb.p[nr(e?.id)] || null;
+      const k = nr(e.id), c = Math.round(e.preis * 100);
+      let v = zb.p[k];
+      if (!Array.isArray(v) || v.length < 6) v = zb.p[k] = [c, c, 0, tagNr, tagNr, tagNr];
+      else { if (v[0] !== c) { v[2] = v[0]; v[0] = c; v[5] = tagNr; } v[1] = Math.max(v[1], c); v[4] = tagNr; }
+      return v;
+    };
+    // echte Senkung laut eigener Chart-Historie: ≥ angebotMinPct % unter dem zuletzt gesehenen anderen Preis, und frisch
+    const gesenktP = (v, preis = v ? v[0] / 100 : null) => !!v && preis != null && v[2] > 0 && preis <= (v[2] / 100) * (1 - m.angebotMinPct / 100) && tagNr - v[5] < m.knuellerFrischTage;
+    const deutlichP = (v, preis) => !!v && preis != null && v[1] > 0 && preis <= (v[1] / 100) * m.deutlichFaktor;
+    const filmOk = (preis, genre, v) => preis == null || preis <= m.angebotPreisAktion || (!!genreGruppe(genre) && preis <= m.angebotMax) || gesenktP(v, preis) || deutlichP(v, preis);
+    const kand = new Map(); // id -> { e, g, art }
+    const pruefe = (e, g, art) => {
+      if (!e?.id || kand.has(e.id)) return false;
+      const v = merkP(e);
+      if (art === 'film') {
+        if (chartTreffer.has(e.id) || listenIds.has(e.id)) return false; // gehört dem bisherigen Weg
+        if (istHorror(e, horrorIds) || horrorText(e.text, e.genre) >= 3) return false;
+        if (!filmOk(e.preis, e.genre, v)) return false;
+      } else if (zf.staffelPool[e.id] != null || serienEigen.has(e.id) || !gesenktP(v)) return false;
+      kand.set(e.id, { e, g, art });
+      return true;
+    };
+    for (const { e, g } of breitRest) pruefe(e, { id: g.id, name: g.name, key: `f${g.id}` }, 'film');
+    for (const g of genres) {
+      const z = zb.g[g.key];
+      if (z?.leer && tageZwischen(z.leer, tag) < m.breitLeerTage) { bst.ruhen++; continue; }
+      if (bst.charts >= m.breitMaxCharts || breitZeit() || appleGestoert() || appleAbrufe >= m.breitGesamtMax - 1) {
+        // nicht dran: Kandidaten vom letzten Mal (höchstens breitMerkTage alt) weiter prüfen – der Preis kommt frisch per Lookup
+        bst.offen++;
+        if (z?.t && tageZwischen(String(z.t).slice(0, 10), tag) <= m.breitMerkTage) {
+          for (const [id, pos] of liste(z.k)) if (!kand.has(id) && !chartTreffer.has(id) && !listenIds.has(id)) kand.set(id, { e: { id, pos }, g, art: g.art, alt: true });
+        }
+        continue;
+      }
+      bst.charts++;
+      try {
+        const e = leseCharts(await apple(g.art === 'film' ? chartUrl(g.id, breitLimit) : serienChartUrl(g.id, breitLimit)));
+        bst.anzahl += e.length;
+        const k = e.filter(x => pruefe(x, g, g.art));
+        zb.g[g.key] = { t: new Date(jetzt).toISOString(), n: e.length, k: k.slice(0, 200).map(x => [x.id, x.pos]), ...(e.length ? {} : { leer: tag }) };
+        bst.genres.push({ id: g.id, name: g.name || '', art: g.art, eintraege: e.length, kandidaten: k.length });
+      } catch (e) { bst.ok = false; bst.fehler.push(`${g.art === 'film' ? 'Filme' : 'Serien'} ${g.name || g.id}: ${e.message}`); }
+    }
+    bst.kandidaten = kand.size;
+    // Lookup für Kandidaten ohne frische Daten: Filme zuerst, Billiges zuerst
+    const ids = [...kand.values()].filter(x => !daten.has(x.e.id))
+      .sort((a, b) => (a.art === b.art ? 0 : a.art === 'film' ? -1 : 1) || ((a.e.preis ?? m.angebotPreis) - (b.e.preis ?? m.angebotPreis)) || ((a.e.pos ?? 999) - (b.e.pos ?? 999)))
+      .map(x => x.e.id);
+    for (let i = 0; i < ids.length && bst.lookups < m.breitMaxLookups; i += m.lookupMax) {
+      if (breitZeit() || appleGestoert() || appleAbrufe >= m.breitGesamtMax) { bst.ohneLookup = ids.length - i; break; }
+      const teil = ids.slice(i, i + m.lookupMax), set = new Set(teil);
+      bst.lookups++;
+      try {
+        for (const r of leseErgebnisse(await apple(lookupUrl(teil)))) {
+          const d = ausItunes(r);
+          if (d && set.has(d.id) && !fremdStore(r)) daten.set(d.id, { ...daten.get(d.id), ...d });
+        }
+      } catch (e) { bst.ok = false; bst.fehler.push(`Lookup: ${e.message}`); }
+    }
+    // Kandidaten mit echtem Preis entscheiden
+    for (const { e, g, art } of kand.values()) {
+      const d = daten.get(e.id);
+      const v = zb.p[nr(e.id)] || null;
+      if (art === 'film') {
+        if (!d && !e.titel) continue; // gemerkter Kandidat ohne Lookup: nächster Lauf
+        if (d && d.typ !== 'film') continue;
+        const preis = d ? d.preisHd ?? d.preisSd ?? null : e.preis;
+        const genre = d?.genre ?? e.genre;
+        if (preis == null || istHorror({ genre }, horrorIds) || !filmOk(preis, genre, v)) continue;
+        chartTreffer.set(e.id, { pos: e.pos ?? 999, genreId: g.id, neu: false, d: e.titel ? e : { ...d, preis }, breit: true });
+        breitIds.add(e.id);
+        if (v) breitVergleich.set(e.id, { vorher: v[2] > 0 ? v[2] / 100 : null, hoch: v[1] / 100 });
+        bst.filme++;
+      } else {
+        if (d?.typ !== 'staffel' || !v || v[2] <= 0) continue;
+        const preis = d.preisHd ?? d.preisSd ?? null;
+        if (!gesenktP(v, preis)) continue; // auch der echte Preis muss unter dem früher gesehenen liegen
+        const info = (d.komplett && komplettInfo(d.titel)) || staffelInfo(d.titel) || komplettInfo(d.titel);
+        if (wunschPosten(info?.serie, d.kuenstler)) continue; // Staffel deiner Serie: bleibt beim bisherigen Weg
+        daten.set(e.id, { ...d, serie: info?.serie || d.kuenstler || d.titel, nr: info?.nr ?? null, zusatz: info?.zusatz || '' });
+        breitStaffeln.push({ id: e.id, vorher: v[2] / 100 });
+        bst.staffeln++;
+      }
+    }
+    // Qualität (Wikidata) nur für die neuen Film-Kandidaten – nach denen des bisherigen Wegs, eigenes Budget
+    if (m.qualitaet !== false) {
+      const kq = [...breitIds].filter(id => !qualiFrisch(zf.quali[nr(id)])).map(id => {
+        const c = chartTreffer.get(id), d = daten.get(id) || c?.d || {};
+        return { id, nr: nr(id), name: suchName(d.titel), jahr: jahrImTitel(d.titel) ?? d.jahr ?? null, preis: d.preisHd ?? d.preisSd ?? d.preis ?? null, pos: c?.pos ?? 999 };
+      }).filter(t => t.name && /^\d+$/.test(t.nr)).sort((a, b) => (a.preis ?? 99) - (b.preis ?? 99) || a.pos - b.pos);
+      for (let i = 0; i < kq.length && bst.quali < m.breitQualiAbrufe && Date.now() - start < m.breitQualiBisSek * 1000; i += m.qualiJeAbfrage) {
+        const teil = kq.slice(i, i + m.qualiJeAbfrage);
+        bst.quali++;
+        try {
+          const zeilen = leseQuali(await holeText(wikidataUrl(qualiAbfrage(teil)), { headers: { accept: 'application/sparql-results+json' } }));
+          for (const t of teil) {
+            const q = qualiWahl(zeilen, t);
+            zf.quali[t.nr] = q ? { l: q.l, h: q.horror ? 1 : 0, k: q.kinder ? 1 : 0, rt: q.rt, j: q.jahr ?? null, tag } : { l: -1, tag };
+          }
+        } catch (e) { bst.fehler.push(`Wikidata (Qualität): ${e.message}`); break; }
+      }
+    }
+    for (const [k, v] of Object.entries(zb.p)) if (!Array.isArray(v) || tagNr - v[4] > m.breitVergessenTage) delete zb.p[k];
+    for (const k of Object.keys(zb.g)) if (!genres.some(g => g.key === k)) delete zb.g[k];
+    bst.abrufe = appleAbrufe - vorAbrufe;
+  }
+
   // 5) Titel bauen + Preis-Historie
   const titel = new Map(); // id -> Titel-Objekt
   const neueTiefst = new Set();
@@ -1450,6 +1606,12 @@ export default async function filme(ctx) {
       t = titelObjekt({ ...d, chart: chartTreffer.get(id)?.pos ?? null }, lage);
       t._hoechst = lage.hoechst; t._gesenkt = lage.gesenkt; t._horror = istHorror(d, horrorIds); t._rang = bw.rang; t._guenstig = bw.guenstig;
       if (d.typ === 'box') t.angebot = !!bw.guenstig || !!bw.knueller; // Box: nur echt gesenkt (nicht nach Kurz-Hoch, nicht ewig)
+      // breite Suche: eigener früher gesehener Chart-Preis als Vergleich (der Radar kennt den Film sonst erst ab heute)
+      const bv = breitVergleich.get(id);
+      if (bv && t.preis != null) {
+        if (bv.hoch > (t._hoechst ?? 0)) t._hoechst = bv.hoch;
+        if (t.vorher == null && bv.vorher > t.preis) { t.vorher = bv.vorher; t._gesenkt = true; }
+      }
       const ct = chartTreffer.get(id)?.d; // Lookup ohne Beschreibung -> die aus den Charts
       t._horrorText = Math.max(horrorText(d.text, d.genre), horrorText(ct?.text, ct?.genre ?? d.genre)); // nur Chart-Titel zählen: 0–3
     } else {
@@ -1463,6 +1625,14 @@ export default async function filme(ctx) {
   const gruppen = { wunsch: [], angebot: [], neu: [], achtziger: [], serien: [], disney: [], boxen: [] };
   const wunschIds = new Set(), kuratiert = new Map(); // id -> 'achtziger' | 'disney'
   const nachPreis = (a, b) => (b.angebot - a.angebot) || ((a.preis ?? Infinity) - (b.preis ?? Infinity));
+  // Kappe mit Schutz: die Treffer des bisherigen Wegs zählen wie vorher gegen altMax (dieselben bleiben), neue Treffer der
+  // breiten Suche füllen nur bis gesamtMax auf – ein neuer Treffer verdrängt nie einen bisherigen
+  const kappe = (arr, altMax, gesamtMax) => {
+    let alt = 0;
+    const r = arr.filter(t => breitIds.has(t.id) || ++alt <= altMax);
+    let frei = Math.max(0, gesamtMax - Math.min(alt, altMax));
+    return r.filter(t => !breitIds.has(t.id) || frei-- > 0);
+  };
 
   // Wunschliste: immer alle Titel
   for (const p of posten.filter(x => x.gruppe === 'wunsch')) {
@@ -1535,6 +1705,22 @@ export default async function filme(ctx) {
   for (const t of andere) t.wunsch = false;
   ss.staffeln = andere.length;
   gruppen.serien.push(...andere.sort(nachRang).slice(0, m.maxSerienAngebot));
+  // Staffeln aus der breiten Suche: nur mit echter Senkung gegenüber dem selbst gesehenen Chart-Preis, hinter den bisherigen
+  const inSerien = new Set(gruppen.serien.map(t => t.id));
+  const breitS = [];
+  for (const b of breitStaffeln) {
+    if (inSerien.has(b.id) || wunschStaffeln.has(b.id)) continue;
+    const t = baue(b.id);
+    if (!t || t._alt || t._horror || t.typ !== 'staffel' || t.preis == null || !(b.vorher > t.preis)) continue;
+    const pct = Math.round((1 - t.preis / b.vorher) * 100);
+    if (pct < m.angebotMinPct) continue;
+    t.vorher = b.vorher; t._gesenkt = true;
+    if (!t.ersparnis) t.ersparnis = { eur: round(b.vorher - t.preis, 2), pct, basis: 'zuletzt' };
+    t.angebot = true; t.wunsch = false; t._rang = Math.max(t._rang ?? 0, pct);
+    breitS.push(t);
+  }
+  status['apple-breit'].staffelnAngebot = breitS.length;
+  gruppen.serien.push(...breitS.sort(nachRang).slice(0, m.breitMaxSerien));
   // Film-Boxen: nur im Angebot (≥ angebotMinPct % unter dem üblichen bzw. frisch unter dem letzten Preis) oder Knüller – eine Box,
   // die immer günstig je Film ist, aber nicht gesenkt, steht nicht unter „im Angebot“ (Prüfer 15.11.). Gleich benannte Boxen
   // (Star Wars, „10 Modern Classics“ je zweimal) nur einmal: die günstigere. Knüller zuerst, dann nach Ersparnis/Preis je Film.
@@ -1584,8 +1770,8 @@ export default async function filme(ctx) {
   gruppen.angebot = [...kandidaten.values()]
     .filter(t => t.typ === 'film' && !t._horror && t.preis != null && (t.preis <= m.angebotPreis
       || (t.preis <= m.angebotPreisAktion && ((t.istTiefst && t.tage >= 7 && (t._hoechst ?? 0) > t.preis) || (aktion && t._gesenkt)))))
-    .sort((a, b) => rang(a) - rang(b) || ((a.chart ?? 999) - (b.chart ?? 999)) || (a.preis - b.preis))
-    .slice(0, m.maxAngebot);
+    .sort((a, b) => rang(a) - rang(b) || ((a.chart ?? 999) - (b.chart ?? 999)) || (a.preis - b.preis));
+  gruppen.angebot = kappe(gruppen.angebot, m.maxAngebot, m.breitMaxAngebot);
   for (const t of raumTreffer) {
     gruppen.angebot.push({
       id: `appletv:${t.f.umc}`, typ: 'film', titel: t.p.item.titel, jahr: t.p.item.jahr ?? null,
@@ -1656,17 +1842,17 @@ export default async function filme(ctx) {
       : { id: `appletv:${r.f.umc}`, typ: 'film', titel, jahr: null, ...NULL_TITEL, preis: r.preis, seit: tag, tage: 1, angebot: true, link: r.f.link, quelle: 'Apple', raum: r.raum, raumUrl: r.raumUrl });
   }
   const ausRaumIds = new Set(ausRaum.map(t => t.id));
-  gruppen.fuer399 = [
+  gruppen.fuer399 = kappe([
     ...raumTitel.filter(t => t.preis != null && t.preis <= m.angebotPreis),
     ...ausRaum,
     ...pool.filter(t => t.preis <= m.angebotPreis && !ausRaumIds.has(t.id)).sort(nachWert),
     ...raumTitel.filter(t => t.preis == null),
     ...mdDeals.filter(t => mdJeFilm(t) != null && mdJeFilm(t) <= m.angebotPreis && !doppelTipp(t.titel, pool.filter(x => x.preis <= m.angebotPreis).map(x => x.titel))),
-  ].slice(0, m.maxGruppe);
+  ], m.maxGruppe, m.breitMaxFuer399);
   const mdRest = mdDeals.filter(t => !(mdJeFilm(t) != null && mdJeFilm(t) <= m.angebotPreis));
   const mdComedy = t => /kom(?:ö|oe)die|comedy/i.test(t.titel);
-  gruppen.action = [...pool.filter(t => genreGruppe(t.genre) === 'action' && istAngebotGenre(t)).sort(nachWert), ...mdRest.filter(t => !mdComedy(t))].slice(0, m.maxGruppe);
-  gruppen.comedy = [...pool.filter(t => genreGruppe(t.genre) === 'comedy' && istAngebotGenre(t)).sort(nachWert), ...mdRest.filter(mdComedy)].slice(0, m.maxGruppe);
+  gruppen.action = kappe([...pool.filter(t => genreGruppe(t.genre) === 'action' && istAngebotGenre(t)).sort(nachWert), ...mdRest.filter(t => !mdComedy(t))], m.maxGruppe, m.breitMaxGruppe);
+  gruppen.comedy = kappe([...pool.filter(t => genreGruppe(t.genre) === 'comedy' && istAngebotGenre(t)).sort(nachWert), ...mdRest.filter(mdComedy)], m.maxGruppe, m.breitMaxGruppe);
   // 80er & Klassiker: deine 80er-Liste (alle, Angebote zuerst) + gute Klassiker aus den Charts im Angebot (bis 1999)
   const in80 = new Set(gruppen.achtziger.map(t => t.id));
   const klassiker = pool.filter(t => !in80.has(t.id) && !kuratiert.has(t.id) && !wunschIds.has(t.id) && t.jahr != null && (jahrImTitel(t.titel) ?? t.jahr) <= 1999 && istAngebotGenre(t));
@@ -1727,7 +1913,7 @@ export default async function filme(ctx) {
   for (const t of gruppen.angebot) {
     if (t.quelle !== 'Apple' || !mitPreis(t) || gemeldet.has(t.id) || !t._gesenkt) continue;
     gemeldet.add(t.id);
-    neuerEintrag(t, { grund: 'Film im Angebot', wert: 50, sofort: false, gruppe: 'angebot', zusatz: t.chart ? [`Platz ${t.chart} der Charts`] : [] });
+    neuerEintrag(t, { grund: 'Film im Angebot', wert: breitIds.has(t.id) ? 49 : 50, sofort: false, gruppe: 'angebot', zusatz: t.chart ? [`Platz ${t.chart} der Charts`] : [] });
   }
   // neu (15.11.2026): Knüller unter den Boxen und den anderen Serien – nur in die Tageszusammenfassung (nie sofort)
   for (const t of [...gruppen.boxen, ...gruppen.serien.filter(x => x.wunsch === false)]) {

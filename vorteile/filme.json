@@ -239,7 +239,25 @@
     "_suche": "Nur zum Finden der Apple-Nummern (Titel-Abgleich), höchstens einmal am Tag und nur, solange Titel offen sind.",
     "horror": [4408],
     "neuMonate": 18,
-    "neuProGenre": 25
+    "neuProGenre": 25,
+    "breit": {
+      "_hinweis": "Breite Suche (Xander 16.11.2026: „wirklich alles, was wirklich da ist, auch sehen“): Top 200 je Genre im deutschen iTunes Store (Legacy-RSS topmovies/toptvseasons mit genre=), nur ZUSÄTZLICH zum bisherigen Weg – der sieht weiter genau die Top 100 seiner Genres (neu/angebot). Neue Treffer: Filme ≤ 4,99 € (für „Für 3,99 €“ zählt wie bisher nur der Kaufpreis, Leihen steht extra), Action/Comedy bis 7,99 €, Gesenktes mit eigenem Chart-Preis-Vergleich; Staffeln nur mit echter Senkung gegenüber dem früher selbst gesehenen Preis. Preis/Bild/Link per Lookup (bis 150 Nummern je Abruf). Höchstens 40 Apple-Abrufe je Lauf (alles zusammen), Genres rotieren (am längsten nicht geholte zuerst); ein Genre ohne Einträge ruht 7 Tage. Horror (4408) bleibt draußen. \"aktiv\": false = aus.",
+      "limit": 200,
+      "filme": [
+        { "id": 4402, "name": "Anime" }, { "id": 4405, "name": "Dokumentarfilm" }, { "id": 4406, "name": "Drama" },
+        { "id": 4407, "name": "Ausländische Filme" }, { "id": 4409, "name": "Independent" }, { "id": 4411, "name": "Musicals" },
+        { "id": 4412, "name": "Romanze" }, { "id": 4414, "name": "Kurzfilme" }, { "id": 4415, "name": "Special Interest" },
+        { "id": 4417, "name": "Sport" }, { "id": 4418, "name": "Western" }, { "id": 4419, "name": "Urban" },
+        { "id": 4420, "name": "Feiertage" }, { "id": 4421, "name": "TV-Filme" }, { "id": 4422, "name": "Konzertfilme" },
+        { "id": 4423, "name": "Musikdokumentationen" }, { "id": 4424, "name": "Musikfilme" }
+      ],
+      "serien": [
+        { "id": 4000, "name": "Comedy" }, { "id": 4001, "name": "Drama" }, { "id": 4002, "name": "Animation" },
+        { "id": 4003, "name": "Action & Abenteuer" }, { "id": 4004, "name": "Klassiker" }, { "id": 4005, "name": "Kinder & Familie" },
+        { "id": 4006, "name": "Sachserien & Dokus" }, { "id": 4007, "name": "Reality-TV" }, { "id": 4008, "name": "Sci-Fi & Fantasy" },
+        { "id": 4009, "name": "Sport" }, { "id": 4010, "name": "Teens" }
+      ]
+    }
   },
   "mydealz": {
     "_hinweis": "Apple-Film-Aktionen aus diesen mydealz-Gruppen (Feed /rss/gruppe/<name>, Name = Adresse der Gruppenseite mydealz.de/gruppe/<name>). Die mydealz-Suche als RSS gibt es nicht mehr (HTTP 404).",
