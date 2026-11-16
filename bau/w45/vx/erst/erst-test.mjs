@@ -66,7 +66,8 @@ async function lauf(dir, o = {}) {
   }).toString()})(fnv)`), fnvJs);
   if (o.wellen) r.wellen = await p.evaluate(new Function('fnv', `return (${(async fnvS => {
     const fnv = eval(fnvS), c = AU.ctx, A = [], B = [], orig = c.createPeriodicWave.bind(c); let L = A;
-    c.createPeriodicWave = (re, im, k) => { L.push(fnv(re) + ':' + fnv(im) + ':' + (k ? JSON.stringify(k) : '')); return orig(re, im, k); };
+    // nur die Form von makeWaves (33 Werte, ohne Optionen) zählen: native Pulse-Stimmen (pulseWave, 96 Werte + Optionen) können unter Last dazwischen laufen
+    c.createPeriodicWave = (re, im, k) => { if (re && re.length === 33 && !k) L.push(fnv(re) + ':' + fnv(im)); return orig(re, im, k); };
     const ref = makeWaves(c); L = B;
     WAVES_T = null; ERST.wv = {c: null, jobs: null, T: null, k: 0, done: false}; const t0 = performance.now(); const hk = erstWv(c);
     for (let i = 0; i < 200 && !ERST.wv.done; i++) await new Promise(r => setTimeout(r, 25));
@@ -86,20 +87,27 @@ ok('ERST-05 Rauschen wie bisher im Tipp: bei gleicher Zufallsfolge ab dem Tipp b
 const kOf = x => JSON.stringify([x.tr, x.src, x.cn, x.out, x.beat, x.dur, x.vel, x.rt]);
 const key = n => JSON.stringify(n.filter(x => !x.late).map(kOf));
 const diff = (x, y) => { const ky = new Set(y.filter(q => !q.late).map(kOf)); return x.filter(q => !q.late && !ky.has(kOf(q))); };
-// Vergleich a gegen b: fehlend = in b, nicht in a; anders = in a, aber nicht in b (geänderte oder zusätzliche Note)
-const vgl = (a, b) => ({gleich: key(a) === key(b), anders: diff(a, b), fehlend: diff(b, a), n: [a.filter(x => !x.late).length, b.filter(x => !x.late).length]});
+// Vergleich a gegen b. Nicht exakt gleiche Noten werden gepaart: dieselbe Note (Spur, Quelle, Ton, Dauer, Stärke) höchstens 0,35 s
+// versetzt = „verschoben“ (der Planer kam unter Last zu spät und setzt t = jetzt; LOOKAHEAD 0,1 s + RETRO_MAX 0,2 s); ohne Partner in b
+// = „anders“ (geänderte oder zusätzliche Note); ohne Partner in a = „fehlend“ (Planer-Aussetzer).
+const idOf = x => JSON.stringify([x.tr, x.src, x.cn, x.out, x.dur, x.vel]);
+const vgl = (a, b) => {
+  const A = diff(a, b), B = diff(b, a).slice(), versch = [], anders = [];
+  for (const q of A) { const j = B.findIndex(p => idOf(p) === idOf(q) && Math.abs(p.rt - q.rt) <= .35); if (j >= 0) { versch.push([q.beat, B[j].beat]); B.splice(j, 1); } else anders.push(q); }
+  return {gleich: key(a) === key(b), anders, versch, fehlend: B, n: [a.filter(x => !x.late).length, b.filter(x => !x.late).length]};
+};
 const versuche = []; let vI = I, vB = B, vB2 = B2;
 for (let v = 0; v < 3; v++) {
   if (v) { vI = await lauf('/i/', {sr: '44100', warte: 5000, seed: true}); vB = await lauf('/b/', {sr: '44100', warte: 5000, seed: true}); vB2 = await lauf('/b/', {sr: '44100', warte: 5000, seed: true}); }
   const c = vgl(vB2.nach.notes, vB.nach.notes), t = vgl(vI.nach.notes, vB.nach.notes), t2 = vgl(vI.nach.notes, vB2.nach.notes);
   const last = fs.readFileSync('/proc/loadavg', 'utf8').split(' ')[0];
-  versuche.push({v: v + 1, last, ctl: {gleich: c.gleich, n: c.n, anders: c.anders.length, fehlend: c.fehlend.length}, idx: {gleich: t.gleich, n: t.n, anders: t.anders.length, fehlend: t.fehlend.length, gegenB2: t2.gleich},
+  versuche.push({v: v + 1, last, ctl: {gleich: c.gleich, n: c.n, anders: c.anders.length, versch: c.versch.length, fehlend: c.fehlend.length}, idx: {gleich: t.gleich, n: t.n, anders: t.anders.length, versch: t.versch.length, fehlend: t.fehlend.length, gegenB2: t2.gleich},
     rnd: [vI.nach.rnd, vB.nach.rnd], beispiel: {idxAnders: t.anders.slice(0, 3), idxFehlend: t.fehlend.slice(0, 3), ctlAnders: c.anders.slice(0, 3)}});
-  // nur fehlende Noten (Planer-Aussetzer, Lücke > LOOKAHEAD+RETRO_MAX ≈ 0,3 s) dürfen wiederholt werden; geänderte/zusätzliche nie
+  // nur verschobene/fehlende Noten (Planer unter Last zu spät) dürfen wiederholt werden; geänderte/zusätzliche nie
   if ((c.gleich && t.gleich) || c.anders.length || t.anders.length) break;
 }
 const vz = versuche[versuche.length - 1];
-ok('ERST-06a Kontrolle: Basis gegen Basis gleich, Schläge 2–8 (Zufall nach dem Rauschen fest; nur fehlende Noten unter Last → Wiederholung, höchstens 3 Versuche)', vz.ctl.gleich, versuche.map(x => ({v: x.v, last: x.last, ctl: x.ctl})));
+ok('ERST-06a Kontrolle: Basis gegen Basis gleich, Schläge 2–8 (Zufall nach dem Rauschen fest; nur verschobene/fehlende Noten unter Last → Wiederholung, höchstens 3 Versuche)', vz.ctl.gleich, versuche.map(x => ({v: x.v, last: x.last, ctl: x.ctl})));
 ok('ERST-06 noteLog Schläge 2–8 gleich (Spur, Quelle, Ton, Schlag, Dauer, Stärke, Zeit ab Start; ohne späte)', vz.idx.gleich && vz.idx.n[0] > 0, versuche.map(x => ({v: x.v, last: x.last, idx: x.idx, bsp: x.beispiel.idxAnders.concat(x.beispiel.idxFehlend).slice(0, 3)})));
 ok('ERST-06b in keinem Versuch eine geänderte oder zusätzliche Note (Index gegen Basis und Basis gegen Basis)', versuche.every(x => !x.idx.anders && !x.ctl.anders), versuche.map(x => [x.idx.anders, x.ctl.anders]));
 ok('ERST-07 WT-Wellen in Scheiben: dieselben 16 Eingaben in derselben Reihenfolge wie makeWaves, gleicher Aufbau', I.wellen && I.wellen.hk && I.wellen.a === 16 && I.wellen.b === 16 && I.wellen.gleich && I.wellen.shape && I.wellen.alle, I.wellen);

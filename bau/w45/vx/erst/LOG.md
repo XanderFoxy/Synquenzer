@@ -29,3 +29,17 @@ Bau: `python3 bau.py` (basis.html + erst-block.js → index.html; Block nach PER
 - 06:29 erst-test Endfassung: Lauf 1 (Last 23) 11/13, Lauf 2 (Last 22) 12/13 – ERST-06 im 2. Lauf OK (61 = 61), rot nur die
   Kontrolle Basis gegen Basis (zweite Basis verlor 11 Noten unter Last). Vorher auf der funktional gleichen Fassung 583dd0c6 zweimal
   13/13 (Last 9–13).
+
+## Prüfung (Nachbessern nach Prüfer 2)
+- 08:28 Sicherung `sicherung-0828/` (index bb817396, erst-block.js, erst-test.mjs/json/out, NOTES, LOG, bau.py, pflicht.log).
+- 08:30 Befund 2 nachgeprüft: Ursache im Test, nicht in ERST – native Stimmen ziehen Math.random für die Startphase (phase(),
+  Z 25550); wie viele bis zum Worklet, hängt von der Hauptfaden-Zeit ab → Humanize/Wahrscheinlichkeit verschieben sich, schon Basis
+  gegen Basis. Auch der „fehlende“ Kick auf Schlag 2 bei Prüfer 2 (p2-tick, 1 von 5 ERST-Läufen) ist so ein Fall: dieselbe Note
+  fehlt im alten Test auch Basis gegen Basis.
+- 08:31 erst-test umgebaut: Zufall nach dem Rauschen fest 0,5; Wiederholung (≤ 3) nur bei verschobenen/fehlenden Noten; neu 06b
+  (keine geänderte/zusätzliche Note), 13 (alle Spuren WT beim ersten Tipp), 14 (WT-Note mitten in den Scheiben). Last 3,96: 16/16.
+- 08:33–08:37 eigenes A/B bei ruhigem Rechner (Last 3,5–9, 6 Paare je 1× und 4×, Skripte von Prüfer 2 in `nach/`).
+- 08:38–08:47 Stress (4× Drosselung, 4 Tests gleichzeitig, Last ≈ 12): alter Test 2× 11/13 (06/06a rot, Befund bestätigt); neuer
+  Test zeigte zwei weitere Test-Fallen: ERST-07 zählte eine Pulse-Welle einer nativen Stimme mit (Filter: nur 33 Werte ohne Optionen),
+  und vom Planer verspätete Noten (t = jetzt) galten als „anders“ → Paarung „verschoben“ (gleiche Note, ≤ 0,35 s).
+- 08:49 Befund 1: NOTES „Messung NACHHER“ trennt jetzt Belegtes (Aufbau, CPU-Zeit) von unter Last nicht Belegtem (Wandzeit, Tipp→Ton).

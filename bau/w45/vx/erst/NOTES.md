@@ -54,6 +54,19 @@ Adresse (z. B. „nur nativ“) wird 15 s nach dem Start freigegeben. Neue Namen
 erstFree, erstWkUrl, erstBufs, erstWv, erstWvIdle. Kosten vor dem Tipp: ≈ 420 KB Blob + 345–384 KB Puffer.
 
 ## Messung NACHHER (A/B abwechselnd basis/index, Rate bekannt, je frische Seite; Rohdaten `mess/ab4.jsonl`, `mess/ab4b.jsonl`, `mess/ab1.jsonl`)
+**Was belegt ist und was nicht (seit der Prüfung, Befund 1):**
+- **Belegt (Aufbau):** makeWaves, der große Blob und der Metall-Puffer laufen nicht mehr in der Tipp-Aufgabe (ERST-12, instr-Läufe,
+  Prüfer 2: makeWaves Basis +71…+229 ms im Tipp, ERST erst ab ≈ +1,5 s in Scheiben ≤ 22 ms).
+- **Belegt (CPU-Zeit der Tipp-Aufgabe, Trace):** −17 bis −25 % auch unter hoher Last (Prüfer 2: 1× 64,9 → 53,9 ms, ERST in 10 von 10
+  Paaren niedriger, Last 15–28; 4× 338 → 252 ms, P = 0,69, Last 22–30). Bei ruhigem Rechner (Prüfung, `nach/n-ab*.jsonl`, Last 3,5–9):
+  1× 75,6 → 54,6 ms (P = 0,88), 4× 292 → 233 ms (P = 0,83).
+- **Wandzeit und Tipp→Ton:** bei ruhigem Rechner sichtbar (Prüfung, je 6 Paare, Last 3,5–9: 1× Wandzeit 148 → 93 ms, P = 0,97;
+  Tipp→Ton 183 → 154 ms, P = 0,83; 4× Wandzeit 342 → 265 ms, P = 0,86; Tipp→Ton 265 → 227 ms, P = 0,64), **unter Rechnerlast 15–30
+  nicht belegt** (Prüfer 2: Tipp→Ton P = 0,52 / 0,55, Wandzeit P = 0,65 / 0,50). Tipp→Ton bei 4× ist auch in Ruhe nur schwach
+  (P = 0,64). Die Prozentzahlen der Tabelle unten (Bauer, 2–8 Paare) sind darum Stichproben, kein gesichertes Ergebnis; am iPhone
+  nachmessen (Offen 5). P = Wahrscheinlichkeit, dass ein Basis-Lauf länger dauert als ein ERST-Lauf (Mann-Whitney).
+
+Tabelle des Bauers (wenige Paare, Last 5–29):
 | | Basis | ERST | Δ |
 |---|---|---|---|
 | 4×, Stapel 1 (Last 7,6–9,5), Tipp-Aufgabe Median (4 Läufe) | 333 ms [331, 394, 318, 335] | 270 ms [288, 396, 251, 224] | −19 % |
