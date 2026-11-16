@@ -229,3 +229,4 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - MV Runde 7 (wf_06e00a77): Testlauf mv7 success 14:43, Prüfung läuft.
 - 15:2x Synquenzer 4.78.0 gemergt: rel-4780/index.html (3f39b6e3) = 4.77.0 + CHORB, 0 Konflikte, topdefs 26/8052/0/0, dupkeys 0, smoke ok. Workflow release-4-78-chorb wf_5d4ed5a8 (wrko7oemx): chorb-test, Regression A/B r4780, KOMM, CHANGES. Push macht Hauptsitzung.
 - 15:3x MV Runde 7 ONLINE (03c15dd5; Radar-Lauf 43892154739 success: Apple-Charts 673, 3,99 € 62, Serien 322; Overpass 502 → Filialen alter Stand). Fotos an Xander. MV8 läuft (wf_01a19533, wcbwkhxkb): Neuversuch 3 h statt voller Takt bei Quellen-Fehler.
+- 16:05 MV8 ONLINE (bee15b48): Neuversuch 3/6/12 h bei Quellen-Fehler, Host-Ruhe bei Retry-After; Radar-Lauf 43902212831 success, Filialen 1743 frisch.
