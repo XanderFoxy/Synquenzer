@@ -24,6 +24,8 @@
   const ARTEN = ['aktionstag', 'wochentag', 'dauerhaft', 'app', 'abholung', 'ayce', 'xxl', 'gratis'];
   const CHIPS = [
     ['heute', 'Heute', 'Was heute gilt, was als Nächstes kommt – nach Wochentag und Uhrzeit.'],
+    ['lokale', 'Lokale', 'Restaurants um Döbeln: nach Küche, Entfernung und Bewertung filtern – mit Öffnungszeiten, Karte und Ketten in der Nähe.'],
+    ['regel', 'Regelmäßig', 'Was an welchem Wochentag immer wieder läuft – zum Planen der Woche.'],
     ['ketten', 'Fastfood & Ketten', 'McDonald’s, Burger King, Subway, IKEA & Co.: Aktionstage, Apps, Coupons.'],
     ['pizza', 'Pizza & Abholen', 'Abhol-Pizza, Rabatt fürs Selbstabholen, gerettetes Essen.'],
     ['ayce', 'All-you-can-eat', 'Buffets und „so viel du magst“ – nach Entfernung ab Döbeln.'],
@@ -209,14 +211,210 @@
     return { stand: n.stand, e };
   }
 
+
+  // --- Lokale um Döbeln + Regelmäßig (Xander 16.11.2026: „die besten Italiener, Griechen, Inder, Türken … nach Bewertung und
+  // was die Leute sagen, in der Nähe von Döbeln; wann All-you-can-eat; Ketten wie Domino's – gibt es einen in der Nähe;
+  // wiederkehrende Muster zum Planen“). Daten: vom Radar (vorteile-daten …/essen.json: gepflegte Liste + OpenStreetMap mit
+  // Öffnungszeiten, weitere Lokale, nächste Filiale je Kette); fehlt die Datei, die gepflegte Liste (../vorteile/essen.json).
+  // Erst beim ersten Öffnen von „Lokale“ oder „Regelmäßig“ geholt (lazy). Merken: nur auf diesem Gerät (localStorage).
+  const LOKALE_URLS = ['https://raw.githubusercontent.com/XanderFoxy/Synquenzer/vorteile-daten/vorteile/data/essen.json', '../vorteile/essen.json'];
+  const LOK_ABLAGE = 'essen-lokale.json'; // Schlüssel in der Ablage „mv-essen“ (relativ zur Seite)
+  const FILTER_SPEICHER = 'mein-vorteil-essen-filter';
+  const MERK_SPEICHER = 'mein-vorteil-essen-gemerkt';
+  const LOK_ZEIGEN = 30; // so viele Karten sofort, der Rest auf Tipp
+  const KUECHE_NAME = {
+    italienisch: 'Italienisch', pizza: 'Pizza', griechisch: 'Griechisch', indisch: 'Indisch', tuerkisch: 'Türkisch', doener: 'Döner',
+    asiatisch: 'Asiatisch', chinesisch: 'Chinesisch', vietnamesisch: 'Vietnamesisch', japanisch: 'Japanisch/Sushi', mongolisch: 'Mongolisch',
+    burger: 'Burger', deutsch: 'Deutsch', saechsisch: 'Sächsisch', mexikanisch: 'Mexikanisch', steak: 'Steak', haehnchen: 'Hähnchen',
+    fisch: 'Fisch', balkan: 'Balkan', orientalisch: 'Orientalisch', mediterran: 'Mediterran', vegan: 'Vegan', vegetarisch: 'Vegetarisch',
+    imbiss: 'Imbiss', international: 'International', fruehstueck: 'Frühstück',
+  };
+  /** Küchen-Filter: [schlüssel, Name, Küchen] */
+  const KUECHE_FILTER = [
+    ['italienisch', 'Italienisch & Pizza', ['italienisch', 'pizza']], ['griechisch', 'Griechisch', ['griechisch']], ['indisch', 'Indisch', ['indisch']],
+    ['tuerkisch', 'Türkisch & Döner', ['tuerkisch', 'doener', 'orientalisch']], ['asiatisch', 'Asiatisch', ['asiatisch', 'chinesisch', 'vietnamesisch', 'japanisch', 'mongolisch']],
+    ['burger', 'Burger', ['burger', 'steak', 'haehnchen']], ['deutsch', 'Deutsch', ['deutsch', 'saechsisch', 'balkan']],
+  ];
+  const UMKREIS = [5, 15, 30, 70];
+  const WEIT_KM = 70; // All-you-can-eat und XXL: bis Leipzig/Chemnitz/Dresden
+  const FILTER_LEER = { kueche: '', km: 30, bew: 0, offen: false, ayce: false, xxl: false, merk: false, sort: 'beste' };
+  const STERN = '<svg class="ess-stern" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.8 5.8 6.4.9-4.6 4.5 1.1 6.3L12 17.3l-5.7 3 1.1-6.3-4.6-4.5 6.4-.9z"/></svg>';
+  const KUECHE_TEXT = [[/griech/i, 'griechisch'], [/mongol/i, 'mongolisch'], [/sushi|japan/i, 'japanisch'], [/asia|wok|chines|vietnam/i, 'asiatisch'],
+    [/steak|rodizio/i, 'steak'], [/vegan/i, 'vegan'], [/mexik/i, 'mexikanisch'], [/diner|burger/i, 'burger'], [/schnitzel|kartoffel|sächs|deutsch/i, 'deutsch'],
+    [/pizza/i, 'pizza'], [/brunch|frühstück/i, 'fruehstueck'], [/indisch|indian/i, 'indisch']];
+  const kuecheAusText = s => [...new Set(KUECHE_TEXT.filter(([re]) => re.test(s)).map(([, k]) => k))];
+  const zahlDe = (v, n = 1) => v.toLocaleString('de-DE', { minimumFractionDigits: n, maximumFractionDigits: n });
+  const kmText = v => (v == null ? '' : v < 10 ? `${zahlDe(v, v % 1 ? 1 : 0)} km` : `${Math.round(v)} km`);
+  const geo = v => (Number.isFinite(v) && Math.abs(v) <= 180 ? v : null);
+
+  /** Lokale-Datei (Radar oder gepflegte Liste) tolerant lesen -> { stand, osmStand, live, lokale, ketten, neu, weg } | null */
+  function normLokale(d) {
+    if (!d || typeof d !== 'object' || !Array.isArray(d.lokale)) return null;
+    const ids = new Set();
+    const eins = (l, osmNur) => {
+      if (!l || typeof l !== 'object') return null;
+      const id = typeof l.id === 'string' && /^[a-z0-9-]{2,80}$/.test(l.id) ? l.id : null;
+      const name = text(l.name, 90);
+      if (!id || !name || ids.has(id)) return null;
+      ids.add(id);
+      const bew = (Array.isArray(l.bewertungen) ? l.bewertungen : []).map(b => (b && Number.isFinite(b.wert) && Number.isInteger(b.anzahl) && b.anzahl > 0 && sicherUrl(b.url)
+        ? { wert: Math.max(0, Math.min(b.wert, Number(b.max) || 5)), max: Number(b.max) || 5, anzahl: b.anzahl, quelle: text(b.quelle, 50) || new URL(b.url).hostname, url: sicherUrl(b.url), stand: isoTag(b.stand) } : null)).filter(Boolean).slice(0, 3);
+      const ay = l.ayce && typeof l.ayce === 'object' ? { wochentage: (Array.isArray(l.ayce.wochentage) ? l.ayce.wochentage : []).filter(x => Number.isInteger(x) && x >= 1 && x <= 7), text: text(l.ayce.text, 80), preis: text(l.ayce.preis, 80) } : null;
+      const hinweise = (Array.isArray(l.hinweise) ? l.hinweise : []).map(h => text(h, 160)).filter(Boolean).slice(0, 4);
+      const quellen = (Array.isArray(l.quellen) ? l.quellen : []).map(q => ({ name: text(q?.name, 50), url: sicherUrl(q?.url) })).filter(q => q.url && q.name).slice(0, 3);
+      return {
+        id, name, zusatz: text(l.zusatz, 60), kueche: (Array.isArray(l.kueche) ? l.kueche : []).filter(k => typeof k === 'string' && KUECHE_NAME[k]).slice(0, 4),
+        ort: text(l.ort, 60), km: Number.isFinite(l.km) && l.km >= 0 && l.km < 500 ? l.km : null, lat: geo(l.lat), lon: geo(l.lon),
+        adresse: text(l.adresse, 120), oeffnung: text(l.oeffnung, 200), website: sicherUrl(l.website), bew, leute: text(l.leuteSagen, 240),
+        hinweise, ayce: ay && ay.wochentage.length ? ay : null, xxl: l.xxl === true || hinweise.some(h => /große Portion|XXL|riesig/i.test(h)),
+        liefert: l.liefert === true, quellen, geprueft: isoTag(l.geprueft), osmNur, osm: typeof l.osm === 'string' ? l.osm.slice(0, 30) : null,
+      };
+    };
+    const lokale = d.lokale.map(l => eins(l, false)).filter(Boolean);
+    const weitere = (Array.isArray(d.weitere) ? d.weitere : []).map(l => eins(l, true)).filter(Boolean);
+    const ketten = (Array.isArray(d.ketten) ? d.ketten : []).map(k => {
+      if (!k || typeof k !== 'object' || !text(k.kette, 40)) return null;
+      const n = k.naechste && typeof k.naechste === 'object' ? { name: text(k.naechste.name, 80), ort: text(k.naechste.ort, 60), adresse: text(k.naechste.adresse, 120), km: Number.isFinite(k.naechste.km) ? k.naechste.km : null, lat: geo(k.naechste.lat), lon: geo(k.naechste.lon), oeffnung: text(k.naechste.oeffnung, 200) } : null;
+      return {
+        id: text(k.id, 60), kette: text(k.kette, 40), filiale: text(k.filiale, 120), ort: text(k.ort, 60), km: Number.isFinite(k.km) ? k.km : null,
+        oeffnungText: text(k.oeffnungText, 160), lieferung: k.lieferung === true ? true : k.lieferung === false ? false : null, lieferungText: text(k.lieferungText, 240),
+        aktionen: (Array.isArray(k.aktionen) ? k.aktionen : []).filter(a => typeof a === 'string').slice(0, 6), naechste: n && n.km != null ? n : null,
+        quellen: (Array.isArray(k.quellen) ? k.quellen : []).map(q => ({ name: text(q?.name, 50), url: sicherUrl(q?.url) })).filter(q => q.url && q.name).slice(0, 3), geprueft: isoTag(k.geprueft),
+      };
+    }).filter(Boolean);
+    const liste = x => (Array.isArray(x) ? x : []).map(y => ({ name: text(y?.name, 80), ort: text(y?.ort, 60), km: Number.isFinite(y?.km) ? y.km : null, seit: isoTag(y?.seit) })).filter(y => y.name).slice(0, 20);
+    return { stand: isoTag(d.stand), osmStand: typeof d.osmStand === 'string' ? d.osmStand.slice(0, 10) : null, live: Array.isArray(d.weitere), lokale, weitere, ketten, neu: liste(d.neu), weg: liste(d.weg) };
+  }
+  /** Lokale aus essen.json der Seite (All-you-can-eat, XXL, feste Tagesessen mit Ort) als Lokal-Karten */
+  function lokaleAusEintraegen(n, iso) {
+    return n.eintraege.filter(e => e.ort && ['ayce', 'xxl', 'lokal'].includes(e.rubrik) && !vorbei(e, iso) && !e.nurHinweis).map(e => ({
+      id: e.id, name: e.titel, zusatz: '', kueche: kuecheAusText(`${e.titel} ${e.was}`), ort: e.ortZusatz || e.ort, km: e.km, lat: null, lon: null, adresse: e.adresse,
+      oeffnung: '', website: null, bew: [], leute: '', hinweise: [], ayce: e.rubrik === 'ayce' ? { wochentage: e.wochentage || [], text: e.wann, preis: e.preis } : null,
+      xxl: e.rubrik === 'xxl', liefert: false, quellen: e.quellen, geprueft: e.geprueft, osmNur: false, eintrag: e,
+    }));
+  }
+
+  // OSM-Öffnungszeiten (häufige Formen): „Mo-Fr 11:00-14:00,17:00-22:00; Sa,Su 12:00-22:00; Tu off“, „24/7“. Feiertage (PH)
+  // werden übergangen; Unbekanntes (Monate, Wochen, sunrise …) -> null (dann nur der Text, kein „offen“).
+  const OSM_TAG = { Mo: 1, Tu: 2, We: 3, Th: 4, Fr: 5, Sa: 6, Su: 7 };
+  function oeffnungPlan(oh) {
+    const s = String(oh || '').trim();
+    if (!s) return null;
+    const plan = {};
+    if (s === '24/7') { for (let t = 1; t <= 7; t++) plan[t] = [[0, 1440]]; return plan; }
+    let ok = false;
+    for (const teil0 of s.split(';')) {
+      const teil = teil0.trim();
+      if (!teil) continue;
+      if (/^PH\b/.test(teil)) continue;
+      const m = /^((?:Mo|Tu|We|Th|Fr|Sa|Su)(?:\s*-\s*(?:Mo|Tu|We|Th|Fr|Sa|Su))?(?:\s*,\s*(?:Mo|Tu|We|Th|Fr|Sa|Su|PH)(?:\s*-\s*(?:Mo|Tu|We|Th|Fr|Sa|Su))?)*)\s+(.+)$/.exec(teil);
+      let tage = [], zeiten;
+      if (m) {
+        for (const st of m[1].split(',').map(x => x.trim()).filter(x => x !== 'PH')) {
+          const [a, b] = st.split('-').map(x => OSM_TAG[x.trim()]);
+          if (!a) return null;
+          if (!b) tage.push(a); else for (let t = a, i = 0; i < 7; i++, t = t % 7 + 1) { tage.push(t); if (t === b) break; }
+        }
+        zeiten = m[2].trim();
+      } else if (/^\d\d:\d\d/.test(teil)) { tage = [1, 2, 3, 4, 5, 6, 7]; zeiten = teil; } else return null;
+      if (/^(off|closed)$/i.test(zeiten)) { for (const t of tage) plan[t] = []; ok = true; continue; }
+      const fenster = [];
+      for (const z of zeiten.split(',')) {
+        const f = /^\s*(\d\d):(\d\d)\s*-\s*(\d\d):(\d\d)\+?\s*$/.exec(z);
+        if (!f) return null;
+        const von = +f[1] * 60 + +f[2];
+        let bis = +f[3] * 60 + +f[4];
+        if (bis <= von) bis += 1440;
+        fenster.push([von, bis]);
+      }
+      for (const t of tage) plan[t] = fenster;
+      ok = true;
+    }
+    return ok ? plan : null;
+  }
+  const uhrText = m => { const h = Math.floor(m / 60) % 24, mi = m % 60; return mi ? `${h}:${String(mi).padStart(2, '0')}` : `${h}`; };
+  /** jetzt: { s: 'offen'|'spaeter'|'vorbei'|'zu', text } | null (Öffnungszeiten unbekannt) */
+  function oeffnungJetzt(plan, j) {
+    if (!plan) return null;
+    const vor = plan[j.wt === 1 ? 7 : j.wt - 1] || [];
+    for (const [, b] of vor) if (b > 1440 && j.min < b - 1440) return { s: 'offen', text: `offen bis ${uhrText(b - 1440)} Uhr` };
+    const heute = plan[j.wt] || [];
+    for (const [v, b] of heute) if (j.min >= v && j.min < b) return { s: 'offen', text: `offen bis ${uhrText(b)} Uhr` };
+    const naechst = heute.find(([v]) => v > j.min);
+    if (naechst) return { s: 'spaeter', text: `heute ab ${uhrText(naechst[0])} Uhr` };
+    if (!heute.length) return { s: 'zu', text: 'heute Ruhetag' };
+    return { s: 'vorbei', text: 'heute schon zu' };
+  }
+  const oeffnungDe = oh => String(oh || '').replace(/\bMo\b/g, 'Mo').replace(/\bTu\b/g, 'Di').replace(/\bWe\b/g, 'Mi').replace(/\bTh\b/g, 'Do')
+    .replace(/\bSu\b/g, 'So').replace(/\bPH\b/g, 'Feiertag').replace(/\b(off|closed)\b/gi, 'Ruhetag').replace(/;\s*/g, ' · ').replace(/(\d)-(\d)/g, '$1–$2').replace(/([A-Za-z])-([A-Z])/g, '$1–$2');
+  /** Bewertung zum Sortieren/Filtern: die mit den meisten Stimmen */
+  const hauptBew = l => (l.bew.length ? [...l.bew].sort((a, b) => b.anzahl - a.anzahl)[0] : null);
+  /** Rang für „Beste zuerst“: Wert, mit wenigen Stimmen zur Mitte gezogen (4 Stimmen mit 5,0 schlagen nicht 600 mit 4,7) */
+  const rangWert = l => { const b = hauptBew(l); if (!b) return -1; const w = (b.wert / b.max) * 5; return (w * b.anzahl + 3.8 * 25) / (b.anzahl + 25); };
+  /** heute für Lokal: { s, text } aus OSM-Zeiten, bei Einträgen der Seite aus Wochentag/Uhrzeit */
+  function heuteLokal(l, j) {
+    if (l.eintrag) {
+      const s = heuteStatus(l.eintrag, j);
+      if (!s) return l.eintrag.wochentage ? { s: 'zu', text: '' } : null;
+      return { s: s === 'vorbei' ? 'vorbei' : s === 'spaeter' ? 'spaeter' : 'offen', text: '' };
+    }
+    return oeffnungJetzt(oeffnungPlan(l.oeffnung), j);
+  }
+  const kuecheGruppe = k => KUECHE_FILTER.find(f => f[0] === k);
+  /** gefilterte, sortierte Lokale */
+  function filtereLokale(alle, f, j, gemerkt) {
+    const weit = f.ayce || f.xxl ? Math.max(f.km, WEIT_KM) : f.km;
+    const kg = f.kueche ? kuecheGruppe(f.kueche) : null;
+    const l = alle.filter(x => {
+      if (x.km != null && x.km > weit) return false;
+      if (x.km == null && weit < 30) return false;
+      if (kg && !x.kueche.some(k => kg[2].includes(k))) return false;
+      if (f.bew) { const b = hauptBew(x); if (!b || (b.wert / b.max) * 5 < f.bew) return false; }
+      if (f.ayce && !x.ayce) return false;
+      if (f.xxl && !x.xxl) return false;
+      if (f.merk && !gemerkt.has(x.id)) return false;
+      if (f.offen) { const h = heuteLokal(x, j); if (!h || !['offen', 'spaeter'].includes(h.s)) return false; }
+      return true;
+    });
+    const km = x => (x.km == null ? 999 : x.km);
+    return l.map((x, i) => ({ x, i })).sort((a, b) => (f.sort === 'nah' ? km(a.x) - km(b.x) : rangWert(b.x) - rangWert(a.x) || km(a.x) - km(b.x)) || a.i - b.i).map(y => y.x);
+  }
+  const ART_REGEL = e => (e.rubrik === 'ayce' ? 'All-you-can-eat' : e.rubrik === 'xxl' ? 'XXL' : e.rubrik === 'lokal' ? 'Tagesessen' : 'Aktion');
+  /** fast jeden Tag (ab 5 Wochentagen, ohne Tagesplan): nicht in jeder Tageszeile, sondern einmal unter „Fast täglich“ */
+  const oft = e => !e.plan && e.wochentage.length >= 5;
+  /** Regelmäßig: 7 Tage ab heute, je Tag die wiederkehrenden Muster; dazu, was täglich gilt */
+  function regelTage(n, lok, j) {
+    const da = n.eintraege.filter(e => !vorbei(e, j.iso) && !e.nurHinweis && e.wochentage && e.art !== 'aktionstag');
+    const tage = [];
+    const nah = (lok ? [...lok.lokale] : []).filter(l => l.km == null || l.km <= 15);
+    for (let i = 0; i < 7; i++) {
+      const iso = plusTage(j.iso, i), wt = wochentag(iso), z = [];
+      for (const e of da) {
+        if (oft(e)) continue;
+        if (!giltAm(e, iso)) continue;
+        const art = ART_REGEL(e);
+        const was = e.plan && e.plan[wt] ? `${e.kette || e.titel.split(/:\s/)[0]}: ${e.titel.split(/:\s/)[0] === e.kette ? '' : `${e.titel.split(/:\s/)[0]} – `}${e.plan[wt]}` : e.kette ? `${e.kette}: ${e.titel}` : e.titel;
+        z.push({ art, was, wo: e.ort ? `${e.ortZusatz || e.ort}${e.km != null ? ` · ${e.km} km` : ''}` : e.region.includes('bundesweit') ? 'teilnehmende Filialen' : '', zeit: e.zeit?.text || '', id: e.id });
+      }
+      for (const l of lok ? lok.lokale : []) if (l.ayce && l.ayce.wochentage.includes(wt) && l.ayce.wochentage.length < 7) z.push({ art: 'All-you-can-eat', was: l.name, wo: `${l.ort}${l.km != null ? ` · ${kmText(l.km)}` : ''}`, zeit: l.ayce.text, id: l.id });
+      const zu = nah.filter(l => { const p = oeffnungPlan(l.oeffnung); return p && Array.isArray(p[wt]) && !p[wt].length; }).map(l => l.name);
+      tage.push({ iso, wt, z, zu });
+    }
+    const immer = da.filter(e => oft(e) && (e.rubrik !== 'ketten' || e.ort)).sort((a, b) => (a.rubrik !== 'ayce') - (b.rubrik !== 'ayce') || (a.km ?? 0) - (b.km ?? 0));
+    return { tage, immer };
+  }
+
   // --- Zustand -----------------------------------------------------------------------------------------------------------
-  const S = { el: null, n: null, roh: null, chip: null, laedt: false, fehler: null, url: DATEI, ablage: null, opt: {}, uhr: null };
+  const S = { el: null, n: null, roh: null, chip: null, laedt: false, fehler: null, url: DATEI, ablage: null, opt: {}, uhr: null,
+    lok: null, lokLaedt: false, lokFehler: null, lokQuelle: null, lokMehr: false, filter: { ...FILTER_LEER }, gemerkt: [] };
   const live = () => { try { const l = S.opt.live ? S.opt.live() : []; return Array.isArray(l) ? l.filter(x => x && typeof x.titel === 'string') : []; } catch { return []; } };
   const chipsDa = () => (live().length ? [...CHIPS.map(c => c[0]), 'aktuell'] : CHIPS.map(c => c[0]));
   const chipInfo = k => (k === 'aktuell' ? AKTUELL : CHIPS.find(c => c[0] === k) || CHIPS[0]);
   function zahl(k, j) {
     if (k === 'aktuell') return live().length;
     if (k === 'heute') return heuteTeile(S.n, j).heute.filter(x => x.s !== 'vorbei').length;
+    if (k === 'lokale') return S.lok ? filtereLokale(alleLokale(j), S.filter, j, merkSet()).length : '';
+    if (k === 'regel') { const r = regelTage(S.n, null, j); return new Set(r.tage.flatMap(t => t.z.map(x => x.id))).size + r.immer.length; }
     return liste(S.n, k, j.iso).l.length;
   }
 
@@ -291,6 +489,8 @@
   }
   function listeHtml(k, j) {
     if (k === 'heute') return heuteHtml(j);
+    if (k === 'lokale') return lokaleHtml(j);
+    if (k === 'regel') return regelHtml(j);
     if (k === 'aktuell') { const l = live(); return l.length ? l.map(liveKarte).join('') : '<p class="ess-leer">Gerade nichts vom Radar.</p>'; }
     const { l, hinweise } = liste(S.n, k, j.iso);
     const vorne = [];
@@ -307,10 +507,150 @@
     const muster = hinweise.length ? `<details class="ess-auf"><summary>Kommt immer wieder (${hinweise.length})</summary><p class="ess-unter">Gerade keine laufende Aktion – so lief es zuletzt. Nicht aktuell.</p>${hinweise.map(e => karte(e, j)).join('')}</details>` : '';
     return vorne.join('') + (karten || '<p class="ess-leer">Hier läuft gerade nichts.</p>') + muster;
   }
+  // --- Lokale: laden, zeichnen -------------------------------------------------------------------------------------------
+  const merkSet = () => new Set(Array.isArray(S.gemerkt) ? S.gemerkt : []);
+  function alleLokale(j) {
+    if (!S.lok) return [];
+    const ids = new Set(S.lok.lokale.map(l => l.id));
+    return [...S.lok.lokale, ...S.lok.weitere.filter(l => !ids.has(l.id)), ...(S.n ? lokaleAusEintraegen(S.n, j.iso) : [])];
+  }
+  async function ladeLokale() {
+    if (S.lokLaedt) return;
+    S.lokLaedt = true;
+    const ablUrl = (() => { try { return new URL(LOK_ABLAGE, location.href).href; } catch { return LOK_ABLAGE; } })();
+    let n = null, roh = null, quelle = null;
+    for (const [i, u] of (S.opt.lokaleUrls || LOKALE_URLS).entries()) {
+      try { roh = await hol(u); n = normLokale(JSON.parse(roh)); if (n && n.lokale.length) { quelle = i === 0 ? 'radar' : 'liste'; break; } } catch {}
+      n = null;
+    }
+    if (n) { try { if (typeof caches !== 'undefined') await (await caches.open(ABLAGE)).put(ablUrl, new Response(roh, { headers: { 'content-type': 'application/json' } })); } catch {} }
+    else {
+      try { if (typeof caches !== 'undefined') { const r = await (await caches.open(ABLAGE)).match(ablUrl); if (r) { n = normLokale(JSON.parse(await r.text())); quelle = 'ablage'; } } } catch {}
+    }
+    S.lokLaedt = false;
+    if (n) { S.lok = n; S.lokQuelle = quelle; S.lokFehler = null; } else if (!S.lok) S.lokFehler = 'netz';
+    if (S.el && S.el.isConnected && (S.chip === 'lokale' || S.chip === 'regel')) zeichne();
+  }
+  function bewHtml(b) {
+    const w = zahlDe((b.wert / b.max) * 5);
+    return `<p class="ess-bew"><span class="ess-bw" aria-label="${w} von 5">${STERN}<b>${w}</b></span><span>${b.anzahl.toLocaleString('de-DE')} ${b.anzahl === 1 ? 'Stimme' : 'Stimmen'}</span>`
+      + `<a href="${esc(b.url)}" target="_blank" rel="noopener noreferrer">${esc(b.quelle)}</a>${b.stand ? `<span class="ess-bw-stand">Stand ${tmj(b.stand)}</span>` : ''}</p>`;
+  }
+  const karteUrl = l => (l.lat != null ? `https://www.openstreetmap.org/?mlat=${l.lat}&mlon=${l.lon}#map=18/${l.lat}/${l.lon}` : `https://www.openstreetmap.org/search?query=${encodeURIComponent([l.name, l.adresse || l.ort].filter(Boolean).join(', '))}`);
+  const appleUrl = l => `https://maps.apple.com/?q=${encodeURIComponent(l.name)}${l.lat != null ? `&ll=${l.lat},${l.lon}` : `&address=${encodeURIComponent(l.adresse || l.ort || '')}`}`;
+  function lokKarte(l, j, gemerkt) {
+    const m = [];
+    for (const k of l.kueche.slice(0, 3)) m.push(`<span class="ess-kette">${esc(KUECHE_NAME[k])}</span>`);
+    if (l.ort || l.km != null) m.push(`<span class="ess-region">${esc(l.ort)}${l.km != null ? ` · ${kmText(l.km)}` : ''}</span>`);
+    const h = l.eintrag ? null : heuteLokal(l, j);
+    if (h) m.push(`<span class="${h.s === 'offen' || h.s === 'spaeter' ? 'ess-jetzt' : 'ess-alt'}">${esc(h.text)}</span>`);
+    if (l.eintrag) { const st = statusMarke(l.eintrag, j); if (st) m.push(st); }
+    if (l.ayce) m.push('<span class="ess-bald">All-you-can-eat</span>');
+    if (l.xxl) m.push('<span class="ess-bald">XXL</span>');
+    if (l.liefert) m.push('<span class="ess-bed">liefert</span>');
+    if (l.osmNur) m.push('<span class="ess-alt">noch ohne Bewertung</span>');
+    const an = gemerkt.has(l.id);
+    const quellen = l.quellen.map(q => `<a href="${esc(q.url)}" target="_blank" rel="noopener noreferrer">${esc(q.name)}</a>`).join('');
+    const e = l.eintrag;
+    return `<article class="ess-karte ess-lok" id="ess-lok-${esc(l.id)}" data-ess-lok="${esc(l.id)}">`
+      + `<div class="ess-lok-kopf"><h3 class="ess-titel">${esc(l.name)}${l.zusatz ? `<span class="ess-zusatz"> · ${esc(l.zusatz)}</span>` : ''}</h3>`
+      + `<button type="button" class="ess-merk" data-ess-merk="${esc(l.id)}" aria-pressed="${an}" aria-label="${esc(l.name)} ${an ? 'nicht mehr merken' : 'merken'}">${STERN}</button></div>`
+      + `<p class="ess-marken">${m.join('')}</p>`
+      + l.bew.map(bewHtml).join('')
+      + (l.leute ? `<p class="ess-was"><b>Leute sagen:</b> ${esc(l.leute)}</p>` : '')
+      + (e && e.was ? `<p class="ess-was">${esc(e.was)}</p>` : '')
+      + l.hinweise.map(x => `<p class="ess-zeile">${esc(x)}</p>`).join('')
+      + (l.oeffnung ? `<p class="ess-zeile"><b>Öffnungszeiten:</b> ${esc(oeffnungDe(l.oeffnung))} <span class="ess-osm">(OpenStreetMap)</span></p>` : '')
+      + (e ? `<p class="ess-zeile"><b>Wann:</b> ${esc(e.wann)}</p>${e.preis ? `<p class="ess-zeile"><b>Preis:</b> ${esc(e.preis)}</p>` : ''}` : '')
+      + (l.adresse ? `<p class="ess-ort">${esc(l.adresse)}</p>` : '')
+      + `<div class="ess-fuss"><a href="${esc(karteUrl(l))}" target="_blank" rel="noopener noreferrer">Karte</a><a href="${esc(appleUrl(l))}" target="_blank" rel="noopener noreferrer">Apple Karten</a>`
+      + (l.website ? `<a href="${esc(l.website)}" target="_blank" rel="noopener noreferrer">Website</a>` : '') + quellen
+      + `${l.geprueft ? `<span class="ess-stand">geprüft ${tmj(l.geprueft)}</span>` : l.osmNur ? '<span class="ess-stand">aus OpenStreetMap</span>' : ''}</div></article>`;
+  }
+  const fKnopf = (k, v, name, an) => `<button type="button" class="ess-f" data-ess-f="${k}" data-ess-v="${esc(String(v))}" aria-pressed="${an}">${name}</button>`;
+  function filterHtml(f) {
+    const r1 = [fKnopf('kueche', '', 'Alle Küchen', !f.kueche), ...KUECHE_FILTER.map(([k, name]) => fKnopf('kueche', k, esc(name), f.kueche === k))];
+    const r2 = [...UMKREIS.map(k => fKnopf('km', k, `bis ${k} km`, f.km === k)), fKnopf('bew', 4, `${STERN} ab 4,0`, f.bew === 4), fKnopf('bew', 4.5, `${STERN} ab 4,5`, f.bew === 4.5)];
+    const r3 = [fKnopf('offen', 1, 'Heute offen', f.offen), fKnopf('ayce', 1, 'All-you-can-eat', f.ayce), fKnopf('xxl', 1, 'XXL', f.xxl), fKnopf('merk', 1, `${STERN} Gemerkt`, f.merk),
+      fKnopf('sort', f.sort === 'nah' ? 'beste' : 'nah', f.sort === 'nah' ? 'Nächste zuerst' : 'Beste zuerst', false)];
+    return `<div class="ess-filter" role="group" aria-label="Lokale filtern"><div class="ess-frei">${r1.join('')}</div><div class="ess-frei">${r2.join('')}</div><div class="ess-frei">${r3.join('')}</div></div>`;
+  }
+  function kettenHtml(j) {
+    const ks = S.lok.ketten;
+    if (!ks.length) return '';
+    const titel = id => { const e = S.n?.eintraege.find(x => x.id === id); return e && !vorbei(e, j.iso) ? e.titel : null; };
+    const k = ks.map(c => {
+      const n = c.naechste;
+      const wo = n ? `${n.name}${n.adresse ? `, ${n.adresse}` : n.ort ? `, ${n.ort}` : ''}` : c.filiale;
+      const km = n ? n.km : c.km;
+      const akt = c.aktionen.map(titel).filter(Boolean);
+      const ziel = n && n.lat != null ? { name: n.name, lat: n.lat, lon: n.lon } : { name: c.kette, adresse: c.filiale };
+      return `<article class="ess-karte ess-lok" id="ess-kette-${esc(c.id)}"><h3 class="ess-titel">${esc(c.kette)}</h3>`
+        + `<p class="ess-marken"><span class="ess-region">nächste: ${esc(n?.ort || c.ort)}${km != null ? ` · ${kmText(km)}` : ''}</span>`
+        + `<span class="${c.lieferung ? 'ess-jetzt' : 'ess-alt'}">${c.lieferung === true ? 'liefert nach Döbeln' : c.lieferung === false ? 'keine Lieferung nach Döbeln' : 'Lieferung unklar'}</span></p>`
+        + `<p class="ess-zeile"><b>Filiale:</b> ${esc(wo)}</p>`
+        + (c.lieferungText ? `<p class="ess-zeile">${esc(c.lieferungText)}</p>` : '')
+        + (n?.oeffnung ? `<p class="ess-zeile"><b>Öffnungszeiten:</b> ${esc(oeffnungDe(n.oeffnung))} <span class="ess-osm">(OpenStreetMap)</span></p>` : c.oeffnungText ? `<p class="ess-zeile"><b>Öffnungszeiten:</b> ${esc(c.oeffnungText)}</p>` : '')
+        + (akt.length ? `<p class="ess-zeile"><b>Aktionen:</b> ${akt.map(esc).join(' · ')}</p><p class="ess-mehr"><button type="button" class="ess-link" data-ess-chip="${c.kette === "Domino's" || c.kette === 'Freddy Fresh' || c.kette === 'Pizza Hut' ? 'pizza' : 'ketten'}">Alle Aktionen ›</button></p>` : '')
+        + `<div class="ess-fuss"><a href="${esc(karteUrl(ziel))}" target="_blank" rel="noopener noreferrer">Karte</a>${c.quellen.map(q => `<a href="${esc(q.url)}" target="_blank" rel="noopener noreferrer">${esc(q.name)}</a>`).join('')}${c.geprueft ? `<span class="ess-stand">geprüft ${tmj(c.geprueft)}</span>` : ''}</div></article>`;
+    }).join('');
+    return `<details class="ess-auf"><summary>Ketten in der Nähe (${ks.length})</summary><p class="ess-unter">Nächste Filiale (Luftlinie ab Döbeln), Lieferung und wiederkehrende Aktionen.</p>${k}</details>`;
+  }
+  function lokaleHtml(j) {
+    if (!S.lok) {
+      if (!S.lokLaedt) ladeLokale();
+      return S.lokFehler && !S.lokLaedt ? `<p class="ess-leer">${navigator.onLine === false ? 'Keine Verbindung – die Lokale erscheinen, sobald du wieder Netz hast.' : 'Lokale gerade nicht erreichbar. Später noch einmal auf ↻ tippen.'}</p>` : '<p class="ess-leer">Lade Lokale …</p>';
+    }
+    const f = S.filter, gemerkt = merkSet();
+    const alle = alleLokale(j);
+    const l = filtereLokale(alle, f, j, gemerkt);
+    const zeigen = S.lokMehr ? l : l.slice(0, LOK_ZEIGEN);
+    const weit = f.ayce || f.xxl ? Math.max(f.km, WEIT_KM) : f.km;
+    const kopf = `<p class="ess-standzeile">${l.length} von ${alle.length} Lokalen · bis ${weit} km${f.ayce || f.xxl ? ' (All-you-can-eat/XXL: bis Leipzig, Chemnitz, Dresden)' : ''}`
+      + ` · ${S.lokQuelle === 'radar' && S.lok.osmStand ? `Öffnungszeiten OpenStreetMap, Stand ${tmj(S.lok.osmStand)}` : 'Öffnungszeiten folgen mit dem nächsten Radar-Lauf'}</p>`;
+    const neu = S.lok.neu.length ? `<p class="ess-hinweis-box"><b>Neu bei OpenStreetMap:</b> ${S.lok.neu.slice(0, 6).map(x => esc(`${x.name} (${x.ort || 'Umgebung'}${x.km != null ? `, ${kmText(x.km)}` : ''})`)).join(' · ')}</p>` : '';
+    const weg = S.lok.weg.length ? `<p class="ess-hinweis-box"><b>Nicht mehr bei OpenStreetMap</b> (vielleicht geschlossen): ${S.lok.weg.slice(0, 6).map(x => esc(x.name)).join(' · ')}</p>` : '';
+    const leer = !l.length ? `<p class="ess-leer">${f.merk ? 'Noch nichts gemerkt – tippe auf den Stern an einem Lokal.' : 'Mit diesen Filtern nichts gefunden.'}</p>${f.km < 70 && !f.merk ? '<p class="ess-woanders"><button type="button" class="ess-link" data-ess-f="km" data-ess-v="70">Bis 70 km zeigen</button></p>' : ''}` : '';
+    const mehr = l.length > zeigen.length ? `<p class="ess-woanders"><button type="button" class="ess-link" data-ess-lok-mehr>${l.length - zeigen.length} weitere zeigen</button></p>` : '';
+    const privat = gemerkt.size ? '<p class="ess-unter">Gemerkt nur auf diesem iPhone. Push am All-you-can-eat-Tag: Claude sagen, welches Lokal.</p>' : '';
+    return filterHtml(f) + kopf + neu + weg + zeigen.map(x => lokKarte(x, j, gemerkt)).join('') + leer + mehr + privat + kettenHtml(j)
+      + '<p class="ess-hinweis">Bewertungen: so, wie die Portale sie am genannten Tag zeigten – sie ändern sich. „Leute sagen“ fasst sichtbare Bewertungstexte in eigenen Worten zusammen. Karten- und Öffnungsdaten: OpenStreetMap-Mitwirkende (Lizenz ODbL).</p>';
+  }
+  function regelHtml(j) {
+    if (!S.lok && !S.lokLaedt && !S.lokFehler) ladeLokale(); // Ruhetage kommen dazu, sobald die Lokale da sind
+    const { tage, immer } = regelTage(S.n, S.lok, j);
+    const zeilen = tage.map(t => {
+      const z = t.z.map(x => `<li><span class="ess-art${x.art === 'All-you-can-eat' ? ' ess-art-ayce' : ''}">${esc(x.art)}</span><span>${esc(x.was)}${x.wo ? ` <i>· ${esc(x.wo)}</i>` : ''}${x.zeit ? ` <i>· ${esc(x.zeit)}</i>` : ''}</span></li>`);
+      if (t.zu.length) z.push(`<li class="ess-zu"><span class="ess-art">Ruhetag</span><span>${esc(t.zu.slice(0, 6).join(' · '))}</span></li>`);
+      return `<section class="ess-abschnitt"><h3 class="ess-ab-titel">${esc(wtm(t.iso))}${t.iso === j.iso ? ' · heute' : ''}</h3>${z.length ? `<ul class="ess-regel">${z.join('')}</ul>` : '<p class="ess-unter">Nichts Festes – siehe „Fast täglich“ unten.</p>'}</section>`;
+    }).join('');
+    const tgl = immer.length ? `<details class="ess-auf"><summary>Fast täglich (${immer.length})</summary><ul class="ess-regel">${immer.map(e => `<li><span class="ess-art${e.rubrik === 'ayce' ? ' ess-art-ayce' : ''}">${esc(ART_REGEL(e))}</span><span>${esc(e.kette ? `${e.kette}: ${e.titel}` : e.titel)} <i>· ${esc(e.wann)}${e.ort ? ` · ${esc(e.ortZusatz || e.ort)}` : ''}${e.km != null ? ` · ${e.km} km` : ''}</i></span></li>`).join('')}</ul></details>` : '';
+    return `<p class="ess-unter">Feste Wochentage aus allen Bereichen: All-you-can-eat, Tagesessen, Ketten-Aktionen${S.lok ? ' und Ruhetage der Lokale bis 15 km' : ''}. Einmalige Aktionstage stehen unter „Heute“.</p>` + zeilen + tgl;
+  }
+  function filterSetzen(k, v) {
+    const f = { ...S.filter };
+    if (k === 'kueche') f.kueche = f.kueche === v ? '' : v;
+    else if (k === 'km') f.km = UMKREIS.includes(Number(v)) ? Number(v) : 30;
+    else if (k === 'bew') f.bew = f.bew === Number(v) ? 0 : Number(v);
+    else if (k === 'sort') f.sort = v === 'nah' ? 'nah' : 'beste';
+    else if (['offen', 'ayce', 'xxl', 'merk'].includes(k)) f[k] = !f[k];
+    S.filter = f; S.lokMehr = false;
+    merk(FILTER_SPEICHER, f);
+    zeichne();
+  }
+  function merkUmschalten(id) {
+    const g = merkSet();
+    if (g.has(id)) g.delete(id); else g.add(id);
+    S.gemerkt = [...g].slice(-200);
+    merk(MERK_SPEICHER, S.gemerkt);
+    const b = S.el.querySelector(`[data-ess-merk="${id}"]`);
+    if (b && !S.filter.merk) { const an = g.has(id); b.setAttribute('aria-pressed', String(an)); b.setAttribute('aria-label', b.getAttribute('aria-label').replace(/ (nicht mehr merken|merken)$/, an ? ' nicht mehr merken' : ' merken')); }
+    else zeichne();
+  }
   function chipHtml(k, j) {
     const an = k === S.chip;
     return `<button type="button" class="ess-chip" role="tab" id="ess-c-${k}" data-ess-chip="${k}" aria-controls="ess-liste" aria-selected="${an}" tabindex="${an ? 0 : -1}">`
-      + `${esc(chipInfo(k)[1])}<span class="ess-n">${zahl(k, j)}</span></button>`;
+      + `${esc(chipInfo(k)[1])}${(z => (z === '' ? '' : `<span class="ess-n">${z}</span>`))(zahl(k, j))}</button>`;
   }
   const WARN = { netz: 'gerade offline – letzter Stand', neu: 'neue Fassung da – Seite neu laden', kaputt: 'Datei gerade fehlerhaft – letzter Stand' };
   function standHtml(j = jetztBerlin()) {
@@ -385,6 +725,7 @@
   const tauglich = d => d && typeof d === 'object' && Array.isArray(d.eintraege) && !(Number.isInteger(d.version) && d.version > VERSION);
   async function lade() {
     if (!S.el || S.laedt) return;
+    if (S.lok && !S.lokLaedt) ladeLokale(); // ↻: Lokale auch frisch
     S.laedt = true;
     if (!S.n) zeichne();
     let was = 'neu';
@@ -424,6 +765,10 @@
       st.textContent = CSS;
       document.head.appendChild(st);
     }
+    const fl = lies(FILTER_SPEICHER, null);
+    if (fl && typeof fl === 'object') S.filter = { ...FILTER_LEER, kueche: KUECHE_FILTER.some(x => x[0] === fl.kueche) ? fl.kueche : '', km: UMKREIS.includes(fl.km) ? fl.km : 30, bew: [4, 4.5].includes(fl.bew) ? fl.bew : 0, offen: fl.offen === true, ayce: fl.ayce === true, xxl: fl.xxl === true, merk: fl.merk === true, sort: fl.sort === 'nah' ? 'nah' : 'beste' };
+    const gm = lies(MERK_SPEICHER, []);
+    S.gemerkt = Array.isArray(gm) ? gm.filter(x => typeof x === 'string' && /^[a-z0-9-]{2,80}$/.test(x)) : [];
     const c = lies(CHIP_SPEICHER, 'heute');
     S.chip = typeof c === 'string' ? c : 'heute';
     S.ablage = ausAblage().then(roh => {
@@ -438,8 +783,13 @@
       if (ev.target.closest('[data-ess-neuladen]')) { location.reload(); return; }
       const sp = ev.target.closest('[data-ess-spar]');
       if (sp) { try { S.opt.zuSpartricks?.(sp.dataset.essSpar, sp.dataset.essSparId || null); } catch {} return; }
+      const fb = ev.target.closest('[data-ess-f]');
+      if (fb) { filterSetzen(fb.dataset.essF, fb.dataset.essV); return; }
+      const mb = ev.target.closest('[data-ess-merk]');
+      if (mb) { merkUmschalten(mb.dataset.essMerk); return; }
+      if (ev.target.closest('[data-ess-lok-mehr]')) { S.lokMehr = true; zeichne(); return; }
       const c2 = ev.target.closest('[data-ess-chip]');
-      if (c2 && c2.dataset.essChip !== S.chip) waehle(c2.dataset.essChip);
+      if (c2 && c2.dataset.essChip !== S.chip) { waehle(c2.dataset.essChip); if (!c2.closest('.ess-chips')) S.el.querySelector('.ess-chips')?.scrollIntoView({ block: 'nearest' }); }
     });
     el.addEventListener('keydown', ev => {
       if (!ev.target.closest || !ev.target.closest('.ess-chips [data-ess-chip]')) return;
@@ -538,12 +888,48 @@
 .ess-erst { margin-top: 16px; }
 .ess-woanders { display: flex; flex-wrap: wrap; gap: 8px; margin: -4px 0 12px; }
 .ess-hinweis { margin: 14px 4px 4px; font-size: 13px; color: var(--leise); }
+.ess-filter { margin: 0 0 6px; }
+.ess-frei {
+  display: flex; gap: 6px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch; margin: 0 -16px 6px; padding: 2px 16px;
+}
+.ess-frei::-webkit-scrollbar { display: none; }
+.ess-f {
+  flex: none; min-height: 44px; min-width: 44px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--linie); background: transparent;
+  color: var(--text); font: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
+}
+.ess-f[aria-pressed="true"] { background: var(--akzent-hell); border-color: var(--akzent); color: var(--akzent); }
+.ess-stern { width: 15px; height: 15px; fill: currentColor; flex: none; }
+.ess-lok-kopf { display: flex; align-items: flex-start; gap: 8px; }
+.ess-lok-kopf .ess-titel { flex: 1; min-width: 0; padding-top: 8px; }
+.ess-zusatz { font-weight: 500; color: var(--leise); font-size: 15px; }
+.ess-merk {
+  flex: none; width: 44px; height: 44px; margin: -2px -6px 0 0; border-radius: 999px; border: 0; background: transparent; color: var(--leise);
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.ess-merk .ess-stern { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; }
+.ess-merk[aria-pressed="true"] { color: var(--warm); }
+.ess-merk[aria-pressed="true"] .ess-stern { fill: currentColor; }
+.ess-bew { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; margin: 6px 0 0; font-size: 14px; color: var(--leise); }
+.ess-bw { display: inline-flex; align-items: center; gap: 4px; color: var(--warm); }
+.ess-bw b { color: var(--text); font-size: 16px; }
+.ess-bew a { color: var(--akzent); min-height: 44px; display: inline-flex; align-items: center; padding: 0 2px; }
+.ess-bw-stand { font-size: 12.5px; }
+.ess-was b { color: var(--leise); font-weight: 650; }
+.ess-osm { font-size: 12px; color: var(--leise); }
+.ess-regel { list-style: none; margin: 0 0 8px; padding: 4px 12px; background: var(--karte); border: 1px solid var(--linie); border-radius: 16px; }
+.ess-regel li { display: flex; gap: 10px; align-items: baseline; padding: 8px 0; border-top: 1px solid var(--linie); font-size: 14.5px; line-height: 1.4; }
+.ess-regel li:first-child { border-top: 0; }
+.ess-regel i { font-style: normal; color: var(--leise); }
+.ess-art { flex: none; width: 112px; font-size: 12px; font-weight: 700; color: var(--leise); text-transform: none; }
+.ess-art-ayce { color: var(--warm); }
+.ess-zu span:last-child { color: var(--leise); }
 `;
 
   window.MeinVorteilEssen = {
     start, lade, auffrischen,
     get gestartet() { return !!S.el; },
     // für Tests (ohne Browser): reine Funktionen
-    _intern: { normalisiere, giltAm, naechsterTag, heuteStatus, heuteTeile, liste, kachelAuszug, kachelZeilen, jetztBerlin, sicherUrl, CHIPS, REGIONEN, CSS: () => CSS },
+    _intern: { normLokale, oeffnungPlan, oeffnungJetzt, filtereLokale, regelTage, lokaleAusEintraegen, rangWert, KUECHE_FILTER, normalisiere, giltAm, naechsterTag, heuteStatus, heuteTeile, liste, kachelAuszug, kachelZeilen, jetztBerlin, sicherUrl, CHIPS, REGIONEN, CSS: () => CSS },
   };
 })();

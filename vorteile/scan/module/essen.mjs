@@ -15,6 +15,7 @@ import { berlin } from '../benachrichtigen.mjs';
 export const STANDARD = {
   overpass: 'https://overpass-api.de/api/interpreter',
   osmStunden: 20,
+  timeoutMs: 100000, // Overpass rechnet bis zu 90 s ([timeout:90]); Lauf 43830401385: 20 s waren zu kurz
   pushVon: 9,
   pushBis: 17,
   maxWeitere: 200,
@@ -161,7 +162,7 @@ export default async function essen({ holeText, cfg, jetzt = new Date(), zustand
   if (faellig) {
     try {
       const url = `${m.overpass}?data=${encodeURIComponent(overpassAbfrage(z, radiusKm, kettenRadiusKm))}`;
-      osm = leseOsm(await holeText(url, { headers: { accept: 'application/json' } }), z);
+      osm = leseOsm(await holeText(url, { headers: { accept: 'application/json' }, timeoutMs: m.timeoutMs }), z);
       if (!osm.length) throw new Error('Overpass: 0 Lokale (Abfrage geändert?)');
       zk.osmZeit = new Date(jetztMs).toISOString();
     } catch (e) {
@@ -186,7 +187,7 @@ export default async function essen({ holeText, cfg, jetzt = new Date(), zustand
     if (neu.length > 25) { hinweise.push(`OSM: ${neu.length} „neue“ Lokale – Abfrage geändert, nicht als neu gezählt`); neu = []; }
     if (weg.length > 25) { hinweise.push(`OSM: ${weg.length} „verschwundene“ Lokale – Abfrage geändert, nicht gezählt`); weg = []; }
   }
-  if (nichtGefunden.length) hinweise.push(`in OSM nicht gefunden: ${nichtGefunden.join(', ')}`.slice(0, 300));
+  if (nichtGefunden.length && osm.length) hinweise.push(`in OSM nicht gefunden: ${nichtGefunden.join(', ')}`.slice(0, 300));
 
   // 3) Push: heute All-you-can-eat bei gemerkten Lokalen (nur am Tag selbst, tagsüber)
   if (stunde >= m.pushVon && stunde < m.pushBis && Array.isArray(m.gemerkt) && m.gemerkt.length) {

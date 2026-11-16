@@ -27,6 +27,10 @@ const ARTEN = ['aktionstag', 'wochentag', 'dauerhaft', 'app', 'abholung', 'ayce'
 const REGIONEN = ['Döbeln', 'Leipzig', 'Dresden', 'Chemnitz', 'Sachsen', 'bundesweit'];
 const PORTAL = /(^|\.)(mydealz\.de|monsterdealz\.de|dealdoktor\.de|sparwelt\.de)$/;
 const CHIPS = ['heute', 'ketten', 'pizza', 'ayce', 'xxl', 'gratis'];
+// Leiste: „Lokale“ und „Regelmäßig“ (Xander 16.11.2026) direkt hinter „Heute“
+const ALLE_CHIPS = ['heute', 'lokale', 'regel', 'ketten', 'pizza', 'ayce', 'xxl', 'gratis'];
+const LOK = JSON.parse(readFileSync(join(WURZEL, 'vorteile', 'essen.json'), 'utf8'));
+const LOK_RADAR = readFileSync(join(FIX, 'essen-lokale-radar.json'), 'utf8');
 
 function modul() {
   const speicher = {};
@@ -287,7 +291,7 @@ const DATEI = {
   'konzerte-daten/konzerte/data/releases.json': 'konzerte-releases.json',
   'konzerte-daten/konzerte/data/status.json': 'konzerte-status.json',
 };
-async function oeffne({ breite = 428, hoehe = 926, pfad = '/mein-vorteil/#essen', jetzt = JETZT, foto = false, radar = null, uhrLaeuft = false } = {}) {
+async function oeffne({ breite = 428, hoehe = 926, pfad = '/mein-vorteil/#essen', jetzt = JETZT, foto = false, radar = null, uhrLaeuft = false, lokale = null } = {}) {
   const ctx = await browser.newContext({
     viewport: { width: breite, height: hoehe }, deviceScaleFactor: foto ? 2 : 1, isMobile: true, hasTouch: true,
     locale: 'de-DE', timezoneId: 'Europe/Berlin', colorScheme: 'dark', serviceWorkers: 'block',
@@ -296,6 +300,7 @@ async function oeffne({ breite = 428, hoehe = 926, pfad = '/mein-vorteil/#essen'
   await ctx.route('https://raw.githubusercontent.com/**', async route => {
     const rest = new URL(route.request().url()).pathname.replace(/^\/XanderFoxy\/Synquenzer\//, '');
     const kopf = { 'access-control-allow-origin': '*' };
+    if (lokale && rest === 'vorteile-daten/vorteile/data/essen.json') return route.fulfill({ status: 200, contentType: 'application/json', headers: kopf, body: lokale });
     if (!DATEI[rest]) return route.fulfill({ status: 404, headers: kopf, body: '' });
     if (radar && rest.endsWith('/aktuell.json')) { const d = JSON.parse(readFileSync(join(FIX, 'vertrag', DATEI[rest]), 'utf8')); radar(d); return route.fulfill({ status: 200, contentType: 'application/json', headers: kopf, body: JSON.stringify(d) }); }
     return route.fulfill({ status: 200, contentType: 'application/json', headers: kopf, body: readFileSync(join(FIX, 'vertrag', DATEI[rest])) });
@@ -393,8 +398,8 @@ test('Lazy: Startseite holt weder essen.js noch essen.json; erst der Reiter (#es
 for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
   test(`Unterreiter, Heute-Logik, Karten mit Quelle + geprüft, Layout (${lage} ${breite} × ${hoehe})`, { skip: ohnePw }, async () => {
     const { ctx, page, fehler, fremd } = await oeffne({ breite, hoehe, foto: true });
-    assert.deepEqual(await page.locator('.ess-chips [data-ess-chip]').evaluateAll(b => b.map(x => x.dataset.essChip)), CHIPS);
-    assert.deepEqual((await page.locator('.ess-chips [data-ess-chip]').allInnerTexts()).map(t => t.replace(/\d+$/, '').trim()), ['Heute', 'Fastfood & Ketten', 'Pizza & Abholen', 'All-you-can-eat', 'XXL & Challenges', 'Gratis-Tage']);
+    assert.deepEqual(await page.locator('.ess-chips [data-ess-chip]').evaluateAll(b => b.map(x => x.dataset.essChip)), ALLE_CHIPS);
+    assert.deepEqual((await page.locator('.ess-chips [data-ess-chip]').allInnerTexts()).map(t => t.replace(/\d+$/, '').trim()), ['Heute', 'Lokale', 'Regelmäßig', 'Fastfood & Ketten', 'Pizza & Abholen', 'All-you-can-eat', 'XXL & Challenges', 'Gratis-Tage']);
     const heute = nbsp(await page.locator('#ess-liste').innerText());
     assert.match(heute, /Heute, So 15\.11\./);
     assert.match(heute, /Café Bubu – Sonntags-Frühstücksbuffet[\s\S]*heute 10–14 Uhr · läuft/);
@@ -487,7 +492,7 @@ test('Radar „Aktuell“: Einträge der Kategorie essen nur im Reiter (Chip Akt
     ];
   };
   const { ctx, page, fehler, fremd } = await oeffne({ radar });
-  assert.deepEqual(await page.locator('.ess-chips [data-ess-chip]').evaluateAll(b => b.map(x => x.dataset.essChip)), [...CHIPS, 'aktuell']);
+  assert.deepEqual(await page.locator('.ess-chips [data-ess-chip]').evaluateAll(b => b.map(x => x.dataset.essChip)), [...ALLE_CHIPS, 'aktuell']);
   assert.match(nbsp(await page.locator('[data-ess-chip="aktuell"]').innerText()), /Aktuell\s*1/);
   await waehle(page, 'aktuell');
   const t = nbsp(await page.locator('#ess-liste').innerText());
@@ -516,5 +521,160 @@ test('Mitternacht bei offener Seite: Start-Kachel springt von „ab Mo 16.11.“
   assert.match(await text(), /McSundae für 1 €\s*heute bis Do 19\.11\. · nur App/);
   assert.deepEqual(fehler.filter(f => !/status of 404/.test(f)), [], 'nur die 404 der absichtlich fehlenden Radar-Dateien');
   assert.deepEqual(nicht404, [], 'essen.js/essen.json nie 404');
+  await ctx.close();
+});
+
+// --- Lokale um Döbeln + Regelmäßig (16.11.2026) ------------------------------------------------------------------------------
+test('Lokale: Liste lesen, Küche/Umkreis/Bewertung/AYCE/XXL filtern, „Beste zuerst“ zieht wenige Stimmen zur Mitte', () => {
+  const L = I.normLokale(LOK);
+  assert.ok(L.lokale.length >= 12 && L.ketten.length >= 5);
+  assert.equal(I.normLokale({ lokale: [{ id: 'xy', name: 'Ohne Quelle', bewertungen: [{ wert: 5, anzahl: 3, url: 'http://unsicher.de' }] }] }).lokale[0].bew.length, 0, 'nur https-Bewertungen');
+  assert.equal(I.normLokale({ x: 1 }), null);
+  const j = J('2026-11-16T11:00:00Z');
+  const alle = [...L.lokale, ...I.lokaleAusEintraegen(N, j.iso)];
+  const F = { kueche: '', km: 30, bew: 0, offen: false, ayce: false, xxl: false, merk: false, sort: 'beste' };
+  const name = l => plain(l.map(x => x.name));
+  const beste = I.filtereLokale(alle, F, j, new Set());
+  assert.ok(beste.every(x => x.km <= 30), 'Standard bis 30 km');
+  assert.equal(beste[0].name, 'Bürgergarten Döbeln', '4,8 bei 1.582 Stimmen ganz oben');
+  assert.ok(name(beste).indexOf('Jin Hai') > name(beste).indexOf('Al Dente'), '4,0 bei 4 Stimmen nicht vor 4,6 bei 510');
+  assert.deepEqual(name(I.filtereLokale(alle, { ...F, kueche: 'italienisch' }, j, new Set())), ['La Gioia', 'Al Dente', 'Pizza Franco', 'Freddy Fresh Pizza & Burger', 'Khindas Pizzeria']);
+  assert.ok(I.filtereLokale(alle, { ...F, bew: 4.5 }, j, new Set()).every(x => x.bew.length && Math.max(...x.bew.map(b => b.anzahl)) > 0));
+  assert.ok(!name(I.filtereLokale(alle, { ...F, bew: 4.5 }, j, new Set())).includes('Freddy Fresh Pizza & Burger'), 'Hauptbewertung = die mit den meisten Stimmen (3,6 bei 401)');
+  const ay = I.filtereLokale(alle, { ...F, ayce: true }, j, new Set());
+  assert.ok(ay.length >= 10 && ay.every(x => x.ayce && x.km <= 70), 'All-you-can-eat: bis 70 km (Chemnitz, Dresden, Leipzig)');
+  assert.ok(!name(ay).some(n => /Naumanns/.test(n)), 'nur „Kommt immer wieder“: nicht als Lokal');
+  assert.deepEqual(name(I.filtereLokale(alle, { ...F, xxl: true, sort: 'nah' }, j, new Set())).slice(0, 2).sort(), ['Bürgergarten Döbeln', 'KL17']);
+  assert.deepEqual(name(I.filtereLokale(alle, { ...F, merk: true }, j, new Set(['doe-namaste']))), ['Namaste']);
+  const nah = I.filtereLokale(alle, { ...F, sort: 'nah', km: 70 }, j, new Set()).map(x => x.km);
+  assert.deepEqual(nah, [...nah].sort((a, b) => a - b));
+  // Ketten-Aktionen zeigen auf echte Einträge
+  const ids = new Set(DATEN.eintraege.map(e => e.id));
+  for (const k of L.ketten) for (const a of k.aktionen) assert.ok(ids.has(a), `${k.id}: ${a}`);
+});
+
+test('Öffnungszeiten (OSM): Ruhetag, später, offen über Mitternacht, Unbekanntes ohne Status', () => {
+  const p = I.oeffnungPlan('Tu-Su 11:30-14:00,17:00-22:00; Mo off; PH off');
+  assert.equal(I.oeffnungJetzt(p, J('2026-11-16T11:00:00Z')).text, 'heute Ruhetag');
+  assert.equal(I.oeffnungJetzt(p, J('2026-11-17T10:00:00Z')).text, 'heute ab 11:30 Uhr');
+  assert.equal(I.oeffnungJetzt(p, J('2026-11-17T12:00:00Z')).text, 'offen bis 14 Uhr');
+  assert.equal(I.oeffnungJetzt(p, J('2026-11-17T21:30:00Z')).s, 'vorbei');
+  assert.equal(I.oeffnungJetzt(I.oeffnungPlan('Fr-Sa 18:00-02:00'), J('2026-11-21T00:30:00Z')).text, 'offen bis 2 Uhr', 'Sa 1:30 noch vom Freitag');
+  assert.equal(I.oeffnungJetzt(I.oeffnungPlan('24/7'), J('2026-11-17T03:00:00Z')).s, 'offen');
+  assert.equal(I.oeffnungPlan('Mo-Fr 11:00-22:00; Jan off'), null);
+  assert.equal(I.oeffnungPlan('sunrise-sunset'), null);
+  assert.deepEqual(Object.keys(I.oeffnungPlan('Mo,We,Fr-Su 11:00-21:00')).map(Number), [1, 3, 5, 6, 7]);
+});
+
+test('Regelmäßig: je Wochentag die festen Muster (Mi Play Off, Monchi, Schnitzeltag; So Shiki, Café Bubu), fast tägliche einmal', () => {
+  const L = I.normLokale(JSON.parse(LOK_RADAR));
+  const r = I.regelTage(N, L, J('2026-11-16T11:00:00Z'));
+  assert.equal(r.tage.length, 7);
+  assert.equal(r.tage[0].iso, '2026-11-16');
+  const tag = iso => r.tage.find(t => t.iso === iso).z.map(x => x.was).join(' | ');
+  assert.match(tag('2026-11-18'), /Play Off[\s\S]*Monchi Vegan[\s\S]*Miramar – Schnitzeltag/);
+  assert.match(tag('2026-11-22'), /Shiki[\s\S]*Café Bubu/);
+  assert.match(tag('2026-11-16'), /Subway: Sub des Tages – Italian B\.M\.T\./);
+  assert.doesNotMatch(tag('2026-11-19'), /Mythos|Peter's Pause|Kartoffelhaus/, 'fast täglich nicht in jeder Zeile');
+  assert.ok(r.immer.some(e => /Mythos Palace/.test(e.titel)) && r.immer.some(e => /Kartoffelhaus/.test(e.titel)));
+  assert.deepEqual(plain(r.tage[0].zu), ['Al Dente'], 'Ruhetag aus OpenStreetMap (Mo off)');
+});
+
+for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
+  test(`Lokale + Regelmäßig im Browser: Filter, Merken, Karte/Apple-Karten, Ketten, Layout (${lage})`, { skip: ohnePw }, async () => {
+    abrufe.length = 0;
+    const { ctx, page, fehler, fremd } = await oeffne({ breite, hoehe, foto: true, jetzt: '2026-11-17T12:00:00Z', lokale: LOK_RADAR }); // Di 13:00 Berlin
+    await waehle(page, 'lokale');
+    await page.waitForSelector('#ess-liste .ess-lok');
+    let t = nbsp(await page.locator('#ess-liste').innerText());
+    assert.match(t, /Alle Küchen[\s\S]*Italienisch & Pizza[\s\S]*bis 30 km[\s\S]*Heute offen/);
+    assert.match(t, /Öffnungszeiten OpenStreetMap, Stand 16\.11\.2026/);
+    const erste = page.locator('#ess-liste .ess-lok').first();
+    assert.match(nbsp(await erste.innerText()), /Bürgergarten Döbeln[\s\S]*4,8[\s\S]*1\.582 Stimmen[\s\S]*Restaurant Guru[\s\S]*Stand 16\.11\.2026[\s\S]*Leute sagen:/);
+    const ad = nbsp(await page.locator('#ess-lok-doe-al-dente').innerText());
+    assert.match(ad, /offen bis 14 Uhr/);
+    assert.match(ad, /Öffnungszeiten: Di–So 11:30–14:00,17:00–22:00 · Mo Ruhetag/);
+    assert.match(await page.locator('#ess-lok-doe-al-dente .ess-fuss a').first().getAttribute('href'), /^https:\/\/www\.openstreetmap\.org\/\?mlat=51\.12152&mlon=13\.11841/);
+    assert.match(await page.locator('#ess-lok-doe-al-dente .ess-fuss a', { hasText: 'Apple Karten' }).getAttribute('href'), /^https:\/\/maps\.apple\.com\/\?q=Al%20Dente&ll=51\.12152,13\.11841/);
+    assert.match(t, /Neu bei OpenStreetMap: Testhof Neu/);
+    await page.screenshot({ path: join(FOTOS, `essen-lokale-${lage}.png`) });
+    await pruefeLayout(page, `${lage} Lokale`);
+    // Küche
+    await page.locator('[data-ess-f="kueche"][data-ess-v="italienisch"]').click();
+    const it = await page.locator('#ess-liste .ess-lok[data-ess-lok] .ess-titel').allInnerTexts();
+    assert.ok(it.length >= 5 && it.every(x => /Gioia|Dente|Franco|Freddy|Khindas/.test(x)), it.join(' | '));
+    await page.locator('[data-ess-f="bew"][data-ess-v="4.5"]').click();
+    assert.deepEqual((await page.locator('#ess-liste .ess-lok[data-ess-lok] .ess-titel').allInnerTexts()).map(x => x.split(' · ')[0]), ['La Gioia', 'Al Dente', 'Pizza Franco']);
+    await page.locator('[data-ess-f="kueche"][data-ess-v=""]').click();
+    await page.locator('[data-ess-f="bew"][data-ess-v="4.5"]').click();
+    // Heute offen (Di 13:00): Al Dente ja (11:30–14), Testhof Neu nein (Mi–So)
+    await page.locator('[data-ess-f="offen"]').click();
+    t = (await page.locator('#ess-liste .ess-lok[data-ess-lok] .ess-titel').allInnerTexts()).join(' | ');
+    assert.match(t, /Al Dente/);
+    assert.doesNotMatch(t, /Testhof Neu/);
+    await page.locator('[data-ess-f="offen"]').click();
+    // All-you-can-eat: bis 70 km, Chemnitz/Dresden/Leipzig
+    await page.locator('[data-ess-f="ayce"]').click();
+    t = nbsp(await page.locator('#ess-liste').innerText());
+    assert.match(t, /bis 70 km \(All-you-can-eat\/XXL/);
+    assert.match(t, /ESPITAS[\s\S]*Chemnitz · 33 km/);
+    await page.screenshot({ path: join(FOTOS, `essen-lokale-ayce-${lage}.png`) });
+    await pruefeLayout(page, `${lage} Lokale AYCE`);
+    await page.locator('[data-ess-f="ayce"]').click();
+    // Merken: Stern, bleibt nach Neuladen, Filter „Gemerkt“
+    const stern = page.locator('#ess-lok-doe-namaste .ess-merk');
+    await stern.click();
+    assert.equal(await stern.getAttribute('aria-pressed'), 'true');
+    assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('mein-vorteil-essen-gemerkt'))), ['doe-namaste']);
+    await page.locator('[data-ess-f="merk"]').click();
+    assert.deepEqual(await page.locator('#ess-liste .ess-lok[data-ess-lok] .ess-titel').allInnerTexts(), ['Namaste · Indisches Restaurant']);
+    assert.match(nbsp(await page.locator('#ess-liste').innerText()), /Gemerkt nur auf diesem iPhone/);
+    await page.locator('[data-ess-f="merk"]').click();
+    // Ketten in der Nähe
+    await page.locator('#ess-liste details.ess-auf > summary', { hasText: 'Ketten in der Nähe' }).click();
+    const dom = nbsp(await page.locator('#ess-kette-kette-dominos').innerText());
+    assert.match(dom, /Domino's[\s\S]*nächste: Freiberg · 2[78] km[\s\S]*keine Lieferung nach Döbeln/);
+    assert.match(dom, /Aktionen:[\s\S]*Abhol-Pizza/);
+    assert.match(nbsp(await page.locator('#ess-kette-kette-kfc').innerText()), /nächste: Chemnitz/);
+    await pruefeLayout(page, `${lage} Ketten`);
+    await page.locator('#ess-kette-kette-dominos [data-ess-chip="pizza"]').click();
+    await page.waitForFunction(() => document.getElementById('ess-liste')?.getAttribute('aria-labelledby') === 'ess-c-pizza');
+    // Regelmäßig
+    await waehle(page, 'regel');
+    t = nbsp(await page.locator('#ess-liste').innerText());
+    assert.match(t, /Di 17\.11\. · heute[\s\S]*Lindenschänke/);
+    assert.match(t, /Mi 18\.11\.[\s\S]*All-you-can-eat[\s\S]*Play Off[\s\S]*Monchi Vegan/);
+    assert.match(t, /Mo 23\.11\.[\s\S]*Ruhetag[\s\S]*Al Dente/);
+    assert.match(t, /Fast täglich \(\d+\)/);
+    await page.screenshot({ path: join(FOTOS, `essen-regel-${lage}.png`) });
+    await pruefeLayout(page, `${lage} Regelmäßig`);
+    // nach Neuladen: Stern und Filter gemerkt, Lokale aus der Radar-Datei
+    await page.reload();
+    await essDa(page);
+    await waehle(page, 'lokale');
+    await page.waitForSelector('#ess-lok-doe-namaste');
+    assert.equal(await page.locator('#ess-lok-doe-namaste .ess-merk').getAttribute('aria-pressed'), 'true');
+    assert.ok(!abrufe.includes('../vorteile/essen.json'));
+    assert.deepEqual(fremd.filter(u => !/^https:\/\/raw\.githubusercontent\.com/.test(u)), []);
+    assert.deepEqual(fehler, []);
+    await ctx.close();
+  });
+}
+
+test('Lokale ohne Radar-Datei: gepflegte Liste (../vorteile/essen.json), ohne Öffnungszeiten-Versprechen; offline danach aus der Ablage', { skip: ohnePw }, async () => {
+  abrufe.length = 0;
+  const { ctx, page, fehler } = await oeffne({ jetzt: '2026-11-17T12:00:00Z' });
+  await waehle(page, 'lokale');
+  await page.waitForSelector('#ess-liste .ess-lok');
+  const t = nbsp(await page.locator('#ess-liste').innerText());
+  assert.match(t, /15 von \d+ Lokalen · bis 30 km/);
+  assert.match(t, /Öffnungszeiten folgen mit dem nächsten Radar-Lauf/);
+  assert.doesNotMatch(t, /offen bis|Ruhetag/);
+  assert.ok(abrufe.filter(a => a === 'essen.json').length >= 2, 'Seiten-essen.json + ../vorteile/essen.json');
+  await ctx.setOffline(true);
+  await page.evaluate(() => { localStorage.setItem('mein-vorteil-essen-chip', JSON.stringify('lokale')); });
+  await page.reload().catch(() => {});
+  await ctx.setOffline(false);
+  assert.deepEqual(fehler.filter(f => !/status of 404/.test(f)), [], 'nur die 404 der (noch) fehlenden Radar-Datei');
   await ctx.close();
 });

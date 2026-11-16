@@ -9,7 +9,8 @@ const warte = ms => new Promise(r => setTimeout(r, ms));
 
 export function macheAbruf(abruf, fetchImpl = globalThis.fetch) {
   const letzter = new Map();
-  return async function holeText(url, { headers = {}, method = 'GET', body } = {}) {
+  // timeoutMs je Abruf: für langsame, aber erlaubte Abfragen (Overpass rechnet bis zu 90 s), sonst abruf.timeoutMs
+  return async function holeText(url, { headers = {}, method = 'GET', body, timeoutMs } = {}) {
     const host = new URL(url).host;
     const pause = abruf.pauseMs > 0 ? Math.max(abruf.pauseMs, abruf.pauseMsJeHost?.[host] ?? 0) : 0;
     for (let versuch = 0; ; versuch++) {
@@ -17,7 +18,7 @@ export function macheAbruf(abruf, fetchImpl = globalThis.fetch) {
       if (seit < pause) await warte(pause - seit);
       letzter.set(host, Date.now());
       const ctl = new AbortController();
-      const t = setTimeout(() => ctl.abort(), abruf.timeoutMs);
+      const t = setTimeout(() => ctl.abort(), timeoutMs || abruf.timeoutMs);
       try {
         const r = await fetchImpl(url, {
           method, body, signal: ctl.signal, redirect: 'follow',
