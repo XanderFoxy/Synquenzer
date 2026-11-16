@@ -1,13 +1,13 @@
 // REG: führt einen Regressions-Test aus, wertet FEHLER-Zeilen nach bekannt.json, prüft Exit/Zeitlimit/Prüfungs-Zahl (soll.json) und schreibt Last + Fremdlast mit.
 // Aufruf: node lauf.mjs <name> <ausgabe-ordner> <timeout-s> -- <befehl …>     → <ordner>/<name>.log (+ .lauf1.log bei Wiederholung), <ordner>/<name>.json
 // Umgebung: WDH=0 keine sofortige Wiederholung (run.sh wiederholt dann am Ende ALLEIN) · ALLEIN=1 Lauf allein am Ende (Log <name>.allein.log, Pool-Ergebnis bleibt in .pool)
-//           WERTEN=1 vorhandenes Log mit den aktuellen Regeln neu werten (ohne Lauf) · REGEL=<bekannt.json> · SOLL=<soll.json>
+//           WERTEN=1 vorhandenes Log mit den aktuellen Regeln neu werten (ohne Lauf) · REGEL=<bekannt.json> · SOLL_DATEI=<soll.json>
 // Urteile: GRÜN · GRÜN (Wdh.) · GRÜN (allein) · BEKANNT · INFO · LAST (nur Zeit-Prüfungen rot, Fremdlast > CPU) · UNGÜLTIG (Last) (Echtzeit-Test, nur Prüf-Zeilen rot,
 //          Fremdlast > CPU) · ROT. Absturz, Zeitlimit, nicht erlaubter Exit, fehlende Prüfungen, leerer Lauf, Fehler im Job-Skript → immer ROT (nie LAST/BEKANNT).
 import { spawn } from 'node:child_process'; import fs from 'node:fs'; import path from 'node:path'; import os from 'node:os';
 const [name, out, tos] = process.argv.slice(2, 5), cmd = process.argv.slice(process.argv.indexOf('--') + 1);
 const here = path.dirname(new URL(import.meta.url).pathname), RG = JSON.parse(fs.readFileSync(process.env.REGEL || path.join(here, 'bekannt.json'), 'utf8'));
-const SL = (() => { try { return JSON.parse(fs.readFileSync(process.env.SOLL || path.join(here, 'soll.json'), 'utf8')); } catch (e) { return {}; } })();
+const SL = (() => { try { return JSON.parse(fs.readFileSync(process.env.SOLL_DATEI || path.join(here, 'soll.json'), 'utf8')); } catch (e) { return {}; } })();
 const R = RG[name] || {}, CPU = os.cpus().length, load = () => +fs.readFileSync('/proc/loadavg', 'utf8').split(' ')[0];
 // Eigene Last: laufende REG-Tests (lauf.mjs-Prozesse dieses Werkzeugs, ohne WERTEN) – Fremdlast = Last − eigene Tests (≥ 0). Jeder Test zählt als 1 CPU (Schätzung).
 const jobs = () => { let n = 0; for (const p of fs.readdirSync('/proc')) { if (!/^\d+$/.test(p)) continue; try { const c = fs.readFileSync('/proc/' + p + '/cmdline', 'utf8');
