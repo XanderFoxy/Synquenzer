@@ -171,3 +171,23 @@ Wegen der hohen Last (fremde Agenten) jeder Test mit Long-Task-Prüfung **A/B gl
 | spk5-test | **ALLES OK · 24** | | |
 | spkfix-test | **ALLES OK 11** | | |
 | lt2-test a2/b/d (REPS 1, beide Größen) | Ergebnis/Bild gleich **6 / 6** | | Long Tasks bei Last 11–17 in A und B (Einzelläufe) |
+| lt2-test a2/b 926×428 (REPS 2, Last 5–10, `reg/r2-lt2-a2b.log`) | **b: 0, 0** (0 Aufgaben > 50) · a2: 82, 0 (2) · Bild gleich | b: 89, 89 (3) · a2: 88, 156 (6) | echte Uhr: b je Lauf 20 Kacheln einzeln, k blieb 1 |
+
+### Pflicht (`pflicht-pruef.out`, Endfassung 47b4ffc8800ac6b042908f3353d58dfb)
+topdefs „Skripte 26, Namen 7996, doppelt 0, Syntaxfehler 0“ · dupkeys „0 doppelte Schlüssel“ · smoke `title SYNQUENZER errors []`, Bild
+`smoke.png` 5ce4b405… = basis (1. smoke-Lauf bei Last 12 anderes Bild `smoke-pruef-lauf1.png`; Wiederholung index, basis und Sicherung je
+5ce4b405 → Zeitpunkt der Aufnahme unter Last, nicht der Code) · „MS 2000“ 1× (= basis) · „^  live: true,“ 1× (= basis) · VERSION '4.76.1' ·
+Markenwörter ohne Groß/Klein (claude, anthropic, openai, chatgpt, gemini, google, apple, iphone, ipad, microsoft, amazon, spotify, youtube,
+instagram, tiktok, whatsapp, facebook, korg, roland, yamaha, moog, ableton, logic, cubase, webgl) alle = basis · Diff gegen basis +54/−2, nur Block
+LT2 + die 2 Haken (Kennung „LT2“) · keine Oberflächen-Texte, keine sichtbare Änderung an Endbild/Bedienung.
+
+### Offen (nach der Prüfung)
+- Fall d (Fokus umschalten) bleibt wie vom Bauer benannt bei Last um 3–5 nicht ganz unter 50 ms (Vollbild **mit** Tönung). Unverändert.
+- Teil 2 auf schneller Grafik jetzt k 1→2→4→8→16 (nach ≤ 4 Bildern nichts mehr zurückgestellt; Rückwechsel im vorgetäuschten 16-ms-Takt
+  333 ms bis vollständig, basis 495 ms). Auf langsamer Grafik (Kopflos/Software, alte Geräte) baut sich das Bild beim FFT-Wechsel weiter
+  stückweise auf (je Bild eine Kachel, dafür ohne lange Hänger). Das ist sichtbar anders als vorher → nach CLAUDE.md Regel 3 im Funk ansprechen
+  (`LT2.on = false` schaltet beides ab). Am echten iPhone nicht gemessen: ob der Bildabstand dort < 22 ms bleibt, zeigt erst das Gerät.
+- k bleibt über Spektren hinweg erhalten (Geräte-Eigenschaft): wird ein schnelles Gerät plötzlich langsam (Wärme), kann das erste Aufbau-Bild
+  bis zu k Kacheln laden (höchstens wie basis), danach halbiert sich k.
+- Long-Task-Prüfungen in spk12c/fokus1/fok2 scheitern bei Last ≥ 11 in index **und** basis gleich (A/B parallel); bei niedriger Last nicht
+  erneut gelaufen außer lt2-test a2/b (Last 5–10) und fok2 (2. Lauf, s. reg5.log).

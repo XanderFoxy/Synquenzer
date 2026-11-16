@@ -43,7 +43,21 @@ Ja: bei veraltetem Rand-Zwischenspeicher lädt ein Update die Seite zweimal (und
 - Werkstatt: `node bau.cjs basis.html index.html` (Block in block-upd.js). Diff: +61 Zeilen, 0 geändert/entfernt.
 
 ## Messung NACHHER (A/B im Wechsel mit basis, Last 17–24 auf dem Rechner; Bytes sind lastunabhängig)
-siehe LOG.md (Tabelle aus `node zeig.cjs mess/*.json`).
+| Szenario | basis gesamt (Update + nächster Start) | index gesamt | Update kommt nach |
+|---|---|---|---|
+| ok | 1 + 0 = **1** (2×) | 1 + 0 = **1** | 564–693 → 660 ms (unverändert, Rauschen) |
+| kurz (Quell-HTML, gz 3,01 MB) | 2 + 1 = **3** (2×) | 1 + 0 = **1** (2×) | 113–372 ms → 30,4–31,2 s (wartet, bis der Rand neu ist) |
+| kurz, Auslieferung (gz 2,27 MB) | 4,54 + 2,27 = **6,81 MB** | **2,27 MB** | 163 ms → 30,5 s |
+| alt (Rand > 60 s alt) | 2 + 1 = **3** (2×) | 1 + 1 = **2** | 360 ms → 60,2 s, dann `?v=` |
+| alt ohne Service-Worker | 1,25 + 1 = 2,25 | 1 + 1 = 2 | 148 ms → 60,2 s |
+Normalfall unverändert; veralteter Rand: nie mehr die alte Seite geladen, Update selbst immer genau 1 Download.
+Einzelzeilen + Last je Lauf: LOG.md.
+
+## Tests
+- upd-test.mjs: 14 Läufe (6 basis vorher/A-B, 5 index, 2 Auslieferung, 1 Probe), 0 Seitenfehler, Seite nach dem Update immer 4.76.2.
+- Pflicht (pflicht.log): topdefs 26 Skripte / 7992 Namen / 0 doppelt / 0 Syntaxfehler; dupkeys 0; smoke „title SYNQUENZER
+  errors []“; „MS 2000“ 1×; „^  live: true,“ 1×; VERSION-Zeile 1×.
+- Auslieferung (perf2/ausliefern.mjs) läuft durch: 6 964 722 B, gzip -6 +446 B gegenüber basis-Auslieferung.
 
 ## Grenzen / Offen
 - Pages selbst nicht messbar (Proxy 403): ETag/Last-Modified-Verhalten des echten Rands ist angenommen (gleiche Datei unter `/` und

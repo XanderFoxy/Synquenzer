@@ -14,4 +14,21 @@
 ## Ergebnisse (node zeig.cjs mess/*.json) – Downloads = gesendete Bytes / eine gzip-Seite
 | Lauf | Update | nächster Start | gesamt | Neuladen nach |
 |---|---|---|---|---|
-ERGEBNISSE
+| v-basis-ok.json (ok, gz 3.01 MB) | 1 (3.01 MB) | 4.76.2→4.76.2, +0 | **1** | 693 ms |
+| n-basis-ok.json (ok, gz 3.01 MB) | 1 (3.01 MB) | 4.76.2→4.76.2, +0 | **1** | 564 ms |
+| n-index-ok.json (ok, gz 3.01 MB) | 1 (3.01 MB) | 4.76.2→4.76.2, +0 | **1** | 660 ms |
+| v-basis-kurz.json (kurz, gz 3.01 MB) | 2 (6.03 MB) | 4.76.1→4.76.2, +1 | **3** | 372 ms |
+| n-basis-kurz.json (kurz, gz 3.01 MB) | 2 (6.03 MB) | 4.76.1→4.76.2, +1 | **3** | 113 ms |
+| probe-index-kurz.json (kurz, gz 3.01 MB) | 1 (3.01 MB) | 4.76.2→4.76.2, +0 | **1** | 31189 ms |
+| n-index-kurz.json (kurz, gz 3.01 MB) | 1 (3.01 MB) | 4.76.2→4.76.2, +0 | **1** | 30431 ms |
+| a-basis-kurz.json (kurz, gz 2.27 MB) | 2 (4.54 MB) | 4.76.1→4.76.2, +1 | **3** | 163 ms |
+| a-index-kurz.json (kurz, gz 2.27 MB) | 1 (2.27 MB) | 4.76.2→4.76.2, +0 | **1** | 30496 ms |
+| v-basis-alt.json (alt, gz 3.01 MB) | 2 (6.03 MB) | 4.76.1→4.76.2, +1 | **3** | 369 ms |
+| n-basis-alt.json (alt, gz 3.01 MB) | 2 (6.03 MB) | 4.76.1→4.76.2, +1 | **3** | 360 ms |
+| n-index-alt.json (alt, gz 3.01 MB) | 1 (3.01 MB) | 4.76.1→4.76.2, +1 | **2** | 60174 ms |
+| v-basis-alt-nosw.json (alt, ohne SW, gz 3.01 MB) | 1.25 (3.76 MB) | 4.76.2→4.76.2, +1 | **2.25** | 148 ms |
+| n-index-alt-nosw.json (alt, ohne SW, gz 3.01 MB) | 1 (3.01 MB) | 4.76.1→4.76.2, +1 | **2** | 60247 ms |
+
+Last (loadavg 1 min) je Lauf: serie-vorher.log 16,8–26,4 · serie-nachher.log 10,6–20,5 · serie-aus.log 14,8–19,1. 0 Seitenfehler in allen Läufen.
+- 06:43 Ende. Pflicht grün (pflicht.log). Nicht committet, Repo und Originale unberührt.
+
