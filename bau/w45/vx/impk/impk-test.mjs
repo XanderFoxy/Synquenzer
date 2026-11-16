@@ -133,8 +133,11 @@ const beg = async f => {
   info('C1 vorher (Basis)', f1(B0.c1));
   ok(B1.c1.every(r => r.sb != null && Math.abs(r.sb - r.sbL) < .06 && r.clicks >= 4 && !r.after.length && !r.notesAfter), 'C1 SCHLUSS mit Metronom: kein Klick (und kein Ton) mehr auf der Eins hinter dem Schlusstakt, Stopp am Taktstrich (120 und 157 BPM)', f1(B1.c1));
   info('C2 vorher (Basis)', `src „clip“ ${B0.c2.clip.length} [${B0.c2.clip.slice(0, 6).join(' ')}], „beg“ ${B0.c2.beg}`);
-  ok(!B1.c2.clip.length && B1.c2.beg === B0.c2.beg + B0.c2.clip.length, 'C2 Akkordwechsel zwischen den Schlägen (Akkorde, Arp): neu angeschlagene Band-Töne stehen im noteLog als „beg“ (nicht „clip“)', `clip ${B0.c2.clip.length} → ${B1.c2.clip.length}, beg ${B0.c2.beg} → ${B1.c2.beg}`);
-  ok(JSON.stringify(B0.c2.all) === JSON.stringify(B1.c2.all), 'C2 Klang unverändert: dieselben Töne (Spur, Tonhöhe, Schlag) wie vorher', B1.c2.all.length + ' Töne');
+  // Der neue Anschlag beim Wechsel liegt bei eff = max(Wechsel, jetzt + 5 ms) – Lage und Zahl hängen am echten Fingerzeitpunkt; die Basis
+  // streut selbst um ±2 Töne (c2-streuung.mjs: Basis 192/194, neu 194/192). Daher: kein „clip“ mehr und Summe im Streubereich.
+  ok(!B1.c2.clip.length && Math.abs(B1.c2.beg - (B0.c2.beg + B0.c2.clip.length)) <= 4, 'C2 Akkordwechsel zwischen den Schlägen (Akkorde, Arp): neu angeschlagene Band-Töne stehen im noteLog als „beg“ (nicht „clip“)', `clip ${B0.c2.clip.length} → ${B1.c2.clip.length}, beg ${B0.c2.beg} → ${B1.c2.beg}`);
+  { const grid = a => a.filter(x => { const b = +x.split('@')[1]; return Math.abs(b * 2 - Math.round(b * 2)) < 1e-6 && Math.abs(b - Math.round(b)) > .01; }).join(','); // Achtel-Zählzeiten zwischen den Schlägen: nie Wechsel-Zeitpunkt
+    ok(grid(B1.c2.all).length > 20 && grid(B0.c2.all) === grid(B1.c2.all) && Math.abs(B0.c2.all.length - B1.c2.all.length) <= 4, 'C2 Klang unverändert: die Töne auf den Zwischen-Achteln (nicht vom Wechsel-Zeitpunkt abhängig) sind gleich, Summe im Streubereich', `${grid(B1.c2.all).split(',').filter(Boolean).length} Achtel-Töne gleich · Summe ${B0.c2.all.length} → ${B1.c2.all.length}`); }
   info('C3 ● AUTO über vorhandenen Song (gemessen, nicht geändert)', `vorher: live ${B0.c3.live1}/${B0.c3.live2}, Song danach ${B0.c3.back} Band-Töne in Takt 2–3 · nachher: live ${B1.c3.live1}/${B1.c3.live2}, Song ${B1.c3.back}`);
 }
 ok(!errs.length, 'D Keine Fehler in der Konsole', errs.slice(0, 3).join(' | '));

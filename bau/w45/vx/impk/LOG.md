@@ -6,3 +6,4 @@
 - 05:54 impk-test Lauf 1: 9/10 (B1 Testfehler, korrigiert); Etikett-Sonde Basis: clip 2–8 je Lage bei Wechsel am Schlag, Last: 1.55 2.14 2.55
 - 05:55 Regression gestartet (lauf.sh: impk-test, beg1, imp1, rv1, rv1k), Last: 1.21 2.02 2.50
 - 05:56 Pflicht: topdefs 0/0, dupkeys 0, smoke errors [], Last: 3.11 2.44 2.61
+- 06:00 impk-test Lauf 2: 8/10 – C2 streut (Anschlag-Zeitpunkt), Basis selbst 192/194 (c2-streuung.mjs); C2-Prüfung angepasst, Lauf 3 gestartet, Last: 5.93 3.80 3.08
