@@ -50,7 +50,7 @@ ok('Aufbau: 16 Takte, Gesang im Refrain, Chor „Pop modern“ mit 3 Stimmen (ei
 // Durchläufe mitschneiden (Kopie der Kanäle), damit „Summe der Stücke = Original“ gegen genau den Durchlauf des Exports prüft
 await p.evaluate(() => {
   window.__chbR = []; const f = window.va1Pass;
-  window.va1Pass = async function (only, dry, onP) { const r = await f(only, dry, onP); window.__chbR.push({lane: only && only.lane || null, vox: only && only.vox, n: r.n, sr: r.sr, lead: r.lead || 0, bpm: r.bpm, a: r.a, L: Float32Array.from(r.ch[0]), R: Float32Array.from(r.ch[1]), solo: G6.solo}); return r; };
+  window.va1Pass = async function (only, dry, onP) { let solo; const r = await f(only, dry, x => { solo = G6.solo; if (onP) onP(x); }); window.__chbR.push({lane: only && only.lane || null, vox: only && only.vox, n: r.n, sr: r.sr, lead: r.lead || 0, bpm: r.bpm, a: r.a, L: Float32Array.from(r.ch[0]), R: Float32Array.from(r.ch[1]), solo}); return r; };
 });
 /* ---------- 1. je Stimme ---------- */
 const ex = await p.evaluate(async () => { const D = window.SYNQUENZER; const t = performance.now(); const r = await D.chbExport('stimme'); return {r, ms: Math.round(performance.now() - t), b64: r ? await D.va1ResB64() : null, solo: G6.solo, only: !!VA1.only, job: !!VA1.job}; });
@@ -66,8 +66,8 @@ if (ex.b64) {
   const L = ex.r.last.list, digits = ex.r.last.digits;
   ok('Stückzahl: 3 Stimmen × 2 Refrains = 6 WAV + Chor-Stuecke.txt', wavs.length === 6 && txt && L.length === 6, wavs.map(f => f.name));
   const lanes = setup.lanes, want = [];
-  for (const l of lanes) for (const t of [5, 13]) want.push('Chor-' + l.name.replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss').replace(/[^0-9A-Za-z_-]+/g, '-').replace(/^-+|-+$/g, '') + '-Takt' + String(t).padStart(2, '0') + '.wav');
-  ok('Namen: Chor-<Stimme>-Takt05 / -Takt13 (Stellenzahl 2 bei 16 Takten)', digits === 2 && want.every(w => wavs.some(f => f.name === w)), {want, got: wavs.map(f => f.name)});
+  for (const l of lanes) for (const t of [5, 13]) want.push('Chor-' + l.name.replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss').replace(/[^0-9A-Za-z_-]+/g, '-').replace(/^-+|-+$/g, '').replace(/^Chor-/, '') + '-Takt' + String(t).padStart(2, '0') + '.wav');
+  ok('Namen: Chor-<Stimme>-Takt05 / -Takt13 (Stellenzahl 2 bei 16 Takten, „Chor Terz oben“ → Chor-Terz-oben-…)', digits === 2 && want.every(w => wavs.some(f => f.name === w)), {want, got: wavs.map(f => f.name)});
   // Lage je Stück
   const lagen = [], fehler = [];
   for (const x of L) {
@@ -104,6 +104,9 @@ if (ex.b64) {
   }, {b64: ex.b64, list: L.map(x => ({datei: x.datei, lane: x.lane, s0: x.s0}))});
   ok('Summe der Stücke an ihren Takten = Durchlauf „nur diese Stimme“ (Rest außerhalb der Blenden < −60 dB)', sum.length === 3 && sum.every(x => x.restDb < -60), sum);
   ok('Je Stimme lief ein eigener Durchlauf mit Solo genau dieser Chor-Spur', sum.every(x => x.solo === x.lane), sum.map(x => [x.lane, x.solo]));
+  const diff = await p.evaluate(() => { const P = window.__chbR, e = q => { let s = 0; for (let i = 0; i < q.n; i++) s += q.L[i] * q.L[i] + q.R[i] * q.R[i]; return s; }, d = (x, y) => { let s = 0; for (let i = 0; i < Math.min(x.n, y.n); i++) { const a = x.L[i] - y.L[i]; s += a * a; } return s; };
+    return {E: P.map(e).map(v => +v.toFixed(1)), d12: +d(P[0], P[1]).toFixed(1), d13: +d(P[0], P[2]).toFixed(1)}; });
+  ok('Die drei Stimmen-Durchläufe klingen verschieden (Solo wirkt)', diff.d12 > 1 && diff.d13 > 1 && diff.E.every(v => v > 1), diff);
   const T = Buffer.from(txt.data).toString('utf8');
   fs.writeFileSync(path.join(OUT, 'Chor-Stuecke.txt'), T);
   ok('Begleittext: Tempo, Taktart, Abtastrate, je Stück eine Zeile (Takt von–bis, Sekunden, Teil Refrain, Stimme), Anleitung für die DAW', /Tempo .* BPM · Taktart 4\/4 · \d+ Hz/.test(T) && L.every(x => T.includes(x.datei + ' · Takt ' + (x.a + 1) + '–' + x.b)) && (T.match(/ · Refrain · /g) || []).length === 6 && /In Cubasis: Datei in eine Audiospur ziehen\. Raster \(Snap\) an\./.test(T), T.split('\r\n').slice(0, 7));
@@ -160,7 +163,7 @@ const tb = await p.$('.pop.va1 .chb-row'); if (tb) await tb.scrollIntoViewIfNeed
 await p.screenshot({path: path.join(OUT, 'export-fertig.png')});
 await tapSel('.pop.va1 .chb-je button[data-va="chbhelp"]'); await p.waitForTimeout(500);
 const hl = await p.evaluate(() => { const q = document.querySelector('.pop.chbh'); return q ? {n: q.querySelectorAll('ol li').length, title: (document.querySelector('.pop.chbh') || {}).textContent.slice(0, 80), over: q.scrollWidth > q.clientWidth + 1} : null; });
-ok('Hilfe „Gesang aus Cubasis holen“: 6 Schritte, nichts quer abgeschnitten', hl && hl.n === 6 && !hl.over, hl);
+ok('Hilfe (Anleitung „Gesang aus Cubasis holen“): 6 Schritte, nichts quer abgeschnitten', hl && hl.n === 6 && !hl.over, hl);
 await p.screenshot({path: path.join(OUT, 'hilfe.png')});
 await p.evaluate(() => closePop());
 // Chor-Blatt: Knopf „Als Einzelstücke speichern“ öffnet das Export-Blatt mit der Zeile
@@ -175,10 +178,10 @@ await p.evaluate(() => imp1Sheet()); await p.waitForTimeout(400);
 const ih = await p.evaluate(() => !!document.querySelector('.pop.imp1 button[data-i="chbhelp"]'));
 if (ih) { await tapSel('.pop.imp1 button[data-i="chbhelp"]'); await p.waitForTimeout(400); }
 const ih2 = await p.evaluate(() => !!document.querySelector('.pop.chbh'));
-ok('Import-Blatt: Knopf „Gesang aus Cubasis holen“ öffnet die Hilfe', ih && ih2, {ih, ih2});
+ok('Import-Blatt: Knopf „Gesang aus deiner DAW holen“ öffnet die Hilfe', ih && ih2, {ih, ih2});
 await p.evaluate(() => closePop());
 const gd = await p.evaluate(() => ui1Entries().filter(e => /^chb/.test(e.id)).map(e => [e.id, e.n]));
-ok('Guide: Einträge „Chor als Einzelstücke“ und „Gesang aus Cubasis holen“', gd.length === 2, gd);
+ok('Guide: Einträge „Chor als Einzelstücke“ und „Gesang aus deiner DAW holen“', gd.length === 2, gd);
 // quer
 await p.setViewportSize({width: 926, height: 428}); await p.evaluate(() => { VA1.res = null; window.SYNQUENZER.chbOpen(); }); await p.waitForTimeout(600);
 const q = await p.evaluate(() => { const r = document.querySelector('.pop.va1 .chb-row button'), pop = document.querySelector('.pop.va1'); const bx = r.getBoundingClientRect(); return {h: Math.round(bx.height), inView: bx.top >= 0 && bx.bottom <= innerHeight, over: pop.scrollWidth > pop.clientWidth + 1}; });

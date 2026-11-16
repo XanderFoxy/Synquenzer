@@ -10,3 +10,5 @@
 - 08:37 KOMM-P (Befund 1+3) in ausliefern.mjs; Gegenproben test/gp-p/ gestartet (Last 14.52 8.02 7.28).
 - 08:41 Gegenproben 8/8 (v1–v5 ABBRUCH, Basis bytegleich dd5abfd2, --ohne-komm = PERF2, --worklets-unberuehrt); lader.mjs A/B alt/neu gleich; freigabe.sh (mit lader-Schritt) gestartet → frei2/.
 - 08:43 golden bitgleich (0 stille Versuche); freigabe.sh-Kopie GRÜN 43 s inkl. lader „ALLES OK“; Pflicht auf frei2/index.html grün (dd5abfd2…). Große Zwischendateien gelöscht. NOTES „Prüfung“. Ende.
+- 10:51 KOMM: Sicherung vor 4.77-Anpassung nach sicherung-4770/ (Auftrag rel-4770)
+- 11:13 KOMM: stellenFn {erstStart: 1} für sq-worklet-src (4.77 ERST), Gegenproben 3/3 ABBRUCH, freigabe 4.77 + 4.76.1 GRÜN, NOTES „4.77“.

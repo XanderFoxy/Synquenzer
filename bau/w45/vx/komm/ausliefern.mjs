@@ -180,7 +180,13 @@ function cssOhneKommentare(css) {
      erster Kommentar '// V0d (A.4b 3)' (bleibt wörtlich) · lkWkCheck: /const PVA = '…'/ und /const PVM = '…'/ (Zeilen behalten Abstände).
    stellen = erwartete Zahl der Stellen in der AUSGABE, an denen der Name als eigene Zeichenkette ('id', "id", `id`) oder #id steht
    (inkl. id-Attribut). Weicht sie ab (neuer Zugriff per Text?), bricht das Werkzeug ab – dann Zugriff prüfen und Zahl anpassen
-   oder den Block hier herausnehmen (er bleibt dann bytegleich). */
+   oder den Block hier herausnehmen (er bleibt dann bytegleich).
+   stellenFn (4.77) = bewusst erlaubte WEITERE Stellen, namentlich je Funktion {Name: Zahl}: gezählt wird der Block-Name als
+   Zeichenkette ('id' oder '#id') im Code der Funktion dieses Namens (samt inneren Funktionen). Gibt es dort genau Zahl Stellen,
+   zählen sie zu stellen dazu; 0 ist nur erlaubt, wenn die Funktion den Namen nicht nennt (ältere Fassung, z. B. 4.76.1 ohne
+   erstStart). Jede andere Zahl → ABBRUCH, und eine neue Stelle in einer ANDEREN Funktion fällt weiter über die Gesamtzahl auf.
+     sq-worklet-src · erstStart (ERST, 4.77): liest den ganzen textContent, schneidet ihn nur in Teil-Blobs (slice) und vergleicht
+     ihn in erstWkUrl als Ganzes mit dem Text von loadWorklet (src === W.src) – keine Suche im Text, deshalb gekürzt erlaubt. */
 const KOMM_BLOECKE = {
   'sq-g9-src': {sourceType: 'script', stellen: 2},
   'sq-arp-src': {sourceType: 'script', stellen: 2},
@@ -190,7 +196,7 @@ const KOMM_BLOECKE = {
   'sq-mk-src': {sourceType: 'script', stellen: 2},
   'sq-bm-src': {sourceType: 'script', stellen: 2},
   'sq-md-src': {sourceType: 'module', stellen: 2},
-  'sq-worklet-src': {sourceType: 'module', stellen: 8,
+  'sq-worklet-src': {sourceType: 'module', stellen: 8, stellenFn: {erstStart: 1},   // 4.77: +1 ERST erstStart (ganzer Text als Blob-Teile, keine Suche)
     kommentare: ['/*MKW{*/', '/*}MKW*/', '// V0d (A.4b 3)'],
     zeilen: [/const PVA = '/, /const PVM = '/, /const LEVEL_LUT/],
     zugriffe: [{art: 'regex', re: /const PVA = '([^']*)'/}, {art: 'regex', re: /const PVM = '([^']*)'/},
@@ -218,6 +224,16 @@ function kommZugriffe(id, alt, neu, regeln) {
   for (const k of regeln.kommentare || []) if (alt.split(k).length !== neu.split(k).length) fail(id + ': Schutz-Kommentar ' + k + ' nicht gleich oft');
 }
 function kommStellen(o, id) { const e = id.replace(/[-]/g, '\\-'); return (o.match(new RegExp("['\"`]" + e + "['\"`]|#" + e + '(?![\\w-])', 'g')) || []).length; }
+// KOMM 4.77: erwartete Gesamtzahl = stellen + die namentlich erlaubten Stellen (stellenFn), die es in dieser Fassung gibt
+function kommStellenSoll(id) {
+  const R = KOMM_BLOECKE[id], fn = {}; let soll = R.stellen;
+  for (const name in R.stellenFn || {}) {
+    const ist = KOMM_P.fn.filter(r => r.name === name).reduce((s, r) => s + ((r.idN && r.idN[id]) || 0), 0); fn[name] = ist;
+    if (ist !== 0 && ist !== R.stellenFn[name]) fail(id + ': Funktion ' + name + ' nennt den Block ' + ist + '× statt ' + R.stellenFn[name] + ' – neuer Zugriff per Text? prüfen, dann stellenFn anpassen');
+    soll += ist;
+  }
+  return {soll, fn};
+}
 /* KOMM-P (Prüfung 16.11., Befund 1/3): der Wächter oben zählt nur Stellen mit dem Block-Namen. Eine NEUE Text-Suche an einer
    BESTEHENDEN Zugriffs-Stelle (z. B. mkwEval sucht zusätzlich einen Kommentar-Text) blieb unbemerkt. Darum zusätzlich:
    (1) Zugriffs-Funktionen = jede Funktion, die einen KOMM-Block-Namen als Zeichenkette nennt; dazu die Funktionen, die sie mit
@@ -260,7 +276,7 @@ function kommSammeln(ast, src, opt, info) {
       if (n.type === 'ArrowFunctionExpression' && n.expression && src.slice(n.body.start, n.body.end).includes('textContent')) r.ret = true;
       stapel.push(r); KOMM_P.fn.push(r); }
     const top = stapel[stapel.length - 1], wo = z0 + (n.loc ? n.loc.start.line : 0);
-    if (n.type === 'Literal' && typeof n.value === 'string') { const v = n.value.replace(/^#/, ''); if (ids.includes(v)) top.ids.add(v); }
+    if (n.type === 'Literal' && typeof n.value === 'string') { const v = n.value.replace(/^#/, ''); if (ids.includes(v)) { top.ids.add(v); for (const r of stapel) (r.idN || (r.idN = {}))[v] = (r.idN[v] || 0) + 1; } }   // KOMM 4.77: idN = Stellen je Funktion (stellenFn)
     else if (n.type === 'ReturnStatement' && n.argument && src.slice(n.argument.start, n.argument.end).includes('textContent')) top.ret = true;
     else if (n.type === 'VariableDeclarator' && n.id.type === 'Identifier') { const L = kommLit(n.init); if (L) top.consts[n.id.name] = L; if (n.init && src.slice(n.init.start, n.init.end).includes('textContent')) (top.textVars || (top.textVars = new Set())).add(n.id.name); }
     else if (n.type === 'CallExpression' || n.type === 'NewExpression') {
@@ -353,7 +369,9 @@ for (const id of TEXT_PLAIN_ALS_SKRIPT) {
   const n = zaehlId(o, id);
   if (n !== 2 || !o.includes("blockLoad('" + id + "'")) fail(id + ': ' + n + ' Erwähnungen statt 2 (id + blockLoad) – neuer Text-Zugriff? Block dann aus TEXT_PLAIN_ALS_SKRIPT nehmen oder Zugriff prüfen');
 }
-if (KOMM_AN) for (const id in KOMM_BLOECKE) { if (!B.some(b => b.id === id && b.type === 'text/plain')) continue; const n = kommStellen(o, id); if (n !== KOMM_BLOECKE[id].stellen) fail(id + ': ' + n + ' Text-Stellen statt ' + KOMM_BLOECKE[id].stellen + ' – neuer Zugriff per Text? prüfen, dann KOMM_BLOECKE anpassen'); }   // KOMM
+if (KOMM_AN) { bericht.kommStellen = {}; for (const id in KOMM_BLOECKE) { if (!B.some(b => b.id === id && b.type === 'text/plain')) continue; const n = kommStellen(o, id), S = kommStellenSoll(id);   // KOMM (+ 4.77 stellenFn)
+  if (n !== S.soll) fail(id + ': ' + n + ' Text-Stellen statt ' + S.soll + (Object.keys(S.fn).length ? ' (' + KOMM_BLOECKE[id].stellen + ' + namentlich ' + JSON.stringify(S.fn) + ')' : '') + ' – neuer Zugriff per Text? prüfen, dann KOMM_BLOECKE anpassen');
+  bericht.kommStellen[id] = Object.keys(S.fn).length ? {stellen: n, basis: KOMM_BLOECKE[id].stellen, namentlich: S.fn} : n; } }
 if (KOMM_AN) bericht.kommPruefung = kommPruefen();   // KOMM-P: Text-Suchen an den Zugriffs-Stellen + toString nachrechnen
 const zaehl = (s, re) => (s.match(re) || []).length;
 function zaehlId(s, id) { let n = 0, i = -1; while ((i = s.indexOf(id, i + 1)) >= 0) n++; return n; }

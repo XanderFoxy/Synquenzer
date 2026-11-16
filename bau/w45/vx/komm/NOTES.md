@@ -140,3 +140,16 @@ Laufzeit abgesichert; wer A8 wörtlich will, nimmt den Schalter.
 
 **Offen nach Prüfung:** siehe „Offen“ 2, 4 (nicht erfasste Zugriffs-Arten), 6 (stille mkRender, App), dazu: Übernahme nach perf2
 braucht drei Dateien (ausliefern.mjs, freigabe.sh, test/lader.mjs); Safari/iPhone weiter ungeprüft (Offen 3).
+
+## 4.77 (16.11.): neue Stelle erstStart namentlich erlaubt
+- Anlass: freigabe.sh auf rel-4770 brach ab „sq-worklet-src: 9 Text-Stellen statt 8“. Neue Stelle = ERST `erstStart()` (4.77,
+  Paket ERST): liest den ganzen textContent, schneidet ihn nur per slice in 64-K-Teil-Blobs, erstWkUrl vergleicht ihn als Ganzes
+  mit dem Text von loadWorklet (`src === W.src`). Keine Suche im Text → Kürzen unbedenklich (golden + lader bestätigen es).
+- Änderung ausliefern.mjs (Sicherung sicherung-4770/): KOMM_BLOECKE['sq-worklet-src'] bekommt `stellenFn: {erstStart: 1}`;
+  kommSammeln zählt je Funktion (samt inneren) die Block-Namen-Zeichenketten (`idN`); `kommStellenSoll(id)` = stellen + je
+  stellenFn-Name die gefundene Zahl, die 0 (Funktion nennt den Block nicht, z. B. 4.76.1) oder genau die erlaubte sein muss.
+  bericht.json: `kommStellen` je Block (worklet: {stellen, basis 8, namentlich {erstStart}}).
+- Gegenproben (rel-4770/pruef/komm/stellen/gp/*.out): neue Stelle in erstFree → „10 statt 9“; 2. Stelle in erstStart →
+  „Funktion erstStart nennt den Block 2× statt 1“; erstStart umbenannt → „9 statt 8 (… erstStart 0)“ – je ABBRUCH.
+- Läufe: 4.77 GRÜN (rel-4770/aus, md5 7a72a1aa…, bytegleich zur Werk-Kopie mit stellen 9); 4.76.1 GRÜN (md5 dd5abfd2… = frei2,
+  also unverändert); golden 4.77 „ERGEBNIS bitgleich“ (12 Werksklänge, Konsole []).

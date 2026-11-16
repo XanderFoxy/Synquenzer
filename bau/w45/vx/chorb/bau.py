@@ -11,8 +11,8 @@ HOOKS = [
     ("  if (wegeVa1Tap(b)) return;   // WEGE (D7)", "  if (chbVa1Tap(b)) return;   /* CHORB: je Stimme | alle zusammen, Hilfe */"),
     ('<div class="small g6pe-st">${g6peStTxt(c, rd)}</div>`;', "  h += chbChorBtn();   /* CHORB: [Als Einzelstücke speichern] */"),
     ("  if (b.dataset.ch1) return ch1Tap(b);", "  if (b.dataset.chb) return chbTap(b);   /* CHORB */"),
-    ("  kf2Guide(UI1.ents);", "  chbGuide(UI1.ents);    /* CHORB: Chor als Einzelstücke, Gesang aus Cubasis holen */"),
-    ("(c && c.x && c.st !== 'analyse' ? B('again', 'Erkennen') : '') + '</div>';", "  h += chbImpHtml();   /* CHORB: Hilfe „Gesang aus Cubasis holen“ */"),
+    ("  kf2Guide(UI1.ents);", "  chbGuide(UI1.ents);    /* CHORB: Chor als Einzelstücke, Gesang aus der DAW holen */"),
+    ("(c && c.x && c.st !== 'analyse' ? B('again', 'Erkennen') : '') + '</div>';", "  h += chbImpHtml();   /* CHORB: Hilfe „Gesang aus der DAW holen“ */"),
     ("  const a = b.dataset.i, c = IMP1.cur;", "  if (a === 'chbhelp') { closePop(); chbHelp(); return; }   /* CHORB */"),
     ("Object.assign(SYNQUENZER, va1Api());", "Object.assign(SYNQUENZER, CHB_API);                         /* CHORB: Chor als Einzelstücke (Test-API) */"),
 ]

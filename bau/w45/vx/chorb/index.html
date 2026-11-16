@@ -55910,7 +55910,7 @@ function ui1Entries() {
   wegeGuide(UI1.ents);   // WEGE: verschobene / umbenannte Wege + neue Einträge
   kf1Guide(UI1.ents);    // KF1: Rauschfarbe, Ringmod, Körnung, Anschlag Filter, S&H Tonart, Arp Treppe
   kf2Guide(UI1.ents);    // KF2: Saite, Vokal-Filter, Oszilloskop
-  chbGuide(UI1.ents);    /* CHORB: Chor als Einzelstücke, Gesang aus Cubasis holen */
+  chbGuide(UI1.ents);    /* CHORB: Chor als Einzelstücke, Gesang aus der DAW holen */
   spk1Guide(UI1.ents);   // SPK1: Spektral-Seite
   if (typeof ki1Guide === 'function') ki1Guide(UI1.ents);   // KI1: Profi-Trennung
   return UI1.ents;
@@ -77299,12 +77299,18 @@ function chbVoices(st, je) {
   const tr = S.tracks[st], lanes = tr && tr.chor && Array.isArray(tr.chor.lanes) ? tr.chor.lanes : [];
   const used = lanes.filter(l => !l.mute && (typeof g6peLaneUsed !== 'function' || g6peLaneUsed(st, l.id)));
   if (!used.length) return all;                                    // nur alter Chor (ohne Spuren): eine Summe
-  const out = used.map(l => ({id: l.id, name: String(l.name || l.id), safe: va1Safe(l.name || l.id)}));
+  const nm = l => { const v = va1Safe(l.name || l.id).replace(/^Chor-(?=.)/i, ''); return v === 'spur' || /^chor$/i.test(v) ? va1Safe(l.id) : v; };   // „Chor Terz oben“ → Chor-Terz-oben-Takt05
+  const out = used.map(l => ({id: l.id, name: String(l.name || l.id), safe: nm(l)}));
   for (const v of out) if (out.filter(x => x.safe === v.safe).length > 1) v.dup = true;
   for (const v of out) if (v.dup) v.safe = va1Safe(v.safe + '-' + v.id);
   return out;
 }
-function chbTeil(a) { const ms = S.song && Array.isArray(S.song.marks) ? S.song.marks : []; const m = ms.find(x => a >= x.a && a < x.a + x.len); return m ? String(markLabel(m) || m.name || '') : ''; }
+// Teil am Anfang des Stücks: Name der Marke, bei einem Teil aus einer Szene deren Name (wie mixaSections), sonst markLabel
+function chbTeil(a) {
+  const ms = S.song && Array.isArray(S.song.marks) ? S.song.marks : [], m = ms.find(x => a >= x.a && a < x.a + x.len); if (!m) return '';
+  const q = !m.name && /^S(\d+)$/.exec(m.part || ''), sc = q && S.scenes[+q[1] - 1];
+  return String(sc && sc.name ? sc.name : markLabel(m) || '');
+}
 const chbSec = v => v.toFixed(3).replace('.', ',');
 function chbText(o) {
   const L = ['Chor als Einzelstücke – ' + (S.name || 'Song'), 'Tempo ' + String(+(+o.bpm).toFixed(2)).replace('.', ',') + ' BPM · Taktart ' + o.ts + ' · ' + o.sr + ' Hz · WAV 24 Bit Stereo',
@@ -77370,6 +77376,7 @@ function chbCss() {
   const s = document.createElement('style'); s.id = 'chbCss';
   s.textContent = ['.va1 .chb-row{margin-top:6px}.va1 .chb-row .mbtn{grid-column:1/-1}',
     '.va1 .chb-je .mbtn[aria-pressed="true"]{box-shadow:inset 0 0 0 2px var(--amber,#f7c948)}',
+    '.g6pe .chb-g6{display:block}.g6pe .chb-g6 .mbtn{width:100%;min-height:44px}',
     '.chbh{width:min(440px,calc(100vw - 16px));box-sizing:border-box}.chbh ol{margin:6px 0 10px;padding-left:22px;font:14px/1.45 var(--font-ui);color:var(--text)}',
     '.chbh li{margin:0 0 8px}.chbh p{margin:4px 0 8px;font:13px/1.4 var(--font-ui);color:var(--text-dim)}.chbh .mbtn{min-height:44px;margin:0}'].join('\n');
   document.head.appendChild(s);
@@ -77380,7 +77387,7 @@ function chbVa1Html(song, hasC, busy) {
   const T = (v, t) => `<button class="mbtn rb" data-va="chbje" data-v="${v}" aria-pressed="${je === v}"${busy ? ' disabled' : ''}>${esc(t)}</button>`;
   return '<div class="va1g chb-row">' + `<button class="mbtn rb" data-va="chorblk"${ok ? '' : ' disabled'}><b>${esc(VA1_KIND.chorblk)}</b><small>${esc('nur die Stellen mit Ton · am Takt geschnitten · Takt im Dateinamen · ZIP')}</small></button></div>` +
     '<div class="va1tr chb-je" role="group" aria-label="Chor als Einzelstücke">' + T('stimme', 'je Stimme') + T('alle', 'alle zusammen') +
-    '<button class="mbtn rb" data-va="chbhelp">Gesang aus Cubasis holen</button></div>';
+    '<button class="mbtn rb" data-va="chbhelp">Gesang aus deiner DAW holen</button></div>';
 }
 function chbVa1Tap(b) {
   const a = b.dataset.va;
@@ -77394,16 +77401,16 @@ function chbOpen() {
   requestAnimationFrame(() => { const h = p && p.querySelector('.chb-row'); if (h && p.isConnected) p.scrollTop = Math.max(0, h.offsetTop - 60); });
   return p;
 }
-const chbChorBtn = () => '<div class="g6pe-addrow"><button class="mbtn rb" data-chb="open">Als Einzelstücke speichern</button></div>';
+const chbChorBtn = () => { chbCss(); return '<div class="g6pe-addrow chb-g6"><button class="mbtn rb" data-chb="open">Als Einzelstücke speichern</button></div>'; };
 function chbTap(b) { if (b.dataset.chb === 'open') { closePop(); chbOpen(); } return true; }
-const chbImpHtml = () => '<div class="imp1r"><button class="mbtn rb" data-i="chbhelp">Gesang aus Cubasis holen</button></div>';
+const chbImpHtml = () => '<div class="imp1r"><button class="mbtn rb" data-i="chbhelp">Gesang aus deiner DAW holen</button></div>';
 const CHB_HELP = [
   'Cubasis › <b>MediaBay</b> › deinen Song antippen › <b>Duplicate</b>, die Kopie öffnen.',
   'Lineal oben: linken <b>Locator auf Takt 1</b>, rechten <b>2 Takte hinter das Songende</b>.',
   '<b>MediaBay › Mixdown › Create Mixdown › WAV.</b> Häkchen: <b>Create separate files for tracks</b> an, <b>Exclude all effects (dry)</b> an, <b>Mixdown between locators</b> an, <b>Normalize</b> aus. Starten.',
   'Oben auf die <b>Tempo-Anzeige</b> tippen und die Zahl merken (zum Beispiel 118.0).',
   'Hier: <b>Neues Projekt</b> › <b>Audio/MIDI importieren</b> › die Datei deiner Gesangsspur wählen › Tempo eintragen › <b>Als Gesang</b>.',
-  'Chor erzeugen › Export › <b>Chor als Einzelstücke</b>. Jede Datei trägt den Takt im Namen. In Cubasis legst du sie mit Raster genau an diesen Takt.'];
+  'Chor erzeugen › Export › <b>Chor als Einzelstücke</b>. Jede Datei trägt den Takt im Namen. Dort legst du sie mit Raster genau an diesen Takt.'];
 function chbHelp() {
   chbCss();
   return openPop(EL.top, q => {
@@ -77420,7 +77427,7 @@ function chbGuide(ents) {
     const E = (id, n, w, d, s, go, q) => ({id, n, w, d, s, go, q});
     ents.push(
       E('chbstk', 'Chor als Einzelstücke', 'Menü › Export › Audio · WAV (oder Chor-Blatt › Als Einzelstücke speichern)', 'Je Chor-Stimme nur die Stellen mit Ton als WAV, am Takt geschnitten, Takt im Dateinamen – in deiner DAW mit Raster an diesen Takt legen.', 'chor einzeln stuecke bloecke takt export wav zip stimmen daw', () => { ui1Home(); chbOpen(); return true; }, '.chb-row .mbtn'),
-      E('chbhelp', 'Gesang aus Cubasis holen', 'Menü › Export › Gesang aus Cubasis holen', 'In 6 Schritten: Gesangsspur trocken als WAV aus deiner DAW, Tempo merken, hier als Gesang laden, Chor erzeugen, als Einzelstücke zurück.', 'gesang importieren daw mixdown tempo vocals chor zurueck', () => { ui1Home(); chbHelp(); return true; }, '.chbh ol'));
+      E('chbhelp', 'Gesang aus deiner DAW holen', 'Menü › Export › Gesang aus deiner DAW holen', 'In 6 Schritten: Gesangsspur trocken als WAV aus deiner DAW, Tempo merken, hier als Gesang laden, Chor erzeugen, als Einzelstücke zurück.', 'gesang importieren daw mixdown tempo vocals chor zurueck', () => { ui1Home(); chbHelp(); return true; }, '.chbh ol'));
   } catch (e) { logErr(e); }
 }
 // Test-API (Objekt, kein Umhüllen nötig): Export, Liste, Kern
@@ -111342,7 +111349,7 @@ function imp1Html() {
   if (c && c.st === 'analyse') h += `<div class="imp1bar"><i style="transform:scaleX(${(c.p || 0).toFixed(3)})"></i></div>`;
   h += `<div class="imp1r"><span class="lbl">Tempo bekannt</span><input class="imp1in imp1bpmin" type="text" inputmode="decimal" placeholder="—" value="${esc(kn)}" aria-label="Tempo bekannt in BPM"><span class="lbl">BPM</span>` +
     B('pick', 'Datei wählen', null, !(c && (c.st === 'lesen' || c.st === 'analyse')), 'go') + (c && c.x && c.st !== 'analyse' ? B('again', 'Erkennen') : '') + '</div>';
-  h += chbImpHtml();   /* CHORB: Hilfe „Gesang aus Cubasis holen“ */
+  h += chbImpHtml();   /* CHORB: Hilfe „Gesang aus der DAW holen“ */
   if (!c || c.st !== 'fertig') return h;
   const G = imp1Geo(c), P = imp1Parts(c), r = c.r;
   if (r.frage) {   // Tempo vorweg eingetragen: keine Rückfrage
