@@ -1,7 +1,7 @@
 # ZRL2 – Zerlegen weiter schneller + Fortschritt (OFFEN-1611 A4)
 
-`index.html` = rel-4761 (4.76.1, VERSION bleibt '4.76.1') + zwei eigene Blöcke `ZRL2-BEGIN … ZRL2-END` und sechs einzeilige Haken mit „ZRL2“.
-`basis.html` = unveränderte rel-4761 (md5 `e4dc1b9599eef2656308cb990e407f37`). Endfassung md5 **`50e0a88c2db5841308a30c565ca3de56`**.
+`index.html` = rel-4761 (4.76.1, VERSION bleibt '4.76.1') + zwei eigene Blöcke `ZRL2-BEGIN … ZRL2-END` und sieben einzeilige Haken mit „ZRL2“ (der siebte aus der Prüfung: Zwischenspeicher freigeben).
+`basis.html` = unveränderte rel-4761 (md5 `e4dc1b9599eef2656308cb990e407f37`). Endfassung md5 siehe Abschnitt „Prüfung“ (vor der Prüfung `50e0a88c2db5841308a30c565ca3de56`, Sicherung `index.vor-pruef.html`).
 Sicherungen: `index.vor-zrl2.html` (= Basis), `index.vor-fort.html` (nur Zerlegen-Teil). Bau: `bau1.py` (Zerlegen), `bau2.py` (Fortschritt),
 jede Ersetzung mit Prüfung „genau 1 Treffer“. Rechnerlast während der ganzen Arbeit 5–14 (andere Agenten) → alle Zeiten A/B abwechselnd,
 dazu CPU-Zeit (weniger lastabhängig) und Mikro-Messungen im selben Prozess.
@@ -59,7 +59,7 @@ Verworfen (gemessen): Zeit-Median zeilenweise für alle Bins (Cache) – kein Ge
 | Speicher-Spitze 3 min (RSS aller Renderer) | 396 MB | 407 MB | Ziel ≤ 500 OK |
 | Transient 3 min (ganzes Stück) | 346 Schläge, 0 Meldungen | 346 Schläge (gleiche Zeiten), 30 Meldungen: 3 % nach 103 ms … 99 % nach 2701 ms | |
 | „Alle Ebenen abtasten“ aus + Transient 3 min (`EBENE=1`, `ebene/zrl2-test.json`) | – | „Ebene abtasten“ 48 Meldungen (2 % nach 135 ms … 99,6 % nach 6842 ms), danach „Schläge suchen“ 30 Meldungen bis 9042 ms | |
-Einordnung: ≈ 15 % weniger Rechenzeit beim Zerlegen. Bei geringer Last (ZRL1-Basis 8,7 s) wären das ≈ 7,5 s für 3 min – bei Last 10 nicht direkt gemessen.
+Einordnung (nach Prüfung berichtigt): **etwa 12–15 % weniger Rechenzeit beim Zerlegen (3 min)** – Prüfer-A/B CPU ×1,14 (−12,5 %), Test-Chromium ×1,14 (−12 %), Node-Kern ×1,17 (−14,5 %); bei 20 s ×1,27 (Prüfer, CPU) bis ×1,36 (Wandzeit, 3 Läufe unter Last). Bei geringer Last (ZRL1-Basis 8,7 s) wären das ≈ 7,5 s für 3 min – bei Last 10 nicht direkt gemessen.
 
 ## Tests
 - `zrl2-test.mjs index.html basis.html` (`RUNDEN=3 RUNDEN3=2`, Ausgabe `zrl2-test.out`, `zrl2-test.json`): **ALLE OK (12)** – Ziel 20 s ≤ 2,5 s,
@@ -72,7 +72,7 @@ Einordnung: ≈ 15 % weniger Rechenzeit beim Zerlegen. Bei geringer Last (ZRL1-B
   Rauchtest `errors []`, `smoke-zrl2.png` byte-gleich mit `smoke-basis.png` · „MS 2000“ 1× · „  live: true,“ 1× · VERSION '4.76.1'.
 
 ## Haken außerhalb der Blöcke (je eine Zeile, Kennung ZRL2)
-zerlegen (SPK1): `const X = zrl2Mags(…), {H, mh} = zrl2Hpss(…)` · `zrl2Sm(…)` statt der smRow-Zeile · `if (!own.length) zrl2Tiles(…); else for (…)`.
+zerlegen (SPK1): `const X = zrl2Mags(…), {H, mh} = zrl2Hpss(…)` · `zrl2Sm(…)` statt der smRow-Zeile · `if (!own.length) zrl2Tiles(…); else for (…)`. · (Prüfung) `finally { …; zrl2W.delete(d); }` am Ende von zerlegen.
 SPK12: `ops.spk12trans = (d, m, emit) =>` · neue Zeile `if (emit && nF > 4096 && (n & 1023) === 1023) emit(…)` · `spk12Trans`: 4. Argument von spk1Call.
 Stellen von LT2/SPKK/IMPK nicht berührt (keine Long-Task-/Import-Stellen; spk12Trans nur die eine Aufruf-Zeile – beim Zusammenführen mit SPKK beachten).
 
