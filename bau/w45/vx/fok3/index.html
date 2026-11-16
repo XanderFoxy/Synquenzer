@@ -109389,18 +109389,52 @@ function fokus1KMake(Z2, X) {
       let c1 = c; for (let e = c + 1; e < W && e <= c1 + gap; e++) if (aff[e]) c1 = e;   // Lauf betroffener Spalten (Lücken bis N/hop zusammen)
       const ra = Math.max(0, (x0 + c) * hop - N / 2 - hb), rz = (x0 + c1 + 1) * hop + N / 2 + hb, SL = 4 * (X.BLK || 16384); let mid = null;
       for (let u = ra; u < rz; u += SL) { mid = await restMid(d, {}, u, Math.min(rz, u + SL), null); if (!ok()) return false; }   // in Scheiben: Abbruch greift nach ≤ 4 Blöcken
-      tY = performance.now();
+      tY = performance.now(); let tF = 0, nF = 0;   /* FOK3: Zeit je Spalte messen (Schätzung) */
       for (let cc = c; cc <= c1; cc += 2) {
-        const sA = (x0 + cc) * hop - N / 2, two = cc + 1 <= c1;
+        const sA = (x0 + cc) * hop - N / 2, two = cc + 1 <= c1, t1 = performance.now();
         for (let j = 0; j < N; j++) { const i = sA + j, i2 = i + hop; re[j] = (i >= 0 && i < mid.length ? mid[i] : 0) * w[j]; im[j] = two && i2 >= 0 && i2 < mid.length ? mid[i2] * w[j] : 0; }
         spk12Fft(re, im);
         for (let k = 0; k <= H; k++) { const kk = k ? N - k : 0, zr = re[k], zi = im[k], wr = re[kk], wi = im[kk], p = zr + wr, q = zi - wi, u = zi + wi, e = wr - zr; m1[k] = 0.5 * Math.sqrt(p * p + q * q); m2[k] = 0.5 * Math.sqrt(u * u + e * e); }
-        col(m1, cc); if (two) col(m2, cc + 1);
+        col(m1, cc); if (two) col(m2, cc + 1); tF += performance.now() - t1; nF += two ? 2 : 1;
         if (performance.now() - tY > 20) { await X.tick(); if (!ok()) return false; tY = performance.now(); }
       }
+      if (nF >= 64) FK3.cC = Math.max(0.01, Math.min(2, 0.7 * FK3.cC + 0.3 * tF / nF / Math.pow(N / 4096, 1.4)));   /* FOK3 */
       c = c1 + 1;
     }
     return keep({aff, rb, na});
+  }
+  /* FOK3: Kosten-Schätzung des genauen Satzes (ohne zu rechnen) für Stücke from…to, die nicht im Zwischenspeicher liegen: Rest-Audio-Blöcke, die
+     für Spalten mit Ebenen-Wirkung fehlen (Masken-Streifen à 128 Basis-Rahmen mit Inhalt; Ebenen mit neuem id:ver → ihre Streifen alt ∪ neu gelten
+     als neu), und FFT-Spalten ohne gültiges Rest-Bild (RS.tr). Kosten je Block / je Spalte werden beim Rechnen laufend gemessen (FK3.cB, FK3.cC,
+     Startwerte aus der FOK2-Messung). Rückgabe {ms, sec (Rest-Audio-Dauer, die neu zu rechnen ist), blk, col}. */
+  const FK3 = {cB: 7, cC: 0.068, lx: new Map()};
+  const fk3Strips = (d, l) => {
+    const k = l.id + ':' + l.ver + ':' + inst(d); let s = FK3.lx.get(k); if (s) return s; s = []; const M = d.masks && d.masks.get(l.id);
+    if (M) for (const [i, st] of M) if (st && st.h && st.h.some(h => h)) s.push(+i);
+    FK3.lx.set(k, s); while (FK3.lx.size > 64) FK3.lx.delete(FK3.lx.keys().next().value); return s;
+  };
+  function fk3Est(d, I, from, to, inC) {
+    const z = {ms: 0, sec: 0, blk: 0, col: 0}; if (!FK2 || !d.meta.layers.length || !d.mid || d.mid.length < 2) return z;
+    const n = d.meta.n, hb = d.meta.base.hop, Nb = d.meta.base.N, BL = X.BLK || 16384, N = I.N, hop = I.hop, mg = N / 2 + 2 * hb + Nb;
+    const base = d.meta.id + '#' + inst(d) + '#' + n, ok0 = !!(RS.mid && RS.done && RS.base === base && RS.mid.length === n), cur = new Map(), all = new Set();
+    for (const l of d.meta.layers) { const s = fk3Strips(d, l); cur.set(l.id + ':' + l.ver, s); for (const v of s) all.add(v); }
+    let dirty = null;   // null = alles neu (kein Rest-Audio dieses Dokuments im Speicher)
+    if (ok0) { dirty = new Set(); if (RS.key !== rsKey(d)) { const old = RS.lx || new Map(); for (const [k, s] of cur) if (!old.has(k)) for (const v of s) dirty.add(v); for (const [k, s] of old) if (!cur.has(k)) for (const v of s) dirty.add(v); } }
+    const sp = [...all].sort((p, q) => p - q), bs = new Set(), dz = s => dirty === null || dirty.has(s) || dirty.has(s - 1) || dirty.has(s + 1);
+    for (let ci = from; ci < to; ci++) {
+      if (inC(ci)) continue;
+      const W = Math.min(1024, I.cols - ci * 1024), pa = ci * 1024 * hop - N / 2 - hb, pb = (ci * 1024 + W) * hop + N / 2 + hb;
+      let pc = 0, pd = false;
+      for (const s of sp) {
+        const sa = Math.max(0, (s * 128 - 1) * hb), sb = Math.min(n, (s * 128 + 128) * hb + Nb), a = Math.max(pa, sa - mg), b = Math.min(pb, sb + mg); if (b <= a) continue;
+        pc += (b - a) / hop; const ds = dz(s); if (ds) pd = true;
+        for (let k = Math.max(0, Math.floor(a / BL)); k <= Math.floor(Math.max(0, b - 1) / BL); k++) if (ds || !RS.done[k]) bs.add(k);
+      }
+      if (!pc) continue;
+      if (pd || !ok0 || !RS.tr.has(RS.base + ':' + N + ':' + hop + ':' + ci + ':' + W)) z.col += Math.min(W, pc);
+    }
+    z.blk = bs.size; z.sec = bs.size * BL / d.meta.sr; z.ms = z.blk * FK3.cB + z.col * FK3.cC * Math.pow(N / 4096, 1.4);
+    return z;
   }
   // ein Stück: Quelle (Original-Bytes) → Fokus-Bytes; Energie (Leistung je Byte) vorher/nachher
   function piece(d, I, ci, src, o, gf, NT, TR) {   /* FOK2: TR = trueRest (nur „Nur Rest“) */
@@ -109474,7 +109508,11 @@ function fokus1KMake(Z2, X) {
     if (!d) throw new Error('Analyse fehlt');
     const T0 = performance.now(), o = optOf(m), N = NS.includes(m.N) ? m.N : 4096, I = X.specInfo(d, N), from = Math.max(0, m.from | 0), to = Math.min(I.chunks, m.to == null ? I.chunks : m.to | 0);
     const NT = found(d, o), H = sigOf(d, o, N, NT), tok = d.fkTok = (d.fkTok || 0) + 1, gf = gainOf(d, o), same = () => d.fkTok === tok && sigOf(d, o, N, found(d, o)) === H;
-    let eO = 0, eR = 0, n = 0, neu = 0, stop = '';
+    let eO = 0, eR = 0, n = 0, neu = 0, stop = '', vb = false, est = null;
+    /* FOK3: m.vorab (nur „Nur Rest“): ist der genaue Satz für from…to teuer (geschätzt > 300 ms oder > 60 s Rest-Audio neu), kommt je Stück sofort die
+       Näherung (Masken-Weg wie 4.72–4.75, ap: 1, NICHT im Zwischenspeicher – Zauberstab und „Noten finden“ bleiben genau); das genaue Stück holt die
+       Anzeige danach einzeln ab (gleicher Rechenweg wie FOK2 → byte-gleich). Sonst direkt genau wie FOK2. */
+    if (m.vorab && o.mode === 'rest') { est = fk3Est(d, I, from, to, ci => C.has('spk:' + d.meta.id + ':fk:' + H + ':v' + N + ':' + ci)); vb = est.ms > 300 || est.sec > 60; }
     for (let ci = from; ci < to; ci++) {
       if (!same()) { stop = d.fkTok !== tok ? 'abgeloest' : 'geaendert'; break; }
       const ck = 'spk:' + d.meta.id + ':fk:' + H + ':v' + N + ':' + ci; let e = C.get(ck); const hit = !!e;
@@ -109483,16 +109521,19 @@ function fokus1KMake(Z2, X) {
         const W = Math.min(1024, I.cols - ci * 1024), have = await X.get('audio', 'spk:' + d.meta.id + ':v' + N + ':' + ci);   // Original nur lesen
         if (!same()) { stop = d.fkTok !== tok ? 'abgeloest' : 'geaendert'; break; }
         const src = have && have.byteLength === I.rows * W ? new Uint8Array(have) : X.specChunk(d, N, ci).data;
+        if (vb) { e = piece(d, I, ci, src, o, gf, NT, null); e.ap = 1; }   /* FOK3: Näherung sofort, nicht gespeichert */
+        else {
         const TR = o.mode === 'rest' ? await trueRest(d, I, ci, W, src, same) : null;   /* FOK2: genauer Rest, wo Ebenen wirken */
         if (TR === false || !same()) { stop = d.fkTok !== tok ? 'abgeloest' : 'geaendert'; break; }
         e = piece(d, I, ci, src, o, gf, NT, TR); neu++; C.set(ck, e); while (C.size > 6) C.delete(C.keys().next().value);
+        }
       }
       eO += e.eO; eR += e.eR; n++;
-      if (m.stream !== false) { const data = e.data.slice(); emit({qid: m.qid, chunk: {N, k: ci, x0: ci * 1024, w: e.W, R: I.rows, hop: I.hop, data, eO: e.eO, eR: e.eR, key: H, mode: o.mode, cached: hit}}, [data.buffer]); }
+      if (m.stream !== false) { const data = e.data.slice(); emit({qid: m.qid, chunk: {N, k: ci, x0: ci * 1024, w: e.W, R: I.rows, hop: I.hop, data, eO: e.eO, eR: e.eR, key: H, mode: o.mode, cached: hit, ap: e.ap ? 1 : 0}}, [data.buffer]); }   /* FOK3: ap */
       emit({qid: m.qid, prog: (ci + 1 - from) / Math.max(1, to - from), stufe: 'Fokus'});
       await X.tick();
     }
-    return {N, hop: I.hop, cols: I.cols, rows: I.rows, chunks: I.chunks, from, to, n, neu, key: H, mode: o.mode, aus: o.aus, nAus: NT.length, eO, eR, anteil: eO > 0 ? +(eR / eO).toFixed(4) : 1, stop, ms: +(performance.now() - T0).toFixed(1)};
+    return {N, hop: I.hop, cols: I.cols, rows: I.rows, chunks: I.chunks, from, to, n, neu, key: H, mode: o.mode, aus: o.aus, nAus: NT.length, eO, eR, anteil: eO > 0 ? +(eR / eO).toFixed(4) : 1, stop, ms: +(performance.now() - T0).toFixed(1), vorab: vb ? 1 : 0, est: est ? {ms: Math.round(est.ms), sec: +est.sec.toFixed(1), blk: est.blk, col: Math.round(est.col)} : null};   /* FOK3 */
   };
   ops.fokusKey = (d, m) => { if (!d) throw new Error('Analyse fehlt'); const o = optOf(m), N = NS.includes(m.N) ? m.N : 4096, NT = found(d, o); return {key: sigOf(d, o, N, NT), nAus: NT.length, mode: o.mode, aus: o.aus}; };
   ops.fokusStop = d => { if (d) d.fkTok = (d.fkTok || 0) + 1; return true; };
@@ -109541,7 +109582,7 @@ function fokus1KMake(Z2, X) {
             }
           }
         } else { RS.mid = new Float32Array(n); RS.done = new Uint8Array(Math.ceil(n / BL)); RS.tr = new Map(); }
-        RS.key = key; RS.base = base; RS.fp = fp;
+        RS.key = key; RS.base = base; RS.fp = fp; RS.lx = new Map(d.meta.layers.map(l => [l.id + ':' + l.ver, fk3Strips(d, l)]));   /* FOK3 */
       })();
       await pend.p;
       if (tries > 60) break;
@@ -109559,10 +109600,10 @@ function fokus1KMake(Z2, X) {
     const mono = d.pcm && d.pcm.length > 1 && d.mid && d.mid.length === n ? Object.assign(Object.create(d), {pcm: [d.mid], cache: new Map()}) : null;
     for (let k = k0; k <= k1; k++) {
       if (done[k]) continue;
-      const o = k * BL, ch = X.render(mono || d, mx, o, Math.min(n, o + BL)), g = mono ? 32768 : 1 / ch.length;   /* FOK2: Stereo → nur die Mitte rendern */
+      const tB = performance.now(), o = k * BL, ch = X.render(mono || d, mx, o, Math.min(n, o + BL)), g = mono ? 32768 : 1 / ch.length;   /* FOK2: Stereo → nur die Mitte rendern */
       for (const y of ch) for (let i = 0; i < y.length; i++) mid[o + i] += y[i] * g;
       done[k] = 1; nd++;
-      const t = performance.now(); if (t - tY > 25) { if (emit && t - tP > 120) { emit({qid: m.qid, prog: 0.4 * nd / Math.max(1, todo), stufe: 'Rest abtasten'}); tP = t; } await X.tick(); tY = performance.now(); }
+      const t = performance.now(); FK3.cB = Math.max(0.5, Math.min(80, 0.85 * FK3.cB + 0.15 * (t - tB)));   /* FOK3: Zeit je Block (Schätzung) */ if (t - tY > 25) { if (emit && t - tP > 120) { emit({qid: m.qid, prog: 0.4 * nd / Math.max(1, todo), stufe: 'Rest abtasten'}); tP = t; } await X.tick(); tY = performance.now(); }
     }
     return mid;
   }
@@ -109679,27 +109720,28 @@ async function fokus1Load(U) {
   F.pend = false;
   const doc = SPK1.doc, N = U.N, mode = F.mode, sig = fokus1Sig(U), I = U.spec.info, nC = I.chunks || U.spec.chunks.length;
   let S = F.set;
-  if (S && S.doc === doc && S.N === N && S.mode === mode && F.sig === sig && S.chunks.filter(Boolean).length >= nC) { if (!F.st && S.st) F.st = S.st; fokus1Done(U); spk1Dirty(U, 'g'); return; }   // noch aktuell (Ergebnis liegt am Satz)
+  if (S && S.doc === doc && S.N === N && S.mode === mode && F.sig === sig && S.chunks.filter(Boolean).length >= nC && !S.chunks.some(c => c && c.ap)) {   /* FOK3: Näherung → nicht fertig */ if (!F.st && S.st) F.st = S.st; fokus1Done(U); spk1Dirty(U, 'g'); return; }   // noch aktuell (Ergebnis liegt am Satz)
   const seq = ++F.seq; F.sig = sig;
   if (!S || S.doc !== doc || S.N !== N || S.mode !== mode) { fokus1Drop(U); S = F.set = {doc, N, mode, hop: U.spec.hop, info: I, chunks: [], key: ''}; }   // gleicher Modus: altes Bild bleibt, bis das neue Stück da ist
   const v = U.v, hs = U.spec.hop / U.meta.sr, cl = x => Math.max(0, Math.min(nC - 1, x));
   const c0 = cl(Math.floor(Math.max(0, v.t0) / hs / 1024)), c1 = Math.max(c0, cl(Math.floor(Math.max(0, v.t0 + U.W / v.pps) / hs / 1024)));
   const parts = [[c0, c1 + 1]]; if (c1 + 1 < nC) parts.push([c1 + 1, nC]); if (c0 > 0) parts.push([0, c0]);   // sichtbare Stücke zuerst
-  const o = {doc, N, mode, aus: F.aus, thr: U.opt && U.opt.n2thr != null ? U.opt.n2thr : 0.5};
+  const o = {doc, N, mode, aus: F.aus, thr: U.opt && U.opt.n2thr != null ? U.opt.n2thr : 0.5, vorab: mode === 'rest' ? 1 : 0};   /* FOK3: Kern entscheidet, ob erst die Näherung kommt */
   let got = 0, eO = 0, eR = 0, nAus = 0, stop = '', key = '', tP = 0;
   F.run = true; if (!F.st) fokus1Stat(U, 'Fokus · 0 %');
-  try {
-    for (const [from, to] of parts) {
-      const r = await spk1Call('fokus', Object.assign({from, to}, o), null, {
-        chunk: c => {
+  const onChunk = c => {   /* FOK3: eine Funktion für beide Durchgänge */
           if (seq !== F.seq || F.set !== S) return;
-          const old = S.chunks[c.k], nc = {x0: c.x0, w: c.w, R: c.R, data: c.data, tex: null, old: null};
+          const old = S.chunks[c.k];
+          if (c.ap && old && !old.ap && old.key === c.key) return;   /* FOK3: genaues Stück desselben Stands bleibt (keine Näherung darüber) */
+          const nc = {x0: c.x0, w: c.w, R: c.R, data: c.data, tex: null, old: null, ap: !!c.ap, key: c.key, eO: c.eO, eR: c.eR};
           if (old) { if (old.tex) nc.old = old; else if (old.old) nc.old = old.old; if (old.tex && old.old) fokus1Tex(U, old.old); }
           S.chunks[c.k] = nc; S.hop = c.hop; S.key = c.key; got++;
           if (!F.dt) F.dt = setTimeout(() => { F.dt = 0; spk1Dirty(U, 'g'); }, 90);   // neu zeichnen höchstens ~11× je Sekunde (Stücke kommen alle ~30 ms)
-          const t = performance.now(); if (got < nC && t - tP > 150) { tP = t; fokus1Stat(U, 'Fokus · ' + Math.round(100 * got / nC) + ' %'); }
-        }
-      });
+          const t = performance.now(); if (!F.gn && got < nC && t - tP > 150) { tP = t; fokus1Stat(U, 'Fokus · ' + Math.round(100 * got / nC) + ' %'); }
+  };
+  try {
+    for (const [from, to] of parts) {
+      const r = await spk1Call('fokus', Object.assign({from, to}, o), null, {chunk: onChunk});
       if (seq !== F.seq) return;
       eO += r.eO || 0; eR += r.eR || 0; nAus = r.nAus; key = r.key; stop = r.stop || '';
       if (stop) break;
@@ -109708,6 +109750,28 @@ async function fokus1Load(U) {
     if (seq !== F.seq) return; F.run = false;
     if (/op fokus/.test(String(e && e.message || e))) { F.mode = 'alles'; F.err = 'fehlt'; fokus1Drop(U); fokus1Stat(U, 'Fokus hier nicht verfügbar'); spk1Dirty(U, 'g'); return; }
     logErr(e); fokus1Stat(U, 'Fokus: Fehler'); return;
+  }
+  /* FOK3: genau nachreichen – je Aufruf ein Stück, das nächste wird jedes Mal neu gewählt (sichtbare zuerst, dann nach Abstand zum Bild), so wirkt
+     Rollen/Zoomen sofort (fokus1Pre löst ein unsichtbares laufendes Stück ab). Austausch wie bisher: die alte Textur bleibt, bis die neue oben ist. */
+  if (!stop && seq === F.seq && S.chunks.some(c => c && c.ap)) {
+    const vis = () => { const v = U.v, hs = S.hop / U.meta.sr, cl = x => Math.max(0, Math.min(nC - 1, x)), a = cl(Math.floor(Math.max(0, v.t0) / hs / 1024)); return [a, Math.max(a, cl(Math.floor(Math.max(0, v.t0 + U.W / v.pps) / hs / 1024)))]; };
+    const next = () => { const [a, b] = vis(); let k0 = -1, dk = 1e9; for (let k = 0; k < nC; k++) { const c = S.chunks[k]; if (!c || !c.ap) continue; const dd = k < a ? a - k + 0.5 : k > b ? k - b : 0; if (dd < dk) { dk = dd; k0 = k; } } return k0; };
+    const ex = () => S.chunks.filter(c => c && !c.ap).length;
+    F.gn = true; fokus1Stat(U, 'Fokus · genauer · ' + Math.round(100 * ex() / nC) + ' %');
+    try {
+      for (let guard = 0; guard < 4 * nC + 40; guard++) {
+        const k = next(); if (k < 0) break; F.gk = k; F.rp = false;
+        const r = await spk1Call('fokus', Object.assign({from: k, to: k + 1}, o, {vorab: 0}), null, {chunk: onChunk});
+        if (seq !== F.seq) return;
+        nAus = r.nAus; key = r.key; stop = r.stop || '';
+        if (stop === 'abgeloest' && F.rp) { stop = ''; continue; }   // Rollen/Zoomen: neu planen (Rest-Audio bleibt im Kern-Speicher)
+        if (stop) break;
+        fokus1Stat(U, 'Fokus · genauer · ' + Math.round(100 * ex() / nC) + ' %');
+      }
+    } catch (e) {
+      if (seq !== F.seq) return; F.run = false; F.gn = false; logErr(e); fokus1Stat(U, 'Fokus: Fehler'); return;
+    } finally { if (seq === F.seq) { F.gn = false; F.gk = -1; F.rp = false; } }
+    if (!stop) { eO = 0; eR = 0; for (const c of S.chunks) if (c) { eO += c.eO || 0; eR += c.eR || 0; } }
   }
   F.run = false; if (seq !== F.seq) return;
   if (stop === 'geaendert') { F.sig = ''; clearTimeout(F.tm); F.tm = setTimeout(() => { F.tm = 0; fokus1Load(U); }, 150); return; }   // Ebene/Note während der Rechnung geändert
@@ -109748,6 +109812,10 @@ function fokus1Pre(U) {   // Haken in spk1Frame vor dem Zeichnen
     if (F.pend && !F.tm && !U.specQ && U.spec && U.spec.hop && U.spec.info) F.tm = setTimeout(() => { F.tm = 0; fokus1Load(U); }, 0);
     const S = F.set, O = U.spec; if (!U.dg || !S || !O || !O.hop || S.doc !== SPK1.doc || S.N !== O.N || S.mode !== F.mode) return;
     if (F.glRef !== U.gl) { for (const c of S.chunks) if (c) { c.tex = null; c.old = null; } F.glRef = U.gl; }   // Kontext verloren → Texturen sind weg
+    if (F.gn && F.gk >= 0 && !F.rp) {   /* FOK3: Rollen/Zoomen beim Nachreichen – läuft ein unsichtbares Stück, während sichtbare noch genähert sind → ablösen, neu planen */
+      const hs0 = S.hop / U.meta.sr, nn = S.chunks.length, cl = x => Math.max(0, Math.min(nn - 1, x)), a = cl(Math.floor(Math.max(0, U.v.t0) / hs0 / 1024)), b = Math.max(a, cl(Math.floor(Math.max(0, U.v.t0 + U.W / U.v.pps) / hs0 / 1024)));
+      if (F.gk < a || F.gk > b) for (let k = a; k <= b; k++) if (S.chunks[k] && S.chunks[k].ap) { F.rp = true; spk1Call('fokusStop', {doc: SPK1.doc}).catch(() => {}); break; }
+    }
     const v = U.v, hs = O.hop / U.meta.sr, n = O.chunks.length, arr = F.arr && F.arr.length === n ? F.arr : (F.arr = new Array(n)), tN = performance.now(); let up = 0, more = false;
     if (F.upMore && F.tUp) { const dt = tN - F.tUp; F.gap = dt > 45 ? Math.min(250, dt) : 0; }   // hat das letzte Hochladen das nächste Bild gebremst (langsame Grafik)? → Abstand halten
     const upMax = F.gap ? (tN - F.tUp >= F.gap ? 1 : 0) : 1;   // eine Textur je Bild (gemessen: weniger lange Aufgaben, Umschalten gleich schnell)
@@ -109791,8 +109859,8 @@ Object.assign(FOKUS1_API, {
   S: () => SPK1.ui && fokus1S(SPK1.ui),
   mode: m => { const U = SPK1.ui; fokus1Mode(U, m); return U.f1.mode; },
   aus: a => { const U = SPK1.ui, F = fokus1S(U); F.aus = a; F.st = null; return fokus1Load(U); },
-  info: () => { const U = SPK1.ui, F = U && U.f1; if (!F) return null; const S = F.set; return {mode: F.mode, aus: F.aus, run: F.run, pend: F.pend, tm: !!F.tm, aktuell: !!U.meta && F.sig === fokus1Sig(U), st: F.st, txt: F.txt, title: U.st.title || '', n: S ? S.chunks.filter(Boolean).length : 0, tex: S ? S.chunks.filter(c => c && c.tex).length : 0, key: S ? S.key : '', err: F.err}; },
-  chunks: () => { const S = SPK1.ui && SPK1.ui.f1 && SPK1.ui.f1.set; return S ? S.chunks.map((c, k) => c && {k, x0: c.x0, w: c.w, R: c.R, hop: S.hop, data: c.data}).filter(Boolean) : []; },
+  info: () => { const U = SPK1.ui, F = U && U.f1; if (!F) return null; const S = F.set; return {mode: F.mode, aus: F.aus, run: F.run, pend: F.pend, tm: !!F.tm, aktuell: !!U.meta && F.sig === fokus1Sig(U), st: F.st, txt: F.txt, title: U.st.title || '', n: S ? S.chunks.filter(Boolean).length : 0, tex: S ? S.chunks.filter(c => c && c.tex).length : 0, key: S ? S.key : '', err: F.err, ap: S ? S.chunks.filter(c => c && c.ap).length : 0, gn: !!F.gn, gk: F.gk == null ? -1 : F.gk}; },   /* FOK3: ap, gn, gk */
+  chunks: () => { const S = SPK1.ui && SPK1.ui.f1 && SPK1.ui.f1.set; return S ? S.chunks.map((c, k) => c && {k, x0: c.x0, w: c.w, R: c.R, hop: S.hop, data: c.data, ap: !!c.ap}).filter(Boolean) : []; },   /* FOK3: ap */
   idle: () => { const U = SPK1.ui, F = U && U.f1; return !!F && !F.run && !F.tm && !F.pend && (F.mode === 'alles' || (!!F.set && F.sig === fokus1Sig(U))); }
 });
 /* FOKUS1-END */
