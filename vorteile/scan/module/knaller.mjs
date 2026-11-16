@@ -16,6 +16,7 @@
 // Goldrahmen); Doppel aus parallelen Prospekten desselben Markts über Bilddatei und Marke/Preis/Vergleichspreis/Ende erkannt.
 import { leseKaufdaSeite, kaufdaZeit, kaufdaSlug } from '../lib/kaufda.mjs';
 import { norm, schluessel, round } from '../lib/text.mjs';
+import { kaufdaSonde } from './kaufda-sonde.mjs';
 
 export const STANDARD = {
   basis: 'https://www.kaufda.de',
@@ -107,6 +108,7 @@ const ist404 = e => /HTTP 404|HTTP 410/.test(String(e?.message || e));
 
 export default async function knaller({ holeText, cfg, jetzt = new Date(), zustand = {}, vorherDatei = null }) {
   const m = { ...STANDARD, ...(cfg.module?.knaller || {}) };
+  const sonde = m.sonde ? await kaufdaSonde({ holeText, basis: String(m.basis).replace(/\/$/, '') }) : null;
   const maerkte = (Array.isArray(m.maerkte) ? m.maerkte : []).filter(x => x && x.id && x.kaufda);
   const jetztMs = new Date(jetzt).getTime();
   const basis = String(m.basis).replace(/\/$/, '');
@@ -232,6 +234,7 @@ export default async function knaller({ holeText, cfg, jetzt = new Date(), zusta
     maerkte: maerkteOut,
     angebote,
     status: { kaufda: st },
+    ...(sonde ? { sonde } : {}),
     hinweis: 'Rabatt nur mit Vergleichspreis aus dem Prospekt, abgerundet: vorherArt streich = Streichpreis, uvp = unverbindliche Preisempfehlung des Herstellers, unbekannt = Art nicht angegeben. abPreis = „ab“-Preis (bis zu). app = nur mit App/Karte. prospekt = Prospekt-id bei kaufDA.',
   };
   return { eintraege: [], fehler, hinweise, datei, kurz };

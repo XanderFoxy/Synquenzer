@@ -120,6 +120,9 @@ export async function main(args = process.argv.slice(2), env = process.env, test
   const daten = resolve(arg(args, '--data') || env.VORTEILE_DATA || join(basis, 'data'));
   const cfg = JSON.parse(await readFile(join(basis, 'config.json'), 'utf8'));
   if (env.NTFY_TOPIC) cfg.ntfy.topic = env.NTFY_TOPIC;
+  // NUR Probe-Zweig: Roh-Lauf mit knaller.sonde -> nur das Knaller-Modul (wenige Abrufe)
+  if (rohDir && env.GITHUB_ACTIONS === 'true' && env.GITHUB_REF_NAME === 'mv-kaufda-ort' && cfg.module?.knaller) for (const [k, v] of Object.entries(cfg.module)) if (k !== 'knaller' && v && typeof v === 'object') v.aktiv = false;
+  if (rohDir && env.GITHUB_ACTIONS === 'true' && env.GITHUB_REF_NAME === 'mv-kaufda-ort' && cfg.module?.knaller) cfg.module.knaller.sonde = true;
   const wunschliste = JSON.parse(await readFile(join(basis, 'wunschliste.json'), 'utf8'));
   const filmListen = await leseJson(join(basis, 'filme.json'), null);
   const vorher = await leseJson(join(daten, 'aktuell.json'), null);
