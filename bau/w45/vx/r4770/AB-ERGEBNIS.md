@@ -1,0 +1,23 @@
+# A/B 4.77.0 ↔ 4.76.1 (13:24:16 UTC)
+
+Tests 55 · {"BEKANNT":5,"GRÜN":38,"LAST":8,"ROT":4}
+
+| Test | A/B-Urteil | 4.77.0 | 4.76.1 | allein 4.77 / 4.76.1 | Grund |
+|---|---|---|---|---|---|
+| beg1 | BEKANNT | LAST 54/4 · 315 s · fremd 8.1 (Pool UNGÜLTIG (Last) 43/15, fremd 26.8) | UNGÜLTIG (Last) 54/4 · 314 s · fremd 8 (Pool UNGÜLTIG (Last) 43/15, fremd 26.5) | BEKANNT 57/1 · 309 s · fremd 5 / BEKANNT 57/1 · 310 s · fremd 6.4 | allein A BEKANNT / B BEKANNT · in 4.76.1 gleich: Prüfung 5 |
+| clip1 | LAST | ROT 0/1 · 10 s · fremd 16.6 | GRÜN 109/0 · 85 s · fremd 19.3 | GRÜN 109/0 · 57 s · fremd 5.3 / GRÜN 109/0 · 57 s · fremd 5.8 | allein A GRÜN / B GRÜN · Pool nur 4.77: STRUKTUR Exit 1 mit Stacktrace (Absturz): TypeErr, STRUKTUR nur 1 von 109 Prüfungen gelaufen (Refere, 428x926 C1 Abschnitt „Als neuer Clip · Synth 1“ mit so vielen Knöpfen wie freie Szenen |
+| fok2 | LAST | LAST 17/4 · 257 s · fremd 8.6 (Pool ROT 18/3, fremd 35.3) | ROT 18/3 · 257 s · fremd 8.6 (Pool ROT 18/3, fremd 35.5) | GRÜN 21/0 · 165 s · fremd 4 / GRÜN 21/0 · 152 s · fremd 4.1 | allein A GRÜN / B GRÜN · Pool nur 4.77:  |
+| fokus1 | ROT | LAST 45/6 · 103 s · fremd 4.5 (Pool LAST 44/7, fremd 14.5) | LAST 45/6 · 104 s · fremd 4.5 (Pool LAST 44/7, fremd 15) | ROT 50/1 · 86 s · fremd 1.9 / ROT 49/2 · 90 s · fremd 2.9 | allein nur 4.77: 428x926 umschalten-gef longtasks<=50 (zeit) · A fremd 1.9 / B ROT fremd 2.9 |
+| ki1 | BEKANNT | BEKANNT 16/3 · 70 s · fremd 14.9 | BEKANNT 16/3 · 71 s · fremd 14.5 | – / – | bekannt.json, in 4.76.1 gleich: besser-als-klassisch-demo, gesang-besser-als-klassisch, guide-eintrag |
+| mtx4 | LAST | LAST 116/2 · 132 s · fremd 4.2 (Pool UNGÜLTIG (Last) 114/4, fremd 21.6) | UNGÜLTIG (Last) 115/3 · 133 s · fremd 5.3 (Pool UNGÜLTIG (Last) 114/4, fremd 22.6) | GRÜN 118/0 · 125 s · fremd 0.8 / GRÜN 118/0 · 125 s · fremd 0.6 | allein A GRÜN / B GRÜN · Pool nur 4.77:  |
+| rv1 | ROT | – | – | ROT 52/2 · 112 s · fremd 0.8 / GRÜN 53/0 · 110 s · fremd 0.3 | kein Ergebnis in 4.77 |
+| spk1 | BEKANNT | BEKANNT 17/1 · 55 s · fremd 20.1 | BEKANNT 17/1 · 51 s · fremd 16.8 | – / – | bekannt.json, in 4.76.1 gleich: verfeinern-verbessert-ziel |
+| spk10s | LAST | ROT 0/0 · 2 s · fremd 14.7 | ROT 0/0 · 2 s · fremd 14.7 | GRÜN 16/0 · 22 s · fremd 0.8 / GRÜN 16/0 · 22 s · fremd 0.6 | allein A GRÜN / B GRÜN · Pool nur 4.77:  |
+| spk12 | LAST | ROT 97/2 · 89 s · fremd 4.3 (Pool ROT 97/2, fremd 16.8) | GRÜN 98/0 · 110 s · fremd 19.6 | GRÜN 98/0 · 81 s · fremd 0 / GRÜN 98/0 · 82 s · fremd 0.1 | allein A GRÜN / B GRÜN · Pool nur 4.77: 926x428 hauptfaden-ohne-long-task |
+| spk12b | ROT | ROT 70/3 · 74 s · fremd 6 (Pool ROT 69/4, fremd 14.9) | GRÜN (allein) 72/0 · 63 s · fremd 3.2 (Pool ROT 69/4, fremd 15.1) | ROT 70/3 · 60 s · fremd 0 / GRÜN 72/0 · 60 s · fremd 0.2 | allein nur 4.77: 926x370 keine-fehler (rot), 926x370 keine-long-task-50ms (zeit) · A fremd 0 / B GRÜN fremd 0.2 |
+| spk12c | LAST | LAST 45/2 · 68 s · fremd 10 (Pool LAST 45/2, fremd 13.3) | LAST 46/1 · 62 s · fremd 5.4 (Pool LAST 45/2, fremd 13.4) | GRÜN 47/0 · 55 s · fremd 0.8 / GRÜN 47/0 · 54 s · fremd 0.5 | allein A GRÜN / B GRÜN · Pool nur 4.77:  |
+| spk12d | ROT | ROT 27/1 · 64 s · fremd 6.9 (Pool ROT 26/2, fremd 16.8) | ROT 27/1 · 78 s · fremd 7.9 (Pool ROT 26/2, fremd 16.1) | ROT 27/1 · 54 s · fremd 1.9 / GRÜN 28/0 · 54 s · fremd 1.7 | allein nur 4.77: 428x926 vorhandene-regler-wie-basis (rot) · A fremd 1.9 / B GRÜN fremd 1.7 |
+| spk4 | BEKANNT | LAST 17/4 · 492 s · fremd 11 | ROT 16/5 · 374 s · fremd 7.1 (Pool LAST 15/6, fremd 11) | BEKANNT 19/2 · 276 s · fremd 1.7 / BEKANNT 19/2 · 286 s · fremd 3.1 | allein A BEKANNT / B BEKANNT · in 4.76.1 gleich: a2-verfeinern-plus-1db, reg-spk2-test |
+| spk6p | LAST | ROT 11/1 · 411 s · fremd 16.6 (Pool ROT 9/3, fremd 35.7) | GRÜN (allein) 12/0 · 220 s · fremd 8.3 (Pool ROT 9/3, fremd 35.6) | GRÜN 12/0 · 139 s · fremd 0.7 / GRÜN 12/0 · 139 s · fremd 0.7 | allein A GRÜN / B GRÜN · Pool nur 4.77:  |
+| teil1 | LAST | ROT 58/3 · 164 s · fremd 10.2 (Pool ROT 53/8, fremd 30.6) | ROT 52/9 · 419 s · fremd 29.8 | GRÜN 61/0 · 134 s · fremd 1 / GRÜN 61/0 · 139 s · fremd 1 | allein A GRÜN / B GRÜN · Pool nur 4.77: 428x926 T1 teile |
+| voxr1 | BEKANNT | UNGÜLTIG (Last) 77/6 · 100 s · fremd 9.2 (Pool UNGÜLTIG (Last) 76/7, fremd 20.5) | UNGÜLTIG (Last) 77/6 · 223 s · fremd 17.4 (Pool UNGÜLTIG (Last) 75/8, fremd 19.4) | BEKANNT 80/3 · 84 s · fremd 0.7 / BEKANNT 80/3 · 83 s · fremd 0.8 | allein A BEKANNT / B BEKANNT · in 4.76.1 gleich: Klicks Take A: ≥ 18 von 20 gefunden (2 Durchgänge), Klicks Take B: repariert, Raumton: Klangfarbe (Oktavbänder 250 Hz–8 kHz) wie der Raumton an der Stelle ± 4 dB |

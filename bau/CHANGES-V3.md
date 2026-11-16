@@ -1,3 +1,15 @@
+## 4.77.0 — Erstes ▶ und Zerlegen schneller, Töne und Tempo genauer, App leichter
+
+- **Erstes ▶ leichter:** Beim ersten Tipp auf ▶ hat die App weniger Arbeit auf einmal, weil sie einiges schon vorher in kleinen Pausen vorbereitet. In der Probe wie auf einem Handy ist das bei ruhigem Gerät spürbar schneller. Am echten Handy ist es noch nicht nachgemessen. Klang und Noten sind genau wie vorher.
+- **Zerlegen schneller:** Ein Lied in Drums, Bass und Rest zu zerlegen geht etwa 12–15 % schneller. Das Ergebnis ist genau dasselbe. Bei langen Auswahlen (über etwa 24 s) zeigt „Suche Schläge …“ jetzt an, wie weit es ist (in %).
+- **Spektral ruckelt weniger beim Umschalten:** Beim Wechsel der Auflösung und beim Fokus „Alles / Nur Rest / Nur Gefundenes“ gibt es weniger Hänger. Ist die Grafik langsam, baut sich das Bild beim Wechsel Stück für Stück auf, statt kurz stehen zu bleiben. Das fertige Bild ist genau dasselbe.
+- **Tonhöhen im Spektral genauer:** „Überall finden“ benennt jetzt auch leicht verstimmte Töne richtig, ebenso Töne mit Vibrato und gezupfte Töne. Eine Note wird nicht mehr in mehrere Stücke zerhackt. Bei der Probe-Melodie (60 s, reine Töne) sind jetzt 112 von 112 Tönen richtig, vorher waren es nur 15 von 152 Stücken. Klänge mit vielen Obertönen werden wie bisher erkannt.
+- **Gesang-Import: Tempo genauer:** Bei „Als Gesang“ findet die App die Toneinsätze genauer. Alle 14 Probe-Melodien bekommen das richtige Tempo, vorher waren es 13 bzw. 12 von 14. Nach ½× oder 2× zeigt die Tempo-Frage keine zwei gleichen Knöpfe mehr (z. B. „60 oder 120?“ statt „60 oder 60?“).
+- **Begleiter:** Mit Metronom kommt nach dem Schlusstakt kein Klick mehr.
+- **Aktualisieren ohne doppeltes Herunterladen:** Ist der Server nach einem Update noch nicht überall auf dem neuen Stand, wartet die App bis zu einer Minute. Danach lädt sie die neue Fassung nur einmal statt dreimal. Bleibt der Server länger alt, lädt sie zweimal statt dreimal. Sonst bleibt alles wie bisher.
+- **App lädt weniger:** Die App, die man herunterlädt, ist etwa 100 KB kleiner. Grund: Erklär-Notizen im Programmtext werden jetzt auch aus den Klang-Bausteinen entfernt. Die Werksklänge klingen bitgleich wie vorher.
+Tests: Spektral-Tonhöhen 25/25, Spektral-Aufbau 12/12 (Bild gleich in 10/10 Fällen), Gesang-Import 10/10 · Tempo-Frage 144/144 · Gesang-Tempo 14/14 bei allen 4 Abtastraten · weitere Tempo-Fälle 66/99 (vorher 63/99, 0 schlechter), Echttest 53/53, erstes ▶ 16/16 (auch in der Auslieferung), ▶ während Zerlegen 9/9 + 6/6, Zerlegen ALLE OK (12) · bitgleich 8/8 · Speicher 5/5 (SDR und Energie je Ebene ±0), Aktualisieren 34/34, Auslieferung: 12 Werksklänge bitgleich, Probe „Blöcke“ ALLES OK, 0 Seitenfehler. Gesamt-Regression gegen 4.76.1 (55 Tests): kein Rückschritt gefunden – was nicht grün war, zeigt 4.76.1 genauso oder es war nur eine Zeitgrenze unter Last.
+
 ## 4.76.1 — Fokus „Nur Rest“ sofort sichtbar
 
 - **Sofort ein Bild:** „Nur Rest“ zeigt nach dem Zerlegen sofort ein Bild (3-Minuten-Lied: etwa 0,25 s statt 0,6 s) und rechnet das genaue Bild im Hintergrund nach. Die Statuszeile zeigt solange „genauer · xx %“. Das fertige Bild ist genau dasselbe wie in 4.76.0.

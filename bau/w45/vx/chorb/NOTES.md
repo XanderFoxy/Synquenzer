@@ -59,3 +59,12 @@ alle Knöpfe/Guide sagen „deine DAW“ · keine Emojis/Bildzeichen in Block un
   bleibt, weil alles in Sekunden ab Takt 1 stimmt.
 - Knopf im Background-Mischpult (`chsMixPaint`).
 - Rendern nur der Chor-Bereiche (heute ganzer Song je Stimme, wie „Nur Chor“): 16 Takte × 3 Stimmen ≈ 29 s in Chromium.
+
+## Nachbesserung 16.11. (Fakten-Prüfung N7–N11), nicht veröffentlicht
+- N11 Begleittext `Chor-Stuecke.txt`: „In Cubasis:“ → „In deiner DAW:“ (App-Name nur noch in der Anleitung: Hilfe-Titel + Schritt 1, 2×).
+- N9 Begleittext: Weg aus dem ZIP (in der Dateien-App antippen = entpacken, in der DAW importieren) und „andere Abtastrate → umwandeln (Ja)“.
+- N7 Hilfe Schritt 3: zusätzlich „Include effect tail aus, Mono downmix aus“ + Tipp „andere Spuren stumm → nur die Gesangsdatei“.
+- N8 Hilfe Schritt 5: „Neu ▾ › Leer (Init)“ statt „Neues Projekt“ (Beschriftung wie in 4.76.1).
+- N10 Pflicht neu ohne grep-Fehler (`pflicht2.log`): Bildzeichen in neuen Zeilen nur „●“/„▾“ (wie in der Basis-Bedienung), keine Emojis.
+- Test `chorb-test.mjs` prüft jetzt auch: Begleittext ohne App-Namen, mit ZIP-Weg und Abtastraten-Satz. Lauf 5: 35/35 OK (`aus/lauf5.out`).
+- Prüfsummen siehe `pflicht2.log` (index.html f8a2de86…, chorb-block.js 727149ac…, chorb-test.mjs 490f2953…). Diff gegen basis +251/−0.
