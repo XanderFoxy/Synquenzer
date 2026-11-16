@@ -13,6 +13,10 @@
 
 export const STANDARD = {
   overpass: 'https://overpass-api.de/api/interpreter',
+  // Roh-Lauf 43842880618 (16.11.2026): overpass-api.de „at capacity“ (502) -> einmal die nächste öffentliche Instanz
+  // (Liste im OSM-Wiki „Overpass API“), nach einer Pause; eine Abfrage pro Woche.
+  overpassWeitere: ['https://overpass.private.coffee/api/interpreter'],
+  pauseMs: 3000,
   timeoutMs: 130000, // Overpass rechnet bis [timeout:120]
   zentrum: { name: 'Döbeln', lat: 51.1211, lon: 13.1229 }, // kaufDA-Stadtmitte Döbeln (Roh-Lauf 43793492110)
   laender: ['DE-SN', 'DE-TH', 'DE-ST', 'DE-BB'],
@@ -132,16 +136,25 @@ export default async function filialen({ holeText, cfg, jetzt = new Date(), zust
   const zk = (zustand.filialen ||= {});
   if (!ids.length) return { eintraege: [], fehler: ['module.knaller.maerkte fehlt'] };
   let f = null;
-  try {
-    const url = `${m.overpass}?data=${encodeURIComponent(overpassAbfrage(ids, m))}`;
-    f = leseFilialen(await holeText(url, { headers: { accept: 'application/json' }, timeoutMs: m.timeoutMs }), ids);
-    const zahl = Object.values(f).reduce((s, l) => s + l.length, 0);
-    if (zahl < m.minFilialen) throw new Error(`Overpass: nur ${zahl} Filialen (Abfrage geändert?)`);
-    zk.osmZeit = new Date(jetztMs).toISOString();
-  } catch (e) {
-    (vorherDatei?.maerkte ? hinweise : fehler).push(`OpenStreetMap: ${String(e.message || e).slice(0, 160)}`);
-    f = null;
+  const abfrage = encodeURIComponent(overpassAbfrage(ids, m));
+  const server = [m.overpass, ...(Array.isArray(m.overpassWeitere) ? m.overpassWeitere : [])].filter(Boolean);
+  const probleme = [];
+  for (const [i, basis] of server.entries()) {
+    if (i && m.pauseMs) await new Promise(r => setTimeout(r, m.pauseMs));
+    try {
+      const l = leseFilialen(await holeText(`${basis}?data=${abfrage}`, { headers: { accept: 'application/json' }, timeoutMs: m.timeoutMs }), ids);
+      const zahl = Object.values(l).reduce((s, x) => s + x.length, 0);
+      if (zahl < m.minFilialen) throw new Error(`Overpass: nur ${zahl} Filialen (Abfrage geändert?)`);
+      f = l;
+      zk.osmZeit = new Date(jetztMs).toISOString();
+      zk.server = new URL(basis).host;
+      break;
+    } catch (e) {
+      probleme.push(`${new URL(basis).host}: ${String(e.message || e).slice(0, 120)}`);
+      if (/nur \d+ Filialen/.test(String(e.message))) break; // Antwort da, aber leer: kein zweiter Server nötig
+    }
   }
+  if (!f) (vorherDatei?.maerkte ? hinweise : fehler).push(`OpenStreetMap: ${probleme.join(' · ')}`.slice(0, 300));
   if (!f) {
     if (!vorherDatei?.maerkte) return { eintraege: [], fehler, hinweise };
     return { eintraege: [], fehler, hinweise: [...hinweise, 'letzter Stand bleibt'], datei: null, kurz: vorherDatei.kurz || '' };
@@ -155,7 +168,7 @@ export default async function filialen({ holeText, cfg, jetzt = new Date(), zust
     .map(id => `${namen[id]}${vonZentrum[id] ? ` (nächste ${String(vonZentrum[id].km).replace('.', ',')} km)` : ''}`);
   const kurz = `${nahNamen.length} Märkte bis ${m.nahKm} km um ${z.name}${fern.length ? ` · weiter weg: ${fern.join(', ')}` : ''}`;
   const datei = {
-    version: 1, aktualisiert: new Date(jetztMs).toISOString(), osmStand: zk.osmZeit,
+    version: 1, aktualisiert: new Date(jetztMs).toISOString(), osmStand: zk.osmZeit, server: zk.server,
     quelle: { name: 'OpenStreetMap-Mitwirkende', lizenz: 'ODbL', url: 'https://www.openstreetmap.org/copyright' },
     gebiet: `Sachsen, Thüringen, Sachsen-Anhalt, Brandenburg im Rahmen ${m.bbox.join(', ')}`, bbox: m.bbox,
     zentrum: z, nahKm: m.nahKm, umkreisKm: m.umkreisKm,

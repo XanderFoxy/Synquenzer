@@ -60,11 +60,17 @@ test('Modullauf: Datei mit Quelle/Stand, kurz nennt die fernen Märkte; Ausfall 
   assert.ok(r.datei.naechsteVomZentrum.rewe.km > 10);
   assert.match(r.kurz, /weiter weg: REWE \(nächste \d+,\d km\)/);
   assert.ok(!/Aldi Nord/.test(r.kurz.split('weiter weg')[1] || ''), 'Aldi Nord ist in der Nähe');
-  const aus = await filialen({ holeText: async () => { throw new Error('HTTP 504'); }, cfg: CFG, jetzt, zustand, vorherDatei: r.datei });
+  const CFG0 = { ...CFG, module: { ...CFG.module, filialen: { ...CFG.module.filialen, pauseMs: 0 } } };
+  const gefragt = [];
+  const aus = await filialen({ holeText: async u => { gefragt.push(new URL(u).host); throw new Error('HTTP 504'); }, cfg: CFG0, jetzt, zustand, vorherDatei: r.datei });
+  assert.deepEqual(gefragt, ['overpass-api.de', 'overpass.private.coffee'], 'bei Ausfall einmal die zweite Instanz');
   assert.deepEqual(aus.fehler, []);
   assert.ok(!aus.datei, 'keine neue Datei -> alte bleibt stehen');
-  assert.match(aus.hinweise.join(' '), /OpenStreetMap: HTTP 504/);
-  const leer = await filialen({ holeText: async () => '{"elements":[]}', cfg: CFG, jetzt, zustand: {} });
+  assert.match(aus.hinweise.join(' '), /OpenStreetMap: overpass-api.de: HTTP 504 · overpass.private.coffee: HTTP 504/);
+  let n = 0;
+  const zweite = await filialen({ holeText: async () => { if (!n++) throw new Error('HTTP 502'); return FIX; }, cfg: CFG0, jetzt, zustand: {} });
+  assert.equal(zweite.datei.server, 'overpass.private.coffee');
+  const leer = await filialen({ holeText: async () => '{"elements":[]}', cfg: CFG0, jetzt, zustand: {} });
   assert.match(leer.fehler.join(' '), /nur 0 Filialen/);
 });
 
