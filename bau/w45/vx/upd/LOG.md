@@ -44,3 +44,6 @@ Last (loadavg 1 min) je Lauf: serie-vorher.log 16,8–26,4 · serie-nachher.log 
   „alt“-Fälle ohne Kopie, die jetzt absichtlich „unklar“ sind (dort gibt es keinen caches-Nachbau).
 - 08:49 upd-test2.mjs (= upd-test.mjs + ETQ wie Prüfer + N2WAIT + Kopie nach 8 s); Reihe serie-pruef.sh A/B im Wechsel, Last je Lauf in mess2/serie.log.
 - 08:50 Pflicht (pflicht2.log) grün; Auslieferung (perf2/ausliefern.mjs) → aus/index.html 6 965 433 B, gzip -6 2 364 767 B (basis-Auslieferung 2 364 079 B: +688 B).
+- 08:56 Reihe fertig (mess2/*.json, serie.log): kurz 3→1, alt 3→2, ok 1=1, ETQ ok 1=1 (Neuladen 363 ms statt 60 s), ETQ kurz 3→1,
+  ohne SW wie basis (2,29). Kopie nach 8 s immer da. 0 Seitenfehler. Nachbau bau.cjs byte-gleich (d7f97d5f…). perf2/r4760/Repo unberührt.
+- 09:00 NOTES „Prüfung“. Ende. Nicht committet.

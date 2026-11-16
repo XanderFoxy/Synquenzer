@@ -72,3 +72,43 @@ Einzelzeilen + Last je Lauf: LOG.md.
   ETag der eigenen Kopie holen und bei 304 die Kopie liefern). Vorschlag, nicht gebaut (Repo-Datei, eigenes Paket).
 - Update kommt bei veraltetem Rand bis zu 60 s später (unsichtbar, kein Hinweis). Normalfall unverändert (+2 HEAD ≈ 1 RTT).
 - Am iPhone prüfen: Fassung hochladen, App offen → Datenzähler ≈ 1× Seite; Safari-Web-Inspector: 2 HEAD, 1 GET.
+
+## Prüfung (Nachbesserung 16.11. 08:43–09:00; Prüfer-Befunde 1–3, Prüfer-Dateien in pruef/)
+Sicherung vorher: `sicherung-0845/` (index.html 56cd354c…, block-upd.js 3611f5e2…, bau.cjs, NOTES, LOG, upd-test.mjs, pflicht.log, smoke.png).
+Endfassung: **index.html md5 d7f97d5f5cef8bfcae7c511097da0bb6** (= `node bau.cjs basis.html …`, nachgebaut byte-gleich), block-upd.js
+14292898…; Diff gegen basis +84 Zeilen, 0 entfernt (1 Haken + Block). VERSION '4.76.1'.
+
+| # | Befund | nachgeprüft | Behebung |
+|---|---|---|---|
+| 1 (mittel) | Kernannahme „/ und ?v= gleiche Kopfzeilen“ ungeprüft; ist sie falsch, wartete UPD 60 s, der nächste Start lief alt und wartete erneut, nach 10 min ein weiterer Download | **echt** (Code: „alt“ allein aus „/ ≠ ?v=“; Prüfer-Lauf ETQ: 60,1 s + nächster Start 4.76.1) | „alt“ braucht jetzt einen **Beleg**: die normale Adresse liefert genau die Kopfzeilen der Seiten-Kopie des Service-Workers (= laufende Fassung; `updRef`, nur Kopfzeilen, kein Inhalt). Liefert Pages unter ?v= eigene ETag/Last-Modified, ist / ≠ Kopie → unklar → bisheriger Weg (PERF1A) ohne Warten. Ohne Kopie (kein Service-Worker) → bisheriger Weg. Die localStorage-Sperre aus dem Vorschlag ist damit unnötig und würde im echten „alt“-Fall einen Download kosten – nicht gebaut. Offen 1 oben richtiggestellt. |
+| 2 (klein) | Offline-Kopie bis zu 60 s gelöscht | **echt** (Haken Z 52795 stand nach dem Löschen Z 52794) | Haken steht jetzt **vor** dem Löschen (nach Speichern/Cloud). „frei“ → vwReload löscht danach wie bisher, reg.update, PERF1A. „alt“ → kein Löschen (?v= ersetzt die Kopie selbst; schlägt ?v= offline fehl, startet die alte Kopie statt Response.error), reg.update wie vwReload. Gemessen: 8 s nach dem Anstoß ist die Kopie da (kurz, kurz-ETQ, alt). |
+| 3 (klein) | Neuladen kommt bei veraltetem Rand später (mitten in der Arbeit) | **echt**, Folge der Wartezeit | Abfrage-Takt 15 → 10 s: Neuladen bei „kurz“ nach 21,0–21,4 s statt 30,4–31,2 s. Bewusste Folge, für Funk: bei veraltetem Rand kommt der (unsichtbare, gespeicherte) Neustart bis zu 60 s später; Warten auf „kein Blatt offen“ wäre eine Bedienungsänderung → nur als Vorschlag. |
+
+**A/B-Reihe nach der Nachbesserung** (`serie-pruef.sh`, upd-test2.mjs = upd-test.mjs + ETQ wie Prüfer + Kopie-Probe, abwechselnd, Last 1 min
+3,2–25,9 in mess2/serie.log; Bytes lastunabhängig; 0 Seitenfehler in allen 11 Läufen; Seite nach dem Update immer 4.76.2):
+| Szenario | basis gesamt (Update + nächster Start) | index gesamt | Neuladen basis → index | Kopie nach 8 s (index) |
+|---|---|---|---|---|
+| ok | 1 + 0 = **1** | 1 + 0 = **1** | 431 → 515 ms (2 HEAD, Rauschen) | – (schon neu geladen) |
+| kurz | 2 + 1 = **3** | 1 + 0 = **1** | 254 ms → 21,4 s | da |
+| alt | 2 + 1 = **3** | 1 + 1 = **2** | 452 ms → 60,6 s | da |
+| ok, ETQ (?v= eigene Kopfzeilen) | 1 + 0 = **1** | 1 + 0 = **1** | 756 → **363 ms** (vorher 60,1 s + nächster Start alt) | – |
+| kurz, ETQ | 2 + 1 = **3** | 1 + 0 = **1** | 208 ms → 21,0 s | da |
+| alt ohne Service-Worker | (vorher gemessen 2,25) | 1,29 + 1 = **2,29** | → 215 ms | – (keine Kopie → bisheriger Weg) |
+Ohne Service-Worker ist der kleine Gewinn (2,25 → 2) bewusst aufgegeben (kein Beleg möglich); die App registriert sw.js auf https immer.
+
+**Tests**
+- `upd-logik.cjs index.html`: **34/34 OK** (16 Probe-Fälle inkl. ETQ, Kopie stark/-gzip, Kopie nur ETag, Kopie ≠ Rand; 8-s-Grenze;
+  updRef Ordner-Adresse/Fehler/ohne Cache-API; updPre neu/n=2/busy/alt (reg.update 1×, 0 gelöscht)/ohne Kopie/ETQ/alt→neu/Zurück-Cache/
+  nicht idle/file:; Zeiten 10 s/60 s; Haken-Lage save < cloud < UPD < löschen < reg.update < PERF1A; Block = block-upd.js).
+  Prüfer-logik.cjs gegen die Endfassung: 6 „FEHL“ = genau die „alt“-Fälle ohne Kopie (dort kein caches-Nachbau), jetzt absichtlich unklar.
+- e2e: 11 Läufe (Tabelle oben). Pflicht (pflicht2.log): topdefs 26 Skripte / 7996 Namen / 0 doppelt / 0 Syntaxfehler; dupkeys 0;
+  smoke „title SYNQUENZER errors []“ (smoke.png unverändert); „MS 2000“ 1×; „^  live: true,“ 1×; VERSION-Zeile 1×.
+- Auslieferung (perf2/ausliefern.mjs): 6 965 433 B, gzip -6 2 364 767 B (+688 B gegenüber basis-Auslieferung).
+- Repo /home/user/synquenzer: git status leer; perf2/r4760: keine Datei neuer als die Sicherung.
+
+**Offen nach der Prüfung**
+1. Roh-Lauf/iPhone-Check vor oder direkt nach dem Release (OFFEN-1611 A6): HEAD / und /?v=x der echten Seite – ETag, Last-Modified,
+   x-cache vergleichen, möglichst kurz nach einem Hochladen. Ist die Annahme falsch, kostet es jetzt nichts mehr (bisheriger Weg); ist der
+   Rand auf HEAD nie aus dem Zwischenspeicher, gibt es keinen Gewinn, aber keinen Schaden.
+2. Funk-Vorschlag (sichtbar → nur vorschlagen): beim Update zusätzlich warten, bis kein Blatt offen ist.
+3. Nächster Start nach „alt“ (> 60 s) lädt einmal neu – nur mit sw.js-Änderung vermeidbar (eigenes Paket, Repo-Datei).
