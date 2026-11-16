@@ -70,19 +70,22 @@ die nativen Stimmen bis zum Worklet (Offen 1–3). Streuung unter Last ±30 %; d
 Paar sichtbar, in Stapel 2 (Lastspitze bis 22) nur im Median.
 
 ## Tests
-`node erst-test.mjs index.html basis.html` → **13/13 OK** (Endfassung md5 bb817396b41d1e598b6378079773eca0) (`erst-test.out`, `erst-test.json`):
+`node erst-test.mjs index.html basis.html` → **16/16 OK** (Fassung nach der Prüfung, index md5 bb817396b41d1e598b6378079773eca0
+unverändert; `erst-test.out`, `erst-test.json`):
 01 kein (Offline)AudioContext vor dem Tipp · 02 Vorarbeit fertig · 03 Worklet über die vorbereitete Adresse ('blob', ready),
 Metall übernommen · 04 Metall byte-gleich zur Basis (FNV 6fe0a136) · 05 Rauschen bei gleicher Zufallsfolge ab dem Tipp byte-gleich
 (222a6644) · 06a Kontrolle Basis=Basis · 06 noteLog Schläge 2–8 gleich (61 Noten, Spur/Quelle/Ton/Schlag/Dauer/Stärke/Zeit ab
-Start) · 07 Wellen in Scheiben = dieselben 16 Eingaben in derselben Reihenfolge wie makeWaves · 08 keine Seitenfehler · 09 andere
-Rate → alter Weg, Metall byte-gleich · 10 geänderter Worklet-Text → alter Weg · 11 Tipp sofort bei bereit → spielt, keine Fehler ·
-12 WT-Wellen nicht mehr im Tipp (Basis: +77 ms über den Getter in spawnVoice; Index: erst +1585 ms aus den Scheiben).
-Endfassung (Last 22–23, viele Agenten): Lauf 1 11/13 (06a Kontrolle Basis≠Basis; 06: ERST 57 statt 61 Noten – nur FEHLENDE Noten
-bei Schlag 4,5–4,75, keine geänderte oder zusätzliche: `nurIdx` leer → vom Planer übersprungene Noten unter Last;
-`erst-test.lauf-last23.out`), Lauf 2 12/13 (06 OK: 61 = 61 identisch; nur die Kontrolle 06a rot, weil die zweite Basis unter Last
-11 Noten verlor). Die Kontrolle ist bei Last > 20 nicht stabil – Wiederholung bei ruhigem Rechner empfohlen (siehe Offen 6).
-Zum noteLog: die ersten Schläge sind schon Basis gegen Basis nicht gleich (Trommeln am Start hängen von der Hauptfaden-Zeit ab) –
-darum Schläge 2–8 mit Kontrolle.
+Start) · 06b in keinem Versuch eine geänderte oder zusätzliche Note · 07 Wellen in Scheiben = dieselben 16 Eingaben in derselben
+Reihenfolge wie makeWaves · 08 keine Seitenfehler · 09 andere Rate → alter Weg, Metall byte-gleich · 10 geänderter Worklet-Text →
+alter Weg · 11 Tipp sofort bei bereit → spielt, keine Fehler · 12 WT-Wellen nicht mehr im Tipp (Basis: über den Getter in
+spawnVoice; Index: erst ab ≈ +1,5 s aus den Scheiben) · 13 alle Synth-Spuren WT beim ersten Tipp: Wellen wie in der Basis sofort
+über den Getter, jede WT-Stimme bekommt PeriodicWaves (0 ohne), spielt · 14 WT-Note mitten in den Wellen-Scheiben: Getter baut alle
+16, Scheiben hören auf, keine Fehler.
+**Zufall im noteLog-Vergleich (seit der Prüfung):** bis das Rauschen steht dieselbe Folge ab dem Tipp (für 05), danach liefert
+Math.random im Test fest 0,5. Vorher hing die Folge für Humanize/Wahrscheinlichkeit davon ab, wie viele native Stimmen vor dem
+Worklet ihre Startphase gezogen hatten (Hauptfaden-Zeit) – darum war schon Basis gegen Basis (06a) ungleich. Fehlen Noten nur
+(Planer-Aussetzer unter Last: Lücke > LOOKAHEAD 0,1 s + RETRO_MAX 0,2 s), wird das Trio höchstens zweimal wiederholt; eine
+geänderte oder zusätzliche Note macht 06b sofort rot.
 
 ## Offen
 1. **AudioContext/Knoten im Tipp** (new AudioContext 31–111 ms, Graph, Trommel-Faltungshall 23–60 ms) bleiben – das geht nur mit
@@ -96,8 +99,9 @@ darum Schläge 2–8 mit Kontrolle.
 4. Test-Falle PERF1B bei 44,1 kHz (Nebenbefund 5): für Messungen immer synq.perf1b.sr setzen; am Gerät prüfen, ob die iPhone-Rate
    wirklich 48 kHz ist (sonst greift PERF1B erst ab dem 2. Start).
 5. Am iPhone bestätigen (Chromium ist nur Näherung): erster ▶ nach Kaltstart fühlbar schneller, Ton sofort, kein Unterschied im Klang.
-6. erst-test ERST-06/06a (noteLog-Vergleich) ist unter Rechnerlast > 20 wackelig (übersprungene Noten, Zufallsfolge je nach Pfad
-   nativ/Worklet); bei ruhigem Rechner zweimal 13/13. Bei der Abnahme mit wenig Last wiederholen.
+6. ~~erst-test ERST-06/06a unter Last wackelig~~ → in der Prüfung behoben (Zufall nach dem Rauschen fest, Wiederholung nur bei
+   fehlenden Noten, 06b). Bleibt: echte Planer-Aussetzer unter sehr hoher Last lassen 06/06a nach 3 Versuchen rot werden – dann
+   ist der Rechner zu voll, nicht ERST (06b zeigt, ob eine Note anders war).
 
 ## Pflicht (Endfassung, `pflicht.log`)
 topdefs: Skripte 26, Namen 7998, doppelt 0, Syntaxfehler 0 · dupkeys: 0 doppelte Schlüssel · smoke: `title SYNQUENZER errors []`
