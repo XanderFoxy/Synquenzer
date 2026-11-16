@@ -19,6 +19,8 @@ export const STANDARD = {
   pushBis: 17,
   maxWeitere: 200,
   gemerkt: [],
+  // Seiten-Daten (All-you-can-eat-Tage in Dresden/Leipzig/Chemnitz) – der Workflow checkt nur vorteile/ aus; nur mit Merkliste geholt
+  seiteUrl: 'https://raw.githubusercontent.com/XanderFoxy/Synquenzer/main/mein-vorteil/essen.json',
 };
 export const KETTEN_NAMEN = ["McDonald", 'Burger King', 'KFC', 'Subway', "Domino", 'Pizza Hut', 'Freddy Fresh', 'Five Guys', "L'Osteria", 'Peter Pane', 'burgerme', 'Nordsee'];
 
@@ -145,7 +147,7 @@ export function ayceHeute({ liste, seite, gemerkt, tag }) {
 export default async function essen({ holeText, cfg, jetzt = new Date(), zustand = {}, vorherDatei = null, essenListen = null }) {
   const m = { ...STANDARD, ...(cfg.module?.essen || {}) };
   const liste = essenListen?.liste;
-  const seite = essenListen?.seite;
+  let seite = essenListen?.seite;
   const fehler = [], hinweise = [], eintraege = [];
   const jetztMs = new Date(jetzt).getTime();
   const { tag, stunde } = berlin(jetzt);
@@ -187,7 +189,8 @@ export default async function essen({ holeText, cfg, jetzt = new Date(), zustand
   if (nichtGefunden.length) hinweise.push(`in OSM nicht gefunden: ${nichtGefunden.join(', ')}`.slice(0, 300));
 
   // 3) Push: heute All-you-can-eat bei gemerkten Lokalen (nur am Tag selbst, tagsüber)
-  if (stunde >= m.pushVon && stunde < m.pushBis) {
+  if (stunde >= m.pushVon && stunde < m.pushBis && Array.isArray(m.gemerkt) && m.gemerkt.length) {
+    if (!seite && m.seiteUrl) { try { seite = JSON.parse(await holeText(m.seiteUrl, { headers: { accept: 'application/json' } })); } catch (e) { hinweise.push(`Seiten-Daten: ${String(e.message || e).slice(0, 120)}`); } }
     for (const a of ayceHeute({ liste, seite, gemerkt: m.gemerkt, tag })) {
       eintraege.push({
         id: `essen-ayce-${a.id}-${tag}`, kategorie: 'essen', titel: `Heute All-you-can-eat: ${a.name}`.slice(0, 140),

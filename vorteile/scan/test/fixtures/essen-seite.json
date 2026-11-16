@@ -1,0 +1,118 @@
+{
+ "version": 1,
+ "stand": "2026-11-15",
+ "_hinweis": "Auszug aus mein-vorteil/essen.json (16.11.2026) für die Radar-Tests – der Radar-Lauf hat nur den Ordner vorteile/",
+ "eintraege": [
+  {
+   "id": "dd-play-off",
+   "rubrik": "ayce",
+   "art": "ayce",
+   "ort": "Dresden",
+   "titel": "Play Off (Diner, Altmarkt-Galerie)",
+   "was": "Montags Spare-Rib-Buffet, mittwochs Burger-Buffet; Frühstücksbuffet werktags und samstags",
+   "adresse": "Webergasse 1a, 01067 Dresden",
+   "region": [
+    "Dresden"
+   ],
+   "km": 44,
+   "wann": "Mo Spare Ribs, Mi Burger (Uhrzeit nicht belegt)",
+   "wochentage": [
+    1,
+    3
+   ],
+   "preis": "nicht belegt (Karte: Spare Ribs ca. 500 g einzeln 22,50 €, Stand 14.05.2026)",
+   "bedingung": "Buffet-Tage nur bei PRINZ genannt, auf der Dresdner Karte nicht bestätigt",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "PRINZ",
+     "url": "https://prinz.de/dresden/toplist/319-all-you-can-eat/"
+    },
+    {
+     "name": "speisekarte.de",
+     "url": "https://www.speisekarte.de/dresden/restaurant/play_off/speisekarte"
+    }
+   ],
+   "quelleStand": "2022–2025 (PRINZ); Karte 2026-05-14",
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "dd-mongolianbar",
+   "rubrik": "ayce",
+   "art": "ayce",
+   "ort": "Dresden",
+   "titel": "MongolianBar (Mongolischer Grill & Sushi)",
+   "was": "Grill-Buffet zum Selbstzusammenstellen (Mongolian BBQ, Sushi inklusive); sonntags All-you-can-eat-Brunch",
+   "adresse": "Schützenplatz 14, 01067 Dresden",
+   "region": [
+    "Dresden"
+   ],
+   "km": 44,
+   "wann": "täglich 17:30–22 Uhr; So Brunch (Uhrzeit nicht belegt)",
+   "wochentage": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "zeit": {
+    "von": "17:30",
+    "bis": "22:00",
+    "text": "17:30–22 Uhr"
+   },
+   "preis": "nicht belegt",
+   "bedingung": "",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "PRINZ",
+     "url": "https://prinz.de/dresden/toplist/319-all-you-can-eat/"
+    },
+    {
+     "name": "vymaps",
+     "url": "https://vymaps.com/DE/MONGOLIANBAR-Restaurant-36855/"
+    }
+   ],
+   "quelleStand": "2022–2025 (PRINZ)",
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  },
+  {
+   "id": "l-shiki",
+   "rubrik": "ayce",
+   "art": "ayce",
+   "ort": "Leipzig",
+   "titel": "Shiki (Sushibar)",
+   "was": "All-you-can-eat am Sonntag (laut Gästen oft vorab ausgebucht)",
+   "adresse": "Klostergasse 18, 04109 Leipzig",
+   "region": [
+    "Leipzig"
+   ],
+   "km": 57,
+   "wann": "sonntags (Uhrzeit nicht belegt)",
+   "wochentage": [
+    7
+   ],
+   "preis": "nicht belegt",
+   "bedingung": "reservieren",
+   "gratis": false,
+   "quellen": [
+    {
+     "name": "speisekarte.menu",
+     "url": "https://speisekarte.menu/restaurants/leipzig/shiki-1"
+    },
+    {
+     "name": "Falstaff",
+     "url": "https://www.falstaff.com/at/restaurants/shiki-klostergasse-18-leipzig"
+    }
+   ],
+   "quelleStand": "undatiert",
+   "geprueft": "2026-11-15",
+   "sicher": "pruefen"
+  }
+ ]
+}

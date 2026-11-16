@@ -9,7 +9,9 @@ import essen, { leseOsm, fuehreZusammen, naechsteFilialen, nameKey, kuecheAus, o
 const HIER = dirname(fileURLToPath(import.meta.url));
 const BASIS = join(HIER, '..', '..');
 const liste = JSON.parse(await readFile(join(BASIS, 'essen.json'), 'utf8'));
-const seite = JSON.parse(await readFile(join(BASIS, '..', 'mein-vorteil', 'essen.json'), 'utf8'));
+// Der Radar-Lauf (Workflow) hat nur den Ordner vorteile/ -> Auszug der Seiten-Daten als Fixture; die volle Datei nur lokal
+const seite = JSON.parse(await readFile(join(HIER, 'fixtures', 'essen-seite.json'), 'utf8'));
+const seiteVoll = await readFile(join(BASIS, '..', 'mein-vorteil', 'essen.json'), 'utf8').then(JSON.parse, () => null);
 const cfg = JSON.parse(await readFile(join(BASIS, 'config.json'), 'utf8'));
 const fixture = await readFile(join(HIER, 'fixtures', 'overpass-essen.json'), 'utf8');
 const ISO = /^\d{4}-\d\d-\d\d$/;
@@ -38,11 +40,11 @@ test('vorteile/essen.json: Schema – ids eindeutig, Küchen bekannt, Bewertunge
     if (l.leuteSagen) { assert.ok(l.leuteSagen.length <= 220, `${l.id}: leuteSagen zu lang`); assert.ok(!/[„“"]/.test(l.leuteSagen), `${l.id}: keine Zitate`); }
   }
   // Ketten: Aktionen zeigen auf echte Einträge der Seite (mein-vorteil/essen.json)
-  const seitenIds = new Set(seite.eintraege.map(e => e.id));
+  const seitenIds = seiteVoll ? new Set(seiteVoll.eintraege.map(e => e.id)) : null;
   for (const k of liste.ketten) {
     assert.ok(k.kette && k.filiale && Number.isFinite(k.km), k.id);
     assert.ok([true, false, null].includes(k.lieferung), `${k.id}: lieferung`);
-    for (const a of k.aktionen || []) assert.ok(seitenIds.has(a), `${k.id}: Aktion ${a} fehlt in mein-vorteil/essen.json`);
+    if (seitenIds) for (const a of k.aktionen || []) assert.ok(seitenIds.has(a), `${k.id}: Aktion ${a} fehlt in mein-vorteil/essen.json`);
     for (const q of k.quellen) assert.match(q.url, /^https:\/\//);
   }
   assert.equal(liste.ketten.find(k => k.kette === "Domino's").lieferung, false, 'Domino’s liefert nicht nach Döbeln');
@@ -141,6 +143,15 @@ test('Push: nur gemerkte Lokale, nur am AYCE-Tag, nur tagsüber; ohne Merkliste 
   assert.equal(frueh.eintraege.length, 0, '6 Uhr Berlin: noch nicht');
   const r = await essen({ holeText: hole, cfg: c, jetzt: new Date('2026-11-18T09:00:00Z'), zustand: {}, essenListen: { liste, seite } });
   assert.equal(r.eintraege.length, 1);
+  // im Workflow fehlt mein-vorteil/ -> die Seiten-Daten kommen dann (nur mit Merkliste) einmal von GitHub
+  const urls = [];
+  const holeMitSeite = async url => { urls.push(url); return /mein-vorteil\/essen\.json$/.test(url) ? JSON.stringify(seite) : fixture; };
+  const r6 = await essen({ holeText: holeMitSeite, cfg: c, jetzt: new Date('2026-11-18T09:00:00Z'), zustand: {}, essenListen: { liste, seite: null } });
+  assert.equal(r6.eintraege.length, 1);
+  assert.ok(urls.some(u => u === 'https://raw.githubusercontent.com/XanderFoxy/Synquenzer/main/mein-vorteil/essen.json'));
+  const urls2 = [];
+  await essen({ holeText: async u => { urls2.push(u); return fixture; }, cfg, jetzt: new Date('2026-11-18T09:00:00Z'), zustand: {}, essenListen: { liste, seite: null } });
+  assert.ok(!urls2.some(u => /mein-vorteil/.test(u)), 'ohne Merkliste kein Abruf der Seiten-Daten');
   const e = r.eintraege[0];
   assert.equal(e.kategorie, 'essen');
   assert.equal(e.sofort, true);
