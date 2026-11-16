@@ -32,3 +32,15 @@
 Last (loadavg 1 min) je Lauf: serie-vorher.log 16,8–26,4 · serie-nachher.log 10,6–20,5 · serie-aus.log 14,8–19,1. 0 Seitenfehler in allen Läufen.
 - 06:43 Ende. Pflicht grün (pflicht.log). Nicht committet, Repo und Originale unberührt.
 
+
+## Prüfung / Nachbesserung (08:43–)
+- 08:45 Sicherung sicherung-0845/ (index.html 56cd354c…, block-upd.js, bau.cjs, NOTES, LOG, upd-test.mjs, pflicht.log, smoke.png).
+- 08:46 Befunde nachgeprüft: B1 (ETQ-Fall) im Code nachvollzogen – updProbe sagte „alt“, sobald / und ?v= abweichen, ohne Beleg, dass
+  / wirklich die alte Datei liefert → echt. B2 (Haken nach dem Löschen der Kopie, Z 52793/52795) → echt. B3 (späteres Neuladen) → echt, Folge der Wartezeit.
+  LT2/SPKK/IMPK: vwReload/VW/PERF1A-Stellen dort unverändert (je 24 Treffer wie basis) → kein Überlappen.
+- 08:47 block-upd.js: updRef (Kopfzeilen der Seiten-Kopie synq-app-*, nur Kopfzeilen), „alt“ nur mit Beleg (normale Adresse = Kopie),
+  STEP 15 → 10 s, im Zweig „alt“ reg.update wie vwReload; bau.cjs: Haken VOR das Löschen der Kopie. topdefs 7996 / 0 doppelt / 0 Syntaxfehler.
+- 08:48 upd-logik.cjs (aus Prüfer-logik.cjs, + Kopie, ETQ, Haken-Lage, Block = Datei): 34/34 OK. Prüfer-logik.cjs alt: 6 „FEHL“ – genau die
+  „alt“-Fälle ohne Kopie, die jetzt absichtlich „unklar“ sind (dort gibt es keinen caches-Nachbau).
+- 08:49 upd-test2.mjs (= upd-test.mjs + ETQ wie Prüfer + N2WAIT + Kopie nach 8 s); Reihe serie-pruef.sh A/B im Wechsel, Last je Lauf in mess2/serie.log.
+- 08:50 Pflicht (pflicht2.log) grün; Auslieferung (perf2/ausliefern.mjs) → aus/index.html 6 965 433 B, gzip -6 2 364 767 B (basis-Auslieferung 2 364 079 B: +688 B).

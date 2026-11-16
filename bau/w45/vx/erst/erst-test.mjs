@@ -102,7 +102,7 @@ for (let v = 0; v < 3; v++) {
   const c = vgl(vB2.nach.notes, vB.nach.notes), t = vgl(vI.nach.notes, vB.nach.notes), t2 = vgl(vI.nach.notes, vB2.nach.notes);
   const last = fs.readFileSync('/proc/loadavg', 'utf8').split(' ')[0];
   versuche.push({v: v + 1, last, ctl: {gleich: c.gleich, n: c.n, anders: c.anders.length, versch: c.versch.length, fehlend: c.fehlend.length}, idx: {gleich: t.gleich, n: t.n, anders: t.anders.length, versch: t.versch.length, fehlend: t.fehlend.length, gegenB2: t2.gleich},
-    rnd: [vI.nach.rnd, vB.nach.rnd], ak: {idx: t.anders.map(kOf), ctl: c.anders.map(kOf)}, beispiel: {idxAnders: t.anders.slice(0, 3), idxFehlend: t.fehlend.slice(0, 3), ctlAnders: c.anders.slice(0, 3)}});
+    rnd: [vI.nach.rnd, vB.nach.rnd], ak: {idx: t.anders.map(kOf), ctl: c.anders.map(kOf)}, keys: {i: vI.nach.notes.filter(x => !x.late).map(kOf), b: vB.nach.notes.concat(vB2.nach.notes).filter(x => !x.late).map(kOf)}, beispiel: {idxAnders: t.anders.slice(0, 3), idxFehlend: t.fehlend.slice(0, 3), ctlAnders: c.anders.slice(0, 3)}});
   // ungleich → neuer Versuch (höchstens 3). Unter Last verliert/verschiebt der Planer Noten in JEDEM Lauf (auch der Basis), darum
   // sieht ein Ausfall in b wie eine „zusätzliche“ Note in a aus. Eine echte Änderung durch ERST wäre in jedem Versuch da (06b).
   if (c.gleich && t.gleich) break;
@@ -110,8 +110,13 @@ for (let v = 0; v < 3; v++) {
 const vz = versuche[versuche.length - 1];
 ok('ERST-06a Kontrolle: Basis gegen Basis gleich, Schläge 2–8 (Zufall nach dem Rauschen fest; ungleich unter Last → neuer Versuch, höchstens 3)', vz.ctl.gleich, versuche.map(x => ({v: x.v, last: x.last, ctl: x.ctl})));
 ok('ERST-06 noteLog Schläge 2–8 gleich (Spur, Quelle, Ton, Schlag, Dauer, Stärke, Zeit ab Start; ohne späte)', vz.idx.gleich && vz.idx.n[0] > 0, versuche.map(x => ({v: x.v, last: x.last, idx: x.idx, bsp: x.beispiel.idxAnders.concat(x.beispiel.idxFehlend).slice(0, 3)})));
-const immer = w => versuche.map(x => new Set(x.ak[w])).reduce((a, b) => new Set([...a].filter(k => b.has(k))));
-ok('ERST-06b keine Note ist in jedem Versuch geändert/zusätzlich (Index gegen Basis; Kontrolle Basis gegen Basis)', immer('idx').size === 0 && immer('ctl').size === 0, {idx: [...immer('idx')].slice(0, 3), ctl: [...immer('ctl')].slice(0, 3), jeVersuch: versuche.map(x => [x.idx.anders, x.ctl.anders])});
+// „immer anders“ = in jedem Versuch anders UND in keinem Basis-Lauf irgendeines Versuchs vorhanden (Index) bzw. in keinem anderen Lauf
+// (Kontrolle). Unter Last verliert gerade die Basis (schwerere Tipp-Aufgabe) früh Noten – ohne diese Gegenprobe sähe das wie eine
+// zusätzliche ERST-Note aus.
+const alleB = new Set(versuche.flatMap(x => x.keys.b)), alleI = new Set(versuche.flatMap(x => x.keys.i));
+const immer = w => [...versuche.map(x => new Set(x.ak[w])).reduce((a, b) => new Set([...a].filter(k => b.has(k))))].filter(k => w === 'idx' ? !alleB.has(k) : !alleI.has(k));
+const immerN = w => immer(w).length;
+ok('ERST-06b keine Note des Index fehlt in allen Basis-Läufen (in jedem Versuch anders und nie in der Basis); Kontrolle ebenso', immerN('idx') === 0 && immerN('ctl') === 0, {idx: immer('idx').slice(0, 3), ctl: immer('ctl').slice(0, 3), jeVersuch: versuche.map(x => [x.idx.anders, x.ctl.anders])});
 ok('ERST-07 WT-Wellen in Scheiben: dieselben 16 Eingaben in derselben Reihenfolge wie makeWaves, gleicher Aufbau', I.wellen && I.wellen.hk && I.wellen.a === 16 && I.wellen.b === 16 && I.wellen.gleich && I.wellen.shape && I.wellen.alle, I.wellen);
 const frueh = r => (r.nach.mw || []).filter(m => m.t >= 0 && m.t < 1400 && !/erstWv/.test(m.wer));
 ok('ERST-12 WT-Wellen nicht mehr im Tipp/ersten Planer-Schritt gebaut (Basis: ja, über spawnVoice)', frueh(I).length === 0 && frueh(B).length > 0, {idx: I.nach.mw, basis: B.nach.mw});
@@ -132,5 +137,5 @@ ok('ERST-14 WT-Note während der Wellen-Scheiben: Getter baut alle 16 auf einmal
 await b.close(); srv.close();
 const f = res.filter(x => !x.ok).length;
 console.log(`\nERST-Test: ${res.length - f}/${res.length} OK`);
-fs.writeFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), 'erst-test.json'), JSON.stringify({res, versuche, I: {vor: I.vor, nach: Object.assign({}, I.nach, {notes: I.nach.notes.length}), wellen: I.wellen}}, null, 1));
+fs.writeFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), 'erst-test.json'), JSON.stringify({res, versuche: versuche.map(x => Object.assign({}, x, {keys: undefined})), I: {vor: I.vor, nach: Object.assign({}, I.nach, {notes: I.nach.notes.length}), wellen: I.wellen}}, null, 1));
 process.exit(f ? 1 : 0);
