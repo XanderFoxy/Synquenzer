@@ -81,7 +81,7 @@ export const STANDARD = {
   breitMaxLookups: 4, // Lookup-Abrufe für Kandidaten (je lookupMax Nummern)
   breitGesamtMax: 40, // alle Apple-Abrufe des Laufs zusammen (bisheriger Weg + breit)
   breitBisSek: 150, // danach keine breiten Abrufe mehr (main bricht ein Modul nach 240 s ab)
-  breitQualiAbrufe: 6, // Wikidata-Abfragen (Qualität) nur für neue Kandidaten, nach denen des bisherigen Wegs
+  breitQualiAbrufe: 8, // Wikidata-Abfragen (Qualität) nur für neue Kandidaten, nach denen des bisherigen Wegs
   breitQualiBisSek: 200,
   breitMerkTage: 1, // Kandidaten eines Genres, das in diesem Lauf nicht dran war, so lange weiter prüfen (Preis per Lookup)
   breitLeerTage: 7, // Genre ohne Einträge (gibt es im deutschen Store nicht) so lange ruhen lassen
@@ -974,17 +974,14 @@ export default async function filme(ctx) {
   const alleCharts = []; // alle Chart-Einträge dieses Laufs (Weg „charts“: Apple-Nummern per Titel/Jahr-Abgleich)
   const kinderIds = new Set(), kinderReihen = new Set(); // alle Titel der Kinder-Charts (auch teure: chartTreffer kennt nur Neues und Angebote)
   const neuGrenze = new Date(new Date(jetzt).getTime() - neuMonate * 30.44 * 864e5);
-  // breite Suche: dieselben Feeds mit Top 200 (kein Abruf extra); der bisherige Weg bekommt genau die Top 100 wie vorher,
-  // Platz 101–200 gehen nur an die breite Suche (Schritt 4d)
+  // breite Suche (Schritt 4d): eigene Genres mit limit=200 – Apple liefert je Feed höchstens 100 (echter Lauf 43796648997:
+  // limit=200 = dieselben 100 Einträge, Byte für Byte). Die bisherigen Genres bleiben darum genau wie vorher (limit=100).
   const breitCfg = chartCfg.breit && typeof chartCfg.breit === 'object' && chartCfg.breit.aktiv !== false ? chartCfg.breit : null;
   const breitLimit = breitCfg ? Math.min(200, Math.max(100, Number(breitCfg.limit) || 200)) : 100;
-  const breitRest = []; // { e, g } Platz 101–200 der bisherigen Genres
   for (const g of [...chartsNeu.map(x => ({ ...x, neu: true })), ...chartsAngebot.map(x => ({ ...x, neu: false }))]) {
     let eintraege;
     try {
-      const roh = leseCharts(await apple(chartUrl(g.id, breitLimit)));
-      eintraege = roh.filter(e => e.pos <= 100);
-      for (const e of roh) if (e.pos > 100) breitRest.push({ e, g });
+      eintraege = leseCharts(await apple(chartUrl(g.id)));
       status['apple-charts'].anzahl += eintraege.length;
       alleCharts.push(...eintraege);
       if (kinderCharts.has(Number(g.id))) for (const e of eintraege) { kinderIds.add(e.id); const r = kinderReihe(e.titel); if (r) kinderReihen.add(r); }
@@ -1477,8 +1474,10 @@ export default async function filme(ctx) {
       .map(g => ({ ...g, key: `${g.art === 'film' ? 'f' : 's'}${g.id}` }))
       .sort((a, b) => String(zb.g[a.key]?.t || '').localeCompare(String(zb.g[b.key]?.t || '')));
     // Chart-Preis merken (kompakt): [Preis ct, höchster ct, vorheriger anderer ct (0 = keiner), erster Tag, letzter Tag, Tag seit Preis]
-    const merkP = e => {
-      if (e?.preis == null) return zb.p[nr(e?.id)] || null;
+    // Staffeln: krumme Chart-Preise (17,94 €, 50,83 € – Season-Pass/Teilstaffel, echter Lauf 43796023775: 5 von 98 weichen vom
+    // Lookup ab) zählen nicht; Filme: Chart-Preis = HD-Kaufpreis des Lookups (25 von 25)
+    const merkP = (e, art = 'film') => {
+      if (e?.preis == null || (art === 'staffel' && Math.round(e.preis * 100) % 10 !== 9)) return zb.p[nr(e?.id)] || null;
       const k = nr(e.id), c = Math.round(e.preis * 100);
       let v = zb.p[k];
       if (!Array.isArray(v) || v.length < 6) v = zb.p[k] = [c, c, 0, tagNr, tagNr, tagNr];
@@ -1492,7 +1491,7 @@ export default async function filme(ctx) {
     const kand = new Map(); // id -> { e, g, art }
     const pruefe = (e, g, art) => {
       if (!e?.id || kand.has(e.id)) return false;
-      const v = merkP(e);
+      const v = merkP(e, art);
       if (art === 'film') {
         if (chartTreffer.has(e.id) || listenIds.has(e.id)) return false; // gehört dem bisherigen Weg
         if (istHorror(e, horrorIds) || horrorText(e.text, e.genre) >= 3) return false;
@@ -1501,7 +1500,6 @@ export default async function filme(ctx) {
       kand.set(e.id, { e, g, art });
       return true;
     };
-    for (const { e, g } of breitRest) pruefe(e, { id: g.id, name: g.name, key: `f${g.id}` }, 'film');
     for (const g of genres) {
       const z = zb.g[g.key];
       if (z?.leer && tageZwischen(z.leer, tag) < m.breitLeerTage) { bst.ruhen++; continue; }
@@ -1555,7 +1553,7 @@ export default async function filme(ctx) {
       } else {
         if (d?.typ !== 'staffel' || !v || v[2] <= 0) continue;
         const preis = d.preisHd ?? d.preisSd ?? null;
-        if (!gesenktP(v, preis)) continue; // auch der echte Preis muss unter dem früher gesehenen liegen
+        if (!gesenktP(v, preis) || Math.abs(preis - v[0] / 100) > 0.005) continue; // echter Preis = Chart-Preis und unter dem früher gesehenen
         const info = (d.komplett && komplettInfo(d.titel)) || staffelInfo(d.titel) || komplettInfo(d.titel);
         if (wunschPosten(info?.serie, d.kuenstler)) continue; // Staffel deiner Serie: bleibt beim bisherigen Weg
         daten.set(e.id, { ...d, serie: info?.serie || d.kuenstler || d.titel, nr: info?.nr ?? null, zusatz: info?.zusatz || '' });
@@ -1750,6 +1748,9 @@ export default async function filme(ctx) {
     if (rang(t) < 2) return true;
     const q = qualiVon(t.id), ht = t._horrorText || 0;
     if (horrorVerdacht(ht, q)) return false;
+    // breite Suche: Platz in einem Nischen-Genre sagt nichts – nur mit Wikidata-Daten (bekannt oder gut bewertet; echter Lauf
+    // 43796648997: ohne diese Regel kamen Kurzfilme für 1,99 € und ein falscher „Death Wish“ nach vorn)
+    if (breitIds.has(t.id)) return !!q && q.l >= 0 && qualiOk(q, { chart: null, neu: false }, m);
     return qualiOk(q, { chart: t.chart, neu: !!chartTreffer.get(t.id)?.neu }, m);
   };
   let qualiRaus = 0;
