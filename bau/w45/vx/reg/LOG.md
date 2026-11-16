@@ -27,3 +27,4 @@
 - 09:02 run.sh: SOLL_VERSION Pflicht (sonst Exit 2), spk8f/spk10p getrennt (Fallliste vorab mit cd messb, env -C statt verschachteltem $(…)), stderr je Job → <name>.err, Allein-Wiederholung am Ende (SOLO=1), clip1 schreibt nach <ordner>/o-clip1. pflicht.sh: Soll Pflicht + VERSION > Vorgänger (sort -V). spk4: ohne SOLL_VERSION rot. tabelle.mjs: erwartete Tests ohne Ergebnis = ROT.
 - 09:02 selbsttest.mjs 17 OK / 0 FEHLER (alle vier Prüfer-Proben aus pruef/fake + spk10p „nur 1 von 11“ + .err + Fremdlast + Allein + Tabelle). pflicht.sh-Versionslogik mit 6 Kleindateien geprüft.
 - 09:03:24 Voller Lauf lauf-4761b gestartet (SOLL_VERSION=4.76.1, Last vor dem Start 2,2). Last stieg danach durch andere Agenten auf 16.
+- 09:26 Zwischenstand lauf-4761b: 21/55 fertig, 12 GRÜN, 0 Struktur-Fehler, alle Prüfungszahlen = soll; ROT/LAST/UNGÜLTIG nur Prüf-Zeilen bei Fremdlast 4,6–14 → Allein-Phase am Ende. Last 14–25 (andere Agenten). NOTES §7 Prüfung, §8 Lauf. Bericht.

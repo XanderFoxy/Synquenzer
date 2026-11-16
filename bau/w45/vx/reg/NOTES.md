@@ -141,3 +141,25 @@ Tests der Werkzeuge:
 - pflicht.sh-Versionslogik (`selbsttest-pflicht/`, 6 Kleindateien): ohne Soll → „SOLL_VERSION fehlt“; Soll 4.76.0 bei Datei 4.76.1 → rot; vorher = gleiche Version → „neuer 0“; 4.76.10 > 4.76.9 → „neuer 1“, umgekehrt „neuer 0“.
 - run.sh ohne SOLL_VERSION → Exit 2, kein Ordner angelegt.
 - Probelauf lauf-4761 mit den neuen Regeln neu gewertet (`neu-gewertet-4761/`, WERTEN=1): spk10p jetzt ROT „kein Ergebnis“ (vorher fehlte die Zeile), Tests 55 (erwartet 55); spk12d LAST statt ROT.
+
+## 8. Voller Lauf mit den neuen Werkzeugen (`vx/reg/lauf-4761b/`, Start 09:03:24, SOLL_VERSION=4.76.1, SPUREN 4, SOLO 1)
+
+Last vor dem Start 2,2; danach durch andere Agenten 14–25 (Fremdlast je Test 4,6–16,8). Stand 09:26 (Zwischenstand, Lauf läuft per nohup weiter
+und schreibt am Ende `ERGEBNIS.md`, `zeit.txt` mit Pool-/Allein-/Gesamtzeit und `fertig.txt`):
+
+- 21 von 55 fertig: **GRÜN 12** (imp1, spk11b, mtx3, vxr2, rv1, spk11, spk6p, rv1k, chrk, spk12, trp1, mtx3c) · INFO 1 (lt1) · LAST 2 (fok2, fokus1) ·
+  UNGÜLTIG (Last) 3 (beg1, mtx4, voxr1) · ROT 3 (spk4 `a3-unison-pad-besser` 1,62 → 1,85 = Klang-Suche mit Zeitbudget, im Probelauf grün; teil1 `T1 teile`;
+  mtx3b `Tastatur-Overdub auf HH ZU`) – alle drei nur Prüf-Zeilen bei Fremdlast 4,7–14,3 > 4 → werden am Ende **allein** wiederholt; dort fällt das Urteil.
+- **Struktur-Fehler: 0** (kein Absturz, kein Zeitlimit, kein unerlaubter Exit, alle Prüfungszahlen = soll.json: z. B. spk4 21/21, beg1 58/58, mtx4 118/118,
+  voxr1 83/83, teil1 61/61, mtx3b 87/87), keine nicht leere `.err`.
+- spk4 `pflicht` grün gegen Soll 4.76.1 (nicht mehr gegen 4.60.0), Doppelläufe spk1/ki1/vx1 entfallen.
+- Gesamtzeit und „alle grün oder bekannt“ sind damit **weiter nicht belegt** (Last 14–25 statt ≤ 8); die Allein-Wiederholungen (≈ 8 Tests, ≈ 25 min bei
+  dieser Last) liegen außerhalb dieses Pakets.
+
+Offen (neu):
+1. Fremdlast-Schätzung zählt jeden eigenen Test als 1 CPU; Chromium-Tests erzeugen mehr → Fremdlast eher zu hoch → mehr Allein-Wiederholungen (kostet Zeit,
+   aber nie falsch grün). Besser: eigene Last über /proc/<pid>/stat (CPU-Zeit der Kindprozesse) messen.
+2. Bei dauerhaft hoher Fremdlast wird die Allein-Phase lang (Summe der Wiederholungen). Ggf. Grenze für die Allein-Phase (nur echtzeit + ROT) oder vor dem
+   Start warten, bis Last < CPU.
+3. Ergebnis von lauf-4761b (ERGEBNIS.md) nachlesen: welche der 8 Tests bleiben allein ROT? spk4 `a3-unison-pad-besser` ggf. wie `a3-nachbau-gleich` als
+   Klang-Suche-Wackler einstufen (nur mit Beleg aus dem Allein-Lauf).
