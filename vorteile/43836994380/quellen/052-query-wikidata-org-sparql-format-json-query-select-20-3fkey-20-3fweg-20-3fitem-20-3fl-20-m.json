@@ -1,0 +1,101 @@
+{
+  "head" : {
+    "vars" : [ "key", "weg", "item", "l", "jahr", "h", "k", "rt", "lab" ]
+  },
+  "results" : {
+    "bindings" : [ {
+      "key" : {
+        "type" : "literal",
+        "value" : "1896863976"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q3201414"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "4"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2010"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "L'Accordeur|L’accordeur"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "1896863976"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q130660452"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "15"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2025"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "The Piano Tuner|Tuner"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "6814715026"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q132256832"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "23"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2026"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Das Ende der Sterne|The Dog Stars"
+      }
+    } ]
+  }
+}
