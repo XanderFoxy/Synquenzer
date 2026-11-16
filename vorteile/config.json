@@ -23,8 +23,15 @@
     "userAgent": "Vorteils-Radar/1.0 (privat, wenige Abrufe pro Stunde; +https://github.com/XanderFoxy/Synquenzer/tree/vorteile/vorteile)",
     "timeoutMs": 20000,
     "pauseMs": 2000,
-    "pauseMsJeHost": { "itunes.apple.com": 3200, "www.reddit.com": 6000, "www.kaufda.de": 2100, "hnrss.org": 3000 },
-    "_pauseMsJeHost": "Apple erlaubt etwa 20 Abrufe pro Minute -> 3,2 s Abstand. Reddit ohne Login: höchstens ~10 Abrufe pro Minute -> 6 s. kaufDA: robots.txt crawl-delay 2 -> 2,1 s."
+    "pauseMsJeHost": { "itunes.apple.com": 3200, "www.kaufda.de": 2100, "hnrss.org": 3000 },
+    "_pauseMsJeHost": "Apple erlaubt etwa 20 Abrufe pro Minute -> 3,2 s Abstand. kaufDA: robots.txt crawl-delay 2 -> 2,1 s.",
+    "robotsPruefen": true,
+    "agbVerbot": [
+      {"host": "freelancer.com", "grund": "Nutzungsbedingungen von Freelancer.com verbieten Robots/Scraper und das Sammeln von Projekten – ausdrücklich auch über die API – ohne schriftliche Erlaubnis", "stand": "User Agreement vom 05.06.2025"},
+      {"host": "reddit.com", "grund": "robots.txt von Reddit verbietet allen Robotern alles („User-agent: *“ / „Disallow: /“), die Public Content Policy erlaubt automatischen Zugriff nur mit Vereinbarung; Läufe bekamen HTTP 429", "stand": "robots.txt und Public Content Policy, Stand 16.11.2026"}
+    ],
+    "robotsAusnahmen": ["ntfy.sh"],
+    "_regeln": "Regel-Wache (MV6, 16.11.2026, Xander-Regel „nur Quellen, deren AGB/robots.txt das erlauben; keine Sperren umgehen“): JEDER Abruf eines Moduls geht erst durch agbVerbot (Host verboten -> kein Abruf, auch nicht die robots.txt) und dann durch die robots.txt des Hosts (vor dem ersten Abruf je Host, 7 Tage gemerkt in zustand.robots; Pfad verboten -> Quelle übersprungen, Hinweis im Status statt Störung; robots.txt nicht lesbar -> dieses Mal nicht gelesen). robotsAusnahmen nur für eigene Dienste: ntfy.sh = das eigene Push-Thema der Seite (Merkliste), keine fremden Inhalte."
   },
   "module": {
     "deals": {
@@ -279,12 +286,11 @@
         "aktiv": true,
         "maxAlterTage": 21,
         "maxEintraege": 20,
-        "reddit": [
-          { "sub": "German+LearnGerman", "q": null, "thema": "deutsch" },
-          { "sub": "forhire+slavelabour+germany+Austria+askswitzerland", "q": null, "thema": null }
-        ],
+        "reddit": [],
+        "_redditAus": "AUS seit 16.11.2026 (MV6, Regel-Verstoß): Reddits robots.txt verbietet allen Robotern alles (User-agent: * / Disallow: /), Läufe bekamen HTTP 429. Zusätzlich steht reddit.com in abruf.agbVerbot – auch ein Eintrag hier würde nie abgerufen. Die Reddit-Suche bleibt als Link unter „Hier selbst schauen“ (fundorte). Früher: { \"sub\": \"German+LearnGerman\", \"thema\": \"deutsch\" }, { \"sub\": \"forhire+slavelabour+germany+Austria+askswitzerland\" }.",
         "_reddit": "Neueste Beiträge als Atom-Feed (/new/.rss, ohne Login), mehrere Subreddits mit „+“ in EINER Abfrage. Roh-Lauf 14.11.2026 aus GitHub: die Reddit-SUCHE (search.rss) gibt 403 „Verboten“/429, old.reddit.com nur eine Anmeldeseite, die Liste /r/German/new/.rss dagegen 200. Gesperrt = ein kurzer Hinweis, die Reddit-Suche unter „Hier selbst schauen“ steht immer da. Nicht im Standard: r/language_exchange (Tandem, unbezahlt) und r/translator (kostenlose Einzel-Übersetzungen).",
-        "freelancer": [{ "name": "German Translator/Tutoring", "jobs": [518, 2108], "limit": 100 }, { "name": "Sprachunterricht/Korrektur/Übersetzung", "jobs": [2109, 48, 22], "limit": 100 }, "german tutor", "german proofreading"],
+        "freelancer": [],
+        "_freelancerAus": "AUS seit 16.11.2026 (MV6, Regel-Verstoß): die Nutzungsbedingungen von Freelancer.com verbieten das automatische Lesen ohne schriftliche Erlaubnis – auch über die API (wie bei auftraege). freelancer.com steht in abruf.agbVerbot; ein Eintrag hier würde nie abgerufen. Die Website-Suche bleibt als Link unter „Hier selbst schauen“. Früher: Fähigkeiten [518, 2108] und [2109, 48, 22].",
         "_freelancer": "Öffentliche Projekt-API von Freelancer.com (JSON, ohne Schlüssel). Jedes Projekt ist ein Auftrag – „sucht“ muss nicht im Text stehen. Volltextsuche ist unscharf (Roh-Lauf 14.11.2026: 9 Suchen, 256 Projekte, 1 echtes Deutsch-Gesuch) -> Fähigkeits-Filter jobs[] (518 German Translator, 2108 German Tutoring; 2109 Language Tutoring, 48 Proofreading, 22 Translation nur mit „German/Deutsch“ im Text).",
         "lemmy": [],
         "_lemmy": "Lemmy-Such-API (Fediverse, JSON, ohne Konto) – Roh-Lauf 14.11.2026 (feddit.org, lemmy.world): nur Nachrichten/Blogs, kein einziges Gesuch -> aus. Eintrag z. B. { \"instanz\": \"feddit.org\", \"q\": \"Nachhilfe Deutsch\" }.",

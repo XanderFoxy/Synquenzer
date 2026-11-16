@@ -7,6 +7,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { aufraeumen } from './lib/ende.mjs';
 import { macheAbruf, macheFixtureAbruf } from './lib/http.mjs';
+import { macheRegelWache, agentAus, REGEL_TEXT } from './lib/robots.mjs';
 import { rohOrdner, macheMitschnitt } from './lib/roh.mjs';
 import { tageBis } from './lib/text.mjs';
 import { modulFaellig } from './faellig.mjs';
@@ -44,10 +45,18 @@ const mitZeitlimit = (p, ms, name) => Promise.race([p, new Promise((_, rej) => s
  * Ergebnis „dateien“: eigene Dateien der Module, die in diesem Lauf gelaufen sind ({ filme: {...} } -> <data>/filme.json);
  * ein übersprungenes oder abgestürztes Modul liefert keine -> die alte Datei bleibt stehen.
  */
-export async function lauf({ cfg, wunschliste, filmListen = null, essenListen = null, dateienVorher = {}, vorher, zustand, holeText, env = {}, jetzt = new Date(), alle = false, log = () => {} }) {
+export async function lauf({ cfg, wunschliste, filmListen = null, essenListen = null, dateienVorher = {}, vorher, zustand, holeText: holeRoh, env = {}, jetzt = new Date(), alle = false, log = () => {}, regelWache = true }) {
   const jetztMs = new Date(jetzt).getTime();
   zustand ||= {};
   zustand.lauf ||= {};
+  // Regel-Wache (MV6, 16.11.2026): JEDER Abruf eines Moduls geht erst durch Nutzungsbedingungen (abruf.agbVerbot: gar kein
+  // Abruf) und robots.txt des Hosts (vor dem ersten Abruf je Host; verboten -> Quelle übersprungen + Hinweis, keine Störung).
+  // Anlass: Bereich Unterricht las Reddit (robots.txt „Disallow: /“, HTTP 429) und Freelancer.com (AGB) ohne diese Prüfung.
+  const holeText = regelWache === false ? holeRoh : macheRegelWache(holeRoh, {
+    zustand, agent: agentAus(cfg.abruf?.userAgent) || 'vorteils-radar', jetzt: new Date(jetztMs),
+    agbVerbot: cfg.abruf?.agbVerbot || [], robots: cfg.abruf?.robotsPruefen !== false, ausnahmen: cfg.abruf?.robotsAusnahmen || [],
+  });
+  const wache = holeText.wache || null;
   const kategorien = {};
   const status = {};
   const dateien = {};
@@ -63,10 +72,15 @@ export async function lauf({ cfg, wunschliste, filmListen = null, essenListen = 
       continue;
     }
     const t0 = Date.now();
+    if (wache) wache.modul = name;
     try {
       const filialenDatei = dateien.filialen || dateienVorher?.filialen || null;
       const r = await mitZeitlimit(fn({ holeText, cfg, wunschliste, zustand, env, jetzt, filmListen, essenListen, filialenDatei, vorherDatei: dateienVorher?.[name] ?? null }), 240000, name);
       if (r.datei) dateien[name] = r.datei;
+      // Regel-Sperren (AGB/robots.txt) sind keine Störung: aus den Fehlern in die Hinweise, je Host ein Satz
+      const gesperrt = [...(wache?.jeModul.get(name)?.values() || [])].map(g => `${g.regel === 'agb' ? 'Nutzungsbedingungen' : 'robots.txt'} von ${g.host}: nicht gelesen – ${g.grund}`);
+      r.fehler = (r.fehler || []).filter(f => !REGEL_TEXT.test(String(f)));
+      r.hinweise = [...new Set([...gesperrt, ...(r.hinweise || []).filter(h => !gesperrt.some(g => String(h).includes(g)))])];
       // komplett kaputte Quelle -> alte Einträge behalten statt leere Liste (Remix/Auftritte/Unterricht: nur Fundorte
       // übrig und Fehler da = alle frischen Quellen tot -> alter Stand bleibt, statt nur die Fundorte zu zeigen)
       const nurFundorte = r.eintraege.length > 0 && r.eintraege.every(e => e.extra?.fundort);
@@ -77,13 +91,17 @@ export async function lauf({ cfg, wunschliste, filmListen = null, essenListen = 
       // Fehltreffer (E-Mail-Vorlagen, 14.11.2026) bliebe sonst bis zu seinem Sichtbar-Ende stehen, wenn Remotive/News ausfallen
       kategorien[name] = kaputt && nurFundorte ? [...alt.filter(e => !e.extra?.fundort && !e.extra?.gesuch), ...r.eintraege] : kaputt ? alt : r.eintraege;
       // gesperrt (HTTP 401): Quelle still aus, zählt nicht als Fehler
-      status[name] = { ok: !r.fehler.length, anzahl: r.eintraege.length, fehler: r.fehler.slice(0, 10), ms: Date.now() - t0, stand: new Date(jetztMs).toISOString(), ...(r.hinweise?.length ? { hinweise: r.hinweise.slice(0, 10) } : {}), ...(r.gesperrt?.length ? { gesperrt: r.gesperrt.slice(0, 10) } : {}), ...(r.kurz ? { kurz: r.kurz } : {}) };
+      // zahl: eigene Datei statt Einträge (Filialen, Wochen-Knaller, Essen, Ausflüge) -> „1468 Filialen“ statt „0 gefunden“
+      status[name] = { ok: !r.fehler.length, anzahl: r.eintraege.length, ...(r.zahl && Number.isFinite(r.zahl.n) ? { zahl: { n: r.zahl.n, wort: String(r.zahl.wort || '').slice(0, 30) } } : {}), fehler: r.fehler.slice(0, 10), ms: Date.now() - t0, stand: new Date(jetztMs).toISOString(), ...(r.hinweise?.length ? { hinweise: r.hinweise.slice(0, 10) } : {}), ...(r.gesperrt?.length ? { gesperrt: r.gesperrt.slice(0, 10) } : {}), ...(r.kurz ? { kurz: r.kurz } : {}) };
       if (!zustand.lauf[name] && zustand.gemeldet && !kaputt) neueModule.push(name);
       zustand.lauf[name] = new Date(jetztMs).toISOString();
     } catch (e) {
-      kategorien[name] = alt;
-      status[name] = { ok: false, anzahl: 0, fehler: [String(e.message || e)], ms: Date.now() - t0 };
+      const msg = String(e.message || e);
+      // ganz gesperrt (AGB/robots.txt): kein Fehler, aber auch keine alten Einträge aus dieser Quelle
+      if (REGEL_TEXT.test(msg)) { kategorien[name] = []; status[name] = { ok: true, anzahl: 0, fehler: [], hinweise: [msg.slice(0, 300)], ms: Date.now() - t0 }; }
+      else { kategorien[name] = alt; status[name] = { ok: false, anzahl: 0, fehler: [msg], ms: Date.now() - t0 }; }
     }
+    if (wache) wache.modul = null;
     log(`${name}: ${status[name].ok ? 'ok' : 'FEHLER'} ${kategorien[name].length} Einträge ${(status[name].fehler || []).slice(0, 2).join(' | ')}`);
   }
   // Enddaten: was vorbei ist (bis/sichtbarBis), fliegt raus – auch Übernommenes; gleicher Link nur in einer Kategorie

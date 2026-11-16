@@ -79,7 +79,8 @@ test('Unterricht im ganzen Lauf: ohne Jobbörse nur noch Fundorte (Plattformen +
   const u = nur('unterricht').module.unterricht;
   assert.equal(l.length, u.fundorte.length + u.gesuche.fundorte.length, l.map(e => e.titel).join(' | '));
   assert.ok(l.every(e => e.extra.fundort));
-  assert.ok(r.aktuell.status.unterricht.hinweise?.some(h => /^Gesuche: Freelancer/.test(h)), 'nicht aufgenommene Quelle = Hinweis, keine Störung');
+  // seit MV6 (16.11.2026) sind Reddit und Freelancer.com aus (robots.txt/AGB) -> kein Abruf, kein Hinweis dazu
+  assert.ok(!(r.aktuell.status.unterricht.hinweise || []).some(h => /Freelancer|Reddit/.test(h)), (r.aktuell.status.unterricht.hinweise || []).join(' | '));
 });
 
 test('Nebenverdienst (echte v6-Antworten): keine Vollzeitstelle, kein Schwedisch-Übersetzer, „Textil“ ist kein Text', async () => {
@@ -257,10 +258,13 @@ test('Urlaubsguru 401: kein Fehler, Status „gesperrt“; danach eine Woche nic
   assert.equal(r.aktuell.status.reisen.ok, true, JSON.stringify(r.aktuell.status.reisen));
   assert.deepEqual(r.aktuell.status.reisen.fehler, []);
   assert.deepEqual(r.aktuell.status.reisen.gesperrt, ['Urlaubsguru: gesperrt seit 08.11.2026 (HTTP 401)']);
-  assert.equal(gefragt.filter(u => /urlaubsguru/.test(u)).length, 1);
+  // die robots.txt (Regel-Wache, MV6) zählt nicht als Abruf der Quelle
+  const quelle = () => gefragt.filter(u => /urlaubsguru/.test(u) && !/\/robots\.txt$/.test(u)).length;
+  assert.equal(quelle(), 1);
+  assert.equal(gefragt.filter(u => /urlaubsguru\.de\/robots\.txt$/.test(u)).length, 1, 'robots.txt vor dem ersten Abruf, einmal');
   const zwei = new Date(JETZT.getTime() + 2 * 864e5);
   const r2 = await lauf({ cfg: nur('reisen'), wunschliste: {}, vorher: r.aktuell, zustand, holeText: zaehlend, jetzt: zwei, alle: true });
-  assert.equal(gefragt.filter(u => /urlaubsguru/.test(u)).length, 1, 'gesperrt: nicht jeden Lauf neu fragen');
+  assert.equal(quelle(), 1, 'gesperrt: nicht jeden Lauf neu fragen');
   assert.deepEqual(r2.aktuell.status.reisen.gesperrt, ['Urlaubsguru: gesperrt seit 08.11.2026 (HTTP 401)']);
   // nach einer Woche einmal neu versuchen; antwortet die Quelle wieder, ist die Sperre weg
   const spaeter = new Date(JETZT.getTime() + (GESPERRT_NEU_TAGE + 1) * 864e5);

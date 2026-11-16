@@ -3,8 +3,10 @@
 // Quellen: (1) Jobbörse der Arbeitsagentur – seit 14.11.2026 raus (Xander: keine Arbeitsamt-Stellen, sondern Gesuche im Netz);
 // (2) Remotive-API (Remote-Stellen „German teacher/tutor“, JSON); (3) Google News (Integrationskurse, Sprachpaten,
 // seit 14.11.2026 nur noch Sprachpaten/Ehrenamt); (4) Fundorte (config): Lehr-Plattformen (italki, Preply, Lingoda),
-// BAMF-Zulassung – erscheinen IMMER; (5) Gesuche aus dem Netz (gesuche.mjs, Xander 14.11.2026): Leute, die auf Reddit,
-// Freelancer & Co. Hilfe mit Deutsch suchen – Einträge mit extra.typ 'gesuch', auf der Seite eine eigene Gruppe oben.
+// BAMF-Zulassung – erscheinen IMMER; (5) Gesuche aus dem Netz (gesuche.mjs, Xander 14.11.2026): Leute, die Hilfe mit
+// Deutsch suchen – Einträge mit extra.typ 'gesuch', auf der Seite eine eigene Gruppe oben. Reddit und Freelancer.com sind
+// seit 16.11.2026 AUS (robots.txt bzw. Nutzungsbedingungen verbieten das automatische Lesen; abruf.agbVerbot) – dort nur noch
+// die fertigen Suchen unter „Hier selbst schauen“.
 import { enthaelt, zaehle, datumDe } from '../lib/text.mjs';
 import { berlinTag } from '../lib/ende.mjs';
 import { ortNach, ortZeile, istOnline, distanzKm, DOEBELN } from '../lib/orte.mjs';
@@ -105,8 +107,8 @@ export default async function unterricht({ holeText, cfg, jetzt, zustand = {}, e
     }));
   }
 
-  // 5) Gesuche aus dem Netz: Ausfälle sind Hinweise (Reddit sperrt Rechenzentrums-IPs gern), die Fundorte stehen immer da
-  const g = await gesucheAusNetz({ holeText, m: m.gesuche, jetzt, zustand, kuenstler: cfg.kuenstler });
+  // 5) Gesuche aus dem Netz: Ausfälle und Regel-Sperren sind Hinweise, die Fundorte stehen immer da
+  const g = await gesucheAusNetz({ holeText, m: m.gesuche, jetzt, zustand, kuenstler: cfg.kuenstler, agbVerbot: cfg.abruf?.agbVerbot || [] });
   const gLinks = new Set(eintraege.map(e => e.link));
   eintraege.push(...g.eintraege.filter(e => !gLinks.has(e.link)));
 

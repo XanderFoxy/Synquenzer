@@ -13,7 +13,11 @@
 // nur einmal. Forenbeiträge (Reddit, Lemmy) merkt sich der Radar im Zustand (zustand.gesuche) bis maxAlterTage und prüft sie
 // jeden Lauf mit dem aktuellen Filter neu – /new/.rss reicht nur Tage (r/German) bzw. Stunden (Sammelabfrage) zurück.
 // Ausfälle (Reddit sperrt Rechenzentrums-IPs gern mit 403/429) landen als Hinweis im Status, nicht als Störung des Bereichs.
+// REGEL (MV6, 16.11.2026): Reddit (robots.txt „Disallow: /“) und Freelancer.com (AGB) sind AUS – config reddit/freelancer
+// leer, beide Hosts in abruf.agbVerbot. gesucheAusNetz prüft agbVerbot vor jeder Quelle selbst (kein Abruf, nur Hinweis), die
+// Regel-Wache in main.mjs zusätzlich robots.txt jedes Hosts. Die Leser für beide Formate bleiben für eine spätere Erlaubnis.
 import { enthaelt, norm, datumDe } from '../lib/text.mjs';
+import { agbGrund } from '../lib/robots.mjs';
 import { berlinTag } from '../lib/ende.mjs';
 import { entities } from '../lib/rss.mjs';
 import { ortAus, istOnline } from '../lib/orte.mjs';
@@ -124,16 +128,26 @@ const SO = {
  * Gesuche aus dem Netz holen. m = cfg.module.unterricht.gesuche. Liefert { eintraege, hinweise } – Fehler einzelner Quellen
  * sind Hinweise (die Fundorte erscheinen immer, der Bereich bleibt „ok“).
  */
-export async function gesucheAusNetz({ holeText, m, jetzt = new Date(), zustand = null, kuenstler = {} }) {
+export async function gesucheAusNetz({ holeText, m, jetzt = new Date(), zustand = null, kuenstler = {}, agbVerbot = [] }) {
   const eintraege = [], hinweise = [];
   if (!m || m.aktiv === false) return { eintraege, hinweise };
+  // Nutzungsbedingungen/robots-Verbot (abruf.agbVerbot + gesuche.agbVerbot): diese Quellen werden gar nicht erst abgerufen
+  const verbot = [...(Array.isArray(agbVerbot) ? agbVerbot : []), ...(Array.isArray(m.agbVerbot) ? m.agbVerbot : [])];
+  const gesperrtAgb = new Set();
+  const erlaubtUrl = (url, name) => {
+    const g = agbGrund(url, verbot);
+    if (!g) return true;
+    if (!gesperrtAgb.has(name)) { gesperrtAgb.add(name); hinweise.push(`Gesuche: ${name} nicht gelesen – ${g} (nur Such-Link)`); }
+    return false;
+  };
   const jetztMs = new Date(jetzt).getTime();
   const maxTage = m.maxAlterTage ?? 21;
   const funde = [];
   const zuAlt = d => !Number.isFinite(d) || jetztMs - d > maxTage * 864e5 || d - jetztMs > 864e5;
 
   // 1) Reddit (Atom). sammleFeeds: Höchstalter, gleicher Link/Titel einmal, HTTP 401 = gesperrt
-  const feeds = (m.reddit || []).filter(r => r?.sub).map(r => ({ name: `Reddit r/${r.sub}`, url: redditSuche(r), maxAlterTage: maxTage, quelleInfo: r }));
+  const feeds = (m.reddit || []).filter(r => r?.sub).map(r => ({ name: `Reddit r/${r.sub}`, url: redditSuche(r), maxAlterTage: maxTage, quelleInfo: r }))
+    .filter(f => erlaubtUrl(f.url, 'Reddit'));
   if (feeds.length) {
     const { items, fehler, gesperrt } = await sammleFeeds(holeText, feeds, { jetzt, maxAlterTage: maxTage, zustand });
     const aus = [...fehler, ...(gesperrt || [])];
@@ -154,6 +168,7 @@ export async function gesucheAusNetz({ holeText, m, jetzt = new Date(), zustand 
 
   // 2) Freelancer.com (JSON): jedes Projekt ist ein Auftrag -> „sucht“ muss nicht im Text stehen
   for (const q of [].concat(m.freelancer || [])) {
+    if (!erlaubtUrl(freelancerSuche(q), 'Freelancer.com')) continue;
     try {
       const j = JSON.parse(await holeText(freelancerSuche(q), { headers: { accept: 'application/json' } }));
       if (j.status && j.status !== 'success') throw new Error(`Status ${j.status}`);
@@ -174,6 +189,7 @@ export async function gesucheAusNetz({ holeText, m, jetzt = new Date(), zustand 
 
   // 3) Lemmy (Fediverse-Foren, z. B. feddit.org) – Beiträge wie bei Reddit prüfen (Gesuch + Deutsch + Hilfe)
   for (const l of [].concat(m.lemmy || []).filter(l => l?.instanz && l?.q)) {
+    if (!erlaubtUrl(lemmySuche(l), `Lemmy ${l.instanz}`)) continue;
     try {
       const j = JSON.parse(await holeText(lemmySuche(l), { headers: { accept: 'application/json' } }));
       for (const x of j.posts || []) {

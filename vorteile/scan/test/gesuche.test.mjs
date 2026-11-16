@@ -15,7 +15,16 @@ import { lauf } from '../main.mjs';
 const HIER = dirname(fileURLToPath(import.meta.url));
 const FX = join(HIER, 'fixtures');
 const cfg = JSON.parse(await readFile(join(HIER, '..', '..', 'config.json'), 'utf8'));
-const m = cfg.module.unterricht.gesuche;
+// Regel-Verstoß behoben (MV6, 16.11.2026): Reddit und Freelancer.com sind in der config AUS (reddit/freelancer leer, beide
+// Hosts in abruf.agbVerbot). Die Leser-Tests unten prüfen nur noch das FORMAT der früheren Quellen mit nachgebauten
+// Fixtures (mAlt, ohne Verbotsliste) – der echte Radar ruft beide nie ab (Tests „Regel“ am Ende und in regeln.test.mjs).
+const mEcht = cfg.module.unterricht.gesuche;
+const m = {
+  ...mEcht,
+  reddit: [{ sub: 'German+LearnGerman', q: null, thema: 'deutsch' }, { sub: 'forhire+slavelabour+germany+Austria+askswitzerland', q: null, thema: null }],
+  freelancer: [{ name: 'German Translator/Tutoring', jobs: [518, 2108], limit: 100 }, { name: 'Sprachunterricht/Korrektur/Übersetzung', jobs: [2109, 48, 22], limit: 100 }, 'german tutor', 'german proofreading'],
+};
+const cfgAlt = { ...cfg, abruf: { ...cfg.abruf, agbVerbot: [] }, module: { ...cfg.module, unterricht: { ...cfg.module.unterricht, gesuche: m } } };
 const JETZT = new Date('2026-11-14T12:00:00Z');
 const holeText = macheFixtureAbruf(FX, FIXTURE_KARTE);
 const funde = l => l.filter(e => !e.extra?.fundort);
@@ -94,14 +103,14 @@ test('Gesuche: Fundorte (Upwork, Fiverr, Kleinanzeigen …) erscheinen immer –
 
 test('Gesuche: Ausfall ist nur ein Hinweis – der Bereich Unterricht bleibt ohne Störung', async () => {
   const nurGesucheKaputt = async (url, o) => (/reddit|freelancer|api\/v3/.test(url) ? Promise.reject(new Error('HTTP 429 bei www.reddit.com')) : holeText(url, o));
-  const r = await unterricht({ holeText: nurGesucheKaputt, cfg, jetzt: JETZT, zustand: {} });
+  const r = await unterricht({ holeText: nurGesucheKaputt, cfg: cfgAlt, jetzt: JETZT, zustand: {} });
   assert.deepEqual(r.fehler, []);
   assert.ok(r.hinweise.some(h => /^Gesuche: Reddit gesperrt \(429\)/.test(h)), r.hinweise.join(' | '));
   assert.ok(r.eintraege.some(e => e.extra.gesuch && e.extra.fundort));
 });
 
 test('Gesuche im Bereich Unterricht: keine Jobbörse mehr, gleicher Link nur einmal', async () => {
-  const r = await unterricht({ holeText, cfg, jetzt: JETZT, zustand: {} });
+  const r = await unterricht({ holeText, cfg: cfgAlt, jetzt: JETZT, zustand: {} });
   assert.deepEqual(r.fehler, []);
   const g = r.eintraege.filter(e => e.extra.gesuch && !e.extra.fundort);
   assert.equal(g.length, 6, g.map(e => e.titel).join(' | ')); // Reddit + Freelancer (Lemmy in der config aus)
@@ -156,7 +165,8 @@ test('Gesuche: Adressen der Quellen', () => {
   // Freelancer-Vorschau (100 Zeichen, mitten im Wort): Wortrest weg, „…“ dran (Prüfer 14.11.2026: „convers“, „insi“)
   assert.equal(auszugAus('Looking for a native speaker for weekly convers', 180, { gekuerzt: true }), 'Looking for a native speaker for weekly …');
   assert.equal(auszugAus('Short and complete.', 180, { gekuerzt: true }), 'Short and complete.');
-  assert.equal(cfg.abruf.pauseMsJeHost['www.reddit.com'], 6000, 'Reddit höflich: höchstens ~10 Abrufe pro Minute');
+  assert.equal(mEcht.reddit.length, 0, 'Reddit AUS (robots.txt „Disallow: /“)');
+  assert.equal(mEcht.freelancer.length, 0, 'Freelancer.com AUS (Nutzungsbedingungen)');
 });
 
 test('Freelancer: nur mit German/Deutsch im Titel oder passender Fähigkeit (Fehltreffer 14.11.2026)', () => {
@@ -220,7 +230,7 @@ test('Gesuche-Gedächtnis: Forenbeiträge bleiben bis 21 Tage (auch wenn Reddit 
 });
 
 test('Radar: fallen Remotive/News aus und gibt es 0 Gesuche, bleiben alte Stellen – alte Gesuche nicht (Prüfer 14.11.2026)', async () => {
-  const cfgU = { ...cfg, module: { unterricht: cfg.module.unterricht } };
+  const cfgU = { ...cfgAlt, module: { unterricht: cfgAlt.module.unterricht } };
   const alt = (id, extra, titel) => ({ id, kategorie: 'unterricht', titel, link: `https://example.org/${id}`, datum: '2026-11-13T07:00:00.000Z', sichtbarBis: '2026-11-30T00:00:00.000Z', wert: 70, extra });
   const vorher = { kategorien: { unterricht: [
     alt('u1', { typ: 'gesuch', gesuch: true, sortWert: 85 }, 'Setup of Professional Email Templates and Follow-up System for Translation Business'),
@@ -232,4 +242,24 @@ test('Radar: fallen Remotive/News aus und gibt es 0 Gesuche, bleiben alte Stelle
   assert.ok(t.includes('Online German Teacher – Firma'), 'alte Stelle bleibt');
   assert.ok(!t.some(x => /Email Templates/.test(x)), 'alter Gesuch-Fehltreffer bleibt nicht stehen');
   assert.ok(r.aktuell.kategorien.unterricht.some(e => e.extra?.fundort), 'Fundorte frisch');
+});
+
+// ---------------------------------------------------------------- Regel (MV6, 16.11.2026)
+test('Regel: mit der echten config werden Reddit und Freelancer.com nie abgerufen – auch nicht, wenn sie wieder eingetragen werden', async () => {
+  const gefragt = [];
+  const zaehlend = async (url, o) => { gefragt.push(url); return holeText(url, o); };
+  // 1) echte config: Bereich Unterricht ganz
+  const r = await unterricht({ holeText: zaehlend, cfg, jetzt: JETZT, zustand: {} });
+  assert.deepEqual(r.fehler, []);
+  assert.ok(!gefragt.some(u => /reddit\.com|freelancer\.com/i.test(u)), gefragt.filter(u => /reddit|freelancer/.test(u)).join(' | '));
+  assert.ok(r.eintraege.some(e => e.extra.fundort && /reddit\.com/.test(e.link)), 'Reddit bleibt als Link zum selbst Suchen');
+  assert.ok(r.eintraege.some(e => e.extra.fundort && /freelancer\.com/.test(e.link)), 'Freelancer.com bleibt als Link zum selbst Suchen');
+  // 2) jemand trägt die alten Abfragen wieder ein: agbVerbot (abruf) hält sie trotzdem auf, je Quelle EIN Hinweis
+  gefragt.length = 0;
+  const cfgWieder = { ...cfg, module: { ...cfg.module, unterricht: { ...cfg.module.unterricht, gesuche: { ...mEcht, reddit: m.reddit, freelancer: m.freelancer } } } };
+  const r2 = await unterricht({ holeText: zaehlend, cfg: cfgWieder, jetzt: JETZT, zustand: {} });
+  assert.ok(!gefragt.some(u => /reddit\.com|freelancer\.com/i.test(u)), 'nie abgerufen, auch nicht die robots.txt');
+  assert.equal(r2.hinweise.filter(h => /^Gesuche: Reddit nicht gelesen – robots\.txt von Reddit/.test(h)).length, 1, r2.hinweise.join(' | '));
+  assert.equal(r2.hinweise.filter(h => /^Gesuche: Freelancer\.com nicht gelesen – Nutzungsbedingungen/.test(h)).length, 1, r2.hinweise.join(' | '));
+  assert.deepEqual(r2.fehler, []);
 });

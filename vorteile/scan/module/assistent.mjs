@@ -7,6 +7,7 @@ import { eintrag } from './gemeinsam.mjs';
 import { ortAus, ortNach, ortZeile, nahPunkte, istOnline, DOEBELN } from '../lib/orte.mjs';
 import { tageBis } from '../lib/text.mjs';
 import { berlinTag } from '../lib/ende.mjs';
+import { istRegelSperre } from '../lib/robots.mjs';
 
 const MAIL = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/;
 const FORMULAR = /formular|anmeldeformular|online-anmeldung|application form|submission form|submit (?:your|the) form|google ?forms?|forms\.gle|typeform|jotform|bewerbungsbogen/i;
@@ -101,6 +102,8 @@ export async function pruefeFundorte(liste, { holeText, zustand, name, jetzt = n
     if (!f?.link || f.aktiv === false || z[f.link]?.tag === tag) continue;
     try { await holeText(f.link, { headers: { accept: 'text/html' } }); z[f.link] = { tag, ok: true, fehlerInFolge: 0 }; }
     catch (e) {
+      // robots.txt/AGB verbieten den Abruf: Link nicht prüfbar, aber nicht „kaputt“ (der Link bleibt für Xander klickbar)
+      if (istRegelSperre(e)) { z[f.link] = { tag, ok: null, fehlerInFolge: 0, nichtGeprueft: true }; continue; }
       const n = (z[f.link]?.fehlerInFolge ?? 0) + 1;
       z[f.link] = { tag, ok: false, fehlerInFolge: n };
       hinweise.push(`Fundort „${f.titel.slice(0, 40)}“: ${e.message}`);

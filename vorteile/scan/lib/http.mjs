@@ -37,10 +37,13 @@ export function macheAbruf(abruf, fetchImpl = globalThis.fetch) {
 }
 
 // Für Tests und --fixtures: URL -> aufgezeichnete Antwort. karte = [[teilDerUrl, dateiname], ...] (erster Treffer gewinnt).
-// Unbekannte RSS-URLs bekommen einen leeren Feed, unbekannte JSON-APIs ein leeres Objekt.
+// Unbekannte RSS-URLs bekommen einen leeren Feed, unbekannte JSON-APIs ein leeres Objekt. Unbekannte robots.txt (Regel-Wache,
+// MV6): HTTP 404 = keine robots.txt = alles erlaubt; eine eigene robots.txt-Fixture steht wie jede andere in der Karte.
+const ROBOTS_FEHLT = url => { try { return new URL(url).pathname === '/robots.txt'; } catch { return false; } };
 export function macheFixtureAbruf(dir, karte) {
   return async function holeText(url) {
     const treffer = karte.find(([teil]) => url.includes(teil));
+    if (!treffer && ROBOTS_FEHLT(url)) throw new Error(`HTTP 404 bei ${new URL(url).host}`);
     if (!treffer) {
       if (/rss|feed|atom|\.xml/i.test(url)) return '<rss><channel></channel></rss>';
       if (/arbeitsagentur/.test(url)) return '{"stellenangebote":[]}';
@@ -53,12 +56,14 @@ export function macheFixtureAbruf(dir, karte) {
 
 // Für Tests mit echten Läufen: Roh-Mitschnitt (lib/roh.mjs) wieder abspielen. index.json = { abrufe: [{ url, status,
 // datei, fehler }] } wie im Roh-Lauf; dieselbe URL -> dieselbe Antwort (Status ≥ 400 -> „HTTP <status> bei <host>“
-// wie macheAbruf). Nicht aufgenommene URLs: RSS leer, sonst Fehler (wie macheFixtureAbruf).
+// wie macheAbruf). Nicht aufgenommene URLs: RSS leer, sonst Fehler (wie macheFixtureAbruf); robots.txt ohne Aufnahme (Läufe
+// vor MV6 holten sie nur für einzelne Quellen) = HTTP 404 = keine Regeln.
 export function macheAufnahmeAbruf(dir, index) {
   const karte = new Map();
   for (const a of index?.abrufe || []) if (!karte.has(a.url)) karte.set(a.url, a);
   return async function holeText(url) {
     const a = karte.get(url);
+    if (!a && ROBOTS_FEHLT(url)) throw new Error(`HTTP 404 bei ${new URL(url).host}`);
     if (!a) {
       if (/rss|feed|atom|\.xml/i.test(url)) return '<rss><channel></channel></rss>';
       throw new Error(`keine Aufnahme für ${url}`);

@@ -2,8 +2,12 @@
 // erlaubt – sonst bleibt sie ein Link „hier selbst suchen“ auf der Seite. Regeln nach RFC 9309:
 //  - Gruppe für unseren Namen („vorteils-radar“, aus dem User-Agent) vor „*“; mehrere passende Gruppen werden vereint,
 //  - längste passende Regel gewinnt, bei Gleichstand Allow; „*“ = beliebig viele Zeichen, „$“ = Ende,
-//  - robots.txt fehlt (HTTP 4xx) = alles erlaubt; Server-Fehler/keine Antwort = dieses Mal NICHT lesen (vorsichtig).
+//  - robots.txt fehlt (HTTP 4xx außer 429) = alles erlaubt; Server-Fehler/429/keine Antwort = dieses Mal NICHT lesen (vorsichtig).
 // Ergebnis je Host im Zustand (zustand.robots[host] = { tag, status, regeln }) – höchstens einmal pro ROBOTS_TAGE neu holen.
+// MV6 (16.11.2026, Regel-Verstoß im Bereich Unterricht: Reddit trotz „Disallow: /“, Freelancer.com trotz AGB-Verbot):
+// macheRegelWache legt sich um JEDEN Abruf des Radars (main.mjs) – nicht nur um einzelne Module:
+//  1. Nutzungsbedingungen (config abruf.agbVerbot): Host verboten -> gar kein Abruf, auch nicht der robots.txt;
+//  2. robots.txt je Host vor dem ersten Abruf (gemerkt wie oben): Pfad verboten -> Abruf übersprungen (Hinweis, kein Fehler).
 
 export const ROBOTS_TAGE = 7;
 
@@ -63,15 +67,87 @@ export async function robotsErlaubt(url, { holeRoh, zustand = null, agent = 'vor
   const speicher = zustand ? (zustand.robots ||= {}) : {};
   const jetztMs = new Date(jetzt).getTime();
   let e = speicher[u.host];
-  if (!e || !(jetztMs - Date.parse(e.zeit) < tage * 864e5) || e.status === 0 || e.status >= 500) {
+  if (!e || !(jetztMs - Date.parse(e.zeit) < tage * 864e5) || e.status === 0 || e.status >= 500 || e.status === 429) {
     let r;
     try { r = await holeRoh(`${u.protocol}//${u.host}/robots.txt`); } catch (err) { r = { status: 0, text: '', fehler: String(err?.message || err) }; }
     const regeln = r.status >= 200 && r.status < 300 ? regelnFuer(leseRobots(r.text), agent) : [];
     e = { zeit: new Date(jetztMs).toISOString(), status: r.status, regeln: regeln.slice(0, 200) };
     speicher[u.host] = e;
   }
-  if (e.status === 0 || e.status >= 500) return { ok: false, grund: `robots.txt nicht lesbar (${e.status ? `HTTP ${e.status}` : 'keine Antwort'})` };
+  if (e.status === 0 || e.status >= 500 || e.status === 429) return { ok: false, nichtLesbar: true, grund: `robots.txt nicht lesbar (${e.status ? `HTTP ${e.status}` : 'keine Antwort'})` };
   if (e.status >= 400) return { ok: true, grund: `keine robots.txt (HTTP ${e.status})` };
   const p = erlaubt(e.regeln, u.pathname + u.search);
   return p.ok ? { ok: true, grund: p.regel ? `robots.txt: ${p.regel}` : 'robots.txt erlaubt' } : { ok: false, grund: `robots.txt: ${p.regel}` };
+}
+
+/**
+ * Nutzungsbedingungen verbieten das automatische Lesen? liste = [{ host, grund }] (config abruf.agbVerbot bzw.
+ * module.<x>.agbVerbot) -> Grund | null. Gilt vor JEDEM Abruf (auch robots.txt). Ausnahme nur mit erlaubnis: true an der
+ * Quelle (schriftliche Erlaubnis/registrierte App) – die globale Wache (abruf.agbVerbot) kennt keine Ausnahme.
+ */
+export function agbGrund(url, liste = [], q = {}) {
+  if (q?.erlaubnis === true) return null;
+  let host;
+  try { host = new URL(url).hostname.toLowerCase(); } catch { return null; }
+  const v = (Array.isArray(liste) ? liste : []).find(x => x?.host && (host === x.host || host.endsWith(`.${x.host}`)));
+  return v ? (v.grund || 'Nutzungsbedingungen verbieten automatisches Lesen') : null;
+}
+
+/** Fehler der Regel-Wache: e.regel = 'agb' | 'robots' – Module zählen ihn nicht als Störung (main.mjs macht einen Hinweis daraus) */
+export class RegelSperre extends Error {
+  constructor(regel, host, grund) {
+    super(`${regel === 'agb' ? 'Nutzungsbedingungen' : 'robots.txt'} von ${host}: nicht gelesen – ${grund}`);
+    this.name = 'RegelSperre'; this.regel = regel; this.host = host; this.grund = grund;
+  }
+}
+/** Text einer RegelSperre (auch eingebettet: „Remotive: robots.txt von remotive.com: nicht gelesen – …“) */
+export const REGEL_TEXT = /(Nutzungsbedingungen|robots\.txt) von \S+: nicht gelesen – /;
+export const istRegelSperre = e => !!e && (e.name === 'RegelSperre' || e.regel === 'agb' || e.regel === 'robots' || REGEL_TEXT.test(String(e.message || e)));
+
+/** holeText -> holeRoh für robotsErlaubt ({ status, text }; Status aus „HTTP 404 bei …“, 0 = keine Antwort) */
+export const holeRohMit = holeText => async url => {
+  try { return { status: 200, text: await holeText(url, { headers: { accept: 'text/plain' } }) }; }
+  catch (e) { const m = /HTTP (\d{3})/.exec(String(e?.message || e)); return { status: m ? Number(m[1]) : 0, text: '' }; }
+};
+
+/**
+ * Regel-Wache um holeText (main.mjs, ein Lauf): erst Nutzungsbedingungen (agbVerbot, kein Abruf), dann robots.txt des Hosts
+ * (einmal je Host und Lauf geholt bzw. aus zustand.robots, höchstens ROBOTS_TAGE alt), erst dann der eigentliche Abruf.
+ *  - verboten (AGB oder Disallow) -> wirft RegelSperre (e.regel), merkt den Host in wache.gesperrt;
+ *  - robots.txt nicht lesbar (5xx/429/keine Antwort) -> wirft einen normalen Fehler („… dieses Mal nicht gelesen“),
+ *    die Quelle gilt wie bei jedem Ausfall als gestört (alter Stand bleibt);
+ *  - /robots.txt selbst geht direkt durch; ausnahmen = Hosts ohne Prüfung (nur eigene Dienste, z. B. ntfy-Thema der Seite).
+ * Rückgabe: holeText-Funktion mit .wache = { gesperrt: Map(host -> { regel, grund, n }), geprueft: Set(host), modul }.
+ */
+export function macheRegelWache(holeText, { zustand = null, agent = 'vorteils-radar', jetzt = new Date(), agbVerbot = [], robots = true, ausnahmen = [] } = {}) {
+  const wache = { gesperrt: new Map(), geprueft: new Set(), modul: null, jeModul: new Map() };
+  const ablage = zustand || {}; // ohne Zustand (Tests): nur für diesen Lauf merken
+  const erste = new Map(); // host -> Promise der ersten Prüfung in diesem Lauf (robots.txt nur einmal holen, auch parallel)
+  const holeRoh = holeRohMit(holeText);
+  const frei = new Set((ausnahmen || []).map(h => String(h).toLowerCase()));
+  const sperre = (regel, host, grund) => {
+    const k = `${regel}|${host}`;
+    const alt = wache.gesperrt.get(k);
+    wache.gesperrt.set(k, { regel, host, grund, n: (alt?.n || 0) + 1 });
+    if (wache.modul) { const s = wache.jeModul.get(wache.modul) || new Map(); s.set(k, { regel, host, grund }); wache.jeModul.set(wache.modul, s); }
+    return new RegelSperre(regel, host, grund);
+  };
+  async function bewacht(url, opts) {
+    let u;
+    try { u = new URL(url); } catch { return holeText(url, opts); }
+    const host = u.host.toLowerCase();
+    const agb = agbGrund(url, agbVerbot);
+    if (agb) throw sperre('agb', host, agb);
+    if (!robots || frei.has(host) || frei.has(u.hostname.toLowerCase()) || u.pathname === '/robots.txt') return holeText(url, opts);
+    if (!erste.has(host)) erste.set(host, robotsErlaubt(url, { holeRoh, zustand: ablage, agent, jetzt }).catch(e => ({ ok: false, nichtLesbar: true, grund: `robots.txt nicht lesbar (${String(e?.message || e).slice(0, 60)})` })));
+    const e1 = await erste.get(host);
+    wache.geprueft.add(host);
+    // nicht lesbar: in diesem Lauf nicht noch einmal fragen (sonst je Adresse ein Zeitlimit)
+    if (e1.nichtLesbar) throw new Error(`${e1.grund} bei ${host} – dieses Mal nicht gelesen`);
+    const r = await robotsErlaubt(url, { holeRoh, zustand: ablage, agent, jetzt }); // aus der Ablage, kein zweiter Abruf
+    if (!r.ok) throw sperre('robots', host, r.grund);
+    return holeText(url, opts);
+  }
+  bewacht.wache = wache;
+  return bewacht;
 }

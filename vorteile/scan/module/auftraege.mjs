@@ -20,7 +20,7 @@ import { enthaelt, zaehle, norm, datumDe } from '../lib/text.mjs';
 import { berlinTag } from '../lib/ende.mjs';
 import { leseRss, entities } from '../lib/rss.mjs';
 import { ortAus, ortNach, istOnline, nahPunkte } from '../lib/orte.mjs';
-import { robotsErlaubt, agentAus } from '../lib/robots.mjs';
+import { robotsErlaubt, agentAus, agbGrund, holeRohMit } from '../lib/robots.mjs';
 import { eintrag } from './gemeinsam.mjs';
 import { fundortEintraege } from './assistent.mjs';
 
@@ -104,11 +104,7 @@ export function betrugPruefen(text, w) {
  * Gilt vor JEDEM Abruf (auch robots.txt). Ausnahme nur mit erlaubnis: true an der Quelle (schriftliche Erlaubnis/registrierte App).
  */
 export function agbSperre(url, m, q = {}) {
-  if (q?.erlaubnis === true) return null;
-  let host;
-  try { host = new URL(url).hostname.toLowerCase(); } catch { return null; }
-  const v = (m?.agbVerbot || []).find(x => x?.host && (host === x.host || host.endsWith(`.${x.host}`)));
-  return v ? (v.grund || 'Nutzungsbedingungen verbieten automatisches Lesen') : null;
+  return agbGrund(url, m?.agbVerbot || [], q);
 }
 
 /**
@@ -231,12 +227,6 @@ const SO = {
   rss: 'Anzeige öffnen und über die Seite antworten: kurz, was du machst, bis wann, Preis. Text unten.',
 };
 
-/** Robots-Prüfer für einen Lauf: holeText -> { status, text } */
-const holeRohMit = holeText => async url => {
-  try { return { status: 200, text: await holeText(url, { headers: { accept: 'text/plain' } }) }; }
-  catch (e) { const m = /HTTP (\d{3})/.exec(String(e?.message || e)); return { status: m ? Number(m[1]) : 0, text: '' }; }
-};
-
 export default async function auftraege({ holeText, cfg, jetzt = new Date(), zustand = {} }) {
   const m = cfg.module.auftraege;
   const eintraege = [], fehler = [], hinweise = [];
@@ -250,7 +240,8 @@ export default async function auftraege({ holeText, cfg, jetzt = new Date(), zus
 
   for (const q of quellen) {
     try {
-      const agb = agbSperre(q.art === 'freelancer' ? FL : q.url, m, q);
+      // eigene Liste + die des ganzen Radars (abruf.agbVerbot, MV6) – die Regel-Wache in main.mjs prüft dasselbe noch einmal
+      const agb = agbSperre(q.art === 'freelancer' ? FL : q.url, { agbVerbot: [...(m.agbVerbot || []), ...(cfg.abruf?.agbVerbot || [])] }, q);
       if (agb) { hinweise.push(`Nebenverdienst: ${q.name || q.art} nicht gelesen – ${agb} (nur Such-Link)`); continue; }
       if (q.art === 'freelancer') {
         const ids = await freelancerIds(holeText, [].concat(q.jobs || []), zustand, jetztMs, hinweise, pruefeRobots);
