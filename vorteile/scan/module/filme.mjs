@@ -349,18 +349,24 @@ export const qualiWert = q => (q && q.l >= 0 ? (q.rt ?? 55) + Math.min(q.l, 120)
 // Einspielergebnis (P2142), Auszeichnungen (P166), Produktionsfirma (P272), Verleih (P750), Besetzung (P161, mit Bekanntheit der
 // Schauspieler = Wikipedia-Sprachen). Je Eigenschaft eigene Zeilen (UNION) – kein Kreuzprodukt wie bei vielen OPTIONAL.
 // Große Studios und Verleiher (englische Wikidata-Namen): Hollywood-Majors mit Töchtern und die großen deutschen/europäischen Häuser
-export const GROSSE_STUDIOS = /\b(?:warner bros|warner brothers|new line cinema|castle rock|universal pictures|universal studios|focus features|illumination|dreamworks|paramount|20th century|twentieth century|columbia pictures|tristar|sony pictures|screen gems|walt disney|disney|pixar|marvel studios|lucasfilm|touchstone pictures|hollywood pictures|buena vista|metro-goldwyn-mayer|mgm|united artists|lionsgate|lions gate|summit entertainment|legendary|amblin|miramax|orion pictures|new regency|regency enterprises|village roadshow|skydance|eon productions|working title|imagine entertainment|carolco|constantin film|neue constantin|ufa|bavaria film|studio babelsberg|x filme|wiedemann & berg|rat pack filmproduktion|studiocanal|gaumont|path[eé]|europacorp)\b/i;
+// Nur PRODUKTIONSfirmen (P272) zählen – Verleih/Streaming (P750) nicht: US-Verleiher wie Paramount, Miramax oder „Disney+“
+// machten im echten Lauf 43820663637 Arthouse-Filme (Die Nächte der Cabiria, Drei Farben: Rot) zu „großen Produktionen“.
+// Arthouse-Labels der Majors (Sony Pictures Classics, Paramount Vantage, Focus Features, Searchlight) zählen nicht.
+export const GROSSE_STUDIOS = /\b(?:warner bros|warner brothers|new line cinema|castle rock|universal pictures|universal studios|illumination|dreamworks|paramount pictures|20th century fox|20th century studios|twentieth century|columbia pictures|tristar|sony pictures (?:animation|entertainment|releasing|imageworks)|screen gems|walt disney (?:pictures|animation|productions|feature)|pixar|marvel studios|lucasfilm|touchstone pictures|hollywood pictures|metro-goldwyn-mayer|united artists|lionsgate|lions gate|summit entertainment|legendary (?:pictures|entertainment)|amblin|orion pictures|new regency|regency enterprises|village roadshow|skydance|eon productions|working title|imagine entertainment|carolco|constantin film|neue constantin|ufa|bavaria film|studio babelsberg|x filme|wiedemann & berg|rat pack filmproduktion)\b/i;
+export const KEIN_GROSSES_STUDIO = /classics|vantage|focus features|searchlight|disney\+|television|\btv\b|home (?:video|entertainment)/i;
 export const detailUrlMax = 7000;
 export function detailAbfrage(qids) {
   const werte = [...new Set(qids.filter(q => /^Q\d{1,12}$/.test(String(q))))].map(q => `wd:${q}`).join(' ');
   const label = '?x rdfs:label ?wert . FILTER(LANG(?wert) = "en")';
   return 'SELECT ?item ?art ?wert ?n WHERE { '
     + `VALUES ?item { ${werte} } `
-    + '{ ?item wdt:P2142 ?wert . BIND("b" AS ?art) } '
+    // Einspielergebnis nur in US-Dollar (Q4917) oder Euro (Q4916): Rupien, Yen oder Rubel wären sonst „Milliarden“-Kinohits
+    + '{ ?item p:P2142/psv:P2142 ?bv . ?bv wikibase:quantityAmount ?wert ; wikibase:quantityUnit ?bu . FILTER(?bu IN (wd:Q4917, wd:Q4916)) BIND("b" AS ?art) } '
     + `UNION { ?item wdt:P166 ?x . ${label} BIND("a" AS ?art) } `
     + `UNION { ?item wdt:P272 ?x . ${label} BIND("s" AS ?art) } `
     + `UNION { ?item wdt:P750 ?x . ${label} BIND("v" AS ?art) } `
-    + `UNION { ?item wdt:P161 ?x . ?x wikibase:sitelinks ?n . ${label} BIND("c" AS ?art) } `
+    // Besetzung: Darsteller (P161) und Sprecher (P725 – Animationsfilme wie Shrek haben keine P161-Darsteller)
+    + `UNION { ?item wdt:P161|wdt:P725 ?x . ?x wikibase:sitelinks ?n . ${label} BIND("c" AS ?art) } `
     + '} LIMIT 8000';
 }
 /** Antwort -> Map(Q… -> { b: höchstes Einspielergebnis, a: [Auszeichnungen], s: [Studios], v: [Verleih], c: [{ name, n }] }). */
@@ -386,31 +392,38 @@ export function leseDetails(text) {
  *  g = Golden Globes, a = Auszeichnungen gesamt, st = Studio (das große zuerst), gs = 1 bei großem Studio/Verleih,
  *  c = die bekanntesten Schauspieler (höchstens 8, nach Wikipedia-Sprachen). */
 export function detailKurz(d, tag) {
-  const studios = [...d.s, ...d.v];
-  const gross = studios.find(x => GROSSE_STUDIOS.test(x));
+  const gross = d.s.find(x => GROSSE_STUDIOS.test(x) && !KEIN_GROSSES_STUDIO.test(x));
   return {
     b: d.b != null ? Math.round(d.b / 1e6) : null,
-    o: d.a.filter(x => /^Academy Award for /i.test(x)).length,
+    // Oscars ohne „bester fremdsprachiger/internationaler Film“ (Arthouse-Preis, sagt nichts über eine große Produktion)
+    o: d.a.filter(x => /^Academy Award for /i.test(x) && !/foreign language|international feature/i.test(x)).length,
     g: d.a.filter(x => /^Golden Globe Award for /i.test(x)).length,
     a: d.a.length,
-    st: (gross || d.s[0] || null)?.slice(0, 40) ?? null,
+    st: (gross || d.s[0] || d.v[0] || null)?.slice(0, 40) ?? null,
     gs: gross ? 1 : 0,
     c: [...d.c].sort((x, y) => y.n - x.n).slice(0, 8).map(x => x.name.slice(0, 40)),
-    tag,
+    tag, v: DETAIL_V,
   };
 }
+/** Fassung der gemerkten Details (zf.detail): ältere Einträge (Einspielergebnis jeder Währung) werden neu geholt. */
+export const DETAIL_V = 2;
+/** Grobe Teuerung (US-Verbraucherpreise, ~3,7 % im Jahr, höchstens × 15): 13 Mio. $ von 1963 (Charade) sind heute ~120 Mio. */
+export const teuerung = jahr => (Number.isFinite(jahr) && jahr > 1900 && jahr < 2025 ? Math.min(15, 1.037 ** (2025 - jahr)) : 1);
 /**
  * „Große Produktion oder Kinohit?“ – Grund oder null. l = Wikipedia-Sprachen (Bekanntheit), d = detailKurz (oder null).
- * Schwellen (an echten Daten 16.11.2026 geprüft, siehe test/filme-bekannt.test.mjs):
- *  kinohit     Einspielergebnis ≥ 50 Mio. (Wikidata, meist US-$) – ein Kinoerfolg, egal welches Studio
- *  studio      großes Studio/großer Verleih UND ≥ 20 Wikipedia-Sprachen – eine große Produktion, kein Video-Ableger
- *  weltbekannt ≥ 60 Wikipedia-Sprachen – auch ohne Zahlen bekannt (Klassiker, Kultfilme)
- *  oscar       mindestens ein Oscar UND ≥ 45 Sprachen – preisgekrönt und bekannt
+ * Schwellen (an echten Daten 16.11.2026 geprüft, Lauf 43820663637, siehe test/filme-bekannt.test.mjs):
+ *  kinohit     Einspielergebnis (US-$/€) in heutigem Geld ≥ 50 Mio. – ein Kinoerfolg, egal welches Studio. 50 Mio. trennt im
+ *              echten Lauf sauber: Hundstage (1976, 50 Mio. × Teuerung), Charade (1963, 13 Mio. ≈ 120 Mio. heute), Shrek,
+ *              Deepwater Horizon gegen Arthouse wie Drei Farben: Rot (4 Mio.), Down by Law (2 Mio.), Lars und die Frauen (11 Mio.)
+ *  studio      großes PRODUKTIONS-Studio (P272, kein Verleih) UND ≥ 20 Wikipedia-Sprachen – eine große Produktion, kein
+ *              Video-Ableger (Die 42. Straße, Soylent Green); 20 Sprachen = auch außerhalb der USA bekannt
+ *  weltbekannt ≥ 60 Wikipedia-Sprachen – auch ohne Zahlen bekannt (Klassiker, Kultfilme; Arthouse liegt bei 40–55)
+ *  oscar       mindestens ein Oscar (ohne „fremdsprachiger Film“) UND ≥ 45 Sprachen – preisgekrönt und bekannt
  * Ohne Wikidata-Treffer (l < 0 / null): nicht „bekannt“ (lieber einen Film zu wenig als Indie-Ramsch).
  */
-export function grossGrund(l, d) {
+export function grossGrund(l, d, jahr) {
   if (!(l >= 0)) return null;
-  if (d?.b != null && d.b >= 50) return 'kinohit';
+  if (d?.b != null && d.b * teuerung(jahr) >= 50) return 'kinohit';
   if (d?.gs && l >= 20) return 'studio';
   if (l >= 60) return 'weltbekannt';
   if (d?.o >= 1 && l >= 45) return 'oscar';
@@ -927,7 +940,9 @@ export function appleZuTipp(mdTitel, mdPreis, kandidaten) {
   const name = normTitel(mdFilmTitel(mdTitel));
   if (name.length < 2) return { treffer: null, gleicheNamen: [] };
   const gesehen = new Set();
-  const gleiche = kandidaten.filter(k => k && k.id && !gesehen.has(k.id) && gesehen.add(k.id) && normTitel(k.titel) === name);
+  // gleicher Name: Apple-Titel, oder der Name, unter dem Wikidata den Film kennt (Apple: „Dr. Seuss' Der Grinch“, mydealz und
+  // Wikidata: „Der Grinch“ – echter Lauf 43820663637)
+  const gleiche = kandidaten.filter(k => k && k.id && !gesehen.has(k.id) && gesehen.add(k.id) && (normTitel(k.titel) === name || (k.namen || []).some(n => normTitel(n) === name)));
   const passend = mdPreis == null ? [] : gleiche.filter(k => k.preis != null && k.preis <= mdPreis + 0.011);
   return { treffer: passend.length === 1 ? passend[0] : null, gleicheNamen: gleiche };
 }
@@ -1709,7 +1724,7 @@ export default async function filme(ctx) {
   status['wikidata-details'] = ds;
   if (m.details !== false && m.qualitaet !== false) {
     const preisVonId = id => { const d = daten.get(id) || chartTreffer.get(id)?.d; return d ? d.preisHd ?? d.preisSd ?? d.preis ?? null : null; };
-    const frisch = x => x && x.tag && tageZwischen(x.tag, tag) < m.detailTage;
+    const frisch = x => x && x.tag && x.v === DETAIL_V && tageZwischen(x.tag, tag) < m.detailTage;
     const offen = [], gesehenQ = new Set();
     for (const id of new Set([...chartTreffer.keys(), ...breitIds, ...listenIds])) {
       const q = zf.quali[nr(id)]?.q;
@@ -1909,7 +1924,7 @@ export default async function filme(ctx) {
     // große Produktion/Kinohit (gross = Grund, null = eher klein/Indie; fehlt = noch keine Daten) und Besetzung für die Filter der Seite
     const dt = detailVon(t.id);
     if (dt) { if (dt.c?.length) t.cast = dt.c; if (dt.st) t.studio = dt.st; if (dt.b != null) t.einspiel = dt.b; if (dt.o) t.oscars = dt.o; }
-    if (q && q.l >= 0 && (dt || q.l >= 60)) t.gross = grossGrund(q.l, dt);
+    if (q && q.l >= 0 && (dt || q.l >= 60)) t.gross = grossGrund(q.l, dt, q.j ?? t.jahr);
     // Filmjahr von Wikidata, wenn Apple nur die Wiederveröffentlichung kennt (≥ 2 Jahre älter; Festival-Premieren ein Jahr vorher zählen nicht)
     if (q && q.l >= 0 && q.jahr && t.typ === 'film' && t.jahr && q.jahr <= t.jahr - 2 && jahrImTitel(t.titel) == null) t.jahr = q.jahr;
     if (!gut(t)) { kandidaten.delete(t.id); qualiRaus++; }
@@ -2001,7 +2016,7 @@ export default async function filme(ctx) {
   // (Link in die TV-App, Vermerk „Tipp von mydealz“). Sonst bleibt der Tipp mit Hinweis. Kandidaten: alle Apple-Filme dieses
   // Laufs (Lookups, Charts, Genre-Charts); ohne Treffer ein Versuch über Wikidata (P6398 = iTunes-Nummer) + ein Lookup.
   const appleKand = new Map();
-  const kand = (id, titel, jahr, preis) => { if (id && titel && preis != null) appleKand.set(id, { id, titel, jahr: jahr ?? null, preis }); };
+  const kand = (id, titel, jahr, preis, namen = []) => { if (id && titel && preis != null) appleKand.set(id, { id, titel, jahr: jahr ?? null, preis, namen: [...(appleKand.get(id)?.namen || []), ...namen] }); };
   for (const e of [...alleCharts, ...breitCharts]) kand(e.id, e.titel, e.jahr, e.preis);
   for (const d of daten.values()) if (d?.typ === 'film') kand(d.id, d.titel, d.jahr, d.preisHd ?? d.preisSd ?? null); // Lookup = frischer Preis
   const einzeln = t => t.preis != null && mdJeFilm(t) != null && Math.abs(mdJeFilm(t) - t.preis) < 0.005; // kein Set
@@ -2017,12 +2032,13 @@ export default async function filme(ctx) {
       abgleich.wikidata++;
       const zeilen = leseWikidata(await holeText(wikidataUrl(wikidataAbfrage(namen)), { headers: { accept: 'application/sparql-results+json' } }));
       const ids = [...new Set(zeilen.map(z => z.id))].slice(0, 40);
+      const wdNamen = id => zeilen.filter(z => z.id === id).map(z => z.name);
       if (ids.length) {
         for (const r of leseErgebnisse(await apple(lookupUrl(ids)))) {
           const d = ausItunes(r);
           if (d?.typ !== 'film' || fremdStore(r)) continue;
           daten.set(d.id, { ...daten.get(d.id), ...d });
-          kand(d.id, d.titel, d.jahr, d.preisHd ?? d.preisSd ?? null);
+          kand(d.id, d.titel, d.jahr, d.preisHd ?? d.preisSd ?? null, wdNamen(d.id));
         }
       }
     } catch (e) { status.mydealz.fehler.push(`Abgleich mit Apple: ${e.message}`); } // kein Modul-Fehler: der Tipp bleibt Tipp
