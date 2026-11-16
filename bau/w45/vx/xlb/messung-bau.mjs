@@ -15,7 +15,7 @@ const b = await chromium.launch();
 const p = await (await b.newContext()).newPage();
 await p.goto('file://' + file); await p.waitForTimeout(1500);
 const SND = await p.evaluate(() => ['f-moog-bass', 'f-fm-pluck', 'f-rom-flaeche', 'f-mini-lead'].map(id => {
-  const snd = factorySound(id); return {id, name: snd.name, engine: snd.engine, patch: wkFlat(snd), mods: wkMods(snd), fm6: snd.engine === 'fm6' && snd.p.fm6 ? wkFmOf(snd.p) : null, poly: snd.p.poly || (snd.common && snd.common.poly) || 0};
+  const snd = factorySound(id); return {id: id.replace(/^f-(moog|fm|rom|mini)-/, ''), engine: snd.engine, patch: wkFlat(snd), mods: wkMods(snd), fm6: snd.engine === 'fm6' && snd.p.fm6 ? wkFmOf(snd.p) : null, poly: snd.p.poly || (snd.common && snd.common.poly) || 0};
 }));
 const ver = await p.evaluate(() => VERSION);
 await b.close();
