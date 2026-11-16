@@ -1,0 +1,180 @@
+{
+ "_fixture": "NACHGEBAUT für Tests (Form wie die echte Antwort der öffentlichen Freelancer-API, Roh-Lauf 43797380195 vom 16.11.2026: Felder title, seo_url, preview_description, description, jobs[{id,name}], language, local, location.city, budget, currency, type, bid_stats, frontend_project_status, requires_upfront_funding). Inhalte erfunden, seo_url mit „beispiel“.",
+ "status": "success",
+ "result": {
+  "projects": [
+   {
+    "id": 92001,
+    "title": "Edit 5 YouTube videos for German vlog channel",
+    "seo_url": "video-editing/beispiel-92001",
+    "preview_description": "Cut and color 5 vlog videos (8–10 min each), German subtitles. Premiere or DaVinci.",
+    "description": "Cut and color 5 vlog videos (8–10 min each), German subtitles. Premiere or DaVinci.",
+    "jobs": [
+     {
+      "id": 688,
+      "name": "Video Editing"
+     }
+    ],
+    "language": "de",
+    "local": false,
+    "location": {
+     "city": null,
+     "country": {
+      "name": null
+     }
+    },
+    "budget": {
+     "minimum": 100,
+     "maximum": 300
+    },
+    "currency": {
+     "code": "EUR",
+     "sign": "€"
+    },
+    "type": "fixed",
+    "time_submitted": 1794801600,
+    "bid_stats": {
+     "bid_count": 14,
+     "bid_avg": null
+    },
+    "status": "active",
+    "frontend_project_status": "open",
+    "deleted": false,
+    "requires_upfront_funding": false,
+    "owner_info": {
+     "_hinweis": "wird vom Radar nie gespeichert"
+    }
+   },
+   {
+    "id": 92002,
+    "title": "Background music for mobile game trailer (60 sec)",
+    "seo_url": "music-production/beispiel-92002",
+    "preview_description": "Need a 60 sec synthwave style soundtrack for our game trailer.",
+    "description": "Need a 60 sec synthwave style soundtrack for our game trailer.",
+    "jobs": [
+     {
+      "id": 1201,
+      "name": "Music Production"
+     },
+     {
+      "id": 693,
+      "name": "Audio Production"
+     }
+    ],
+    "language": "en",
+    "local": false,
+    "location": {
+     "city": null,
+     "country": {
+      "name": null
+     }
+    },
+    "budget": {
+     "minimum": 150,
+     "maximum": 250
+    },
+    "currency": {
+     "code": "USD",
+     "sign": "$"
+    },
+    "type": "fixed",
+    "time_submitted": 1794769200,
+    "bid_stats": {
+     "bid_count": 7,
+     "bid_avg": null
+    },
+    "status": "active",
+    "frontend_project_status": "open",
+    "deleted": false,
+    "requires_upfront_funding": false,
+    "owner_info": {
+     "_hinweis": "wird vom Radar nie gespeichert"
+    }
+   },
+   {
+    "id": 92003,
+    "title": "Retouch 20 product photos (background removal)",
+    "seo_url": "photo-editing/beispiel-92003",
+    "preview_description": "Photoshop retouch and background removal for 20 product photos.",
+    "description": "Photoshop retouch and background removal for 20 product photos.",
+    "jobs": [
+     {
+      "id": 204,
+      "name": "Photo Editing"
+     }
+    ],
+    "language": "en",
+    "local": false,
+    "location": {
+     "city": null,
+     "country": {
+      "name": null
+     }
+    },
+    "budget": {
+     "minimum": 30,
+     "maximum": 60
+    },
+    "currency": {
+     "code": "USD",
+     "sign": "$"
+    },
+    "type": "fixed",
+    "time_submitted": 1794643200,
+    "bid_stats": {
+     "bid_count": 40,
+     "bid_avg": null
+    },
+    "status": "active",
+    "frontend_project_status": "open",
+    "deleted": false,
+    "requires_upfront_funding": false,
+    "owner_info": {
+     "_hinweis": "wird vom Radar nie gespeichert"
+    }
+   },
+   {
+    "id": 92004,
+    "title": "Transcription of 3 hours of audio",
+    "seo_url": "audio-production/beispiel-92004",
+    "preview_description": "Transcribe 3 hours of interviews.",
+    "description": "Transcribe 3 hours of interviews.",
+    "jobs": [
+     {
+      "id": 693,
+      "name": "Audio Production"
+     }
+    ],
+    "language": "en",
+    "local": false,
+    "location": {
+     "city": null,
+     "country": {
+      "name": null
+     }
+    },
+    "budget": {
+     "minimum": 30,
+     "maximum": 60
+    },
+    "currency": {
+     "code": "USD",
+     "sign": "$"
+    },
+    "type": "fixed",
+    "time_submitted": 1794805200,
+    "bid_stats": {
+     "bid_count": 25,
+     "bid_avg": null
+    },
+    "status": "active",
+    "frontend_project_status": "open",
+    "deleted": false,
+    "requires_upfront_funding": false,
+    "owner_info": {
+     "_hinweis": "wird vom Radar nie gespeichert"
+    }
+   }
+  ]
+ }
+}

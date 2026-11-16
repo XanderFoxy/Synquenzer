@@ -6,7 +6,7 @@
    „Standort verwenden“). Produktbilder (fremde Server) auch nicht.
    Symbole/Manifest: aus dem Zwischenspeicher. Daten (raw.githubusercontent.com) gehen nie durch diesen Worker –
    die Seite merkt sich den letzten Stand selbst. */
-const CACHE = 'mein-vorteil-7'; // 16.11.2026: Ausflüge (ausfluege.js) + Woche – Märkte vor Ort zusammengeführt – alte Kopie wird beim Aktivieren gelöscht (mein-vorteil-6: Märkte vor Ort, mein-vorteil-5: Woche/Filme/Essen zusammengeführt, mein-vorteil-4: woche.js, mein-vorteil-3: essen.js)
+const CACHE = 'mein-vorteil-8'; // 16.11.2026: Nebenverdienst (Bereich + Kachel „Aufträge“) zusammengeführt – alte Kopie wird beim Aktivieren gelöscht (mein-vorteil-7: Ausflüge (ausfluege.js) + Woche – Märkte vor Ort, mein-vorteil-6: Märkte vor Ort, mein-vorteil-5: Woche/Filme/Essen zusammengeführt, mein-vorteil-4: woche.js, mein-vorteil-3: essen.js)
 const SEITE = new URL('./', self.registration.scope).href;
 const FILME = new URL('filme.js', self.registration.scope).href;
 const SPAR = new URL('spartricks.js', self.registration.scope).href;

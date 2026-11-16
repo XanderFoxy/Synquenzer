@@ -29,11 +29,11 @@ Dunkles, warmes Design – immer, auch wenn das iPhone hell eingestellt ist (`co
 Farbe (`.f-<bereich>` setzt `--f`/`--f-hell`; `--akzent` folgt, so passen alle Karten von selbst).
 
 Oben bleibt eine Leiste mit gezeichneten Symbolen (SVG, keine Emojis) und Zähler stehen:
-**Start · Deals · Essen · Preisfehler · Filme · Auftritte · Remix · Unterricht · Konzerte · Gewinnspiele · Krypto · Spartricks · Mehr**
+**Start · Deals · Woche · Essen · Preisfehler · Filme · Auftritte · Remix · Unterricht · Nebenverdienst · Ausflüge · Konzerte · Gewinnspiele · Krypto · Spartricks · Mehr**
 („Start“ bleibt links stehen, der Rest ist seitlich wischbar). Darunter „Du bist in: …“ mit einer kurzen Zeile.
 Es ist immer nur **ein** Bereich zu sehen (kein ewiges Scrollen); je Bereich eine Top-Liste + „weitere zeigen“.
 Sprungmarken: `#start`, `#deals` (`#produkte`, `#cashback`, `#snacks` = Ziel im Bereich Deals), `#preisfehler`, `#filme`,
-`#auftritte`, `#remix`, `#unterricht`, `#konzerte`, `#gewinnspiele`, `#krypto`, `#spartricks`, `#mehr`. Alte Marken: `#angebote` →
+`#auftritte`, `#remix`, `#unterricht`, `#nebenverdienst`, `#konzerte`, `#gewinnspiele`, `#krypto`, `#spartricks`, `#mehr`. Alte Marken: `#angebote` →
 `#produkte`, `#vorteile` → `#start`, `#konzerte` bleibt.
 
 | Bereich | Inhalt | Nie leer, weil … |
@@ -45,6 +45,7 @@ Sprungmarken: `#start`, `#deals` (`#produkte`, `#cashback`, `#snacks` = Ziel im 
 | **Auftritte** | frische Ausschreibungen (nah + bald zuerst) mit **Bewerben**, darunter feste Adressen (Döbeln, Leipzig, Dresden, Chemnitz, deutschlandweit) | feste Adressen immer (gigmit nur noch die Startseite, Zeile „Link prüfen“); ältere Daten: dieselben Adressen aus der Seite (`FUNDORTE`, Test gegen `vorteile/config.json`) |
 | **Remix** | laufende Contests (was zuerst endet, oben) mit **Mitmachen** (Frist, Stems, Text) | Fundorte mit laufenden Contests weltweit |
 | **Unterricht** | oben **Gesuche im Netz** (Reddit, Freelancer …, neueste zuerst, mit Auszug), darunter Stellen (Döbeln + online zuerst) – alles mit **Melden** als „Deutsch mit Xander“ | Jobbörse-Live-Suche, italki, Preply, Lingoda, BAMF; Gesuche: Upwork, Fiverr, Kleinanzeigen, Freelancer, Reddit |
+| **Nebenverdienst** (seit 16.11.2026) | Gesuche ohne Arbeitsamt aus der Radar-Kategorie `auftraege`, drei Felder: Unterricht geben (Klavier, Keyboard, Gitarre, Synthese & Sounddesign), KI & Apps, Bild & Video; je Karte passt/Aufwand/allein machbar, Ort + km ab Döbeln oder online, Vergütung falls genannt, Warnung bei Betrugsmustern, **Antworten**-Vorlage; Kachel heißt „Aufträge“ | 21 fertige Suchen (Kleinanzeigen-Gesuche um Döbeln, Upwork, Fiverr, Freelancer, Reddit, freelancermap, service.bund.de) stehen immer da |
 | **Konzerte** | in der Nähe (bis `pushRadiusKm`), darunter **je Band der nächste Termin, auch weit weg, mit km**; Tourdaten-Links je Band (`../konzerte/artists.json`, erst beim Öffnen) | nächster Termin bzw. Tourdaten-Links |
 | **Gewinnspiele** | nur laufende ohne Kauf/Abo | sonst mydealz-Gruppen Gewinnspiele/Gratis |
 | **Krypto** | wie bisher (nur `localStorage`); Push-Kasten mit Feld „ntfy-Thema“ (nur auf dem Gerät) | Kurs immer |

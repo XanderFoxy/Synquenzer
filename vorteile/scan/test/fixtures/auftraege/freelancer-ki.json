@@ -1,0 +1,402 @@
+{
+ "_fixture": "NACHGEBAUT für Tests (Form wie die echte Antwort der öffentlichen Freelancer-API, Roh-Lauf 43797380195 vom 16.11.2026: Felder title, seo_url, preview_description, description, jobs[{id,name}], language, local, location.city, budget, currency, type, bid_stats, frontend_project_status, requires_upfront_funding). Inhalte erfunden, seo_url mit „beispiel“.",
+ "status": "success",
+ "result": {
+  "projects": [
+   {
+    "id": 91001,
+    "title": "Kleine Web-App für Bestellungen unserer Bäckerei",
+    "seo_url": "web-development/beispiel-91001",
+    "preview_description": "Wir sind eine Bäckerei in Sachsen und suchen jemanden, der eine kleine Web-App (PWA) für Vorbestellu",
+    "description": "Wir sind eine Bäckerei in Sachsen und suchen jemanden, der eine kleine Web-App (PWA) für Vorbestellungen baut. Kontakt: baecker@example.de, Tel. 0341 1234567.",
+    "jobs": [
+     {
+      "id": 1031,
+      "name": "Web Development"
+     },
+     {
+      "id": 44,
+      "name": "Mobile App Development"
+     }
+    ],
+    "language": "de",
+    "local": false,
+    "location": {
+     "city": null,
+     "country": {
+      "name": null
+     }
+    },
+    "budget": {
+     "minimum": 250,
+     "maximum": 750
+    },
+    "currency": {
+     "code": "EUR",
+     "sign": "€"
+    },
+    "type": "fixed",
+    "time_submitted": 1794751200,
+    "bid_stats": {
+     "bid_count": 4,
+     "bid_avg": null
+    },
+    "status": "active",
+    "frontend_project_status": "open",
+    "deleted": false,
+    "requires_upfront_funding": false,
+    "owner_info": {
+     "_hinweis": "wird vom Radar nie gespeichert"
+    }
+   },
+   {
+    "id": 91002,
+    "title": "Marketplace platform like Airbnb with iOS and Android apps",
+    "seo_url": "mobile-app-development/beispiel-91002",
+    "preview_description": "We need a full-stack team to build a marketplace platform, iOS and Android, long-term project.",
+    "description": "We need a full-stack team to build a marketplace platform, iOS and Android, long-term project.",
+    "jobs": [
+     {
+      "id": 44,
+      "name": "Mobile App Development"
+     },
+     {
+      "id": 1031,
+      "name": "Web Development"
+     }
+    ],
+    "language": "en",
+    "local": false,
+    "location": {
+     "city": null,
+     "country": {
+      "name": null
+     }
+    },
+    "budget": {
+     "minimum": 5000,
+     "maximum": 10000
+    },
+    "currency": {
+     "code": "USD",
+     "sign": "$"
+    },
+    "type": "fixed",
+    "time_submitted": 1794715200,
+    "bid_stats": {
+     "bid_count": 61,
+     "bid_avg": null
+    },
+    "status": "active",
+    "frontend_project_status": "open",
+    "deleted": false,
+    "requires_upfront_funding": false,
+    "owner_info": {
+     "_hinweis": "wird vom Radar nie gespeichert"
+    }
+   },
+   {
+    "id": 91003,
+    "title": "AI chatbot for our website – contact me on WhatsApp",
+    "seo_url": "ai-chatbot/beispiel-91003",
+    "preview_description": "Need a ChatGPT based chatbot on our website. Contact me on WhatsApp for details.",
+    "description": "Need a ChatGPT based chatbot on our website. Contact me on WhatsApp for details.",
+    "jobs": [
+     {
+      "id": 2917,
+      "name": "AI Chatbot"
+     },
+     {
+      "id": 1977,
+      "name": "Automation"
+     }
+    ],
+    "language": "en",
+    "local": false,
+    "location": {
+     "city": null,
+     "country": {
+      "name": null
+     }
+    },
+    "budget": {
+     "minimum": 300,
+     "maximum": 800
+    },
+    "currency": {
+     "code": "USD",
+     "sign": "$"
+    },
+    "type": "fixed",
+    "time_submitted": 1794787200,
+    "bid_stats": {
+     "bid_count": 12,
+     "bid_avg": null
+    },
+    "status": "active",
+    "frontend_project_status": "open",
+    "deleted": false,
+    "requires_upfront_funding": false,
+    "owner_info": {
+     "_hinweis": "wird vom Radar nie gespeichert"
+    }
+   },
+   {
+    "id": 91004,
+    "title": "Package forwarding agent needed – work from home",
+    "seo_url": "automation/beispiel-91004",
+    "preview_description": "Receive parcels and do package forwarding (reshipping). Pay per parcel.",
+    "description": "Receive parcels and do package forwarding (reshipping). Pay per parcel.",
+    "jobs": [
+     {
+      "id": 1977,
+      "name": "Automation"
+     }
+    ],
+    "language": "en",
+    "local": false,
+    "location": {
+     "city": null,
+     "country": {
+      "name": null
+     }
+    },
+    "budget": {
+     "minimum": 100,
+     "maximum": 200
+    },
+    "currency": {
+     "code": "USD",
+     "sign": "$"
+    },
+    "type": "fixed",
+    "time_submitted": 1794805200,
+    "bid_stats": {
+     "bid_count": 3,
+     "bid_avg": null
+    },
+    "status": "active",
+    "frontend_project_status": "open",
+    "deleted": false,
+    "requires_upfront_funding": false,
+    "owner_info": {
+     "_hinweis": "wird vom Radar nie gespeichert"
+    }
+   },
+   {
+    "id": 91005,
+    "title": "NFT minting dapp with smart contract",
+    "seo_url": "web-development/beispiel-91005",
+    "preview_description": "Solidity smart contract plus web3 frontend for NFT minting.",
+    "description": "Solidity smart contract plus web3 frontend for NFT minting.",
+    "jobs": [
+     {
+      "id": 1031,
+      "name": "Web Development"
+     }
+    ],
+    "language": "en",
+    "local": false,
+    "location": {
+     "city": null,
+     "country": {
+      "name": null
+     }
+    },
+    "budget": {
+     "minimum": 500,
+     "maximum": 1500
+    },
+    "currency": {
+     "code": "USD",
+     "sign": "$"
+    },
+    "type": "fixed",
+    "time_submitted": 1794780000,
+    "bid_stats": {
+     "bid_count": 20,
+     "bid_avg": null
+    },
+    "status": "active",
+    "frontend_project_status": "open",
+    "deleted": false,
+    "requires_upfront_funding": false,
+    "owner_info": {
+     "_hinweis": "wird vom Radar nie gespeichert"
+    }
+   },
+   {
+    "id": 91006,
+    "title": "Automate invoices with n8n and ChatGPT",
+    "seo_url": "automation/beispiel-91006",
+    "preview_description": "Small automation: read invoices from email, extract data with OpenAI, put into Google Sheets.",
+    "description": "Small automation: read invoices from email, extract data with OpenAI, put into Google Sheets.",
+    "jobs": [
+     {
+      "id": 1977,
+      "name": "Automation"
+     },
+     {
+      "id": 2917,
+      "name": "AI Chatbot"
+     }
+    ],
+    "language": "en",
+    "local": false,
+    "location": {
+     "city": null,
+     "country": {
+      "name": null
+     }
+    },
+    "budget": {
+     "minimum": 150,
+     "maximum": 300
+    },
+    "currency": {
+     "code": "USD",
+     "sign": "$"
+    },
+    "type": "fixed",
+    "time_submitted": 1794679200,
+    "bid_stats": {
+     "bid_count": 9,
+     "bid_avg": null
+    },
+    "status": "active",
+    "frontend_project_status": "open",
+    "deleted": false,
+    "requires_upfront_funding": false,
+    "owner_info": {
+     "_hinweis": "wird vom Radar nie gespeichert"
+    }
+   },
+   {
+    "id": 91007,
+    "title": "Old project: landing page",
+    "seo_url": "web-development/beispiel-91007",
+    "preview_description": "Simple landing page for a café.",
+    "description": "Simple landing page for a café.",
+    "jobs": [
+     {
+      "id": 1031,
+      "name": "Web Development"
+     }
+    ],
+    "language": "en",
+    "local": false,
+    "location": {
+     "city": null,
+     "country": {
+      "name": null
+     }
+    },
+    "budget": {
+     "minimum": 100,
+     "maximum": 200
+    },
+    "currency": {
+     "code": "EUR",
+     "sign": "€"
+    },
+    "type": "fixed",
+    "time_submitted": 1792231200,
+    "bid_stats": {
+     "bid_count": 30,
+     "bid_avg": null
+    },
+    "status": "active",
+    "frontend_project_status": "open",
+    "deleted": false,
+    "requires_upfront_funding": false,
+    "owner_info": {
+     "_hinweis": "wird vom Radar nie gespeichert"
+    }
+   },
+   {
+    "id": 91008,
+    "title": "Landing page with AI image generator (pay registration fee first)",
+    "seo_url": "web-development/beispiel-91008",
+    "preview_description": "Build a landing page. You must pay a registration fee before starting.",
+    "description": "Build a landing page. You must pay a registration fee before starting.",
+    "jobs": [
+     {
+      "id": 1031,
+      "name": "Web Development"
+     }
+    ],
+    "language": "en",
+    "local": false,
+    "location": {
+     "city": null,
+     "country": {
+      "name": null
+     }
+    },
+    "budget": {
+     "minimum": 50,
+     "maximum": 100
+    },
+    "currency": {
+     "code": "USD",
+     "sign": "$"
+    },
+    "type": "fixed",
+    "time_submitted": 1794794400,
+    "bid_stats": {
+     "bid_count": 2,
+     "bid_avg": null
+    },
+    "status": "active",
+    "frontend_project_status": "open",
+    "deleted": false,
+    "requires_upfront_funding": false,
+    "owner_info": {
+     "_hinweis": "wird vom Radar nie gespeichert"
+    }
+   },
+   {
+    "id": 91009,
+    "title": "Website for a law firm",
+    "seo_url": "web-development/beispiel-91009",
+    "preview_description": "Website for our law firm, 5 pages, WordPress welcome.",
+    "description": "Website for our law firm, 5 pages, WordPress welcome.",
+    "jobs": [
+     {
+      "id": 1031,
+      "name": "Web Development"
+     }
+    ],
+    "language": "en",
+    "local": false,
+    "location": {
+     "city": null,
+     "country": {
+      "name": null
+     }
+    },
+    "budget": {
+     "minimum": 800,
+     "maximum": 1200
+    },
+    "currency": {
+     "code": "EUR",
+     "sign": "€"
+    },
+    "type": "fixed",
+    "time_submitted": 1794801600,
+    "bid_stats": {
+     "bid_count": 8,
+     "bid_avg": null
+    },
+    "status": "active",
+    "frontend_project_status": "open",
+    "deleted": false,
+    "requires_upfront_funding": true,
+    "owner_info": {
+     "_hinweis": "wird vom Radar nie gespeichert"
+    }
+   }
+  ]
+ }
+}

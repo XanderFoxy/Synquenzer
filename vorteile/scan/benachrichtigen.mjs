@@ -4,7 +4,7 @@ import { schluessel } from './lib/text.mjs';
 
 export const KATEGORIEN = {
   deals: 'Deals', erleben: 'Erleben', reisen: 'Reisen', musik: 'Musik', nebenverdienst: 'Nebenverdienst', tests: 'Tests & Gewinnspiele',
-  praemien: 'Prämien & Freunde werben', filme: 'Filme & Serien', remix: 'Remix-Contests', auftritte: 'Auftritte', unterricht: 'Deutschunterricht', essen: 'Essen',
+  praemien: 'Prämien & Freunde werben', filme: 'Filme & Serien', remix: 'Remix-Contests', auftritte: 'Auftritte', unterricht: 'Deutschunterricht', auftraege: 'Nebenverdienst', essen: 'Essen',
   events: 'Ausflüge & Aktionen',
 };
 

@@ -1,0 +1,222 @@
+{
+ "_fixture": "NACHGEBAUT für Tests (Form wie die echte Antwort der öffentlichen Freelancer-API, Roh-Lauf 43797380195 vom 16.11.2026: Felder title, seo_url, preview_description, description, jobs[{id,name}], language, local, location.city, budget, currency, type, bid_stats, frontend_project_status, requires_upfront_funding). Inhalte erfunden, seo_url mit „beispiel“.",
+ "status": "success",
+ "result": {
+  "projects": [
+   {
+    "id": 93001,
+    "title": "Online piano lessons for adult beginner (weekly)",
+    "seo_url": "tutoring/beispiel-93001",
+    "preview_description": "Looking for a patient piano teacher for weekly online lessons via Zoom.",
+    "description": "Looking for a patient piano teacher for weekly online lessons via Zoom.",
+    "jobs": [
+     {
+      "id": 3501,
+      "name": "Tutoring"
+     }
+    ],
+    "language": "en",
+    "local": false,
+    "location": {
+     "city": null,
+     "country": {
+      "name": null
+     }
+    },
+    "budget": {
+     "minimum": 15,
+     "maximum": 25
+    },
+    "currency": {
+     "code": "USD",
+     "sign": "$"
+    },
+    "type": "hourly",
+    "time_submitted": 1794812400,
+    "bid_stats": {
+     "bid_count": 6,
+     "bid_avg": null
+    },
+    "status": "active",
+    "frontend_project_status": "open",
+    "deleted": false,
+    "requires_upfront_funding": false,
+    "owner_info": {
+     "_hinweis": "wird vom Radar nie gespeichert"
+    }
+   },
+   {
+    "id": 93002,
+    "title": "Math tutoring for high school",
+    "seo_url": "tutoring/beispiel-93002",
+    "preview_description": "Algebra tutoring twice a week.",
+    "description": "Algebra tutoring twice a week.",
+    "jobs": [
+     {
+      "id": 3501,
+      "name": "Tutoring"
+     }
+    ],
+    "language": "en",
+    "local": false,
+    "location": {
+     "city": null,
+     "country": {
+      "name": null
+     }
+    },
+    "budget": {
+     "minimum": 10,
+     "maximum": 15
+    },
+    "currency": {
+     "code": "USD",
+     "sign": "$"
+    },
+    "type": "hourly",
+    "time_submitted": 1794808800,
+    "bid_stats": {
+     "bid_count": 11,
+     "bid_avg": null
+    },
+    "status": "active",
+    "frontend_project_status": "open",
+    "deleted": false,
+    "requires_upfront_funding": false,
+    "owner_info": {
+     "_hinweis": "wird vom Radar nie gespeichert"
+    }
+   },
+   {
+    "id": 93003,
+    "title": "Synth sound design coaching in Ableton",
+    "seo_url": "sound-design/beispiel-93003",
+    "preview_description": "I want to learn sound design on my Moog and Ableton – 1:1 coaching sessions, online.",
+    "description": "I want to learn sound design on my Moog and Ableton – 1:1 coaching sessions, online.",
+    "jobs": [
+     {
+      "id": 1202,
+      "name": "Sound Design"
+     },
+     {
+      "id": 1201,
+      "name": "Music Production"
+     }
+    ],
+    "language": "en",
+    "local": false,
+    "location": {
+     "city": null,
+     "country": {
+      "name": null
+     }
+    },
+    "budget": {
+     "minimum": 20,
+     "maximum": 40
+    },
+    "currency": {
+     "code": "EUR",
+     "sign": "€"
+    },
+    "type": "hourly",
+    "time_submitted": 1794715200,
+    "bid_stats": {
+     "bid_count": 3,
+     "bid_avg": null
+    },
+    "status": "active",
+    "frontend_project_status": "open",
+    "deleted": false,
+    "requires_upfront_funding": false,
+    "owner_info": {
+     "_hinweis": "wird vom Radar nie gespeichert"
+    }
+   },
+   {
+    "id": 93004,
+    "title": "Gitarrenunterricht in Leipzig",
+    "seo_url": "tutoring/beispiel-93004",
+    "preview_description": "Suche Gitarrenlehrer für meinen Sohn (12), Pop und Rock, einmal pro Woche bei uns zu Hause.",
+    "description": "Suche Gitarrenlehrer für meinen Sohn (12), Pop und Rock, einmal pro Woche bei uns zu Hause.",
+    "jobs": [
+     {
+      "id": 3501,
+      "name": "Tutoring"
+     }
+    ],
+    "language": "de",
+    "local": true,
+    "location": {
+     "city": "Leipzig",
+     "country": {
+      "name": "Germany"
+     }
+    },
+    "budget": {
+     "minimum": 20,
+     "maximum": 30
+    },
+    "currency": {
+     "code": "EUR",
+     "sign": "€"
+    },
+    "type": "hourly",
+    "time_submitted": 1794729600,
+    "bid_stats": {
+     "bid_count": 1,
+     "bid_avg": null
+    },
+    "status": "active",
+    "frontend_project_status": "open",
+    "deleted": false,
+    "requires_upfront_funding": false,
+    "owner_info": {
+     "_hinweis": "wird vom Radar nie gespeichert"
+    }
+   },
+   {
+    "id": 93005,
+    "title": "Piano teacher in Hamburg",
+    "seo_url": "tutoring/beispiel-93005",
+    "preview_description": "In person piano lessons in Hamburg, twice a week.",
+    "description": "In person piano lessons in Hamburg, twice a week.",
+    "jobs": [
+     {
+      "id": 3501,
+      "name": "Tutoring"
+     }
+    ],
+    "language": "en",
+    "local": true,
+    "location": {
+     "city": "Hamburg",
+     "country": {
+      "name": "Germany"
+     }
+    },
+    "budget": {
+     "minimum": 25,
+     "maximum": 35
+    },
+    "currency": {
+     "code": "EUR",
+     "sign": "€"
+    },
+    "type": "hourly",
+    "time_submitted": 1794787200,
+    "bid_stats": {
+     "bid_count": 2,
+     "bid_avg": null
+    },
+    "status": "active",
+    "frontend_project_status": "open",
+    "deleted": false,
+    "requires_upfront_funding": false,
+    "owner_info": {
+     "_hinweis": "wird vom Radar nie gespeichert"
+    }
+   }
+  ]
+ }
+}

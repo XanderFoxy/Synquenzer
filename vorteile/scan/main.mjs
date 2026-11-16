@@ -26,14 +26,15 @@ import knaller from './module/knaller.mjs';
 import essen from './module/essen.mjs';
 import filialen from './module/filialen.mjs';
 import events from './module/events.mjs';
+import auftraege from './module/auftraege.mjs';
 import { FIXTURE_KARTE } from './test/fixtures/karte.mjs';
 import { holeMerkliste, faelligeErinnerungen, erinnerungNachricht, verbucheErinnerung } from './lib/merken.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
 // filialen vor knaller: der Knaller nimmt die frische Filial-Liste (nächste Filiale je Markt von Döbeln, wenn kaufDA keine nennt)
-export const MODULE = { deals, erleben, reisen, musik, nebenverdienst, tests, praemien, filme, remix, auftritte, unterricht, filialen, knaller, essen, events };
+export const MODULE = { deals, erleben, reisen, musik, nebenverdienst, tests, praemien, filme, remix, auftritte, unterricht, filialen, knaller, essen, events, auftraege };
 // Fundorte (Remix/Auftritte/Unterricht) haben kein Datum und bleiben immer stehen
-const MAX_ALTER_TAGE = { filialen: 30, essen: 1, knaller: 7, deals: 7, erleben: 21, reisen: 5, musik: 30, nebenverdienst: 21, tests: 21, praemien: 14, filme: 3, remix: 45, auftritte: 60, unterricht: 30, events: 14 };
+const MAX_ALTER_TAGE = { filialen: 30, essen: 1, knaller: 7, deals: 7, erleben: 21, reisen: 5, musik: 30, nebenverdienst: 21, tests: 21, praemien: 14, filme: 3, remix: 45, auftritte: 60, unterricht: 30, events: 14, auftraege: 21 };
 
 const mitZeitlimit = (p, ms, name) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(`${name}: Zeitlimit`)), ms).unref())]);
 

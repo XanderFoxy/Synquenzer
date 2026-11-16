@@ -116,3 +116,11 @@ test('Geräte sind keine Filme: gleiche Regel in Seite (FILM_GERAET), filme.js (
   for (const g of ['Apple TV 4K (2026)', 'Apple TV 4K (4. Generation) 2026 Version AMAZON', 'Apple TV 4K 32GB HDR 1. Generation A1842 MQD22FD (Gebraucht)']) assert.equal(re.test(g), true, g);
   for (const f of ['Manta Manta (1991) für 3,99 €', 'Flash Gordon ~ 3,99€ | UHD digital | Apple TV', '[Apple TV/Prime Video] Evil Dead Burn in 4K mit Dolby Vision', 'Kingsglaive: Final Fantasy XV ~ 3,99€ | UHD digital | Apple TV']) assert.equal(re.test(f), false, f);
 });
+
+test('Nebenverdienst: fertige Suchen der Seite (SUCHEN_NEBEN) = vorteile/config.json module.auftraege.suchLinks', async () => {
+  const cfg = JSON.parse(await readFile(join(HIER, '..', '..', 'vorteile', 'config.json'), 'utf8'));
+  const conf = cfg.module.auftraege.suchLinks;
+  const seite = seiteKonst('SUCHEN_NEBEN', '\n];');
+  assert.deepEqual(seite.map(f => [f.feld, f.titel, f.link, f.quelle]), conf.map(f => [f.feld, f.titel, f.link, f.quelle]));
+  assert.ok(seite.every(f => /^https:\/\//.test(f.link)));
+});
