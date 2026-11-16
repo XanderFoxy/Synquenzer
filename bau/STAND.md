@@ -185,3 +185,10 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - Azure-Schlüssel funktioniert (HTTP 200 nach Neueintrag durch Xander).
 - Laufend: atem-014 (wf_d846f3a2), atem-015 (wf_e3f8fdc8, wxmmyc7m7, Klären vorgezogen), atem-ansage-fix 0.1.3.1 (wf_36e9621a, wyj714wyx), atem-stimme (wf_8a051b38, w614za76o), mv-wochenknaller (wf_875f96e3, wknxoagy6).
 - Offen zur Entscheidung: FOK2 erster ganzer Satz 5–7× langsamer → Näherung zuerst, genau im Leerlauf (sichtbar → Funk).
+
+## 16.11. ~04:15 UTC
+- Synquenzer 4.76.1 (241134d8, In-App v33): FOK3 Fokus „Nur Rest“ sofort (Näherung, dann genau; Endbild byte-gleich). Gezielte Regression (fok2/fokus1/spk5/spk12/spkfix) grün.
+- Atem 0.1.4 (6e8ef994): Knöpfe nach Reload, Doppeltipp-Schutz, SW-Prüfsummen, Nervensystem beruhigen, Kurz/Normal/Lang, Buch-Kennzeichen, Ansage-Fix (kein doppeltes „Aus“, ansage-test 130/130). 0.1.3.1 entfällt (Push abgelehnt, Fix steckt in 0.1.4).
+- Mein Vorteil: Woche-Reiter (Döbeln-Prospekte, 35 Angebote), Apple-Startseite + Genre-Charts (fuer399 24→46, angebot 26→48, 0 verloren).
+- Atem-Stimme: 12 Meditationen × DE/EN/AR erzeugt (114.593 Zeichen), geprüft, Freigabe; Hörproben + Drei-Minuten-Pause an Xander.
+- Laufend: atem-015 (Bau 0.1.5), atem-016-stimme wf_fd7b6fc6 (Vorbau, dann nach 0.1.5 Einbau → 0.1.6).
