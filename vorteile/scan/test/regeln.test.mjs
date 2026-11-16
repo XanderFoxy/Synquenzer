@@ -158,3 +158,16 @@ test('Fundort-Prüfung: robots-Verbot heißt „nicht geprüft“, nicht „Link
   assert.equal(zustand.fundorte.unterricht['https://teach.example/jobs'].fehlerInFolge, 0);
   assert.equal(zustand.fundorte.unterricht['https://teach.example/jobs'].nichtGeprueft, true);
 });
+
+test('Roh-Lauf 43868228532: Apple-robots.txt sperrt /*/rss/* und /search* – Filme ohne „Apple antwortet gerade nicht“-Störung', async () => {
+  // echte robots.txt von itunes.apple.com (16.11.2026, Gruppe „*“)
+  const apple = 'User-agent: *\nDisallow: /WebObjects/MZFastFinance.woa\nDisallow: /WebObjects/*\nAllow: /WebObjects/MZStore.woa/wa/viewMultiRoom?*\nDisallow: /search*\nDisallow: /*/rss/*\nDisallow: /*/lookup?\n';
+  const { hole, gefragt } = attrappe({ 'itunes.apple.com': apple });
+  const nur = { ...cfg, module: Object.fromEntries(Object.entries(cfg.module).map(([k, v]) => [k, { ...v, aktiv: k === 'filme' }])) };
+  const filmListen = JSON.parse(await readFile(join(HIER, '..', '..', 'filme.json'), 'utf8'));
+  const r = await lauf({ cfg: nur, wunschliste, filmListen, vorher: null, zustand: {}, holeText: hole, jetzt: JETZT, alle: true });
+  const st = r.aktuell.status.filme;
+  assert.ok(!(st.fehler || []).some(f => /antwortet gerade nicht/.test(f)), (st.fehler || []).join(' | '));
+  assert.ok((st.hinweise || []).some(h => /robots\.txt von itunes\.apple\.com: nicht gelesen/.test(h)), (st.hinweise || []).join(' | '));
+  assert.ok(!gefragt.some(u => /itunes\.apple\.com\/([^/]+\/rss\/|search)/.test(u)), 'gesperrte Apple-Pfade nie abgerufen');
+});

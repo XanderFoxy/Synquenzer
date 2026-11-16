@@ -279,6 +279,15 @@ App-Clients. `scan/lib/robots.mjs` → `macheRegelWache` liegt in `main.mjs` um 
    Antwort) → dieses Mal nicht gelesen, wie ein Ausfall (alter Stand bleibt). Keine robots.txt (4xx) = erlaubt.
 3. `abruf.robotsAusnahmen` nur für eigene Dienste (ntfy-Thema der Seite). `abruf.robotsPruefen: false` schaltet nur Schritt 2 ab.
 
+**Ergebnis des ersten echten Laufs mit der Wache** (Roh-Lauf 43868228532 auf Zweig mv6, 16.11.2026, 20 Hosts, alle
+robots.txt im Mitschnitt): gesperrt sind `overpass-api.de` („Disallow: /api/“ → Filialen und Essen werden nicht mehr
+aufgefrischt, der letzte Stand bleibt), `news.google.com` („Disallow: /“, nur Start-/Themen-Seiten erlaubt → alle
+News-Suchen in Erleben, Tests, Remix, Auftritte, Unterricht, Ausflüge), `itunes.apple.com` („/*/rss/*“, „/search*“ →
+Filme-Charts und -Suche; Lookup bleibt erlaubt) und `remotive.com` („/api/*“, „/*search=“ → Unterricht). Erlaubt u. a.:
+kaufDA, marktguru-API („Allow: /api/“), mydealz, tv.apple.com, Audius, service.bund.de, hnrss. **Keine Ausnahme
+eingetragen** – ob für solche APIs (gebaut für Programme, robots.txt gegen Suchmaschinen-Crawler) eine Ausnahme gelten
+soll, entscheidet Xander.
+
 Fundort-Links, die die robots.txt sperrt, heißen „nicht geprüft“ (nicht „Link gerade nicht erreichbar“). Gemerkte
 Forenbeiträge (`zustand.gesuche`) von Hosts mit Verbot werden verworfen und gelöscht, ebenso Gesuche von dort aus dem
 letzten Stand (Prüfung Runde 6: zwei Reddit-Beiträge vom 09./15.11. wären sonst bis Anfang Dezember stehen geblieben). Tests:

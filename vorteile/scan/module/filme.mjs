@@ -17,6 +17,7 @@ import { berlinTag } from '../lib/ende.mjs';
 import { preisAngaben, threadId, altpreisAusText, dealPruefer } from '../lib/mydealz.mjs';
 import { sammleFeeds, eintrag, mydealzFeeds } from './gemeinsam.mjs';
 import { raumLinks, raumFilme, raumName, raumPreis, passtZuListe, slugVon } from '../lib/appletv.mjs';
+import { istRegelSperre } from '../lib/robots.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
 export const LISTEN_PFAD = join(HIER, '..', '..', 'filme.json');
@@ -1055,7 +1056,9 @@ export default async function filme(ctx) {
     if (appleAbrufe >= m.maxAppleAbrufe) throw new Error('Abruf-Grenze für diesen Lauf erreicht');
     if (appleGestoert()) throw new Error('Apple antwortet gerade nicht – Rest im nächsten Lauf');
     appleAbrufe++;
-    try { const text = await holeText(url); appleFehlerInFolge = 0; return text; } catch (e) { appleFehlerInFolge++; throw e; }
+    // Regel-Sperre (robots.txt, Roh-Lauf 43868228532: itunes.apple.com „Disallow: /*/rss/*“, „/search*“) ist kein Ausfall von
+    // Apple: zählt weder als Fehler in Folge (sonst „Apple antwortet gerade nicht“ = Störung) noch als Abruf
+    try { const text = await holeText(url); appleFehlerInFolge = 0; return text; } catch (e) { if (istRegelSperre(e)) appleAbrufe--; else appleFehlerInFolge++; throw e; }
   };
 
   const chartCfg = listen.charts || {};
