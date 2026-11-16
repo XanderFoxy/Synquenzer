@@ -7,3 +7,4 @@
 - 05:55 Regression gestartet (lauf.sh: impk-test, beg1, imp1, rv1, rv1k), Last: 1.21 2.02 2.50
 - 05:56 Pflicht: topdefs 0/0, dupkeys 0, smoke errors [], Last: 3.11 2.44 2.61
 - 06:00 impk-test Lauf 2: 8/10 – C2 streut (Anschlag-Zeitpunkt), Basis selbst 192/194 (c2-streuung.mjs); C2-Prüfung angepasst, Lauf 3 gestartet, Last: 5.93 3.80 3.08
+- 06:05 Regression: imp1 48/48, rv1 52/53 (#14 Stück 31 links = IMP2B-Bezugsfehler, Basis mit Tempo 120,33 zeigt dasselbe: reg-rv1s-basis-14.log), rv1k 53/53, beg1 57/59 (Prüfung 5 wie Basis + Block-Zählung zählt IMPK-Zeilen), impk-test 3: C2 unter Last daneben → Lauf 4 ohne Parallel-Last, Last: 5.82 4.93 3.74
