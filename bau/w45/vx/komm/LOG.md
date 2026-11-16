@@ -6,3 +6,4 @@
 - 06:34–06:37 golden bitgleich; Gegenproben 1+2 ABBRUCH wie erwartet; 2. Lauf bytegleich (136 s unter Last); Pflicht grün; lader.mjs alt/neu gleich; smoke errors [].
 - 06:40 freigabe.sh-Kopie Gesamtlauf gestartet (frei/), NOTES.md.
 - 06:44 freigabe.sh-Kopie GRÜN (2:55 min), frei/index.html = aus/index.html (md5 dd5abfd2…). Große Zwischendateien gelöscht. Ende.
+- 08:31 PRÜFUNG Start (Last 3.72 5.07 6.85); Sicherung sicherung-0830/ (ausliefern.mjs, freigabe.sh, NOTES.md, LOG.md, test/).
