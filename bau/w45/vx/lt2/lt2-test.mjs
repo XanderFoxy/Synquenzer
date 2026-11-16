@@ -33,14 +33,14 @@ const view = (p, t0, t1, mTop, mBot) => p.evaluate(([t0, t1, a, z]) => { const U
 async function scA(p) {   // Ansicht-Sprünge: Ganz → Zoom Anfang → Sprung ans Ende → Ganz → Zoom Mitte (wie die Tests: Ansicht per Skript setzen)
   const t0 = await now(p); const J = [[0, 4, 100, 40], [80, 86, 110, 50], [-0.05, 90, 110, 26], [40, 43, 96, 60], [10, 70, 120, 30]];
   for (const j of J) { await view(p, ...j); await p.waitForTimeout(700); }
-  const r = await since(p, t0); r.hash = await canvasHash(p); r.lt1 = await p.evaluate(() => typeof LT1 !== 'undefined' ? {n: LT1.n, gUp: LT1.gUp} : null); return r;
+  const r = await since(p, t0); r.hash = await canvasHash(p); r.lt1 = await p.evaluate(() => typeof LT2 !== 'undefined' ? {n0: LT2.n0, nT: LT2.nT, mk: LT2.mk, up: LT2.nUp, skip: LT2.nSkip, err: LT2.err} : null); return r;
 }
 async function scA2(p) {   // a2: wie a, aber im Zoom (0–4 s) FFT 4096 → 8192 gewechselt → die übrigen Kacheln sind noch nicht auf der Grafik; dann Sprünge
   await view(p, 0, 4, 100, 40); await p.waitForTimeout(600);
   await p.evaluate(() => { const U = __spk.page.ui(); U.N = 8192; spk1SpecLoad(U); }); await p.waitForFunction(() => !__spk.page.ui().specQ, null, {timeout: 120000}); await p.waitForTimeout(1500);
   const t0 = await now(p); const J = [[80, 86, 110, 50], [-0.05, 90, 110, 26], [40, 43, 96, 60], [10, 70, 120, 30]];
   for (const j of J) { await view(p, ...j); await p.waitForTimeout(700); }
-  const r = await since(p, t0); r.hash = await canvasHash(p); r.lt1 = await p.evaluate(() => typeof LT1 !== 'undefined' ? {n: LT1.n, gUp: LT1.gUp} : null); return r;
+  const r = await since(p, t0); r.hash = await canvasHash(p); r.lt1 = await p.evaluate(() => typeof LT2 !== 'undefined' ? {n0: LT2.n0, nT: LT2.nT, mk: LT2.mk, up: LT2.nUp, skip: LT2.nSkip, err: LT2.err} : null); return r;
 }
 async function scB(p) {   // FFT 4096 → 8192 → 4096 per Tipp im Ansicht-Klappfenster
   const t0 = await now(p), res = {};
@@ -50,7 +50,7 @@ async function scB(p) {   // FFT 4096 → 8192 → 4096 per Tipp im Ansicht-Klap
     await p.waitForFunction(() => !__spk.page.ui().specQ, null, {timeout: 120000}); await p.waitForTimeout(800);
     await p.evaluate(() => spk1Dd(__spk.page.ui(), null)); await p.waitForTimeout(300);
   }
-  const r = await since(p, t0); r.hash = await canvasHash(p); r.lt1 = await p.evaluate(() => typeof LT1 !== 'undefined' ? {n: LT1.n, gUp: LT1.gUp} : null); return r;
+  const r = await since(p, t0); r.hash = await canvasHash(p); r.lt1 = await p.evaluate(() => typeof LT2 !== 'undefined' ? {n0: LT2.n0, nT: LT2.nT, mk: LT2.mk, up: LT2.nUp, skip: LT2.nSkip, err: LT2.err} : null); return r;
 }
 async function scC(p) {   // Import: Lied 96 BPM erkennen, dann Ablegen (imp1Place 'scenes') – nur das Ablegen wird gemessen
   await p.waitForFunction(() => window.SYNQUENZER && window.__imp1 && window.__imp1.ui, null, {timeout: 90000}); await p.waitForTimeout(800);
@@ -102,7 +102,7 @@ async function scD(p) {   // d: Fokus Alles → Nur Rest → Alles → Nur Gefun
     await p.evaluate(() => spk1Dd(__spk.page.ui(), null)); await p.waitForTimeout(300);
     res.hashes.push(name + ':' + await img());
   }
-  res.hash = res.hashes.join(' '); return res;
+  res.hash = res.hashes.join(' '); res.lt1 = await p.evaluate(() => typeof LT2 !== 'undefined' ? {n0: LT2.n0, nT: LT2.nT, mk: LT2.mk, up: LT2.nUp, skip: LT2.nSkip, err: LT2.err} : null); return res;
 }
 for (const [W, H] of VIEWS) {
   const tag = W + 'x' + H;

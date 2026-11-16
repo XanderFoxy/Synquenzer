@@ -102879,7 +102879,7 @@ function spk1GlDraw(U) {
   for (const c of U.spec.chunks) {
     if (!c) continue;
     const xa = ((c.x0 - 0.5) * hs - v.t0) * v.pps * d, xb = ((c.x0 + c.w - 0.5) * hs - v.t0) * v.pps * d; if (xb < 0 || xa > W) continue;
-    if (!c.tex) c.tex = G.tex(c.w, c.R, 'r', c.data, true);
+    if (!c.tex) { if (typeof lt2Up === 'function' && lt2Up(U)) continue; c.tex = G.tex(c.w, c.R, 'r', c.data, true); }   /* LT2: beim Aufbau höchstens eine neue Kachel je Bild */
     gl.bindTexture(gl.TEXTURE_2D, c.tex); gl.uniform4f(G.u.r, xa, yT, xb, yB); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }
 }
@@ -109976,12 +109976,31 @@ function lt1StoreJobs(pcm, chunks) {   // Haken in tkStore: nur für die vorbere
    ganzer Shader 16–28 ms, derselbe ohne den Zweig 9–10 ms je Vollbild.
    → Für nl = 0 ein zweites Programm ohne den Tönungs-Zweig (Farbe auf genau demselben Rechenweg → Bild byte-gleich, geprüft per
    readPixels-Hash). Mit Tönung bleibt das Original-Programm. Übersetzt wird im Leerlauf nach dem ersten Bild (nie im Bild), je
-   Grafik-Kontext (WeakMap; Kontextverlust/CPU-Rückfall → nichts zu tun). LT2.on = false → alter Weg. */
-const LT2 = {on: true, n0: 0, nT: 0, mk: 0, err: ''};
+   Grafik-Kontext (WeakMap; Kontextverlust/CPU-Rückfall → nichts zu tun). LT2.on = false → alter Weg.
+   Teil 2 (FFT-Wechsel, Öffnen): beim Aufbau eines Spektrums (spk1SpecLoad → Stücke kommen nach und nach) lud spk1GlDraw jede sichtbare
+   neue Kachel im selben Bild hoch (je 1024×984 R8 + Mipmaps ≈ 8,5 ms Grafik) → mehrere je Bild = 60–140 ms am Stück. Jetzt in dieser
+   Aufbau-Phase höchstens eine neue Kachel je Bild; die übrigen bleiben ein Bild länger Hintergrund – wie Stücke, die noch nicht gerechnet
+   sind – und kommen in den nächsten Bildern. Die Phase endet mit dem ersten vollständigen Bild nach dem Rechnen (WeakSet je Spektrum);
+   danach (Ansicht-Sprung, Zoom) wie bisher alle im selben Bild – keine Lücken beim Bewegen. Während Fokus Stücke eintauscht: alter Weg
+   (FOKUS1 hat eigene Taktung). Endbild unverändert. */
+const LT2 = {on: true, n0: 0, nT: 0, mk: 0, err: '', sp: null, sw: false, q: false, up: 0, skip: 0, nUp: 0, nSkip: 0};
+const LT2_DONE = new WeakSet();
+function lt2Frame(U) {   // je Zeichnen (aus lt2G): Aufbau-Phase verfolgen
+  const F = U.f1; LT2.sw = !!(F && F.sw); if (LT2.sw) return;   // Fokus hat gerade eigene Stücke eingesetzt → nicht mitzählen
+  const sp = U.spec; if (sp && LT2.sp === sp && !LT2.skip && LT2.q === false && sp.hop) LT2_DONE.add(sp);   // letztes Bild vollständig, Rechnen fertig → Aufbau vorbei
+  LT2.sp = sp; LT2.skip = 0; LT2.up = 0; LT2.q = !!U.specQ;
+}
+function lt2Up(U) {   // Haken in spk1GlDraw: sichtbare Kachel ohne Textur. true = in diesem Bild auslassen
+  if (!LT2.on || LT2.sw || !U.spec || LT2.sp !== U.spec || LT2_DONE.has(U.spec)) return false;
+  if (LT2.up < 1) { LT2.up++; LT2.nUp++; return false; }
+  if (!LT2.skip++) queueMicrotask(() => spk1Dirty(U, 'g'));   // nächstes Bild holt die nächste
+  LT2.nSkip++; return true;
+}
 const LT2_FS0 = SPK1_FS.slice(0, SPK1_FS.indexOf('if(nl>0)')) + 'o=vec4(c,1.0);}';
 const LT2_G = new WeakMap();
 function lt2G(U) {   // Haken in spk1GlDraw (erste Zeile): Grafik-Satz mit dem passenden Programm
   const G = U.gl; if (!G || !LT2.on) return G;
+  lt2Frame(U);
   if (U.tintOn && U.tint && Math.min(8, U.tint.ids.length) > 0) { LT2.nT++; return G; }   // Tönung → Original-Programm
   let V = LT2_G.get(G);
   if (!V) { LT2_G.set(G, V = {st: 0, G: null}); setTimeout(() => lt2Make(G, V), 0); return G; }
