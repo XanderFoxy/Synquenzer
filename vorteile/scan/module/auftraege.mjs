@@ -237,25 +237,28 @@ export default async function auftraege({ holeText, cfg, jetzt = new Date(), zus
   const funde = [];
   let gelesen = 0;
   const quellen = (m.quellen || []).filter(q => q && q.aktiv !== false);
+  // Hosts, die nach Regeln nicht gelesen werden (Quellen-Liste der Seite: „gesperrt (Regeln)“, MV7)
+  const regelSperren = new Set();
+  const host = u => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return null; } };
 
   for (const q of quellen) {
     try {
       // eigene Liste + die des ganzen Radars (abruf.agbVerbot, MV6) – die Regel-Wache in main.mjs prüft dasselbe noch einmal
       const agb = agbSperre(q.art === 'freelancer' ? FL : q.url, { agbVerbot: [...(m.agbVerbot || []), ...(cfg.abruf?.agbVerbot || [])] }, q);
-      if (agb) { hinweise.push(`Nebenverdienst: ${q.name || q.art} nicht gelesen – ${agb} (nur Such-Link)`); continue; }
+      if (agb) { hinweise.push(`Nebenverdienst: ${q.name || q.art} nicht gelesen – ${agb} (nur Such-Link)`); regelSperren.add(host(q.art === 'freelancer' ? FL : q.url)); continue; }
       if (q.art === 'freelancer') {
         const ids = await freelancerIds(holeText, [].concat(q.jobs || []), zustand, jetztMs, hinweise, pruefeRobots);
         if (!ids.length) { hinweise.push(`Nebenverdienst: ${q.name}: keine Fähigkeit gefunden`); continue; }
         const url = freelancerProjekteUrl(ids, q.limit ?? 100);
         const r = await pruefeRobots(url);
-        if (!r.ok) { hinweise.push(`Nebenverdienst: ${q.name} nicht gelesen – ${r.grund} (nur Such-Link)`); continue; }
+        if (!r.ok) { hinweise.push(`Nebenverdienst: ${q.name} nicht gelesen – ${r.grund} (nur Such-Link)`); if (!r.nichtLesbar) regelSperren.add(host(url)); continue; }
         const j = JSON.parse(await holeText(url, { headers: { accept: 'application/json' } }));
         if (j.status && j.status !== 'success') throw new Error(`Status ${j.status}`);
         gelesen++;
         for (const pr of j.result?.projects || []) { const f = ausFreelancer(pr, q); if (f) funde.push(f); }
       } else if (q.art === 'rss') {
         const r = await pruefeRobots(q.url);
-        if (!r.ok) { hinweise.push(`Nebenverdienst: ${q.name} nicht gelesen – ${r.grund} (nur Such-Link)`); continue; }
+        if (!r.ok) { hinweise.push(`Nebenverdienst: ${q.name} nicht gelesen – ${r.grund} (nur Such-Link)`); if (!r.nichtLesbar) regelSperren.add(host(q.url)); continue; }
         const liste = leseRss(await holeText(q.url));
         gelesen++;
         for (const it of liste) { const f = ausRss(it, q); if (f) funde.push(f); }
@@ -325,5 +328,5 @@ export default async function auftraege({ holeText, cfg, jetzt = new Date(), zus
     e.zeile = String(e.zeile || '').replace(/^([^·]+?) · [0-3] km\b/, '$1 · hier'); // „Döbeln · 0 km“ -> „Döbeln · hier“ (wie die Seite)
   }
   eintraege.push(...fund);
-  return { eintraege, fehler, hinweise, kurz: { ...zahlen, treffer: liste.length, gelesen } };
+  return { eintraege, fehler, hinweise, kurz: { ...zahlen, treffer: liste.length, gelesen }, regelSperren: [...regelSperren].filter(Boolean) };
 }

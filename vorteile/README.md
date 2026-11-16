@@ -319,9 +319,16 @@ und Cache)“ – ehrlich, ohne Personennamen, ohne E-Mail und ohne persönliche
 User-Agent; wir lassen sie bewusst weg. Antwortet Wikidata deshalb einmal mit 403, ist das eine Störung im Status (alter
 Stand bleibt) – dann eine neutrale Projekt-Adresse ergänzen, keine persönliche.
 
+**Roh-Lauf 43887290010** (Zweig mv7, 16.11.2026, roh+alle+still): 166 Abrufe bei 20 Hosts, 0 Reddit/Freelancer, alle 16
+Bereiche ok. Google News 47 Suchen (213 Meldungen), Apple 25 über die Ausnahme (+ Lookups), Wikidata 5, Remotive 1,
+Overpass 2 (einmal „at capacity“ 502, Wiederholung jetzt frühestens nach dem Host-Abstand von 10 s statt 3 s). Filialen
+1468 → 1743 (EDEKA 275 erstmals dabei), Essen-OSM-Stand 09:28 → 14:40 Uhr, Filme-Charts 0 → 673 (Serien 0 → 322, Filme
+für 3,99 € 31 → 62), Tests 0 → 3, Remix 11 → 16, Auftritte 7 → 8; Erleben und Musik 0 wie schon vor der Sperre.
+
 **Quellen-Liste der Seite**: `status.<bereich>.quellen = [{ host, name?, art }]` – je Quelle kurz „Schnittstelle“
 (über die Ausnahme gelesen) bzw. „gesperrt (Regeln)“ (robots.txt/Nutzungsbedingungen); ein Host, der als Schnittstelle
-gelesen wurde, steht nicht zusätzlich als gesperrt da. Tests: `scan/test/schnittstellen.test.mjs` (genaue Pfade, andere
+gelesen wurde, steht nicht zusätzlich als gesperrt da. Module, die eine gesperrte Quelle selbst auslassen (Nebenverdienst:
+Freelancer.com), melden sie in `regelSperren`. Tests: `scan/test/schnittstellen.test.mjs` (genaue Pfade, andere
 gesperrte Pfade bleiben gesperrt, Reddit/Freelancer nie, Obergrenze, Lauf-Memo, Cache 6 h/24 h, Abstände, User-Agent,
 ganzer Lauf und `main()` mit zwei Läufen).
 

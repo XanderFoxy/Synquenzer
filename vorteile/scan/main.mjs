@@ -101,6 +101,8 @@ export async function lauf({ cfg, wunschliste, filmListen = null, essenListen = 
       // zahl: eigene Datei statt Einträge (Filialen, Wochen-Knaller, Essen, Ausflüge) -> „1468 Filialen“ statt „0 gefunden“
       // quellen: je Host „Schnittstelle“ (Ausnahme, MV7) bzw. „gesperrt“ (AGB/robots.txt) – für die Quellen-Liste der Seite
       const quellen = regelQuellen(wache, name);
+      // Module, die eine gesperrte Quelle schon selbst auslassen (Nebenverdienst: Freelancer.com), melden sie in r.regelSperren
+      for (const h of [].concat(r.regelSperren || [])) if (typeof h === 'string' && quellen.length < 10 && !quellen.some(q => q.host === h)) quellen.push({ host: h, art: 'gesperrt' });
       status[name] = { ok: !r.fehler.length, anzahl: r.eintraege.length, ...(quellen.length ? { quellen } : {}), ...(r.zahl && Number.isFinite(r.zahl.n) ? { zahl: { n: r.zahl.n, wort: String(r.zahl.wort || '').slice(0, 30) } } : {}), fehler: r.fehler.slice(0, 10), ms: Date.now() - t0, stand: new Date(jetztMs).toISOString(), ...(r.hinweise?.length ? { hinweise: r.hinweise.slice(0, 10) } : {}), ...(r.gesperrt?.length ? { gesperrt: r.gesperrt.slice(0, 10) } : {}), ...(r.kurz ? { kurz: r.kurz } : {}) };
       if (!zustand.lauf[name] && zustand.gemeldet && !kaputt) neueModule.push(name);
       zustand.lauf[name] = new Date(jetztMs).toISOString();
