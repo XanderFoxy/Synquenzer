@@ -127,3 +127,48 @@ weiter genau die 3 Haken-Zeilen mit „IMPK“ (`diff basis.html` gegen index oh
 - #14 bekommt mit IMPK weiter roh 120,33 → Projekt 120 (Basis 121); der Bauer hat mit der Basis bei gleichem Tempo/t1 denselben FEHLER
   nachgestellt (`reg-rv1s-basis-14.log`). Die korrigierte Abnahme rv1k (vergleicht zusätzlich mit der ungedehnten Quelle) ist 53/53.
   Entscheidung beim Zusammenführen bleibt (Offen 4).
+
+## Tests (Prüfung) – Endfassung index.html md5 d89d27f427f5d13d358903e3ed553585
+Fortsetzung 07:41–08:2x nach Abbruch des ersten Nachbesserungs-Laufs (Maschine neu gestartet; Logs in `f2/`). Fremdlast durch parallel
+laufende Pakete: Last 16–29 auf 4 Kernen während fast aller Browser-Läufe.
+- **Bau**: `apply.mjs` erzeugt index.html byte-gleich (md5 d89d27f4…, `f2/index.rebuild.html`). Ohne die 3 IMPK-Blöcke gegen basis.html:
+  5 Zeilen (2 alt, 3 neu), alle neuen tragen „IMPK“ (`f2/ohne-bloecke.diff`). Hinweis: die Zeile „Zeilen anders ohne Bloecke: 81168“ in
+  `pflicht-p.log` stammt aus einem zeilenweisen Vergleich ohne Ausrichtung und ist falsch; maßgeblich ist der diff.
+- **impk-frage-test.mjs**: ALLE OK (144); Fassung vor Prüfung 50 FEHLER. Geändert sind nur Zustände, in denen die Basis zwei gleiche Knöpfe
+  zeigt (15 von 49 Zuständen, `f2/frage-f2.log`), nie mehr Knöpfe als die Basis.
+- **impk-tempo-test.mjs** (Prüfer-Fälle, 11 Tempi 66–150 × 9 Arten = 99): **ALLE OK – 0 schlechter, richtig 66/99 gegen Basis 63/99**, besser:
+  punkt 118, punkt 132, synk 132; |Fehler| 0,796 → 0,047 BPM, |t1| 16,9 → 12,7 ms (`f2/tempo-test-f2.log`, ein Lauf, kein Abbruch).
+  (Die 33 Fälle mit ½×/2× sind langsame Legato-/Punkt-Fälle, die Basis und IMPK gleich auf 2× schätzen – Bestand der Basis, nicht IMPK.)
+- **lead-ons**: Basis 10 von 17 Einsätzen > 40 ms daneben, 120,54 → IMPK 5 (nur Vibrato-Spitzen im Schlusston), alle 12 Töne −4…−7 ms, **120,24 → Projekt 120**.
+- **echt-ons** (Prüfer-Sonde, echte Aufnahme #1 gegen Annotation, an der Endfassung): getroffen A1 40/59, A2 49/64 = **Basis (kein Einsatz verloren)**,
+  falsche Einsätze 91 → 84 bzw. 82 → 75, Tempo 118,62 → 118,61 (`f2/echt-ons-f2.log`).
+- **tempo-raten**: nach 900 s wegen Fremdlast abgebrochen (11 von 14 Fällen): Projekt-Tempo richtig Basis 39/44 → IMPK **44/44**, Spanne über die
+  Raten max 0,33 → 0,06 BPM (`f2/tempo-raten-f2-summe.txt`). Alle 14 Fälle bei 44,1 kHz deckt impk-test A1 ab (13/14 → 14/14).
+- **impk-test.mjs**: Lauf f2 (Last 23–28) 8/10 – A, B, C1, D grün; C2 „clip“ 8 → 0 grün im Kern, aber der **Summen-Vergleich zweier getrennter
+  Echtzeit-Läufe war nicht lastfest** (Finger kam bis 0,24 Schlag zu spät: Wechsel bei 6,04 statt 5,8; dann schlägt applyCarrierChange je nach
+  Zeitpunkt andere Töne neu an – Basis selbst 179/184/189/193 Töne in vier Läufen). **Test ergänzt** (Sicherung `f2/impk-test.vor-f2.mjs`):
+  C2 zählt jetzt je Lauf die von applyCarrierChange neu angeschlagenen Töne (spawnClipVoice innerhalb des Wechsels; Zweig „zusätzlicher Anschlag
+  bei eff“ getrennt) – Etikett-Prüfung: alle Wechsel-Anschläge „beg“, kein „clip“; Klang-Prüfung: Summe ohne die zusätzlichen Wechsel-Anschläge
+  ±4 und Zwischen-Achtel gleich, ausgenommen die Achtel bis 0,3 Schlag hinter einem Wechsel (3,5 / 7,5 – hängen am Finger-Zeitpunkt).
+  **Lauf f2c (Last 16–20): OK IMPK 10/10** – C1 Klick hinter SCHLUSS 1 → 0 (120 und 157 BPM, Stopp 12,02/12,05), C2 Wechsel-Anschläge Basis 10
+  „clip“ → IMPK 10 „beg“, Summe ohne zusätzliche 185 → 186, 50 Zwischen-Achtel gleich (`f2/impk-test-f2c.log`).
+- **beg1-test** A/B gleichzeitig (gleiche Last, Basis = `b0/neu`, IMPK = `b1/neu`), Runde 1: **Basis 54/59, IMPK 51/59** (`f2/beg1-B-f2.log`,
+  `f2/beg1-I-f2.log`). Bei beiden: Aufnahme = Live, Prüfung 5 (Bestand der Basis), Prüfung 6 ● AUTO. Nur Basis: Begleiter aus, FILL. Nur IMPK:
+  „Eigener Block BEG1“ (zählt die 39 IMPK-Zeilen außerhalb des BEG1-Blocks – erwartet, wie im ersten Bericht), CPU (Spitze 44,9 ms), Ein Finger,
+  Prüfung 6 ↶ und Speichern/Laden (diese drei hatte die Basis im Prüfer-Lauf unter Last ebenfalls bzw. sind zeitkritisch). „Ein Finger“ zählt
+  alle Quellen außer „retune“ – das IMPK-Etikett kann es nicht ändern; der Fehler ist ein F-Ton bei 12,00, der schon klang, als der Finger für
+  Em zu spät kam. Ohne Fremdlast war beg1 vor der Prüfung 57/59 (nur Prüfung 5 + Block-Zählung). Runde 2 siehe unten.
+- **imp1-test** ALLE OK (48), **imp2-node** ALLE OK (Mischungen zahlengleich), **rv1** 52/53 (der bekannte Bezugs-FEHLER #14 Stück 31 links),
+  **rv1k** ALLE OK 53 – Läufe 07:00–07:19 an derselben Endfassung (`reg-imp1-p.log`, `imp2n-p.log`, `reg-rv1-p.log`, `reg-rv1k-p.log`; rechnen
+  ohne Echtzeit, Last ändert die Zahlen nicht).
+- **Pflicht** (Endfassung, `f2/pflicht-f2.log`): topdefs Skripte 26, Namen 7990, doppelt 0, Syntaxfehler 0 · dupkeys 0 · smoke `title SYNQUENZER
+  errors []` (`f2/smoke-f2.png`) · „MS 2000“ 1× (Basis 1) · „^  live: true,“ 1× · VERSION '4.76.1' · Markenwörter gleich der Basis · 3 IMPK-Blöcke
+  ohne Emoji/Bildzeichen.
+
+## Offen (Stand Prüfung)
+1. ● AUTO über einen vorhandenen Song nimmt die Band nicht mit (unverändert, siehe Offen 1 oben) – eigenes Paket.
+2. rv1-Original 52/53 (#14 Stück 31 links, Bezug „Fassung nach ↶“, mit der Basis bei gleichem Tempo/t1 zahlengleich nachgestellt); rv1k 53/53.
+   Entscheidung beim Zusammenführen: rv1k als Abnahme nehmen oder #14-Tempowechsel 121 → 120 nicht übernehmen.
+3. Zeitkritische Browser-Prüfungen (beg1, impk-test C) streuen unter Fremdlast in Basis und IMPK; ein beg1-Lauf ohne Fremdlast steht für die
+   Endfassung noch aus (vor der Prüfung ohne Last: 57/59 = Basis-Stand).
+4. tempo-raten vollständig (alle 14 Fälle × 4 Raten) an der Endfassung bei niedriger Last wiederholen (Teil: 44/44).
