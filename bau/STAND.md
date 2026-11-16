@@ -192,3 +192,4 @@ Weiter mit: 4.54 = rel-4540/k fertig prüfen + INT53D nachziehen + Versionszeile
 - Mein Vorteil: Woche-Reiter (Döbeln-Prospekte, 35 Angebote), Apple-Startseite + Genre-Charts (fuer399 24→46, angebot 26→48, 0 verloren).
 - Atem-Stimme: 12 Meditationen × DE/EN/AR erzeugt (114.593 Zeichen), geprüft, Freigabe; Hörproben + Drei-Minuten-Pause an Xander.
 - Laufend: atem-015 (Bau 0.1.5), atem-016-stimme wf_fd7b6fc6 (Vorbau, dann nach 0.1.5 Einbau → 0.1.6).
+- 05:16 Check-in: Platte 5,0 GB (vx/r4710–r4730 gelöscht), Krypto 0, wip ok. Neuer Workflow puls-4-77 wf_610de4c4 (wx5n2hztg): OFFEN-1611.md Abgleich + LT2 (Long Tasks), SPKK (Spektral-Kleinfehler), IMPK (Import-Tempo Gesang, 60/60-Frage, Begleiter-Rest) → danach mergen auf rel-4761, Regression, Release 4.77.
