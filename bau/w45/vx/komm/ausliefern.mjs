@@ -30,7 +30,8 @@ const req = createRequire(new URL('package.json', WZ));   // KOMM
 const acorn = req('acorn'), parse5 = req('parse5'), postcss = req('postcss'), cssTokenize = req('postcss/lib/tokenize');
 const VERS = Object.fromEntries(['acorn', 'parse5', 'postcss'].map(m => [m, JSON.parse(fs.readFileSync(new URL('node_modules/' + m + '/package.json', WZ))).version]));
 
-const [, , QUELLE, ZIEL, BERICHT] = process.argv;
+const KOMM_AN = !process.argv.includes('--ohne-komm');   // KOMM: --ohne-komm = Verhalten wie PERF2 (Vergleich)
+const [, , QUELLE, ZIEL, BERICHT] = process.argv.filter(a => a !== '--ohne-komm');   // KOMM
 if (!QUELLE || !ZIEL) { console.error('Aufruf: node ausliefern.mjs <quelle.html> <auslieferung.html> [<bericht.json>]'); process.exit(2); }
 const fail = m => { console.error('ABBRUCH: ' + m); process.exit(1); };
 
@@ -94,12 +95,13 @@ function jsOhneKommentare(src, info, opt) {   // KOMM: opt = Block-Regeln aus KO
   const lines = src.split(/\r\n|[\n\r\u2028\u2029]/), zeilen = new Set();
   lines.forEach((l, i) => { if (SCHUTZ_ZEILEN.concat(opt.zeilen || []).some(r => r.test(l))) zeilen.add(i + 1); });   // KOMM
   const inSchutz = (s, e) => schutz.some(([a, b]) => s >= a && e <= b);
-  const kGap = kommSchutzGap(src, coms, opt.kommentare);   // KOMM
+  const kG = (a, b) => kommGap(src, coms, opt.kommentare, a, b);   // KOMM
   const lineStart = [0]; { src.replace(NL, (m, off) => { lineStart.push(off + m.length); return m; }); }
   const parts = []; let prev = null;
   for (const t of T) {
     const gap = src.slice(prev ? prev.end : 0, t.start), tt = src.slice(t.start, t.end);
-    if (kGap.has(prev ? prev.end : 0)) parts.push(kGap.get(prev ? prev.end : 0));   // KOMM: Lücke mit Schutz-Kommentar
+    const kg = kG(prev ? prev.end : 0, t.start);   // KOMM
+    if (kg !== null) parts.push(kg);   // KOMM: Lücke mit Schutz-Kommentar
     else if (!prev) parts.push('\n'.repeat(nlCount(gap)));
     else if (gap === '') { /* waren schon aneinander */ }
     else if (inSchutz(prev.start, t.end)) parts.push(gap);
@@ -114,7 +116,8 @@ function jsOhneKommentare(src, info, opt) {   // KOMM: opt = Block-Regeln aus KO
     }
     parts.push(tt); prev = t;
   }
-  parts.push(kGap.has(prev ? prev.end : 0) ? kGap.get(prev ? prev.end : 0) : '\n'.repeat(nlCount(src.slice(prev ? prev.end : 0))));   // KOMM
+  const kgE = kG(prev ? prev.end : 0, src.length);   // KOMM
+  parts.push(kgE !== null ? kgE : '\n'.repeat(nlCount(src.slice(prev ? prev.end : 0))));
   const out = parts.join('');
   // Prüfung: gleicher AST, gleiche Startzeilen, keine Kommentare
   const coms2 = []; let ast2;
@@ -166,18 +169,69 @@ function cssOhneKommentare(css) {
   return {out, kommentare: n};
 }
 
+/* KOMM-BEGIN – OFFEN-1611 A8: die übrigen text/plain-Blöcke (Worker-/Worklet-/Lade-Quelltexte) ohne Kommentare und Einrückung.
+   Gleiches Token-Verfahren wie bei den Skripten (acorn; Zeichenketten, Vorlagen, Regex unverändert; Zeilen gleich; AST-Prüfung).
+   Je Block steht hier, WIE die App ihn liest (Zugriffs-Stellen im Code, geprüft auf 4.76.1):
+     script = per <script>-Element ausgewertet (g9Load, arpSrcLoad, blockLoad, ndpLoad, mkLoad, bmLoad) – nur ausführen, kein Textsuchen;
+     module = als AudioWorklet-Modul geladen (addModule Blob/data:) – strenger Modus, deshalb mit sourceType 'module' geprüft.
+   sq-worklet-src wird zusätzlich per Text gelesen; diese Zugriffe bleiben erhalten und werden nach dem Kürzen nachgerechnet:
+     mkwEval: die zwei Anker-Kommentare MKW{ und }MKW (bleiben wörtlich, Code dazwischen per new Function) · vv3Fmx: 'const LEVEL_LUT' …
+     erster Kommentar '// V0d (A.4b 3)' (bleibt wörtlich) · lkWkCheck: /const PVA = '…'/ und /const PVM = '…'/ (Zeilen behalten Abstände).
+   stellen = erwartete Zahl der Stellen in der AUSGABE, an denen der Name als eigene Zeichenkette ('id', "id", `id`) oder #id steht
+   (inkl. id-Attribut). Weicht sie ab (neuer Zugriff per Text?), bricht das Werkzeug ab – dann Zugriff prüfen und Zahl anpassen
+   oder den Block hier herausnehmen (er bleibt dann bytegleich). */
+const KOMM_BLOECKE = {
+  'sq-g9-src': {sourceType: 'script', stellen: 2},
+  'sq-arp-src': {sourceType: 'script', stellen: 2},
+  'sq-form-src': {sourceType: 'script', stellen: 2},
+  'sq-sr-src': {sourceType: 'script', stellen: 2},
+  'sq-ndp-src': {sourceType: 'script', stellen: 2},
+  'sq-mk-src': {sourceType: 'script', stellen: 2},
+  'sq-bm-src': {sourceType: 'script', stellen: 2},
+  'sq-md-src': {sourceType: 'module', stellen: 2},
+  'sq-worklet-src': {sourceType: 'module', stellen: 8,
+    kommentare: ['/*MKW{*/', '/*}MKW*/', '// V0d (A.4b 3)'],
+    zeilen: [/const PVA = '/, /const PVM = '/, /const LEVEL_LUT/],
+    zugriffe: [{art: 'regex', re: /const PVA = '([^']*)'/}, {art: 'regex', re: /const PVM = '([^']*)'/},
+      {art: 'stueck', von: '/*MKW{*/', bis: '/*}MKW*/', ab: 8}, {art: 'stueck', von: 'const LEVEL_LUT', bis: '// V0d (A.4b 3)', ab: 0}]},
+};
+function kommIstSchutz(src, c, liste) { if (!liste || !liste.length) return false; const t = src.slice(c.start, c.end); return liste.some(p => t.startsWith(p)); }
+// Lücke [a, b) zwischen zwei Tokens mit mindestens einem Schutz-Kommentar: Kommentar wörtlich, davor/danach nur so viele "\n" wie vorher
+// (sonst ein Leerzeichen, damit nichts verschmilzt); andere Kommentare der Lücke fallen weg. null = kein Schutz-Kommentar in der Lücke.
+function kommGap(src, coms, liste, a, b) {
+  if (!liste || !liste.length) return null;
+  const k = coms.filter(c => c.start >= a && c.end <= b && kommIstSchutz(src, c, liste)); if (!k.length) return null;
+  let out = '', pos = a; const zw = x => { const n = nlCount(x); return n ? '\n'.repeat(n) : ' '; };
+  for (const c of k) { out += zw(src.slice(pos, c.start)) + src.slice(c.start, c.end); pos = c.end; }
+  return out + zw(src.slice(pos, b));
+}
+// Text-Zugriffe der App auf den gekürzten Block nachrechnen (gleiche Treffer, gleicher Baum der ausgeschnittenen Stücke)
+function kommZugriffe(id, alt, neu, regeln) {
+  for (const z of regeln.zugriffe || []) {
+    if (z.art === 'regex') { const x = z.re.exec(alt), y = z.re.exec(neu); if (!x || !y || x[1] !== y[1]) fail(id + ': Text-Zugriff ' + z.re + ' liefert nicht dasselbe'); continue; }
+    const st = s => { const a = s.indexOf(z.von), b = s.indexOf(z.bis); if (a < 0 || b <= a) fail(id + ': Anker ' + z.von + ' … ' + z.bis + ' fehlt'); return s.slice(a + z.ab, b); };
+    const p = s => acorn.parse(s, {ecmaVersion: 'latest', sourceType: 'script', allowReturnOutsideFunction: true, locations: true});
+    let A, B; try { A = p(st(alt)); B = p(st(neu)); } catch (e) { fail(id + ': Stück ' + z.von + ' nicht lesbar: ' + e.message); }
+    const d = astDiff(A, B, 'Stück'); if (d) fail(id + ': Stück ' + z.von + ' … ' + z.bis + ' verschieden: ' + d);
+  }
+  for (const k of regeln.kommentare || []) if (alt.split(k).length !== neu.split(k).length) fail(id + ': Schutz-Kommentar ' + k + ' nicht gleich oft');
+}
+function kommStellen(o, id) { const e = id.replace(/[-]/g, '\\-'); return (o.match(new RegExp("['\"`]" + e + "['\"`]|#" + e + '(?![\\w-])', 'g')) || []).length; }
+/* KOMM-END */
+
 // ---------- Ablauf ----------
 const t0 = Date.now();
 const quelleBuf = fs.readFileSync(QUELLE), html = quelleBuf.toString('utf8');
 if (Buffer.from(html, 'utf8').compare(quelleBuf) !== 0) fail('Quelle ist kein sauberes UTF-8');
-const B = blocks(html), bericht = {werkzeug: 'ausliefern.mjs (PERF2 D + F)', versionen: VERS, quelle: path.resolve(QUELLE), quelleSha256: sha(quelleBuf), bloecke: []};
+const B = blocks(html), bericht = {werkzeug: KOMM_AN ? 'ausliefern.mjs (PERF2 D + F + KOMM)' : 'ausliefern.mjs (PERF2 D + F, --ohne-komm)', versionen: VERS, quelle: path.resolve(QUELLE), quelleSha256: sha(quelleBuf), bloecke: []};
 let o = '', pos = 0; const soll = [];
 for (const b of B) {
   const inhalt = html.slice(b.a, b.b); let neu = inhalt, art;
-  const alsSkript = b.tag === 'script' && b.type === 'text/plain' && TEXT_PLAIN_ALS_SKRIPT.includes(b.id) && !('src' in b.attrs);
+  const alsSkript = b.tag === 'script' && b.type === 'text/plain' && (TEXT_PLAIN_ALS_SKRIPT.includes(b.id) || KOMM_AN && b.id in KOMM_BLOECKE) && !('src' in b.attrs);   // KOMM
   if ((b.tag === 'script' && JS_TYPES.has(b.type) && !('src' in b.attrs)) || alsSkript) {
-    const r = jsOhneKommentare(inhalt, (alsSkript ? 'Block ' + b.id : 'Skript') + ' bei Zeile ' + (nlCount(html.slice(0, b.a)) + 1)); neu = r.out; art = alsSkript ? 'js-block' : 'js';
-    bericht.bloecke.push({art, id: b.id || undefined, zeile: nlCount(html.slice(0, b.a)) + 1, vorher: inhalt.length, nachher: neu.length, kommentare: r.kommentare, tokens: r.tokens, schutz: r.schutz, schutzZeilen: r.schutzZeilen, kommentareGeschuetzt: r.kommentareGeschuetzt});
+    const r = jsOhneKommentare(inhalt, (alsSkript ? 'Block ' + b.id : 'Skript') + ' bei Zeile ' + (nlCount(html.slice(0, b.a)) + 1), alsSkript ? KOMM_BLOECKE[b.id] : null); neu = r.out; art = alsSkript ? 'js-block' : 'js';   // KOMM
+    if (alsSkript && KOMM_BLOECKE[b.id]) kommZugriffe(b.id, inhalt, neu, KOMM_BLOECKE[b.id]);   // KOMM
+    bericht.bloecke.push({art, id: b.id || undefined, quellart: alsSkript && KOMM_BLOECKE[b.id] ? KOMM_BLOECKE[b.id].sourceType : undefined, zeile: nlCount(html.slice(0, b.a)) + 1, vorher: inhalt.length, nachher: neu.length, kommentare: r.kommentare, tokens: r.tokens, schutz: r.schutz, schutzZeilen: r.schutzZeilen, kommentareGeschuetzt: r.kommentareGeschuetzt});   // KOMM (quellart)
   } else if (b.tag === 'style' && (!b.attrs.type || b.type === 'text/css')) {
     const r = cssOhneKommentare(inhalt); neu = r.out; art = 'css';
     bericht.bloecke.push({art, zeile: nlCount(html.slice(0, b.a)) + 1, vorher: inhalt.length, nachher: neu.length, kommentare: r.kommentare});
@@ -196,6 +250,7 @@ for (const id of TEXT_PLAIN_ALS_SKRIPT) {
   const n = zaehlId(o, id);
   if (n !== 2 || !o.includes("blockLoad('" + id + "'")) fail(id + ': ' + n + ' Erwähnungen statt 2 (id + blockLoad) – neuer Text-Zugriff? Block dann aus TEXT_PLAIN_ALS_SKRIPT nehmen oder Zugriff prüfen');
 }
+if (KOMM_AN) for (const id in KOMM_BLOECKE) { if (!B.some(b => b.id === id && b.type === 'text/plain')) continue; const n = kommStellen(o, id); if (n !== KOMM_BLOECKE[id].stellen) fail(id + ': ' + n + ' Text-Stellen statt ' + KOMM_BLOECKE[id].stellen + ' – neuer Zugriff per Text? prüfen, dann KOMM_BLOECKE anpassen'); }   // KOMM
 const zaehl = (s, re) => (s.match(re) || []).length;
 function zaehlId(s, id) { let n = 0, i = -1; while ((i = s.indexOf(id, i + 1)) >= 0) n++; return n; }
 const marken = {

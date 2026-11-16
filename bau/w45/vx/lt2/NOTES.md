@@ -128,3 +128,32 @@ spk1GlDraw (Kennung „LT2“ im Kommentar). Diff: `lt2.diff`. Keine Oberfläche
   wie beim normalen Nachkommen der Stücke, Endbild gleich. Falls Xander das sichtbar anders findet: `LT2.on = false` schaltet beides ab.
 - a2 nach Sprung in noch nie gesehene Bereiche lädt wie bisher alle neuen Kacheln im selben Bild (bewusst, sonst Lücken beim Bewegen);
   Vorab-Hochladen unsichtbarer Kacheln im Leerlauf hieße mehr Grafik-Speicher → erst Funk.
+
+## Prüfung (06:21–, Befunde des Prüfers nachgeprüft und behoben; Sicherung `index.vor-pruef.html` = febbfca4…)
+Endfassung `index.html` md5 **47b4ffc8800ac6b042908f3353d58dfb** (VERSION '4.76.1' unverändert). Änderungen nur im Block LT2-BEGIN…END
+(`lt2-pruef.diff`: +9/−7 gegen die Sicherung; gegen basis jetzt +54/−2 = Block 52 Zeilen + die 2 Haken wie bisher, `lt2.diff`).
+Last während der ganzen Prüfung 14–29 (fremde Agenten) → Long-Task-Zahlen nur als A/B im selben Lauf lesbar.
+
+| # | Befund (Prüfer) | nachgeprüft | Änderung |
+|---|---|---|---|
+| 1 | Teil 1: `V.G = Object.assign({}, G, …)` ist eine Momentaufnahme; spk1TintLoad löscht danach G.ta/G.tb und setzt neue → V.G bindet gelöschte Texturen, WebGL INVALID_OPERATION in jedem Bild ohne Tönung (mittel) | **bestätigt**: Gegenprobe Fall G (lt2p-test) auf der Sicherung: 24 Warnungen „bindTexture: attempt to use a deleted object“, gl.getError() 1282 in 3 von 7 Stufen, V.G.ta ≠ G.ta; basis 0. Bilder trotzdem gleich (Shader ohne Tönung liest ta/tb nicht) | `V.G = Object.assign(Object.create(G), {p, u})` – erbt gl/vao/tex/lut/ta/tb immer aktuell von G. Einzige Schreibstelle auf G-Felder ist spk1TintLoad (auf U.gl = G selbst) → kommt an. Danach: 0 Meldungen, getError 0 in allen 7 Stufen, V.G.ta === G.ta |
+| 2 | Teil 2: feste Rate „eine Kachel je Bild“ – auf schneller Grafik kommt das volle Bild beim FFT-Rückwechsel später als bisher (16 Kacheln ≥ 16 Bilder) (klein) | **bestätigt** (Fall R „langsam“ = alte feste Rate: Rückwechsel 16 Bilder, 15 davon mit zurückgestellten Kacheln) | Rate folgt der Bildfolge (wie FOKUS1 mit F.gap): wurde in einem Bild etwas zurückgestellt, misst das nächste Bild den Abstand; < 22 ms (Grafik hält mit) → k verdoppeln bis 16, sonst halbieren bis 1. Uhr `LT2.now` (für den Test austauschbar). Schnelle Grafik: 1→2→4→8→16 = nach ≤ 4 Bildern nichts mehr zurückgestellt; langsame Grafik (hier im Kopflos-Chromium, echter Takt): k bleibt 1 wie bisher |
+| 3 | „CLAUDE“ ohne Groß/Klein 35 → 36 (Kommentar „CLAUDE.md Vorrang 1“) (klein) | **bestätigt**; zusätzlich „webgl“ ohne Groß/Klein 5 → 6 (Kommentar „WebGL-Leinwand“) | Kommentar „Projektregeln Vorrang 1“, „Grafik-Leinwand“ → claude 35 = basis, webgl 5 = basis; alle anderen geprüften Wörter gleich |
+
+### Neuer Test `lt2p-test.mjs <index> <basis>` (A/B, frischer Kontext je Lauf; Ausgabe `lt2p-test.out`, `lt2p-test.json`)
+- **Fall G** (Befund 1): Fokus-Lied mit Ebene wie p3/fokus1-test, per Tipp Nur Rest → Alles → Nur Gefundenes → Alles, Ebenen-Farben aus,
+  neue Tönung (spk1TintLoad) an, dann aus; je Stufe Bild erzwingen, gl.getError(), readPixels-Hash. Zählt **alle** WebGL-Konsolenmeldungen
+  (auch Warnungen; der Treiber-Hinweis „GPU stall due to ReadPixels“ vom readPixels des Tests selbst wird getrennt gezählt).
+- **Fall R** (Befund 2): 180-s-Stück, ganze Ansicht (16 Kacheln), FFT 4096 → 1024 (neu gerechnet) → 4096 (schon gerechnet); LT2-Uhr vorgetäuscht
+  „schnell“ (+16 ms je Bild) / „langsam“ (+50 ms) / „echt“; je Bild Zahl der hochgeladenen und zurückgestellten Kacheln; Endbild-Hash gegen basis.
+- Ergebnis Endfassung: **ALLES OK · 12 Prüfungen** (Last 14–16). Gegenprobe Fall G auf `index.vor-pruef.html`: **3 FEHLER** (Meldungen 24,
+  getError 1282, Erben) → der Test erkennt Befund 1 (`neg/lt2p-test-G-vorpruef.out`).
+
+| Fall R (Rückwechsel auf 4096, 16 Kacheln) | Bilder mit Hochladen | davon mit zurückgestellten Kacheln | Kacheln je Bild | komplett |
+|---|---|---|---|---|
+| index „schnell“ (Bildabstand 16 ms) | 5 | 4 | 1, 2, 4, 8, 1 | 333 ms |
+| index „langsam“ (50 ms) = alte feste Rate | 16 | 15 | je 1 | 662 ms |
+| index „echt“ (Kopflos, Software-Grafik, Last 14) | 16 | 15 | je 1 (k blieb 1) | 645 ms, Long Tasks 1× 57 ms |
+| basis | 2 | – | 4, 12 | 495 ms, Long Tasks 2× max 324 ms |
+Erstes Rechnen (4096 → 1024): Stücke kommen langsamer als die Bilder → in keinem Modus etwas zurückgestellt, je Bild 1 Kachel (wie basis).
+Endbilder in allen Modi byte-gleich basis (7eb53ee5 / 1420d956), keine GL-Fehler.
