@@ -99,13 +99,19 @@ const beg = async f => {
     const r = {sb: sb == null ? null : +sb.toFixed(3), sbL, clicks: ck.length, after: ck.filter(e => e.beat >= sbL - 1e-3).map(e => e.beat.toFixed(2)), notesAfter: L.filter(e => e.src !== 'click' && e.beat >= sbL - 1e-3).length};
     setMetronome(false); Bg.close(); await wait(300); return r;
   }, bpm));
-  // C2 Akkordwechsel mit klingender Fläche: Etikett der neu angeschlagenen Töne
+  // C2 Akkordwechsel zwischen den Schlägen (Wechsel am Schlag): Etikett der Töne, die der Träger neu anschlägt – je Figur Akkorde und Arp
   out.c2 = await run(p, async () => {
-    ensureAudio(); SYNQUENZER.setBpm(120); const Bg = SYNQUENZER.beg1; Bg.fig('pad'); Bg.open(); await wait(200); const tg = Bg.state().tg, T = [tg.dr, tg.bs, tg.cp];
-    clearLog(); await chord([60, 64, 67], 120); await until(6.5); await chord([57, 60, 64], 120); await until(8.6); await chord([53, 57, 60], 120); await until(12.05);
-    const L = noteLog(4096).filter(e => e.beat != null && e.beat < 12 && T.includes(e.track) && e.src !== 'retune');
-    SYNQUENZER.stop(); await stopWait(); await wait(300); Bg.close(); Bg.fig('auto'); await wait(300);
-    return {clip: L.filter(e => e.src === 'clip').map(e => e.track + ':' + e.out + '@' + e.beat.toFixed(2)), beg: L.filter(e => e.src === 'beg').length, srcs: [...new Set(L.map(e => e.src))], all: L.map(e => e.track + ':' + e.out + '@' + e.beat.toFixed(2)).sort()};
+    ensureAudio(); SYNQUENZER.setBpm(110); const Bg = SYNQUENZER.beg1, res = {clip: [], beg: 0, all: []};
+    for (const fig of ['stab', 'arp']) {
+      Bg.fig(fig); Bg.chg('beat'); Bg.open(); await wait(200); const tg = Bg.state().tg, T = [tg.dr, tg.bs, tg.cp];
+      clearLog(); await chord([60, 64, 67], 150);
+      for (const [b, c] of [[3.3, [57, 60, 64]], [5.8, [53, 57, 60]], [7.45, [55, 59, 62]], [9.9, [60, 64, 67]]]) { await until(b); await chord(c, 150); }
+      await until(12.5); const L = noteLog(4096).filter(e => e.beat != null && e.beat < 12 && T.includes(e.track) && e.src !== 'retune');
+      SYNQUENZER.stop(); await stopWait(); await wait(400); Bg.close(); await wait(300);
+      res.clip.push(...L.filter(e => e.src === 'clip').map(e => fig + ' ' + e.track + ':' + e.out + '@' + e.beat.toFixed(2))); res.beg += L.filter(e => e.src === 'beg').length;
+      res.all.push(...L.map(e => fig + ' ' + e.track + ':' + e.out + '@' + e.beat.toFixed(2)));
+    }
+    Bg.fig('auto'); res.all.sort(); return res;
   });
   // C3 ● AUTO über einen vorhandenen Song (nur messen): klingt der Song hinterher wie live?
   out.c3 = await run(p, async () => {
@@ -127,7 +133,7 @@ const beg = async f => {
   info('C1 vorher (Basis)', f1(B0.c1));
   ok(B1.c1.every(r => r.sb != null && Math.abs(r.sb - r.sbL) < .06 && r.clicks >= 4 && !r.after.length && !r.notesAfter), 'C1 SCHLUSS mit Metronom: kein Klick (und kein Ton) mehr auf der Eins hinter dem Schlusstakt, Stopp am Taktstrich (120 und 157 BPM)', f1(B1.c1));
   info('C2 vorher (Basis)', `src „clip“ ${B0.c2.clip.length} [${B0.c2.clip.slice(0, 6).join(' ')}], „beg“ ${B0.c2.beg}`);
-  ok(B0.c2.clip.length > 0 ? !B1.c2.clip.length && B1.c2.beg >= B0.c2.beg : !B1.c2.clip.length, 'C2 Akkordwechsel bei klingender Fläche: neu angeschlagene Band-Töne stehen im noteLog als „beg“ (nicht „clip“)', `clip ${B0.c2.clip.length} → ${B1.c2.clip.length}, beg ${B0.c2.beg} → ${B1.c2.beg}`);
+  ok(!B1.c2.clip.length && B1.c2.beg === B0.c2.beg + B0.c2.clip.length, 'C2 Akkordwechsel zwischen den Schlägen (Akkorde, Arp): neu angeschlagene Band-Töne stehen im noteLog als „beg“ (nicht „clip“)', `clip ${B0.c2.clip.length} → ${B1.c2.clip.length}, beg ${B0.c2.beg} → ${B1.c2.beg}`);
   ok(JSON.stringify(B0.c2.all) === JSON.stringify(B1.c2.all), 'C2 Klang unverändert: dieselben Töne (Spur, Tonhöhe, Schlag) wie vorher', B1.c2.all.length + ' Töne');
   info('C3 ● AUTO über vorhandenen Song (gemessen, nicht geändert)', `vorher: live ${B0.c3.live1}/${B0.c3.live2}, Song danach ${B0.c3.back} Band-Töne in Takt 2–3 · nachher: live ${B1.c3.live1}/${B1.c3.live2}, Song ${B1.c3.back}`);
 }

@@ -3,3 +3,5 @@
 - 05:42 Tempo-Block gebaut (lead-ons 10 → 4 daneben, 120,54 → 119,95), Node-Läufe starten, Last: 2.56 3.34 2.90
 - 05:46 impk-test.mjs geschrieben, Last: 1.51 2.78 2.83
 - 05:49 Blöcke UI (½×-Frage) + BEG (Klick/Etikett) gebaut; topdefs 0/0, dupkeys 0; impk-test Lauf 1, Last: 2.66 2.89 2.87
+- 05:54 impk-test Lauf 1: 9/10 (B1 Testfehler, korrigiert); Etikett-Sonde Basis: clip 2–8 je Lage bei Wechsel am Schlag, Last: 1.55 2.14 2.55
+- 05:55 Regression gestartet (lauf.sh: impk-test, beg1, imp1, rv1, rv1k), Last: 1.21 2.02 2.50
