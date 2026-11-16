@@ -1,5 +1,5 @@
 // SPKK Abnahme: A8 Spektral-Kleinfehler (1)–(4) auf <index>, Gegenprobe auf <basis>. Aufruf: node spkk-test.mjs <index> <basis>
-// → spkk-test.json neben diesem Skript; Ausgang 1 bei Fehler. Sonden in sonde/ (p2-name, p16, pseite aus SPKFIX; p-finden, p-worker-finden, p-korn, p-finden-zeit neu).
+// Prüfung SPKK-P: P1–P5 (Prüfer-Sonden p-fall, p-lang in sonde/). → spkk-test.json neben diesem Skript; Ausgang 1 bei Fehler. Sonden in sonde/ (p2-name, p16, pseite aus SPKFIX; p-finden, p-worker-finden, p-korn, p-finden-zeit neu).
 import {execFileSync} from 'node:child_process'; import fs from 'node:fs'; import path from 'node:path'; import {fileURLToPath} from 'node:url';
 const D = path.dirname(fileURLToPath(import.meta.url)), file = path.resolve(process.argv[2] || path.join(D, 'index.html')), basis = process.argv[3] ? path.resolve(process.argv[3]) : null, res = []; let fails = 0;
 const EXTRA = 'spk8DspMake,spk10Okt,spk9DspMake,spk12SelFn,spk12Ras,spk12Fft,spk12Win,spk12Mag,spk12K2,spk12DspMake,spkfixS6,spkfixImpClean,spkfixName,spkfixMaskRange,spkfixPatch,spkfixUid,spkfixDspMake,spkkPk,spkkF0';
@@ -38,5 +38,18 @@ if (basis) { const T = {b: [], i: []}; let Ni = null;
   const sum = A => A.map(z => z.reduce((s, q) => s + q.ms, 0)).sort((p, q) => p - q)[0], sb = sum(T.b), si = sum(T.i);
   ok('tempo-ueberall-finden', {basisMs: sb, indexMs: si, basis: T.b[0], index: Ni}, si <= sb * 1.15 + 50);
   ok('ueberall-finden-60s-namen', Ni, Ni.every(z => z.richtig === z.neu && z.neu >= 110)); }
+// Prüfung (SPKK-P): Prüfer-Fälle für „Überall finden“ – verstimmt ±40 ct, Vibrato, Legato (auch tief, N 8192), gezupft, Rauschen + Kick, Gesang
+{ const J = Object.fromEntries(run('p-fall.mjs').trim().split('\n').filter(l => l.startsWith('{')).map(l => JSON.parse(l)).map(r => [r.fall, r])), kurz = r => r && (r.err || r.richtig + '/' + r.neu + ' (Soll ' + r.sollNoten + '): ' + r.ms_);
+  const voll = ['verstimmt', 'verstimmtMinus', 'vibrato', 'vibratoVerstimmt', 'legatoTief', 'legatoLead', 'padsTief', 'gesang', 'dreieck'];
+  ok('P1-rein-verstimmt-legato-tief-ganze-noten', Object.fromEntries(voll.map(c => [c, kurz(J[c])])), voll.every(c => J[c] && !J[c].err && J[c].neu === J[c].sollNoten && J[c].richtig === J[c].sollNoten));
+  ok('P2-gezupft-kein-falsches-vorderstueck', kurz(J.pluck), J.pluck && J.pluck.neu === J.pluck.sollNoten && J.pluck.richtig === J.pluck.sollNoten);
+  ok('P3-rauschen-kick-nicht-zerhackt', kurz(J.rauschen), J.rauschen && J.rauschen.richtig >= J.rauschen.sollNoten && J.rauschen.neu <= J.rauschen.sollNoten + 2);
+  if (basis) { const G = Object.fromEntries(run('p-fall.mjs', basis).trim().split('\n').filter(l => l.startsWith('{')).map(l => JSON.parse(l)).map(r => [r.fall, r])), ohne = r => JSON.stringify(Object.assign({}, r, {ms: 0}));
+    const gl = ['saege', 'hohl', 'harmDrums'];
+    ok('P4-gleichbleibende-obertoene-byte-gleich-basis', gl.map(c => c + ':' + (ohne(J[c]) === ohne(G[c]))), gl.every(c => J[c] && G[c] && ohne(J[c]) === ohne(G[c])));
+    ok('P4-gegenprobe-basis-rot', ['verstimmt', 'legatoTief', 'pluck', 'rauschen'].map(c => c + ' ' + kurz(G[c])), ['verstimmt', 'legatoTief', 'rauschen'].every(c => G[c].richtig < G[c].neu)); }
+  const L = Object.fromEntries(run('p-lang.mjs').trim().split('\n').filter(l => l.startsWith('{')).map(l => JSON.parse(l)).map(r => [r.fall, r]));
+  ok('P5-60s-gezupft-epiano-trommeln-obertonreich', ['pluck', 'epiano', 'drums', 'harm'].map(c => L[c] && c + ' ' + L[c].richtig + '/' + L[c].neu + ' zerhackt ' + L[c].zerhackt), ['pluck', 'epiano', 'drums', 'harm'].every(c => L[c] && L[c].neu === 114 && L[c].richtig === 114 && L[c].zerhackt === 0));
+  ok('P5-60s-legato-rein', L.legato, L.legato && L.legato.richtig === L.legato.neu && L.legato.notenGetroffen >= 105 && L.legato.zerhackt === 0); }
 fs.writeFileSync(path.join(D, 'spkk-test.json'), JSON.stringify({file, basis, fails, s: Math.round((Date.now() - t0) / 1000), res}, null, 1));
 console.log(fails ? 'FEHLER ' + fails : 'ALLES OK', res.length, 'Prüfungen', Math.round((Date.now() - t0) / 1000), 's'); process.exit(fails ? 1 : 0);

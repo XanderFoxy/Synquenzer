@@ -37,7 +37,7 @@ async function lauf(dir, o = {}) {
   r.nach = await p.evaluate(new Function('fnv', `return (${(fnvS => {
     const fnv = eval(fnvS);
     const rel = LOG.n ? (() => { const out = []; for (let i = 0; i < Math.min(LOG.n, 4096); i++) { const e = LOG.buf[i]; if (!e || e.removed) continue; out.push(e); } return out; })() : [];
-    const notes = rel.filter(e => e.beat != null && e.beat < 4).map(e => ({tr: e.track, src: e.src, cn: e.clipNote, out: e.out, beat: e.beat, dur: +(+e.dur).toFixed(6), vel: +(+e.vel).toFixed(6), rt: +((e.time - R.startTime)).toFixed(6), late: !!e.late, bpm: S.bpm}))
+    const notes = rel.filter(e => e.beat != null && e.beat >= 2 && e.beat < 8).map(e => ({tr: e.track, src: e.src, cn: e.clipNote, out: e.out, beat: e.beat, dur: +(+e.dur).toFixed(6), vel: +(+e.vel).toFixed(6), rt: +((e.time - R.startTime)).toFixed(6), late: !!e.late, bpm: S.bpm}))
       .sort((a, c) => a.rt - c.rt || a.tr - c.tr || a.out - c.out || String(a.src).localeCompare(String(c.src)));
     const nd = AU.noise ? AU.noise.getChannelData(0) : []; let nmin = 1, nmax = -1; const nd0 = AU.noise ? AU.noise.getChannelData(0) : []; for (let i = 0; i < nd.length; i++) { if (nd[i] < nmin) nmin = nd[i]; if (nd[i] > nmax) nmax = nd[i]; }
     return {playing: R.playing, state: AU.ctx && AU.ctx.state, sr: AU.ctx && AU.ctx.sampleRate, how: SynthHost.how, wk: SynthHost.state, synth: AU.synth.filter(Boolean).length,
@@ -68,8 +68,8 @@ const key = n => JSON.stringify(n.filter(x => !x.late).map(x => [x.tr, x.src, x.
 const diff = (x, y) => { const ky = new Set(y.filter(q => !q.late).map(q => JSON.stringify(q))); return x.filter(q => !q.late && !ky.has(JSON.stringify(q))); };
 const nIdx = I.nach.notes.filter(x => !x.late).length, nBas = B.nach.notes.filter(x => !x.late).length;
 const ctl = key(B.nach.notes) === key(B2.nach.notes);
-ok('ERST-06a Kontrolle: Basis gegen Basis gleich (sonst sagt ERST-06 nichts)', ctl, {b: nBas, b2: B2.nach.notes.length});
-ok('ERST-06 noteLog erster Takt gleich (Spur, Quelle, Ton, Schlag, Dauer, Stärke, Zeit ab Start; ohne späte)', nIdx > 0 && key(I.nach.notes) === key(B.nach.notes), {idx: nIdx, basis: nBas, spaet: [I.nach.late, B.nach.late], nurIdx: diff(I.nach.notes, B.nach.notes).slice(0, 4), nurBasis: diff(B.nach.notes, I.nach.notes).slice(0, 4)});
+ok('ERST-06a Kontrolle: Basis gegen Basis gleich, Schläge 2–8 (die ersten Schläge hängen schon in der Basis von der Hauptfaden-Zeit ab)', ctl, {b: nBas, b2: B2.nach.notes.length});
+ok('ERST-06 noteLog Schläge 2–8 gleich (Spur, Quelle, Ton, Schlag, Dauer, Stärke, Zeit ab Start; ohne späte)', nIdx > 0 && key(I.nach.notes) === key(B.nach.notes), {idx: nIdx, basis: nBas, spaet: [I.nach.late, B.nach.late], nurIdx: diff(I.nach.notes, B.nach.notes).slice(0, 4), nurBasis: diff(B.nach.notes, I.nach.notes).slice(0, 4)});
 ok('ERST-07 WT-Wellen in Scheiben: dieselben 16 Eingaben in derselben Reihenfolge wie makeWaves, gleicher Aufbau', I.wellen && I.wellen.a === 16 && I.wellen.b === 16 && I.wellen.gleich && I.wellen.shape && I.wellen.alle, I.wellen);
 ok('ERST-08 keine Seitenfehler (Index/Basis)', !I.errs.length && !B.errs.length && !B2.errs.length, I.errs.concat(B.errs).slice(0, 3));
 // 2) Rückfälle

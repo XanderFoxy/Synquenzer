@@ -10,3 +10,4 @@
 - 05:38:25 Regression Teil 2: spk8s 14/0, spk10s 16/0, spk5 24/24 – Index = Basis. spkk-test 18/18 (mit Worker-Sonde). Pflicht erneut: siehe pflicht.log. md5 804c037b. Ende. Last: 5.67 4.87 3.17 1/289 3221
 - 06:09:18 Prüfung/Nachbesserung Start (Sicherung index.vor-pruef.html, md5 804c037b). Last: 10.26 7.45 5.01 8/609 8266
 - 06:12:16 Befunde nachgestellt (pruef/fall-*.out, lang-*.out: Prüfer-Zahlen stimmen mit dem Code überein); Fassung 3: Fenster 2,6 HT/3 Bins + Lücken-Füllung (Kick-Rahmen, Anschlag) mit O/hopS am Haken. Last: 12.74 9.94 6.40 18/716 12558
+- 06:16:04 Fassung 4 (nur Anschläge mit Pegel-Anstieg ≥ 3 dB begrenzen die Rück-Füllung): p-fall alle Prüfer-Fälle richtig, p-lang 60 s alle richtig, Säge/hohl/harmDrums byte-gleich Basis, Worker (p-worker2) 10/10. spkk-test (P1–P5 neu) + Regression reg/i4 laufen. Last: 12.22 10.84 7.56 18/720 17532
