@@ -266,7 +266,8 @@
         id, name, zusatz: text(l.zusatz, 60), kueche: (Array.isArray(l.kueche) ? l.kueche : []).filter(k => typeof k === 'string' && KUECHE_NAME[k]).slice(0, 4),
         ort: text(l.ort, 60), km: Number.isFinite(l.km) && l.km >= 0 && l.km < 500 ? l.km : null, lat: geo(l.lat), lon: geo(l.lon),
         adresse: text(l.adresse, 120), oeffnung: text(l.oeffnung, 200), website: sicherUrl(l.website), bew, leute: text(l.leuteSagen, 240),
-        hinweise, ayce: ay && ay.wochentage.length ? ay : null, xxl: l.xxl === true || hinweise.some(h => /große Portion|XXL|riesig/i.test(h)),
+        hinweise: hinweise.filter(h => !/^große Portionen$/i.test(h)), ayce: ay && ay.wochentage.length ? ay : null, xxl: l.xxl === true || hinweise.some(h => /große Portion|XXL|riesig/i.test(h)),
+        xxlEcht: l.xxl === true,
         liefert: l.liefert === true, quellen, geprueft: isoTag(l.geprueft), osmNur, osm: typeof l.osm === 'string' ? l.osm.slice(0, 30) : null,
       };
     };
@@ -290,7 +291,7 @@
     return n.eintraege.filter(e => e.ort && ['ayce', 'xxl', 'lokal'].includes(e.rubrik) && !vorbei(e, iso) && !e.nurHinweis).map(e => ({
       id: e.id, name: e.titel, zusatz: '', kueche: kuecheAusText(`${e.titel} ${e.was}`), ort: e.ortZusatz || e.ort, km: e.km, lat: null, lon: null, adresse: e.adresse,
       oeffnung: '', website: null, bew: [], leute: '', hinweise: [], ayce: e.rubrik === 'ayce' ? { wochentage: e.wochentage || [], text: e.wann, preis: e.preis } : null,
-      xxl: e.rubrik === 'xxl', liefert: false, quellen: e.quellen, geprueft: e.geprueft, osmNur: false, eintrag: e,
+      xxl: e.rubrik === 'xxl', xxlEcht: e.rubrik === 'xxl', liefert: false, quellen: e.quellen, geprueft: e.geprueft, osmNur: false, eintrag: e,
     }));
   }
 
@@ -546,7 +547,7 @@
     if (h) m.push(`<span class="${h.s === 'offen' || h.s === 'spaeter' ? 'ess-jetzt' : 'ess-alt'}">${esc(h.text)}</span>`);
     if (l.eintrag) { const st = statusMarke(l.eintrag, j); if (st) m.push(st); }
     if (l.ayce) m.push('<span class="ess-bald">All-you-can-eat</span>');
-    if (l.xxl) m.push('<span class="ess-bald">XXL</span>');
+    if (l.xxl) m.push(`<span class="ess-bald">${l.xxlEcht ? 'XXL' : 'große Portionen'}</span>`);
     if (l.liefert) m.push('<span class="ess-bed">liefert</span>');
     if (l.osmNur) m.push('<span class="ess-alt">noch ohne Bewertung</span>');
     const an = gemerkt.has(l.id);
