@@ -43,7 +43,10 @@ export function digestNachricht(liste, cfg) {
 export function plane({ eintraege, zustand, cfg, jetzt, modus = 'auto' }) {
   const { tag, stunde } = berlin(jetzt);
   const gemeldet = zustand.gemeldet || {};
-  const neu = eintraege.filter(e => !schonGemeldet(e, gemeldet));
+  // Xander 16.11.2026: „In den Benachrichtigungen immer nur, was jetzt aktuell ist.“ Was erst später beginnt (ab), bleibt
+  // ungemeldet und kommt in dem Lauf, in dem es gilt.
+  const jetztMs = new Date(jetzt).getTime();
+  const neu = eintraege.filter(e => !schonGemeldet(e, gemeldet) && !(e.ab && Date.parse(e.ab) > jetztMs));
   // dieselbe Sache aus zwei Quellen -> einmal
   const einmal = [];
   const tk = new Set();

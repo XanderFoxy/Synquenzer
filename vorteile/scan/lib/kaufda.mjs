@@ -12,6 +12,11 @@
 // Ortsbezug (Roh-Lauf 43793492110, 16.11.2026): /Geschaefte/<Händler> zeigt immer den Standort Berlin 10178 (auch mit ?zip=
 // oder ?lat=&lng=); /<Stadt>/<Händler>/p-r<Händler-id> (z. B. /Doebeln/Kaufland/p-r2801) zeigt die Prospekte der Stadt
 // (eigene Prospekt-ids je Region) und die nächste Filiale. /<Stadt>/Angebote/<Begriff> und /<Stadt>/Geschaefte/... = 404.
+// Vollständigkeit (Roh-Lauf 43818792502, 16.11.2026): die Orts-Händlerseite zeigt nur 16 Angebote (OfferGrid size 16) von
+// offers.main.totalItems (Aldi Nord Döbeln 359, Lidl 1000, Kaufland 491, Netto 483, Penny 297), immer dieselben 16, ?page=2
+// ändert nichts. /<Stadt>/Angebote/<Begriff> gibt es nur für wenige verlinkte Begriffe (Cola), sonst 404; /<Händler>/Sortiment/
+// <Begriff> ebenso. Die bundesweite Stichwortseite /Angebote/<Begriff> listet je Begriff bis zu 16 Angebote aller Händler mit
+// parentContent.id (Prospekt) – darüber kommt die Wochen-Knaller-Liste an die übrigen Angebote der Döbelner Prospekte.
 
 const NEXT = /<script[^>]*id="__NEXT_DATA__"[^>]*>([\s\S]+?)<\/script>/;
 
@@ -69,7 +74,37 @@ export function filialeAus(pi) {
   return adresse || km != null ? { adresse, km } : null;
 }
 
-/** HTML einer kaufDA-Seite -> { ort, plz, url, typ, filiale, items[] } (wirft, wenn der Datenblock fehlt oder kaputt ist) */
+/**
+ * Prospekte einer Orts-Händlerseite (Roh-Lauf 43818792502, 16.11.2026): brochures.viewer[] (der große Wochenprospekt) und
+ * brochures.publisher[] (weitere Prospekte des Händlers: Extra-Angebote, „ab nächster Woche“ mit contentBadges valid_soon, …).
+ * id = contentId – dieselbe id steht bei jedem Angebot in parentContent.id. Damit lässt sich ein Angebot einer bundesweiten
+ * Stichwortseite (/Angebote/<Begriff>, Standort Berlin) eindeutig dem Prospekt für Döbeln zuordnen (gleiche id = gleicher
+ * Prospekt; Aldi Nord Crunchips 16.11.2026: Seite 20 von 6c21c979…, dem Döbelner Wochenprospekt).
+ */
+export function prospekteAus(pi, felder = ['viewer', 'publisher']) {
+  const out = [], gesehen = new Set();
+  for (const k of felder) {
+    for (const b of Array.isArray(pi?.brochures?.[k]) ? pi.brochures[k] : []) {
+      const id = typeof b?.contentId === 'string' && b.contentId ? b.contentId : null;
+      if (!id || gesehen.has(id)) continue;
+      gesehen.add(id);
+      out.push({
+        id, titel: String(b.title || '').replace(/\s+/g, ' ').trim().slice(0, 60), verlag: String(b.publisher?.name || '').trim().slice(0, 40),
+        ab: kaufdaZeit(b.validFrom), bis: kaufdaZeit(b.validUntil), seiten: Number.isInteger(b.pageCount) ? b.pageCount : null,
+        bald: (Array.isArray(b.contentBadges) ? b.contentBadges : []).some(c => c?.name === 'valid_soon'),
+      });
+    }
+  }
+  return out;
+}
+
+/** Zahl aller Angebote laut Seite (offers.main.totalItems) – die Seite zeigt davon höchstens 16 (OfferGrid size 16) */
+export function gesamtAus(pi) {
+  const n = pi?.offers?.main?.totalItems;
+  return Number.isInteger(n) && n >= 0 ? n : null;
+}
+
+/** HTML einer kaufDA-Seite -> { ort, plz, url, typ, filiale, items[], prospekte[], gesamt } (wirft, wenn der Datenblock fehlt oder kaputt ist) */
 export function leseKaufdaSeite(html) {
   const m = String(html || '').match(NEXT);
   if (!m) throw new Error('kaufDA: Datenblock __NEXT_DATA__ fehlt (Seite geändert?)');
@@ -77,5 +112,5 @@ export function leseKaufdaSeite(html) {
   try { d = JSON.parse(m[1]); } catch { throw new Error('kaufDA: Datenblock __NEXT_DATA__ nicht lesbar'); }
   const pi = d?.props?.pageProps?.pageInformation || {};
   const loc = pi.location || {};
-  return { ort: loc.cityDisplayName || loc.city || null, plz: loc.zip || null, url: typeof pi.url === 'string' ? pi.url : null, typ: typeof pi.type === 'string' ? pi.type : null, filiale: filialeAus(pi), items: angeboteAus(pi) };
+  return { ort: loc.cityDisplayName || loc.city || null, plz: loc.zip || null, url: typeof pi.url === 'string' ? pi.url : null, typ: typeof pi.type === 'string' ? pi.type : null, filiale: filialeAus(pi), items: angeboteAus(pi), prospekte: prospekteAus(pi), gesamt: gesamtAus(pi) };
 }

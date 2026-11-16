@@ -66,8 +66,9 @@ test('knaller: nur mit Vergleichspreis, ab 30 %, Art UVP/Streich, ab-Preis, App,
   assert.equal(penny.filter(a => /Frischkäse/.test(a.titel)).length, 1);
   // „Netto mit dem Scottie“ auf der Penny-Seite gehört nicht zu Penny (und ist kein Markt der Liste)
   assert.ok(!d.angebote.some(a => /Choco Crossies/.test(a.titel)));
-  // Netto Marken-Discount: Haribo 0,66 statt 1,19 (UVP) = 44,5 % -> −44 %; Dosen (−22 %) und Adventskalender (−22 %) zu wenig
-  assert.deepEqual(d.angebote.filter(a => a.markt === 'netto').map(a => [a.preis, a.pct]), [[0.66, 44]]);
+  // Netto Marken-Discount: Haribo 0,66 statt 1,19 (UVP) = 44,5 % -> −44 %; Dosen (−22 %) und Adventskalender (−22 %) erst ab
+  // der neuen Stufe 20 % (Xander 16.11.2026: „Staffel 20/30/40/50“)
+  assert.deepEqual(d.angebote.filter(a => a.markt === 'netto').map(a => [a.preis, a.pct]), [[0.66, 44], [3.49, 22], [6.99, 22]]);
   // Lidl (andere Struktur der Seite): HARIBO XXL 0,99 statt 1,49 = Streichpreis 33,6 % -> −33 %
   const lidl = d.angebote.filter(a => a.markt === 'lidl');
   assert.equal(lidl.length, 1);
@@ -78,9 +79,14 @@ test('knaller: nur mit Vergleichspreis, ab 30 %, Art UVP/Streich, ab-Preis, App,
   // sortiert nach Rabatt
   const pcts = d.angebote.map(a => a.pct);
   assert.deepEqual(pcts, [...pcts].sort((a, b) => b - a));
-  assert.equal(d.angebote.length, 8, titelVon(d).join('\n'));
-  // Übersicht für die Start-Kachel
-  assert.deepEqual(r.kurz.ab, { 30: 8, 40: 3, 50: 0 });
+  assert.equal(d.angebote.length, 10, titelVon(d).join('\n'));
+  assert.equal(d.angebote.filter(a => a.pct >= 30).length, 8, 'ab 30 % wie bisher');
+  // Übersicht für die Start-Kachel: Zähler nur für das, was HEUTE gilt (Crunchips ab 16.11. steht unter „kommt“)
+  assert.deepEqual(r.kurz.ab, { 20: 9, 30: 7, 40: 3, 50: 0 });
+  // Crunchips ab Mo 16.11. = nächste Woche (Di 10.11.): kurz.naechste, nicht „kommt diese Woche“ (Prüfer 16.11.)
+  assert.deepEqual(r.kurz.kommt, { 20: 0, 30: 0, 40: 0, 50: 0 });
+  assert.deepEqual(r.kurz.naechste, { 20: 1, 30: 1, 40: 0, 50: 0 });
+  assert.equal(r.kurz.wocheBis, '2026-11-15T23:00:00.000Z');
   assert.equal(r.kurz.top[0].pct, 44);
   assert.equal(r.kurz.top[0].markt, 'Netto');
   // Bild = Prospekt-Ausschnitt (https, nur Link), Link = Händlerseite, regional mit Ort
@@ -91,7 +97,9 @@ test('knaller: nur mit Vergleichspreis, ab 30 %, Art UVP/Streich, ab-Preis, App,
     assert.ok(a.region);
     assert.ok(a.gueltigBis);
     assert.ok(a.vorher > a.preis);
-    assert.equal(a.bereich, 'lebensmittel');
+    // Haribo-Adventskalender (neu ab 20 %) steht bei kaufDA unter Weihnachten -> nonfood; alles ab 30 % Lebensmittel wie bisher
+    assert.equal(a.bereich, a.pct >= 30 ? 'lebensmittel' : a.bereich);
+    assert.ok(['lebensmittel', 'nonfood'].includes(a.bereich));
   }
   // klein genug für das Handy
   assert.ok(JSON.stringify(d).length < 60000);
@@ -249,7 +257,8 @@ test('main.lauf: knaller schreibt knaller.json und status.knaller.kurz, keine Ka
   const nur = { ...cfg, module: Object.fromEntries(Object.entries(cfg.module).map(([k, v]) => [k, { ...v, aktiv: k === 'knaller' }])) };
   const r = await lauf({ cfg: nur, wunschliste: {}, vorher: null, zustand: {}, holeText: abruf(STANDARD_KARTE), jetzt: JETZT, alle: true });
   assert.ok(r.dateien.knaller);
-  assert.equal(r.dateien.knaller.angebote.length, 8);
+  assert.equal(r.dateien.knaller.angebote.length, 10);
+  assert.equal(r.dateien.knaller.angebote.filter(a => a.pct >= 30).length, 8);
   assert.deepEqual(r.aktuell.kategorien.knaller, []);
   assert.equal(r.aktuell.status.knaller.kurz.ab['40'], 3);
   assert.equal(r.aktuell.status.knaller.ok, false, 'Aldi/Marktkauf gestört');

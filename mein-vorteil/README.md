@@ -211,6 +211,18 @@ Folgetags (Penny) zählt zum Vortag („bis Sa“); Vergleichspreis ohne Art-Ang
 wenn das Top-Angebot erst später gilt. Deals: das Produktbild steht an der Karte nur, wenn das gezeigte Angebot auch dieses
 Produkt ist (Karte „Haribo Colorado“ mit Angebot „Haribo Harry Potter“ -> kein fremdes Foto).
 
+**Woche, 2. Runde (Xander 16.11.2026: „gelten die Angebote wirklich für die Woche? … anhaken/merken … Crunchips fehlen“):**
+Stufen `ab 20 · 30 · 40 · 50 %` (Start bleibt 30). Was heute gilt, steht normal in den Rabatt-Gruppen; was erst ab Do/Fr/Sa
+(oder als Wochenend-Angebot) beginnt, steht in der eigenen Gruppe **„Kommt diese Woche“** – Kachel gestrichelt, Marke „ab Do …“,
+„Wochenende“ –, was erst nächste Woche beginnt unter „Ab Montag“. Sprung-Leiste unter den Markt-Chips: „Gilt jetzt n ·
+Kommt diese Woche n · Ab Montag n · Gemerkt n“ (nur, wenn es mehr als „Gilt jetzt“ gibt). Start-Kachel: „+ n kommen diese Woche
+noch“. Abgelaufenes fällt raus. `vorherArt: 'geschaetzt'` (kein Vergleichspreis im Prospekt, sondern derselbe Artikel im
+selben Markt aus einem früheren Prospekt) -> hellgraue Plakette „≈ −n %“ und „statt ~… geschätzt“. **Merken:** Haken oben rechts
+an jeder Kachel (44 px) oder lange drücken (550 ms, ohne zu wischen; öffnet dann nicht) -> Gruppe „Gemerkt“ oben, gespeichert in
+`mein-vorteil-woche-gemerkt`; die Seite schickt die Liste (id, Titel, Markt, Preise, Gültigkeit – nichts Persönliches) als
+einfache Anfrage an das ntfy-Thema `…-merken` (öffentlich wie das Push-Thema), bei jeder Änderung und spätestens alle 6 h; der
+Radar erinnert per Push am ersten Gültigkeitstag ab 7 Uhr. Fuß: „Gelesen: Aldi Nord n von 359 …“.
+
 **Produktbilder (seit 16.11.2026):** Angebotskarten der eigenen Produkte zeigen `bild` (marktguru/mydealz, aus `current.json`)
 als 64-px-Bild links neben Kopf, Titel und Preis (die Karte wird dadurch nicht höher); „weitere Angebote“ und „Andere Snacks“
 ein 40-px-Bild, sobald der Radar `bild` mitliefert. Nur https, nur als Link (wie die Filmbilder), lazy, ohne Referrer.

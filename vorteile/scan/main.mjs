@@ -24,6 +24,7 @@ import auftritte from './module/auftritte.mjs';
 import unterricht from './module/unterricht.mjs';
 import knaller from './module/knaller.mjs';
 import { FIXTURE_KARTE } from './test/fixtures/karte.mjs';
+import { holeMerkliste, faelligeErinnerungen, erinnerungNachricht, verbucheErinnerung } from './lib/merken.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
 export const MODULE = { deals, erleben, reisen, musik, nebenverdienst, tests, praemien, filme, remix, auftritte, unterricht, knaller };
@@ -91,6 +92,18 @@ export async function lauf({ cfg, wunschliste, filmListen = null, dateienVorher 
       .sort((a, b) => (b.extra?.sortWert ?? b.wert) - (a.extra?.sortWert ?? a.wert))
       .slice(0, 40);
   }
+  // Gemerkte Wochen-Knaller (lib/merken.mjs): Merkliste der Seite holen (ntfy-Thema), fällige Erinnerungen planen – jeder Lauf,
+  // nicht nur, wenn das Modul knaller dran ist (Erinnerung „am ersten Gültigkeitstag morgens“)
+  let erinnerung = null;
+  if (cfg.module?.knaller && cfg.module.knaller.aktiv !== false) {
+    let merkStatus = null;
+    try { merkStatus = await holeMerkliste({ holeText, cfg, zustand, jetzt: new Date(jetztMs) }); } catch (e) { merkStatus = { ok: false, fehler: String(e?.message || e).slice(0, 120) }; }
+    if (merkStatus && status.knaller) status.knaller.merken = merkStatus;
+    const kn = dateien.knaller || dateienVorher?.knaller || null;
+    const liste = faelligeErinnerungen({ zustand, cfg, jetzt: new Date(jetztMs), angebote: kn?.angebote || [] });
+    const namen = Object.fromEntries((cfg.module.knaller.maerkte || []).map(m => [m.id, m.name]));
+    if (liste.length) erinnerung = { liste, msg: erinnerungNachricht(liste, cfg, namen) };
+  }
   // Neues Modul in einem laufenden Radar: beim ersten Lauf nichts nachmelden (keine Push-Flut), nur auf der Seite zeigen
   for (const name of neueModule) alsGemeldet(zustand, kategorien[name], new Date(jetztMs));
   const alleEintraege = Object.values(kategorien).flat();
@@ -103,7 +116,7 @@ export async function lauf({ cfg, wunschliste, filmListen = null, dateienVorher 
     kategorien,
     status,
   };
-  return { aktuell, zustand, alleEintraege, dateien };
+  return { aktuell, zustand, alleEintraege, dateien, erinnerung };
 }
 
 function arg(args, name) { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; }
@@ -140,6 +153,12 @@ export async function main(args = process.argv.slice(2), env = process.env, test
   const token = env.NTFY_TOKEN;
   for (const s of plan.sofort) ok.sofort.push(await sende(s.msg, cfg, { dryRun, token }));
   if (plan.digest) ok.digest = await sende(plan.digest.msg, cfg, { dryRun, token });
+  // Erinnerung an gemerkte Wochen-Knaller: ausdrücklich gewünscht -> eigenes Kontingent, nicht im Tageslimit der Sofort-Pushes
+  let erinnert = false;
+  if (r.erinnerung && !erstlauf && modus !== 'still') {
+    erinnert = await sende(r.erinnerung.msg, cfg, { dryRun, token });
+    if (erinnert && !dryRun) verbucheErinnerung(r.zustand, r.erinnerung.liste, jetzt);
+  }
   if (erstlauf) {
     for (const e of r.alleEintraege) (r.zustand.gemeldet ||= {})[e.id] = r.aktuell.aktualisiert;
     r.zustand.gemeldet ||= {};
@@ -156,7 +175,7 @@ export async function main(args = process.argv.slice(2), env = process.env, test
     roh.ausgabe('aktuell.json', JSON.stringify(r.aktuell, null, 1) + '\n');
     roh.ausgabe('zustand.json', JSON.stringify(r.zustand) + '\n');
     for (const [name, inhalt] of Object.entries(r.dateien || {})) roh.ausgabe(`${name}.json`, JSON.stringify(inhalt) + '\n');
-    roh.ausgabe('pushes.json', { sofort: plan.sofort.map(s => s.msg), digest: plan.digest?.msg || null, modus: erstlauf ? 'still' : modus });
+    roh.ausgabe('pushes.json', { sofort: plan.sofort.map(s => s.msg), digest: plan.digest?.msg || null, erinnerung: r.erinnerung?.msg || null, modus: erstlauf ? 'still' : modus });
     roh.abschluss({ dryRun: true, eintraege: r.alleEintraege.length, sofort: plan.sofort.length, digest: !!plan.digest });
     console.log(`Roh-Mitschnitt: ${roh.abrufe.length} Abrufe → ${roh.dir}`);
   }
