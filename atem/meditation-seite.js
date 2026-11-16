@@ -30,7 +30,9 @@ const STIL = `.md-spieler{position:fixed;inset:0;z-index:25;background:#05080c;c
 @media (orientation:landscape) and (max-height:560px){.md-mitte{display:grid;grid-template-columns:auto minmax(0,1fr);align-content:center;justify-content:center;column-gap:24px;row-gap:6px;text-align:start;padding:0 16px}.md-spieler .md-buehne{grid-row:1/span 4;width:min(40vw,280px);height:min(calc(100vh - 150px),280px)}.md-zeit{font-size:36px}.md-text{min-height:0;max-width:none}.md-text[hidden]{display:none}.md-unten{padding:4px 16px 8px}}`;
 // 020-figur: Meditationsfigur (Kissen/Stuhl/Liegen, leuchtende Lunge, Gold- oder Lila-Licht); figur.js lädt erst hier
 const figLicht = (id, wahl) => speicher.einst().med_licht || (id === 'einschlafen' || wahl.schlaf || wahl.haltung === 'im_bett' ? 'lila' : 'gold');
-function figurIn(host, id, wahl) { if (!host) return Promise.resolve(null); return import('./figur.js').then((F) => { if (!host.isConnected) return null; const f = F.erzeugeFigur(host, { pose: F.poseAusHaltung(wahl.haltung, speicher.einst().med_sitz), licht: figLicht(id, wahl) }); f.laufe(); f.F = F; return f; }, () => { host.hidden = true; return null; }); }
+function figurIn(host, id, wahl, O) { if (!host) return Promise.resolve(null); return import('./figur.js').then((F) => { if (!host.isConnected) return null; const f = F.erzeugeFigur(host, { pose: F.poseAusHaltung(wahl.haltung, speicher.einst().med_sitz), licht: figLicht(id, wahl) }); figMarke(f, wahl, O); f.laufe(); f.F = F; return f; }, () => { host.hidden = true; return null; }); }
+// 0.2.1 (Figur-Paket „022“): gläserner Mensch (wie in den Übungen); die Haltung steht als Symbol + Wort im Chip daneben (keine eigene Sitzfigur)
+const figMarke = (f, wahl, O) => { if (f && f.marke && O) f.marke(sym(HSYM[wahl.haltung] || 'sitzen'), (O.haltung_kurz || {})[wahl.haltung] || ''); };
 function stil() { if (!document.getElementById('md-stil')) { const s = document.createElement('style'); s.id = 'md-stil'; s.textContent = STIL; document.head.appendChild(s); } }
 
 let cache = {}, spieler = null;
@@ -91,7 +93,7 @@ export async function zeigeMeditation(api, id) {
     const ht = document.getElementById('md-ht'); if (ht) ht.textContent = (O.haltungen || {})[wahl.haltung] || '';
     const s = document.getElementById('md-schlaf'); if (s) s.checked = wahl.schlaf;
     const f = document.getElementById('md-fahr'); if (f) f.textContent = id === 'einschlafen' || wahl.schlaf ? SB.nicht_fahren_einschlafen : SB.nicht_fahren;
-    if (fig && fig.F) { fig.pose(fig.F.poseAusHaltung(wahl.haltung, speicher.einst().med_sitz)); fig.licht(figLicht(id, wahl)); }   // 020-figur
+    if (fig && fig.F) { fig.pose(fig.F.poseAusHaltung(wahl.haltung, speicher.einst().med_sitz)); fig.licht(figLicht(id, wahl)); figMarke(fig, wahl, O); }   // 020-figur, 022: Haltungs-Chip
   };
   api.seite(m0.titel, `<div class="md-seite zweispaltig" data-id="${id}" ${rahmenAttr(sp, ui)}><div>${sprachWahl(sp)}<div class="md-buehne nachtbuehne" id="md-buehne" aria-hidden="true"></div>
     <p>${esc(x.untertitel)}</p>${x.start_hinweis ? `<p class="leise">${esc(x.start_hinweis)}</p>` : ''}<p class="leise">${esc(x.wirkung)}</p>
@@ -107,7 +109,7 @@ export async function zeigeMeditation(api, id) {
     <button class="knopf zweit voll" id="md-laden">${esc(SB.laden.replace('{mb}', mb))}</button><div class="md-fort" hidden><i></i></div>
     <button class="knopf haupt voll startknopf" id="md-los">${sym('play')}<span>${esc(SB.starten)}</span></button>
     <p class="leise mitte">${esc(SB.augen_zu)}</p><p class="leise md-offen">${esc(O.offenlegung_stimme)}</p></div></div>`, 'meditation', 2);
-  let fig = null; figurIn(document.getElementById('md-buehne'), id, wahl).then((f) => { fig = f; });   // 020-figur
+  let fig = null; figurIn(document.getElementById('md-buehne'), id, wahl, O).then((f) => { fig = f; });   // 020-figur
   male(); titelSprache(sp, ui);
   const root = document.querySelector('.md-seite');
   root.onclick = async (ev) => {
@@ -151,7 +153,7 @@ async function starte(api, sp, D, m0, med, wahl) {
     <div class="md-mitte"><div class="md-buehne" aria-hidden="true"></div><p class="md-zeit"></p><p class="md-text" hidden></p><p class="md-sys" hidden>${esc(w.system)}</p><p class="md-hinweis">${esc(O.stopp_hinweis)}</p></div>
     <div class="md-unten"><button class="sz-pause" data-m="pause" aria-label="${esc(w.pause)}">${sym('pause')}</button><button class="knopf klein zweit" data-m="mitlesen">${esc(O.start_blatt.mitlesen)}</button></div><div class="sz-blatt" hidden></div>`;
   host.appendChild(v); document.body.classList.add('in-sitzung');
-  let sfig = null; figurIn(v.querySelector('.md-buehne'), m0.id, wahl).then((f) => { sfig = f; });   // 020-figur: Kranz atmet 12 s, Perlen ruhig (kein Takt)
+  let sfig = null; figurIn(v.querySelector('.md-buehne'), m0.id, wahl, O).then((f) => { sfig = f; });   // 020-figur: Kranz atmet 12 s, Perlen ruhig (kein Takt)
   const $ = (s) => v.querySelector(s), ab = performance.now();
   const blattZeigen = (html) => { const b = $('.sz-blatt'); b.innerHTML = '<div class="blatt-innen">' + html + '</div>'; b.hidden = false; b.dataset.art = ''; if (api.tippSperre) api.tippSperre(); };
   const zu = () => { if (sfig) sfig.zerstoere(); v.remove(); if (!document.querySelector('.md-spieler')) document.body.classList.remove('in-sitzung'); spieler = null; if (api.neuLaden && api.neuLaden()) location.reload(); };   // B1: neue Fassung erst nach der Meditation

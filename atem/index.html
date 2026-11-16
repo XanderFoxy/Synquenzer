@@ -34,6 +34,8 @@ p{margin:.4em 0}ul,ol{padding-left:1.2em;margin:.4em 0}li{margin:.25em 0}
 #leiste a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px;color:var(--leise);min-height:56px;min-width:44px}
 #leiste a.an{color:var(--akzent)}
 .knopf-ico{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;background:none;border:0;color:var(--text);border-radius:12px;cursor:pointer;padding:0}
+/* 021b: Ton hängt (iOS) – Knopf zeigt „Ton antippen“: Lautsprecher aus + sanft pulsierender Ring (ohne Bewegung bei reduzierter Bewegung) */
+.knopf-ico.ton-tippen{position:relative;color:var(--fokus,#ffcf5c)}.knopf-ico.ton-tippen::after{content:'';position:absolute;inset:5px;border-radius:50%;border:2px solid currentColor;opacity:.55;animation:tontippen 1.6s ease-in-out infinite}@keyframes tontippen{50%{opacity:.15;transform:scale(1.12)}}
 .knopf{min-height:48px;padding:10px 16px;border-radius:14px;border:1px solid var(--rand);background:var(--fl2);color:var(--text);font:inherit;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;text-align:center}
 .knopf.voll{width:100%;margin:8px 0}.knopf.haupt{background:var(--akzent);color:#0d1218;border-color:var(--akzent)}.knopf.gefahr{border:2px solid var(--gefahr);background:transparent;color:var(--text)}
 .knopf.zweit{background:transparent;font-weight:500}.knopf.klein{min-height:44px;padding:6px 14px}.knopf.an{border-color:var(--akzent);color:var(--akzent)}.knopf:disabled{opacity:.4}
@@ -84,7 +86,7 @@ body.in-sitzung #leiste,body.in-sitzung #kopf{visibility:hidden}
 .sz-haupt{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 16px 0;min-height:0}
 .sz-kreis{position:relative;display:flex;align-items:center;justify-content:center}.sz-kreis canvas{display:block}
 .sz-mitte{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;text-align:center}
-.sz-mitte{text-shadow:0 1px 6px rgba(5,8,12,.9)}.sz-wort{font-size:28px;font-weight:600}.sz-zahl{font-size:68px;font-weight:300;font-variant-numeric:tabular-nums;line-height:1}.sz-hinweis{font-size:15px;color:var(--leise);min-height:20px}
+.sz-mitte{text-shadow:0 1px 6px rgba(5,8,12,.9)}.sz-wort{font-size:28px;font-weight:600}.sz-zahl{font-size:68px;font-weight:300;font-variant-numeric:tabular-nums;line-height:1}.sz-hinweis{font-size:15px;color:var(--leise);min-height:20px;max-width:60%;line-height:1.25}
 .sz-zeile{display:flex;gap:14px;align-items:center;justify-content:center;min-height:40px;color:var(--leise);font-size:15px;font-variant-numeric:tabular-nums}.sz-weg{display:flex;align-items:center;gap:4px}
 .vorschau{padding:0;overflow:hidden}.vs-fig{height:200px;background:var(--hg)}.vorschau.gross .vs-fig{height:360px}.vs-leiste{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 8px 6px 14px}.vs-wort{color:var(--leise);font-size:14px;font-variant-numeric:tabular-nums}
 .sz-anat{position:relative;width:100%;height:170px;background:var(--fl);border-radius:18px;overflow:hidden;cursor:pointer}.sz-ans{position:absolute;top:0;right:0;z-index:1;min-width:64px;min-height:44px;padding:0 12px;border:0;background:transparent;color:var(--leise);font:inherit;font-size:13px;cursor:pointer}.sz-anat.aus{display:none}

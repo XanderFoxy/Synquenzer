@@ -44,7 +44,8 @@ export function oeffne(plan, opt) {
   const knopfPlan = kk && plan.schritte.some((x) => x.kuerzbar && /^halten/.test(x.art));
   const kreisHoch = () => {
     const K = Math.min(320, innerWidth - 60), q = (s) => $(s, host), h = kk ? q('.sz-kk').offsetHeight : 0, tab = q('.sz-tab');
-    if (!h) return K;
+    if (!h) { if (q('.sz-anat.aus')) return K; const hs = q('.sz-haupt'), cs = getComputedStyle(hs), g = parseFloat(cs.rowGap) || 8;   // 021 M4: Figur ≥ 170 über den Knöpfen (375×667: sonst ragt der Pause-Knopf in den Rumpf)
+      return Math.max(200, Math.min(K, Math.floor(hs.clientHeight - parseFloat(cs.paddingTop) - 2 * g - q('.sz-zeile').offsetHeight - (tab ? tab.offsetHeight + g : 0) - 170))); }
     const frei = q('.sz-haupt').clientHeight - (knopfPlan && q('.sz-atmen').hidden && q('.sz-stopp').hidden ? 104 : 0) - 28 - K - q('.sz-zeile').offsetHeight - (tab ? tab.offsetHeight + 8 : 0) - (q('.sz-anat.aus') ? 0 : 170);
     const r = K - h + Math.min(h, Math.max(0, Math.floor(frei))); host.style.setProperty('--kk-b', r + 'px'); return r;
   };
@@ -75,13 +76,21 @@ export function oeffne(plan, opt) {
       : s.runden ? 'Runde ' + s.runde + '/' + s.runden + (s.zuege && s.zug ? ' · Zug ' + s.zug + '/' + s.zuege : '') : s.zuege ? 'Zug ' + s.zug + '/' + s.zuege : '';
   }
   const zeileNeu = () => { if (kk && uhr.plan) zeile(uhr.zustand().schritt); };
+  // 021b: Ton-/Ansage-Knopf zeigen den echten Zustand – hängt der Ton (iOS), „Ton antippen“; der Tipp entsperrt (schaltet nicht aus)
+  const tk = $('[data-a="ton"]', host), ak = $('[data-a="ansage"]', host); let tonAnz = '';
+  const knopfTon = (b, k, wort) => { b.innerHTML = sym(k === 'an' ? 'ton' : 'tonAus'); b.classList.toggle('ton-tippen', k === 'tippen'); b.dataset.ton = k; b.setAttribute('aria-label', k === 'tippen' ? 'Ton antippen' : wort + ' an oder aus'); };
+  function tonZeige() {
+    const g = !!(ton.gesperrt && ton.gesperrt()), k = einst.ton === 'aus' ? 'aus' : g ? 'tippen' : 'an', a = !ak ? '' : !einst.ansage ? 'aus' : g ? 'tippen' : 'an';
+    if (k + a === tonAnz) return; tonAnz = k + a; knopfTon(tk, k, 'Ton'); if (ak) knopfTon(ak, a, 'Ansage');
+  }
   if (einst.figur !== false) import('./figur.js').then((m) => {   // 020-figur: stilisierte Figur (gleiche Schnittstelle)
   if (!aktiv || aktiv.uhr !== uhr) return; an = m.erzeugeAnatomie(el.anat, { ansicht: einst.ansicht || 'seite', modus: gross ? 'gross' : 'klein', daten: { MUSKELN } }); figurRuhe(); }).catch(() => { el.anat.classList.add('aus'); });
   ton.einstellen({ art: einst.ton || 'klang', laut: einst.laut ?? 0.6, sekunden: !!einst.sekunden, ansage: einst.ansage === 'stimme' ? 'stimme' : !!einst.ansage, musikAn: !!(einst.eigeneMusik && einst.musikName), musikLaut: einst.musikLaut ?? 0.5 });   // 016: 'stimme' = echte Stimme (stimme.js)
   ton.entsperren(einst.musik);
   if (ton.zaehltoene) ton.zaehltoene(); ton.einstellen({ signale: einst.signale, signaleLaut: einst.signaleLaut });   // 020-klang: Zähltöne laden (3 s Einzählen) + Stil/Lautstärke (ohne Wahl: Standard)
   holeWake();
-  async function holeWake() { try { if (navigator.wakeLock && document.visibilityState === 'visible') { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); } } catch { wake = null; } }
+  let wakeNeu = 0;   // 021b: gibt das System die Wach-Sperre in der Übung frei, neu anfordern (höchstens alle 10 s) – sonst sperrt das Handy, die Übung hält an
+  async function holeWake() { try { if (navigator.wakeLock && document.visibilityState === 'visible') { const w = wake = await navigator.wakeLock.request('screen'); w.addEventListener('release', () => { if (wake === w) wake = null; if ((zustand === 'laeuft' || zustand === 'zaehlen') && document.visibilityState === 'visible' && performance.now() - wakeNeu > 10000) { wakeNeu = performance.now(); holeWake(); } }); } } catch { wake = null; } }
   const lasseWake = () => { try { if (wake) wake.release(); } catch {} wake = null; };
 
   // Figur in Ruhelage (Einzählen), v = 0 wie der Kreis
@@ -91,10 +100,10 @@ export function oeffne(plan, opt) {
     const t = performance.now(); zeitFigur = t - (uhr.plan ? uhr.zeit() : 0);
     an.setze({ phase: 'ruhe', anteil: 0, v: 0, art: s0.art_anat, tiefe: s0.tiefe, weg: s0.weg, liegend: !!T.liegend, zeit: t, ruhig });
   }
-  function zaehleEin(dann) { zustand = 'zaehlen'; zaehlStart = performance.now(); aktiv._nachZaehlen = dann; lauf(); }
+  function zaehleEin(dann) { zustand = 'zaehlen'; zaehlStart = performance.now(); aktiv._nachZaehlen = dann; if (ton.einzaehlen) ton.einzaehlen(); lauf(); }   // 0.2.1 B2: 3-2-1 leise hörbar
   function lauf() { if (!raf) raf = requestAnimationFrame(bild); }
   function bild() {
-    raf = 0;
+    raf = 0; tonZeige();
     if (zustand === 'zaehlen') {
       const rest = 3000 - (performance.now() - zaehlStart);
       el.zahl.textContent = String(Math.max(1, Math.ceil(rest / 1000)));
@@ -137,7 +146,7 @@ export function oeffne(plan, opt) {
     zeigeBlatt(`<h2>Pausiert</h2><button class="knopf haupt" data-a="weiter">Weiter</button><button class="knopf" data-a="beenden2">Beenden</button>`);
   }
   function weiter() {
-    el.blatt.hidden = true; sperre(); ton.entsperren(einst.musik); holeWake();
+    el.blatt.hidden = true; sperre(); ton.entsperren(einst.musik, { neu: true }); holeWake();   // 021b: hängender Ton → im Tipp neu
     zaehleEin(uhr.plan ? () => { uhr.weiter(); zustand = 'laeuft'; letzterI = -1; letzteSek = -1; ton.starte(uhr, uhr.plan); } : los);
   }
   function zeigeBlatt(html) { el.blatt.innerHTML = '<div class="blatt-innen">' + html + '</div>'; el.blatt.hidden = false; sperre(); }
@@ -171,8 +180,9 @@ export function oeffne(plan, opt) {
     else if (a === 'normal') beenden('abbruch');
     else if (a === 'atmen') kuerze();
     else if (a === 'stopp') { if (T.id === 'ruhe_zuege') { tippZahl++; el.stopp.textContent = 'Einatmen (' + tippZahl + ')'; } else kuerze(); }
-    else if (a === 'ton') { einst.ton = einst.ton === 'aus' ? 'klang' : 'aus'; ton.einstellen({ art: einst.ton }); b.innerHTML = sym(einst.ton === 'aus' ? 'tonAus' : 'ton'); if (opt.merke) opt.merke({ ton: einst.ton }); }
-    else if (a === 'ansage') { einst.ansage = einst.ansage ? false : 'stimme'; /* 016 */ ton.einstellen({ ansage: einst.ansage }); b.innerHTML = sym(einst.ansage ? 'ton' : 'tonAus'); if (opt.merke) opt.merke({ ansage: einst.ansage }); }
+    else if ((a === 'ton' || a === 'ansage') && b.dataset.ton === 'tippen') { ton.entsperren(einst.musik, { neu: true }); }
+    else if (a === 'ton') { einst.ton = einst.ton === 'aus' ? 'klang' : 'aus'; ton.einstellen({ art: einst.ton }); tonAnz = ''; tonZeige(); if (opt.merke) opt.merke({ ton: einst.ton }); }
+    else if (a === 'ansage') { einst.ansage = einst.ansage ? false : 'stimme'; /* 016 */ ton.einstellen({ ansage: einst.ansage }); tonAnz = ''; tonZeige(); if (opt.merke) opt.merke({ ansage: einst.ansage }); if (einst.ansage === 'stimme' && !ton.stimme) import('./stimme.js').then((S) => { const p = S.bereiteVor(ton, einst); ton.einstellen({}); const geh = () => { if (ton.stimme && aktiv && aktiv.uhr === uhr && uhr.plan && einst.ansage === 'stimme') ton.stimme.starte(uhr); }; return p.then(geh, geh); }).catch(() => {}); }   // 021 M5: in der Übung eingeschaltet → echte Stimme in der gewählten Sprache laden (sonst de-Systemstimme); 0.2.1 B3: Lauf erst starten, wenn das Sprite da ist (sonst bliebe der Weg auf „System“ fest)
     else if (a === 'seitevorn') { einst.ansicht = einst.ansicht === 'vorn' ? 'seite' : 'vorn'; b.textContent = einst.ansicht === 'vorn' ? 'Seite' : 'Vorne'; if (an) an.ansicht(einst.ansicht); if (opt.merke) opt.merke({ ansicht: einst.ansicht }); }
     else if (a === 'ansicht' && an) { gross = !gross; host.classList.toggle('figur-gross', gross); f.groesse(kreisPx()); if (an.modus) an.modus(gross ? 'gross' : 'klein'); zeileNeu(); }
   }

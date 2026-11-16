@@ -8,7 +8,7 @@ import { ton } from './ton.js';   // statisch: der Ton entsteht im Tipp auf Star
 import * as LAY from './layout.js';   // 020-layout: Navigation, Heute, Fortschritt, Mehr, Hinweise
 let ZM = null; const zmLade = () => import('./signale.js').then((m) => { ZM = m; if (ton.zaehltoene) ton.zaehltoene(); return m; }, () => null);   // 020-klang: Zähltöne erst bei Bedarf
 
-export const VERSION = '0.2.0';   // 020
+export const VERSION = '0.2.1';   // 021
 const TEST = /[?&]test=1/.test(location.search);
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -231,9 +231,9 @@ const WISSEN_FIGUR = { 'T-VAGUS': 'lang_aus', 'T-NASE': 'bauch', 'T-LANGSAM': 'r
 async function starte(T, st, quelle, plan, extra = {}) {
   if (startet) return; startet = true;
   const e = speicher.einst(), k = $('#los'), kt = k && k.textContent;
-  ton.entsperren(e.musik); stimmeVor();   // 016
+  ton.entsperren(e.musik, { neu: true, ansage: e.ansage }); stimmeVor();   // 016 | 021b: hängender Ton wird im selben Tipp ersetzt, Systemstimme freigeschaltet
   try {
-    if (T.warnung === 'voll' || T.warnung === 'kurz') { if (!(await sicherheitsBlatt(T))) { ton.schliessen(); return; } ton.entsperren(e.musik); }
+    if (T.warnung === 'voll' || T.warnung === 'kurz') { if (!(await sicherheitsBlatt(T))) { ton.schliessen(); return; } ton.entsperren(e.musik, { neu: true, ansage: e.ansage }); }
     if (!plan) plan = T.id === 'programm' ? st.plan : baue(T, st);
     if (e.eigeneMusik && e.musikName && !ton.musikDa()) { const M = await import('./musik.js').catch(() => null); const v = M && await M.laden(); if (v) ton.musikSetzen(v.pcm, v.meta.rate, v.meta.pegel); }   // 0.1.5 eigene Musik (bleibt auf dem Gerät)
     if (k && !SZda) { k.disabled = true; k.textContent = 'Lädt …'; }
@@ -424,7 +424,7 @@ function zeigeEinstellungen() {
       const pt = $('#probetext'), pw = $('#probewort'); if (pt && pw) { pw.textContent = zt ? ZM.TEXT[zt] : t === 'aus' ? 'Ohne Ton – Kreis und Figur führen allein.' : t === 'wind' ? 'Wind: rauscht beim Einatmen auf, beim Ausatmen ab.' : 'Klang: eine Glocke beim Einatmen, eine tiefere beim Ausatmen.'; pt.classList.remove('puls'); void pt.offsetWidth; pt.classList.add('puls'); }
     }
     else if (b.dataset.ans) { speicher.setzeEinst({ ansicht: b.dataset.ans }); zeigeEinstellungen(); }
-    else if (b.id === 'tonpruef') { const { ton } = await import('./ton.js'); ton.einstellen({ art: 'klang', laut: speicher.einst().laut }); const r = await ton.pruefen(); $('#tonerg').innerHTML = `<p>Hörst du drei Töne?</p><div class="zwei"><button class="knopf" id="tja">Ja</button><button class="knopf" id="tnein">Nein</button></div>`; $('#tonerg').dataset.zustand = r.zustand; }
+    else if (b.id === 'tonpruef') { ton.einstellen({ art: 'klang', laut: speicher.einst().laut }); const r = await ton.pruefen(); $('#tonerg').innerHTML = `<p>Hörst du drei Töne?</p><div class="zwei"><button class="knopf" id="tja">Ja</button><button class="knopf" id="tnein">Nein</button></div>`; $('#tonerg').dataset.zustand = r.zustand; }
     else if (b.id === 'tnein') $('#tonerg').innerHTML = '<p class="hinweis">Prüfe den Stummschalter und die Lautstärke. Öffne die App sonst einmal neu. Das Bild führt dich auch ohne Ton.</p>';
     else if (b.id === 'tja') $('#tonerg').innerHTML = '<p class="leise">Gut.</p>';
     else if (b.id === 'sichlesen') erststart();
@@ -458,8 +458,10 @@ async function allesLoeschen() {
 
 // ---------- Router ----------
 const frei = () => $('#sitzung').hidden && !document.querySelector('.md-spieler');   // 016-nb B1: auch eine laufende Meditation nie durch Neuladen abbrechen
+const ohneAutostart = () => { const [w, q] = location.hash.split('?'), p = new URLSearchParams(q || ''); if (p.get('s') !== '1') return; p.delete('s'); const r = p.toString(); history.replaceState(null, '', w + (r ? '?' + r : '')); };   // 021 M2: nach dem Neuladen kein stummer Autostart
 function route() {
-  if (neuLaden && frei()) return location.reload();
+  if (neuLaden && frei()) { ohneAutostart(); return location.reload(); }
+  { const b = $('#blatt'); if (!b.hidden) { b.hidden = true; b.innerHTML = ''; } }   // 021 K8: offenes Blatt schließt beim Seitenwechsel (nichts gewählt)
   tippSperre();   // neue Seite: ein zweiter Tipp an derselben Stelle trifft nicht gleich den Knopf darunter   // neue Fassung aktiv: sauber neu laden, nie alt+neu mischen
   if (vergleichStop) { vergleichStop(); vergleichStop = null; }
   if (vorschauStop) { vorschauStop(); vorschauStop = null; }

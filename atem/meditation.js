@@ -41,7 +41,7 @@ export async function stimmenLoeschen() { try { return await caches.delete(CACHE
 export function erzeugeSpieler(o = {}) {
   const basis = o.basis || './stimme/', AC = o.AudioContext || window.AudioContext || window.webkitAudioContext;
   let ctx = o.ctx || null, eigen = !o.ctx, master = null, med = null, sp = 'de', plan = null, laenge = 'normal', schlaf = false;
-  let t0 = 0, pos = 0, zustand = 'leer', naechster = 0, takt = null, burst = false, system = false, wake = null, laut = o.laut ?? 0.6;
+  let t0 = 0, pos = 0, zustand = 'leer', naechster = 0, takt = null, burst = false, system = false, wake = null, laut = o.laut ?? 0.6, ctxAb = 0, pruefT = null;
   const puffer = new Map(), fehlt = new Set(), laden = new Set(), quellen = new Map(), timer = new Map(), proto = [];
   const ereignis = { stand: o.beiStand || null, ende: o.beiEnde || null };
   const log = (e) => { proto.push(e); if (proto.length > 5000) proto.shift(); };
@@ -50,7 +50,7 @@ export function erzeugeSpieler(o = {}) {
   const url = (d) => basis + sp + '/' + d;
   async function hole(d) {   // Clip holen + dekodieren (einmal je Datei; Wiederholungen teilen den Puffer)
     if (puffer.has(d) || fehlt.has(d) || laden.has(d)) return;
-    laden.add(d);
+    laden.add(d); const c0 = ctx;
     try {
       let r = null; try { r = await fetch(url(d)); } catch {}
       if ((!r || !r.ok) && self.caches) { const c = await caches.open(CACHE); r = await c.match(new URL(url(d), location.href).href); }
@@ -58,7 +58,7 @@ export function erzeugeSpieler(o = {}) {
       const roh = await r.arrayBuffer();
       puffer.set(d, await new Promise((ok, f) => { const p = ctx.decodeAudioData(roh, ok, f); if (p && p.then) p.then(ok, f); }));
       log({ art: 'geladen', d });
-    } catch { fehlt.add(d); system = true; log({ art: 'fehlt', d }); }
+    } catch { if (c0 !== ctx) log({ art: 'neu_laden', d }); else { fehlt.add(d); system = true; log({ art: 'fehlt', d }); } }   // 0.2.1: Kontext im Tipp ersetzt → nicht „fehlt“, beim nächsten Planen neu
     finally { laden.delete(d); if (zustand === 'laeuft') plane(); }
   }
   function vorladen() {
@@ -122,6 +122,10 @@ export function erzeugeSpieler(o = {}) {
     master = null;
   }
   function neuerAusgang() { master = ctx.createGain(); master.gain.value = pegel(); master.connect(ctx.destination); }
+  // 0.2.1 (wie ton.js 021b): Störung (Anruf, Sperre) → Pause; nur der aktuelle Kontext zählt
+  function wache() { const c = ctx; if (c) c.onstatechange = () => { if (c === ctx && c.state !== 'running' && c.state !== 'closed' && zustand === 'laeuft') A.pause('stoerung'); }; }
+  // 0.2.1: läuft der Ton 1,2 s nach Start/Weiter nicht (iOS: resume() hängt), ehrlich anhalten – das Blatt „Weiter“ erscheint, der Tipp darauf legt einen neuen Kontext an
+  function pruefeLauf() { clearTimeout(pruefT); pruefT = setTimeout(() => { pruefT = null; if (zustand === 'laeuft' && ctx && ctx.state !== 'running' && ctx.state !== 'closed') A.pause('stumm'); }, 1200); }
   const sicht = () => { burst = document.visibilityState === 'hidden'; if (zustand === 'laeuft') { if (burst) vorladen(); else holeWake(); plane(); } };
   async function holeWake() { try { if (o.wach !== false && !wake && navigator.wakeLock && document.visibilityState === 'visible') { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); } } catch { wake = null; } }
   function lasseWake() { try { if (wake) wake.release(); } catch {} wake = null; }
@@ -137,7 +141,7 @@ export function erzeugeSpieler(o = {}) {
   }
   function beenden(grund, ausblende) {
     if (zustand === 'ende' || zustand === 'leer') return;
-    const war = zustand; zustand = 'ende'; clearInterval(takt); takt = null;
+    const war = zustand; zustand = 'ende'; clearInterval(takt); takt = null; clearTimeout(pruefT);
     stopAlles(ausblende ?? (grund === 'fertig' ? 0.05 : 1.2));
     document.removeEventListener('visibilitychange', sicht); lasseWake(); medien(false);
     if (ctx && eigen) { const c = ctx; setTimeout(() => { try { c.close(); } catch {} }, 1500); ctx = null; }
@@ -146,8 +150,14 @@ export function erzeugeSpieler(o = {}) {
   }
   const A = {
     // Im Tipp auf „Starten“ rufen (iOS: Ton vor jedem await anlegen)
+    // 0.2.1 (B1): hängt der Kontext (iOS nach Sperre „interrupted“, resume() kommt nicht an – WebKit 281566), im Tipp einen neuen anlegen.
+    // Die Puffer bleiben (AudioBuffer gehören keinem Kontext); der alte wird erst nach 2 s geschlossen (laufendes Dekodieren).
     entsperren() {
-      if (!ctx && AC) { try { ctx = new AC({ latencyHint: 'playback', sampleRate: 24000 }); } catch { ctx = new AC(); } eigen = true; }
+      const t = performance.now(), geste = !navigator.userActivation || navigator.userActivation.isActive;
+      if (ctx && eigen && geste && zustand !== 'laeuft' && ctx.state !== 'running' && ctx.state !== 'closed' && (ctx.state === 'interrupted' || t - ctxAb > 800)) {
+        const alt = ctx; ctx = null; alt.onstatechange = null; setTimeout(() => { try { alt.close(); } catch {} }, 2000); log({ art: 'neuer_kontext', war: alt.state });
+      }
+      if (!ctx && AC) { try { ctx = new AC({ latencyHint: 'playback', sampleRate: 24000 }); } catch { ctx = new AC(); } eigen = true; ctxAb = t; wache(); }
       if (ctx && ctx.state !== 'running') { const r = ctx.resume(); if (r && r.catch) r.catch(() => {}); }
       try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch {}
       return ctx;
@@ -159,19 +169,18 @@ export function erzeugeSpieler(o = {}) {
       if (!med) throw new Error('kein Manifest');
       if (!med.laengen[L]) L = LAENGEN.find((x) => med.laengen[x]);
       laenge = L; schlaf = !!(s && med.schlaf_modus); plan = zeitplan(med, laenge, schlaf);
-      A.entsperren(); neuerAusgang();
-      ctx.onstatechange = () => { if (ctx && ctx.state !== 'running' && ctx.state !== 'closed' && zustand === 'laeuft') A.pause('stoerung'); };   // Anruf: Pause
+      A.entsperren(); neuerAusgang(); wache();   // Anruf/Sperre: Pause
       naechster = plan.eintraege.findIndex((e) => e.ab + (e.dauer || 0) > ab); if (naechster < 0) naechster = plan.eintraege.length;
       t0 = uhr() + 0.3 - (naechster < plan.eintraege.length ? plan.eintraege[naechster].ab : ab);
       zustand = 'laeuft'; burst = document.visibilityState === 'hidden';
       document.addEventListener('visibilitychange', sicht); holeWake(); medien(true);
       log({ art: 'start', laenge, schlaf, sp, gesamt: plan.gesamt, t0 });
-      clearInterval(takt); takt = setInterval(plane, 250); plane();
+      clearInterval(takt); takt = setInterval(plane, 250); plane(); pruefeLauf();
       return plan;
     },
     pause(grund = 'knopf') {
       if (zustand !== 'laeuft') return;
-      pos = uhr() - t0; zustand = 'pause'; clearInterval(takt); takt = null; stopAlles(0.25); lasseWake(); medien(true);
+      pos = Math.max(0, uhr() - t0); zustand = 'pause'; clearInterval(takt); takt = null; clearTimeout(pruefT); stopAlles(0.25); lasseWake(); medien(true);
       log({ art: 'pause', pos, grund });
       if (ereignis.stand) ereignis.stand(A.stand());
     },
@@ -182,7 +191,7 @@ export function erzeugeSpieler(o = {}) {
       const e = plan.eintraege[i], neu = !e ? plan.gesamt : e.art === 'sprache' ? e.ab : Math.max(e.ab, pos);
       naechster = i; t0 = uhr() + 0.3 - neu; zustand = 'laeuft'; holeWake(); medien(true);
       log({ art: 'weiter', ab: neu, i });
-      clearInterval(takt); takt = setInterval(plane, 250); plane();
+      clearInterval(takt); takt = setInterval(plane, 250); plane(); pruefeLauf();
     },
     beenden(grund = 'gestoppt') { if (zustand === 'laeuft') pos = uhr() - t0; beenden(grund); },
     lautstaerke(l) { laut = l; if (master && ctx) master.gain.setTargetAtTime(pegel(), ctx.currentTime, 0.05); },

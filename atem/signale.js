@@ -114,6 +114,7 @@ export const signale = {
   // am Ende von takt(): vorgemerkte Schritte planen – jetzt sind die Wörter dieses Takts bekannt
   plane({ ctx, ziel, jetzt, ausgleich = 0, plan, lauf, log }) {
     if (lauf !== meinLauf) { stoppe(ctx); meinLauf = lauf; }   // neuer Lauf (Start, Weiter nach Pause): Altes nie mitnehmen
+    for (const [i, e] of eintraege) if (e.ende != null && e.ende < jetzt - 3000) { for (const k of e.n) if (k.g) try { k.g.disconnect(); } catch {} eintraege.delete(i); }   // 021 M3: verklungene Zähltöne freigeben (sonst +44 Knoten/min bis zum Ende)
     if (!offen.size || !plan) return;
     for (const i of offen) {
       const st = plan.start[i], alt = eintraege.get(i); if (alt && alt.st === st) continue;

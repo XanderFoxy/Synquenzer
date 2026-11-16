@@ -49,13 +49,13 @@ export function fuelle(box, ctx = {}) {
         <details><summary>Eintragen (freiwillig)</summary><label class="zl-schieber"><span>${art === 'einschlafen' ? 'Minuten' : '0–10'}</span> <b id="zl-w-${art}">${art === 'einschlafen' ? 20 : 5}</b><input type="range" min="${art === 'imt_stufe' ? 1 : 0}" max="${max}" step="${art === 'einschlafen' ? 5 : 1}" value="${art === 'einschlafen' ? 20 : 5}" data-zl-art="${art}"></label><button class="zl-los zweit" data-zl-speichern="${art}">Eintragen</button></details>
         ${F.d ? `<p class="zl-mini">${esc(F.d)}</p>` : ''}</div>`; }
   }
-  const W = PLAN[z.p].w[Math.min(3, wi - 1)], tipp = P.tipps[Math.min(3, wi - 1)];
+  const W = PLAN[z.p].w[Math.min(3, wi - 1)], tipp = P.tipps[Math.min(3, wi - 1)], hw = (P.hw || [])[Math.min(3, wi - 1)];   // 021 N5: Wochenhinweis
   box.innerHTML = `<div class="zl-karte"><span class="zl-ueber">${esc(zi.name)} · Woche ${Math.min(4, wi)}</span><div class="zl-seg">${seg}</div>
       <div class="zl-ziel">${blume(h.fenster.map((f) => geuebt(h.m[tagKey(f)])), 120, h.fenster.findIndex((f) => tagKey(f) === heuteK))}<span><b>${h.wocheTage} von ${h.zielTage} Tagen</b><span>${h.wocheMin} min diese Woche</span></span></div>
-      <div class="zl-tage">${tage}</div><p class="zl-leise">Diese Woche: ${esc(W.t)} · ${W.u.map((u) => esc(name(u)) + ' ' + esc(dauer(u))).join(' + ')}</p>${tipp ? `<p class="zl-mini">${esc(tipp)}</p>` : ''}</div>
+      <div class="zl-tage">${tage}</div><p class="zl-leise">Diese Woche: ${esc(W.t)} · ${W.u.map((u) => esc(name(u)) + ' ' + esc(dauer(u))).join(' + ')}</p>${hw ? `<p class="zl-mini">${esc(hw)}</p>` : ''}${tipp ? `<p class="zl-mini">${esc(tipp)}</p>` : ''}</div>
     ${summen}${mess}
-    <div class="zl-karte"><span class="zl-ueber">Was ist belegt</span><p class="zl-leise">${esc(erw.t)}</p>${leds({ hoch: 'gut', mittel: 'mittel', gering: 'schwach' }[erw.b] || '')}
-      <details><summary>Quelle (${erw.q.length || P.q.length})</summary>${quellenHtml(erw.q.length ? erw.q : P.q)}</details></div>
+    <div class="zl-karte"><span class="zl-ueber">Was ist belegt</span><p class="zl-leise">${esc(erw.t)}</p>${leds({ hoch: 'gut', mittel: 'mittel', gering: 'schwach' }[erw.b] || erw.b || '')}
+      <details><summary>${erw.q.length ? (erw.q.length === 1 ? 'Quelle' : 'Quellen') : 'Quellen zum Programm'} (${erw.q.length || P.q.length})</summary>${quellenHtml(erw.q.length ? erw.q : P.q)}</details></div>
     <div class="zl-karte">${zeile('#health', 'In Health eintragen')}${zeile('#erinnerung', 'Erinnerung')}${zeile('#ziel', 'Ziel ändern', esc(zi.name))}</div>`;
   box.oninput = (e) => { const i = e.target.closest('[data-zl-art]'); if (i) box.querySelector('#zl-w-' + i.dataset.zlArt).textContent = i.value; };
   box.onclick = (e) => { const b = e.target.closest('[data-zl-speichern]'); if (!b) return; const a = b.dataset.zlSpeichern, i = box.querySelector(`[data-zl-art="${a}"]`); selbstWert({ t: new Date().toISOString(), a, w: +i.value }); fuelle(box, ctx); };

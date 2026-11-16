@@ -6,17 +6,22 @@ const zLade = () => (Z ? Promise.resolve(Z) : import('./signale.js').then((m) =>
 let ctx = null, haupt = null, einst = { art: 'klang', laut: 0.6, sekunden: false, ansage: false }, planer = null, geplant = new Map(), proto = [], wind = null, rausch = null;
 // Ansage (0.1.3.1): je Lauf (starte…halt) jeder Schritt höchstens einmal (Schlüssel Schritt + Startzeit), Timer gemerkt und beim Anhalten gelöscht
 let lauf = 0, ansageT = new Map(), gesagt = new Map(), letzteU = null, glocken = new Map(), knoten = null;   // glocken: vorausgeplante Glocken je Schritt
-let uhrRef = null, planRef = null, testZeit = null, wachSeit = 0, ersatzT = -1e9, musikZ = false;
+let uhrRef = null, planRef = null, testZeit = null, wachSeit = 0, ersatzT = -1e9, musikZ = false, ctxAb = 0, weckT = 0, zaehlK = [];
+// 021b: Vorlauf 0,6 → 1,5 s (Wort/Töne auf der ctx-Uhr) – ein Hänger ≥ 0,75 s ließ sonst das Wort der Phase fallen
+const VORLAUF = 1500;
 const db = (d) => Math.pow(10, d / 20);
+const still0 = (c) => { try { const b = c.createBuffer(1, 1, c.sampleRate), s = c.createBufferSource(); s.buffer = b; s.connect(c.destination); s.start(0); } catch {} };   // stiller Puffer im Tipp (iOS)
 
 function neuerKontext() {
   const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
-  const c = new AC({ latencyHint: 'interactive' });
+  const c = new AC({ latencyHint: 'interactive' }); ctxAb = performance.now(); wachSeit = 0;
   haupt = c.createGain(); haupt.gain.value = einst.laut * 0.4; haupt.connect(c.destination);
-  const b = c.createBuffer(1, 1, c.sampleRate), s = c.createBufferSource(); s.buffer = b; s.connect(c.destination); s.start(0);
-  c.onstatechange = () => { if (c !== ctx) return; if (c.state === 'running') wachSeit = 0; else if (c.state !== 'closed' && ton.beiStoerung) ton.beiStoerung(c.state); };   // nur der aktuelle Kontext zählt
+  still0(c);
+  c.onstatechange = () => { if (c !== ctx) return; if (c.state === 'running') { wachSeit = 0; nachholen(); } else if (c.state !== 'closed' && ton.beiStoerung) ton.beiStoerung(c.state); };   // nur der aktuelle Kontext zählt; 021b: läuft er wieder → nachplanen
   return c;
 }
+// 021b: Ton hängt = Kontext läuft nach 0,8 s nicht (iOS: ohne Tipp, „interrupted“ nach Sperre)
+const haengt = () => !TEST && !!ctx && ctx.state !== 'running' && ctx.state !== 'closed' && performance.now() - ctxAb > 800;
 function glocke(at, hz, lautDb = 0, dauer = 1.5, ziel = haupt) {
   if (TEST) { proto.push({ art: 'glocke', hz, t_ms: testZeit }); return; }
   if (!ctx) return;
@@ -46,10 +51,11 @@ function ansage(wort) {
     // Hängt noch eine alte Äußerung (iOS: Schlange, leere Entsperr-Äußerung), erst verwerfen – sonst käme das Wort zu spät oder doppelt
     if (letzteU && letzteU.w === wort && performance.now() - letzteU.t < 1500) return;   // 0.1.5 Netz: dasselbe Wort nie zweimal binnen 1,5 s
     if (speechSynthesis.pending || (speechSynthesis.speaking && (!letzteU || performance.now() - letzteU.t > 1200))) speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(wort); u.lang = 'de-DE'; letzteU = { t: performance.now(), w: wort }; speechSynthesis.speak(u);
+    const u = new SpeechSynthesisUtterance(wort); u.lang = 'de-DE'; letzteU = { t: performance.now(), w: wort, u }; speechSynthesis.speak(u);
   } catch {}
 }
 function ansageWeg() { for (const t of ansageT.values()) clearTimeout(t); ansageT = new Map(); }
+function zaehlWeg() { for (const g of zaehlK) try { g.disconnect(); } catch {} zaehlK = []; }   // 0.2.1: Einzähltöne abhängen (Ton aus, Pause, Beenden)
 const ANSAGE = { ein: 'Ein', ein2: 'Noch etwas', halten_voll: 'Halten', halten_leer: 'Halten', aus: 'Aus' };
 // Wort für Schritt i: ab 2 s; 0.1.5: kurzes Einatmen (ab 0,9 s) zwischen zwei gleichen Ansagen (Aus – Ein – Aus) auch – sonst hört man „Aus … Aus“
 const lang2 = (s) => s && (s.ms || 0) >= 2000 ? ANSAGE[s.art] : null;
@@ -83,17 +89,21 @@ function takt() {
   planRef = plan;
   for (const [k] of glocken) if (!(plan.start[k] > jetzt)) glocken.delete(k);
   const ausgleich = ctx ? Math.min(0.3, Math.max(0, ctx.outputLatency || ctx.baseLatency || 0)) : 0;
+  // 021b: Kontext steht → nichts in seine Uhr legen (käme beim Entsperren alles auf einmal); Systemstimme geht ohne ihn
+  const steht = !TEST && !!ctx && ctx.state !== 'running', sprite = einst.ansage === 'stimme' && ton.stimme && (ton.stimme.festerWeg || ton.stimme.weg) === 'sprite';
+  if (steht && ctx.state !== 'closed' && performance.now() - weckT > 1500) { weckT = performance.now(); try { const r = ctx.resume(); if (r && r.catch) r.catch(() => {}); } catch {} }   // gestört: leise weiter versuchen
   for (let i = 0; i < plan.schritte.length; i++) {
     const st = plan.start[i];
-    if (st > jetzt + 600) break;
+    if (st > jetzt + VORLAUF) break;
     if (st < jetzt - 50 || geplant.get(i) === st) continue;   // schon geplant (gleicher Schritt, gleiche Startzeit)
     if (plan.offenAb >= 0 && i > plan.offenAb) break;
+    if (steht && sprite) continue;
     geplant.set(i, st);
     testZeit = st;
     const at = ctx ? ctx.currentTime + (st - jetzt) / 1000 - ausgleich : 0;
-    knoten = st > jetzt ? [] : null; planeSchritt(i, Math.max(ctx ? ctx.currentTime : 0, at)); if (knoten && knoten.length) glocken.set(i, knoten); knoten = null;
+    knoten = st > jetzt ? [] : null; if (!steht) planeSchritt(i, Math.max(ctx ? ctx.currentTime : 0, at)); if (knoten && knoten.length) glocken.set(i, knoten); knoten = null;
     const w = sagWort(plan, i);
-    if (einst.ansage === 'stimme' && ton.stimme) { const e = ton.stimme.schritt(i, plan, st, jetzt, at, ctx, w); if (Z) Z.wort(i, e); continue; }   // 020-klang: Sprite-Wort freihalten |   // 016: echte Stimme (stimme.js); w = Wort-Regel sagWort 0.1.5
+    if (einst.ansage === 'stimme' && ton.stimme) { const e = ton.stimme.schritt(i, plan, st, jetzt, at, steht ? null : ctx, w); if (Z) Z.wort(i, e); continue; }   // 020-klang: Sprite-Wort freihalten |   // 016: echte Stimme (stimme.js); w = Wort-Regel sagWort 0.1.5
     if (!einst.ansage || plan.modus === 'messen' || !w || gesagt.has(i) || gesagt.get(i - 1) === w) continue;   // gleiches Wort direkt davor: schweigen
     gesagt.set(i, w); clearTimeout(ansageT.get(i));
     if (Z) Z.wort(i, 'system');   // 020-klang
@@ -105,7 +115,15 @@ function takt() {
       ansage(w);
     }, soll - jetzt));
   }
-  if (Z) Z.plane({ ctx, ziel: haupt, jetzt, ausgleich, plan, lauf, log: (e) => proto.push(e) });   // 020-klang
+  if (Z && !steht) Z.plane({ ctx, ziel: haupt, jetzt, ausgleich, plan, lauf, log: (e) => proto.push(e) });   // 020-klang
+}
+// 021b: „Ton an“/entsperrt wirkt sofort: Zähltöne des laufenden Schritts nachplanen (nur kommende Schläge)
+function nachholen() {
+  if (!Z || !planer || !uhrRef || !uhrRef.plan || uhrRef.pausiert || einst.art === 'aus' || !ctx || ctx.state !== 'running') return;
+  const plan = uhrRef.plan, jetzt = uhrRef.zeit(), z = uhrRef.zustand(); if (z.fertig || !(plan.start[z.i] <= jetzt)) return;
+  if (!Z.nimmt(z.i, plan, einst)) return;
+  const e = ton.stimme && ton.stimme.offenBei ? ton.stimme.offenBei(z.i) : null; if (e) Z.wort(z.i, e);
+  Z.plane({ ctx, ziel: haupt, jetzt, ausgleich: Math.min(0.3, Math.max(0, ctx.outputLatency || ctx.baseLatency || 0)), plan, lauf, log: (x) => proto.push(x) });
 }
 // 0.1.5 Probehören (Klang-Wahl wie Klingelton-Auswahl): eigener Proben-Zweig im vorhandenen Kontext; neuer Tipp blendet die alte Probe in 50 ms aus
 let probeG = null, probeQ = [];
@@ -146,27 +164,39 @@ function musikAus(blende = 0.6) {
 }
 export const ton = {
   beiStoerung: null, stimme: null, kontext: () => ctx,   // 016: Ansager aus stimme.js
-  entsperren(musik) {
+  // Im Tipp. 021b o.neu (Start/Weiter/„Ton antippen“): hängt der Kontext (resume() kommt auf iOS oft nicht an, WebKit 281566), im selben Tipp neu anlegen.
+  // o.ansage: Systemstimme im Tipp freischalten, solange das Sprite nicht bereit ist.
+  entsperren(musik, o = {}) {
     if (TEST) return true;
     musikZ = !!musik;
     try { if (navigator.audioSession) navigator.audioSession.type = musik ? 'ambient' : 'playback'; } catch {}
     try {
-      if (!ctx || ctx.state === 'closed') { ctx = neuerKontext(); wind = null; if (planer && einst.art === 'wind') windStart(); }   // bei „interrupted“ keine neuen Kontexte (0.1.2.1)
-      if (ctx && ctx.state !== 'running') { const r = ctx.resume(); if (r && r.catch) r.catch(() => {}); }
+      const t = performance.now();
+      const geste = !navigator.userActivation || navigator.userActivation.isActive;   // neu nur im Tipp
+      if (geste && haengt() && (o.neu || ctx.state === 'interrupted' || (wachSeit && t - wachSeit > 300)) && t - ersatzT > (o.neu ? 0 : 2000)) { ersatzT = t; try { ctx.close(); } catch {} ctx = null; }
+      if (!ctx || ctx.state === 'closed') { ctx = neuerKontext(); wind = null; if (planer && einst.art === 'wind') windStart(); }
+      if (ctx && ctx.state !== 'running') { if (!wachSeit) wachSeit = t; const r = ctx.resume(); if (r && r.catch) r.catch(() => {}); still0(ctx); }
       if (haupt) haupt.gain.value = einst.laut * 0.4;
-      if (einst.ansage && window.speechSynthesis) { const u = new SpeechSynthesisUtterance(''); u.volume = 0; speechSynthesis.speak(u); }
+      const sprich = o.ansage != null ? o.ansage : einst.ansage;
+      if (sprich && window.speechSynthesis && !(ton.stimme && ton.stimme.bereit) && !speechSynthesis.pending && !speechSynthesis.speaking) { const u = new SpeechSynthesisUtterance(''); u.volume = 0; speechSynthesis.speak(u); }
     } catch { return false; }
     return true;
   },
-  // 0.1.4: jeder Tipp holt gestörten Ton zurück (iOS „interrupted“/„suspended“, auch nach Aktualisieren/Sperren).
-  // Läuft er 400 ms nach dem letzten Versuch noch nicht (resume() hängt, WebKit 281566), legt der nächste Tipp einen neuen Kontext an – höchstens einmal pro Minute (keine Kontext-Schleife).
+  // 0.1.4/021b: jeder Tipp holt gestörten Ton zurück; läuft er 0,3 s nach resume() nicht (oder „interrupted“), neuer Kontext (höchstens alle 2 s)
   wecken() {
     if (TEST || !ctx || ctx.state === 'running') return;
-    const t = performance.now(); if (wachSeit && t - wachSeit > 400 && t - ersatzT > 60000) { ersatzT = t; try { ctx.close(); } catch {} ctx = null; }
-    wachSeit = performance.now(); ton.entsperren(musikZ);
+    ton.entsperren(musikZ);
   },
   zustand: () => (TEST ? 'test' : ctx ? ctx.state : 'kein'),
-  einstellen(e) { einst = { ...einst, ...e }; if (e.art === 'aus' && Z && Z.still) Z.still(ctx, uhrRef && uhrRef.plan ? uhrRef.zeit() : null); /* 020-nb M3: Zähltöne sofort aus */ if (ton.stimme) ton.stimme.einstellen(einst); /* 016 */ if (haupt && ctx) haupt.gain.setTargetAtTime(einst.laut * 0.4, ctx.currentTime, 0.05); if (mQuelle && mGain && ctx && 'musikLaut' in e) mGain.gain.setTargetAtTime(musikZiel(), ctx.currentTime, 0.1); },
+  gesperrt: () => haengt(),   // 021b: Symbol „Ton antippen“
+  // 0.2.1 (B2): leiser Einzählton je Zahl (3-2-1) im neuen Kontext – der Ton ist ab dem Start-Tipp zu hören, nicht erst nach 3 s
+  einzaehlen(n = 3) {
+    zaehlWeg(); if (einst.art === 'aus') return;
+    if (TEST) { for (let k = 0; k < n; k++) proto.push({ art: 'einzaehlen', k, t_ms: k * 1000 }); return; }
+    if (!ctx || !haupt) return;
+    const t = ctx.currentTime + 0.03; knoten = []; for (let k = 0; k < n; k++) glocke(t + k, HZ.halten, -12, 0.6); zaehlK = knoten; knoten = null;
+  },
+  einstellen(e) { const warAus = einst.art === 'aus'; einst = { ...einst, ...e }; if (e.art === 'aus') { zaehlWeg(); if (Z && Z.still) Z.still(ctx, uhrRef && uhrRef.plan ? uhrRef.zeit() : null); for (const ks of glocken.values()) for (const g of ks) try { g.disconnect(); } catch {} glocken = new Map(); } /* 020-nb M3 + 021b: geplante Töne sofort weg */ if ('ansage' in e && !e.ansage && ton.stimme && planer) ton.stimme.halt(true); if (warAus && e.art && e.art !== 'aus') nachholen(); if (ton.stimme) ton.stimme.einstellen(einst); /* 016 */ if (haupt && ctx) haupt.gain.setTargetAtTime(einst.laut * 0.4, ctx.currentTime, 0.05); if (mQuelle && mGain && ctx && 'musikLaut' in e) mGain.gain.setTargetAtTime(musikZiel(), ctx.currentTime, 0.1); },
   starte(uhr, plan) { uhrRef = uhr; planRef = plan; lauf++; ansageWeg(); geplant = new Map(); gesagt = new Map(); glocken = new Map(); if (ton.stimme) ton.stimme.starte(uhr); /* 016 */ if (einst.art === 'wind') windStart(); clearInterval(planer); planer = setInterval(takt, 100); takt(); if (einst.musikAn && (mPuffer || TEST)) musikAn(false); },
   neuPlanen() {   // nur Schritte, deren Startzeit sich geändert hat (Atmen-/Stopp-Knopf), neu planen – nie den gerade laufenden noch einmal
     const p = uhrRef && uhrRef.plan; if (!p) return;
@@ -180,7 +210,7 @@ export const ton = {
     if (planer) takt();   // Schritt, der durch den Knopf jetzt beginnt, sofort planen (nicht erst beim nächsten Takt, sonst > 50 ms und still)
   },
   halt() {
-    clearInterval(planer); planer = null;
+    clearInterval(planer); planer = null; zaehlWeg();
     if (Z) Z.halt(ctx, uhrRef && uhrRef.plan ? uhrRef.zeit() : null);   // 020-klang
     if (ctx && haupt) { const t = ctx.currentTime; haupt.gain.cancelScheduledValues(t); haupt.gain.setValueAtTime(haupt.gain.value, t); haupt.gain.linearRampToValueAtTime(0, t + 0.05); const h = haupt; setTimeout(() => { try { h.disconnect(); } catch {} }, 120); haupt = ctx.createGain(); haupt.gain.value = einst.laut * 0.4; haupt.connect(ctx.destination); }
     wind = null; geplant = new Map(); gesagt = new Map(); glocken = new Map(); lauf++; ansageWeg(); musikAus(); if (ton.stimme) ton.stimme.halt();   // 016

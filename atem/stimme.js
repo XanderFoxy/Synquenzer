@@ -47,7 +47,7 @@ export function erzeugeAnsager(o = {}) {
       if (S.pending || (S.speaking && (!letzteU || jetztMs() - letzteU > 1200))) S.cancel();
       const u = new SpeechSynthesisUtterance(text); u.lang = LANG[sp] || 'de-DE'; u.volume = Math.min(1, pegel());
       const v = (S.getVoices ? S.getVoices() : []).find((x) => x.lang && x.lang.replace('_', '-').startsWith(u.lang.slice(0, 2))); if (v) u.voice = v;
-      letzteU = jetztMs(); letzteW = text; S.speak(u);
+      letzteU = jetztMs(); letzteW = text; A._u = u; S.speak(u);   // 021b: Äußerung festhalten (iOS: sonst kann sie vor dem Ende eingesammelt werden, „speaking“ bleibt hängen)
     } catch {}
   }
   function weg(i, e) { if (e.q) { try { e.q.stop(); } catch {} try { e.q.disconnect(); } catch {} } if (e.t) clearTimeout(e.t); offen.delete(i); }
@@ -106,6 +106,7 @@ export function erzeugeAnsager(o = {}) {
       if (!still) try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch {}
     },
     systemStimmeDa() { try { const v = speechSynthesis.getVoices(); return !v.length ? null : v.some((x) => (x.lang || '').startsWith(sp)); } catch { return false; } },
+    offenBei: (i) => offen.get(i) || null,   // 021b: geplantes Wort eines Schritts (Zähltöne nachplanen, Fenster frei halten)
     protokoll: () => proto.slice(), leeren() { proto = []; }
   };
   return A;

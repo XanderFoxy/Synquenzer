@@ -1,5 +1,5 @@
 // 020-ziele: Achtsamkeitsminuten in Health über einen Kurzbefehl (recherche/technik.md Teil 3).
-// Eine Web-App kann nicht selbst in Health schreiben. Der Kurzbefehl „Atem-Minuten“ trägt nur die Minuten ein; nichts wird verschickt.
+// 021 K2: Aktionsname laut Kurzbefehle-Hilfe DE „Health-Messung protokollieren“ (QUELLEN.md R01). Eine Web-App kann nicht selbst in Health schreiben. Der Kurzbefehl „Atem-Minuten“ trägt nur die Minuten ein; nichts wird verschickt.
 import { speicher } from './speicher.js';
 import { stil, healthLink } from './ziele.js';
 
@@ -16,10 +16,10 @@ const BILD = [
 const SCHRITTE = [
   'Öffne „Kurzbefehle“ und tippe oben rechts auf „+“.',
   'Nenne den Kurzbefehl genau „Atem-Minuten“.',
-  'Tippe auf „Aktion hinzufügen“, suche „Health“ und wähle „Health-Probe protokollieren“.',
+  'Tippe auf „Aktion hinzufügen“, suche „Health“ und wähle „Health-Messung protokollieren“.',
   'Wähle als Typ „Achtsamkeitsminuten“ und als Wert „Kurzbefehleingabe“.',
   'Fragt die Aktion nach Start und Ende: Ende = „Aktuelles Datum“; für den Start davor „Datum anpassen“ (minus Kurzbefehleingabe Minuten).',
-  'Tippe auf „Fertig“, starte ihn einmal und erlaube das Eintragen.'
+  'Tippe auf „Fertig“. Tippe dann hier unten auf „Probe: 1 Minute eintragen“ und erlaube das Eintragen.'
 ];
 export function fuelle(box, ctx = {}) {
   stil(); box.classList.add('zl');
@@ -30,6 +30,6 @@ export function fuelle(box, ctx = {}) {
     <div class="zl-karte"><span class="zl-ueber">Einmal einrichten</span><p class="zl-leise">Ohne diesen Kurzbefehl kann eine Web-App nichts in Health eintragen.</p>
       <ol class="zl-schritte">${SCHRITTE.map((s, i) => `<li>${BILD[i]}<span>${s}</span></li>`).join('')}</ol>
       <a class="zl-los zweit" href="${healthLink(1)}" id="zl-h-probe">Probe: 1 Minute eintragen</a>
-      <p class="zl-mini">Ob Health den Eintrag gespeichert hat, kann die App nicht sehen – schau einmal in Health unter Achtsamkeitsminuten.</p></div>`;
+      <p class="zl-mini">Ob Health den Eintrag gespeichert hat, kann die App nicht sehen – schau einmal in Health unter Achtsamkeitsminuten. Den Probe-Eintrag kannst du dort wieder löschen.</p></div>`;
   box.onchange = (e) => { if (e.target.id === 'zl-h-an') speicher.setzeWert('health', { ...h, an: e.target.checked }); };
 }
