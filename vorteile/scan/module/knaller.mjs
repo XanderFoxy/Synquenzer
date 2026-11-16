@@ -46,6 +46,7 @@ export const STANDARD = {
   orte: ['Döbeln', 'Chemnitz', 'Leipzig'],
   ort: 'Döbeln',
   maxFilialeKm: 30,
+  nahKm: 10, // Xander 16.11.2026: nur Märkte mit Filiale bis nahKm um Döbeln zeigt die Seite sofort, die übrigen unter „weitere Märkte“
   minProzent: 20,
   stufen: [20, 30, 40, 50],
   maxJeMarkt: 60,
@@ -322,7 +323,14 @@ export function marktguruTreffer(a, liste) {
 /** marktguru-Zeitraum überlappt den des Angebots (Lidl hat z. B. Chips 1,79 € diese Woche und andere ab nächster Woche) */
 export const zeitlichPassend = (a, g) => !(a.gueltigBis && Date.parse(g.ab) >= Date.parse(a.gueltigBis)) && !(a.gueltigAb && g.bis && Date.parse(g.bis) <= Date.parse(a.gueltigAb));
 
-export default async function knaller({ holeText, cfg, jetzt = new Date(), zustand = {}, vorherDatei = null }) {
+/** nächste Filiale des Markts von Döbeln aus der Filial-Datei (OSM) -> { adresse, km, von, quelle } oder null */
+export function filialeAusOsm(datei, id) {
+  const f = datei?.naechsteVomZentrum?.[id];
+  if (!f || typeof f.km !== 'number' || !Number.isFinite(f.km)) return null;
+  return { adresse: typeof f.adresse === 'string' ? f.adresse : '', km: f.km, von: datei.zentrum?.name || 'Döbeln', quelle: 'OpenStreetMap' };
+}
+
+export default async function knaller({ holeText, cfg, jetzt = new Date(), zustand = {}, vorherDatei = null, filialenDatei = null }) {
   const m = { ...STANDARD, ...(cfg.module?.knaller || {}) };
   const maerkte = (Array.isArray(m.maerkte) ? m.maerkte : []).filter(x => x && x.id && x.kaufda);
   const jetztMs = new Date(jetzt).getTime();
@@ -574,11 +582,15 @@ export default async function knaller({ holeText, cfg, jetzt = new Date(), zusta
     angebote.push(...l);
     const bis = l.map(a => a.gueltigBis).filter(Boolean).sort().pop() || null;
     const i = info[mk.id] || {};
+    // nächste Filiale von Döbeln: kaufDA (Orts-Händlerseite) oder – wenn kaufDA keine nennt (REWE: keine Döbelner Seite) – die
+    // Filial-Liste aus OpenStreetMap (Modul filialen). nah = bis nahKm (die Seite blendet die übrigen erst auf Wunsch ein).
+    if (!i.filiale) { const f = filialeAusOsm(filialenDatei, mk.id); if (f) i.filiale = f; }
+    const nah = i.filiale?.km != null ? i.filiale.km <= m.nahKm : i.keinMarkt ? false : null;
     const pr = prospekte[mk.id] ? [...prospekte[mk.id].values()] : [];
     maerkteOut[mk.id] = {
       name: mk.name, link: i.link || null, anzahl: l.length, ...(bis ? { prospektBis: bis } : {}), ...(st.alt.includes(mk.id) ? { alt: true } : {}),
       // Prospekt-Ort dieses Markts (Döbeln/Chemnitz/Leipzig oder „bundesweit (Berlin)“), nächste Filiale von Döbeln aus
-      ...(i.ort ? { ort: i.ort } : {}), ...(i.keinMarkt ? { keinMarkt: true } : {}), ...(i.filiale ? { filiale: i.filiale } : {}),
+      ...(i.ort ? { ort: i.ort } : {}), ...(i.keinMarkt ? { keinMarkt: true } : {}), ...(i.filiale ? { filiale: i.filiale } : {}), ...(nah != null ? { nah } : {}),
       // Vollständigkeit: kaufDA zählt gesamt Angebote in den Prospekten, gelesen = davon hier gesehen (Seite + Stichworte + Pool)
       ...(i.gesamt != null ? { gesamt: i.gesamt } : {}),
       ...(prospekte[mk.id] ? { gelesen: new Set([...(gesehenIds[mk.id] || []), ...(jeMarkt[mk.id] || []).filter(a => !a.bestaetigt).map(a => String(a.id).replace(/^kd:/, ''))]).size, mitVergleich: alleM.length } : {}),
@@ -606,20 +618,23 @@ export default async function knaller({ holeText, cfg, jetzt = new Date(), zusta
   if (!Object.keys(st.orte).length) delete st.orte;
   const stufen = (Array.isArray(m.stufen) && m.stufen.length ? m.stufen : STANDARD.stufen).filter(n => Number.isFinite(n));
   const spaeter = a => !!(a.gueltigAb && Date.parse(a.gueltigAb) > jetztMs);
-  const jetztGilt = angebote.filter(a => !spaeter(a));
+  // Start-Kachel wie der Reiter ohne Standort: nur Märkte mit Filiale bis nahKm um Döbeln (nah = false -> nicht mitgezählt)
+  const fern = maerkte.filter(x => maerkteOut[x.id]?.nah === false).map(x => x.id);
+  const kachelAngebote = angebote.filter(a => !fern.includes(a.markt));
+  const jetztGilt = kachelAngebote.filter(a => !spaeter(a));
   // Zähler je Stufe nur für das, was HEUTE gilt; was später kommt, steht extra (kommt)
   const ab = Object.fromEntries(stufen.map(n => [n, jetztGilt.filter(a => a.pct >= n).length]));
   // kommt = beginnt noch DIESE Woche (vor Mo 00:00 Berlin), naechste = ab Montag (Prüfer 16.11.2026: die Start-Kachel sagte
   // „+ 7 kommen diese Woche noch“, 3 davon erst ab 23./26.11.); wocheBis = dieses Ende, damit die Seite alte Zahlen erkennt
   const wocheBis = wochenEndeIso(jetztMs), wbMs = Date.parse(wocheBis);
   const dieseWoche = a => spaeter(a) && Date.parse(a.gueltigAb) < wbMs;
-  const kommt = Object.fromEntries(stufen.map(n => [n, angebote.filter(a => dieseWoche(a) && a.pct >= n).length]));
-  const naechste = Object.fromEntries(stufen.map(n => [n, angebote.filter(a => spaeter(a) && !dieseWoche(a) && a.pct >= n).length]));
+  const kommt = Object.fromEntries(stufen.map(n => [n, kachelAngebote.filter(a => dieseWoche(a) && a.pct >= n).length]));
+  const naechste = Object.fromEntries(stufen.map(n => [n, kachelAngebote.filter(a => spaeter(a) && !dieseWoche(a) && a.pct >= n).length]));
   const nameVon = id => maerkte.find(x => x.id === id)?.name || id;
   const kurz = {
-    anzahl: angebote.length, ab, kommt, naechste, wocheBis,
+    anzahl: kachelAngebote.length, ab, kommt, naechste, wocheBis, ...(fern.length ? { ohneFiliale: fern.map(nameVon) } : {}),
     // erst was jetzt gilt, dann was ab Montag/Donnerstag kommt (mit „ab“, damit die Start-Kachel „ab Mo“ sagen kann)
-    top: [...jetztGilt, ...angebote.filter(spaeter)].slice(0, 3).map(a => ({ titel: a.titel, markt: nameVon(a.markt), pct: a.pct, preis: a.preis, vorherArt: a.vorherArt, ...(a.abPreis ? { abPreis: true } : {}), ...(a.app ? { app: true } : {}), ...(spaeter(a) ? { ab: a.gueltigAb } : {}) })),
+    top: [...jetztGilt, ...kachelAngebote.filter(spaeter)].slice(0, 3).map(a => ({ titel: a.titel, markt: nameVon(a.markt), pct: a.pct, preis: a.preis, vorherArt: a.vorherArt, ...(a.abPreis ? { abPreis: true } : {}), ...(a.app ? { app: true } : {}), ...(spaeter(a) ? { ab: a.gueltigAb } : {}) })),
   };
   const datei = {
     version: 1,
@@ -632,7 +647,7 @@ export default async function knaller({ holeText, cfg, jetzt = new Date(), zusta
     maerkte: maerkteOut,
     angebote,
     status: { kaufda: st },
-    hinweis: 'Prospekt-Ort je Markt in maerkte.<id>.ort (regional = nicht der Prospekt für Döbeln, dort prüfen). Rabatt mit Vergleichspreis, abgerundet: vorherArt streich = Streichpreis im Prospekt, uvp = unverbindliche Preisempfehlung des Herstellers, unbekannt = Art nicht angegeben, geschaetzt = kein Vergleichspreis im Prospekt, sondern derselbe Artikel im selben Markt aus einem früheren Prospekt (vorherQuelle). abPreis = „ab“-Preis (bis zu). app = nur mit App/Karte. prospekt = Prospekt-id bei kaufDA. gueltigAb später als heute = kommt noch (abQuelle text/marktguru, wochenende = Fr/Sa-Angebot). maerkte.<id>.gesamt = Angebote in den Prospekten laut kaufDA, gelesen = davon gesehen. bestaetigt marktguru = aus einem anderen Prospekt desselben Markts, von marktguru für PLZ 04720 mit gleichem Preis und Produktwort bestätigt. menge = Packungsgröße (geschaetzt nur bei gleicher Packung). Online-Prospekte (netto-online.de …) zählen nicht (status.kaufda.online).',
+    hinweis: 'Prospekt-Ort je Markt in maerkte.<id>.ort (regional = nicht der Prospekt für Döbeln, dort prüfen). Rabatt mit Vergleichspreis, abgerundet: vorherArt streich = Streichpreis im Prospekt, uvp = unverbindliche Preisempfehlung des Herstellers, unbekannt = Art nicht angegeben, geschaetzt = kein Vergleichspreis im Prospekt, sondern derselbe Artikel im selben Markt aus einem früheren Prospekt (vorherQuelle). abPreis = „ab“-Preis (bis zu). app = nur mit App/Karte. prospekt = Prospekt-id bei kaufDA. gueltigAb später als heute = kommt noch (abQuelle text/marktguru, wochenende = Fr/Sa-Angebot). maerkte.<id>.gesamt = Angebote in den Prospekten laut kaufDA, gelesen = davon gesehen. bestaetigt marktguru = aus einem anderen Prospekt desselben Markts, von marktguru für PLZ 04720 mit gleichem Preis und Produktwort bestätigt. menge = Packungsgröße (geschaetzt nur bei gleicher Packung). Online-Prospekte (netto-online.de …) zählen nicht (status.kaufda.online). maerkte.<id>.filiale = nächste Filiale von Döbeln (kaufDA oder OpenStreetMap, quelle), nah = bis nahKm (false = keine Filiale in der Nähe: die Seite zeigt den Markt erst unter „weitere Märkte“, die Start-Kachel zählt ihn nicht).',
   };
   return { eintraege: [], fehler, hinweise, datei, kurz };
 }

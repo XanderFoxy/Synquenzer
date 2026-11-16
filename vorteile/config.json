@@ -336,6 +336,8 @@
       "orte": ["Döbeln", "Chemnitz", "Leipzig"],
       "ort": "Döbeln",
       "maxFilialeKm": 30,
+      "nahKm": 10,
+      "_nahKm": "Xander 16.11.2026 („nur Märkte, die wirklich in Döbeln sind“): maerkte.<id>.nah = nächste Filiale bis nahKm um Döbeln (kaufDA, sonst OpenStreetMap aus Modul filialen). nah false = Seite zeigt den Markt erst unter „weitere Märkte“, Start-Kachel zählt ihn nicht.",
       "minProzent": 20,
       "stufen": [20, 30, 40, 50],
       "maxJeMarkt": 60,
@@ -356,6 +358,14 @@
         { "id": "rewe", "name": "REWE", "kaufda": "REWE", "kaufdaId": 101, "haendler": ["REWE", "REWE Center", "REWE City"] },
         { "id": "marktkauf", "name": "Marktkauf", "kaufda": "Marktkauf", "kaufdaId": 60, "haendler": ["Marktkauf"] }
       ]
+    },
+    "filialen": {
+      "aktiv": true,
+      "intervallStunden": 168,
+      "_hinweis": "Filial-Liste (Xander 16.11.2026: „anhand von GPS … nur die Märkte zeigen, die für diese Gegend in Frage kommen“): einmal pro Woche EINE Overpass-Abfrage (OpenStreetMap, ODbL) nach allen Filialen der Märkte aus module.knaller.maerkte in Sachsen, Thüringen, Sachsen-Anhalt und Brandenburg im Rahmen bbox -> <data>/filialen.json (je Markt [Breite, Länge, Adresse]; nächste Filiale je Markt von Döbeln). Die Seite lädt sie nur nach „Standort verwenden“ (Position bleibt auf dem Gerät) und zeigt dann nur Märkte mit Filiale bis umkreisKm. „Netto“ ohne Zusatz (Scottie), ALDI SÜD und „to go“ zählen nicht.",
+      "overpass": "https://overpass-api.de/api/interpreter",
+      "nahKm": 10,
+      "umkreisKm": 15
     },
     "essen": {
       "aktiv": true,
