@@ -43,3 +43,7 @@ Bau: `python3 bau.py` (basis.html + erst-block.js → index.html; Block nach PER
   Test zeigte zwei weitere Test-Fallen: ERST-07 zählte eine Pulse-Welle einer nativen Stimme mit (Filter: nur 33 Werte ohne Optionen),
   und vom Planer verspätete Noten (t = jetzt) galten als „anders“ → Paarung „verschoben“ (gleiche Note, ≤ 0,35 s).
 - 08:49 Befund 1: NOTES „Messung NACHHER“ trennt jetzt Belegtes (Aufbau, CPU-Zeit) von unter Last nicht Belegtem (Wandzeit, Tipp→Ton).
+- 08:51–08:54 zweiter Stress (2× Drosselung, Last 16–26): alter Test 2× 11/13; neuer 13/16 und 14/16 – auch Basis gegen Basis
+  verliert dort bis zu 27 Noten. 06b gegen alle Basis-Läufe aller Versuche geschärft.
+- 08:55 erst-test Endfassung (Last 14–15,5): 16/16 (`erst-test.out`). 08:56 Pflicht grün (`pflicht.log`), parallel zweiter Lauf
+  16/16 (`nach/neu-lauf2.out`, 06 im 2. Versuch). index.html unverändert bb817396b41d1e598b6378079773eca0.
