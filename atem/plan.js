@@ -150,9 +150,17 @@ export function baueProgramm(P, TECH) {
     const T = TECH[x.uebung];
     if (i > 0) s.push({ ...ruhe(3000, T, { abschnitt: 'wechsel' }), wort: T.name });
     const zms = zyklusMs(T.phasen, T, {});
-    const n = Math.max(1, Math.round(x.min * 60000 / zms));
-    const p = baue(T, { zyklen: n });
-    s.push(...p.schritte.map((st) => ({ ...st, uebung: T.id, uebung_name: T.name })));
+    // 0.1.5: nie mehr Zyklen am Stück als die Übung erlaubt (ihre Grenzen und Sicherheitstexte gelten auch im Programm).
+    // Feste Zahl (min = max) genau einmal; sonst bis 25 % drüber kürzen, darüber in Blöcke ≤ max mit 15 s „Normal atmen“ dazwischen.
+    const z = T.zyklen, max = z ? z.max : Infinity;
+    let n = Math.max(1, Math.round(x.min * 60000 / zms));
+    const bl = z && z.min === z.max ? 1 : n <= max * 1.25 ? 1 : Math.ceil(n / max);
+    if (bl === 1) n = Math.min(n, max); else n = Math.max(bl, Math.round((x.min * 60000 - (bl - 1) * 15000) / zms));   // Pausen zählen zur Zeit
+    for (let b = 0; b < bl; b++) {
+      if (b) s.push({ ...ruhe(15000, T), hinweis: 'Kurz normal atmen', uebung: T.id, uebung_name: T.name, teil: i });
+      const p = baue(T, { zyklen: Math.round(n * (b + 1) / bl) - Math.round(n * b / bl) });
+      s.push(...p.schritte.map((st) => ({ ...st, uebung: T.id, uebung_name: T.name, teil: i })));
+    }
   });
   return fertig({ id: 'programm:' + P.id, name: P.name, technik: 'programm', risiko: 'niedrig', modus: 'programm', schritte: s, zuege: 0, runden: 0, ring: 'zyklus' });
 }

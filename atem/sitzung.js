@@ -76,7 +76,7 @@ export function oeffne(plan, opt) {
   }
   const zeileNeu = () => { if (kk && uhr.plan) zeile(uhr.zustand().schritt); };
   if (einst.figur !== false) import('./anatomie.js').then((m) => { if (!aktiv || aktiv.uhr !== uhr) return; an = m.erzeugeAnatomie(el.anat, { ansicht: einst.ansicht || 'seite', modus: gross ? 'gross' : 'klein', daten: { MUSKELN } }); figurRuhe(); }).catch(() => { el.anat.classList.add('aus'); });
-  ton.einstellen({ art: einst.ton || 'klang', laut: einst.laut ?? 0.6, sekunden: !!einst.sekunden, ansage: !!einst.ansage });
+  ton.einstellen({ art: einst.ton || 'klang', laut: einst.laut ?? 0.6, sekunden: !!einst.sekunden, ansage: !!einst.ansage, musikAn: !!(einst.eigeneMusik && einst.musikName), musikLaut: einst.musikLaut ?? 0.5 });
   ton.entsperren(einst.musik);
   holeWake();
   async function holeWake() { try { if (navigator.wakeLock && document.visibilityState === 'visible') { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); } } catch { wake = null; } }

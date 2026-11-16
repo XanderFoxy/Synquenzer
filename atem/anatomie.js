@@ -1,6 +1,7 @@
-// anatomie.js – „Atem“: 2,5D-SVG-Figur (Seite + Vorn), arbeitende Muskeln, Lunge, Zwerchfell, Luftweg, Pfeile.
+// anatomie.js – „Atem“: gläserne Figur (Seite + Vorn, 0.1.5): Hülle aus Glas, Skelett-Andeutung, Lunge mit Lappen, Bronchialbaum, Zwerchfell, arbeitende Muskeln,
+// Luftstrom nur zur aktuellen Phase (Stationen nacheinander) und Bewegungs-Pfeile nur zur aktuellen Phase.
 // Schnittstelle KONZEPT §5. Werte: recherche-gesang.json → animation (cm am Ende des Einatmens, „Darstellung“ bis ×1,5 überhöht).
-// Keine Bibliothek, keine Filter, ein SVG je Ansicht (einmal gebaut), je Bild nur geänderte Attribute.
+// Keine Bibliothek, keine Filter, keine Masken, ein SVG je Ansicht (einmal gebaut), je Bild nur geänderte Attribute. Glas = Verläufe + Transparenz.
 const NS = 'http://www.w3.org/2000/svg';
 const W0 = 150, H0 = 250, KERN = 96;              // Figurraum in Einheiten; KERN = Rumpfbreite, die frei bleiben soll
 const U = 3.6;                                     // Einheiten je cm
@@ -77,150 +78,351 @@ function ariaText(phase, art, aktiv) {
   return { halten_voll: 'Halten: Lunge bleibt gefüllt', halten_leer: 'Leer halten', stoss_aus: 'Stoß: Bauchmuskeln ziehen kurz nach innen' }[phase] || 'Ruhig atmen';
 }
 
-// ---------------------------------------------------------------- Zeichnung
-const P = (x, y) => `${r(x)} ${r(y)}`;
+// ---------------------------------------------------------------- Zeichnung (gläsern; Rig oben unverändert)
+const S = 3;                                            // Einheiten je cm (Zeichnung in cm, Ursprung = Drosselgrube)
+const r1 = (n) => Math.round(n * 10) / 10;
+const q = (x, y) => `${r1(x * S)} ${r1(y * S)}`;
+const sm = (t) => t * t * (3 - 2 * t);
+// Catmull-Rom → Bézier (glatte Kurve durch Punkte). zu = geschlossen.
+function kurve(p, zu = false, sp = 1) {
+  const n = p.length; if (n < 2) return '';
+  const g = (i) => (zu ? p[(i + n) % n] : p[cl(i, 0, n - 1)]);
+  let d = `M${q(...p[0])}`;
+  for (let i = 0; i < (zu ? n : n - 1); i++) {
+    const a = g(i - 1), b = g(i), c = g(i + 1), e = g(i + 2);
+    d += `C${q(b[0] + (c[0] - a[0]) / 6 * sp, b[1] + (c[1] - a[1]) / 6 * sp)} ${q(c[0] - (e[0] - b[0]) / 6 * sp, c[1] - (e[1] - b[1]) / 6 * sp)} ${q(...c)}`;
+  }
+  return zu ? d + 'Z' : d;
+}
+// Punkte entlang derselben Kurve (für Leitpunkt / Länge)
+function proben(p, k = 10) {
+  const n = p.length, g = (i) => p[cl(i, 0, n - 1)], out = [];
+  for (let i = 0; i < n - 1; i++) {
+    const a = g(i - 1), b = g(i), c = g(i + 1), e = g(i + 2);
+    const c1 = [b[0] + (c[0] - a[0]) / 6, b[1] + (c[1] - a[1]) / 6], c2 = [c[0] - (e[0] - b[0]) / 6, c[1] - (e[1] - b[1]) / 6];
+    for (let j = i ? 1 : 0; j <= k; j++) { const t = j / k, u = 1 - t; out.push([u * u * u * b[0] + 3 * u * u * t * c1[0] + 3 * u * t * t * c2[0] + t * t * t * c[0], u * u * u * b[1] + 3 * u * u * t * c1[1] + 3 * u * t * t * c2[1] + t * t * t * c[1]]); }
+  }
+  const L = [0]; for (let i = 1; i < out.length; i++) L.push(L[i - 1] + Math.hypot(out[i][0] - out[i - 1][0], out[i][1] - out[i - 1][1]));
+  return { pkt: out, L, ges: L[L.length - 1] };
+}
+function punktBei(pr, f) { const z = cl(f, 0, 1) * pr.ges; let i = 1; while (i < pr.L.length - 1 && pr.L[i] < z) i++; const t = (z - pr.L[i - 1]) / ((pr.L[i] - pr.L[i - 1]) || 1); return [lerp(pr.pkt[i - 1][0], pr.pkt[i][0], t), lerp(pr.pkt[i - 1][1], pr.pkt[i][1], t)]; }
+const spiegel = (p) => p.map(([x, y]) => [-x, y]);
 const bz = (a, b, c, d, t) => { const u = 1 - t; return [u * u * u * a[0] + 3 * u * u * t * b[0] + 3 * u * t * t * c[0] + t * t * t * d[0], u * u * u * a[1] + 3 * u * u * t * b[1] + 3 * u * t * t * c[1] + t * t * t * d[1]]; };
-const rot = (p, j, co, si) => [j[0] + (p[0] - j[0]) * co - (p[1] - j[1]) * si, j[1] + (p[0] - j[0]) * si + (p[1] - j[1]) * co];
-const pfeil = (k, x, y, w) => `<g data-k="${k}" transform="translate(${x} ${y}) rotate(${w})" opacity="0"><g data-k="${k}r"><path d="M-9 0H7M2-5l6 5-6 5" fill="none" stroke="#e9eef7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g></g>`;
-const SJ = [[60, 70], [57, 81], [55, 92], [54, 103], [54, 114], [55, 125]];   // Rippengelenke an der Wirbelsäule (Seite)
-const WS = [[72, 44], [69, 50], [66, 56], [63, 62], [60, 69], [57, 80], [55, 91], [54, 102], [54, 113], [55, 124], [56, 135], [58, 146], [60, 158], [61, 170], [61, 182], [59, 194], [56, 206]];
-const LAB = {   // [Muskel, Seite der Beschriftung, Ankerpunkt]
-  seite: [['trapez_oben', 0, 61, 46], ['treppenmuskeln', 0, 71, 55], ['zwerchfell', 0, 62, 128], ['ruecken_breit', 0, 49, 160],
-    ['kopfwender', 1, 84, 49], ['brustmuskel_klein', 1, 86, 84], ['zwischenrippen_aussen', 1, 74, 106], ['zwischenrippen_innen', 1, 96, 124], ['bauchmuskeln', 1, 103, 190]],
-  vorn: [['kopfwender', 0, 67, 46], ['trapez_oben', 0, 55, 53], ['brustmuskel_klein', 0, 51, 86], ['zwischenrippen_aussen', 0, 42, 112], ['ruecken_breit', 0, 40, 142],
-    ['treppenmuskeln', 1, 85, 50], ['zwischenrippen_innen', 1, 82, 104], ['zwerchfell', 1, 97, 112], ['bauchmuskeln', 1, 81, 182]] };
+const rot = (p, j, w) => { const co = Math.cos(w), si = Math.sin(w); return [j[0] + (p[0] - j[0]) * co - (p[1] - j[1]) * si, j[1] + (p[0] - j[0]) * si + (p[1] - j[1]) * co]; };
+const C3 = (a, b, c, d) => `M${q(...a)}C${q(...b)} ${q(...c)} ${q(...d)}`;
+// Bronchialbaum: feste Verzweigung (2 Kinder je Ast, ±Winkel, Länge × .66), deterministisch
+function baum(start, w0, len, tiefe, spreiz, out, lvl = 0) {
+  const ende = [start[0] + Math.cos(w0) * len, start[1] + Math.sin(w0) * len];
+  (out[lvl] = out[lvl] || []).push([start, ende]);
+  if (tiefe > 0) for (const s of [-1, 1]) baum(ende, w0 + s * spreiz, len * .66, tiefe - 1, spreiz * .92, out, lvl + 1);
+  else (out.spitzen = out.spitzen || []).push(ende);
+  return out;
+}
+const ast = (segs) => segs.map(([a, b]) => `M${q(...a)}L${q(...b)}`).join('');
 
-function baue(ans, id) {
-  const seite = ans === 'seite';
-  const ws = WS.map(([x, y], i) => { const [nx, ny] = WS[Math.min(i + 1, WS.length - 1)], [px, py] = WS[Math.max(i - 1, 0)], dx = nx - px, dy = ny - py, l = Math.hypot(dx, dy) || 1; return `M${P(x - dx / l * 2.6, y - dy / l * 2.6)}L${P(x + dx / l * 2.6, y + dy / l * 2.6)}`; }).join('');
-  const kopf = seite ? 'M66 34C58 22 66 4 82 4C94 4 100 13 99 22L103 29C103 31 101 32 99 32C100 35 99 37 97 38C98 41 96 43 92 43C88 43 85 41 84 40C78 42 70 40 66 34Z' : 'M75 3C66 3 61 11 61 21C61 31 67 39 75 39C83 39 89 31 89 21C89 11 84 3 75 3Z';
-  const arm = (s) => { const x = (v) => (s ? 150 - v : v); return `M${x(42)} 60C${x(32)} 58 ${x(25)} 64 ${x(24)} 76C${x(22)} 100 ${x(20)} 128 ${x(21)} 158C${x(22)} 165 ${x(30)} 165 ${x(31)} 158C${x(32)} 132 ${x(33)} 108 ${x(35)} 90Z`; };
-  const mus = MUSKEL_IDS.map((m) => `<path id="${id}${ans}-${m}"/>`).join('');
-  const u = (m, a) => `<use href="#${id}${ans}-${m}" ${a}/>`;
-  const marks = seite
-    ? `<g data-k="summen" opacity="0" fill="none" stroke="#bfeaf3" stroke-width="1.4" stroke-linecap="round"><path d="M106 26q3 4 0 8M110 23q5 7 0 14M114 20q7 10 0 20"/></g><path data-k="lippen" opacity="0" d="M96.5 35.2q2.5-1.2 3.6.4q-1.2 1.8-3.6.2" fill="#f0b8a8"/><path data-k="halm" opacity="0" d="M99 36.5L116 38.5" stroke="#d9e2f2" stroke-width="2.4" stroke-linecap="round"/><g data-k="brr" opacity="0" stroke="#f0b8a8" stroke-width="1.2" stroke-linecap="round"><path d="M103 33.5h3M103 36h4M103 38.5h3"/></g><ellipse data-k="nl" cx="100.4" cy="30.6" rx="1.5" ry="1" fill="#bfeaf3" opacity="0"/><ellipse data-k="nr" cx="100.4" cy="30.6" rx="0" ry="0" opacity="0"/>`
-    : `<g data-k="summen" opacity="0" fill="none" stroke="#bfeaf3" stroke-width="1.4" stroke-linecap="round"><path d="M64 24q-3 4 0 8M60 21q-5 7 0 14M86 24q3 4 0 8M90 21q5 7 0 14"/></g><path data-k="lippen" opacity="0" d="M70.5 35q4.5-2 9 0q-4.5 3.4-9 0Z" fill="#f0b8a8"/><path data-k="halm" opacity="0" d="M75 36v0" stroke="none"/><g data-k="brr" opacity="0" stroke="#f0b8a8" stroke-width="1.2" stroke-linecap="round"><path d="M67 33.5l-3-1M67 36h-4M67 38.5l-3 1M83 33.5l3-1M83 36h4M83 38.5l3 1"/></g><ellipse data-k="nl" cx="72.6" cy="30.4" rx="1.7" ry="1.1" fill="#bfeaf3" opacity="0"/><ellipse data-k="nr" cx="77.4" cy="30.4" rx="1.7" ry="1.1" fill="#bfeaf3" opacity="0"/>`;
-  const luft = seite
-    ? ['M101 30C92 30 84 28 80 33C78 38 80 44 84 48L84 74C84 78 82 82 79 87', 'M98 37C92 37 84 38 81 41C80 44 82 46 84 48L84 74C84 78 82 82 79 87']
-    : ['M75 30V82C75 86 70 88 65 93M75 82C75 86 80 88 85 93', 'M75 36.5V82C75 86 70 88 65 93M75 82C75 86 80 88 85 93'];
-  const pf = seite ? pfeil('pz', 78, 150, 90) + pfeil('pb', 124, 194, 0) + pfeil('pr', 112, 78, -45) + pfeil('ps', 64, 47, -90)
-    : pfeil('pz', 57, 164, 90) + pfeil('pr', 27, 146, 180) + pfeil('pr2', 123, 146, 0) + pfeil('ps', 38, 46, -90) + pfeil('ps2', 112, 46, -90);
-  const labs = LAB[ans].map(([m]) => `<g data-l="${m}" opacity="0"><path class="an-ll" fill="none" stroke="#f0907f" stroke-opacity=".75" stroke-width=".8"/><circle r="1.8" fill="#f0907f"/><text>${KURZ[m].map((t) => `<tspan>${t}</tspan>`).join('')}</text></g>`).join('');
+// ---------------------------------------------------------------- Texte (Stationen)
+const ST_NAME = { nase: 'Nase', mund: 'Mund', luftroehre: 'Luftröhre', bronchien: 'Bronchien', lunge: 'Lunge' };
+
+// ---------------------------------------------------------------- Geometrie VORN (cm; x nach rechts im Bild, y nach unten)
+const V = {
+  box: [-32, -36.5, 64, 94],
+  hull(g) {
+    const sh = g.sh, b = g.ba * .22 + g.ri * .3;
+    const H = [[0, -32.6], [4.7, -31.2], [7.2, -27], [7.7, -21.5], [7.0, -16.4], [5.3, -12.4], [3.3, -10.3], [3.9, -7.6], [4.6, -4.8 - sh * .3], [8.4, -2.8 - sh * .7],
+      [13.4, -1.4 - sh], [17.4, -.2 - sh], [18.6, 2 - sh * .7], [17.3, 6.6 - sh * .2], [16.0, 11.5], [15.7 + g.ri * .5, 18], [15.0 + g.ri * .9, 25], [13.4 + b, 31], [12.8 + b, 35.6], [14.3, 41], [15.5, 47], [15.8, 57]];
+    return kurve([...H, ...spiegel(H.slice(1)).reverse()], true);
+  },
+  arm: () => kurve([[16.9, .1], [19.6, .9], [21.6, 3.5], [22.4, 8], [22.6, 15], [22.4, 22], [22.1, 30], [21.8, 38], [21.6, 46], [21.5, 57], [18.4, 57], [18.3, 46], [18.0, 38], [17.6, 30], [17.0, 22], [16.4, 15], [16.0, 9], [16.2, 4]], true),
+  dome(x, g) {   // Oberkante Zwerchfell bei x (cm)
+    const kz = g.kz, P = [[-14.6 - g.ri * .8, 27.5], [-13.4 - g.ri * .6, 20.5 + kz * .45], [-10.6, 15.8 + kz * .9], [-7, 14.6 + kz], [-3.4, 15.7 + kz * .95], [0, 17.3 + kz * .7], [3.8, 16.5 + kz * .95], [7.6, 15.8 + kz], [11, 16.9 + kz * .9], [13.6 + g.ri * .6, 21.2 + kz * .45], [14.6 + g.ri * .8, 27.5]];
+    if (x === undefined) return P;
+    for (let i = 1; i < P.length; i++) if (x <= P[i][0]) { const t = (x - P[i - 1][0]) / (P[i][0] - P[i - 1][0]); return lerp(P[i - 1][1], P[i][1], sm(cl(t, 0, 1))); }
+    return P[P.length - 1][1];
+  },
+  geo(g) {
+    const { kz, ri, bh, sh, sl } = g, a = sl * .5 + bh * .35, o = {};
+    o.hull = V.hull(g);
+    // Rippen
+    const W = [7.2, 10.4, 12.6, 14.0, 14.8, 15.1, 15.1, 14.7, 14.0, 13.0], AX = [3.0, 4.0, 5.0, 6.0, 6.8, 7.6, 8.8, 11.0, 12.8, 13.8], AY = [2.2, 5.0, 7.8, 10.6, 13.4, 16.6, 21.6, 24.4, 26.8, 28.6];
+    const SY = [1.6, 4.4, 7.4, 10.2, 12.8, 15.2, 17.2];
+    let hint = '', vorn = '', knorpel = '', ia = '', ii = ''; const RV = [[], []];
+    for (const s of [-1, 1]) {
+      const c = s < 0 ? 0 : 1;
+      for (let k = 0; k < 10; k++) {
+        const yv = -1.2 + 2.5 * k, rk = ri * (.15 + .09 * k), lift = bh * (1 - k / 11) * .85;
+        const L = [s * (W[k] + rk), yv + 3 + .3 * k - lift * .4], A = [s * (AX[k] + rk * .7), AY[k] - lift];
+        hint += C3([s * 1.3, yv], [s * W[k] * .45, yv - 1.6], [s * (W[k] + rk) * .97, yv + .4 - lift * .4], L);
+        const pv = [L, [s * (W[k] + rk) * 1.02, L[1] + 3.2], [A[0] + s * 2.6, A[1] + .4], A]; RV[c].push(pv);
+        vorn += C3(...pv);
+        if (k < 7) { const St = [s * 1.6, SY[k] - bh]; knorpel += `M${q(...A)}Q${q((A[0] + St[0]) / 2, Math.max(A[1], St[1]) + .5)} ${q(...St)}`; }
+        else if (k < 9) { const J = k === 7 ? [s * 7.0, 21.0 - bh * .5] : [s * 9.8, 23.4 - bh * .4]; knorpel += `M${q(...A)}Q${q((A[0] + J[0]) / 2, A[1] - .2)} ${q(...J)}`; }
+      }
+      knorpel += kurve([[s * 1.4, 17.4 - bh], [s * 4.2, 19.3 - bh * .8], [s * 7.0, 21.0 - bh * .5], [s * 9.8, 23.4 - bh * .4], [s * (12.4 + ri * .9), 26.2]]);
+      for (let k = 2; k < 9; k++) for (const t0 of [.25, .5]) { const t = t0 + (k % 2) * .08, p = bz(...RV[c][k], t), p2 = bz(...RV[c][k + 1], t - .06); ia += `M${q(...p)}L${q(...p2)}`; }
+      for (let k = 1; k < 7; k++) { const p = bz(...RV[c][k], .93), p2 = bz(...RV[c][k + 1], .86); ii += `M${q(...p)}L${q(...p2)}`; }
+    }
+    o.rHint = hint; o.rVorn = vorn; o.knorpel = knorpel;
+    // Schlüsselbeine + Brustbein + Schulter
+    o.schl = [-1, 1].map((s) => kurve([[s * 1.6, .7 - bh], [s * 4.6, .9 - sl * .3 - bh * .7], [s * 8.6, -.2 - sl * .7], [s * 12.6, -1.2 - sl * .9 - sh * .5], [s * 15.4, -.9 - sl - sh * .7], [s * 17.4, -1.6 - Math.max(sh, sl) * .95]])).join('');
+    o.brustbein = `translate(0 ${r1(-bh * S)})`;
+    o.arm = `translate(0 ${r1(-sh * S)})`;
+    // Lunge
+    const D = (x) => V.dome(x, g);
+    const luR = [[-3.8, -3.4 - a], [-6.6, -2.6 - a * .6], [-9.6, .4], [-12.2, 4.8], [-13.6 - ri * .35, 10.5], [-14.2 - ri * .6, 17], [-14.0 - ri * .8, 22 + kz * .5], [-13.3 - ri * .8, 25.4 + kz * .85],
+      ...[-11.8, -9.6, -7, -4.4].map((x) => [x, D(x) - .5]), [-2.8, 15.2 + kz * .3], [-2.6, 10], [-2.2, 4], [-2.6, -.2]];
+    const luL = [[3.8, -3.6 - a], [6.6, -2.8 - a * .6], [9.6, .2], [12.2, 4.6], [13.6 + ri * .35, 10.3], [14.2 + ri * .6, 17], [14.0 + ri * .8, 22.4 + kz * .5], [13.3 + ri * .8, 26 + kz * .85],
+      ...[11.8, 9.8, 7.8].map((x) => [x, D(x) - .5]), [5.6, D(5.6) - .7], [4.0, 18.4 + kz * .6], [4.4, 16.2 + kz * .3], [6.6, 13.6 + kz * .2], [4.8, 10.6], [2.6, 8], [2.2, 3], [2.6, -.4]];
+    o.lu1 = kurve(luR, true); o.lu2 = kurve(luL, true);
+    o.spalt = kurve([[-2.8, 9.2], [-7, 8.8 - bh * .2], [-11, 9.4], [-13.7 - ri * .45, 10.4]]) + kurve([[-13.9 - ri * .55, 13.4], [-11.2, 15.6 + kz * .35], [-8.6, D(-8.6) - .6]])
+      + kurve([[13.6 + ri * .4, 9.2], [11.2, 13.2 + kz * .2], [8.8, 16.4 + kz * .5], [6.8, D(6.8) - .7]]);
+    o.dz = kurve(V.dome(undefined, g));
+    o.herz = `translate(0 ${r1(kz * .55 * S)})`;
+    const sx = 1 + ri / 15, sy = 1 + kz / 24;
+    o.baum = `translate(0 ${r1(7.2 * S - bh * .3 * S)}) scale(${r1(sx * 100) / 100} ${r1(sy * 100) / 100}) translate(0 ${r1(-7.2 * S)})`;
+    o.rohr = `translate(0 ${r1(-bh * .3 * S)})`;
+    // Muskeln
+    const m = {};
+    m.zwischenrippen_aussen = () => ia; m.zwischenrippen_innen = () => ii;
+    m.kopfwender = () => [-1, 1].map((s) => kurve([[s * 6.2, -14.6], [s * 5.0, -9.5], [s * 3.2, -4.4], [s * 1.6, .2 - bh]]) + kurve([[s * 6.0, -13.8], [s * 5.6, -8.6], [s * 4.8, -3.6], [s * 4.3, 0 - sl * .5]])).join('');
+    m.treppenmuskeln = () => [-1, 1].map((s) => kurve([[s * 3.0, -10], [s * 4.0, -6], [s * 5.4, -2.6 - sh * .4], [s * 6.4, .6 - bh * .6]]) + kurve([[s * 3.4, -9.4], [s * 5.0, -5.4], [s * 6.6, -2.2 - sh * .4], [s * 7.8, .8 - bh * .5]])).join('');
+    m.trapez_oben = () => [-1, 1].map((s) => kurve([[s * 4.4, -7], [s * 7.6, -3.4 - sh * .7], [s * 12.6, -1.6 - sh], [s * 16.6, -.6 - sh]]) + kurve([[s * 4.9, -5.6], [s * 8.4, -2.2 - sh * .6], [s * 13, -.6 - sh * .9]])).join('');
+    m.brustmuskel_klein = () => [-1, 1].map((s) => [2, 3, 4].map((k) => { const p = bz(...RV[s < 0 ? 0 : 1][k], .82); return `M${q(s * 13.6, 2.4 - sh)}Q${q(s * 10.4, (2.4 - sh + p[1]) / 2 - 1)} ${q(...p)}`; }).join('')).join('');
+    m.ruecken_breit = () => [-1, 1].map((s) => kurve([[s * 16.4, 9 - sh * .3], [s * (16.2 + ri * .4), 16], [s * (15.4 + ri * .6), 23], [s * 14.4, 30]]) + kurve([[s * 15.4, 11], [s * (15.0 + ri * .4), 18], [s * (14.2 + ri * .5), 25]])).join('');
+    const bw = g.ba * .22;
+    m.bauchmuskeln = () => [-1, 1].map((s) => kurve([[s * 1.0, 19.5], [s * 1.2, 30], [s * 1.2, 40], [s * 1.0, 50]]) + kurve([[s * (5.2 + bw * .4), 19.8], [s * (5.8 + bw * .6), 30], [s * (5.4 + bw * .5), 40], [s * 3.4, 50]])
+      + [24.8, 30.2, 35.8].map((y) => `M${q(s * 1.2, y)}Q${q(s * 3.4, y - .7)} ${q(s * (5.6 + bw * .5), y - .2)}`).join('') + kurve([[s * (12.6 + ri * .5), 27], [s * (11.2 + bw), 34], [s * 8.4, 41], [s * 5.4, 46]])).join('');
+    m.zwerchfell = () => o.dz;
+    o.m = m;
+    return o;
+  },
+};
+// Luftweg VORN (Stationen); Punkte in cm, Pfade von außen nach innen
+V.weg = {
+  nase: [[[-1.0, -16.9], [-1.5, -18.6], [-1.0, -20.4], [-.2, -19.4], [-.1, -16], [0, -12.6], [0, -8.6]], [[1.0, -16.9], [1.5, -18.6], [1.0, -20.4], [.2, -19.4], [.1, -16], [0, -12.6], [0, -8.6]]],
+  mund: [[[0, -14.2], [0, -12.6], [0, -10.6], [0, -8.6]]],
+  luftroehre: [[[0, -8.6], [0, -3], [0, 2], [0, 7.2]]],
+  bronchien: [[[0, 7.2], [-2.4, 9.0], [-3.6, 10.4]], [[-2.0, 8.7], [-4.6, 6.8], [-6.6, 4.2]], [[-3.6, 10.4], [-5.6, 11.8], [-7.6, 12.6]], [[-3.6, 10.4], [-4.8, 13.6], [-6.2, 16.2]],
+    [[0, 7.2], [2.8, 8.6], [4.8, 10.2]], [[4.8, 10.2], [6.4, 8.2], [8.0, 5.4]], [[4.8, 10.2], [6.2, 13.6], [7.6, 16.4]]],
+};
+V.zweige = [[[-6.6, 4.2], -2.2], [[-7.6, 12.6], -2.9], [[-6.2, 16.2], 2.1], [[8.0, 5.4], -.95], [[7.6, 16.4], 1.05]];   // [Start, Richtung rad]
+V.lab = [['nase', 1, -.2, -18.4], ['mund', 1, 0, -14.2], ['luftroehre', 1, .9, -3], ['bronchien', 1, 4.4, 9.8], ['lunge', 1, 10.6, 3],
+  ['kopfwender', 0, -4.4, -7.2], ['treppenmuskeln', 1, 5.6, -3.4], ['trapez_oben', 0, -12.4, -1.8], ['brustmuskel_klein', 0, -10.4, 5.2], ['zwischenrippen_aussen', 1, 15.0, 20],
+  ['zwischenrippen_innen', 0, -3.6, 13.6], ['zwerchfell', 0, -10.6, 16.2], ['ruecken_breit', 0, -15.6, 23], ['bauchmuskeln', 1, 4.6, 37]];
+V.pf = [   // Bewegungs-Pfeile: [Name, Phase, Art-Gewicht-Schlüssel, Start (Anteil), Punkte]
+  ['zw', 'ein', 'zw', 0, [[-7, 19.4], [-7, 25.4]]], ['zw2', 'ein', 'zw', 0, [[7.6, 20.4], [7.6, 26.4]]], ['zw', 'aus', 'zw', 0, [[-7, 25.4], [-7, 19.4]]], ['zw2', 'aus', 'zw', 0, [[7.6, 26.4], [7.6, 20.4]]],
+  ['ri', 'ein', 'ri', .15, [[-16.4, 26.4], [-21.2, 26.4]]], ['ri2', 'ein', 'ri', .15, [[16.4, 26.4], [21.2, 26.4]]], ['ri', 'aus', 'ri', .1, [[-21.2, 26.4], [-16.4, 26.4]]], ['ri2', 'aus', 'ri', .1, [[21.2, 26.4], [16.4, 26.4]]],
+  ['sh', 'ein', 'sh', .2, [[-16.2, -3.2], [-16.2, -9.2]]], ['sh2', 'ein', 'sh', .2, [[16.2, -3.2], [16.2, -9.2]]], ['sh', 'aus', 'sh', .05, [[-16.2, -9.2], [-16.2, -3.2]]], ['sh2', 'aus', 'sh', .05, [[16.2, -9.2], [16.2, -3.2]]]];
+
+// ---------------------------------------------------------------- Geometrie SEITE (cm; x nach vorn = rechts im Bild)
+const SJ = [[-7.4, -3.2], [-8.0, -1.3], [-8.6, .7], [-9.1, 2.8], [-9.5, 4.9], [-9.8, 7.1], [-10.0, 9.3], [-10.0, 11.6], [-9.9, 13.9], [-9.6, 16.3]];
+const WSS = [[-5.0, -13.5], [-5.2, -11.8], [-5.5, -10.1], [-5.8, -8.4], [-6.2, -6.7], [-6.8, -5.0], ...SJ, [-9.2, 18.8], [-8.7, 21.4], [-8.1, 24.2], [-7.6, 27.1], [-7.3, 30.1], [-7.4, 33.2], [-8.0, 36.4]];
+const SS = {
+  box: [-34, -36.5, 64, 94],
+  dome(x, g) {
+    const kz = g.kz, P = [[-9.6 - g.fl * .4, 26.4], [-9.3 - g.fl * .4, 22.4 + kz * .4], [-7.2, 17.6 + kz * .8], [-4, 14.6 + kz * .95], [-1, 13.8 + kz], [1.4, 14.2 + kz * .95], [3.4, 15.6 + kz * .75], [4.8 + g.bv * .5, 19.4 - g.bh * .2]];
+    if (x === undefined) return P;
+    for (let i = 1; i < P.length; i++) if (x <= P[i][0]) { const t = (x - P[i - 1][0]) / (P[i][0] - P[i - 1][0]); return lerp(P[i - 1][1], P[i][1], sm(cl(t, 0, 1))); }
+    return P[P.length - 1][1];
+  },
+  geo(g) {
+    const { kz, ri, bv, bh, ba, fl, sh, sl } = g, a = sl * .5 + bh * .35, o = {};
+    o.hull = kurve([[-3, -32.4], [2.6, -31.2], [6.0, -27.6], [7.3, -23.4], [7.0, -21.6], [9.6, -18.4], [7.8, -16.9], [8.0, -15.7], [7.4, -14.7], [7.7, -13.8], [7.2, -11.6], [4.6, -9.9], [2.6, -8.6], [2.2, -4.4], [1.8 + bv * .2, -.4 - bh * .6],
+      [4.4 + bv * .5, 3 - bh], [6.4 + bv, 9 - bh * .7], [7.0 + bv * .8, 15 - bh * .4], [6.5 + ba * .25, 21], [6.2 + ba * .6, 27], [6.9 + ba, 33], [7.2 + ba * .85, 39], [6.6 + ba * .45, 45], [5.9, 50], [5.6, 57],
+      [-12.6, 57], [-13.4, 48], [-12.4, 41], [-10.8 - fl * .3, 34], [-11.9 - fl, 26], [-13.2 - fl * .6, 17], [-13.0, 8], [-11.2, 1], [-8.4, -4.6 - sh], [-7.6, -9], [-9.6, -15], [-10.4, -20.4], [-9.2, -26.6], [-6.6, -30.6]], true);
+    o.arm = `translate(0 ${r1(-sh * S)})`;
+    // Rippen (Pumpenschwengel: Drehung um das Wirbelgelenk)
+    const St = [[1.6 + bv * .3, .5 - bh], [5.0 + bv, 17.4 - bh * .5]], sp = (t) => [lerp(St[0][0], St[1][0], t), lerp(St[0][1], St[1][1], t)];
+    const bhA = bh / 3.4, riA = ri / 2.6;
+    let hint = '', vorn = '', knorpel = '', ia = '', ii = ''; const R = [];
+    for (let k = 0; k < 10; k++) {
+      const J = SJ[k], w = -((5.5 - .45 * k) * bhA + (2 + .9 * k) * riA) * Math.PI / 180;
+      const Sk = k < 7 ? sp([.03, .16, .3, .45, .6, .76, .93][k]) : [[4.6 + bv * .8, 19.6 - bh * .3], [4.0 + bv * .6, 21.8 - bh * .2], [3.0 + bv * .4, 23.8]][k - 7];
+      const A0 = [Sk[0] - (k < 7 ? 2.0 + .25 * k : 1.4), Sk[1] + (k < 7 ? .9 + .1 * k : 1.0)];
+      const pr = [J, [J[0] - 1.6, J[1] + 3.4 + .25 * k], [A0[0] - 7.5, A0[1] + 2.2], A0].map((p, i) => (i ? rot(p, J, w) : p));
+      R.push(pr);
+      hint += `M${q(...J)}Q${q(J[0] - 1.4, J[1] + 1.6)} ${q(...bz(...pr, .25))}`;
+      vorn += C3(...pr);
+      knorpel += `M${q(...pr[3])}Q${q((pr[3][0] + Sk[0]) / 2, Math.max(pr[3][1], Sk[1]) + .4)} ${q(...Sk)}`;
+    }
+    for (let k = 1; k < 9; k++) for (const t0 of [.42, .6, .78]) { const t = t0 + (k % 2) * .05, p = bz(...R[k], t), p2 = bz(...R[k + 1], t + .03); ia += `M${q(...p)}L${q(...p2)}`; }
+    for (let k = 1; k < 8; k++) { const p = bz(...R[k], .9), p2 = bz(...R[k + 1], .82); ii += `M${q(...p)}L${q(...p2)}`; }
+    o.rHint = hint; o.rVorn = vorn; o.knorpel = knorpel;
+    o.brustbein = `M${q(...St[0])}L${q(...St[1])}`;
+    o.schl = kurve([[1.8 + bv * .2, .1 - bh], [-.6, -.6 - sl * .6], [-3.0, -.4 - sl * .8 - sh * .4], [-4.8, -1 - Math.max(sh, sl) * .9]]);
+    const D = (x) => SS.dome(x, g);
+    o.lu1 = kurve([[-3.2, -3.6 - a], [.2, -1.4 - a * .6], [3.4 + bv * .5, 3 - bh * .6], [4.8 + bv * .8, 8 - bh * .5], [5.2 + bv * .8, 13 - bh * .3], [4.4 + bv * .6, D(4.4) - .4],
+      ...[2.4, -.4, -3.6, -6.6].map((x) => [x, D(x) - .5]), [-9.0 - fl * .45, D(-9.0) + 1.2], [-10.3 - fl * .5, 24.6 + kz * .9], [-11.3 - fl * .4, 18], [-11.0 - fl * .2, 10], [-9.4, 3], [-6.6, -1.6]], true);
+    o.spalt = kurve([[-9.4, 2], [-5.6, 7], [-2.4, 11.4], [.6, 15.4 + kz * .3], [2.6, D(2.6) - .6]]) + kurve([[-3.4, 10.0], [.4, 9.6 - bh * .3], [5.0 + bv * .8, 9.2 - bh * .45]]);
+    o.dz = kurve(SS.dome(undefined, g)); o.crus = `M${q(-9.6 - fl * .4, 26.4)}Q${q(-8.4, 28.6)} ${q(-7.8, 31)}`;
+    o.herz = `translate(${r1(bv * .3 * S)} ${r1(kz * .5 * S)})`;
+    const sx = 1 + bv / 14, sy = 1 + kz / 22;
+    o.baum = `translate(${r1(-1.6 * S)} ${r1(7.6 * S - bh * .3 * S)}) scale(${r1(sx * 100) / 100} ${r1(sy * 100) / 100}) translate(${r1(1.6 * S)} ${r1(-7.6 * S)})`;
+    o.rohr = `translate(0 ${r1(-bh * .3 * S)})`;
+    const m = {};
+    m.zwischenrippen_aussen = () => ia; m.zwischenrippen_innen = () => ii;
+    m.kopfwender = () => kurve([[-4.4, -16.2], [-2.6, -11], [-.4, -5.2], [1.6 + bv * .2, -.2 - bh * .8]]) + kurve([[-4.8, -15.4], [-3.4, -10.2], [-1.6, -4.4], [-.2, -.4 - sl * .6]]);
+    m.treppenmuskeln = () => kurve([[-5.4, -11.8], [-4.8, -7.4], [-3.6, -3.4 - sh * .3], [-2.4, -.6 - bh * .6]]) + kurve([[-6.0, -10.6], [-5.6, -6.6], [-4.8, -2.8 - sh * .4], [-4.0, -.2 - bh * .5]]);
+    m.trapez_oben = () => kurve([[-9.4, -15.4], [-8.4, -9.6], [-7.6, -5.2 - sh * .6], [-5.4, -1.6 - sh]]) + kurve([[-8.8, -14.2], [-7.6, -9], [-6.4, -4.8 - sh * .7], [-4.2, -1.2 - sh * .9]]);
+    m.brustmuskel_klein = () => [2, 3, 4].map((k) => { const p = bz(...R[k], .86); return `M${q(.2, 2.6 - sh)}Q${q(1.6, (2.6 - sh + p[1]) / 2 - .6)} ${q(...p)}`; }).join('');
+    m.ruecken_breit = () => kurve([[-3.6, 8.4 - sh * .4], [-7.6, 14], [-11.0 - fl * .7, 22], [-11.2 - fl * .4, 32]]) + kurve([[-4.2, 10.4 - sh * .3], [-7.8, 18], [-10.0 - fl * .5, 27], [-10.2 - fl * .3, 36]]);
+    m.bauchmuskeln = () => kurve([[5.0 + bv * .5, 19.4], [5.0 + ba * .5, 26], [5.6 + ba * .9, 33], [5.8 + ba * .8, 39], [5.0 + ba * .4, 46], [4.4, 51]])
+      + [25, 30.4, 36].map((y) => { const x = y < 28 ? 5.4 + ba * .55 : y < 33 ? 6.0 + ba * .9 : 6.2 + ba * .85; return `M${q(x - 1.6, y + .5)}L${q(x, y)}`; }).join('')
+      + kurve([[2.6, 23], [3.4 + ba * .4, 30], [3.8 + ba * .6, 37], [3.2 + ba * .3, 44]]) + kurve([[-1.6, 25], [-.6 + ba * .2, 33], [.2 + ba * .3, 41]]);
+    m.zwerchfell = () => o.dz;
+    o.m = m;
+    return o;
+  },
+};
+SS.weg = {
+  nase: [[[8.5, -17.2], [6.4, -18.5], [3.5, -19.1], [.2, -19.0], [-2.6, -17.8], [-3.4, -15], [-2.9, -11.9], [-.8, -9.6], [1.8, -8.6]]],
+  mund: [[[7.6, -14.4], [4.8, -14.1], [1.2, -13.9], [-2.2, -13.2], [-2.9, -11.9], [-.8, -9.6], [1.8, -8.6]]],
+  luftroehre: [[[1.8, -8.6], [1.7, -4], [.6, 1], [-.9, 6.0], [-1.6, 7.6]]],
+  bronchien: [[[-1.6, 7.6], [-3.0, 9.6]], [[-3.0, 9.4], [-3.8, 7.6], [-5.0, 4.6]], [[-2.6, 9.8], [.4, 11.4], [2.8, 12.4]], [[-3.0, 9.6], [-4.6, 13.4], [-6.0, 17.2]]],
+};
+SS.zweige = [[[-5.0, 4.6], -1.95], [[2.8, 12.4], .35], [[-6.0, 17.2], 1.9], [[-3.8, 7.6], -2.7], [[-4.4, 12.6], 2.75]];
+SS.lab = [['nase', 1, 7.4, -18.6], ['mund', 1, 7.6, -14.4], ['luftroehre', 1, 2.2, -5], ['bronchien', 1, 1.0, 11.0], ['lunge', 1, 4.0, 4.6],
+  ['trapez_oben', 0, -8.6, -8], ['treppenmuskeln', 0, -5.4, -5.4], ['kopfwender', 1, -1.0, -8.2], ['brustmuskel_klein', 1, 2.4, 5.2], ['zwischenrippen_aussen', 1, 1.4, 16.6],
+  ['zwischenrippen_innen', 1, 4.0, 19.6], ['zwerchfell', 0, -5.4, 16.0], ['ruecken_breit', 0, -10.8, 24], ['bauchmuskeln', 1, 6.4, 33]];
+SS.pf = [
+  ['zw', 'ein', 'zw', 0, [[-1.6, 18.0], [-1.6, 24.4]]], ['zw', 'aus', 'zw', 0, [[-1.6, 24.4], [-1.6, 18.0]]],
+  ['ba', 'ein', 'ba', .15, [[9.6, 31], [14.6, 31]]], ['ba', 'aus', 'ba', .05, [[14.6, 31], [9.6, 31]]],
+  ['ri', 'ein', 'fl', .2, [[-14.4, 20], [-18.6, 20]]], ['ri', 'aus', 'fl', .1, [[-18.6, 20], [-14.4, 20]]],
+  ['bh', 'ein', 'bh', .05, [[9.0, 9.0], [11.4, 2.6]]], ['bh', 'aus', 'bh', 0, [[11.4, 2.6], [9.0, 9.0]]],
+  ['sh', 'ein', 'sh', .2, [[-2.8, -2.6], [-2.8, -8.4]]], ['sh', 'aus', 'sh', .05, [[-2.8, -8.4], [-2.8, -2.6]]]];
+
+// Mundformen je Weg (cm): Summen = Schallbögen, Lippen, Lippenflattern, Strohhalm
+function mundformen(seite) {
+  const bog = (x, y, d, h) => `M${q(x, y - h)}Q${q(x + d, y)} ${q(x, y + h)}`;
+  const st = 'fill="none" stroke="#bfeaf3" stroke-width="1.3" stroke-linecap="round"';
+  return seite
+    ? `<g data-k="summen" opacity="0" ${st}>${[0, 1, 2].map((i) => bog(10.0 + 1.3 * i, -15.6, 1.2 + .4 * i, 1.4 + .9 * i)).join('')}</g>
+<path data-k="lippen" opacity="0" d="M${q(7.0, -14.7)}Q${q(8.0, -14.9)} ${q(8.2, -14.3)}Q${q(7.9, -13.7)} ${q(7.0, -13.9)}Z" fill="#f0b8a8"/>
+<path data-k="brr" opacity="0" d="M${q(9.2, -15.6)}l${q(.6, .5)}l${q(-.6, .5)}l${q(.6, .5)}l${q(-.6, .5)}M${q(10.4, -15.6)}l${q(.6, .5)}l${q(-.6, .5)}l${q(.6, .5)}l${q(-.6, .5)}" ${st}/>
+<path data-k="halm" opacity="0" d="M${q(7.4, -14.3)}L${q(13.4, -13.5)}" fill="none" stroke="#e9eef7" stroke-opacity=".8" stroke-width="3" stroke-linecap="round"/>`
+    : `<g data-k="summen" opacity="0" ${st}>${[0, 1, 2].map((i) => bog(8.6 + 1.3 * i, -15.4, 1.2 + .4 * i, 1.4 + .9 * i) + bog(-8.6 - 1.3 * i, -15.4, -1.2 - .4 * i, 1.4 + .9 * i)).join('')}</g>
+<path data-k="lippen" opacity="0" d="M${q(-1.8, -13.9)}Q${q(0, -14.7)} ${q(1.8, -13.9)}Q${q(0, -13.0)} ${q(-1.8, -13.9)}Z" fill="#f0b8a8"/>
+<path data-k="brr" opacity="0" d="M${q(-3.6, -14.6)}l${q(-.5, .4)}l${q(.5, .4)}l${q(-.5, .4)}M${q(3.6, -14.6)}l${q(.5, .4)}l${q(-.5, .4)}l${q(.5, .4)}" ${st}/>
+<circle data-k="halm" opacity="0" cx="0" cy="${r1(-13.9 * S)}" r="2.4" fill="none" stroke="#e9eef7" stroke-opacity=".85" stroke-width="1.4"/>`;
+}
+
+// ---------------------------------------------------------------- Farben
+const LUNGE = { rosa: ['#ffe3e8', '#ec9fb1', '#a24f69', '#ffd1db'], blau: ['#d6f6ff', '#79cfe2', '#2f6f8a', '#bfeaf3'] };
+const LUFT = { ein: '#c9f6ff', aus: '#ffd49e' };   // Einatmen kühl (wie Kreis), Ausatmen warm (wie Ausatem-Bogen)
+
+function baue(ans, id, lungeFarbe) {
+  const Gm = ans === 'seite' ? SS : V, seite = ans === 'seite';
+  const L = LUNGE[lungeFarbe] || LUNGE.rosa;
+  const g0 = { kz: 0, ri: 0, bv: 0, bh: 0, ba: 0, fl: 0, sh: 0, sl: 0 }, G = Gm.geo(g0);
+  // Bronchialbaum (fest, wird als Gruppe mit der Lunge skaliert)
+  const tr = {}; Gm.zweige.forEach(([p, w]) => baum(p, w, 2.0, 2, .5, tr));
+  const sp = tr.spitzen || [];
+  const wegP = (k) => (Gm.weg[k] || []).map((pp) => kurve(pp)).join('');
+  const spitzenPfad = ast([...(tr[0] || []), ...(tr[1] || []), ...(tr[2] || [])]);
+  // Stationen: Strom-Pfade (Punkt-Strich). Luftröhre/Nase/Mund in "rohr" (fest), Bronchien/Lunge im Baum (mitskaliert).
+  const strom = (k, d, grp) => `<path data-k="s_${k}" d="${d}" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="0 6.6" opacity="0"/>`;
+  const kopf = seite
+    ? `<path d="${kurve([[7.0, -18.0], [4.6, -18.9], [1.4, -19.6], [-1.6, -19.2], [-2.8, -17.6], [-1.2, -16.7], [2.2, -17.0], [5.6, -16.9]], true)}" fill="#bfe3ff" fill-opacity=".07" stroke="#cfe9ff" stroke-opacity=".28" stroke-width=".6"/>
+<path d="M${q(5.6, -18.2)}Q${q(2.4, -18.9)} ${q(-.4, -18.4)}M${q(5.2, -17.4)}Q${q(2.0, -17.9)} ${q(-.8, -17.5)}" fill="none" stroke="#cfe9ff" stroke-opacity=".22" stroke-width=".5" stroke-linecap="round"/>
+<path d="${kurve([[6.6, -14.4], [3.4, -15.2], [-.2, -15.0], [-2.0, -13.6], [-.6, -12.4], [3.0, -12.6], [6.0, -13.2]], true)}" fill="#e7a3b5" fill-opacity=".08" stroke="#e7a3b5" stroke-opacity=".18" stroke-width=".5"/>
+<path d="${kurve([[-3.2, -21.6], [-4.4, -22.4], [-5.2, -20.4], [-4.6, -18.2], [-3.4, -18.6]], true)}" fill="#bfe3ff" fill-opacity=".06" stroke="#cfe9ff" stroke-opacity=".3" stroke-width=".6"/>`
+    : `<path d="M${q(0, -24)}L${q(0, -18.4)}M${q(-1.6, -17.2)}Q${q(0, -16.2)} ${q(1.6, -17.2)}" fill="none" stroke="#cfe9ff" stroke-opacity=".3" stroke-width=".6" stroke-linecap="round"/>
+<path d="M${q(-2.2, -13.9)}Q${q(0, -13.2)} ${q(2.2, -13.9)}" fill="none" stroke="#cfe9ff" stroke-opacity=".25" stroke-width=".6" stroke-linecap="round"/>
+<path d="${kurve([[-.2, -20.8], [-2.2, -20.2], [-2.4, -18.0], [-1.0, -17.4], [-.2, -18.4]], true)}${kurve([[.2, -20.8], [2.2, -20.2], [2.4, -18.0], [1.0, -17.4], [.2, -18.4]], true)}" fill="#bfe3ff" fill-opacity=".07" stroke="#cfe9ff" stroke-opacity=".22" stroke-width=".5"/>
+<ellipse cx="${-7.9 * S}" cy="${-20.4 * S}" rx="${1.0 * S}" ry="${2.3 * S}" fill="#bfe3ff" fill-opacity=".05" stroke="#cfe9ff" stroke-opacity=".3" stroke-width=".6"/><ellipse cx="${7.9 * S}" cy="${-20.4 * S}" rx="${1.0 * S}" ry="${2.3 * S}" fill="#bfe3ff" fill-opacity=".05" stroke="#cfe9ff" stroke-opacity=".3" stroke-width=".6"/>`;
+  // Wirbelsäule
+  const ws = seite
+    ? WSS.map(([x, y], i) => { const n = WSS[Math.min(i + 1, WSS.length - 1)], p = WSS[Math.max(i - 1, 0)], w = Math.atan2(n[1] - p[1], n[0] - p[0]) * 180 / Math.PI - 90, b = i < 6 ? 1.5 : i < 18 ? 2.0 : 2.5;
+      return `<g transform="translate(${r1(x * S)} ${r1(y * S)}) rotate(${r1(w)})"><rect x="${r1(-b * S)}" y="${-2.6}" width="${r1(2 * b * S)}" height="${i < 6 ? 4.4 : 5.6}" rx="1.6"/><path d="M${r1(-b * S)} 0l${r1(-1.5 * S)} ${i < 18 ? 2 : .6}" fill="none" stroke-opacity=".55"/></g>`; }).join('')
+    : Array.from({ length: 22 }, (_, i) => { const y = -12 + i * 2.55, b = i < 6 ? 1.2 : i < 18 ? 1.5 + i * .02 : 2.0; return `<rect x="${r1(-b * S)}" y="${r1(y * S)}" width="${r1(2 * b * S)}" height="${r1(2.0 * S)}" rx="1.6"${i < 9 ? ' opacity=".35"' : ''}/>`; }).join('');
+  const mBasis = MUSKEL_IDS.slice(1).map((m) => `<path d="${G.m[m]()}"/>`).join('');   // blasse Grundlage: feste Ruhelage (keine Schreibzugriffe je Bild)
+  const pfeile = Gm.pf.map(([k, ph, , , pts], i) => { const d = kurve(pts), e = pts[pts.length - 1], b = pts[pts.length - 2], w = Math.atan2(e[1] - b[1], e[0] - b[0]) * 180 / Math.PI;
+    const kopf = `M-5.4 -5L.6 0L-5.4 5`, tf = `translate(${q(...e)}) rotate(${r1(w)})`;
+    return `<g data-p="${i}" data-phase="${ph}" opacity="0"><path d="${d}" fill="none" stroke="#0d1218" stroke-opacity=".55" stroke-width="5" stroke-linecap="round" stroke-dasharray="0 5" data-ph="${i}"/><path d="${kopf}" transform="${tf}" fill="none" stroke="#0d1218" stroke-opacity=".55" stroke-width="5.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="${d}" fill="none" stroke="#fff6ec" stroke-width="2.9" stroke-linecap="round" stroke-dasharray="0 5" data-pd="${i}"/><path d="${kopf}" transform="${tf}" fill="none" stroke="#fff6ec" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></g>`; }).join('');
+  const labs = Gm.lab.map(([k]) => `<g data-l="${k}" opacity="0"><path fill="none" stroke-width=".9"/><circle r="1.9"/><text>${(KURZ[k] || [ST_NAME[k]]).map((t) => `<tspan>${t}</tspan>`).join('')}</text></g>`).join('');
   const svg = document.createElementNS(NS, 'svg');
   svg.setAttribute('aria-hidden', 'true'); svg.setAttribute('data-ansicht', ans);
-  svg.innerHTML = `<defs><linearGradient id="${id}${ans}h" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#27324d"/><stop offset="1" stop-color="#171f31"/></linearGradient>
-<radialGradient id="${id}${ans}l" cx=".45" cy=".3" r=".85"><stop offset="0" stop-color="#9ee0ee"/><stop offset=".6" stop-color="#5fb4cc"/><stop offset="1" stop-color="#2f6f8a"/></radialGradient>
-<linearGradient id="${id}${ans}f" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#6cc4d9" stop-opacity=".8"/><stop data-k="f1" offset=".5" stop-color="#6cc4d9" stop-opacity=".8"/><stop data-k="f2" offset=".5" stop-color="#6cc4d9" stop-opacity=".1"/><stop offset="1" stop-color="#6cc4d9" stop-opacity=".1"/></linearGradient>
-${mus}</defs>
-<g data-k="sch" class="an-sch">${seite ? '<path d="M52 72C52 58 76 58 76 72C76 86 70 96 64 98C58 96 52 86 52 72Z" fill="#2b3754" fill-opacity=".55" stroke="#45547a" stroke-width="1.2"/>' : `<path d="${arm(0)}" fill="url(#${id}${ans}h)" stroke="#3d4a6b" stroke-width="1.3"/><path d="${arm(1)}" fill="url(#${id}${ans}h)" stroke="#3d4a6b" stroke-width="1.3"/>`}</g>
-<path data-k="koerper" fill="url(#${id}${ans}h)" stroke="#3d4a6b" stroke-width="1.4" stroke-linejoin="round"/>
-<path d="${kopf}" fill="url(#${id}${ans}h)" stroke="#3d4a6b" stroke-width="1.4"/>
-${seite ? `<path d="${ws}" stroke="#6f7d9e" stroke-opacity=".55" stroke-width="4.6" stroke-linecap="round"/>` : `<path data-k="herz" d="M70 98C64 100 62 112 68 118C74 122 86 120 88 114C90 106 84 96 76 96C74 96 72 97 70 98Z" fill="#8a5466" fill-opacity=".55"/>`}
-<g data-k="lungen" fill="url(#${id}${ans}l)" fill-opacity=".7" stroke="#8fd8ea" stroke-opacity=".55" stroke-width="1.1"><path data-k="lu1"/>${seite ? '' : '<path data-k="lu2"/>'}</g>
-<path data-k="luN" d="${luft[0]}" fill="none" stroke="#c9eef6" stroke-width="2.3" stroke-linecap="round" stroke-dasharray="0 6.5" opacity=".2"/>
-<path data-k="luM" d="${luft[1]}" fill="none" stroke="#c9eef6" stroke-width="2.3" stroke-linecap="round" stroke-dasharray="0 6.5" opacity="0"/>
-<path data-k="knorpel" fill="none" stroke="#cfd8ea" stroke-opacity=".22" stroke-width="1.4" stroke-linecap="round"/>
-<path data-k="knochen" fill="none" stroke="#d6deef" stroke-opacity=".42" stroke-width="2" stroke-linecap="round"/>
-${u('zwerchfell', 'fill="none" stroke="#8e9bbd" stroke-opacity=".8" stroke-width="3.2" stroke-linecap="round"')}
-<g fill="none" stroke="#6a7aa3" stroke-opacity=".3" stroke-width="1.7" stroke-linecap="round">${MUSKEL_IDS.slice(1).map((m) => u(m, '')).join('')}</g>
-<g fill="none" stroke-linecap="round" stroke-linejoin="round">${MUSKEL_IDS.map((m) => `<g data-m="${m}" opacity="0">${u(m, 'stroke="#f0907f" stroke-opacity=".25" stroke-width="11"')}${u(m, 'stroke="#f0907f" stroke-opacity=".55" stroke-width="5"')}${u(m, 'stroke="#ffd9cf" stroke-opacity=".7" stroke-width="1.4"')}</g>`).join('')}</g>
-${marks}${pf}
+  svg.innerHTML = `<defs>
+<linearGradient id="${id}glas" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#9fd4ff" stop-opacity=".2"/><stop offset=".22" stop-color="#7fb3e8" stop-opacity=".07"/><stop offset=".5" stop-color="#6e9fd6" stop-opacity=".035"/><stop offset=".8" stop-color="#7fb3e8" stop-opacity=".08"/><stop offset="1" stop-color="#9fd4ff" stop-opacity=".2"/></linearGradient>
+<linearGradient id="${id}rand" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e6f5ff" stop-opacity=".85"/><stop offset=".55" stop-color="#a8d4f5" stop-opacity=".45"/><stop offset="1" stop-color="#6d9cc8" stop-opacity=".25"/></linearGradient>
+<radialGradient id="${id}lu" cx=".42" cy=".32" r=".8"><stop offset="0" stop-color="${L[0]}" stop-opacity=".8"/><stop offset=".5" stop-color="${L[1]}" stop-opacity=".58"/><stop offset="1" stop-color="${L[2]}" stop-opacity=".7"/></radialGradient>
+<radialGradient id="${id}luft" cx=".5" cy=".55" r=".6"><stop offset="0" stop-color="#f2fdff" stop-opacity=".9"/><stop offset=".6" stop-color="#9be6f6" stop-opacity=".45"/><stop offset="1" stop-color="#9be6f6" stop-opacity="0"/></radialGradient>
+<radialGradient id="${id}alv" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#f4feff" stop-opacity=".95"/><stop offset="1" stop-color="#9be6f6" stop-opacity="0"/></radialGradient>
+<linearGradient id="${id}mus" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff8a66"/><stop offset="1" stop-color="#e2463f"/></linearGradient>
+<linearGradient id="${id}knochen" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#cfd9ea"/><stop offset=".5" stop-color="#fbfcff"/><stop offset="1" stop-color="#cfd9ea"/></linearGradient>
+<linearGradient id="${id}aus" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--an-grund,#151c25)" stop-opacity="0"/><stop offset="1" style="stop-color:var(--an-grund,#151c25)"/></linearGradient>
+<linearGradient id="${id}f" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="${L[1]}" stop-opacity=".85"/><stop data-k="f1" offset=".5" stop-color="${L[1]}" stop-opacity=".85"/><stop data-k="f2" offset=".5" stop-color="${L[1]}" stop-opacity=".12"/><stop offset="1" stop-color="${L[1]}" stop-opacity=".12"/></linearGradient>
+${MUSKEL_IDS.map((m) => `<path id="${id}m${m}" d="${m === 'zwerchfell' ? G.dz : ''}"/>`).join('')}<path id="${id}pl1" data-k="lu1" d="${G.lu1}"/>${G.lu2 ? `<path id="${id}pl2" data-k="lu2" d="${G.lu2}"/>` : ''}</defs>
+<g data-k="arm">${seite ? `<path d="${kurve([[-6.6, 1.4], [-2.6, -1.4], [1.0, 1.6], [1.2, 6.6], [-.6, 13], [-4.0, 15.2], [-7.0, 12], [-7.6, 6]], true)}" fill="url(#${id}glas)" stroke="url(#${id}rand)" stroke-width="1" stroke-opacity=".6"/>`
+    : `<path d="${G.arm = V.arm()}" fill="url(#${id}glas)" stroke="url(#${id}rand)" stroke-width="1"/><path d="${kurve(spiegel([[16.9, .1], [19.6, .9], [21.6, 3.5], [22.4, 8], [22.6, 15], [22.4, 22], [22.1, 30], [21.8, 38], [21.6, 46], [21.5, 57], [18.4, 57], [18.3, 46], [18.0, 38], [17.6, 30], [17.0, 22], [16.4, 15], [16.0, 9], [16.2, 4]]), true)}" fill="url(#${id}glas)" stroke="url(#${id}rand)" stroke-width="1"/>`}</g>
+<path data-k="hull" d="${G.hull}" fill="url(#${id}glas)" stroke="url(#${id}rand)" stroke-width="1.1"/>
+<path d="${G.hull}" fill="none" stroke="#bfe3ff" stroke-opacity=".05" stroke-width="7"/>
+<g fill="#e3ebf7" fill-opacity=".16" stroke="#e8eff9" stroke-opacity=".34" stroke-width=".7">${ws}</g>
+${seite ? '' : `<path d="${kurve([[-13.4, 41], [-9, 39.4], [-5, 43], [-3.4, 47.6]])}${kurve([[13.4, 41], [9, 39.4], [5, 43], [3.4, 47.6]])}" fill="none" stroke="#e8eff9" stroke-opacity=".28" stroke-width="2.4" stroke-linecap="round"/>`}
+${seite ? `<path d="${kurve([[-12.4, 40.6], [-8.6, 38.4], [-3.6, 40.4], [-.4, 44.6]])}" fill="none" stroke="#e8eff9" stroke-opacity=".26" stroke-width="2.4" stroke-linecap="round"/>` : ''}
+<path data-k="rHint" d="${G.rHint}" fill="none" stroke="#e8eff9" stroke-opacity=".17" stroke-width="1.5" stroke-linecap="round"/>
+${seite ? `<path data-k="crus" d="${G.crus}" fill="none" stroke="#d9707f" stroke-opacity=".3" stroke-width="2.4" stroke-linecap="round"/>` : ''}
+<g data-k="herz" transform="${G.herz}"><path d="${seite ? kurve([[-.4, 8.6], [3.4, 8.2], [5.4, 11], [4.8, 14.6], [1.6, 16.2], [-1.6, 15.4], [-2.4, 12]], true) : kurve([[-3.2, 9.8], [.5, 8.4], [4.5, 9.2], [7.2, 12.6], [7.2, 16], [3.5, 18], [-1.6, 17.6], [-3.6, 14.5]], true)}" fill="#b04e6a" fill-opacity=".34" stroke="#e48aa3" stroke-opacity=".35" stroke-width=".7"/></g>
+<g data-k="lungen" fill="url(#${id}lu)" stroke="${L[3]}" stroke-opacity=".55" stroke-width="1"><use href="#${id}pl1"/>${G.lu2 ? `<use href="#${id}pl2"/>` : ''}
+<g data-k="luft" opacity=".3" fill="url(#${id}luft)" stroke="none"><use href="#${id}pl1"/>${G.lu2 ? `<use href="#${id}pl2"/>` : ''}</g>
+<path data-k="spalt" d="${G.spalt}" fill="none" stroke="${L[2]}" stroke-opacity=".75" stroke-width="1.1" stroke-linecap="round"/></g>
+<g data-k="rohr" transform="${G.rohr}">
+<path d="${wegP('luftroehre')}" fill="none" stroke="#eaf3ff" stroke-opacity=".3" stroke-width="5.8" stroke-linecap="round"/>
+<path d="${wegP('luftroehre')}" fill="none" stroke="#f4f9ff" stroke-opacity=".62" stroke-width="4.6" stroke-linecap="butt" stroke-dasharray="1.2 1.5"/>
+<path d="${seite ? kurve([[.6, -11.6], [3.0, -11.0], [3.2, -8.8], [1.6, -7.6], [.4, -8.6]], true) : kurve([[-2.2, -10.4], [2.2, -10.4], [1.8, -8.2], [0, -7.4], [-1.8, -8.2]], true)}" fill="#eaf3ff" fill-opacity=".12" stroke="#eaf3ff" stroke-opacity=".4" stroke-width=".7"/>
+<g data-k="sr" stroke="${LUFT.ein}">${strom('nase', wegP('nase'))}${seite ? '' : strom('nasL', kurve(Gm.weg.nase[0])) + strom('nasR', kurve(Gm.weg.nase[1]))}${strom('mund', wegP('mund'))}${strom('luftroehre', wegP('luftroehre'))}</g>
+<circle data-k="kopf" r="2.2" fill="#ffffff" opacity="0"/></g>
+<g data-k="baum" transform="${G.baum}">
+<path d="${wegP('bronchien')}" fill="none" stroke="#eaf3ff" stroke-opacity=".55" stroke-width="2.6" stroke-linecap="round"/>
+<path d="${ast(tr[0] || [])}" fill="none" stroke="#eaf3ff" stroke-opacity=".45" stroke-width="1.6" stroke-linecap="round"/>
+<path d="${ast([...(tr[1] || []), ...(tr[2] || [])])}" fill="none" stroke="#eaf3ff" stroke-opacity=".32" stroke-width=".9" stroke-linecap="round"/>
+<g data-k="sb" stroke="${LUFT.ein}">${strom('bronchien', wegP('bronchien'))}${strom('lunge', spitzenPfad)}</g>
+<g data-k="alv" opacity="0">${sp.map(([x, y]) => `<circle cx="${r1(x * S)}" cy="${r1(y * S)}" r="3.2" fill="url(#${id}alv)"/>`).join('')}</g></g>
+<path data-k="knorpel" d="${G.knorpel}" fill="none" stroke="#bfe0ec" stroke-opacity=".38" stroke-width="1.5" stroke-linecap="round"/>
+<path data-k="rVorn" d="${G.rVorn}" fill="none" stroke="#f3f7fd" stroke-opacity=".5" stroke-width="2.1" stroke-linecap="round"/>
+${seite ? `<path data-k="brustbein" d="${G.brustbein}" fill="none" stroke="url(#${id}knochen)" stroke-opacity=".7" stroke-width="3.6" stroke-linecap="round"/>`
+    : `<g data-k="brustbein" transform="${G.brustbein}"><path d="${kurve([[-2.2, .6], [2.2, .6], [1.6, 4.8], [1.6, 10], [1.7, 16.5], [0, 19.8], [-1.7, 16.5], [-1.6, 10], [-1.6, 4.8]], true, .5)}" fill="url(#${id}knochen)" fill-opacity=".42" stroke="#f3f7fd" stroke-opacity=".55" stroke-width=".7"/></g>`}
+<path data-k="schl" d="${G.schl}" fill="none" stroke="url(#${id}knochen)" stroke-opacity=".8" stroke-width="2.8" stroke-linecap="round"/>
+<g fill="none" stroke-linecap="round" stroke-linejoin="round">
+<use data-k="zwB" href="#${id}mzwerchfell" stroke="#d9707f" stroke-opacity=".38" stroke-width="3.4"/>
+<g stroke="#e0a9b4" stroke-opacity=".13" stroke-width="1.6">${mBasis}</g>
+${MUSKEL_IDS.map((m) => `<g data-m="${m}" opacity="0"><use href="#${id}m${m}" stroke="#ff7a59" stroke-opacity=".22" stroke-width="${m === 'zwerchfell' ? 12 : 9}"/><use href="#${id}m${m}" stroke="url(#${id}mus)" stroke-opacity=".85" stroke-width="${m === 'zwerchfell' ? 4.4 : 3.2}"/><use href="#${id}m${m}" stroke="#ffe0d6" stroke-opacity=".75" stroke-width="1"/></g>`).join('')}</g>
+<path d="${seite ? kurve([[4.0, -29.4], [5.6, -26.2], [6.2, -23.4]]) + kurve([[5.6, 4.4], [6.4, 9.6], [6.6, 14]]) : kurve([[-5.6, -28.4], [-6.6, -24.6], [-6.8, -21.2]]) + kurve([[-12.6, 1.2], [-15.6, 4.8], [-15.0, 12]])}" fill="none" stroke="#ffffff" stroke-opacity=".28" stroke-width="1.6" stroke-linecap="round"/>
+${kopf}
+<rect x="${Gm.box[0] * S * 1.6}" y="${46 * S}" width="${Gm.box[2] * S * 1.6}" height="${12 * S}" fill="url(#${id}aus)"/>
+${pfeile}
+${mundformen(seite)}
 <g class="an-lab">${labs}</g>
-<text data-k="liter" class="an-liter" text-anchor="middle" x="${seite ? 76 : 95}" y="${seite ? 94 : 92}" opacity="0"></text>
 <g class="an-info" opacity="0" data-k="hinweis"><text data-k="hw"><tspan>Lunge: Richtwert,</tspan><tspan>nicht deine Messung</tspan></text></g>
 <g class="an-info" opacity="0" data-k="lern"><text data-k="lw"><tspan>Ausatmen geschieht</tspan><tspan>von selbst.</tspan></text></g>
-<g class="an-hit" fill="none" stroke="#000" stroke-opacity="0" stroke-width="16" stroke-linecap="round">${MUSKEL_IDS.map((m) => `<use href="#${id}${ans}-${m}" data-m="${m}"/>`).join('')}</g>`;
-  const q = (k) => svg.querySelector(`[data-k="${k}"]`);
-  const el = {}; for (const k of ['koerper', 'sch', 'herz', 'lungen', 'lu1', 'lu2', 'luN', 'luM', 'knorpel', 'knochen', 'summen', 'lippen', 'halm', 'brr', 'nl', 'nr', 'liter', 'hinweis', 'lern', 'hw', 'lw', 'f1', 'f2']) el[k] = q(k);
-  el.pf = (seite ? ['pz', 'pb', 'pr', 'ps'] : ['pz', 'pr', 'pr2', 'ps', 'ps2']).map((k) => [k, q(k), q(k + 'r')]);
-  for (const m of MUSKEL_IDS) { el['P' + m] = svg.querySelector(`[id="${id}${ans}-${m}"]`); el['M' + m] = svg.querySelector(`g[data-m="${m}"]`); el['L' + m] = svg.querySelector(`g[data-l="${m}"]`); }
-  el.zw = el.Pzwerchfell;
-  return { svg, el, ans, lab: LAB[ans].map(([m, s, x, y]) => ({ m, s, x, y, g: el['L' + m] })) };
-}
-
-// Geometrie je Ansicht: g in Einheiten (positiv kz = Kuppel tiefer). Liefert Pfad-Zeichenketten, Setzen macht der Aufrufer.
-function seiteGeo(g) {
-  const { kz, ri, bv, bh, ba, fl, sh, sl, rk } = g;
-  const st = [95 + bv * .7, 63 - bh], xi = [102 + bv, 127 - bh * .5];
-  const bhA = bh / (1.5 * U * 1.5), riA = ri / (U * 1.5) * .8;
-  const R = [], S = [];
-  let kn = `M${P(66, 63 - sh)}Q${P(80, 61 - sh * .5 - bh * .5)} ${P(st[0] - 1, st[1])}M${P(st[0], st[1])}L${P(xi[0], xi[1])}`, ko = '';
-  for (let k = 0; k < 6; k++) {
-    const j = SJ[k], s = [lerp(st[0], xi[0], k / 5), lerp(st[1], xi[1], k / 5)], f0 = [88.5 + 1.4 * k - 1.5, 71 + 14.8 * k];
-    const th = -((6 - .5 * k) * bhA + (4 + k) * riA) * Math.PI / 180, co = Math.cos(th), si = Math.sin(th);
-    const p = [j, [j[0] + 10, j[1] + 14 + k], [f0[0] - 16, f0[1] + 8], f0].map((q, i) => (i ? rot(q, j, co, si) : q));
-    R.push(p); S.push(s);
-    kn += `M${P(...p[0])}C${P(...p[1])} ${P(...p[2])} ${P(...p[3])}`;
-    ko += `M${P(...p[3])}Q${P(p[3][0] + 4, s[1] + 4)} ${P(...s)}`;
-  }
-  let ia = '', ii = '';
-  for (let k = 0; k < 5; k++) for (const t0 of [.36, .54, .72]) { const t = t0 + (k % 2) * .08, a = bz(...R[k], t), b = bz(...R[k + 1], t + .04); ia += `M${P(...a)}L${P(...b)}`; }
-  for (let k = 1; k < 5; k++) { const a = bz(...R[k], .9), b = bz(...R[k + 1], .8); ii += `M${P(...a)}L${P(...b)}`; }
-  const Df = [xi[0] - 3, xi[1] + 7], Dt = [78, 108 + kz - rk], Db = [52 - fl * .4, 168];
-  const dz = `M${P(...Df)}C${P(Df[0] - 2, Dt[1] + 2)} ${P(Dt[0] + 14, Dt[1])} ${P(...Dt)}C${P(Dt[0] - 16, Dt[1])} ${P(Db[0] + 4, Db[1] - 30)} ${P(...Db)}`;
-  const A = [80, 54 - sl * .4 - bh * .3], F1 = [st[0] - 4, 72 - bh], F2 = [xi[0] - 5, 121 - bh * .5];
-  const lu = `M${P(...A)}C${P(88, A[1])} ${P(F1[0], F1[1] - 8)} ${P(...F1)}C${P(F1[0] + 3, 90)} ${P(F2[0], 108)} ${P(...F2)}L${P(Df[0] - 1, Df[1] - 3)}C${P(Df[0] - 3, Dt[1])} ${P(Dt[0] + 14, Dt[1] - 2)} ${P(Dt[0], Dt[1] - 2)}C${P(Dt[0] - 16, Dt[1] - 2)} ${P(Db[0] + 3, Db[1] - 32)} ${P(Db[0] + 1, Db[1] - 3)}C${P(47 - fl * .8, 140)} ${P(50, 100)} ${P(56, 80)}C${P(60, 66)} ${P(70, A[1])} ${P(...A)}Z`;
-  const Cf = [104 + bv * .5, 136 - bh * .3], Pb = [98, 232];
-  const bauch = `C${P(Cf[0] + 2, 148)} ${P(104 + ba * .6, 160)} ${P(106 + ba * .9, 178)}C${P(108 + ba, 196)} ${P(104 + ba * .6, 222)} ${P(...Pb)}`;
-  const koerper = `M70 38C66 46 64 52 60 58C44 66 38 84 38 104C38 120 ${P(40 - fl, 142)} ${P(42 - fl, 160)}C44 176 50 186 48 200C46 214 38 222 40 236L42 246H96L98 232C${P(104 + ba * .6, 222)} ${P(108 + ba, 196)} ${P(106 + ba * .9, 178)}C${P(104 + ba * .6, 160)} ${P(Cf[0] + 2, 148)} ${P(...Cf)}C${P(106 + bv, 120 - bh)} ${P(106 + bv, 84 - bh)} ${P(100 + bv, 66 - bh)}C${P(97 + bv * .6, 61 - bh)} 92 56 90 50L88 42C82 41 74 41 70 38Z`;
-  const abs = `M${P(Cf[0] - 3, Cf[1] + 4)}${bauch.replace(/(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)/g, (_, x, y) => `${r(+x - 4)} ${y}`)}M${P(R[5][3][0] - 6, R[5][3][1] + 2)}C${P(90, 160)} ${P(96 + ba * .4, 190)} ${P(97, 214)}M${P(78, 150)}C${P(84, 172)} ${P(90 + ba * .3, 200)} ${P(92, 226)}`;
-  const f = (k) => R[k][3];
-  return { kn, ko, dz, lu, koerper, sch: sh, herz: 0,
-    m: { zwischenrippen_aussen: ia, zwischenrippen_innen: ii, bauchmuskeln: abs,
-      treppenmuskeln: `M70 40Q72 54 ${P(74, 68 - bh * .8)}M66 42Q68 56 ${P(70, 70 - bh * .8)}`,
-      kopfwender: `M72 34Q84 46 ${P(st[0] - 1, st[1] + 1)}`,
-      trapez_oben: `M64 26C60 40 60 52 ${P(62, 62 - sh)}`,
-      brustmuskel_klein: [1, 2, 3].map((k) => `M${P(76, 72 - sh)}L${P(f(k)[0] - 1, f(k)[1] - 2)}`).join(''),
-      ruecken_breit: `M${P(66, 90 - sh * .5)}C56 110 ${P(46 - fl, 150)} 48 188` } };
-}
-function vornGeo(g) {
-  const { kz, ri, bv, bh, ba, fl, sh, sl, rk } = g, fw = fl * .5 + ba * .12;
-  let kn = '', ko = '';
-  const R = [[], []];
-  for (const s of [-1, 1]) {
-    const c = s < 0 ? 0 : 1, X = (d) => 75 + s * d;
-    kn += `M${P(X(2), 61 - bh)}C${P(X(13), 63 - bh)} ${P(X(25), 58 - sl)} ${P(X(35), 58 - Math.max(sh, sl) * .9)}`;
-    for (let k = 0; k < 6; k++) {
-      const lift = bh * (1 - k / 7) * .8 + ri * .05 * k, S = [X(3), 66 + 11 * k - bh * (1 - k / 7)], L = [X(19 + 3.2 * k + ri * (.25 + .15 * k)), 80 + 12.5 * k - lift];
-      const p = [S, [S[0] + 10 * s, S[1] - 3], [L[0] - 2 * s, L[1] - 14 + k], L];
-      R[c].push(p); kn += `M${P(...S)}C${P(...p[1])} ${P(...p[2])} ${P(...L)}`;
-    }
-    ko += `M${P(75, 126 - bh * .5)}C${P(X(6), 132)} ${P(X(22 + ri * .6), 142)} ${P(X(31 + ri * .9), 147)}`;
-  }
-  kn += `M${P(75, 62 - bh)}L${P(75, 126 - bh * .5)}`;
-  const ML = [41 - ri, 150], MR = [109 + ri, 150], DL = [57, 113 + kz - rk], C = [75, 121 + kz * .7 - rk], DR = [93, 108 + kz - rk];
-  const dz = `M${P(...ML)}C${P(ML[0], ML[1] - 30)} ${P(DL[0] - 10, DL[1])} ${P(...DL)}C${P(DL[0] + 9, DL[1])} ${P(C[0] - 8, C[1])} ${P(...C)}C${P(C[0] + 8, C[1])} ${P(DR[0] - 9, DR[1])} ${P(...DR)}C${P(DR[0] + 10, DR[1])} ${P(MR[0], MR[1] - 30)} ${P(...MR)}`;
-  const a = sl * .5 + bh * .3;
-  const lu1 = `M${P(61, 52 - a)}C${P(54, 52 - a)} ${P(47 - ri * .4, 64)} ${P(45 - ri * .6, 84)}C${P(43 - ri * .9, 104)} ${P(41 - ri, 124)} ${P(ML[0] + 1, ML[1] - 6)}C${P(ML[0] + 2, ML[1] - 32)} ${P(DL[0] - 10, DL[1] - 2)} ${P(DL[0], DL[1] - 2)}C${P(DL[0] + 5, DL[1] - 2)} ${P(65, DL[1] + 1)} ${P(66, (DL[1] + C[1]) / 2 - 2)}C63 104 69 96 69 84C69 70 68 58 ${P(61, 52 - a)}Z`;
-  const lu2 = `M${P(89, 50 - a)}C${P(96, 50 - a)} ${P(103 + ri * .4, 62)} ${P(105 + ri * .6, 82)}C${P(107 + ri * .9, 102)} ${P(109 + ri, 122)} ${P(MR[0] - 1, MR[1] - 6)}C${P(MR[0] - 2, MR[1] - 32)} ${P(DR[0] + 10, DR[1] - 2)} ${P(DR[0], DR[1] - 2)}C${P(DR[0] - 5, DR[1] - 2)} ${P(84, DR[1] + 1)} ${P(83, (DR[1] + C[1]) / 2 - 2)}C82 96 81 76 82 66C83 58 85 ${r(50 - a)} 89 ${r(50 - a)}Z`;
-  const side = (s) => { const X = (d) => 75 + s * d; return [[X(39), 84 - sh * .5], [X(39 + ri * .2), 100], [X(38 + ri * .6), 125], [X(36 + ri), 146], [X(34 + ri * .8 + fw), 160], [X(30 + fw), 172], [X(31 + fw * .5), 186], [X(33), 204], [X(37), 218], [X(36), 246]]; };
-  const Lr = side(-1), Rr = side(1);
-  const koerper = `M68 38L67 50C60 54 50 56 ${P(42, 58 - sh)}C${P(34, 60 - sh)} ${P(32, 70 - sh)} ${P(...Lr[0])}C${P(...Lr[1])} ${P(...Lr[2])} ${P(...Lr[3])}C${P(...Lr[4])} ${P(...Lr[5])} ${P(...Lr[6])}C${P(...Lr[7])} ${P(...Lr[8])} ${P(...Lr[9])}L${P(...Rr[9])}C${P(...Rr[8])} ${P(...Rr[7])} ${P(...Rr[6])}C${P(...Rr[5])} ${P(...Rr[4])} ${P(...Rr[3])}C${P(...Rr[2])} ${P(...Rr[1])} ${P(...Rr[0])}C${P(118, 70 - sh)} ${P(116, 60 - sh)} ${P(108, 58 - sh)}C100 56 90 54 83 50L82 38Z`;
-  let ia = '', ii = '';
-  for (const c of [0, 1]) {
-    for (let k = 0; k < 5; k++) for (const t0 of [.66, .84]) { const t = t0 + (k % 2) * .07, p = bz(...R[c][k], t), q = bz(...R[c][k + 1], t - .06); ia += `M${P(...p)}L${P(...q)}`; }
-    for (let k = 1; k < 5; k++) { const p = bz(...R[c][k], .16), q = bz(...R[c][k + 1], .26); ii += `M${P(...p)}L${P(...q)}`; }
-  }
-  const pt = (c, k, t) => bz(...R[c][k], t);
-  const abs = `M68 140C67 170 68 200 71 226M82 140C83 170 82 200 79 226M75 132V228M69 156H81M68.5 172H81.5M69 190H81M${P(41 - ri * .8, 153)}C48 176 58 200 68 214M${P(109 + ri * .8, 153)}C102 176 92 200 82 214`;
-  return { kn, ko, dz, lu: lu1, lu2, koerper, sch: sh, herz: kz * .7 - rk,
-    m: { zwischenrippen_aussen: ia, zwischenrippen_innen: ii, bauchmuskeln: abs,
-      treppenmuskeln: `M66 40C64 48 60 56 ${P(56, 65 - bh * .7)}M84 40C86 48 90 56 ${P(94, 65 - bh * .7)}`,
-      kopfwender: `M64 33C66 44 70 54 ${P(73, 61 - bh)}M86 33C84 44 80 54 ${P(77, 61 - bh)}`,
-      trapez_oben: `M68 44C62 52 ${P(52, 55 - sh * .6)} ${P(42, 58 - sh)}M82 44C88 52 ${P(98, 55 - sh * .6)} ${P(108, 58 - sh)}`,
-      brustmuskel_klein: [0, 1].map((c) => { const o = [c ? 106 : 44, 68 - sh]; return [2, 3, 4].map((k) => `M${P(...o)}L${P(...pt(c, k, .45))}`).join(''); }).join(''),
-      ruecken_breit: `M${P(37, 88 - sh * .5)}C${P(37 - ri * .4, 110)} ${P(40 - ri * .8, 136)} ${P(44 - fw, 166)}M${P(113, 88 - sh * .5)}C${P(113 + ri * .4, 110)} ${P(110 + ri * .8, 136)} ${P(106 + fw, 166)}` } };
+<g class="an-hit" fill="none" stroke="#000" stroke-opacity="0" stroke-width="16" stroke-linecap="round">${MUSKEL_IDS.map((m) => `<path data-m="${m}" d="${G.m[m]()}"/>`).join('')}</g>
+<text data-k="liter" class="an-liter" text-anchor="middle" x="${seite ? -3 * S : 0}" y="${54 * S}" opacity="0"></text>`;
+  const qs = (k) => svg.querySelector(`[data-k="${k}"]`);
+  const el = {};
+  for (const k of ['crus', 'arm', 'rHint', 'rVorn', 'knorpel', 'brustbein', 'schl', 'herz', 'lungen', 'luft', 'spalt', 'rohr', 'baum', 'kopf', 'alv', 'liter']) el[k] = qs(k);
+  for (const k of ['hull', 'lu1', 'lu2', 'la1', 'la2', 'zwB']) el[k] = qs(k);
+  for (const k of ['nase', 'nasL', 'nasR', 'mund', 'luftroehre', 'bronchien', 'lunge']) el['s_' + k] = qs('s_' + k);
+  for (const k of ['f1', 'f2', 'summen', 'lippen', 'brr', 'halm', 'hinweis', 'lern', 'hw', 'lw']) el[k] = qs(k);
+  for (const m of MUSKEL_IDS) { el['M' + m] = svg.querySelector(`g[data-m="${m}"]`); el['A' + m] = m === 'zwerchfell' ? [] : [svg.querySelector(`[id="${id}m${m}"]`)]; }
+  el.zwP = svg.querySelector(`[id="${id}mzwerchfell"]`); el.sr = qs('sr'); el.sb = qs('sb');
+  el.pf = Gm.pf.map(([k, ph, gw, st, pts], i) => ({ k, ph, gw, st, g: svg.querySelector(`g[data-p="${i}"]`), d: svg.querySelector(`[data-pd="${i}"]`), h: svg.querySelector(`[data-ph="${i}"]`) }));
+  el.lab = Gm.lab.map(([k, s, x, y]) => ({ k, s, x, y, g: svg.querySelector(`g[data-l="${k}"]`), n: (KURZ[k] || [1]).length, w: Math.max(...(KURZ[k] || [ST_NAME[k]]).map((t) => t.length)) }));
+  // Leitpunkt-Wege (cm-Proben): Nase/Mund → Luftröhre
+  el.leit = { nase: proben([...Gm.weg.nase[0], ...Gm.weg.luftroehre[0].slice(1)]), mund: proben([...Gm.weg.mund[0], ...Gm.weg.luftroehre[0].slice(1)]) };
+  el.leit.nasL = el.leit.nase; if (Gm.weg.nase[1]) el.leit.nasR = proben([...Gm.weg.nase[1], ...Gm.weg.luftroehre[0].slice(1)]);
+  return { svg, el, Gm, ans, id };
 }
 
 // ---------------------------------------------------------------- Stil (einmal je Dokument; CSP erlaubt 'unsafe-inline' für style)
 function stil() {
-  if (document.getElementById('an-stil')) return;
-  const s = document.createElement('style'); s.id = 'an-stil';
-  s.textContent = `.an-figur{position:relative;width:100%;height:100%;min-height:60px;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+  if (document.getElementById('an-stil-015')) return;   // eigene Kennung: nie mit dem Stil einer älteren Figur mischen
+  const s = document.createElement('style'); s.id = 'an-stil-015';
+  s.textContent = `.an-figur{position:relative;width:100%;height:100%;min-height:60px;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;background:radial-gradient(ellipse 62% 50% at 50% 40%,rgba(130,180,240,.075),transparent 72%)}
 .an-figur svg{position:absolute;left:0;top:0;width:100%;height:100%;display:block;overflow:visible}
 .an-figur text{fill:var(--text,#e3e9f4);paint-order:stroke;stroke:var(--an-grund,#121a28);stroke-linejoin:round;font-family:inherit;font-weight:500}
-.an-figur .an-liter{font-weight:600;fill:#e9f8fc}.an-figur .an-info text{fill:var(--leise,#9aa6bf)}
-.an-hit use{pointer-events:none}.an-namen .an-hit use{pointer-events:stroke;cursor:pointer}
+.an-lab path{stroke:#f0907f;stroke-opacity:.8}.an-lab circle{fill:#f0907f}.an-lab g[data-st] path{stroke:#9be6f6}.an-lab g[data-st] circle{fill:#9be6f6}.an-lab g[data-st] text{fill:#d9f7ff}
+.an-figur .an-liter{font-weight:600;fill:#eafaff}.an-figur .an-info text{fill:var(--leise,#9aa6bf)}
+.an-hit path{pointer-events:none}.an-namen .an-hit path{pointer-events:stroke;cursor:pointer}
 .an-v{position:relative;display:flex;flex-direction:column;gap:12px;color:var(--text,#e3e9f4);--an-grund:var(--karte,#141c2b)}
 .an-v-mitte{display:contents}.an-v-seg,.an-v-knoepfe{display:flex;gap:6px;order:-1}.an-v-knoepfe{order:0;flex-wrap:wrap}
 .an-v button{flex:1;min-height:44px;min-width:44px;padding:0 10px;border-radius:12px;border:1px solid var(--linie,#2a3550);background:var(--karte,#141c2b);color:inherit;font:inherit;font-size:15px}
@@ -240,58 +442,63 @@ function stil() {
   document.head.append(s);
 }
 
-// ---------------------------------------------------------------- Figur
+// ---------------------------------------------------------------- Figur (gläsern, 0.1.5). Schnittstelle wie bisher (KONZEPT §5).
 let nr = 0;
 let mqR = null; const reduziert = () => { try { mqR = mqR || matchMedia('(prefers-reduced-motion: reduce)'); return mqR.matches; } catch { return false; } };
+const STR = ['nase', 'nasL', 'nasR', 'mund', 'luftroehre', 'bronchien', 'lunge'];
 export function erzeugeAnatomie(host, o = {}) {
   stil();
   const id = `an${++nr}-`, box = document.createElement('div');
   box.className = 'an-figur'; box.setAttribute('role', 'img'); box.setAttribute('aria-label', 'Figur: Atmung');
-  const V = { seite: baue('seite', id), vorn: baue('vorn', id) };
-  box.append(V.seite.svg, V.vorn.svg); host.append(box);
+  const VV = { seite: baue('seite', id + 's', o.lunge), vorn: baue('vorn', id + 'v', o.lunge) };
+  box.append(VV.seite.svg, VV.vorn.svg); host.append(box);
   let ans = o.ansicht === 'vorn' ? 'vorn' : 'seite', mod = o.modus === 'gross' ? 'gross' : 'klein', nam = !!o.namen, B = 0, H = 0, letztes = null;
-  const Z = { t: 0, v: 0, dv: 0, phase: '', art: '', weg: '', op: Object.fromEntries(MUSKEL_IDS.map((m) => [m, 0])), stoss0: -1e9, lern: 0, lernFertig: false, ruhig: null, off: 0, schreib: 0, dir: {}, c: null };
+  const Z = { t: 0, v: 0, dv: 0, phase: '', art: '', weg: '', wans: '', off: 0, offP: 0, op: Object.fromEntries(MUSKEL_IDS.map((m) => [m, 0])), stoss0: -1e9, lern: 0, lernFertig: false, sichtSet: '', schreib: 0, c: null, gkey: '', G: null, so: {} };
   const put = (e, a, val) => { if (!e) return; const k = '_' + a; if (e[k] === val) return; e[k] = val; e.setAttribute(a, val); Z.schreib++; };
   const info = (m) => { const M = o.daten && o.daten.MUSKELN, d = Array.isArray(M) ? M.find((x) => x.id === m) : M && M[m]; return { id: m, name_ui: d ? d.name_ui : KURZ[m].join(' '), rolle: d ? d.rolle : ROLLE[m] }; };
+  for (const v of Object.values(VV)) v.el.lab.forEach((l) => { if (!KURZ[l.k]) l.g.setAttribute('data-st', ''); });
   function layout() {
     if (!B || !H) return;
-    const fs = mod === 'gross' ? 13 : 12, lw = 8.2 * fs;   // gerendert ≥ 12 px (Prüfung 15:57)
-    const s = Math.max(.3, Math.min(H / H0, B / W0, (B - 2 * lw) / KERN));
-    const vw = B / s, vh = H / s, ox = (vw - W0) / 2, oy = Math.max(0, (vh - H0) / 2), fu = fs / s;
-    for (const v of Object.values(V)) {
-      v.svg.setAttribute('viewBox', `${r(-ox)} ${r(-oy)} ${r(vw)} ${r(vh)}`);
-      const lab = v.svg.querySelector('.an-lab'); lab.setAttribute('font-size', r(fu * 10) / 10); lab.setAttribute('stroke-width', r(3 / s * 10) / 10);
-      for (const seite of [0, 1]) {
-        const L = v.lab.filter((l) => l.s === seite).sort((a, b) => a.y - b.y);
-        let y = -oy + fu * 1.2; const ys = [];
-        for (const l of L) { const n = KURZ[l.m].length; y = Math.max(y, l.y - (n - 1) * fu * .55); ys.push(y); y += n * fu * 1.15 + fu * .55; }
-        const ueber = y - (H0 + oy - fu * .4); if (ueber > 0) for (let i = ys.length - 1, lim = H0 + oy - fu * .4; i >= 0; i--) { const n = KURZ[L[i].m].length; ys[i] = Math.min(ys[i], lim - n * fu * 1.15); lim = ys[i] - fu * .55; }
-        L.forEach((l, i) => {
-          const x = seite ? W0 + ox - 4 / s : -ox + 4 / s, t = l.g.querySelector('text'), w = Math.max(...KURZ[l.m].map((z) => z.length)) * fu * .56;
-          t.setAttribute('text-anchor', seite ? 'end' : 'start');
-          [...t.children].forEach((sp, j) => { sp.setAttribute('x', r(x)); sp.setAttribute('y', r(ys[i] + j * fu * 1.15)); });
-          const lx = seite ? x - w - 3 / s : x + w + 3 / s, ly = ys[i] - fu * .35;
-          l.g.querySelector('path').setAttribute('d', `M${P(lx, ly)}L${P(lx + (seite ? -4 : 4) / s, ly)}L${P(l.x, l.y)}`);
-          const c = l.g.querySelector('circle'); c.setAttribute('cx', l.x); c.setAttribute('cy', l.y);
-        });
-      }
-      for (const k of ['hw', 'lw']) { const t = v.el[k], y0 = k === 'hw' ? H0 + oy - fu * 1.6 : H0 + oy - fu * 4.4; t.setAttribute('font-size', r(fu * 10) / 10); [...t.children].forEach((sp, j) => { sp.setAttribute('x', r(-ox + 4 / s)); sp.setAttribute('y', r(y0 + j * fu * 1.1)); }); }
-      v.el.liter.setAttribute('font-size', r(fu * 1.05 * 10) / 10);
+    const fs = mod === 'gross' ? 13 : 12.5;   // gerendert ≥ 12 px (Prüfung 15:57)
+    for (const v of Object.values(VV)) {
+      const [x0, y0, w0, h0] = v.Gm.box, s = Math.min(B / (w0 * S), H / (h0 * S)), vw = B / s, vh = H / s, cx = (x0 + w0 / 2) * S, cy = (y0 + h0 / 2) * S;
+      v.svg.setAttribute('viewBox', `${r1(cx - vw / 2)} ${r1(cy - vh / 2)} ${r1(vw)} ${r1(vh)}`);
+      v.vb = [cx - vw / 2, cy - vh / 2, vw, vh]; v.fu = fs / s; v.s = s;
+      const lab = v.svg.querySelector('.an-lab'); lab.setAttribute('font-size', r1(v.fu)); lab.setAttribute('stroke-width', r1(3 / s));
+      v.el.liter.setAttribute('font-size', r1(v.fu * 1.05));
+      for (const k of ['hw', 'lw']) { const t = v.el[k], yy = v.vb[1] + vh - v.fu * (k === 'hw' ? 1.6 : 4.4); t.setAttribute('font-size', r1(v.fu)); t.setAttribute('stroke-width', r1(3 / s)); [...t.children].forEach((sp, j) => { sp.setAttribute('x', r1(v.vb[0] + 4 / s)); sp.setAttribute('y', r1(yy + j * v.fu * 1.1)); }); }
     }
-    if (letztes) setze(letztes, true);
+    Z.sichtSet = ''; if (letztes) setze(letztes, true);
+  }
+  function stapel(v, sicht) {   // Beschriftung: sichtbare je Seite nach y sortiert, ohne Überlappung (groß: unten links Platz für den Hinweis)
+    const [vx, vy, vw, vh] = v.vb, fu = v.fu;
+    for (const seite of [0, 1]) {
+      const L = v.el.lab.filter((l) => l.s === seite && sicht.has(l.k)).sort((a, b) => a.y - b.y);
+      let y = vy + fu * 1.4 + (seite ? 46 / v.s : 0); const ys = [];   // rechts oben/unten liegen Knöpfe der Karte (Vorne/Seite, Vorschau): 46 px frei
+      for (const l of L) { y = Math.max(y, l.y * S - (l.n - 1) * fu * .55); ys.push(y); y += l.n * fu * 1.15 + fu * .5; }
+      let lim = vy + vh - (seite ? 46 / v.s : fu * (mod === 'gross' ? 5.6 : .6)); for (let i = L.length - 1; i >= 0; i--) { ys[i] = Math.min(ys[i], lim - (L[i].n - 1) * fu * 1.15); lim = ys[i] - fu * 1.15 - fu * .5 + fu * .2; }
+      L.forEach((l, i) => {
+        const x = seite ? vx + vw - 4 / v.s : vx + 4 / v.s, t = l.g.querySelector('text'), w = l.w * fu * .56;
+        t.setAttribute('text-anchor', seite ? 'end' : 'start');
+        [...t.children].forEach((sp, j) => { sp.setAttribute('x', r1(x)); sp.setAttribute('y', r1(ys[i] + j * fu * 1.15)); });
+        const lx = seite ? x - w - 3 / v.s : x + w + 3 / v.s, ly = ys[i] - fu * .35;
+        l.g.querySelector('path').setAttribute('d', `M${r1(lx)} ${r1(ly)}L${r1(lx + (seite ? -5 : 5) / v.s)} ${r1(ly)}L${r1(l.x * S)} ${r1(l.y * S)}`);
+        const c = l.g.querySelector('circle'); c.setAttribute('cx', r1(l.x * S)); c.setAttribute('cy', r1(l.y * S));
+      });
+    }
   }
   const ro = typeof ResizeObserver === 'function' ? new ResizeObserver((es) => { const c = es[es.length - 1].contentRect; B = c.width; H = c.height; layout(); }) : null;
   if (ro) ro.observe(box); else { B = host.clientWidth; H = host.clientHeight; }
-  function zeigeAnsicht() { V.seite.svg.style.display = ans === 'seite' ? '' : 'none'; V.vorn.svg.style.display = ans === 'vorn' ? '' : 'none'; box.classList.toggle('an-namen', nam); }
-  zeigeAnsicht();
-  box.addEventListener('click', (e) => { const t = e.target.closest && e.target.closest('[data-m],[data-l]'); if (!nam || !t) return; const m = t.getAttribute('data-m') || t.getAttribute('data-l'); if (o.beimMuskel) o.beimMuskel(m, info(m)); box.dispatchEvent(new CustomEvent('anatomie-muskel', { bubbles: true, detail: info(m) })); });
+  const zeige = () => { VV.seite.svg.style.display = ans === 'seite' ? '' : 'none'; VV.vorn.svg.style.display = ans === 'vorn' ? '' : 'none'; box.classList.toggle('an-namen', nam); Z.sichtSet = ''; };
+  zeige();
+  box.addEventListener('click', (e) => { const t = e.target.closest && e.target.closest('[data-m],[data-l]'); if (!nam || !t) return; const m = t.getAttribute('data-m') || t.getAttribute('data-l'); if (!KURZ[m]) return; if (o.beimMuskel) o.beimMuskel(m, info(m)); box.dispatchEvent(new CustomEvent('anatomie-muskel', { bubbles: true, detail: info(m) })); });
 
   function setze(z = {}, nurNeu = false) {
     letztes = z;
     const t = z.zeit ?? performance.now();
     const erst = !Z.t; let dt = Z.t ? t - Z.t : 16; if (nurNeu) dt = 0; else { if (dt < 0 || dt > 250) dt = 16; Z.t = t; }
     const art = artAus(z.art), tiefe = cl(z.tiefe ?? TIEFE_STD[art], 0, 1), phase = z.phase || 'ruhe', p = cl(+z.anteil || 0, 0, 1);
-    const v = cl(+z.v || 0, -1, 1.2), ruhig = z.ruhig ?? o.ruhig ?? reduziert(), weg = z.weg || 'nase';
+    const v = cl(+z.v || 0, -1, 1.2), ruhig = !!(z.ruhig ?? o.ruhig ?? reduziert()), weg = z.weg || 'nase', mund = MUNDWEGE.has(weg);
     if (dt > 0) { const roh = (v - Z.v) / (dt / 1000); Z.dv += (cl(roh, -20, 20) - Z.dv) * Math.min(1, dt / 90); } Z.v = v;
     const aktiv = phase === 'aus' && (z.vz != null ? z.vz < 0 : v < -.02);
     if (phase === 'stoss_aus' && Z.phase !== 'stoss_aus') Z.stoss0 = t;
@@ -311,53 +518,76 @@ export function erzeugeAnatomie(host, o = {}) {
       Z.op[m] = cur;
     }
     if (!B || !H) return;                                   // unsichtbar: nur Zustand merken
-    const VV = V[ans], E = VV.el, k = U * 1.5;
-    const g = ruhig ? { kz: 0, ri: 0, bv: 0, bh: 0, ba: 0, fl: 0, sh: 0, sl: 0, rk: z.liegend ? 1.5 * U : 0 }
-      : { kz: -c.kz * U * 1.1, ri: c.ri * k, bv: c.bv * k, bh: c.bh * k, ba: c.ba * U * 1.2, fl: c.fl * k, sh: c.sh * k, sl: c.sl * k, rk: c.ruhe_kz * U };
-    const G = ans === 'seite' ? seiteGeo(g) : vornGeo(g);
-    put(E.koerper, 'd', G.koerper); put(E.knochen, 'd', G.kn); put(E.knorpel, 'd', G.ko); put(E.zw, 'd', G.dz);
-    put(E.lu1, 'd', G.lu); if (E.lu2) put(E.lu2, 'd', G.lu2);
-    put(E.sch, 'transform', `translate(0 ${r(-G.sch)})`); if (E.herz) put(E.herz, 'transform', `translate(0 ${r(G.herz)})`);
-    for (const m in G.m) put(E['P' + m], 'd', G.m[m]);
-    // Lunge: Füllung (ruhig: Füllstand statt Form)
-    const fL = (c.liter - 2.4) / 3.1;   // Füllstand (ruhige Ansicht): sichtbarer Bereich 2,4–5,5 L
-    put(E.lungen, 'fill', ruhig ? `url(#${id}${ans}f)` : `url(#${id}${ans}l)`);
-    if (ruhig) { const of = r(cl(fL, 0, 1) * 100) / 100; put(E.f1, 'offset', of); put(E.f2, 'offset', of); put(E.lungen, 'fill-opacity', 1); }
-    else put(E.lungen, 'fill-opacity', r((.42 + .5 * fL) * 100) / 100);
-    // Muskeln
-    for (const m of MUSKEL_IDS) {
-      const cur = Z.op[m], oq = r(cur * 100) / 100; put(E['M' + m], 'opacity', oq);
-      put(E['L' + m], 'opacity', nam ? r((.45 + .55 * cl(cur / .3, 0, 1)) * 100) / 100 : r(cl(cur / .3, 0, 1) * 100) / 100);
+    const W = VV[ans], E = W.el, k = 1.5;
+    // ruhig (Einstellung oder „Bewegung reduzieren“): Form bleibt, nur Füllstand und Deckkraft ändern sich
+    const g = ruhig ? { kz: 0, ri: 0, bv: 0, bh: 0, ba: 0, fl: 0, sh: 0, sl: 0 } : { kz: -c.kz * 1.1, ri: c.ri * k, bv: c.bv * k, bh: c.bh * k, ba: c.ba * 1.2, fl: c.fl * k, sh: c.sh * k, sl: c.sl * k };
+    const gkey = ans + Math.round(g.kz * 50) + ',' + Math.round(g.ri * 50) + ',' + Math.round(g.bv * 50) + ',' + Math.round(g.bh * 50) + ',' + Math.round(g.ba * 50) + ',' + Math.round(g.fl * 50) + ',' + Math.round(g.sh * 50) + ',' + Math.round(g.sl * 50);
+    let G = Z.G;
+    if (gkey !== Z.gkey) {   // Form nur neu rechnen, wenn sie sich sichtbar ändert (Halten, ruhig: keine Arbeit)
+      Z.gkey = gkey; G = Z.G = W.Gm.geo(g); G.mc = {};
+      put(E.hull, 'd', G.hull); put(E.rHint, 'd', G.rHint); put(E.rVorn, 'd', G.rVorn); put(E.knorpel, 'd', G.knorpel); put(E.schl, 'd', G.schl);
+      put(E.brustbein, ans === 'seite' ? 'd' : 'transform', G.brustbein); put(E.arm, 'transform', G.arm); put(E.herz, 'transform', G.herz);
+      if (E.crus) put(E.crus, 'd', G.crus);
+      put(E.lu1, 'd', G.lu1); if (E.lu2) put(E.lu2, 'd', G.lu2); put(E.zwP, 'd', G.dz); put(E.spalt, 'd', G.spalt); put(E.baum, 'transform', G.baum); put(E.rohr, 'transform', G.rohr);
     }
-    // Luftweg
-    const mund = MUNDWEGE.has(weg), fliesst = /^(ein|ein2|aus|stoss_aus)$/.test(phase), sp = Math.abs(Z.dv);
-    if (!ruhig && fliesst) { Z.off += (Z.dv > 0 ? -1 : 1) * (6 + 55 * sp) * dt / 1000; Z.off %= 650; }
-    const lo = r((fliesst ? (ruhig ? .55 : cl(.25 + sp * 1.6, .25, .9)) : .14) * 100) / 100;
-    put(E.luN, 'opacity', mund ? 0 : lo); put(E.luM, 'opacity', mund ? lo : 0); put(mund ? E.luM : E.luN, 'stroke-dashoffset', r(Z.off));
+    const fL = cl((c.liter - 2.4) / 3.1, 0, 1);   // Füllstand: sichtbarer Bereich 2,4–5,5 L
+    const fu = ruhig ? `url(#${W.id}f)` : `url(#${W.id}lu)`; put(E.lungen, 'fill', fu);
+    if (ruhig) { const of = r1(fL * 100) / 100; put(E.f1, 'offset', of); put(E.f2, 'offset', of); }
+    put(E.luft, 'opacity', ruhig ? 0 : Math.round((.12 + .7 * fL) * 50) / 50);
+    for (const m of MUSKEL_IDS) { const op = r1(Z.op[m] * 100) / 100; put(E['M' + m], 'opacity', op); if (op > 0 && E['A' + m].length) { const d = G.mc[m] || (G.mc[m] = G.m[m]()); put(E['A' + m][0], 'd', d); } }   // Muskelform nur schreiben, wenn sichtbar
+    // Mundformen je Weg (Summen, Lippen, Lippenflattern, Strohhalm)
     if (weg !== Z.weg || ans !== Z.wans) {
       Z.weg = weg; Z.wans = ans;
       put(E.summen, 'opacity', weg === 'summen' ? 1 : 0); put(E.lippen, 'opacity', mund ? .9 : 0); put(E.brr, 'opacity', weg === 'brr' ? 1 : 0); put(E.halm, 'opacity', weg === 'strohhalm' ? 1 : 0);
-      put(E.nl, 'opacity', weg === 'links' ? 1 : weg === 'rechts' ? .12 : mund ? 0 : .55); put(E.nr, 'opacity', weg === 'rechts' ? 1 : weg === 'links' ? .12 : mund ? 0 : .55);
     }
-    // Pfeile (nur bei Bewegung, nicht ruhig)
-    const W = GEWICHTE[art], sicht = ruhig ? 0 : cl((sp - .05) / .3, 0, 1) * .9, dir = Z.dv >= 0 ? 1 : -1;
-    const rel = { pz: W.zw, pb: Math.min(1, Math.abs(ende(art, tiefe).e[4]) / 1.2), pr: ans === 'seite' ? W.hoch : W.ri * (art === 'bauch' ? .4 : 1), ps: W.hoch };
-    for (const [a, e, inner] of E.pf) {
-      put(e, 'opacity', r(sicht * rel[a.slice(0, 2)] * 100) / 100);
-      const fl = a === 'pb' && art === 'brust' ? -dir : dir;
-      if (Z.dir[ans + a] !== fl) { Z.dir[ans + a] = fl; inner.setAttribute('transform', `scale(${fl} 1)`); }
+    // ---- Strom: nur die aktuelle Phase, Stationen nacheinander (Wechselatmung vorn: nur das eine Nasenloch)
+    const ein = phase === 'ein' || phase === 'ein2', aus = phase === 'aus' || phase === 'stoss_aus', fl = ein || aus;
+    const nk = mund ? 'mund' : ans === 'vorn' && weg === 'links' ? 'nasL' : ans === 'vorn' && weg === 'rechts' ? 'nasR' : 'nase';
+    const reihe = ein ? [nk, 'luftroehre', 'bronchien', 'lunge'] : ['lunge', 'bronchien', 'luftroehre', nk];
+    const front = fl ? cl(p / .5, 0, 1) : 0, schluss = fl ? 1 - cl((p - .9) / .1, 0, 1) : 0;
+    const farbe = ein ? LUFT.ein : LUFT.aus;
+    if (!ruhig && fl) { Z.off += (ein ? -1 : 1) * (10 + 70 * Math.abs(Z.dv)) * dt / 1000; Z.off %= 660; }
+    const sichtbar = new Set();
+    for (const s of STR) {
+      const e = E['s_' + s]; if (!e) continue;
+      const i = reihe.indexOf(s); let op = 0;
+      if (fl && i >= 0) op = cl((front - i / 4) / .1, 0, 1) * schluss;
+      op = r1(op * 100) / 100; put(e, 'opacity', op); Z.so[s] = op;
+      if (op > 0) sichtbar.add(s === 'nasL' || s === 'nasR' ? 'nase' : s);
     }
+    Z.so.nase = Math.max(Z.so.nase || 0, Z.so.nasL || 0, Z.so.nasR || 0);
+    const ov = r1(Z.off);   // Farbe + Versatz an der Gruppe (vererbt)
+    if (sichtbar.has('nase') || sichtbar.has('mund') || sichtbar.has('luftroehre')) { put(E.sr, 'stroke', farbe); put(E.sr, 'stroke-dashoffset', ov); }
+    if (sichtbar.has('bronchien') || sichtbar.has('lunge')) { put(E.sb, 'stroke', farbe); put(E.sb, 'stroke-dashoffset', ov); }
+    // Leitpunkt (Kopf des Stroms) bis zur Gabelung
+    const leit = E.leit[nk] || E.leit.nase;
+    if (fl && !ruhig && front < 1) { const f = ein ? cl(front * 2, 0, 1) : 1 - cl((front - .5) * 2, 0, 1), pt = punktBei(leit, f), vis = ein ? front < .5 : front > .5;
+      put(E.kopf, 'opacity', vis ? .95 * schluss : 0); put(E.kopf, 'cx', r1(pt[0] * S)); put(E.kopf, 'cy', r1(pt[1] * S)); put(E.kopf, 'fill', farbe); }
+    else put(E.kopf, 'opacity', 0);
+    put(E.alv, 'opacity', r1((ein ? cl((front - .75) / .25, 0, 1) * (.35 + .65 * fL) * schluss : aus ? cl(1 - front * 3, 0, 1) * fL * schluss : 0) * 100) / 100);
+    // ---- Bewegungs-Pfeile: nur Bewegungen der aktuellen Phase, nacheinander; nie Gegenpfeile
+    const gk = art + tiefe; if (Z.gk !== gk) { const e0 = koerper({ art, tiefe, phase: 'ein', anteil: 1, v: 1 }); Z.gk = gk; Z.gw = { zw: -e0.kz > 1.5, ba: e0.ba > .8, ri: e0.ri > .45, fl: e0.fl > .45, bh: e0.bh > .6, sh: e0.sh > .8 }; }
+    const gw = Z.gw;
+    if (!ruhig) { Z.offP += 12 * dt / 1000; Z.offP %= 50; }
+    for (const P of E.pf) {
+      const an = !ruhig && P.ph === (ein ? 'ein' : aus ? 'aus' : '-') && gw[P.gw], op = an ? cl((p - P.st) / .08, 0, 1) * (1 - cl((p - .88) / .12, 0, 1)) : 0;
+      put(P.g, 'opacity', r1(op * 100) / 100); if (op > 0) put(P.g, 'stroke-dashoffset', r1(-Z.offP));
+    }
+    // ---- Beschriftung: arbeitende Muskeln + erreichte Stationen (Namen-Modus: alle Muskeln blass)
+    for (const m of MUSKEL_IDS) if (nam || Z.op[m] > .12) sichtbar.add(m);
+    const key = [...sichtbar].sort().join(',') + ans;
+    if (key !== Z.sichtSet) { Z.sichtSet = key; stapel(W, sichtbar); }
+    for (const l of E.lab) { const mu = !!KURZ[l.k], sOp = mu ? cl(Z.op[l.k] / .3, 0, 1) : Z.so[l.k] || 0; put(l.g, 'opacity', r1((sichtbar.has(l.k) ? (mu && nam ? .45 + .55 * sOp : sOp) : 0) * 100) / 100); }
     // Liter, Hinweis, Lernsatz (nur groß)
-    const gr = mod === 'gross';
-    put(E.liter, 'opacity', gr ? 1 : 0); put(E.hinweis, 'opacity', gr ? 1 : 0);
+    const gr = mod === 'gross'; put(E.liter, 'opacity', gr ? 1 : 0); put(E.hinweis, 'opacity', gr ? 1 : 0);
     if (gr) { const txt = `≈ ${c.liter.toFixed(1).replace('.', ',')} L`; if (E.liter.textContent !== txt) { E.liter.textContent = txt; Z.schreib++; } }
     put(E.lern, 'opacity', gr && Z.lern ? 1 : 0);
   }
   return {
     setze,
-    ansicht(a) { ans = a === 'vorn' ? 'vorn' : 'seite'; zeigeAnsicht(); if (letztes) setze(letztes, true); },
+    ansicht(a) { ans = a === 'vorn' ? 'vorn' : 'seite'; Z.gkey = ''; Z.weg = ''; zeige(); if (letztes) setze(letztes, true); },
     modus(m) { mod = m === 'gross' ? 'gross' : 'klein'; layout(); },
-    namen(b) { nam = !!b; zeigeAnsicht(); if (letztes) setze(letztes, true); },
+    namen(b) { nam = !!b; zeige(); if (letztes) setze(letztes, true); },
     muskelAn: info,
     zustand: () => ({ art: Z.art, phase: Z.phase, v: Z.v, dv: Z.dv, ansicht: ans, modus: mod, liter: Z.c && Z.c.liter, koerper: Z.c, deckkraft: { ...Z.op }, schreib: Z.schreib, groesse: [B, H] }),
     zerstoere() { if (ro) ro.disconnect(); box.remove(); letztes = null; },

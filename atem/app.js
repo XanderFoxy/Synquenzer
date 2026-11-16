@@ -1,12 +1,12 @@
 // Atem – Start, Router, Bildschirme (KONZEPT §2). Ohne Build-Schritt, ohne fremde Bibliotheken, nichts wird gesendet.
 import { TECHNIKEN, SITUATIONEN, PROGRAMME, TRAINING, SICHERHEIT, ZIELNAMEN, REIHENFOLGE } from './daten.js';
-import { sym, abzeichen } from './symbole.js';
+import { sym, abzeichen, haltungSym } from './symbole.js';
 import { speicher } from './speicher.js';
 import { baue, baueProgramm, wortFuer, grenzen } from './plan.js';
 import * as TRN from './training.js';
 import { ton } from './ton.js';   // statisch: der Ton entsteht im Tipp auf Start, vor jedem await (iOS)
 
-export const VERSION = '0.1.4';
+export const VERSION = '0.1.5';
 const TEST = /[?&]test=1/.test(location.search);
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -150,7 +150,7 @@ function zeigeUebung(id, q) {
     ${T.varianten.filter((v) => v.phasen || v.dauer).length ? `<div class="chips">${[{ id: '', name: 'Standard' }, ...T.varianten.filter((v) => v.phasen || v.dauer)].map((v) => `<button class="chip ${(st.variante || '') === v.id ? 'an' : ''}" data-v="${v.id}">${esc(v.name)}</button>`).join('')}</div>` : ''}
     ${offenLaenge ? `<label class="schieber">Ausatmen ${offenLaenge.s.min}–${offenLaenge.s.max} s <input type="range" min="${offenLaenge.s.min}" max="${offenLaenge.s.max}" step="1" value="${(e.laengen || {})[T.id] || offenLaenge.s.min}" id="laenge"></label>` : ''}
     ${T.anleitung.length ? `<ol class="anleitung">${T.anleitung.map((a) => `<li>${esc(a)}</li>`).join('')}</ol>` : ''}
-    <p class="haltung">${sym(T.liegend ? 'liegen' : 'sitzen')} ${esc(T.haltung)}</p>${verlauf}${T.modus === 'messen' || RISIKO_HOCH(T) ? '' : vorschauHtml('So bewegt sich der Körper')}</div>
+    <p class="haltung">${haltungSym(T.haltung, T.liegend)} ${esc(T.haltung)}</p>${verlauf}${T.modus === 'messen' || RISIKO_HOCH(T) ? '' : vorschauHtml('So bewegt sich der Körper')}</div>
     <div><h3>Was Studien zeigen</h3><div class="belege">${belegReihe(T.beleg)}</div>${T.beleg_ui ? `<p class="leise">${esc(T.beleg_ui)}</p>` : ''}
     ${T.risiken.length ? `<h3>Risiken</h3><ul>${T.risiken.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>` : ''}
     ${T.hinweis_zeile ? `<p class="hinweis">${sym('warnung', 'warn')} ${esc(T.hinweis_zeile)}</p>` : ''}
@@ -208,6 +208,7 @@ async function starte(T, st, quelle, plan, extra = {}) {
   try {
     if (T.warnung === 'voll' || T.warnung === 'kurz') { if (!(await sicherheitsBlatt(T))) { ton.schliessen(); return; } ton.entsperren(e.musik); }
     if (!plan) plan = T.id === 'programm' ? st.plan : baue(T, st);
+    if (e.eigeneMusik && e.musikName && !ton.musikDa()) { const M = await import('./musik.js').catch(() => null); const v = M && await M.laden(); if (v) ton.musikSetzen(v.pcm, v.meta.rate, v.meta.pegel); }   // 0.1.5 eigene Musik (bleibt auf dem Gerät)
     if (k && !SZda) { k.disabled = true; k.textContent = 'Lädt …'; }
     const SZm = await sitzungModul().catch(keinNetz); if (!SZm) return;
     letzteSitzung = SZm.oeffne(plan, { T, einst: { ...e }, quelle, riskant: RISIKO_HOCH(T), merke: (x) => speicher.setzeEinst(x), sperre: tippSperre, beiEnde: (erg, ui) => endeSitzung(erg, ui, st, extra) });
@@ -310,7 +311,8 @@ function zeigeTraining() {
 // ---------- Singen ----------
 async function zeigeSingen() {
   const gs = Object.values(TECHNIKEN).filter((T) => T.gruppe === 'singen');
-  seite('Singen', `<div class="zweispaltig"><div><h3>Programme</h3>${Object.values(PROGRAMME).filter((p) => p.schritte).map((p) => `<a class="zeile" href="#programm/${p.id}"><span><b>${esc(p.name)}</b><small>${p.schritte.map((s) => esc(TECHNIKEN[s.uebung].name)).join(' · ')}</small></span><span class="rechts">${sym('weiter')}</span></a>`).join('')}
+  const pz = (p) => `<a class="zeile" href="#programm/${p.id}"><span><b>${esc(p.name)}</b><small>${p.schritte.map((s) => esc(TECHNIKEN[s.uebung].name)).join(' · ')}</small></span><span class="rechts">${sym('weiter')}</span></a>`;
+  seite('Singen', `<div class="zweispaltig"><div><h3>Einsingen nach Ziel</h3>${Object.values(PROGRAMME).filter((p) => p.schritte && p.ziel).map(pz).join('')}<h3>Programme</h3>${Object.values(PROGRAMME).filter((p) => p.schritte && !p.ziel).map((p) => `<a class="zeile" href="#programm/${p.id}"><span><b>${esc(p.name)}</b><small>${p.schritte.map((s) => esc(TECHNIKEN[s.uebung].name)).join(' · ')}</small></span><span class="rechts">${sym('weiter')}</span></a>`).join('')}
     <a class="karte" href="#vergleich"><b>Zwerchfell oder Brust?</b><span>Sieh, was sich bewegt – und welcher Muskel arbeitet.</span></a>
     <h3>Übungen</h3>${gs.map((T) => `<a class="zeile" href="#uebung/${T.id}"><span><b>${esc(T.name)}</b><small>${esc(T.kurz)}</small></span><span class="rechts">${dauerText(T)}</span></a>`).join('')}</div>
     <div id="sw"><p class="leise">Lädt …</p></div></div>${KEIN_ERSATZ}`, 'singen', 1);
@@ -319,10 +321,13 @@ async function zeigeSingen() {
     <div class="karte"><b>Stimme schonen</b><ul>${SICHERHEIT.gesang.punkte.map((t) => `<li>${esc(t)}</li>`).join('')}</ul><b>${sym('warnung', 'warn')} Zum Arzt (HNO)</b><ul>${SICHERHEIT.stimme_warnzeichen.map((t) => `<li>${esc(t)}</li>`).join('')}</ul></div>`;
   if (TECHNIKEN.g_sss && location.hash === '#singen') vorschau(baue(TECHNIKEN.g_sss, { zyklen: 2 }));
 }
+// 0.1.5: echte Dauer je Teil (gerechnet, nicht geschätzt) und die Hinweise der Übungen auch im Programm
+const dauerTxt = (ms) => ms < 60000 ? Math.round(ms / 5000) * 5 + ' s' : String(Math.round(ms / 30000) / 2).replace('.', ',') + ' min';
+const risikoTxt = (P) => { const r = [...new Set(P.schritte.flatMap((s) => TECHNIKEN[s.uebung].risiken || []))].filter((t) => !/mühelosen Umfang/.test(t)); return r.length ? `<div class="hinweis"><b>Achte darauf</b><ul>${r.map((t) => `<li>${esc(t)}</li>`).join('')}</ul></div>` : ''; };
 function zeigeProgramm(id) {
   const P = PROGRAMME[id]; if (!P || !P.schritte) return zeigeSingen();
   const plan = baueProgramm(P, TECHNIKEN);
-  seite(P.name, `<div id="abl">${ablaufLeiste({ ...plan, modus: 'tabelle' })}</div><ol class="anleitung">${P.schritte.map((s) => `<li>${esc(TECHNIKEN[s.uebung].name)} · ${s.min} min</li>`).join('')}</ol>${P.beleg ? `<p class="leise">${esc(P.beleg)}</p>` : ''}<p class="leise">Die App spielt keine Töne vor – sing in deiner bequemen Lage.</p><button class="knopf haupt voll" id="los">Start</button>${KEIN_ERSATZ}`, 'singen', 2);
+  seite(P.name, `<div id="abl">${ablaufLeiste({ ...plan, modus: 'tabelle' })}</div><ol class="anleitung">${P.schritte.map((s, i) => `<li>${esc(TECHNIKEN[s.uebung].name)} · ${dauerTxt(plan.schritte.reduce((a, st) => a + (st.teil === i ? st.ms || 0 : 0), 0))}</li>`).join('')}</ol>${P.hinweis ? `<p class="hinweis">${esc(P.hinweis)}</p>` : ''}${risikoTxt(P)}${P.beleg ? `<p class="leise">${esc(P.beleg)}</p>` : ''}${P.ziel ? '<p class="leise">Nur im mühelosen Umfang – kein Schmerz, kein Pressen. Heiserkeit länger als 2–3 Wochen: ärztlich abklären lassen.</p>' : ''}<p class="leise">Die App spielt keine Töne vor – sing in deiner bequemen Lage.</p><button class="knopf haupt voll" id="los">Start</button>${KEIN_ERSATZ}`, 'singen', 2);
   $('#los').onclick = () => starte({ id: 'programm', name: P.name, risiko: 'niedrig', warnung: 'keine', liegend: false }, { plan }, 'programm:' + id, plan);
 }
 let vergleichStop = null;
@@ -362,8 +367,10 @@ async function zeigeWissen(id) {
 function zeigeEinstellungen() {
   const e = speicher.einst(), tr = speicher.training();
   const sch = (k, n) => `<label class="schalter"><span>${n}</span><input type="checkbox" data-k="${k}" ${e[k] ? 'checked' : ''}></label>`;
-  seite('Einstellungen', `<div class="zweispaltig"><div><div class="karte"><b>Ton</b><div class="chips">${['klang', 'wind', 'aus'].map((t) => `<button class="chip ${e.ton === t ? 'an' : ''}" data-ton="${t}">${{ klang: 'Klang', wind: 'Wind', aus: 'Aus' }[t]}</button>`).join('')}</div>
+  seite('Einstellungen', `<div class="zweispaltig"><div><div class="karte"><b>Ton</b><div class="chips">${['klang', 'wind', 'aus'].map((t) => `<button class="chip ${e.ton === t ? 'an' : ''}" data-ton="${t}" aria-pressed="${e.ton === t}">${{ klang: 'Klang', wind: 'Wind', aus: 'Aus' }[t]}</button>`).join('')}</div>
+      <p class="leise probe" id="probetext"><span class="pkreis" aria-hidden="true"></span><span id="probewort">Tippen = Probehören</span></p>
       <label class="schieber">Lautstärke <input type="range" min="0" max="1" step="0.05" value="${e.laut}" data-k="laut"></label>${sch('sekunden', 'Leises Ticken beim Halten')}${sch('musik', 'Zur eigenen Musik')}${sch('ansage', 'Ansage (Ein / Halten / Aus)')}
+      <a class="zeile" href="#musik" id="musikzeile"><span><b>Eigene Musik</b><small>${e.eigeneMusik && e.musikName ? 'An: ' + esc(e.musikName) : e.musikName ? 'Aus: ' + esc(e.musikName) : 'Ein ruhiges Stück von deinem Gerät unter die Übung legen'}</small></span><span class="rechts">${sym('weiter')}</span></a>
       <button class="knopf zweit voll" id="tonpruef">Ton prüfen</button><div id="tonerg"></div></div>
     <div class="karte"><b>Anzeige</b>${sch('ruhig', 'Ruhige Anzeige')}${sch('figur', 'Figur zeigen')}${sch('blumen', 'Blüte statt Kreis')}<div class="chips">${['seite', 'vorn'].map((t) => `<button class="chip ${e.ansicht === t ? 'an' : ''}" data-ans="${t}">${t === 'seite' ? 'Seite' : 'Vorne'}</button>`).join('')}</div></div>
     <div class="karte"><b>Übungen</b>${sch('vorherNachher', 'Anspannung vorher/nachher fragen')}${sch('geraet', 'Ich habe einen Atemtrainer')}
@@ -372,10 +379,18 @@ function zeigeEinstellungen() {
     <div class="karte"><b>Daten</b><button class="knopf zweit voll" id="export">Sichern (Datei)</button><label class="knopf zweit voll">Wiederherstellen<input type="file" accept="application/json,.json" id="import" hidden></label><button class="knopf zweit voll" id="loeschen">Alles löschen</button><p class="leise">Die Home-Bildschirm-App hat einen eigenen Speicher, getrennt von Safari.</p></div>
     <div class="karte"><b>Über</b><p>Version ${VERSION} · <span id="offline">${navigator.serviceWorker && navigator.serviceWorker.controller ? 'Offline bereit' : 'Offline noch nicht bereit'}</span></p><p>Keine Daten verlassen dein Gerät.</p><a class="link" href="#wissen/quellen">Quellen</a></div></div></div>`, 'start', 2);
   const i = $('#inhalt');
-  i.querySelectorAll('[data-k]').forEach((x) => (x.onchange = () => speicher.setzeEinst({ [x.dataset.k]: x.type === 'checkbox' ? x.checked : +x.value })));
+  i.querySelectorAll('[data-k]').forEach((x) => (x.onchange = () => {
+    speicher.setzeEinst({ [x.dataset.k]: x.type === 'checkbox' ? x.checked : +x.value });
+    if (x.dataset.k === 'laut') { ton.entsperren(speicher.einst().musik); ton.einstellen({ laut: +x.value }); ton.probe('glocke'); }   // beim Loslassen: kurze Glocke in neuer Lautstärke
+  }));
   i.onclick = async (ev) => {
     const b = ev.target.closest('button'); if (!b) return;
-    if (b.dataset.ton) { speicher.setzeEinst({ ton: b.dataset.ton }); zeigeEinstellungen(); }
+    if (b.dataset.ton) {   // 0.1.5: wählen UND sofort Probe hören (wie Klingelton-Auswahl); kein neues Neuzeichnen der Seite (Ton läuft weiter)
+      const t = b.dataset.ton, e2 = speicher.setzeEinst({ ton: t });
+      ton.entsperren(e2.musik); ton.einstellen({ art: t, laut: e2.laut }); ton.probe(t);
+      i.querySelectorAll('[data-ton]').forEach((c) => { c.classList.toggle('an', c === b); c.setAttribute('aria-pressed', c === b); });
+      const pt = $('#probetext'), pw = $('#probewort'); if (pt && pw) { pw.textContent = t === 'aus' ? 'Ohne Ton – Kreis und Figur führen allein.' : t === 'wind' ? 'Wind: rauscht beim Einatmen auf, beim Ausatmen ab.' : 'Klang: eine Glocke beim Einatmen, eine tiefere beim Ausatmen.'; pt.classList.remove('puls'); void pt.offsetWidth; pt.classList.add('puls'); }
+    }
     else if (b.dataset.ans) { speicher.setzeEinst({ ansicht: b.dataset.ans }); zeigeEinstellungen(); }
     else if (b.id === 'tonpruef') { const { ton } = await import('./ton.js'); ton.einstellen({ art: 'klang', laut: speicher.einst().laut }); const r = await ton.pruefen(); $('#tonerg').innerHTML = `<p>Hörst du drei Töne?</p><div class="zwei"><button class="knopf" id="tja">Ja</button><button class="knopf" id="tnein">Nein</button></div>`; $('#tonerg').dataset.zustand = r.zustand; }
     else if (b.id === 'tnein') $('#tonerg').innerHTML = '<p class="hinweis">Prüfe den Stummschalter und die Lautstärke. Öffne die App sonst einmal neu. Das Bild führt dich auch ohne Ton.</p>';
@@ -386,6 +401,12 @@ function zeigeEinstellungen() {
   };
   if ($('#ausschl')) $('#ausschl').onchange = (ev) => speicher.setzeTraining({ ...speicher.training(), ausschluss: ev.target.checked });
   $('#import').onchange = async (ev) => { const f = ev.target.files[0]; if (!f) return; try { const obj = JSON.parse(await f.text()); const w = await blatt('<h2>Wiederherstellen?</h2><p>Deine jetzigen Atem-Daten werden ersetzt.</p><div class="zwei"><button class="knopf" data-w="n">Abbrechen</button><button class="knopf haupt" data-w="j">Ersetzen</button></div>'); if (w === 'j') { speicher.import(obj); location.reload(); } } catch { blatt('<h2>Keine gültige Sicherung</h2><button class="knopf voll" data-w="ok">OK</button>'); } };
+}
+// ---------- Eigene Musik (0.1.5) – Seite, Messung und Code liegen in musik.js (erst hier geladen) ----------
+async function zeigeMusik() {
+  seite('Eigene Musik', '<p class="leise">Lädt …</p>', 'start', 3);
+  const r = await Promise.all([import('./musik.js'), wissenModul()]).catch(keinNetz); if (!r) return;
+  r[0].musikSeite({ W: r[1], $, esc, sym, abzeichen, quellenListe, KEIN_ERSATZ, speicher, ton });
 }
 async function exportiere() {
   const obj = speicher.export(VERSION), name = 'atem-sicherung-' + TRN.tag(new Date()) + '.json';
@@ -419,6 +440,7 @@ function route() {
     case 'vergleich': return zeigeVergleich();
     case 'wissen': return zeigeWissen(b);
     case 'einstellungen': return zeigeEinstellungen();
+    case 'musik': return zeigeMusik();
     case 'sicherheit': erststart(); return zeigeStart();
     default: return zeigeStart();
   }

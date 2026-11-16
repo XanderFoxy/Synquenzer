@@ -1,13 +1,13 @@
 // Atem – Service Worker. 0.1.4: Schale zuerst aus dem Cache (kein Warten aufs Netz nach dem Aktualisieren),
 // eine Fassung pro Cache: neu nur über eine neue sw.js, die beim Einrichten JEDE Datei gegen ihre Prüfsumme prüft (PRUEF).
 // Versionswechsel: SCHALE und VERSION in app.js zusammen hochzählen; nach jeder Änderung an app/: node test/sw-pruefsummen.mjs (daten-test prüft beides).
-const SCHALE = 'atem-schale-v5';   // v5: 0.1.4
-const V = '0.1.4';
+const SCHALE = 'atem-schale-v6';   // v6: 0.1.5 (gläserne Figur, Haltungs-Symbole, Klang-Probe, eigene Musik, Einsingen nach Ziel)
+const V = '0.1.5';
 const DATEIEN = ['./', './index.html', './app.js', './symbole.js', './daten.js', './wissen.js', './plan.js', './uhr.js', './training.js',
-  './sitzung.js', './fuehrung.js', './anatomie.js', './vorschau.js', './ton.js', './speicher.js', './manifest.webmanifest', './icon.svg', './icon-180.png',
+  './sitzung.js', './fuehrung.js', './anatomie.js', './vorschau.js', './ton.js', './musik.js', './speicher.js', './manifest.webmanifest', './icon.svg', './icon-180.png',
   './icon-192.png', './icon-512.png'];
 // SHA-256, erste 16 Zeichen – ERZEUGT von test/sw-pruefsummen.mjs, nicht von Hand ändern
-const PRUEF = {'./':'c0d0313c02671bfb', './index.html':'c0d0313c02671bfb', './app.js':'d7b4bfb2c6b37b88', './symbole.js':'efe2b54a94781395', './daten.js':'745481da2931ffaf', './wissen.js':'c936604a7f5e78d2', './plan.js':'e491b23a13b6abfc', './uhr.js':'bd85cbf3b5666388', './training.js':'354c65e339c6f68e', './sitzung.js':'be8d8ae0a91419f6', './fuehrung.js':'c30046c3d0586d58', './anatomie.js':'1c5da04ad2052d51', './vorschau.js':'c7e2d5cc96ab14c4', './ton.js':'e9321ba248518098', './speicher.js':'87c4e94cbe7a66e2', './manifest.webmanifest':'de4a2d00f5c421dd', './icon.svg':'300072b0d1558b2a', './icon-180.png':'7e9a7bb31569bcbe', './icon-192.png':'345935289c33d11f', './icon-512.png':'cde2cd0b942bef9d'};
+const PRUEF = {'./':'c6a7d0f1e666ef7d', './index.html':'c6a7d0f1e666ef7d', './app.js':'e7bb9c3ceee501da', './symbole.js':'9db8e66221ca81bd', './daten.js':'306bb5ab261a5f82', './wissen.js':'1161763c05ab2ad4', './plan.js':'43babcbde603722b', './uhr.js':'bd85cbf3b5666388', './training.js':'354c65e339c6f68e', './sitzung.js':'94a4950b622205e7', './fuehrung.js':'c30046c3d0586d58', './anatomie.js':'ec855eea6366ed16', './vorschau.js':'c7e2d5cc96ab14c4', './ton.js':'232fa01d1fd7a294', './musik.js':'bee2f65b966f967e', './speicher.js':'f5dfbd78f65fcb21', './manifest.webmanifest':'de4a2d00f5c421dd', './icon.svg':'300072b0d1558b2a', './icon-180.png':'7e9a7bb31569bcbe', './icon-192.png':'345935289c33d11f', './icon-512.png':'cde2cd0b942bef9d'};
 const neu = (d) => new Request(d, { cache: 'reload' });
 const summe = async (r) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', await r.clone().arrayBuffer()))].slice(0, 8).map((b) => b.toString(16).padStart(2, '0')).join('');
 self.addEventListener('install', (e) => {

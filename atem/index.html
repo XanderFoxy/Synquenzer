@@ -60,7 +60,7 @@ details summary{min-height:44px;display:flex;align-items:center;cursor:pointer}d
 .schieber{display:flex;flex-direction:column;gap:6px;margin:10px 0;font-size:14px}.schieber input{width:100%;min-height:44px;accent-color:var(--akzent)}
 .schalter{display:flex;align-items:center;justify-content:space-between;min-height:48px;gap:10px}.schalter input{width:44px;height:44px;margin:0;accent-color:var(--akzent)}
 .ablauf{display:block;margin:10px 0 2px}.ph-ein,.ph-ein2{fill:#6cc4d9}.ph-halten_voll{fill:#9a8fd6}.ph-aus,.ph-stoss_aus{fill:#e0a87a}.ph-halten_leer{fill:#5c6b8a}.ph-ruhe{fill:#3a4656}
-.anleitung li{margin:.4em 0}.haltung{display:flex;align-items:center;gap:8px;color:var(--leise)}
+.anleitung li{margin:.4em 0}.haltung{display:flex;align-items:center;gap:8px;color:var(--leise)}.haltung-sym{display:inline-flex;gap:4px;flex:none;color:var(--text)}
 .verlauf{margin:12px 0}.verlauf b{font-size:22px}.verlauf svg{width:100%;height:48px;color:var(--akzent)}.verlauf small{color:var(--leise)}
 .quellen li{font-size:14px;margin-bottom:4px}.quellen a{color:var(--akzent);display:flex;align-items:center;min-height:44px}
 .woche{display:flex;gap:10px;margin-top:8px}.punkt{width:14px;height:14px;border-radius:50%;background:var(--rand)}.punkt.voll{background:var(--akzent)}.punkt.ring{background:none;border:2px solid var(--rand)}.punkt.heute{background:none;border:2px solid var(--akzent)}
@@ -128,6 +128,8 @@ body.in-sitzung #leiste,body.in-sitzung #kopf{visibility:hidden}
  .vergleich{flex-direction:row}.vg-fig{flex:1}.nur-quer{display:block}
  .kurven{grid-template-columns:1fr 1fr}
 }
+.probe{display:flex;align-items:center;gap:8px;margin:2px 0 6px}.pkreis{width:14px;height:14px;border-radius:50%;border:2px solid var(--akzent);flex:none;opacity:.6}.probe.puls .pkreis{animation:probepuls 1.2s ease-out 1}@keyframes probepuls{0%{transform:scale(.6);opacity:.3}35%{transform:scale(1.5);opacity:1}100%{transform:scale(1);opacity:.6}}
+.belegliste{padding-left:0;list-style:none}.belegliste li{margin:8px 0}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>

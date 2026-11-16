@@ -15,13 +15,13 @@ function neuerKontext() {
   c.onstatechange = () => { if (c !== ctx) return; if (c.state === 'running') wachSeit = 0; else if (c.state !== 'closed' && ton.beiStoerung) ton.beiStoerung(c.state); };   // nur der aktuelle Kontext zählt
   return c;
 }
-function glocke(at, hz, lautDb = 0, dauer = 1.5) {
+function glocke(at, hz, lautDb = 0, dauer = 1.5, ziel = haupt) {
   if (TEST) { proto.push({ art: 'glocke', hz, t_ms: testZeit }); return; }
   if (!ctx) return;
   for (const [f, a] of [[hz, 1], [hz * 2, 0.15]]) {
     const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = f; g.gain.value = 0;
     g.gain.setTargetAtTime(a * db(lautDb), at, 0.02); g.gain.setTargetAtTime(0, at + 0.08, dauer / 4);
-    o.connect(g); g.connect(haupt); o.start(at); o.stop(at + dauer + 0.5); if (knoten) knoten.push(g);
+    o.connect(g); g.connect(ziel); o.start(at); o.stop(at + dauer + 0.5); if (knoten) knoten.push(g);
   }
 }
 function tick(at, lautDb = -14) {
@@ -42,12 +42,19 @@ function ansage(wort) {
   try {
     if (!einst.ansage || !window.speechSynthesis) return;
     // Hängt noch eine alte Äußerung (iOS: Schlange, leere Entsperr-Äußerung), erst verwerfen – sonst käme das Wort zu spät oder doppelt
+    if (letzteU && letzteU.w === wort && performance.now() - letzteU.t < 1500) return;   // 0.1.5 Netz: dasselbe Wort nie zweimal binnen 1,5 s
     if (speechSynthesis.pending || (speechSynthesis.speaking && (!letzteU || performance.now() - letzteU.t > 1200))) speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(wort); u.lang = 'de-DE'; letzteU = { t: performance.now() }; speechSynthesis.speak(u);
+    const u = new SpeechSynthesisUtterance(wort); u.lang = 'de-DE'; letzteU = { t: performance.now(), w: wort }; speechSynthesis.speak(u);
   } catch {}
 }
 function ansageWeg() { for (const t of ansageT.values()) clearTimeout(t); ansageT = new Map(); }
 const ANSAGE = { ein: 'Ein', ein2: 'Noch etwas', halten_voll: 'Halten', halten_leer: 'Halten', aus: 'Aus' };
+// Wort für Schritt i: ab 2 s; 0.1.5: kurzes Einatmen (ab 0,9 s) zwischen zwei gleichen Ansagen (Aus – Ein – Aus) auch – sonst hört man „Aus … Aus“
+const lang2 = (s) => s && (s.ms || 0) >= 2000 ? ANSAGE[s.art] : null;
+export function sagWort(plan, i) {
+  const s = plan.schritte[i], w = s && ANSAGE[s.art]; if (!w) return null; if ((s.ms || 0) >= 2000) return w;
+  const a = lang2(plan.schritte[i - 1]); return (s.ms || 0) >= 900 && a && a !== w && a === lang2(plan.schritte[i + 1]) ? w : null;
+}
 
 function planeSchritt(i, at) {
   const s = planRef.schritte[i]; if (!s) return;
@@ -82,8 +89,8 @@ function takt() {
     testZeit = st;
     const at = ctx ? ctx.currentTime + (st - jetzt) / 1000 - ausgleich : 0;
     knoten = st > jetzt ? [] : null; planeSchritt(i, Math.max(ctx ? ctx.currentTime : 0, at)); if (knoten && knoten.length) glocken.set(i, knoten); knoten = null;
-    const w = ANSAGE[plan.schritte[i].art];
-    if (!einst.ansage || plan.modus === 'messen' || (plan.schritte[i].ms || 0) < 2000 || !w || gesagt.has(i) || gesagt.get(i - 1) === w) continue;   // gleiches Wort direkt davor: schweigen
+    const w = sagWort(plan, i);
+    if (!einst.ansage || plan.modus === 'messen' || !w || gesagt.has(i) || gesagt.get(i - 1) === w) continue;   // gleiches Wort direkt davor: schweigen
     gesagt.set(i, w); clearTimeout(ansageT.get(i));
     const soll = Math.max(jetzt, st - 250), meinLauf = lauf;
     ansageT.set(i, setTimeout(() => {
@@ -93,6 +100,43 @@ function takt() {
       ansage(w);
     }, soll - jetzt));
   }
+}
+// 0.1.5 Probehören (Klang-Wahl wie Klingelton-Auswahl): eigener Proben-Zweig im vorhandenen Kontext; neuer Tipp blendet die alte Probe in 50 ms aus
+let probeG = null, probeQ = [];
+function probeStopp() {
+  if (!ctx || !probeG) return; const t = ctx.currentTime, g = probeG, q = probeQ;
+  g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(0, t + 0.05);
+  setTimeout(() => { for (const s of q) try { s.stop(); } catch {} try { g.disconnect(); } catch {} }, 90); probeG = null; probeQ = [];
+}
+function rauschen() { if (!rausch) { rausch = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate); const d = rausch.getChannelData(0); let x = 0; for (let i = 0; i < d.length; i++) { x = 0.97 * x + 0.03 * (Math.random() * 2 - 1); d[i] = x * 3; } } return rausch; }
+// 0.1.5 Eigene Musik: Mono-Puffer (aus musik.js) läuft in Schleife UNTER der Führung – eigener Zweig Gain → Kompressor → Ausgang, ein-/ausgeblendet
+let mPuffer = null, mPegel = 1, mQuelle = null, mGain = null, mStart = 0, mPos = 0;
+function musikZweig() {
+  if (!ctx) return null;
+  if (!mGain || mGain.context !== ctx) {
+    const k = ctx.createDynamicsCompressor(); k.threshold.value = -24; k.ratio.value = 4; k.knee.value = 6; k.attack.value = 0.01; k.release.value = 0.3; k.connect(ctx.destination);
+    mGain = ctx.createGain(); mGain.gain.value = 0; mGain.connect(k);
+  }
+  return mGain;
+}
+const musikZiel = () => Math.max(0, Math.min(1, einst.musikLaut ?? 0.5)) * 0.5 * mPegel;
+function musikAn(probe) {
+  if (TEST) { proto.push({ art: probe ? 'musik_probe' : 'musik', an: true, t_ms: uhrRef ? uhrRef.zeit() : 0 }); if (!probe) mQuelle = true; return; }
+  if (!ctx || !mPuffer) return;
+  musikAus(0.02); const g = musikZweig(), t = ctx.currentTime + 0.02, s = ctx.createBufferSource();
+  s.buffer = mPuffer; s.loop = !probe; s.connect(g);
+  const ab = probe ? Math.max(0, mPuffer.duration / 2 - 2) : mPos % mPuffer.duration;
+  g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(musikZiel(), t + (probe ? 0.3 : 1.5));
+  if (probe) { g.gain.setValueAtTime(musikZiel(), t + 3.7); g.gain.linearRampToValueAtTime(0, t + 4); s.start(t, ab, 4.05); }
+  else s.start(t, ab);
+  mQuelle = s; mStart = t - ab; if (probe) s.onended = () => { if (mQuelle === s) mQuelle = null; };
+}
+function musikAus(blende = 0.6) {
+  if (TEST) { if (mQuelle) proto.push({ art: 'musik', an: false }); mQuelle = null; return; }
+  if (!ctx || !mQuelle) return; const t = ctx.currentTime, s = mQuelle, g = mGain;
+  if (s.loop) mPos = Math.max(0, t - mStart);
+  g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(0, t + blende);
+  try { s.stop(t + blende + 0.02); } catch {} mQuelle = null;
 }
 export const ton = {
   beiStoerung: null,
@@ -116,8 +160,8 @@ export const ton = {
     wachSeit = performance.now(); ton.entsperren(musikZ);
   },
   zustand: () => (TEST ? 'test' : ctx ? ctx.state : 'kein'),
-  einstellen(e) { einst = { ...einst, ...e }; if (haupt && ctx) haupt.gain.setTargetAtTime(einst.laut * 0.4, ctx.currentTime, 0.05); },
-  starte(uhr, plan) { uhrRef = uhr; planRef = plan; lauf++; ansageWeg(); geplant = new Map(); gesagt = new Map(); glocken = new Map(); if (einst.art === 'wind') windStart(); clearInterval(planer); planer = setInterval(takt, 100); takt(); },
+  einstellen(e) { einst = { ...einst, ...e }; if (haupt && ctx) haupt.gain.setTargetAtTime(einst.laut * 0.4, ctx.currentTime, 0.05); if (mQuelle && mGain && ctx && 'musikLaut' in e) mGain.gain.setTargetAtTime(musikZiel(), ctx.currentTime, 0.1); },
+  starte(uhr, plan) { uhrRef = uhr; planRef = plan; lauf++; ansageWeg(); geplant = new Map(); gesagt = new Map(); glocken = new Map(); if (einst.art === 'wind') windStart(); clearInterval(planer); planer = setInterval(takt, 100); takt(); if (einst.musikAn && (mPuffer || TEST)) musikAn(false); },
   neuPlanen() {   // nur Schritte, deren Startzeit sich geändert hat (Atmen-/Stopp-Knopf), neu planen – nie den gerade laufenden noch einmal
     const p = uhrRef && uhrRef.plan; if (!p) return;
     for (const [i, st] of geplant) if (p.start[i] !== st) {
@@ -130,7 +174,7 @@ export const ton = {
   halt() {
     clearInterval(planer); planer = null;
     if (ctx && haupt) { const t = ctx.currentTime; haupt.gain.cancelScheduledValues(t); haupt.gain.setValueAtTime(haupt.gain.value, t); haupt.gain.linearRampToValueAtTime(0, t + 0.05); const h = haupt; setTimeout(() => { try { h.disconnect(); } catch {} }, 120); haupt = ctx.createGain(); haupt.gain.value = einst.laut * 0.4; haupt.connect(ctx.destination); }
-    wind = null; geplant = new Map(); gesagt = new Map(); glocken = new Map(); lauf++; ansageWeg();
+    wind = null; geplant = new Map(); gesagt = new Map(); glocken = new Map(); lauf++; ansageWeg(); musikAus();
     try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch {}
   },
   ende() { if (TEST) { proto.push({ art: 'ende', t_ms: uhrRef ? uhrRef.zeit() : 0 }); return; } if (!ctx || einst.art === 'aus') return; const t = ctx.currentTime + 0.05; glocke(t, 294); glocke(t + 0.3, 392); glocke(t + 0.6, 494); },
@@ -140,7 +184,33 @@ export const ton = {
     const t = ctx.currentTime + 0.1; glocke(t, HZ.ein); glocke(t + 1.2, HZ.halten, -8); glocke(t + 2.4, HZ.aus);
     return { ok: ctx.state === 'running', zustand: ctx.state, latenz_ms: Math.round(1000 * (ctx.outputLatency || ctx.baseLatency || 0)) };
   },
-  schliessen() { try { if (ctx) ctx.close(); } catch {} ctx = null; haupt = null; wind = null; try { if (navigator.audioSession) navigator.audioSession.type = 'auto'; } catch {} },
+  schliessen() { try { if (ctx) ctx.close(); } catch {} ctx = null; haupt = null; wind = null; mGain = null; mQuelle = null; mPuffer = null; probeG = null; probeQ = []; rausch = null; try { if (navigator.audioSession) navigator.audioSession.type = 'auto'; } catch {} },
+  // Probe zur Klang-Wahl (≈ 2,5 s): 'klang' Ein- dann Aus-Glocke · 'wind' 1,2 s steigend + 1,2 s fallend · 'aus' still · 'glocke' eine kurze Glocke (Lautstärke)
+  probe(art) {
+    if (TEST) { proto.push({ art: 'probe', ton: art, t_ms: Math.round(performance.now()) }); return true; }
+    probeStopp(); musikAus(0.05); if (!ctx || !haupt || art === 'aus') return !!ctx;
+    const g = ctx.createGain(); g.gain.value = 1; g.connect(haupt); probeG = g; const t = ctx.currentTime + 0.03;
+    if (art === 'klang') { glocke(t, HZ.ein, 0, 1.2, g); glocke(t + 1.2, HZ.aus, 0, 1.2, g); }
+    else if (art === 'glocke') glocke(t, HZ.ein, -4, 0.8, g);
+    else if (art === 'wind') {
+      const s = ctx.createBufferSource(); s.buffer = rauschen(); s.loop = true; const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 0.8; const v = ctx.createGain(); v.gain.value = 0;
+      s.connect(f); f.connect(v); v.connect(g);
+      f.frequency.setValueAtTime(400, t); f.frequency.linearRampToValueAtTime(1200, t + 1.2); f.frequency.linearRampToValueAtTime(400, t + 2.4);
+      v.gain.setValueAtTime(0, t); v.gain.linearRampToValueAtTime(0.5, t + 0.08); v.gain.linearRampToValueAtTime(0.35, t + 1.2); v.gain.setValueAtTime(0.35, t + 2.32); v.gain.linearRampToValueAtTime(0, t + 2.4);
+      s.start(t); s.stop(t + 2.5); probeQ.push(s);
+    }
+    return true;
+  },
+  // Eigene Musik: pcm = Int16Array (Mono, rate), pegel = Ausgleich auf etwa −20 dBFS. Ohne pcm: Musik vergessen.
+  musikSetzen(pcm, rate = 22050, pegel = 1) {
+    musikAus(0.05); mPuffer = null; mPegel = pegel || 1; mPos = 0;
+    if (TEST || !pcm || !ctx) return !!pcm;
+    try { const b = ctx.createBuffer(1, pcm.length, rate), d = b.getChannelData(0); for (let i = 0; i < pcm.length; i++) d[i] = pcm[i] / 32768; mPuffer = b; } catch { mPuffer = null; }
+    return !!mPuffer;
+  },
+  musikProbe() { probeStopp(); musikAn(true); },
+  musikStopp() { musikAus(0.05); },
+  musikDa: () => !!mPuffer,
   protokoll() { return proto.slice(); },
   leeren() { proto = []; }
 };
