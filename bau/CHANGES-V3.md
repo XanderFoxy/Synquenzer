@@ -1,3 +1,9 @@
+## 4.76.1 — Fokus „Nur Rest“ sofort sichtbar
+
+- **Sofort ein Bild:** „Nur Rest“ zeigt nach dem Zerlegen sofort ein Bild (3-Minuten-Lied: etwa 0,25 s statt 0,6 s) und rechnet das genaue Bild im Hintergrund nach. Die Statuszeile zeigt solange „genauer · xx %“. Das fertige Bild ist genau dasselbe wie in 4.76.0.
+- Beim schnellen Hin- und Herrollen kommt das genaue Bild jetzt sicher an, und ein Fokus-Wechsel während des Rechnens zeigt immer den neuesten Stand.
+Tests: Fokus sofort 28/28 + 8/8 (Endbild in 10 Fällen byte-gleich mit 4.76.0), Fokus genau 16/16, Fokus-Kern 26/26, Spektral 5 24/24, Auswahl-Werkzeuge 98/98 · 47/47, Spektral-Fix 11/11; außerhalb des Fokus-Blocks byte-gleich mit 4.76.0.
+
 ## 4.76.0 — Songteile, Auswahl als neuer Clip, Fokus genauer
 
 - **Songteile im Spektral:** Beim Laden einer Audiodatei erkennt die App die Songteile (Intro, Strophe, Refrain …) aus dem Tempo-Lauf. Sie stehen als farbiger Streifen über den Taktzahlen. Ein Tipp auf einen Teil legt den Loop auf den Teil und zoomt hin; ein zweiter Tipp zeigt wieder das ganze Lied. Hochkant steht der Teil im Kopf („Lied › Refrain 1“).

@@ -27571,7 +27571,7 @@ const LOGO_SVG='<svg role="img" aria-label="One Day in Rome" shape-rendering="ge
 
 
 
-const VERSION = '4.76.0';
+const VERSION = '4.76.1';
 const clamp=(v,a,b)=>(v<a?a:v>b?b:v);
 const isNum=v=>typeof v==='number'&&Number.isFinite(v);
 const deep=o=>(o==null?o:JSON.parse(JSON.stringify(o)));
@@ -109389,18 +109389,60 @@ if(!aff[c]){c++;continue;}
 let c1=c;for(let e=c+1;e<W&&e<=c1+gap;e++)if(aff[e])c1=e;
 const ra=Math.max(0,(x0+c)*hop-N/2-hb),rz=(x0+c1+1)*hop+N/2+hb,SL=4*(X.BLK||16384);let mid=null;
 for(let u=ra;u<rz;u+=SL){mid=await restMid(d,{},u,Math.min(rz,u+SL),null);if(!ok())return false;}
-tY=performance.now();
+tY=performance.now();let tF=0,nF=0;
 for(let cc=c;cc<=c1;cc+=2){
-const sA=(x0+cc)*hop-N/2,two=cc+1<=c1;
+const sA=(x0+cc)*hop-N/2,two=cc+1<=c1,t1=performance.now();
 for(let j=0;j<N;j++){const i=sA+j,i2=i+hop;re[j]=(i>=0&&i<mid.length?mid[i]:0)*w[j];im[j]=two&&i2>=0&&i2<mid.length?mid[i2]*w[j]:0;}
 spk12Fft(re,im);
 for(let k=0;k<=H;k++){const kk=k?N-k:0,zr=re[k],zi=im[k],wr=re[kk],wi=im[kk],p=zr+wr,q=zi-wi,u=zi+wi,e=wr-zr;m1[k]=0.5*Math.sqrt(p*p+q*q);m2[k]=0.5*Math.sqrt(u*u+e*e);}
-col(m1,cc);if(two)col(m2,cc+1);
+col(m1,cc);if(two)col(m2,cc+1);tF+=performance.now()-t1;nF+=two?2:1;
 if(performance.now()-tY>20){await X.tick();if(!ok())return false;tY=performance.now();}
 }
+if(nF>=64)FK3.cC=Math.max(0.01,Math.min(2,0.7*FK3.cC+0.3*tF/nF/Math.pow(N/4096,1.4)));
 c=c1+1;
 }
 return keep({aff,rb,na});
+}
+
+
+
+
+const FK3={cB:7,cC:0.068,tid:new WeakMap(),n:0};
+function fk3Sig(d){
+const F=new Map(),MS=d.masks;if(!MS)return F;
+for(const l of d.meta.layers){
+const M=MS.get(l.id);if(!M)continue;const pre=l.id+(l.k6===1?'#k6':'')+':';
+for(const[s,st]of M){
+if(!st||!st.h)continue;let q='';
+for(let tr=0;tr<st.h.length;tr++){const h=st.h[tr];if(!h)continue;const t=st.t&&st.t[tr];let id=0;if(t&&typeof t==='object'){id=FK3.tid.get(t);if(!id)FK3.tid.set(t,id=++FK3.n);}q+=tr+'.'+h+'@'+id+',';}
+if(q)F.set(+s,(F.get(+s)||'')+pre+q+';');
+}
+}
+return F;
+}
+function fk3Est(d,I,from,to,inC){
+const z={ms:0,sec:0,blk:0,col:0};if(!FK2||!d.meta.layers.length||!d.mid||d.mid.length<2)return z;
+const n=d.meta.n,hb=d.meta.base.hop,Nb=d.meta.base.N,BL=X.BLK||16384,N=I.N,hop=I.hop,mg=N/2+2*hb+Nb;
+const base=d.meta.id+'#'+inst(d)+'#'+n,ok0=!!(RS.mid&&RS.done&&RS.base===base&&RS.mid.length===n&&RS.sg),cur=fk3Sig(d);
+let dirty=null;
+if(ok0){dirty=new Set();if(RS.key!==rsKey(d)){for(const[s,q]of cur)if(RS.sg.get(s)!==q)dirty.add(s);for(const s of RS.sg.keys())if(!cur.has(s))dirty.add(s);}}
+const sp=[...cur.keys()].sort((p,q)=>p-q),bs=new Set(),dz=s=>dirty===null||dirty.has(s)||dirty.has(s-1)||dirty.has(s+1);
+z.pp=new Float64Array(Math.max(0,to-from));
+for(let ci=from;ci<to;ci++){
+if(inC(ci))continue;const nb0=bs.size;
+const W=Math.min(1024,I.cols-ci*1024),pa=ci*1024*hop-N/2-hb,pb=(ci*1024+W)*hop+N/2+hb;
+let pc=0,pd=false;
+for(const s of sp){
+const sa=Math.max(0,(s*128-1)*hb),sb=Math.min(n,(s*128+128)*hb+Nb),a=Math.max(pa,sa-mg),b=Math.min(pb,sb+mg);if(b<=a)continue;
+pc+=(b-a)/hop;const ds=dz(s);if(ds)pd=true;
+for(let k=Math.max(0,Math.floor(a/BL));k<=Math.floor(Math.max(0,b-1)/BL);k++)if(ds||!RS.done[k])bs.add(k);
+}
+if(!pc)continue;let cc=0;
+if(pd||!ok0||!RS.tr.has(RS.base+':'+N+':'+hop+':'+ci+':'+W)){cc=Math.min(W,pc);z.col+=cc;}
+z.pp[ci-from]=(bs.size-nb0)*FK3.cB+cc*FK3.cC*Math.pow(N/4096,1.4);
+}
+z.blk=bs.size;z.sec=bs.size*BL/d.meta.sr;z.ms=z.blk*FK3.cB+z.col*FK3.cC*Math.pow(N/4096,1.4);
+return z;
 }
 
 function piece(d,I,ci,src,o,gf,NT,TR){
@@ -109474,25 +109516,34 @@ ops.fokus=async(d,m,emit)=>{
 if(!d)throw new Error('Analyse fehlt');
 const T0=performance.now(),o=optOf(m),N=NS.includes(m.N)?m.N:4096,I=X.specInfo(d,N),from=Math.max(0,m.from|0),to=Math.min(I.chunks,m.to==null?I.chunks:m.to|0);
 const NT=found(d,o),H=sigOf(d,o,N,NT),tok=d.fkTok=(d.fkTok||0)+1,gf=gainOf(d,o),same=()=>d.fkTok===tok&&sigOf(d,o,N,found(d,o))===H;
-let eO=0,eR=0,n=0,neu=0,stop='';
-for(let ci=from;ci<to;ci++){
+let eO=0,eR=0,n=0,neu=0,stop='',vb=false,est=null;const sk=[];
+
+
+
+if(m.vorab&&o.mode==='rest'){est=fk3Est(d,I,from,to,ci=>C.has('spk:'+d.meta.id+':fk:'+H+':v'+N+':'+ci));vb=est.ms>300||est.sec>60;}
+const CI=Array.isArray(m.list)?m.list.map(v=>v|0).filter(v=>v>=from&&v<to):null,nI=CI?CI.length:to-from;
+for(let ii=0;ii<nI;ii++){const ci=CI?CI[ii]:from+ii;
 if(!same()){stop=d.fkTok!==tok?'abgeloest':'geaendert';break;}
 const ck='spk:'+d.meta.id+':fk:'+H+':v'+N+':'+ci;let e=C.get(ck);const hit=!!e;
 if(e){C.delete(ck);C.set(ck,e);}
+else if(vb&&m.vorab===2&&est.pp[ci-from]>40){sk.push(ci);emit({qid:m.qid,prog:(ii+1)/Math.max(1,nI),stufe:'Fokus'});continue;}
 else{
 const W=Math.min(1024,I.cols-ci*1024),have=await X.get('audio','spk:'+d.meta.id+':v'+N+':'+ci);
 if(!same()){stop=d.fkTok!==tok?'abgeloest':'geaendert';break;}
 const src=have&&have.byteLength===I.rows*W?new Uint8Array(have):X.specChunk(d,N,ci).data;
+if(vb&&est.pp[ci-from]>40){e=piece(d,I,ci,src,o,gf,NT,null);e.ap=1;}
+else{
 const TR=o.mode==='rest'?await trueRest(d,I,ci,W,src,same):null;
 if(TR===false||!same()){stop=d.fkTok!==tok?'abgeloest':'geaendert';break;}
 e=piece(d,I,ci,src,o,gf,NT,TR);neu++;C.set(ck,e);while(C.size>6)C.delete(C.keys().next().value);
 }
+}
 eO+=e.eO;eR+=e.eR;n++;
-if(m.stream!==false){const data=e.data.slice();emit({qid:m.qid,chunk:{N,k:ci,x0:ci*1024,w:e.W,R:I.rows,hop:I.hop,data,eO:e.eO,eR:e.eR,key:H,mode:o.mode,cached:hit}},[data.buffer]);}
-emit({qid:m.qid,prog:(ci+1-from)/Math.max(1,to-from),stufe:'Fokus'});
+if(m.stream!==false){const data=e.data.slice();emit({qid:m.qid,chunk:{N,k:ci,x0:ci*1024,w:e.W,R:I.rows,hop:I.hop,data,eO:e.eO,eR:e.eR,key:H,mode:o.mode,cached:hit,ap:e.ap?1:0}},[data.buffer]);}
+emit({qid:m.qid,prog:(ii+1)/Math.max(1,nI),stufe:'Fokus'});
 await X.tick();
 }
-return{N,hop:I.hop,cols:I.cols,rows:I.rows,chunks:I.chunks,from,to,n,neu,key:H,mode:o.mode,aus:o.aus,nAus:NT.length,eO,eR,anteil:eO>0?+(eR/eO).toFixed(4):1,stop,ms:+(performance.now()-T0).toFixed(1)};
+return{N,hop:I.hop,cols:I.cols,rows:I.rows,chunks:I.chunks,from,to,n,neu,key:H,mode:o.mode,aus:o.aus,nAus:NT.length,eO,eR,anteil:eO>0?+(eR/eO).toFixed(4):1,stop,ms:+(performance.now()-T0).toFixed(1),vorab:vb?1:0,skip:sk,est:est?{ms:Math.round(est.ms),sec:+est.sec.toFixed(1),blk:est.blk,col:Math.round(est.col)}:null};
 };
 ops.fokusKey=(d,m)=>{if(!d)throw new Error('Analyse fehlt');const o=optOf(m),N=NS.includes(m.N)?m.N:4096,NT=found(d,o);return{key:sigOf(d,o,N,NT),nAus:NT.length,mode:o.mode,aus:o.aus};};
 ops.fokusStop=d=>{if(d)d.fkTok=(d.fkTok||0)+1;return true;};
@@ -109541,7 +109592,7 @@ RS.done[k]=0;RS.mid.fill(0,k*BL,Math.min(n,(k+1)*BL));break;
 }
 }
 }else{RS.mid=new Float32Array(n);RS.done=new Uint8Array(Math.ceil(n/BL));RS.tr=new Map();}
-RS.key=key;RS.base=base;RS.fp=fp;
+RS.key=key;RS.base=base;RS.fp=fp;RS.sg=fk3Sig(d);
 })();
 await pend.p;
 if(tries>60)break;
@@ -109559,10 +109610,10 @@ let todo=0,nd=0,tY=performance.now(),tP=tY;for(let k=k0;k<=k1;k++)if(!done[k])to
 const mono=d.pcm&&d.pcm.length>1&&d.mid&&d.mid.length===n?Object.assign(Object.create(d),{pcm:[d.mid],cache:new Map()}):null;
 for(let k=k0;k<=k1;k++){
 if(done[k])continue;
-const o=k*BL,ch=X.render(mono||d,mx,o,Math.min(n,o+BL)),g=mono?32768:1/ch.length;
+const tB=performance.now(),o=k*BL,ch=X.render(mono||d,mx,o,Math.min(n,o+BL)),g=mono?32768:1/ch.length;
 for(const y of ch)for(let i=0;i<y.length;i++)mid[o+i]+=y[i]*g;
 done[k]=1;nd++;
-const t=performance.now();if(t-tY>25){if(emit&&t-tP>120){emit({qid:m.qid,prog:0.4*nd/Math.max(1,todo),stufe:'Rest abtasten'});tP=t;}await X.tick();tY=performance.now();}
+const t=performance.now();FK3.cB=Math.max(0.5,Math.min(80,0.85*FK3.cB+0.15*(t-tB)));if(t-tY>25){if(emit&&t-tP>120){emit({qid:m.qid,prog:0.4*nd/Math.max(1,todo),stufe:'Rest abtasten'});tP=t;}await X.tick();tY=performance.now();}
 }
 return mid;
 }
@@ -109679,28 +109730,33 @@ if(U.specQ||!U.spec||!U.spec.hop||!U.spec.info){F.pend=true;return;}
 F.pend=false;
 const doc=SPK1.doc,N=U.N,mode=F.mode,sig=fokus1Sig(U),I=U.spec.info,nC=I.chunks||U.spec.chunks.length;
 let S=F.set;
-if(S&&S.doc===doc&&S.N===N&&S.mode===mode&&F.sig===sig&&S.chunks.filter(Boolean).length>=nC){if(!F.st&&S.st)F.st=S.st;fokus1Done(U);spk1Dirty(U,'g');return;}
-const seq=++F.seq;F.sig=sig;
+if(S&&S.doc===doc&&S.N===N&&S.mode===mode&&F.sig===sig&&S.ok===sig&&S.chunks.filter(Boolean).length>=nC&&!S.chunks.some(c=>c&&c.ap)){if(!F.st&&S.st)F.st=S.st;fokus1Done(U);spk1Dirty(U,'g');return;}
+const seq=++F.seq;F.sig=sig;const SK=F.sk=new Set();
 if(!S||S.doc!==doc||S.N!==N||S.mode!==mode){fokus1Drop(U);S=F.set={doc,N,mode,hop:U.spec.hop,info:I,chunks:[],key:''};}
 const v=U.v,hs=U.spec.hop/U.meta.sr,cl=x=>Math.max(0,Math.min(nC-1,x));
 const c0=cl(Math.floor(Math.max(0,v.t0)/hs/1024)),c1=Math.max(c0,cl(Math.floor(Math.max(0,v.t0+U.W/v.pps)/hs/1024)));
 const parts=[[c0,c1+1]];if(c1+1<nC)parts.push([c1+1,nC]);if(c0>0)parts.push([0,c0]);
-const o={doc,N,mode,aus:F.aus,thr:U.opt&&U.opt.n2thr!=null?U.opt.n2thr:0.5};
+const o={doc,N,mode,aus:F.aus,thr:U.opt&&U.opt.n2thr!=null?U.opt.n2thr:0.5,vorab:mode==='rest'?1:0};
 let got=0,eO=0,eR=0,nAus=0,stop='',key='',tP=0;
 F.run=true;if(!F.st)fokus1Stat(U,'Fokus · 0 %');
-try{
-for(const[from,to]of parts){
-const r=await spk1Call('fokus',Object.assign({from,to},o),null,{
-chunk:c=>{
+const onChunk=c=>{
 if(seq!==F.seq||F.set!==S)return;
-const old=S.chunks[c.k],nc={x0:c.x0,w:c.w,R:c.R,data:c.data,tex:null,old:null};
+if(!c.ap)SK.delete(c.k);
+const old=S.chunks[c.k];
+if(c.ap&&old&&!old.ap&&old.key===c.key)return;
+const nc={x0:c.x0,w:c.w,R:c.R,data:c.data,tex:null,old:null,ap:!!c.ap,key:c.key,eO:c.eO,eR:c.eR};
 if(old){if(old.tex)nc.old=old;else if(old.old)nc.old=old.old;if(old.tex&&old.old)fokus1Tex(U,old.old);}
 S.chunks[c.k]=nc;S.hop=c.hop;S.key=c.key;got++;
 if(!F.dt)F.dt=setTimeout(()=>{F.dt=0;spk1Dirty(U,'g');},90);
-const t=performance.now();if(got<nC&&t-tP>150){tP=t;fokus1Stat(U,'Fokus · '+Math.round(100*got/nC)+' %');}
-}
-});
-if(seq!==F.seq)return;
+const t=performance.now();if(F.gn!==seq&&got<nC&&t-tP>150){tP=t;fokus1Stat(U,'Fokus · '+Math.round(100*got/nC)+' %');}
+else if(F.gn===seq&&!c.ap&&t-tP>150){tP=t;fokus1Stat(U,'Fokus · genauer · '+Math.round(100*F.ex()/nC)+' %');}
+};
+const pend=k=>!!(S.chunks[k]&&S.chunks[k].ap)||SK.has(k);
+F.ex=()=>{let x=0;for(let k=0;k<nC;k++)if(S.chunks[k]&&!pend(k))x++;return x;};
+try{
+for(let pi=0;pi<parts.length;pi++){const[from,to]=parts[pi];
+const r=await spk1Call('fokus',Object.assign({from,to},o,pi&&o.vorab?{vorab:2}:null),null,{chunk:onChunk});
+if(seq!==F.seq)return;if(r.skip)for(const k of r.skip)SK.add(k);
 eO+=r.eO||0;eR+=r.eR||0;nAus=r.nAus;key=r.key;stop=r.stop||'';
 if(stop)break;
 }
@@ -109709,10 +109765,31 @@ if(seq!==F.seq)return;F.run=false;
 if(/op fokus/.test(String(e&&e.message||e))){F.mode='alles';F.err='fehlt';fokus1Drop(U);fokus1Stat(U,'Fokus hier nicht verfügbar');spk1Dirty(U,'g');return;}
 logErr(e);fokus1Stat(U,'Fokus: Fehler');return;
 }
+
+
+if(!stop&&seq===F.seq&&(S.chunks.some(c=>c&&c.ap)||SK.size)){
+const vis=()=>{const v=U.v,hs=S.hop/U.meta.sr,cl=x=>Math.max(0,Math.min(nC-1,x)),a=cl(Math.floor(Math.max(0,v.t0)/hs/1024));return[a,Math.max(a,cl(Math.floor(Math.max(0,v.t0+U.W/v.pps)/hs/1024)))];};
+const order=()=>{const[a,b]=vis(),L=[];for(let k=0;k<nC;k++){if(pend(k))L.push([k<a?a-k+0.5:k>b?k-b:0,k]);}return L.sort((p,q)=>p[0]-q[0]||p[1]-q[1]).map(x=>x[1]);};
+F.gn=seq;F.rpX=new Set();F.noRp=false;fokus1Stat(U,'Fokus · genauer · '+Math.round(100*F.ex()/nC)+' %');
+try{
+for(let guard=0;guard<=2*nC+8;guard++){
+const L=order();if(!L.length)break;F.gL=L;F.gk=L[0];F.rp=false;F.tRp=performance.now();F.noRp=guard>=nC+2;
+const r=await spk1Call('fokus',Object.assign({from:0,to:nC,list:L},o,{vorab:0}),null,{chunk:onChunk});
+if(seq!==F.seq)return;
+nAus=r.nAus;key=r.key;stop=r.stop||'';
+if(stop==='abgeloest'&&F.rp){stop='';continue;}
+if(stop)break;
+}
+}catch(e){
+if(seq!==F.seq)return;F.run=false;logErr(e);fokus1Stat(U,'Fokus: Fehler');return;
+}finally{if(F.gn===seq){F.gn=0;F.gk=-1;F.gL=null;F.rp=false;F.noRp=false;}}
+if(!stop){eO=0;eR=0;for(const c of S.chunks)if(c){eO+=c.eO||0;eR+=c.eR||0;}}
+}
 F.run=false;if(seq!==F.seq)return;
+if(!stop&&(S.chunks.some(c=>c&&c.ap)||SK.size)&&(F.rl=(F.rl||0)+1)<=2){F.sig='';clearTimeout(F.tm);F.tm=setTimeout(()=>{F.tm=0;fokus1Load(U);},150);return;}
 if(stop==='geaendert'){F.sig='';clearTimeout(F.tm);F.tm=setTimeout(()=>{F.tm=0;fokus1Load(U);},150);return;}
 if(stop)return;
-F.st=S.st={eO,eR,nAus,key,ms:0};fokus1Done(U);spk1Dirty(U,'g');
+F.st=S.st={eO,eR,nAus,key,ms:0};S.ok=sig;F.rl=0;fokus1Done(U);spk1Dirty(U,'g');
 }
 function fokus1Mode(U,v){
 const F=fokus1S(U),was=F.mode;if(v===was)return;
@@ -109748,6 +109825,12 @@ if(F.mode==='alles')return;
 if(F.pend&&!F.tm&&!U.specQ&&U.spec&&U.spec.hop&&U.spec.info)F.tm=setTimeout(()=>{F.tm=0;fokus1Load(U);},0);
 const S=F.set,O=U.spec;if(!U.dg||!S||!O||!O.hop||S.doc!==SPK1.doc||S.N!==O.N||S.mode!==F.mode)return;
 if(F.glRef!==U.gl){for(const c of S.chunks)if(c){c.tex=null;c.old=null;}F.glRef=U.gl;}
+if(F.gn&&F.gn===F.seq&&F.gL&&!F.rp&&!F.noRp&&performance.now()-F.tRp>250){
+const hs0=S.hop/U.meta.sr,nn=S.chunks.length,cl=x=>Math.max(0,Math.min(nn-1,x)),a=cl(Math.floor(Math.max(0,U.v.t0)/hs0/1024)),b=Math.max(a,cl(Math.floor(Math.max(0,U.v.t0+U.W/U.v.pps)/hs0/1024)));
+const pd=k=>!!(S.chunks[k]&&S.chunks[k].ap)||!!(F.sk&&F.sk.has(k));
+let cur=-1;for(const k of F.gL)if(pd(k)){cur=k;break;}
+if(cur>=0&&(cur<a||cur>b)&&!(F.rpX&&F.rpX.has(cur)))for(let k=a;k<=b;k++)if(pd(k)){F.rp=true;F.rpX&&F.rpX.add(cur);spk1Call('fokusStop',{doc:SPK1.doc}).catch(()=>{});break;}
+}
 const v=U.v,hs=O.hop/U.meta.sr,n=O.chunks.length,arr=F.arr&&F.arr.length===n?F.arr:(F.arr=new Array(n)),tN=performance.now();let up=0,more=false;
 if(F.upMore&&F.tUp){const dt=tN-F.tUp;F.gap=dt>45?Math.min(250,dt):0;}
 const upMax=F.gap?(tN-F.tUp>=F.gap?1:0):1;
@@ -109791,8 +109874,8 @@ Object.assign(FOKUS1_API,{
 S:()=>SPK1.ui&&fokus1S(SPK1.ui),
 mode:m=>{const U=SPK1.ui;fokus1Mode(U,m);return U.f1.mode;},
 aus:a=>{const U=SPK1.ui,F=fokus1S(U);F.aus=a;F.st=null;return fokus1Load(U);},
-info:()=>{const U=SPK1.ui,F=U&&U.f1;if(!F)return null;const S=F.set;return{mode:F.mode,aus:F.aus,run:F.run,pend:F.pend,tm:!!F.tm,aktuell:!!U.meta&&F.sig===fokus1Sig(U),st:F.st,txt:F.txt,title:U.st.title||'',n:S?S.chunks.filter(Boolean).length:0,tex:S?S.chunks.filter(c=>c&&c.tex).length:0,key:S?S.key:'',err:F.err};},
-chunks:()=>{const S=SPK1.ui&&SPK1.ui.f1&&SPK1.ui.f1.set;return S?S.chunks.map((c,k)=>c&&{k,x0:c.x0,w:c.w,R:c.R,hop:S.hop,data:c.data}).filter(Boolean):[];},
+info:()=>{const U=SPK1.ui,F=U&&U.f1;if(!F)return null;const S=F.set;return{mode:F.mode,aus:F.aus,run:F.run,pend:F.pend,tm:!!F.tm,aktuell:!!U.meta&&F.sig===fokus1Sig(U),st:F.st,txt:F.txt,title:U.st.title||'',n:S?S.chunks.filter(Boolean).length:0,tex:S?S.chunks.filter(c=>c&&c.tex).length:0,key:S?S.key:'',err:F.err,ap:S?S.chunks.filter(c=>c&&c.ap).length:0,gn:!!F.gn&&F.gn===F.seq,gk:F.gk==null?-1:F.gk,rpn:F.rpX?F.rpX.size:0,ok:!!S&&S.ok===F.sig,sk:F.sk?F.sk.size:0};},
+chunks:()=>{const S=SPK1.ui&&SPK1.ui.f1&&SPK1.ui.f1.set;return S?S.chunks.map((c,k)=>c&&{k,x0:c.x0,w:c.w,R:c.R,hop:S.hop,data:c.data,ap:!!c.ap}).filter(Boolean):[];},
 idle:()=>{const U=SPK1.ui,F=U&&U.f1;return!!F&&!F.run&&!F.tm&&!F.pend&&(F.mode==='alles'||(!!F.set&&F.sig===fokus1Sig(U)));}
 });
 
