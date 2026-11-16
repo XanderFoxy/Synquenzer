@@ -102858,7 +102858,7 @@ function spk1GlLost(U) {   // Kontext weg (Speicherdruck) → neue Leinwand mit 
   spk1Size(U); spk1Dirty(U, 'all');
 }
 function spk1GlDraw(U) {
-  const G = U.gl, gl = G.gl, W = U.cw, H = U.ch, d = U.dpr, v = U.v;
+  const G = typeof lt2G === 'function' ? lt2G(U) : U.gl, gl = G.gl, W = U.cw, H = U.ch, d = U.dpr, v = U.v;   /* LT2: ohne Tönung das Programm ohne Tönungs-Zweig (Bild byte-gleich) */
   gl.viewport(0, 0, W, H); gl.clearColor(0.03, 0.035, 0.045, 1); gl.clear(gl.COLOR_BUFFER_BIT);
   if (!U.spec || !U.spec.hop) return;
   gl.useProgram(G.p); gl.bindVertexArray(G.vao);
@@ -109969,6 +109969,37 @@ function lt1StoreJobs(pcm, chunks) {   // Haken in tkStore: nur für die vorbere
   return chunks.map((k, i) => () => kv.aput(k, pcm.slice(i * TK_CHUNK, Math.min(pcm.length, (i + 1) * TK_CHUNK)).buffer));
 }
 /* LT1-END */
+/* LT2-BEGIN ===== Long Tasks im Hauptfaden, Rest (Paket LT2, Puls 16.11., CLAUDE.md Vorrang 1 „schnelle Performance“)
+   Befund (Spur + Grafik-Probe lt2-gpu-probe.mjs): die restlichen Long Tasks beim Ansicht-Sprung, FFT-Wechsel und Fokus-Umschalten sind kein
+   Skript, sondern das Warten des Hauptfadens auf die Grafik (Commit → ReadPixels der WebGL-Leinwand). Den größten Teil davon kostet das
+   Zeichnen des Spektrums: ohne Tönung (nl = 0) rechnet die Grafik den Tönungs-Zweig des Shaders trotzdem mit – gemessen 1244×584:
+   ganzer Shader 16–28 ms, derselbe ohne den Zweig 9–10 ms je Vollbild.
+   → Für nl = 0 ein zweites Programm ohne den Tönungs-Zweig (Farbe auf genau demselben Rechenweg → Bild byte-gleich, geprüft per
+   readPixels-Hash). Mit Tönung bleibt das Original-Programm. Übersetzt wird im Leerlauf nach dem ersten Bild (nie im Bild), je
+   Grafik-Kontext (WeakMap; Kontextverlust/CPU-Rückfall → nichts zu tun). LT2.on = false → alter Weg. */
+const LT2 = {on: true, n0: 0, nT: 0, mk: 0, err: ''};
+const LT2_FS0 = SPK1_FS.slice(0, SPK1_FS.indexOf('if(nl>0)')) + 'o=vec4(c,1.0);}';
+const LT2_G = new WeakMap();
+function lt2G(U) {   // Haken in spk1GlDraw (erste Zeile): Grafik-Satz mit dem passenden Programm
+  const G = U.gl; if (!G || !LT2.on) return G;
+  if (U.tintOn && U.tint && Math.min(8, U.tint.ids.length) > 0) { LT2.nT++; return G; }   // Tönung → Original-Programm
+  let V = LT2_G.get(G);
+  if (!V) { LT2_G.set(G, V = {st: 0, G: null}); setTimeout(() => lt2Make(G, V), 0); return G; }
+  if (V.st !== 1) return G;
+  LT2.n0++; return V.G;
+}
+function lt2Make(G, V) {   // Programm ohne Tönungs-Zweig: gleicher Vertex-Shader, gleiche Attribut-Stelle (VAO bleibt gültig)
+  try {
+    const gl = G.gl; if (gl.isContextLost()) { V.st = 2; return; }
+    const mk = (t, src) => { const o = gl.createShader(t); gl.shaderSource(o, src); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o) || 'shader'); return o; };
+    const p = gl.createProgram(); gl.attachShader(p, mk(gl.VERTEX_SHADER, SPK1_VS)); gl.attachShader(p, mk(gl.FRAGMENT_SHADER, LT2_FS0));
+    gl.bindAttribLocation(p, gl.getAttribLocation(G.p, 'a'), 'a'); gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p) || 'link');
+    const u = {}; for (const n of ['r', 'sz', 'sp', 'lut', 'ta', 'tb', 'db', 'tv', 'lc', 'nl']) u[n] = gl.getUniformLocation(p, n);   // ungenutzte → null (gl.uniform*(null, …) tut nichts)
+    V.G = Object.assign({}, G, {p, u}); V.st = 1; LT2.mk++;
+  } catch (e) { V.st = 2; LT2.err = String((e && e.message) || e).slice(0, 200); }
+}
+/* LT2-END */
 /* SPK11B-BEGIN ===== Spektral-Seite Teil 11B · Szenen: Drum-Kit und Bass-Phantome nachgebessert (Puls: offene Fehler aus SPK11).
    (1) Drums → Kit: Kick/Snare-Schwellen aus dem Lied selbst (zwei Häufungen der Band-Einsätze, Otsu auf log-Werten), Anschlag muss in die
    Mitten reichen (Schwebung Kick+Bass bleibt tief), 1/16 nach einem Kick ohne eigenen Anschlag kein Kick (Ausklang gegen Sub-Bass), an

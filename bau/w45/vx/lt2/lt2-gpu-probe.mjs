@@ -25,6 +25,16 @@ const r = await p.evaluate(() => { const U = __spk.page.ui(), G = U.gl, gl = G.g
   const p0 = G.p, u0 = G.u; out.var = {};
   for (const k in V) { const q = mkP(V[k]); G.p = q; G.u = {}; for (const n of ['r', 'sz', 'sp', 'lut', 'ta', 'tb', 'db', 'tv', 'lc', 'nl']) G.u[n] = gl.getUniformLocation(q, n); spk1GlDraw(U); const a = []; for (let i = 0; i < 6; i++) a.push(T(() => spk1GlDraw(U))); out.var[k] = a; }
   G.p = p0; G.u = u0;
+  if (typeof LT2 !== 'undefined') {   // index: Bild mit LT2 (Programm ohne Tönungs-Zweig) = Bild mit Original-Programm? mehrere Ansichten, je readPixels-Hash
+    const hash = () => { const px = new Uint8Array(U.cw * U.ch * 4); gl.readPixels(0, 0, U.cw, U.ch, gl.RGBA, gl.UNSIGNED_BYTE, px); let h = 0x811c9dc5; for (let i = 0; i < px.length; i++) { h ^= px[i]; h = Math.imul(h, 16777619); } return (h >>> 0).toString(16); };
+    const v = U.v, keep = {...v}, J = [[0, 4, 100, 40], [80, 86, 110, 50], [-0.05, 90, 110, 26], [40, 43, 96, 60], [10, 70, 120, 30], [0.3, 0.5, 70, 60], [5, 85, 135, 12]]; out.same = []; out.lt2 = {};
+    for (const [t0, t1, a, z] of J) { v.pps = U.W / (t1 - t0); v.t0 = t0; v.rowH = U.H / (a - z); v.mTop = a; spk1Clamp(U); const lo0 = U.lo, hi0 = U.hi;
+      for (const [lo, hi] of [[lo0, hi0], [-100, -20], [-60, -59.9]]) { U.lo = lo; U.hi = hi; LT2.on = false; spk1GlDraw(U); const h0 = hash(); LT2.on = true; spk1GlDraw(U); const h1 = hash(); out.same.push(h0 === h1 ? 1 : h0 + '/' + h1); }
+      U.lo = lo0; U.hi = hi0; }
+    Object.assign(v, keep); spk1Clamp(U);
+    LT2.on = false; out.drawOrigProg = []; for (let i = 0; i < 6; i++) out.drawOrigProg.push(T(() => spk1GlDraw(U))); LT2.on = true; out.drawLt2 = []; for (let i = 0; i < 6; i++) out.drawLt2.push(T(() => spk1GlDraw(U)));
+    out.lt2 = {...LT2};
+  }
   return out; });
 console.log(JSON.stringify(r), 'last', os.loadavg()[0].toFixed(2));
 await b.close(); srv.close();
