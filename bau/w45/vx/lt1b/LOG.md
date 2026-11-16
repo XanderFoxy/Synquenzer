@@ -15,3 +15,4 @@
 - 00:16 Last 4.60, 4.80, 5.61 · Kommentar Grenze im Block LT1 korrigiert (364 s, immer 48 kHz); t/ab.mjs: b7-Text korrigiert (Dehnen-Regel), b5-Text (48 kHz), neuer Fall b8 (Take-Regel ohne Tempo). Start ab.mjs CASES=b7,b8,b1 + Pflicht
 - 00:17 Last 5.35, 5.09, 5.65 · b7/b8/b1 gleich=true (b8: w false, ohne Take true, q 1, re 0); Pflicht topdefs/dupkeys/MS2000/live/VERSION ok. Start smoke + imp2-node, dann ab.mjs alle 29 Fälle ∥ imp1-test
 - 00:17 Last 5.11, 5.06, 5.62 · smoke errors [] (smoke2.png); imp2-node ALLE OK (t/imp2b.out). Start ab.mjs alle 29 Fälle (OUT=ab-end.json) ∥ imp1-test (t/imp)
+- 00:25 Last 1.08, 3.07, 4.60 · imp1-test ALLE OK (127 s, t/imp1b.out). ab.mjs Gesamtlauf (parallel zu imp1-test, Last bis ~5): 28/29 gleich; b1 gleich=false NUR in redo.grid (DOM-Signatur 600 ms nach ↷; basis selbst ≠ eigener Vorher-Stand) → Timing-Verdacht, Nachmessung b1 allein + längere Wartezeit
