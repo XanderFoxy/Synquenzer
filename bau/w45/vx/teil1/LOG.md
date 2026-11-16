@@ -7,3 +7,4 @@
 23:58 mess/ (Demo-Stems) aus fokus1 kopiert, spk2-loop-test wird am Ende von Strom B wiederholt. Last 12.78 6.67 4.37
 00:00 teil1Sync: Neu-Zuschnitt nur noch über den ResizeObserver (spart 1 volles Neuzeichnen je Umschalten). Last 13.74 8.76 5.34
 00:00 Regression läuft (spk11 41/0, fokus1-kern 26/0, imp1 ALLE OK), NOTES-Entwurf. Last 12.32 8.87 5.48
+00:07 Ende: teil1-test 59 OK / 2 (T1 Zeitziel unter Last), Regression grün außer fokus1-test Long-Task-Schwellen (wie im FOKUS1-Release-Lauf), Rauchtest ok, md5 7fcf0543. Last 5.37 8.53 6.74
