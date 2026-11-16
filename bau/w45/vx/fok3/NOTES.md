@@ -1,6 +1,6 @@
 # FOK3 – „Nur Rest“: erst die Näherung sofort, dann genau nachreichen
 
-Stand: index.html = basis.html (rel-4760, 4.76.0 = FOK2 v6) + Änderungen NUR im Block `/* FOKUS1-BEGIN */ … /* FOKUS1-END */`, Kennung `FOK3`.
+Endfassung v4 md5 edfc49a6f7eb2900337e2b9e2408ba3f. Stand: index.html = basis.html (rel-4760, 4.76.0 = FOK2 v6) + Änderungen NUR im Block `/* FOKUS1-BEGIN */ … /* FOKUS1-END */`, Kennung `FOK3`.
 Keine neuen Haken außerhalb, keine Zeile außerhalb des Blocks geändert. VERSION bleibt '4.76.0'. Zwischenstand v1: index.v1.html.
 Anlass: Xander 16.11. „Wenn es hilfreich ist, entscheide selber.“ – Entscheidung Lead: „Nur Rest“ soll sofort ein Bild zeigen.
 
@@ -78,7 +78,7 @@ genau s20 1036 / 664 / (4.75 Näherung fertig 312), m1 5683 / 5829 / (3016). Das
   neben index.html – Eingabedatei eines anderen Pakets, hier nicht vorhanden), spkfix ALLES OK 11 (sonde braucht spk7/lib.mjs, kopiert),
   fokus1-test (LONG=0 CPU=0) 43/5 – alle 5 Long Tasks unter Last 8, auch in „Alles“/„Gefundenes“ (FOK3 wirkt dort nicht).
 - Pflicht: topdefs doppelt 0 / Syntaxfehler 0; dupkeys 0; smoke errors []; „MS 2000“ 1×; „  live: true,“ 1×; VERSION '4.76.0'.
-- Diff (fok3.diff): 101 Zeilen neu, 23 geändert, 21 Abschnitte, alle zwischen FOKUS1-BEGIN und FOKUS1-END.
+- Diff (fok3.diff, v4): 101 Zeilen neu, 23 geändert, 21 Abschnitte, alle zwischen FOKUS1-BEGIN und FOKUS1-END.
 
 ## Offen
 - Long Tasks in der Test-Grafik: zweimaliges Hochladen sichtbarer Stücke (Näherung + genau). Falls das am Gerät stört (nicht erwartet, 1–2 ms):
@@ -88,3 +88,18 @@ genau s20 1036 / 664 / (4.75 Näherung fertig 312), m1 5683 / 5829 / (3016). Das
 - Schätzung: Kosten je Block/Spalte werden gemessen; Masken-Änderungen ohne neues Kachel-Feld (in-place) würden als „unverändert“ geschätzt →
   dann kommt das Stück direkt genau (wie v6), nie ein falsches Bild.
 - Statuszeile: während des Nachreichens „Fokus · genauer · xx %“ (neues Wort „genauer“ in der vorhandenen Fortschrittsanzeige) – bitte abnicken.
+
+## Endfassung v4 (md5 edfc49a6f7eb2900337e2b9e2408ba3f) – fok3-test Lauf 4: 28 OK / 0 FEHLER (Last 4,8–7,7)
+| Fall | v6 erstes Bild | FOK3 erstes Bild | v6 genau | FOK3 genau | genähert | Hash |
+|---|---|---|---|---|---|---|
+| 20 s, Ebene über alles | 591 | 477 | 682 | 1589 | 2 | gleich |
+| Kamm 8 s N 16384 / N 4096 | 294 / 311 | 492 / 246 | 294 / 311 | 492 / 246 | 0 | gleich |
+| 3 min stereo | 579 | 280 | 5427 | 6497 | 15 | gleich |
+| 3 min mono | 568 | 280 | 5380 | 7421 | 15 | gleich |
+| örtliche Ebene 60–70 s | 192 | 167 | 1501 | 1693 | 3 | gleich |
+| ↶ | 171 | 161 | 1430 | 1517 | 3 | gleich (= erster Satz) |
+| Rollen + Fokus-Wechsel beim Nachreichen | 602 | 251 | 5476 | 6592 | 16 | gleich; neu geplant: Stück 12 (sichtbar) statt 0 |
+| ↶ während Nachreichen | 643 | 355 | 2523 | 2798 | 16 | gleich (= Stand davor) |
+| Zauberstab während Näherung | – | – | – | – | 16 | gleich; Prüfung genau (46,6 dB, 188 ms) |
+Long Tasks > 50 ms neu/v6 (alle außerhalb JS): s20 5/1, st 12/0, m1 22/10, m2 5/2, m3 2/1, m4 8/2, m5 4/1, m6 2/2. Worker-Antwort m1 Median 15,8 /
+P95 141 ms (v6 16,8 / 136), stereo 20,3 / 155 (v6 20,4 / 149).
