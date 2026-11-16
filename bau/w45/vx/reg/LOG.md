@@ -12,3 +12,6 @@
   „Exit ohne FEHLER-Zeile“ – Wertung hat den Absturz richtig erkannt), Log nach spk4.abgebrochen.log, spk4 neu gestartet (5. Prozess neben dem Pool).
   run.sh legt beides jetzt selbst an (aus r4660/mess, md5 mix.f32 = r4760/mess).
 - 06:50 imp1 GRÜN 157 s (r4760: 209 s). Last 13,6 (andere Agenten).
+- 07:01 beg1 ROT (329 s, Last 14): Prüfung 5 korrekt „bekannt“, dazu 4× neu „Prüfung 6 … Ton für Ton wie live / klingt gleich“ (104 live ↔ 101 aus dem Song).
+  Beleg Last: BEG1-Block 4.76.0 ↔ 4.76.1 identisch (diff 0; ganze Diff 137 Zeilen = FOK3 + VERSION), r4760 Prüfung 6 grün; Last jetzt 36–38 (andere Agenten).
+  → Regel ergänzt (Zeit/Last-Klasse „Echtzeit-Aufnahme“), beg1 neu gestartet (alter Lauf: beg1.lauf0.log). spk11b GRÜN 347 s (r4760 183 s, Last 19).
