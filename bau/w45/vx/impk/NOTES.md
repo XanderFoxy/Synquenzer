@@ -60,7 +60,27 @@ Diff: +48/−2 Zeilen, +4 440 Byte. `diff basis.html (index ohne IMPK-Blöcke)` 
    „clip“ 2/8/2/4 → **0** in allen 16 Lagen, Summe der Band-Töne gleich (90/102/90/105). Klang gleich (impk-test C2: dieselben Töne Spur/Tonhöhe/Schlag).
 
 ## Tests
-REGRESSION_PLATZHALTER
+Alle Läufe an `index.html` (md5 c0ac5b11…), Logs im Paketordner. Test-Kopien in `reg/` (Fotos landen in `reg/fotos`, nichts in fremden Ordnern).
+- **impk-test.mjs** (A Tempo · B Import-Blatt · C Begleiter · D Konsole): Lauf 1 9/10 (B1 maß gegen die Basis-Frage, die wegen des neuen
+  Tempos 120 statt 121 lautet – Prüfung auf „alte Formel am selben Ergebnis“ umgestellt), Lauf 2/3 8/10 (C2: Zahl und Lage der beim Wechsel
+  neu angeschlagenen Töne hängen am echten Finger-Zeitpunkt; die Basis streut selbst 192/194, `c2-streuung.mjs`; Lauf 3 lief neben beg1/rv1 →
+  Basis 174 Töne). C2 prüft jetzt: kein „clip“, Töne auf den Zwischen-Achteln gleich (60 gleich), Summe ±4. IMPK_LAUF4
+- **beg1-test** (Kopie, `b1/basis.html` = Basis, `b1/neu/index.html` = IMPK): **57/59** (Auftrag: Basis 57/59; eigener Basislauf b0: 58/59).
+  FEHLER 1 = Prüfung 5 (5/4 ohne Stil, Hinweis-Text) – derselbe Fehler mit demselben Text im Basislauf `beg1-vorher.log`.
+  FEHLER 2 = „Eigener Block BEG1 … jede Zeile außerhalb trägt BEG1“ – zählt die 36 IMPK-Zeilen außerhalb des BEG1-Blocks (Test vergleicht
+  gegen die Basis ohne IMPK; in r4760 aus demselben Grund 575 Zeilen). Alle Begleiter-Prüfungen (SCHLUSS 1, Ziel-Spur 2, ✕ 3, ↶ 4, ● AUTO 6) OK.
+- **imp1-test** (Kopie `reg/imp1-test.mjs`): **ALLE OK (48)**, 120 s.
+- **imp2-node** (realvox/imp2rs, alle Raten): **ALLE OK** wie Basis; Mischungen zahlengleich, #10/#14 Spanne 0,00/0,01 BPM (vorher 0,00/0,05).
+- **rv1-test** (Kopie `reg/rv1-test.mjs`, Original-Prüfungen): **52/53** (r4760: 53/53). Der FEHLER: „#14 Stück 31 60 ms nach links:
+  Ausklang des Vorgängers bitgleich“ (Abweichung bei 349 ms). Ursache wie in IMP2B (c) belegt: der Test vergleicht mit der Fassung nach ↶,
+  in der der Vorgänger gedehnt war; #14 bekommt jetzt Projekt-Tempo 120 statt 121 und damit andere Schnitte. Gegenprobe: **Basis** mit
+  demselben Tempo/t1 (`reg/rv1s-test.mjs`, RV1_ONLY=14 RV1_BPM=120.33 RV1_T1=0.676 → `reg-rv1s-basis-14.log`): NX1 q 1,0025 / 586 959 Proben
+  wie IMPK und **derselbe FEHLER Stück 31 links, diffBeiMs 349** → Funktion von (Tempo, t1), nicht vom IMPK-Code.
+- **rv1-test-imp2b** (rv1k, die korrigierte Kopie, vergleicht zusätzlich mit der ungedehnten Quelle): **ALLE OK 53**.
+- Sonden: `tempo-raten.txt` (Basis vs IMPK, 14 Fälle × 4 Raten), `lead-ons.mjs`, `etikett-sonde.mjs` (16 Lagen Basis/IMPK).
+- **Pflicht** (`pflicht.log`): topdefs Skripte 26, Namen 7990 (+2: impkAsk, impkClickOff), doppelt 0, Syntaxfehler 0 · dupkeys 0 doppelte
+  Schlüssel · smoke `title SYNQUENZER errors []` (`smoke.png`) · „MS 2000“ 1× · „^  live: true,“ 1× · VERSION '4.76.1' · Markenwörter: keine
+  Änderung gegen die Basis · keine Emojis/Produktnamen in neuen Texten.
 
 ## Offen
 1. **● AUTO über einen vorhandenen Song nimmt die Band nicht mit** (gemessen: 54 live → 27 im Song). Das ist der eigene Weg `songRecStartOver`
