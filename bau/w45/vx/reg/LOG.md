@@ -15,3 +15,6 @@
 - 07:01 beg1 ROT (329 s, Last 14): Prüfung 5 korrekt „bekannt“, dazu 4× neu „Prüfung 6 … Ton für Ton wie live / klingt gleich“ (104 live ↔ 101 aus dem Song).
   Beleg Last: BEG1-Block 4.76.0 ↔ 4.76.1 identisch (diff 0; ganze Diff 137 Zeilen = FOK3 + VERSION), r4760 Prüfung 6 grün; Last jetzt 36–38 (andere Agenten).
   → Regel ergänzt (Zeit/Last-Klasse „Echtzeit-Aufnahme“), beg1 neu gestartet (alter Lauf: beg1.lauf0.log). spk11b GRÜN 347 s (r4760 183 s, Last 19).
+- 07:06–07:10 spk4 neu: pflicht OK (Soll 4.76.1), 4 FEHLER: a2 bekannt, a3-Zeiten 2× langsamer (Last 30), reg-spk2 + klang-abstand-bekannt → Regel ergänzt.
+  beg1 neu (Last 43): 15 FEHLER, alle Echtzeit-Wiedergabe → neues Urteil „UNGÜLTIG (Last)“ für Echtzeit-Tests bei Last > 2× CPU; WERTEN=1 zum Neu-Werten.
+- 07:12 Stand: 8/55 fertig (5 GRÜN, 1 INFO, spk4 LAST, beg1 UNGÜLTIG), Last 48. Pool läuft weiter (nohup), ERGEBNIS.md entsteht am Ende. Bericht.

@@ -64,10 +64,59 @@ Alles in `vx/reg/` (Kopien; keine Originaldatei geändert):
 - `run.sh` (neu, Vorlage r4760): ein Job-Pool statt 4 fester Spuren, Spuren = `nproc`, längste Tests zuerst (Dauer aus r4760), dieselben
   Tests und Argumente wie r4760 (+ pflicht als Job), Gesamtzeit + Last in `zeit.txt`, am Ende Tabelle.
 
-## 4. Messung nachher
+Nachträge aus dem Probelauf (06:49–07:12):
+- **Versteckte Umgebung (Ursache 10):** spk2/spk4-ui/spk4-rest/spk1/spk5/spk7/spk8/spk10 lesen `mess/*.f32` neben der index.html, spk2 zusätzlich
+  `../basis2.html`. In r4760 lag das von Hand im Ordner. Im Probelauf fehlte es zuerst → spk4-ui/rest „Status 1“; die neue Wertung meldete
+  das richtig als ROT („Exit ohne FEHLER-Zeile“). run.sh legt beides jetzt selbst an (mess aus r4660, md5 = r4760/mess).
+- `bekannt.json` ergänzt: beg1 „Prüfung 6 … Ton für Ton wie live / klingt gleich“ = Zeit-/Last-Klasse (BEG1-Block 4.76.0 ↔ 4.76.1 identisch,
+  r4760 grün, im Probelauf rot bei Last 14–36); spk4 `reg-spk2-test` mit zusätzlich `klang-abstand-bekannt` = Zeit-/Last-Klasse (Klang-Suche mit
+  Zeitbudget, bei Last 30 alle 4 Klänge zweier Läufe verschieden).
+- Neues Urteil **UNGÜLTIG (Last)** für Echtzeit-Tests (beg1, fokus1, mtx4, voxr1): bleiben sie ROT bei mittlerer Last > 2× CPU-Zahl, ist der Lauf
+  nicht aussagekräftig – nicht grün, nicht bekannt, bei niedriger Last wiederholen. `WERTEN=1 node tests/lauf.mjs <name> <ordner> 0 -- true`
+  wertet ein vorhandenes Log mit den aktuellen Regeln neu (ohne Lauf, ohne Wiederholung).
 
-(siehe unten, wird nach dem Probelauf eingetragen)
+## 4. Messung nachher (Probelauf rel-4761, `vx/reg/lauf-4761/`, Start 06:47:51)
+
+Last: 5,3 beim Start → 14 (06:55) → 36–48 (07:00–07:12) durch andere Agenten (4 CPUs). Alle Zeiten darum nicht mit r4760 vergleichbar.
+
+| Test | alt r4760 | neu (Probelauf) |
+|---|---|---|
+| imp1 | grün 48/0 · 209 s | GRÜN 48/0 · 157 s · Last 8,7 |
+| spk11b | grün 17/0 · 183 s | GRÜN 17/0 · 347 s · Last 19 |
+| mtx3 | grün 51/0 · 142 s | GRÜN 51/0 · 557 s · Last 39 |
+| rv1 | grün 53/0 · 160 s | GRÜN 53/0 · 770 s · Last 35 |
+| vxr2 | grün 11/0 · 182 s | GRÜN 11/0 · 1045 s · Last 33 |
+| lt1 | (ohne Urteil) · 545 s | INFO (A/B-Messung) · 1159 s · Last 29 |
+| spk4 | ROT 17 OK / 6 FEHLER · 549 s | LAST 17 OK / 4: a2-verfeinern-plus-1db bekannt (A29); a3-nachbau-zeit (va2 8323 → 15431 ms …), a3-nachbau-gleich-2laeufe, reg-spk2 (+ klang-abstand-bekannt) = Zeit/Last · **pflicht jetzt OK** (Soll 4.76.1) · 847 s · Last 30 (neu gewertet, ohne Wiederholung) |
+| beg1 | ROT 55/59 · 335 s | Lauf 0 (Last 14): Prüfung 5 bekannt + Prüfung 6 ×4 (Echtzeit) · Lauf 1 (Last 43): UNGÜLTIG (Last), 43 OK / 15 FEHLER (alles Echtzeit-Wiedergabe) · „Eigener Block“ jetzt INFO (662 Zeilen) |
+| pflicht (kleiner Lauf) | – | GRÜN: Skripte 26, Namen 7988, doppelt 0, Syntaxfehler 0 · 0 doppelte Schlüssel · smoke errors [] · MS 2000 1× · live 1× · VERSION 4.76.1 |
+| spk9f, spk9poly, vxr2lyr (kleiner Lauf) | grün | GRÜN (1/2/4 s) |
+
+Bis 07:12 fertig: 8 von 55 Tests (+ 4 im kleinen Lauf); 4 laufen (fok2, spk11, spk6p, teil1), 43 warten. Der Pool läuft weiter (nohup) und
+schreibt am Ende `lauf-4761/ERGEBNIS.md`, `zeit.txt` (Gesamtzeit) und `fertig.txt`. **Gesamtzeit und das Ziel „alle grün oder bekannt“ sind in
+diesem Paket nicht belegt** – bei Last 30–48 auf 4 CPUs dauerten die Tests 2–6× so lange wie in r4760.
+
+Erwartung bei Last wie r4760 (rechnerisch, nicht gemessen): Summe der Testzeiten ≈ 4580 s (ohne die doppelten spk1/ki1/vx1 in spk4),
+4 Plätze, längste zuerst → ≈ 1150–1250 s statt 1813 s (−30 bis −35 %), weil keine Spur mehr 11–16 min allein läuft.
 
 ## 5. Tests
 
+- Syntax: `node --check` für alle .mjs in tests/, `bash -n run.sh`.
+- Kleiner Lauf (`probe-klein/`, 7 s): pflicht, spk9f, spk9poly, vxr2lyr → 4× GRÜN; Tabelle alt/neu erzeugt.
+- Regeln geprüft: Muster für reg-spk2 mit `klang-abstand-bekannt` trifft die echte Zeile (true); falscher/abweichender Fehlerlisten-Text bleibt ROT.
+- Absturz-Erkennung: abgebrochenes spk4 (fehlendes mess/) → ROT „Exit ohne FEHLER-Zeile“ (nicht still grün).
+- Originale unverändert: vx/spk4, zrl1, beg1, clip1 (mtimes 13:30–21:12 vom 15.11.), keine neueren Dateien in vx/r4760 oder vx/perf2.
+
+md5: run.sh fd0752bb · tests/lauf.mjs 0dd3f475 · tests/bekannt.json 0eb35ff3 · tests/tabelle.mjs 2a8f2158 · tests/pflicht.sh 0690bf7e ·
+tests/spk4-test.mjs bd6b111e · tests/zrl1-test.mjs 1eac2401 · tests/beg1-test.mjs 0f7c9feb · tests/clip1-test.mjs 3dc2771c · rel-4761/index.html
+e4dc1b95 (unverändert).
+
 ## 6. Offen
+
+1. Voller Probelauf bei normaler Last (≤ 8) wiederholen: `vx/reg/run.sh rel-4761/index.html` (≈ 20 min erwartet) – erst dann Gesamtzeit und
+   „alle grün/bekannt“ belegt. beg1 dabei prüfen: Prüfung 6 bei Last < 4 grün? (sonst echte Regel ändern statt Last-Klasse).
+2. zrl1/clip1/ki1/spk1/voxr1/fokus1/mtx4 im Probelauf noch nicht gelaufen → Regeln dort ungetestet.
+3. Last-Grenzen fest: LAST bei Mittel > CPU, UNGÜLTIG bei > 2× CPU (Echtzeit-Tests). Ggf. vor dem Start warten, bis Last < CPU (Schalter fehlt).
+4. Gleiche Ausgabedateien mehrerer Tests im selben Ordner (spk1-test.json, ki1-test.json …) – mit dem Wegfall der Doppelläufe in spk4 kleiner,
+   aber nicht ganz weg (z. B. spk3/spk2-Dateien). Sauber wäre ein Unterordner je Test (Tests lesen mess/ neben der Datei → Verknüpfung je Ordner).
+5. spk4 „pflicht“ ist doppelt zur Pflicht-Prüfung von run.sh; könnte in spk4 per NUR wegfallen (≈ 10 s).

@@ -96,3 +96,34 @@ Alle Läufe an `index.html` (md5 c0ac5b11…), Logs im Paketordner. Test-Kopien 
 4. **rv1-Original 52/53** (r4760: 53/53): der eine FEHLER (#14 Stück 31 links, Bezug „Fassung nach ↶“) entsteht aus dem neuen #14-Tempo (120 statt 121)
    und ist mit der Basis bei gleichem Tempo/t1 zahlengleich nachgestellt; die korrigierte Kopie rv1k ist 53/53. Entscheidung beim Zusammenführen:
    rv1k (vx/imp2b/fix/rv1-test-imp2b.mjs) als Abnahme nehmen – wie in IMP2B schon vorgeschlagen – oder IMPK-Tempo ohne #14-Wechsel nicht übernehmen.
+
+## Prüfung (Nachbesserung 06:44–07:2x, Sicherung `index.vor-pruef.html` = c0ac5b11…, Blöcke `block-tempo.vor-pruef.js`/`block-ui.vor-pruef.js`)
+Bau weiter nur über `apply.mjs` (basis.html + 3 Blöcke). Begleiter-Block `block-beg.js` unverändert (byte-gleich im index). Außerhalb der Blöcke
+weiter genau die 3 Haken-Zeilen mit „IMPK“ (`diff basis.html` gegen index ohne IMPK-Blöcke, `pv/ohne-bloecke.diff`).
+
+**Befund 1 (mittel) – Ausklang-Filter verwirft Einsätze leiserer Töne nach lauteren: BESTÄTIGT, behoben.**
+- Nachgeprüft mit der Prüfer-Sonde (Kopie `pv/tempo-eigen.mjs`), `gap+alt 80` mit Entscheidungs-Dump (`pv/diag.html`, `pv/te-diag.mjs`):
+  die Spitzen der leiseren Töne liegen 30–38 ms *vor* dem Ton (Ende des lauteren Vorgängers, ea/eb 0,08–0,31) – die Basis nahm genau dieses
+  Tonende als Ersatz-Einsatz. IMPK strich sie, der eigentliche Einsatz des leiseren Tons kam aber nicht zurück, weil die gestrichene Spitze im
+  ±50-ms-Maximum-Test weiter sperrte → nur Vibrato-Spitzen blieben, Tempo kippte auf 2×.
+- Varianten gemessen (beide Prüfer-Sätze, lead-ons): Lücken-Kriterium (min. Energie 60 ms danach < 0,1/0,2 × davor) **half nicht** (gleich
+  schlecht wie vorher, die Tonenden haben echte Lücken); „gestrichene Rahmen sperren nicht“ (fm50/fm35) 1–5 Fälle schlechter;
+  **„stärkere Spitze binnen 100 ms folgt“: 0 schlechter** in beiden Sätzen → übernommen (Prüfer-Vorschlag 2). Logik im Block `block-tempo.js`:
+  eine Spitze mit fallendem Pegel wird nur gestrichen, wenn binnen 100 ms eine stärkere folgt (genau der Ausgangsfall: Tonende 70 ms vor dem
+  nächsten Einsatz); sonst bleibt sie wie in der Basis. Parabel-Verfeinerung (b) unverändert.
+- Messung nachher: lead-ons 120,54 (Basis) → **120,24** → Projekt 120 (vor Prüfung 119,95; beide richtig). Echte Aufnahme #1 gegen Annotation
+  (`pv/echt-sf.log`): getroffen A1 40/59, A2 49/64 = **wie Basis (kein Einsatz verloren**; vor Prüfung 39/59), falsche Einsätze 91 → 84 bzw. 82 → 75
+  (vor Prüfung 78/68). #1 118,61, #10 112,06, #14 120,33 (unverändert gegen die Fassung vor der Prüfung).
+- Neuer Test **`impk-tempo-test.mjs`** (Prüfer-Fälle + langsamer Satz 66–92 BPM, Abnahme: kein Fall schlechter als die Basis):
+  Endfassung `impk-tempo-test-p.log` (+ `-p-rest.log`), Fassung vor Prüfung `impk-tempo-test-alt.log` zum Gegenbeweis – Zahlen unter „Tests (Prüfung)“.
+
+**Befund 2 (mittel) – impkAsk ändert die Frage auch nach +, −, Tippen: BESTÄTIGT, behoben.**
+- Nachgeprüft: vor Prüfung „122 oder 121 / 60?“ bzw. „85 oder 84 / 42 / 168?“ (ein Knopf mehr als die Basis) – sichtbare, nicht verlangte Änderung.
+- Jetzt (Prüfer-Vorschlag): Basis-Liste bleibt, nur ein Vorschlag, der auf das gewählte Tempo rundet, wird durch das erkannte Tempo ersetzt,
+  jeder ganze Wert einmal. Start/+/−/Tippen = Basis; nach ½× „60 oder 121?“, nach 2× bei 84 „168 oder 42 / 84?“; nie mehr Knöpfe als die Basis.
+- Neuer Test **`impk-frage-test.mjs`** (8 Tempi × bis 7 Zustände): Endfassung **ALLE OK (144)**; Fassung vor Prüfung **50 FEHLER** (fängt den Befund).
+
+**Befund 3 (klein) – rv1-Original 52/53 (#14 Stück 31 links): BESTÄTIGT als Test-Bezugsfrage, nicht als Code-Fehler; nicht geändert.**
+- #14 bekommt mit IMPK weiter roh 120,33 → Projekt 120 (Basis 121); der Bauer hat mit der Basis bei gleichem Tempo/t1 denselben FEHLER
+  nachgestellt (`reg-rv1s-basis-14.log`). Die korrigierte Abnahme rv1k (vergleicht zusätzlich mit der ungedehnten Quelle) ist 53/53.
+  Entscheidung beim Zusammenführen bleibt (Offen 4).
