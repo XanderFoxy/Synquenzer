@@ -117,7 +117,7 @@ export function standortVon(liste, orte) {
 
 const ist404 = e => /HTTP 404|HTTP 410/.test(String(e?.message || e));
 
-export default async function knaller({ holeText, cfg, jetzt = new Date(), zustand = {}, vorherDatei = null }) {
+export default async function knaller({ holeText, cfg, jetzt = new Date(), zustand = {}, vorherDatei = null, env = {} }) {
   const m = { ...STANDARD, ...(cfg.module?.knaller || {}) };
   const maerkte = (Array.isArray(m.maerkte) ? m.maerkte : []).filter(x => x && x.id && x.kaufda);
   const jetztMs = new Date(jetzt).getTime();
@@ -222,6 +222,17 @@ export default async function knaller({ holeText, cfg, jetzt = new Date(), zusta
     }
     st.seiten[mk.id] = liste.length;
     jeMarkt[mk.id] = liste;
+  }
+  // SONDE (nur Probe-Zweig mv3-knaller, wird wieder entfernt): zusätzliche Seiten nur abrufen, damit der Roh-Mitschnitt sie hat
+  if (env?.ROH_DIR && Array.isArray(m.sonde)) {
+    let mgKeys = null;
+    for (const s of m.sonde) {
+      try {
+        if (s.mgStart) { const h = await holeText(s.mgStart, opts); const a = h.match(/"apiKey"\s*:\s*"([^"]+)"/), c = h.match(/"clientKey"\s*:\s*"([^"]+)"/); mgKeys = a && c ? { apiKey: a[1], clientKey: c[1] } : null; continue; }
+        if (s.mg) { if (mgKeys) await holeText(s.mg, { headers: { 'x-apikey': mgKeys.apiKey, 'x-clientkey': mgKeys.clientKey, accept: 'application/json' } }); continue; }
+        await holeText(s.url, s.url.endsWith('.txt') ? {} : opts);
+      } catch { /* nur Mitschnitt */ }
+    }
   }
   if (leer.length >= 2 && leer.length > okSeiten) fehler.push(`Seiten ohne Angebote (${leer.join(', ')}) – Aufbau bei kaufDA geändert?`);
   if (maerkte.length && !okSeiten && fehler.length) throw new Error(`kaufDA: keine Händlerseite gelesen – ${fehler[0]}`);

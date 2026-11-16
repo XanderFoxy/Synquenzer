@@ -340,6 +340,7 @@
       "stufen": [30, 40, 50],
       "maxJeMarkt": 40,
       "abPreise": true,
+      "sonde": [{"url": "https://www.kaufda.de/robots.txt"}, {"url": "https://www.kaufda.de/Doebeln/ALDI-Nord/p-r43"}, {"url": "https://www.kaufda.de/Doebeln/ALDI-Nord/p-r43?page=2"}, {"url": "https://www.kaufda.de/Doebeln/Angebote/Crunchips"}, {"url": "https://www.kaufda.de/Doebeln/Angebote/Chips"}, {"url": "https://www.kaufda.de/Doebeln/Angebote/Cola"}, {"url": "https://www.kaufda.de/Doebeln/Angebote/Kaffee"}, {"url": "https://www.kaufda.de/Doebeln/Angebote/Suessigkeiten"}, {"url": "https://www.kaufda.de/Aldi-Nord/Sortiment/Crunchips"}, {"url": "https://www.kaufda.de/Angebote/Crunchips"}, {"url": "https://www.kaufda.de/Filialen/Doebeln/ALDI-Nord-Grimmaische-Strasse/v-f913204576"}, {"mgStart": "https://www.marktguru.de/"}, {"mg": "https://api.marktguru.de/api/v1/offers/search?as=web&limit=48&offset=0&q=crunchips&zipCode=04720"}, {"mg": "https://api.marktguru.de/api/v1/offers/search?as=web&limit=48&offset=0&q=chips&zipCode=04720"}, {"mg": "https://api.marktguru.de/api/v1/offers/search?as=web&limit=48&offset=0&q=&zipCode=04720"}, {"url": "https://www.marktguru.de/r/aldi-nord"}],
       "maerkte": [
         { "id": "aldi-nord", "name": "Aldi Nord", "kaufda": "Aldi-Nord", "kaufdaOrt": "ALDI-Nord", "kaufdaId": 43, "haendler": ["Aldi Nord"] },
         { "id": "lidl", "name": "Lidl", "kaufda": "Lidl", "kaufdaId": 74, "haendler": ["Lidl"] },
