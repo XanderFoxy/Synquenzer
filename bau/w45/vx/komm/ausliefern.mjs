@@ -128,7 +128,7 @@ function jsOhneKommentare(src, info, opt) {   // KOMM: opt = Block-Regeln aus KO
   const diff = astDiff(ast, ast2, 'Program');
   if (diff) fail('AST verschieden (' + info + '): ' + diff);
   if (nlCount(src) !== nlCount(out)) fail('Zeilenzahl verschieden (' + info + ')');
-  return {out, ast, ast2, kommentare: coms.length, kommentareGeschuetzt: schutzKom, tokens: T.length, schutz: schutz.map(x => x[2]), schutzZeilen: [...zeilen]};
+  return {out, kommentare: coms.length, kommentareGeschuetzt: schutzKom, tokens: T.length, schutz: schutz.map(x => x[2]), schutzZeilen: [...zeilen]};
 }
 function astDiff(a, b, p) {
   const st = [[a, b, p]];
