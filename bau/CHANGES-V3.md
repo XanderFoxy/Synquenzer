@@ -1,3 +1,13 @@
+## 4.76.0 — Songteile, Auswahl als neuer Clip, Fokus genauer
+
+- **Songteile im Spektral:** Beim Laden einer Audiodatei erkennt die App die Songteile (Intro, Strophe, Refrain …) aus dem Tempo-Lauf. Sie stehen als farbiger Streifen über den Taktzahlen. Ein Tipp auf einen Teil legt den Loop auf den Teil und zoomt hin; ein zweiter Tipp zeigt wieder das ganze Lied. Hochkant steht der Teil im Kopf („Lied › Refrain 1“).
+- **Teil in die Matrix:** „In die Matrix ▾ › Als Szene“ schickt den Teil im Loop mit den Noten jeder Ebene als eigene Szene in die Clip-Matrix.
+- **Auswahl → neuer Clip:** Im Noten-Editor und im Drum-Schritt-Editor gibt es unter „Auslagern ▾“ den Abschnitt „ALS NEUER CLIP“. Ein Tipp auf eine freie Szene macht die gewählten Noten zu einem eigenen Clip (Länge passt sich an, kein Ton geht verloren, ein ↶).
+- **Fokus „Nur Rest“ genauer:** Ausgeblendete Ebenen verschwinden jetzt wirklich aus dem Bild (Abstand zum echten Rest ≤ 0,1 dB statt 15–21 dB), auch ohne Schatten vor und nach den Tönen. Der erste ganze Satz nach einer langen Ebene braucht etwas länger, das Bild bleibt dabei bedienbar.
+- **Gesang-Editor stabil:** Die Stücke eines Takes liegen jetzt immer an denselben Stellen, egal wie viel Stille vor dem Take ist (vorher wechselten die Marken um bis zu 1 s).
+- **Import spart Speicher:** Die Vorbereitung beim Audio-Import ist auf 100 MB begrenzt, entfällt bei „Als Gesang“ und startet nach Änderungen an Tempo, Takt oder „1“ sauber neu.
+Tests: Songteile 61/61, Auswahl als Clip 109/109, Fokus genau 21/21, Gesang-Editor ALLE OK (11) + Liedtext 5/5, Zerlegen gleich (SDR und Energie je Ebene ±0), Spektral 5/6/7/8/9/10/11/12 wie 4.75, Fokus-Kern 26/26, Einzelspuren 51/51 · 87/87 · 21/21 · 5/5, mehrere Clips 117/118, Transponieren 81/81, Gesang 61/61 · 14/14 · 15/15, Gesang reinigen 79/83, Chor 82/82, Import ALLE OK, Begleiter 57/59 (wie 4.75), Echttest 53/53 · 53/53.
+
 ## 4.75.0 — Spektral: Zerlegen schneller
 
 - **Zerlegen schneller:** Ein 20-s-Stück braucht 1,1 statt 1,8 s, ein 3-Minuten-Lied 8,7 statt 13,9 s (gemessen im Test-Browser). Die Ebenen klingen genau gleich wie vorher. Der Speicherbedarf bleibt unter 500 MB.
