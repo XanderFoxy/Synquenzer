@@ -32,6 +32,8 @@ export const SYM = {
   stopp: s('<rect x="6.5" y="6.5" width="11" height="11" rx="2" fill="currentColor"/>'),
   tafel: s('<rect x="3" y="4" width="18" height="13" rx="1.5"/><path d="M8 21l2-4M16 21l-2-4"/><path d="M7 9l2 2-2 2M11 13h5"/>'),
   idee: s('<path d="M9 17.5h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V17h5v-1.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/>'),
+  wunsch: s('<path d="M5 4.5h14a2 2 0 0 1 2 2v8.5a2 2 0 0 1-2 2h-8.2L6.5 20.5V17H5a2 2 0 0 1-2-2V6.5a2 2 0 0 1 2-2z"/><path d="M7.5 9h9M7.5 12.5h6"/>'),
+  senden: s('<path d="M20.5 3.5L10.2 13.8"/><path d="M20.5 3.5l-6.3 17-4-6.7-6.7-4z"/>'),
   einstellungen: s('<circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/>'),
   // Quiz-Kacheln: Form + Farbe, damit sie auch ohne Farbsehen unterscheidbar sind
   form0: s('<path d="M12 4.5l8 14H4z" fill="currentColor" stroke="none"/>'),

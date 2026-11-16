@@ -5,6 +5,7 @@ import { SYM } from './symbole.js';
 import { lade, liste } from './daten.js';
 import { waehle, vermerke } from './wiederholung.js';
 import { kandidatenAus } from './ueben.js';
+import { wunschLink } from './wunsch-link.js';
 import { buche, bonus, einheit } from './konto.js';
 import { kopf } from './app.js';
 
@@ -83,7 +84,7 @@ function spiel(view, fragen) {
     bonus('quiz', Math.round(punkte / 50)); einheit();
     view.innerHTML = `${kopf('Quiz-Ergebnis', '#/quiz', 'quiz')}<section class="karte quiz-ende"><svg class="pokal" viewBox="0 0 64 64" aria-hidden="true"><path d="M20 10h24v12a12 12 0 0 1-24 0z" fill="var(--c-schreiben)"/><path d="M20 14h-7a7 7 0 0 0 7 9M44 14h7a7 7 0 0 1-7 9" fill="none" stroke="var(--c-schreiben)" stroke-width="3"/><path d="M29 34h6v10h-6z" fill="var(--c-schreiben)"/><rect x="21" y="44" width="22" height="7" rx="2" fill="var(--c-lesen)"/></svg>
       <h2 data-endpunkte>${punkte} Punkte</h2><p>${richtig} von ${fragen.length} richtig${neu ? ' · neuer Bestwert' : ''}</p><p class="leise">+${Math.round(punkte / 50)} Punkte für deinen Fortschritt</p></section>
-      <button class="knopf haupt breit" data-nochmal>Neue Runde</button><a class="knopf zweit breit" href="#/heute">Fertig</a>`;
+      <button class="knopf haupt breit" data-nochmal>Neue Runde</button><a class="knopf zweit breit" href="#/heute">Fertig</a>${wunschLink('quiz')}`;
     view.querySelector('[data-nochmal]').addEventListener('click', () => seite(view));
   }
   addEventListener('fs-weg', () => clearTimeout(timer), { once: true });

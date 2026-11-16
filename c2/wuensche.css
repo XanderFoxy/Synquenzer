@@ -1,0 +1,34 @@
+/* Feinschliff 0.4.0 – Seite „Wünsche“ (wird erst mit der Seite geladen; Start-Teile wie Knopf, Punkt und Karte stehen in app.css) */
+.wuensche h3 { display: flex; align-items: center; gap: 8px; } .wuensche h3 .sym { color: var(--f); }
+.w-arten { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); } .w-arten > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+@media (min-width: 640px) { .w-arten { grid-template-columns: repeat(5, minmax(0, 1fr)); } .w-arten > :last-child:nth-child(odd) { grid-column: auto; } }
+.wuensche select.feld { width: 100%; }
+.w-hinweis { display: flex; align-items: flex-start; gap: 6px; margin: 8px 0 4px; font-size: .82rem; color: var(--text2); } .w-hinweis > span:first-of-type { flex: 1; min-width: 0; }
+.w-hinweis .sym { width: 16px; height: 16px; margin-top: 1px; } .w-zahl { flex: none; font-variant-numeric: tabular-nums; }
+.w-status { min-height: 1.4em; margin: 6px 0 0; color: var(--text2); font-size: .92rem; }
+.w-angekommen { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: var(--gut-f); margin-bottom: 10px; }
+.w-angekommen .sym { width: 28px; height: 28px; color: var(--gut); } .w-angekommen p { margin: 4px 0 0; }
+.w-frage { border-color: color-mix(in srgb, var(--c-sprechen) 45%, var(--linie)); }
+.w-frage .ueber .sym { width: 16px; height: 16px; color: var(--c-sprechen); }
+.w-frage h3 { margin-top: 6px; font-size: 1.15rem; }
+.w-optionen { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); margin: 10px 0 4px; }
+.w-optionen .option { min-height: 56px; overflow-wrap: anywhere; }
+.w-optionen .option[aria-pressed="true"] { border-width: 2px; font-weight: 750; }
+.w-frage .knopfzeile { align-items: center; } .w-frage .knopfzeile .knopf { flex: 1; }
+.w-legende { margin-top: -4px; font-size: .8rem; }
+.w-posts { list-style: none; padding: 0; margin: 0; }
+.w-post { padding: 10px 0; border-bottom: 1px solid var(--linie); } .w-post:last-child { border-bottom: 0; }
+.w-post-kopf { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; } .w-post-kopf .leise { font-size: .82rem; }
+.w-pill { margin-left: auto; font-size: .75rem; font-weight: 700; padding: 2px 10px; border-radius: 99px; background: var(--flaeche2); color: var(--text2); white-space: nowrap; }
+.w-pill.s-gelesen { background: color-mix(in srgb, var(--c-wortschatz) 16%, var(--flaeche)); color: var(--c-wortschatz); }
+.w-pill.s-umgesetzt { background: var(--gut-f); color: var(--gut); }
+.w-pill.s-wartet { background: color-mix(in srgb, var(--c-schreiben) 16%, var(--flaeche)); color: var(--c-schreiben); }
+.w-post-text { margin: 6px 0 0; white-space: pre-line; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
+.w-post-frage { margin: 6px 0 0; font-size: .85rem; }
+.w-antwort { margin-top: 8px; padding: 8px 12px; border-left: 4px solid var(--c-sprechen); background: color-mix(in srgb, var(--c-sprechen) 8%, var(--flaeche)); border-radius: 0 10px 10px 0; overflow-wrap: anywhere; }
+.w-neu-chip { --f: var(--c-lesen); }
+.w-neu h3 .sym { color: var(--c-schreiben); }
+.w-neu-liste { list-style: none; padding: 0; margin: 0 0 6px; } .w-neu-liste li { padding: 8px 0; border-bottom: 1px dashed var(--linie); } .w-neu-liste li:last-child { border-bottom: 0; }
+.w-bewerten { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; } .w-bewerten .chip-knopf { min-height: 44px; padding: 4px 14px; font-size: .9rem; }
+.w-bewerten .sym { width: 16px; height: 16px; color: var(--gut); }
+.w-neu summary { min-height: 44px; padding-block: 10px; box-sizing: border-box; }   /* Tippziel mind. 44 px */

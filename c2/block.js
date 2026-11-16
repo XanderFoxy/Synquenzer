@@ -3,6 +3,7 @@
 import { esc, speicher, tag } from './speicher.js';
 import { SYM } from './symbole.js';
 import { zeichneUebung, auswerten } from './ueben.js';
+import { wunschLink } from './wunsch-link.js';
 import { vermerke } from './wiederholung.js';
 import { buche, einheit } from './konto.js';
 
@@ -24,7 +25,7 @@ export function aufgabenBlock(el, aufgaben, { modus, bereich, id, onAbgabe }) {
     });
     const quote = Math.round((richtig / aufgaben.length) * 100);
     const box = el.querySelector('.ergebnis-box'); box.hidden = false;
-    box.innerHTML = `<div class="ergebnis-kopf"><div class="ring" style="--w:${quote}">${quote} %</div><div><h3>${richtig} von ${aufgaben.length} richtig</h3><p class="leise">+${richtig * 10} Punkte${modus === 'pruefung' ? ` · ${quote >= 60 ? 'Prüfungsziel (60 %) erreicht' : 'Ziel in der Prüfung: 60 %'}` : ''}</p></div></div>`;
+    box.innerHTML = `<div class="ergebnis-kopf"><div class="ring" style="--w:${quote}">${quote} %</div><div><h3>${richtig} von ${aufgaben.length} richtig</h3><p class="leise">+${richtig * 10} Punkte${modus === 'pruefung' ? ` · ${quote >= 60 ? 'Prüfungsziel (60 %) erreicht' : 'Ziel in der Prüfung: 60 %'}` : ''}</p></div></div>${wunschLink(pool.split('/')[0])}`;
     speicher.aendere('erledigt', {}, (x) => { x[pool] = tag(); });
     einheit();
     box.scrollIntoView?.({ block: 'center', behavior: 'smooth' });

@@ -3,6 +3,7 @@
 import { esc, mische } from './speicher.js';
 import { vergleiche, liste, luecken, lueckenLoesungen, fehlerTreffer, amSatzanfang, kern } from './pruefen.js';
 import { SYM } from './symbole.js';
+import { wunschLink } from './wunsch-link.js';
 import { vermerke } from './wiederholung.js';
 import { buche, einheit } from './konto.js';
 
@@ -297,7 +298,7 @@ export function sitzung(view, { titel = 'Üben', bereich = 'grammatik', eintraeg
     karte.className = 's-karte karte ende'; delete karte.dataset.uid;
     karte.innerHTML = `<div class="ergebnis-kopf"><div class="ring" style="--w:${quote}">${quote} %</div><div><h3>${richtig} von ${eintraege.length} richtig</h3><p class="leise">+${richtig * 10} Punkte${modus === 'pruefung' ? ` · ${quote >= 60 ? 'Prüfungsziel (60 %) erreicht' : 'Ziel in der Prüfung: 60 %'}` : ''}</p></div></div>
       ${liste ? `<h4>${modus === 'pruefung' ? 'Korrektur' : 'Zum Nachlesen'}</h4><ul class="uebersicht">${liste}</ul>` : '<p class="lob">Alles richtig. Stark.</p>'}`;
-    fuss.innerHTML = `${nochmal ? '<button class="knopf haupt breit" data-nochmal>Noch eine Runde</button>' : ''}<a class="knopf breit zweit" href="${esc(zurueck)}">Fertig</a>`;
+    fuss.innerHTML = `${nochmal ? '<button class="knopf haupt breit" data-nochmal>Noch eine Runde</button>' : ''}<a class="knopf breit zweit" href="${esc(zurueck)}">Fertig</a>${wunschLink(zurueck === '#/heute' ? 'heute' : bereich)}`;
     fuss.querySelector('[data-nochmal]')?.addEventListener('click', nochmal);
     onEnde?.(ergebnisse, eintraege);
   }

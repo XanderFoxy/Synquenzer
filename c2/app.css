@@ -265,3 +265,18 @@ details summary { cursor: pointer; min-height: 32px; color: var(--text2); }
 .knopfzeile label.knopf { cursor: pointer; }
 .ios-hinweis .textknopf { min-height: 44px; padding-left: 0; }
 @media (orientation: landscape) and (max-height: 500px) { .s-fuss { position: static; } }
+
+/* 0.4.0 – Wünsche an Claude (eigener Kanal), Rückfragen, „Wunsch dazu?“ */
+[data-bereich="wuensche"] { --f: var(--c-sprechen); }
+.appkopf > div { flex: 1; min-width: 0; }
+.w-knopf { position: relative; color: var(--c-sprechen); }
+.w-knopf .sym { width: 24px; height: 24px; }
+.w-punkt { position: absolute; top: 4px; right: calc(50% - 20px); width: 10px; height: 10px; border-radius: 50%; background: var(--c-lesen); box-shadow: 0 0 0 2px var(--flaeche); }
+.w-knopf .w-punkt { top: 2px; right: 2px; }
+#nav a { position: relative; }
+.karte.klein.w-karte, .karte.klein.w-mehr { color: inherit; --f: var(--c-sprechen); }
+.w-mehr { position: relative; } .w-mehr .w-punkt { position: static; flex: none; }
+.w-karte { border-color: color-mix(in srgb, var(--c-sprechen) 40%, var(--linie)); background: color-mix(in srgb, var(--c-sprechen) 8%, var(--flaeche)); }
+.karte.klein.w-karte > .sym:last-child, .karte.klein.w-mehr > .sym:last-child { color: var(--text2); width: 22px; height: 22px; }
+.wunsch-link { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; margin: 4px auto 0; color: var(--text2); font-size: .88rem; text-decoration: underline; text-underline-offset: 3px; }
+.wunsch-link .sym { width: 16px; height: 16px; }

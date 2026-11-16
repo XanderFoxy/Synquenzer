@@ -16,7 +16,8 @@ export const speicher = {
   // Sichern/Laden als Datei (iPhone: Safari und Home-Bildschirm-App haben getrennte Speicher)
   export() { const d = {}; try { for (const k of Object.keys(localStorage)) if (k.startsWith(P)) d[k.slice(P.length)] = JSON.parse(localStorage.getItem(k)); } catch { /* nur Arbeitsspeicher */ } for (const [k, v] of mem) if (!(k in d)) d[k] = v; return { app: 'feinschliff', stand: 1, zeit: new Date().toISOString(), daten: d }; },
   import(o) { if (!o || o.app !== 'feinschliff' || typeof o.daten !== 'object') throw new Error('falsches Format'); let n = 0; for (const [k, v] of Object.entries(o.daten)) { this.schreib(k, v); n++; } return n; },
-  allesLoeschen() { mem.clear(); try { Object.keys(localStorage).filter((x) => x.startsWith(P)).forEach((x) => localStorage.removeItem(x)); } catch { /* egal */ } },
+  // Der Wünsche-Kanal (Gerätekennung, Entwürfe, Wartendes) bleibt: sonst wären die eigenen Nachrichten an Claude nicht mehr sichtbar
+  allesLoeschen() { for (const k of [...mem.keys()]) if (k !== 'walkie') mem.delete(k); try { Object.keys(localStorage).filter((x) => x.startsWith(P) && x !== P + 'walkie').forEach((x) => localStorage.removeItem(x)); } catch { /* egal */ } },
 };
 // Datum als lokaler Tagesschlüssel JJJJ-MM-TT (nicht UTC: der Lerntag endet um Mitternacht vor Ort)
 export const tag = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;

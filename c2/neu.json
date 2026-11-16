@@ -1,0 +1,32 @@
+{
+  "hinweis": "Bei jedem Update oben eine neue Version eintragen (punkte: id, bereich, titel, text). Wird in „Wünsche“ angezeigt und kann dort bewertet werden.",
+  "versionen": [
+    {
+      "version": "0.4.0",
+      "datum": "2026-11-16",
+      "punkte": [
+        { "id": "v040-wuensche", "bereich": "allgemein", "titel": "Wünsche an Claude", "text": "Ein eigener Kanal: melden, was nicht klappt, was feiner werden soll oder was fehlt – Claude liest mit und baut es ein." },
+        { "id": "v040-rueckfragen", "bereich": "allgemein", "titel": "Rückfragen von Claude", "text": "Kurze Fragen mit Antwort-Knöpfen, damit die App genau zu dir passt." },
+        { "id": "v040-wunsch-link", "bereich": "allgemein", "titel": "„Wunsch dazu?“", "text": "Am Ende einer Übung, eines Textes oder Quiz direkt einen Wunsch zu genau diesem Bereich schicken." }
+      ]
+    },
+    {
+      "version": "0.3.0",
+      "datum": "2026-11-16",
+      "punkte": [
+        { "id": "v030-heute", "bereich": "heute", "titel": "Heute ausgewogener", "text": "Mehr Grammatik, weniger Auswahlaufgaben, nach und nach alle Themen." },
+        { "id": "v030-auch-richtig", "bereich": "grammatik", "titel": "„Meine Antwort ist auch richtig“", "text": "Bei offenen Aufgaben kannst du eine gleichwertige Antwort selbst als richtig werten." },
+        { "id": "v030-offline", "bereich": "allgemein", "titel": "Offline und sichern", "text": "Übungen laufen ohne Internet; dein Stand lässt sich unter „Mehr“ als Datei sichern und laden." },
+        { "id": "v030-hoeren", "bereich": "hoeren", "titel": "Hören ruhiger", "text": "Audio stoppt beim Wechseln, eine Unterbrechung kostet keinen Durchgang." }
+      ]
+    },
+    {
+      "version": "0.2.0",
+      "datum": "2026-11-16",
+      "punkte": [
+        { "id": "v020-inhalte", "bereich": "allgemein", "titel": "Alle Inhalte", "text": "28 Grammatik-Themen, 10 Hör- und 12 Lese-Sets, 24 Themen zum Sprechen und Schreiben, Wortschatz mit Fremdwörtern." },
+        { "id": "v020-pruefung", "bereich": "pruefung", "titel": "Prüfungssimulation", "text": "Je Modul mit Zeiten und Punkten wie in der C2-Prüfung." }
+      ]
+    }
+  ]
+}

@@ -3,12 +3,15 @@
 // 0.3.0: Nach dem Einrichten holt der Worker im Hintergrund alle Übungs- und Text-Dateien (JSON, ca. 0,3 MB gzip) in den Cache,
 // damit Heute, Quiz und jedes Thema offline laufen. Die Startseite wird dadurch nicht langsamer (läuft nach dem Laden).
 // Audio bleibt bei Bedarf (erstes Abspielen) oder über „Alles offline speichern“ in Mehr.
+// 0.4.0: wuensche.js (Wünsche-Kanal zu Claude) und neu.json („Neu in dieser Version“) gehören zur Schale – neu.json kommt so mit jeder Version frisch.
+// Anfragen an die Datenbank (anderer Ursprung) gehen nie durch den Worker. Ab 0.4.0 lädt die App nach einem Wechsel des Workers
+// beim nächsten Seitenwechsel neu (app.js), damit nie alte und neue Module gemischt laufen.
 // Neue Fassung: VERSION hochzählen (und in app.js), dann lädt der nächste Start die Schale neu.
-const VERSION = '0.3.0';
+const VERSION = '0.4.0';
 const SCHALE = 'fs-schale-' + VERSION, DATEN = 'fs-daten-v2', AUDIO = 'fs-audio-v1';
 const DATEIEN = ['./', './index.html', './app.css', './app.js', './speicher.js', './daten.js', './symbole.js', './pruefen.js', './wiederholung.js', './konto.js',
   './ueben.js', './block.js', './hoeren.js', './lesen.js', './quiz.js', './pruefung.js', './schreiben.js', './fortschritt.js', './wortschatz.js', './links.js',
-  './erinnerung.js', './manifest.webmanifest', './icon.svg', './icon-180.png', './icon-192.png', './icon-512.png', './daten/index.json'];
+  './erinnerung.js', './wuensche.js', './wunsch-link.js', './wuensche.css', './neu.json', './manifest.webmanifest', './icon.svg', './icon-180.png', './icon-192.png', './icon-512.png', './daten/index.json'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(SCHALE).then((c) => c.addAll(DATEIEN.map((d) => new Request(d, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
