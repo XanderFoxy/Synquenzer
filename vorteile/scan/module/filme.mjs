@@ -924,13 +924,20 @@ export function preisJeFilm(titel, preis) {
 export function mdFilmTitel(titel) {
   const x = String(titel ?? '').replace(/^\s*\[[^\]]{0,40}\]\s*/, '')
     // „Apple TV Countdown Tag 5: Wicked …“, „iTunes Adventskalender – Wicked …“ -> „Wicked …“
-    .replace(/^[^:–—]{0,60}?(?:countdown|adventskalender|advent|tag\s*\d{1,2})[^:–—]{0,30}[:–—]\s*/i, '')
-    .replace(/^[^:–—]{0,20}?tag\s*\d{1,2}[^:–—]{0,10}[:–—]\s*/i, '')
+    // (nur ganze Wörter: „Adventure Time: Staffel 1“ bleibt so – Prüfer 16.11.)
+    .replace(/^[^:–—]{0,60}?(?:\bcountdown\b|\badventskalender|\badvent\b|\btag\s*\d{1,2}\b)[^:–—]{0,30}[:–—]\s*/i, '')
+    .replace(/^[^:–—]{0,20}?\btag\s*\d{1,2}\b[^:–—]{0,10}[:–—]\s*/i, '')
     .split(/\s*(?:[~|@]|\s(?:für|for|ab|nur|bei|im|in)\s|\d{1,3}[.,]\d{2}\s*(?:€|eur)|\(\s*(?:u?hd|4k|kauf|leih|digital))/i)[0];
   return x.replace(/[\s:,;–—-]+$/, '').trim();
 }
-/** Countdown/Adventskalender von Apple (Dezember: „Apple TV Countdown Tag 5“, „iTunes Adventskalender“, „31 Tage, 31 Angebote“) */
-export const COUNTDOWN_WORT = /countdown|adventskalender|advent|31\s*tage|film des tages|tagesangebot|tages-?deal/i;
+/** Countdown/Adventskalender von Apple (Dezember: „Apple TV Countdown Tag 5“, „iTunes Adventskalender“, „31 Tage, 31 Angebote“).
+ *  Nur ganze Wörter (Prüfer 16.11.: „Bill & Ted's Excellent Adventure“ und „Adventszeit“ sind kein Countdown), „2. Advent“ auch nicht. */
+export const COUNTDOWN_WORT = /\bcountdown\b|\badventskalender|(?<!\d\.\s{0,2})\badvent\b|\b31\s*tage\b|\bfilm des tages\b|\btagesangebot|\btages-?deal\b/i;
+/** Countdown in der Beschreibung zählt nur mit „heute“/„Tag N“ davor („Heute im Apple TV Countdown: Wicked …“) – ein normaler
+ *  Deal, der den Countdown nur erwähnt, wird kein Tagesangebot. */
+const COUNTDOWN_HEUTE = /\b(?:heute|tag\s*\d{1,2})\b[^.!?\n]{0,40}\b(?:countdown|adventskalender)/i;
+/** mydealz-Tipp = Apples Tagesangebot im Dezember? Titel mit Countdown-Wort, oder Beschreibung „heute im Countdown“. */
+export const istCountdownTipp = (titel, beschreibung = '') => COUNTDOWN_WORT.test(String(titel || '')) || COUNTDOWN_HEUTE.test(String(beschreibung || ''));
 /**
  * Apple-Eintrag zu einem mydealz-Tipp (Xander 16.11.2026: „Apple statt mydealz“) – nur eindeutig: gleicher Filmname (normTitel)
  * und genau EIN Apple-Film zu höchstens dem Tipp-Preis (+1 ct). Kandidaten = alle Apple-Filme dieses Laufs ({ id, titel, jahr, preis }).
@@ -945,6 +952,22 @@ export function appleZuTipp(mdTitel, mdPreis, kandidaten) {
   const gleiche = kandidaten.filter(k => k && k.id && !gesehen.has(k.id) && gesehen.add(k.id) && (normTitel(k.titel) === name || (k.namen || []).some(n => normTitel(n) === name)));
   const passend = mdPreis == null ? [] : gleiche.filter(k => k.preis != null && k.preis <= mdPreis + 0.011);
   return { treffer: passend.length === 1 ? passend[0] : null, gleicheNamen: gleiche };
+}
+
+/**
+ * Wer bekommt im Qualitäts-Schritt Wikidata-Daten? Chart-Titel (außer deinen Listen-Filmen über maxPreis – die bleiben ohnehin
+ * stehen), deine Listen-Filme bis maxPreis (auch wenn sie zugleich in den Charts stehen) und zugeordnete mydealz-Tipps.
+ * -> Ids in dieser Reihenfolge, ohne Doppelte.
+ */
+export function qualiKandidatIds({ chartIds = [], listenIds = new Set(), tippIds = new Set(), preisVon = () => null, maxPreis = 4.99 }) {
+  const billig = id => { const p = preisVon(id); return p != null && p <= maxPreis; };
+  const raus = new Set();
+  const aus = [];
+  const dazu = id => { if (!raus.has(id)) { raus.add(id); aus.push(id); } };
+  for (const id of chartIds) if (!listenIds.has(id) || billig(id)) dazu(id);
+  for (const id of listenIds) if (billig(id)) dazu(id);
+  for (const id of tippIds) if (!listenIds.has(id)) dazu(id);
+  return aus;
 }
 
 // ---------------------------------------------------------------- Ausgabe
@@ -1550,11 +1573,12 @@ export default async function filme(ctx) {
   const nr = id => String(id).replace(/^itunes:/, '');
   if (m.qualitaet !== false) {
     // deine Listen-Titel bis angebotPreisAktion auch (nur Bekanntheit/Besetzung für die Filter der Seite – sie bleiben immer stehen)
-    const listeBillig = [...listenIds].filter(id => { const d = daten.get(id); const p = d ? d.preisHd ?? d.preisSd ?? d.preis ?? null : null; return p != null && p <= m.angebotPreisAktion; })
-      .filter(id => !chartTreffer.has(id)).map(id => [id, { pos: 999 }]);
-    const tippQ = [...tippIds].filter(id => !chartTreffer.has(id) && !listenIds.has(id)).map(id => [id, { pos: 999, altTitel: zf.tippIds[id] }]);
-    const kandidat = [...chartTreffer.entries(), ...listeBillig, ...tippQ]
-      .filter(([id]) => (!listenIds.has(id) || listeBillig.some(x => x[0] === id)) && !qualiFrisch(zf.quali[nr(id)]))
+    // (auch wenn der Listen-Film zugleich in den Charts steht – Prüfer 16.11.: „Kindergarten Cop“ Platz 57 + 80er-Liste und
+    // „Manta Manta“ Platz 47 + Wunschliste blieben sonst für immer ohne Wikidata, „Nur bekannte“/Schauspieler fanden sie nicht)
+    const preisVon = id => { const d = daten.get(id) || chartTreffer.get(id)?.d; return d ? d.preisHd ?? d.preisSd ?? d.preis ?? null : null; };
+    const ids = qualiKandidatIds({ chartIds: [...chartTreffer.keys()], listenIds, tippIds, preisVon, maxPreis: m.angebotPreisAktion });
+    const kandidat = ids.map(id => [id, chartTreffer.get(id) || { pos: 999, ...(tippIds.has(id) && !listenIds.has(id) ? { altTitel: zf.tippIds[id] } : {}) }])
+      .filter(([id]) => !qualiFrisch(zf.quali[nr(id)]))
       .map(([id, c]) => {
         const d = daten.get(id) || c.d || c.altTitel || {};
         const preis = d.preisHd ?? d.preisSd ?? d.preis ?? null;
@@ -1958,11 +1982,12 @@ export default async function filme(ctx) {
       ...NULL_TITEL, preis: t.preis, seit: tag, tage: 1, angebot: true, link: t.f.link, quelle: 'Apple', raum: t.raum, raumUrl: t.raumUrl, liste: t.p.gruppe,
     });
   }
+  const mdId = it => `mydealz:${threadId(it.link) || schluessel(it.link)}`;
   const mdEintrag = it => ({
-    id: `mydealz:${threadId(it.link) || schluessel(it.link)}`, typ: /staffel|season|serie/i.test(it.titel) ? 'staffel' : 'film',
+    id: mdId(it), typ: /staffel|season|serie/i.test(it.titel) ? 'staffel' : 'film',
     titel: it.titel.replace(/^\s*\[[^\]]{1,30}\]\s*/, '') || it.titel, jahr: null, // „[iTunes / Apple TV] …“ -> kurz
     ...NULL_TITEL, preis: preisWert(it.preisText), seit: tag, tage: 1, angebot: true, bild: it.bild || null, link: it.link, quelle: 'mydealz',
-    _text: `${it.titel} ${it.beschreibung || ''}`,
+    _text: `${it.titel} ${it.beschreibung || ''}`, _beschreibung: it.beschreibung || '', _datum: it.datum || null,
   });
   for (const it of deals) gruppen.angebot.push(mdEintrag(it));
 
@@ -2033,7 +2058,8 @@ export default async function filme(ctx) {
   const einzeln = t => t.preis != null && mdJeFilm(t) != null && Math.abs(mdJeFilm(t) - t.preis) < 0.005; // kein Set
   const mdApple = new Map(); // mydealz-id -> Apple-Nummer
   const abgleich = (status.mydealz.apple = { geprueft: 0, gefunden: 0, wikidata: 0 });
-  const tippZiele = mdDeals.filter(t => einzeln(t) && (t.preis <= m.angebotPreis || COUNTDOWN_WORT.test(t._text || t.titel)));
+  const cdTipp = t => istCountdownTipp(t.titel, t._beschreibung);
+  const tippZiele = mdDeals.filter(t => einzeln(t) && (t.preis <= m.angebotPreis || cdTipp(t)));
   const ordne = t => { const r = appleZuTipp(t.titel, t.preis, [...appleKand.values()]); if (r.treffer) mdApple.set(t.id, r.treffer.id); return r; };
   const offenTipps = tippZiele.filter(t => { abgleich.geprueft++; return !ordne(t).treffer; });
   // Budget: der eine Lookup zählt zu allen Apple-Abrufen des Laufs (breitGesamtMax) – ist es aufgebraucht, bleibt der Tipp ein Tipp
@@ -2069,7 +2095,8 @@ export default async function filme(ctx) {
     if (!a.angebot) a.angebot = true;
     return a;
   };
-  const tipps399 = mdDeals.filter(t => einzeln(t) && t.preis <= m.angebotPreis && !doppelTipp(t.titel, pool.filter(x => x.preis <= m.angebotPreis).map(x => x.titel))).map(ausTipp);
+  // ein zugeordneter Tipp bleibt, auch wenn der gleichnamige Apple-Film schon dasteht: er bekommt den Vermerk „Tipp von mydealz“
+  const tipps399 = mdDeals.filter(t => einzeln(t) && t.preis <= m.angebotPreis && (mdApple.has(t.id) || !doppelTipp(t.titel, pool.filter(x => x.preis <= m.angebotPreis).map(x => x.titel)))).map(ausTipp);
   // zugeordnete Tipps: unter „angebot“ steht dann der Apple-Eintrag statt des mydealz-Tipps (Lauf 43826385997: „Der Grinch ~ 3,99€“
   // stand sonst als Tipp unter „Angebote“ und als „Dr. Seuss' Der Grinch“ unter „Für 3,99 €“)
   const zugeordnet = new Map(tipps399.filter(t => t.tipp?.link).map(t => [t.tipp.link, t]));
@@ -2087,12 +2114,15 @@ export default async function filme(ctx) {
     ...tipps399.filter(t => t.quelle === 'mydealz' || t.preis <= m.angebotPreis),
   ].filter(t => !fuer399Ids.has(t.id) && fuer399Ids.add(t.id)), m.maxGruppe, m.breitMaxFuer399);
   // Countdown/Adventskalender (Dezember): Apples Tagesangebot aus mydealz-Tipps und Angebotsräumen – für den Tages-Push
+  // tag = Tag des mydealz-Beitrags (Berliner Zeit), nicht der Tag des Laufs: mydealz-Beiträge bis 7 Tage alt werden gelesen, und
+  // „Countdown Tag 4“ vom 04.12. ist am 05.12. nicht mehr das Tagesangebot (Prüfer 16.11.). Ohne Datum kein Countdown.
   const countdown = [
-    ...mdDeals.filter(t => einzeln(t) && COUNTDOWN_WORT.test(t._text || t.titel)).map(t => {
+    ...mdDeals.filter(t => einzeln(t) && cdTipp(t) && berlinTag(t._datum)).map(t => {
       const a = mdApple.has(t.id) ? baue(mdApple.get(t.id)) : null;
+      const beitragTag = berlinTag(t._datum);
       return a && a.preis != null && !a._horror
-        ? { id: a.id, titel: a.titel, jahr: a.jahr ?? null, preis: a.preis, link: a.link, bild: a.bild ?? null, quelle: 'mydealz', tag }
-        : { id: t.id, titel: mdFilmTitel(t.titel) || t.titel, jahr: null, preis: t.preis, link: t.link, bild: t.bild ?? null, quelle: 'mydealz', tag };
+        ? { id: a.id, titel: a.titel, jahr: a.jahr ?? null, preis: a.preis, link: a.link, bild: a.bild ?? null, quelle: 'mydealz', tag: beitragTag }
+        : { id: t.id, titel: mdFilmTitel(t.titel) || t.titel, jahr: null, preis: t.preis, link: t.link, bild: t.bild ?? null, quelle: 'mydealz', tag: beitragTag };
     }),
     ...raumCountdown.map(r => ({ id: `appletv:${r.f.umc}`, titel: r.f.name || r.f.titel, jahr: null, preis: r.preis, link: r.f.link, bild: null, quelle: 'apple-tv', raum: r.raum, tag })),
   ].filter(x => x.titel && x.link).slice(0, 5);
@@ -2180,23 +2210,44 @@ export default async function filme(ctx) {
     const it = t.p.item, g = t.p.gruppe;
     if (schonTitel.has(normTitel(it.titel))) continue;
     const wunsch = g === 'wunsch';
-    const billig = t.preis != null && t.preis <= m.angebotPreis;
+    const billig = t.preis != null && t.preis <= m.angebotPreis + 0.004;
+    if (!wunsch && !billig) continue; // 80er/Disney über 3,99 € oder ohne Preis: keine Meldung (Xander 16.11.2026: „ich will sparen“)
     const p = preisAngaben({ preis: t.preis });
     eintraege.push(eintrag({
       id: `film-raum-${schluessel(t.f.umc, String(t.preis))}`, kategorie: 'filme',
       titel: `${it.titel}${it.jahr ? ` (${it.jahr})` : ''}${t.preis != null ? ` für ${euro(t.preis)}` : ' im Angebot'}`,
       link: t.f.link, quelle: 'Apple TV', datum: jetzt, jetzt, art: 'deal', preise: p,
       zeile: [`im Apple-TV-Raum „${t.raum}“`, wunsch ? 'auf deiner Wunschliste' : g === 'disney' ? 'Disney' : '80er/Kult'].join(' · '),
-      soGehts: SO_FILM, wert: wunsch ? 92 : billig ? 80 : 65, sofort: wunsch || billig, grund: wunsch ? 'Wunschfilm im Apple-TV-Angebot' : 'Film von deiner Liste im Apple-TV-Angebot',
+      soGehts: SO_FILM, wert: wunsch ? 92 : 80, sofort: true, grund: wunsch ? 'Wunschfilm im Apple-TV-Angebot' : 'Film von deiner Liste im Apple-TV-Angebot',
       extra: { filmId: `appletv:${t.f.umc}`, typ: 'film', jahr: it.jahr ?? null, gruppe: 'angebot', liste: g, raum: t.raum, raumUrl: t.raumUrl, filmTitel: it.titel },
     }));
   }
+  const appleLink = u => /^https:\/\/(?:itunes|tv)\.apple\.com\//.test(String(u || ''));
+  const appleFuerTipp = it => {
+    if (zugeordnet.has(it.link)) return zugeordnet.get(it.link);
+    const id = mdApple.get(mdId(it)), a = id ? baue(id) : null;
+    if (a && !a._horror && !a._alt && a.typ === 'film' && a.preis != null && appleLink(a.link)) return a;
+    const preis = preisWert(it.preisText), titel = String(it.titel).replace(/^\s*\[[^\]]{1,30}\]\s*/, '');
+    if (preis == null) return null;
+    return gruppen.fuer399.find(t => t.quelle !== 'mydealz' && t.typ === 'film' && t.preis != null && t.preis <= preis + 0.011 && appleLink(t.link) && doppelTipp(titel, [t.titel])) || null;
+  };
   const wunschNamen = posten.filter(x => x.gruppe === 'wunsch').flatMap(p => namen(p.item).filter(x => x.faktor === 1).map(x => normTitel(x.n)));
   for (const it of deals) {
     const n = ` ${normTitel(`${it.titel} ${it.beschreibung || ''}`)} `;
     const wunsch = wunschNamen.some(w => n.includes(` ${w} `));
     const jeFilm = preisJeFilm(it.titel, preisWert(it.preisText));
     if (jeFilm != null && jeFilm > m.angebotPreis + 0.004 && !wunsch) continue; // nur bis 3,99 € je Film (Xander 16.11.2026)
+    // dem Tipp ist ein Apple-Film zugeordnet: die Meldung führt in die TV-App wie auf der Seite (Prüfer 16.11.: „Der Grinch ~ 3,99€“
+    // stand in aktuell.json noch als mydealz-Aktion mit mydealz-Link). Ebenso, wenn die Seite den Tipp nur ausblendet, weil der
+    // gleichnamige Apple-Film schon unter „Für 3,99 €“ steht (doppelTipp)
+    const a = appleFuerTipp(it);
+    if (a) {
+      if (mitPreis(a) && !gemeldet.has(a.id)) {
+        gemeldet.add(a.id);
+        neuerEintrag(a, { grund: wunsch ? 'Wunschfilm in einer Aktion' : 'Film für 3,99 € (Tipp von mydealz)', wert: wunsch ? 85 : 60, sofort: wunsch, gruppe: 'angebot', zusatz: ['Tipp von mydealz'] });
+      }
+      continue;
+    }
     const p = preisAngaben({ preis: preisWert(it.preisText) });
     eintraege.push(eintrag({
       kategorie: 'filme', titel: it.titel, link: it.link, quelle: 'mydealz', datum: it.datum, jetzt, bis: it.bis, ab: it.ab, art: 'deal',
