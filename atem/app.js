@@ -2,18 +2,29 @@
 import { TECHNIKEN, SITUATIONEN, PROGRAMME, TRAINING, SICHERHEIT, ZIELNAMEN, REIHENFOLGE } from './daten.js';
 import { sym, abzeichen } from './symbole.js';
 import { speicher } from './speicher.js';
-import { baue, baueProgramm, wortFuer } from './plan.js';
+import { baue, baueProgramm, wortFuer, grenzen } from './plan.js';
 import * as TRN from './training.js';
+import { ton } from './ton.js';   // statisch: der Ton entsteht im Tipp auf Start, vor jedem await (iOS)
 
-export const VERSION = '0.1.3';
+export const VERSION = '0.1.4';
 const TEST = /[?&]test=1/.test(location.search);
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const dauerText = (T) => T.dauer ? T.dauer.standard + ' min' : T.zyklen ? T.zyklen.standard + '×' : T.modus === 'tabelle' ? 'ca. 15 min' : T.modus === 'messen' ? '1–3 min' : T.ablauf ? T.ablauf.runden + ' Runden' : '';
+const dauerText = (T) => T.dauer ? T.dauer.standard + ' min' : T.zyklen ? T.zyklen.standard + '×' : T.modus === 'tabelle' ? 'ca. 15 min' : T.modus === 'messen' ? '1–3 min' : T.ablauf ? einheit(T.ablauf.runden, 'runden') : '';
 const RISIKO_HOCH = (T) => T.risiko === 'hoch' || T.risiko === 'mittel';
 const KEIN_ERSATZ = '<p class="fuss">Kein Ersatz für ärztlichen Rat.</p>';
-let SZ = null, WISSEN = null, letzteSitzung = null;
-const sitzungModul = () => SZ || (SZ = import('./sitzung.js').catch((e) => { SZ = null; throw e; }));   // Fehlschlag nicht merken (Funkloch)
+// 0.1.4: Herkunft je Übung/Karte (Buch nur als Thema, ohne Autorennamen)
+const HERK = { buch: 'Aus dem Buch „Atem“', buch_zusatz: 'Thema aus dem Buch „Atem“, Studien zusätzlich recherchiert', recherche: 'Zusätzlich recherchiert (nicht aus dem Buch)' };
+const HERK_K = { buch: 'aus dem Buch', buch_zusatz: 'Buch-Thema + Studien', recherche: 'zusätzlich recherchiert' };
+const herk = (h, kap) => h ? `<p class="herk">${HERK[h]}${kap ? ' · ' + esc(kap) : ''}</p>` : '';
+const einheit = (w, e) => e === 'min' ? w + ' min' : w + ' ' + (e === 'runden' ? (w === 1 ? 'Runde' : 'Runden') : w === 1 ? 'Zyklus' : 'Zyklen');
+let SZ = null, SZda = false, WISSEN = null, letzteSitzung = null, startet = false, neuLaden = false;
+// 0.1.4 Doppeltipp-Schutz: Öffnet oder schließt ein Tipp ein Blatt, die Übung oder eine Seite, wird ein zweiter Tipp an derselben Stelle
+// (≤ 40 px, ≤ 400 ms) verworfen – sonst träfe er den Knopf, der jetzt darunter liegt (Pause → Beenden, Weiter → Ansicht, Fertig → Leiste).
+const SPERR_MS = 400, SPERR_PX = 40;
+let tipp = { t: -1e9, x: 0, y: 0 }, sperre = null;
+const tippSperre = () => { if (performance.now() - tipp.t < SPERR_MS) sperre = { ...tipp }; };
+const sitzungModul = () => SZ || (SZ = import('./sitzung.js').then((m) => { SZda = true; return m; }, (e) => { SZ = null; throw e; }));   // Fehlschlag nicht merken (Funkloch)
 const wissenModul = () => WISSEN || (WISSEN = import('./wissen.js').catch((e) => { WISSEN = null; throw e; }));
 function keinNetz() { const i = $('#inhalt'); i.querySelectorAll('p.leise').forEach((p) => { if (p.textContent === 'Lädt …') p.remove(); }); i.insertAdjacentHTML('afterbegin', '<div class="karte hinweis">Keine Verbindung. <button class="knopf klein zweit" id="nochmal">Nochmal versuchen</button></div>'); $('#nochmal').onclick = () => location.reload(); scrollTo(0, 0); }   // Neu laden: Browser merken sich fehlgeschlagene Module
 const hauptBeleg = (T) => { const e = Object.entries(T.beleg || {}); return e.length ? e[0] : null; };
@@ -34,8 +45,8 @@ function seite(titel, html, reiter, tiefe = 1) {
 
 // ---------- Blätter ----------
 function blatt(html, binde) {
-  const b = $('#blatt'); b.innerHTML = `<div class="dunkel"></div><div class="blatt-innen" role="dialog" aria-modal="true">${html}</div>`; b.hidden = false;
-  return new Promise((ok) => { b.onclick = (e) => { const k = e.target.closest('[data-w]'); if (!k) { if (binde) binde(e); return; } b.hidden = true; b.innerHTML = ''; ok(k.dataset.w); }; });
+  const b = $('#blatt'); b.innerHTML = `<div class="dunkel"></div><div class="blatt-innen" role="dialog" aria-modal="true">${html}</div>`; b.hidden = false; tippSperre();
+  return new Promise((ok) => { b.onclick = (e) => { const k = e.target.closest('[data-w]'); if (!k) { if (binde) binde(e); return; } b.hidden = true; b.innerHTML = ''; tippSperre(); ok(k.dataset.w); }; });
 }
 const BILDER = [['wasserAus', 'Nie im oder am Wasser, nicht in der Wanne'], ['lenkradAus', 'Nie beim Fahren'], ['sitzen', 'Nur sitzend oder liegend'], ['spirale', 'Schwindel oder Kribbeln: sofort normal atmen']];
 function erststart() {
@@ -82,14 +93,14 @@ function zeigeLage(id) {
   const warn = L.warnzeichen ? `<div class="karte notfall warnkarte"><b>${sym('warnung', 'warn')} Erst prüfen: Warnzeichen</b><ul>${L.warnzeichen.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
     <a class="knopf gefahr voll" href="tel:112">${sym('telefon')} 112 anrufen</a>${id === 'spannungskopfschmerz' ? '<p>Gegen akute Kopfschmerzen ist Atmen nicht als wirksam belegt. Es kann beim Entspannen helfen.</p>' : ''}</div>` : '';
   const emp = L.empfehlung.slice().sort((a, b) => (RISIKO_HOCH(TECHNIKEN[a.technik]) ? 1 : 0) - (RISIKO_HOCH(TECHNIKEN[b.technik]) ? 1 : 0));
-  const zeile = (e, i) => { const T = TECHNIKEN[e.technik], hb = hauptBeleg(T), d = e.dauer_min ? e.dauer_min + ' min' : e.zyklen ? e.zyklen + ' Zyklen' : e.runden ? e.runden + ' Runden' : dauerText(T);
+  const zeile = (e, i) => { const T = TECHNIKEN[e.technik], hb = hauptBeleg(T), d = e.dauer_min ? e.dauer_min + ' min' : e.zyklen ? e.zyklen + ' Zyklen' : e.runden ? einheit(e.runden, 'runden') : dauerText(T);
     const href = `#uebung/${T.id}?l=${id}${e.dauer_min ? '&d=' + e.dauer_min : ''}${e.zyklen ? '&z=' + e.zyklen : ''}${e.variante ? '&v=' + e.variante : ''}${e.runden ? '&r=' + e.runden : ''}`;
-    return i === 0 ? `<div class="karte empf1"><b>${esc(T.name)}</b><p>${esc(e.warum || e.hinweis || e.dazu || T.kurz)}</p>${hb ? abzeichen(hb[1], ZIELNAMEN[hb[0]] || hb[0]) : ''}<a class="knopf haupt voll" href="${href}&s=1">Start · ${d}</a></div>`
-      : `<a class="zeile" href="${href}"><span><b>${esc(T.name)}</b> ${RISIKO_HOCH(T) ? sym('warnung', 'warn') : ''}<small>${esc(e.warum || e.hinweis || e.dazu || T.kurz)}</small></span><span class="rechts">${d}${hb ? abzeichen(hb[1]) : ''}</span></a>`; };
+    return i === 0 ? `<div class="karte empf1"><b>${esc(T.name)}</b><p>${esc(e.warum || e.hinweis || e.dazu || T.kurz)}</p>${hb ? abzeichen(hb[1], ZIELNAMEN[hb[0]] || hb[0]) : ''}${herk(T.herkunft)}<a class="knopf haupt voll" href="${href}&s=1">Start · ${d}</a></div>`
+      : `<a class="zeile" href="${href}"><span><b>${esc(T.name)}</b> ${RISIKO_HOCH(T) ? sym('warnung', 'warn') : ''}<small>${esc(e.warum || e.hinweis || e.dazu || T.kurz)} · <i>${HERK_K[T.herkunft] || ''}</i></small></span><span class="rechts">${d}${hb ? abzeichen(hb[1]) : ''}</span></a>`; };
   seite(L.name, `<div class="zweispaltig"><div><p class="ziel">${esc(L.ziel_ui)}</p><div class="belege">${belegReihe(L.beleg)}</div><p class="leise">${esc(L.beleg_ui)}</p>${warn}</div>
     <div>${L.nicht_empfohlen_wenn ? `<p class="hinweis">${sym('warnung', 'warn')} Nicht bei: ${esc(L.nicht_empfohlen_wenn.join(', '))}</p>` : ''}<h3>Empfohlen</h3>${emp.map(zeile).join('')}${L.hinweis_ui ? `<p class="hinweis">${esc(L.hinweis_ui)}</p>` : ''}${L.regelmaessig ? `<p class="hinweis">${esc(L.regelmaessig)}</p>` : ''}
     ${L.nicht_empfohlen.length ? `<p class="leise">Hier nicht empfohlen: ${L.nicht_empfohlen.map((t) => esc(TECHNIKEN[t] ? TECHNIKEN[t].name : t)).join(', ')}</p>` : ''}
-    <a class="link" href="#wissen/lage-${id}">Was sagt die Forschung?</a></div></div>${KEIN_ERSATZ}`, 'start', 2);
+    <a class="link" href="#wissen/lage-${id}">Was sagt die Forschung?</a>${L.wissen ? ` <a class="link" href="#wissen/${L.wissen}">Wie das wirkt – und was nicht</a>` : ''}</div></div>${KEIN_ERSATZ}`, 'start', 2);
   const s1 = $('.empf1 a'); if (s1) s1.onclick = (ev) => { ev.preventDefault(); history.pushState(null, '', s1.getAttribute('href')); route(); };   // starte() noch im Tipp
 }
 
@@ -111,14 +122,15 @@ function ablaufLeiste(plan) {
   const summe = z1.reduce((a, x) => a + (x.ms ?? 20000), 0) || 1; let x = 0;
   const bal = z1.map((st) => { const w = 100 * (st.ms ?? 20000) / summe, r = `<rect x="${x}%" y="0" width="${Math.max(0.5, w - 0.6)}%" height="28" rx="6" class="ph-${st.art}"/>`; x += w; return r; }).join('');
   const txt = z1.filter((st) => st.ms == null || st.ms >= 900).slice(0, 6).map((st) => (st.ms == null ? 'offen' : Math.round(st.ms / 100) / 10) + ' ' + ({ ein: 'ein', ein2: 'nach', halten_voll: 'halten', halten_leer: 'leer', aus: 'aus', stoss_aus: 'Stoß', ruhe: 'ruhig' }[st.art] || st.art)).join(' · ');
-  const extra = plan.runden ? ` · ${plan.zuege ? plan.zuege + ' Züge, ' : ''}${plan.runden} Runden` : plan.zuege ? ` · ${plan.zuege}×` : '';
+  const extra = plan.runden ? ` · ${plan.zuege ? plan.zuege + ' Züge, ' : ''}${einheit(plan.runden, 'runden')}` : plan.zuege ? ` · ${plan.zuege}×` : '';
   return `<svg class="ablauf" width="100%" height="28" aria-hidden="true">${bal}</svg><p class="leise">${txt}${extra} · ${Math.round(plan.gesamt_ms / 6000) / 10} min</p>`;
 }
 function optAusHash(q) { const o = {}; for (const [k, v] of new URLSearchParams(q)) o[k] = v; return o; }
 function zeigeUebung(id, q) {
   const T = TECHNIKEN[id]; if (!T) return zeigeUebungen();
   const o = optAusHash(q), e = speicher.einst(), tr = speicher.training(), si = speicher.sicherheit();
-  const st = { variante: o.v || null, dauer_min: o.d ? +o.d : T.dauer ? T.dauer.standard : null, zyklen: o.z ? +o.z : null, runden: o.r ? +o.r : null, laengen: e.laengen || {} };
+  const gz = grenzen(T, o);   // 0.1.4: d/z/r aus dem Link nur innerhalb der Grenzen („Nicht verlängerbar“ gilt auch für #uebung/kraft?r=6)
+  const st = { variante: o.v || null, dauer_min: gz.dauer_min ?? (T.dauer ? T.dauer.standard : null), zyklen: gz.zyklen, runden: gz.runden, laengen: e.laengen || {} };
   if (T.modus === 'tabelle') { const pb = letzterBestwert(); st.bestwert_s = pb ? pb.s : null; st.stufe = (tr && tr.stufen && tr.stufen[T.id === 'co2_tabelle' ? 'B-CO2' : 'B-O2']) || 1; }
   const g = TRN.gesperrt(T, { training: tr, sicherheit: si });
   const offenLaenge = T.phasen.find((p) => p.s && typeof p.s === 'object');
@@ -126,10 +138,14 @@ function zeigeUebung(id, q) {
     const plan = T.modus === 'tabelle' && !st.bestwert_s ? null : baue(T, st);
     $('#abl').innerHTML = plan ? ablaufLeiste(plan) : '<p class="hinweis">Erst den Anhalte-Bestwert messen – die Zeiten werden daraus berechnet.</p>';
     if ($('#dauerw')) $('#dauerw').textContent = st.zyklen ? st.zyklen + ' Zyklen' : st.dauer_min + ' min';
+    document.querySelectorAll('#stufen .chip').forEach((c) => c.classList.toggle('an', SF[c.dataset.st] === stW()));
     return plan;
   };
   const verlauf = T.messwert ? verlaufSvg(speicher.messwerte()[T.messwert] || [], T.messwert === 'M-AF' ? 'n' : 's') : '';
-  seite(T.name, `<div class="zweispaltig"><div><p>${esc(T.kurz)}</p><p class="leise">${esc(T.wirkung_ui)}</p><div id="abl"></div>
+  const SF = T.stufen, stW = () => !SF ? null : SF.einheit === 'runden' ? st.runden || T.ablauf.runden : SF.einheit === 'zyklen' ? st.zyklen || T.zyklen.standard : st.dauer_min;
+  seite(T.name, `<div class="zweispaltig"><div><p>${esc(T.kurz)}</p><p class="leise">${esc(T.wirkung_ui)}</p>${herk(T.herkunft)}<div id="abl"></div>
+    ${SF ? `<div class="chips stufen" id="stufen">${[['kurz', 'Kurz'], ['normal', 'Normal'], ['lang', 'Lang']].map(([k, n]) => `<button class="chip" data-st="${k}" ${SF[k] == null ? 'disabled' : ''}>${n}${SF[k] != null ? ' ' + einheit(SF[k], SF.einheit) : ''}</button>`).join('')}</div>
+    <p class="leise">${esc(SF.grund || 'Lieber jeden Tag kurz als selten lang.')} <a class="link" href="#wissen/T-DAUER">Muss ich lange üben?</a></p>` : ''}
     ${T.dauer || T.zyklen ? `<div class="stepper"><button class="knopf-ico" data-s="-">${sym('minus')}</button><b id="dauerw"></b><button class="knopf-ico" data-s="+">${sym('plus')}</button></div>` : ''}
     ${T.varianten.filter((v) => v.phasen || v.dauer).length ? `<div class="chips">${[{ id: '', name: 'Standard' }, ...T.varianten.filter((v) => v.phasen || v.dauer)].map((v) => `<button class="chip ${(st.variante || '') === v.id ? 'an' : ''}" data-v="${v.id}">${esc(v.name)}</button>`).join('')}</div>` : ''}
     ${offenLaenge ? `<label class="schieber">Ausatmen ${offenLaenge.s.min}–${offenLaenge.s.max} s <input type="range" min="${offenLaenge.s.min}" max="${offenLaenge.s.max}" step="1" value="${(e.laengen || {})[T.id] || offenLaenge.s.min}" id="laenge"></label>` : ''}
@@ -142,10 +158,16 @@ function zeigeUebung(id, q) {
     <button class="link" id="quellen">Quellen (${T.quellen.length})</button><div id="qliste"></div>
     ${g ? `<p class="hinweis gesperrt">${esc(g)}</p>` : ''}<button class="knopf haupt voll startknopf" id="los" ${g ? 'disabled' : ''}>Start</button></div></div>${KEIN_ERSATZ}`, 'uebungen', 2);
   let plan = male();
+  const merkeWahl = () => {   // Wahl im Link merken: übersteht das Aktualisieren (ohne neuen Verlaufseintrag)
+    const p = new URLSearchParams(q || ''); p.delete('s');
+    for (const [k, w] of [['d', T.dauer && !st.zyklen ? st.dauer_min : null], ['z', st.zyklen], ['r', st.runden], ['v', st.variante]]) if (w) p.set(k, w); else p.delete(k);
+    const s = p.toString(); history.replaceState(null, '', location.hash.split('?')[0] + (s ? '?' + s : ''));
+  };
   $('#inhalt').onclick = (ev) => {
     const b = ev.target.closest('button'); if (!b) return;
-    if (b.dataset.s) { if (st.zyklen || (!T.dauer && T.zyklen)) { const z = T.zyklen || { min: 1, max: 8, standard: 4 }; st.zyklen = Math.min(z.max, Math.max(z.min, (st.zyklen || z.standard) + (b.dataset.s === '+' ? 1 : -1))); } else { st.dauer_min = Math.min(T.dauer.max, Math.max(T.dauer.min, Math.round(st.dauer_min) + (b.dataset.s === '+' ? 1 : -1))); } plan = male(); }
-    else if (b.dataset.v != null) { st.variante = b.dataset.v || null; b.parentNode.querySelectorAll('.chip').forEach((c) => c.classList.toggle('an', c === b)); plan = male(); }
+    if (b.dataset.st) { const w = SF[b.dataset.st]; if (w == null) return; st[SF.einheit === 'min' ? 'dauer_min' : SF.einheit] = w; plan = male(); merkeWahl(); }
+    else if (b.dataset.s) { if (st.zyklen || (!T.dauer && T.zyklen)) { const z = T.zyklen || { min: 1, max: 8, standard: 4 }; st.zyklen = Math.min(z.max, Math.max(z.min, (st.zyklen || z.standard) + (b.dataset.s === '+' ? 1 : -1))); } else { st.dauer_min = Math.min(T.dauer.max, Math.max(T.dauer.min, Math.round(st.dauer_min) + (b.dataset.s === '+' ? 1 : -1))); } plan = male(); merkeWahl(); }
+    else if (b.dataset.v != null) { st.variante = b.dataset.v || null; b.parentNode.querySelectorAll('.chip').forEach((c) => c.classList.toggle('an', c === b)); plan = male(); merkeWahl(); }
     else if (b.id === 'quellen') wissenModul().then((W) => { $('#qliste').innerHTML = quellenListe(T.quellen, W.QUELLEN); }, keinNetz);
     else if (b.id === 'los' && plan) starte(T, st, o.l ? 'lage:' + o.l : o.q || 'frei', plan);
   };
@@ -175,16 +197,22 @@ function vorschau(quelle, opt) {   // lädt vorschau.js + anatomie.js erst hier 
   import('./vorschau.js').then((m) => m.vorschau(karte, quelle, opt)).then((stop) => { if (!stop) return; if (vorschauStop) vorschauStop(); vorschauStop = stop; }).catch(() => {});
 }
 // Wissen-Themen mit passender Übung für die Vorschau (riskante Techniken und Skoliose bewusst ohne Figur)
-const WISSEN_FIGUR = { 'T-NASE': 'bauch', 'T-LANGSAM': 'resonanz', 'T-AUSATMEN': 'lang_aus', 'T-WENIGER': 'weniger', 'T-HALTUNG': 'bauch', 'T-SINGEN': 'g_sss', 'T-WECHSEL': 'wechsel', 'T-KOPFSCHMERZ': 'lang_aus' };
+const WISSEN_FIGUR = { 'T-VAGUS': 'lang_aus', 'T-NASE': 'bauch', 'T-LANGSAM': 'resonanz', 'T-AUSATMEN': 'lang_aus', 'T-WENIGER': 'weniger', 'T-HALTUNG': 'bauch', 'T-SINGEN': 'g_sss', 'T-WECHSEL': 'wechsel', 'T-KOPFSCHMERZ': 'lang_aus' };
 
 // ---------- Sitzung starten und beenden ----------
+// 0.1.4: Ton im Tipp anlegen (vor jedem await), Doppeltipp sperren, Knopf sofort quittieren
 async function starte(T, st, quelle, plan, extra = {}) {
-  if (T.warnung === 'voll' || T.warnung === 'kurz') { if (!(await sicherheitsBlatt(T))) return; }
-  if (!plan) plan = T.id === 'programm' ? st.plan : baue(T, st);
-  const e = speicher.einst();
-  const SZm = await sitzungModul().catch(keinNetz); if (!SZm) return;
-  letzteSitzung = SZm.oeffne(plan, { T, einst: { ...e }, quelle, riskant: RISIKO_HOCH(T), merke: (x) => speicher.setzeEinst(x), beiEnde: (erg, ui) => endeSitzung(erg, ui, st, extra) });
-  if (T.id !== 'programm') speicher.setzeEinst({ letzte: T.id });
+  if (startet) return; startet = true;
+  const e = speicher.einst(), k = $('#los'), kt = k && k.textContent;
+  ton.entsperren(e.musik);
+  try {
+    if (T.warnung === 'voll' || T.warnung === 'kurz') { if (!(await sicherheitsBlatt(T))) { ton.schliessen(); return; } ton.entsperren(e.musik); }
+    if (!plan) plan = T.id === 'programm' ? st.plan : baue(T, st);
+    if (k && !SZda) { k.disabled = true; k.textContent = 'Lädt …'; }
+    const SZm = await sitzungModul().catch(keinNetz); if (!SZm) return;
+    letzteSitzung = SZm.oeffne(plan, { T, einst: { ...e }, quelle, riskant: RISIKO_HOCH(T), merke: (x) => speicher.setzeEinst(x), sperre: tippSperre, beiEnde: (erg, ui) => endeSitzung(erg, ui, st, extra) });
+    if (T.id !== 'programm') speicher.setzeEinst({ letzte: T.id });
+  } finally { startet = false; if (k && k.textContent === 'Lädt …') { k.textContent = kt; k.disabled = false; } }
 }
 async function endeSitzung(erg, ui, st, extra) {
   const { T, plan, ende } = erg;
@@ -317,14 +345,15 @@ async function zeigeWissen(id) {
   const W = await wissenModul().catch(keinNetz); if (!W) return;
   if (id === 'quellen') return seite('Quellen', `<p class="leise">Das Buch „${esc(W.BUCH.titel)}“ ist nur Anregung (${W.BUCH.quelle}). Keine Texte übernommen.</p>${quellenListe(Object.keys(W.QUELLEN).filter((k) => !W.QUELLEN[k].alias).sort(), W.QUELLEN)}`, 'wissen', 2);
   if (id && id.startsWith('lage-')) { const L = SITUATIONEN[id.slice(5)]; if (L) return seite(L.name, `<div class="belege">${belegReihe(L.beleg)}</div><p>${esc(L.beleg_ui)}</p>${L.warnzeichen ? `<div class="karte notfall"><b>Warnzeichen</b><ul>${L.warnzeichen.map((t) => `<li>${esc(t)}</li>`).join('')}</ul><a class="knopf gefahr voll" href="tel:112">${sym('telefon')} 112 anrufen</a></div>` : ''}${quellenListe(L.quellen, W.QUELLEN)}${KEIN_ERSATZ}`, 'wissen', 2); }
-  if (id === 'lunge') { const lv = W.LUNGE.volumen; seite('Lunge – was wächst wirklich?', `<p>${esc(W.LUNGE.realistisch.ui_text)}</p><p class="leise">${esc(W.LUNGE.realistisch.kurz)}</p><svg class="lunge-balken" viewBox="0 0 100 16"><rect x="0" y="4" width="100" height="8" rx="4" class="leer"/><rect x="${(1.2 / 6) * 100}" y="4" width="${(4.8 / 6) * 100}" height="8" rx="4" class="voll"/></svg><p class="leise">1,2 L Restluft bis etwa 6 L Gesamt – ${esc(lv.hinweis)}</p>${vorschauHtml('Ruhig, dann tief in den Bauch', true)}${KEIN_ERSATZ}`, 'wissen', 2); return vorschau(baue(TECHNIKEN.bauch, { dauer_min: 1 }), { modus: 'gross' }); }
+  if (id === 'lunge') { const lv = W.LUNGE.volumen; seite('Lunge – was wächst wirklich?', `${herk(W.LUNGE.herkunft, W.LUNGE.kapitel)}<p>${esc(W.LUNGE.realistisch.ui_text)}</p><p class="leise">${esc(W.LUNGE.realistisch.kurz)}</p><svg class="lunge-balken" viewBox="0 0 100 16"><rect x="0" y="4" width="100" height="8" rx="4" class="leer"/><rect x="${(1.2 / 6) * 100}" y="4" width="${(4.8 / 6) * 100}" height="8" rx="4" class="voll"/></svg><p class="leise">1,2 L Restluft bis etwa 6 L Gesamt – ${esc(lv.hinweis)}</p>${vorschauHtml('Ruhig, dann tief in den Bauch', true)}${KEIN_ERSATZ}`, 'wissen', 2); return vorschau(baue(TECHNIKEN.bauch, { dauer_min: 1 }), { modus: 'gross' }); }
   const T = id && W.THEMEN.find((t) => t.id === id);
-  if (T) seite(T.titel_ui, `<div class="lesen"><h3>Die Idee (sinngemäß)</h3><p>${esc(T.kernaussage_buch)}</p><h3>Was Studien zeigen</h3><div class="belege">${belegReihe(T.beleg)}</div><ul>${T.was_studien_zeigen.map((t) => `<li>${esc(t)}</li>`).join('')}</ul><h3>Was die App daraus macht</h3><p>${esc(T.app_folgerung)}</p>${T.id === 'T-SKOLIOSE' ? '<p class="hinweis">Nur mit Fachleuten.</p>' : ''}${WISSEN_FIGUR[T.id] && TECHNIKEN[WISSEN_FIGUR[T.id]] ? vorschauHtml(TECHNIKEN[WISSEN_FIGUR[T.id]].name) : ''}<h3>Quellen</h3>${quellenListe(T.quellen, W.QUELLEN)}</div>${KEIN_ERSATZ}`, 'wissen', 2);
+  if (T) seite(T.titel_ui, `<div class="lesen">${herk(T.herkunft, T.kapitel)}<h3>${T.herkunft === 'recherche' ? 'Worum es geht' : 'Die Idee (sinngemäß)'}</h3><p>${esc(T.kernaussage_buch)}</p><h3>Was Studien zeigen</h3><div class="belege">${belegReihe(T.beleg)}</div><ul>${T.was_studien_zeigen.map((t) => `<li>${esc(t)}</li>`).join('')}</ul><h3>Was die App daraus macht</h3><p>${esc(T.app_folgerung)}</p>${T.id === 'T-SKOLIOSE' ? '<p class="hinweis">Nur mit Fachleuten.</p>' : ''}${WISSEN_FIGUR[T.id] && TECHNIKEN[WISSEN_FIGUR[T.id]] ? vorschauHtml(TECHNIKEN[WISSEN_FIGUR[T.id]].name) : ''}<h3>Quellen</h3>${quellenListe(T.quellen, W.QUELLEN)}</div>${KEIN_ERSATZ}`, 'wissen', 2);
   if (T && WISSEN_FIGUR[T.id] && TECHNIKEN[WISSEN_FIGUR[T.id]]) { const TT = TECHNIKEN[WISSEN_FIGUR[T.id]]; vorschau(baue(TT, TT.dauer ? { dauer_min: TT.dauer.min } : {}), { ansicht: TT.id === 'wechsel' ? 'vorn' : undefined }); }
   if (T) return;
   seite('Was sagt die Forschung?', `<div class="karte"><b>So bewerten wir</b><ul class="skala">${Object.entries(W.SKALA).map(([s, t]) => `<li>${abzeichen(s)} ${esc(t)}</li>`).join('')}</ul><p>Regelmäßig ruhig atmen zählt offenbar mehr als die genaue Technik.</p></div>
-    <div class="liste2">${W.THEMEN.map((t) => `<a class="karte thema" href="#wissen/${t.id}"><b>${esc(t.titel_ui)}</b><div class="belege">${Object.values(t.beleg).map((s) => abzeichen(s)).join('')}</div><span>${esc(t.ui_kurztext)}</span></a>`).join('')}
+    <div class="liste2">${W.THEMEN.map((t) => `<a class="karte thema" href="#wissen/${t.id}"><b>${esc(t.titel_ui)}</b><div class="belege">${Object.values(t.beleg).map((s) => abzeichen(s)).join('')}</div><span>${esc(t.ui_kurztext)}</span><i class="herk">${HERK_K[t.herkunft]}</i></a>`).join('')}
     <a class="karte" href="#wissen/lunge"><b>Lunge – was wächst wirklich?</b><span>${esc(TRAINING.lunge_ui)}</span></a></div>
+    <details class="karte"><summary>Buch-Kapitel – wo sie in der App stehen</summary><ul class="kapitel">${W.BUCH.kapitel.map((k) => `<li><b>${esc(k.k)}:</b> ${esc(k.thema)} → ${esc(k.app)}</li>`).join('')}</ul><p class="leise">Nur Themen in eigenen Worten, keine Buchtexte.</p></details>
     <h3>Situationen</h3>${REIHENFOLGE.map((s) => `<a class="zeile" href="#wissen/lage-${s}"><span><b>${esc(SITUATIONEN[s].name)}</b></span><span class="rechts">${Object.values(SITUATIONEN[s].beleg).map((x) => abzeichen(x)).join('')}</span></a>`).join('')}
     <a class="knopf zweit voll" href="#wissen/quellen">Alle Quellen</a>${KEIN_ERSATZ}`, 'wissen', 1);
 }
@@ -374,6 +403,8 @@ async function allesLoeschen() {
 
 // ---------- Router ----------
 function route() {
+  if (neuLaden && $('#sitzung').hidden) return location.reload();
+  tippSperre();   // neue Seite: ein zweiter Tipp an derselben Stelle trifft nicht gleich den Knopf darunter   // neue Fassung aktiv: sauber neu laden, nie alt+neu mischen
   if (vergleichStop) { vergleichStop(); vergleichStop = null; }
   if (vorschauStop) { vorschauStop(); vorschauStop = null; }
   const h = location.hash.slice(1) || 'start';
@@ -395,8 +426,19 @@ function route() {
 rahmen(); addEventListener('hashchange', route); route();
 if (!speicher.sicherheit().erst) erststart();
 if (!TEST || /[?&]sw=1/.test(location.search)) {
-  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(() => {});
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+    navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(() => {});
+    // Versions-Prüfung: meldet der Service Worker eine andere Fassung, laden wir neu – sofort, oder nach der laufenden Übung (route)
+    navigator.serviceWorker.addEventListener('message', (m) => { if (m.data && m.data.atem && m.data.atem !== VERSION) { neuLaden = true; if ($('#sitzung').hidden) location.reload(); } });
+  }
 }
+document.addEventListener('click', (e) => {
+  const echt = e.isTrusted && e.detail > 0, t = performance.now();   // nur echte Tipps (kein el.click(), keine Tastatur)
+  if (echt && sperre && t - sperre.t < SPERR_MS && Math.hypot(e.clientX - sperre.x, e.clientY - sperre.y) < SPERR_PX) { e.preventDefault(); e.stopImmediatePropagation(); return; }
+  if (echt) tipp = { t, x: e.clientX, y: e.clientY };
+  ton.wecken();   // jeder Tipp holt gestörten Ton zurück (iOS)
+}, true);
+addEventListener('pageshow', (e) => { if (e.persisted && neuLaden && $('#sitzung').hidden) location.reload(); });
 // Module für die Übung nach dem ersten Bild vorab holen (nicht auf ruhenden Seiten animieren)
 (window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => { if (!TEST) sitzungModul(); });
 window.atem = { VERSION, test: TEST ? {

@@ -33,6 +33,7 @@ export const SYM = {
   schmerz: P('M12 21s-7-5-7-11a4 4 0 017-2.6A4 4 0 0119 10c0 6-7 11-7 11z'),
   uebelkeit: P('M4 12c2-3 4-3 6 0s4 3 6 0 4-3 4-3') + P('M4 17c2-3 4-3 6 0s4 3 6 0 4-3 4-3'),
   blutdruck_hrv: P('M3 13h4l2-4 3 8 2-6 2 2h5') + P('M12 21s-8-5-8-11'),
+  nervensystem: '<circle cx="12" cy="5" r="2.5"/>' + P('M12 8v2c-2 1-2 3 0 4s2 3 0 4v2') + P('M12 12l-4 2M12 16l4 2'),
   nicht_gut: '<circle cx="12" cy="12" r="9"/>' + P('M8 16c2-2 6-2 8 0M9 9.5v.01M15 9.5v.01'),
   // Wege
   nase: P('M12 4v9l-3 4h6') + P('M9 17c-1 1-3 1-3 0M15 17c1 1 3 1 3 0'),

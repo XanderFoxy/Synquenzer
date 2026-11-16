@@ -62,6 +62,11 @@ const zyklusMs = (phasen, T, laengen) => zyklusSchritte(phasen, T, laengen).redu
 const ruhe = (ms, T, extra) => schritt({ art: 'ruhe', weg: 'nase' }, ms, T, { abschnitt: 'ruhe', wort: 'Normal atmen', ...extra });
 
 // ---- Plan bauen ----
+// 0.1.4: Werte aus dem Link (#uebung/x?d=&z=&r=) nur innerhalb der Grenzen der Übung – wie −/+ und die Stufen-Knöpfe
+export function grenzen(T, o = {}) {
+  const zahl = (v) => { const n = Math.round(+v); return Number.isFinite(n) && n > 0 ? n : null; }, klemme = (n, g) => n == null ? null : Math.min(g.max, Math.max(g.min, n));
+  return { dauer_min: klemme(zahl(o.d), T.dauer || { min: 1, max: 20 }), zyklen: klemme(zahl(o.z), T.zyklen || { min: 1, max: 8 }), runden: T.ablauf && T.ablauf.runden ? klemme(zahl(o.r), { min: 1, max: T.ablauf.runden }) : null };
+}
 export function baue(T, opt = {}) {
   if (!T) throw new Error('Technik fehlt');
   const v = opt.variante && T.varianten ? T.varianten.find((x) => x.id === opt.variante) : null;
@@ -84,7 +89,7 @@ export function baue(T, opt = {}) {
     var tab_ = tab;
   } else if (T.modus === 'runden') {
     const a = T.ablauf;
-    runden = opt.runden || a.runden;
+    runden = Math.min(a.runden, Math.max(1, Math.round(opt.runden) || a.runden));   // nie mehr Runden als vorgesehen (0.1.4)
     const nz = opt.variante === 'einstieg' && a.einstieg_zuege ? a.einstieg_zuege : a.zuege;
     zuege = nz;
     for (let r = 1; r <= runden; r++) {

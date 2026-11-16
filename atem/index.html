@@ -15,6 +15,7 @@
 <link rel="icon" href="./icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="./icon-180.png">
 <link rel="modulepreload" href="./daten.js">
+<link rel="modulepreload" href="./ton.js"><link rel="modulepreload" href="./sitzung.js"><link rel="modulepreload" href="./uhr.js"><link rel="modulepreload" href="./fuehrung.js">
 <style>
 :root{--hg:#0d1218;--fl:#151c25;--fl2:#1c2531;--rand:#2a3644;--text:#e6ecf2;--leise:#8a97a6;--akzent:#6cc4d9;--akzent2:#9a8fd6;--aus:#e0a87a;--warnung:#e3b76b;--gefahr:#e07a6e;
 --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);--sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px);color-scheme:dark}
@@ -54,6 +55,7 @@ details summary{min-height:44px;display:flex;align-items:center;cursor:pointer}d
 .belege{display:flex;flex-wrap:wrap;margin:6px 0}
 .hinweis{background:var(--fl2);border-left:3px solid var(--warnung);padding:8px 12px;border-radius:8px}.gesperrt{border-color:var(--gefahr)}
 .leise{color:var(--leise);font-size:14px}.mitte{text-align:center}.fuss{color:var(--leise);font-size:12px;margin-top:28px}.link{color:var(--akzent);background:none;border:0;font:inherit;min-height:44px;display:inline-flex;align-items:center;cursor:pointer;padding:0}
+.stufen .chip{flex:1;padding:0 6px}.chip:disabled{opacity:.4;cursor:default}.herk{font-size:12.5px;color:var(--leise);margin:4px 0;font-style:italic;display:block}ul.kapitel li{margin:6px 0;font-size:14px}
 .stepper{display:flex;align-items:center;gap:12px;margin:10px 0}.stepper b{min-width:90px;text-align:center;font-size:18px}.stepper .knopf-ico{border:1px solid var(--rand)}
 .schieber{display:flex;flex-direction:column;gap:6px;margin:10px 0;font-size:14px}.schieber input{width:100%;min-height:44px;accent-color:var(--akzent)}
 .schalter{display:flex;align-items:center;justify-content:space-between;min-height:48px;gap:10px}.schalter input{width:44px;height:44px;margin:0;accent-color:var(--akzent)}
@@ -71,7 +73,7 @@ details summary{min-height:44px;display:flex;align-items:center;cursor:pointer}d
 .lunge-balken{width:100%;height:20px}.lunge-balken .leer{fill:var(--rand)}.lunge-balken .voll{fill:var(--akzent)}
 .lesen{max-width:640px}
 /* Blätter */
-#blatt{position:fixed;inset:0;z-index:30;display:flex;align-items:flex-end;justify-content:center}#blatt[hidden]{display:none}
+#sitzung,#blatt,#leiste{touch-action:manipulation}#blatt{position:fixed;inset:0;z-index:30;display:flex;align-items:flex-end;justify-content:center}#blatt[hidden]{display:none}
 .dunkel{position:absolute;inset:0;background:rgba(5,8,12,.7)}
 .blatt-innen{position:relative;width:100%;max-height:92%;overflow-y:auto;background:var(--fl);border-radius:22px 22px 0 0;padding:20px calc(16px + var(--sr)) calc(20px + var(--sb)) calc(16px + var(--sl));overscroll-behavior:contain}
 /* Sitzung */

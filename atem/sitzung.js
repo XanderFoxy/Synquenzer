@@ -12,7 +12,7 @@ export const laeuft = () => aktiv;
 
 export function oeffne(plan, opt) {
   if (aktiv) aktiv.beenden('gestoppt', true);
-  const { T, einst = {}, quelle = 'frei', beiEnde, riskant = false, test = false } = opt;
+  const { T, einst = {}, quelle = 'frei', beiEnde, riskant = false, test = false } = opt, sperre = opt.sperre || (() => {});   // Doppeltipp-Schutz (app.js)
   const host = $('#sitzung'); host.classList.remove('figur-gross', 'eng'); host.classList.toggle('riskant', riskant);
   const kk = plan.runden > 0;
   host.classList.toggle('mit-kk', kk);
@@ -55,7 +55,7 @@ export function oeffne(plan, opt) {
   let gross = false;
   const f = erzeugeFuehrung(cv, { ruhig, blumen: einst.blumen !== false, px: kreisPx() });
   const uhr = erzeugeUhr();
-  let an = null, raf = 0, letzteSek = -1, letzterI = -1, zustand = 'zaehlen', zaehlStart = performance.now(), wake = null, offenWand = null, tippZahl = 0, gekuerzt = [];
+  let an = null, raf = 0, letzteSek = -1, letzteRs = -1, letzterI = -1, zustand = 'zaehlen', zaehlStart = performance.now(), wake = null, offenWand = null, tippZahl = 0, gekuerzt = [];
   const el = { wort: $('.sz-wort', host), zahl: $('.sz-zahl', host), hinweis: $('.sz-hinweis', host), weg: $('.sz-weg', host), zug: $('.sz-zug', host), rest: $('.sz-rest', host), atmen: $('.sz-atmen', host), stopp: $('.sz-stopp', host), blatt: $('.sz-blatt', host), anat: $('.sz-anat', host), kkRunde: $('.sz-kk-runde', host), kkPhase: $('.sz-kk-phase', host) };
   // Kopfkarte: Abschnitt; nach dem letzten Halten einer Tabelle „Erholung“
   let kkText = '';
@@ -106,8 +106,9 @@ export function oeffne(plan, opt) {
     const s = z.schritt;
     if (an) an.setze({ phase: s.art, anteil: z.p, v: z.v, vz: s.vz, art: s.art_anat, tiefe: s.tiefe, weg: s.weg, liegend: !!T.liegend, zeit: zeitFigur + uhr.zeit(), ruhig });
     if (z.i !== letzterI) neuerSchritt(z);
-    const sek = z.offen_ms != null ? Math.floor(z.offen_ms / 1000) : z.sekunde;
-    if (sek !== letzteSek) { letzteSek = sek; el.zahl.textContent = z.offen_ms != null ? String(sek) : String(Math.max(0, sek)); el.rest.textContent = z.gesamt_rest_ms != null ? 'noch ' + mmss(z.gesamt_rest_ms) : ''; }
+    // Zahl: Sekunden; bei Schritten ≤ 1 s (Schnellatmung) der Zug – sonst stünde „1“ bis 45 s still. „noch m:ss“ je Sekunde (0.1.4)
+    const sek = z.offen_ms != null ? Math.floor(z.offen_ms / 1000) : s.ms != null && s.ms <= 1000 && s.zug > 0 ? s.zug : Math.max(0, z.sekunde), rs = z.gesamt_rest_ms != null ? Math.ceil(z.gesamt_rest_ms / 1000) : -1;
+    if (sek !== letzteSek || rs !== letzteRs) { letzteSek = sek; letzteRs = rs; el.zahl.textContent = String(sek); el.rest.textContent = rs >= 0 ? 'noch ' + mmss(z.gesamt_rest_ms) : ''; }
     if (z.fertig) { beenden('fertig'); return; }
     lauf();
   }
@@ -134,10 +135,10 @@ export function oeffne(plan, opt) {
     zeigeBlatt(`<h2>Pausiert</h2><button class="knopf haupt" data-a="weiter">Weiter</button><button class="knopf" data-a="beenden2">Beenden</button>`);
   }
   function weiter() {
-    el.blatt.hidden = true; ton.entsperren(einst.musik); holeWake();
+    el.blatt.hidden = true; sperre(); ton.entsperren(einst.musik); holeWake();
     zaehleEin(uhr.plan ? () => { uhr.weiter(); zustand = 'laeuft'; letzterI = -1; letzteSek = -1; ton.starte(uhr, uhr.plan); } : los);
   }
-  function zeigeBlatt(html) { el.blatt.innerHTML = '<div class="blatt-innen">' + html + '</div>'; el.blatt.hidden = false; }
+  function zeigeBlatt(html) { el.blatt.innerHTML = '<div class="blatt-innen">' + html + '</div>'; el.blatt.hidden = false; sperre(); }
   function kuerze() {
     const z = uhr.zustand(); const s = z.schritt;
     const wandMs = offenWand != null ? Date.now() - offenWand : null;
@@ -158,6 +159,7 @@ export function oeffne(plan, opt) {
   }
   function schliessen() { host.hidden = true; host.innerHTML = ''; host.classList.remove('figur-gross', 'mit-kk', 'eng'); document.body.classList.remove('in-sitzung'); if (an && an.zerstoere) an.zerstoere(); }
   function klick(e) {
+    if (ton.wecken) ton.wecken();   // Ton nach iOS-Störung im Tipp zurückholen (0.1.4)
     if (!wake && zustand === 'laeuft') holeWake();
     const b = e.target.closest('[data-a]'); if (!b) { if (e.target.closest('.sz-anat') && an) { gross = !gross; host.classList.toggle('figur-gross', gross); f.groesse(kreisPx()); if (an.modus) an.modus(gross ? 'gross' : 'klein'); zeileNeu(); } return; }
     const a = b.dataset.a;
@@ -180,7 +182,7 @@ export function oeffne(plan, opt) {
   ton.beiStoerung = () => {};   // 0.1.2.1: Ton-Störung (iOS „interrupted“) hält die Übung nicht an
   aktiv = { uhr, plan, pause, weiter, kuerze, beenden, f, get zustand() { return zustand; }, get an() { return an; }, _nachZaehlen: null };
   function los() { uhr.starte(plan); zustand = 'laeuft'; ton.starte(uhr, uhr.plan); }
-  zaehleEin(los);
+  zaehleEin(los); sperre();
   return aktiv;
 }
 const WEG = { nase: 'Nase', mund: 'Mund', nase_oder_mund: 'Nase oder Mund', summen: 'Summen', links: 'Links', rechts: 'Rechts', sss: 'sss', fff: 'fff', brr: 'Lippen', strohhalm: 'Halm', vokal: 'Vokal', ha: 'Ha' };
