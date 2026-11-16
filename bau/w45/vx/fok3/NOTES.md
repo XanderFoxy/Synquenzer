@@ -144,6 +144,17 @@ Kennung „FOK3-P“; keine neuen Haken, vor/nach dem Block byte-gleich mit basi
 Hashes in allen Läufen gleich v6 (s20 bcbde967, m1 45d36813). „Genau fertig“ streut unter Last stark (neu Lauf 1 12,2 s, Lauf 2 7,9 s); kein
 systematischer Unterschied zwischen v4 und v6-FOK3-P.
 
+### Messung bei niedriger Last (fok3-zeit neu/basis, RUNS=3 abwechselnd, Last 3–6, nichts parallel; fok3-zeit-p2.log/.json; ms)
+| Fall | FOK3-P v6 (3 Läufe) | 4.76.0 = FOK2 v6 (3 Läufe) | Verhältnis (Median) |
+|---|---|---|---|
+| 20 s, erstes Bild | 273 / 288 / 293 | 618 / 615 / 599 | 0,47× (4.75 im Lauf davor 404 / 466, Bauer 261 → ≤ 1,1×, Ziel ≤ 1,3× erfüllt) |
+| 3 min mono, erstes Bild | 305 / 236 / 238 | 595 / 583 / 603 | 0,40× |
+| 20 s, genau fertig | 1014 / 855 / 829 | 751 / 799 / 684 | +106 ms |
+| 3 min mono, genau fertig | 6656 / 5855 / 6160 | 5602 / 5124 / 5446 | +0,7 s (+13 %) – Prüfer v4: +20 %, Bauer v4: +1–2 s |
+| Worker-Antwort P95 (3 min) | 155 / 135 / 149 | 146 / 151 / 153 | gleich |
+| Long Tasks > 50 ms (3 min) | 12 / 2 / 0 | 6 / 3 / 0 | – |
+Hashes alle gleich (s20 bcbde967, m1 45d36813).
+
 ### Prüfung (Tests als Kopien im Paketordner; Logs fok3-lauf6.log, fok3p-lauf1–3.log, fok3-zeit-p.log, reg5/*.log, smoke5.log)
 - fok3p-test.mjs (NEU, Befund 1 + eigener Befund): v6 Lauf 3 8 OK / 0 FEHLER (Lauf 2 unter Last 21: 7/1 – die damalige Prüfung „alle genau noch während
   des Rollens“ war lastabhängig, jetzt „mindestens ein Stück genau während des Rollens“; v4 hätte 0).
