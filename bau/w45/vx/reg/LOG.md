@@ -28,3 +28,5 @@
 - 09:02 selbsttest.mjs 17 OK / 0 FEHLER (alle vier Prüfer-Proben aus pruef/fake + spk10p „nur 1 von 11“ + .err + Fremdlast + Allein + Tabelle). pflicht.sh-Versionslogik mit 6 Kleindateien geprüft.
 - 09:03:24 Voller Lauf lauf-4761b gestartet (SOLL_VERSION=4.76.1, Last vor dem Start 2,2). Last stieg danach durch andere Agenten auf 16.
 - 09:26 Zwischenstand lauf-4761b: 21/55 fertig, 12 GRÜN, 0 Struktur-Fehler, alle Prüfungszahlen = soll; ROT/LAST/UNGÜLTIG nur Prüf-Zeilen bei Fremdlast 4,6–14 → Allein-Phase am Ende. Last 14–25 (andere Agenten). NOTES §7 Prüfung, §8 Lauf. Bericht.
+- 09:28 Pool fertig 1494 s (r4760 1813 s, Probelauf 2373 s) bei Last 9–21: 42 GRÜN, 2 BEKANNT, 1 INFO, 2 LAST, 3 UNGÜLTIG, 5 ROT (nur Prüf-/Zeit-Zeilen), Struktur 0; spk10p 11/11, pflicht inkl. „neuer“ grün. Allein-Phase für 10 Tests gestartet.
+- 09:30 _zeit_alle + `long[- ]tasks?` (spk12b/spk12c), selbsttest 18/18. Bericht; Allein-Phase läuft per nohup weiter → ERGEBNIS.md.

@@ -163,3 +163,17 @@ Offen (neu):
    Start warten, bis Last < CPU.
 3. Ergebnis von lauf-4761b (ERGEBNIS.md) nachlesen: welche der 8 Tests bleiben allein ROT? spk4 `a3-unison-pad-besser` ggf. wie `a3-nachbau-gleich` als
    Klang-Suche-Wackler einstufen (nur mit Beleg aus dem Allein-Lauf).
+
+### 8b. Pool fertig (09:28:18) – Stand bei Paket-Ende
+
+- **Pool-Zeit 1494 s** (r4760: 1813 s mit 4 festen Spuren; Probelauf lauf-4761: 2373 s) – bei **höherer** Last als r4760 (Mittel je Test 8,6–20,8, Fremdlast
+  4,6–16,8). Damit ist der Gewinn durch den Job-Pool gemessen (−18 % trotz Last), nicht nur gerechnet. Die Allein-Phase kommt hinzu (s. u.).
+- 55/55 Tests mit Ergebnis (erwartet 55): **GRÜN 42 · BEKANNT 2** (ki1, spk1) · INFO 1 (lt1) · LAST 2 (fok2, fokus1) · UNGÜLTIG (Last) 3 (beg1, mtx4, voxr1) ·
+  ROT 5 (spk4, teil1, mtx3b, spk12b, spk12c) – **Struktur-Fehler 0**, alle `.err` leer, alle Prüfungszahlen ≥ soll.json (spk12b 73/72).
+- Behobene Befunde im echten Lauf belegt: **spk10p 11 OK / 0 FEHLER** (eigener Job, vorher still nur 1), spk8f 13/13, pflicht `VERSION 4.76.1 (Soll 4.76.1 ·
+  vorher 4.75.0 · neuer 1) PFLICHT OK`, clip1 109/109 (Ausgabe in `o-clip1/`), spk4 pflicht gegen Soll grün.
+- Allein-Phase läuft (gestartet 09:28): beg1 fok2 fokus1 mtx3b mtx4 spk12b spk12c spk4 teil1 voxr1 (alle nur Prüf-/Zeit-Zeilen bei Fremdlast > 4).
+  Ergebnis → `lauf-4761b/ERGEBNIS.md` (je Test Pool- und Allein-Urteil), `zeit.txt` (Allein-Dauer, Gesamt).
+- Nachtrag Regel (09:30, während der Allein-Phase): spk12b/spk12c-ROT waren Long-Task-Prüfungen mit Bindestrich (`keine-long-task-50ms`,
+  `hauptfaden-ohne-long-task`), die `_zeit_alle` nicht traf → Muster `long[- ]tasks?` ergänzt (selbsttest 18/18). Die Allein-Läufe spk12b/spk12c nutzen
+  schon die neue Regel; der Pool-Eintrag bleibt mit der alten Wertung im `pool`-Feld.
