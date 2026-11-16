@@ -208,13 +208,18 @@
   },
   {
    "id": "t3",
-   "typ": "luecke",
-   "satz": "Kommentar: Der Autor fordert mehr politische ___ an den Schulen.",
-   "loesungen": [
-    "Bildung"
+   "typ": "auswahl",
+   "frage": "Kommentar: Der Autor fordert mehr politische ___ an den Schulen.",
+   "optionen": [
+    "Beteiligung",
+    "Neutralität",
+    "Bildung",
+    "Debatte"
    ],
+   "richtig": 2,
    "erklaerung": "„muss auch an den Schulen mehr politische Bildung ermöglichen“",
-   "nur_training": true
+   "nur_training": true,
+   "aus": "luecke"
   }
  ]
 }

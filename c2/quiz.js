@@ -56,8 +56,9 @@ function spiel(view, fragen) {
   function frage() {
     const f = fragen[i], { opts } = optionenVon(f.u); const text = f.u.frage || f.u.aussage || '';
     dauer = (text.length > 110 ? ZEIT_LANG_S : ZEIT_S) * 1000; beantwortet = false;
+    const fragHtml = esc(text).split(/_{3,}/).join('<span class="luecke-platz" aria-label="Lücke">&#8202;</span>');
     view.innerHTML = `<section class="quiz" data-bereich="quiz"><header class="s-kopf"><a class="rund" href="#/quiz" aria-label="Beenden">${SYM.kreuz}</a><div class="s-fort"><span class="s-zahl">Frage ${i + 1} von ${fragen.length}</span></div><span class="quiz-punkte" data-punkte>${punkte}</span></header>
-      <div class="karte quiz-frage" data-uid="${esc(f.uid)}"><span class="u-typ">${f.u.typ === 'auswahl' ? 'Welche Antwort stimmt?' : 'Stimmt das?'}</span><p class="frage">${esc(text)}</p><div class="zeitbalken"><i></i></div></div>
+      <div class="karte quiz-frage" data-uid="${esc(f.uid)}"><span class="u-typ">${f.u.typ === 'auswahl' ? (/_{3,}/.test(text) ? 'Was passt in die Lücke?' : 'Welche Antwort stimmt?') : 'Stimmt das?'}</span><p class="frage">${fragHtml}</p>${f.u.hinweis && /_{3,}/.test(text) ? `<p class="hinweis">${esc(f.u.hinweis)}</p>` : ''}<div class="zeitbalken"><i></i></div></div>
       <div class="quiz-kacheln n${opts.length}">${opts.map((o, k) => `<button class="qk q${k % 4}" data-k="${k}">${SYM['form' + (k % 4)]}<span>${esc(o)}</span></button>`).join('')}</div><div class="quiz-rueck"></div></section>`;
     view.querySelector('.quiz-kacheln').addEventListener('click', (e) => { const b = e.target.closest('[data-k]'); if (b) antwort(+b.dataset.k); });
     const balken = view.querySelector('.zeitbalken i'); start = performance.now();

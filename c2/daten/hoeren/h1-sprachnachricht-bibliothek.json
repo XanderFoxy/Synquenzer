@@ -213,13 +213,18 @@
   },
   {
    "id": "t3",
-   "typ": "luecke",
-   "satz": "Reparaturcafé: Eine ___ auf die Reparatur gibt es nicht.",
-   "loesungen": [
-    "Garantie"
+   "typ": "auswahl",
+   "frage": "Reparaturcafé: Eine ___ auf die Reparatur gibt es nicht.",
+   "optionen": [
+    "Wartezeit",
+    "Rechnung",
+    "Garantie",
+    "Gebühr"
    ],
+   "richtig": 2,
    "erklaerung": "„Eine Garantie auf die Reparatur gibt es dort freilich nicht.“",
-   "nur_training": true
+   "nur_training": true,
+   "aus": "luecke"
   }
  ]
 }

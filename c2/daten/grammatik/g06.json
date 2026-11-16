@@ -48,117 +48,165 @@
  "uebungen": [
   {
    "id": "u01",
-   "typ": "luecke",
-   "satz": "Angesichts ___ knappen Zeit verschiebt der Ausschuss die Abstimmung.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Angesichts ___ knappen Zeit verschiebt der Ausschuss die Abstimmung.",
+   "optionen": [
+    "die",
+    "das",
+    "den",
     "der"
    ],
-   "hinweis": "d-",
-   "erklaerung": "„angesichts“ verlangt den Genitiv: der knappen Zeit."
+   "richtig": 3,
+   "erklaerung": "„angesichts“ verlangt den Genitiv: der knappen Zeit.",
+   "aus": "luecke"
   },
   {
    "id": "u02",
-   "typ": "luecke",
-   "satz": "___ Beweisen musste der Angeklagte freigesprochen werden.",
-   "loesungen": [
-    "Mangels"
+   "typ": "auswahl",
+   "frage": "___ Beweisen musste der Angeklagte freigesprochen werden.",
+   "optionen": [
+    "Mangels",
+    "Mangel an",
+    "Mangelnd",
+    "Wegen"
    ],
-   "hinweis": "ein Wort: weil Beweise fehlten",
-   "erklaerung": "„mangels“ + Genitiv; im Plural ohne Artikel weicht man auf den Dativ aus: mangels Beweisen."
+   "richtig": 0,
+   "hinweis": "weil Beweise fehlten",
+   "erklaerung": "„mangels“ + Genitiv; im Plural ohne Artikel weicht man auf den Dativ aus: mangels Beweisen.",
+   "aus": "luecke"
   },
   {
    "id": "u03",
-   "typ": "luecke",
-   "satz": "Die Spenden wurden ___ der Opfer des Erdbebens verwendet.",
-   "loesungen": [
-    "zugunsten"
+   "typ": "auswahl",
+   "frage": "Die Spenden wurden ___ der Opfer des Erdbebens verwendet.",
+   "optionen": [
+    "zuliebe",
+    "zugunsten",
+    "zugute",
+    "für"
    ],
+   "richtig": 1,
    "hinweis": "zum Vorteil von",
-   "erklaerung": "„zugunsten“ + Genitiv."
+   "erklaerung": "„zugunsten“ + Genitiv.",
+   "aus": "luecke"
   },
   {
    "id": "u04",
-   "typ": "luecke",
-   "satz": "___ aller Bedenken hielt die Regierung an dem Vorhaben fest.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "___ aller Bedenken hielt die Regierung an dem Vorhaben fest.",
+   "optionen": [
     "Ungeachtet",
-    "Trotz"
+    "Aufgrund",
+    "Infolge",
+    "Wegen"
    ],
+   "richtig": 0,
    "hinweis": "ohne Rücksicht auf",
-   "erklaerung": "„ungeachtet“ (gehoben) und „trotz“ verlangen beide den Genitiv."
+   "erklaerung": "„ungeachtet“ (gehoben) und „trotz“ verlangen beide den Genitiv.",
+   "aus": "luecke"
   },
   {
    "id": "u05",
-   "typ": "luecke",
-   "satz": "Dem Bericht ___ ist die Zahl der Erstsemester deutlich gesunken.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Dem Bericht ___ ist die Zahl der Erstsemester deutlich gesunken.",
+   "optionen": [
+    "laut",
+    "zuliebe",
+    "zugunsten",
     "zufolge"
    ],
+   "richtig": 3,
    "hinweis": "laut, nachgestellt",
-   "erklaerung": "„zufolge“ steht nach dem Nomen und verlangt den Dativ: dem Bericht zufolge."
+   "erklaerung": "„zufolge“ steht nach dem Nomen und verlangt den Dativ: dem Bericht zufolge.",
+   "aus": "luecke"
   },
   {
    "id": "u06",
-   "typ": "luecke",
-   "satz": "Der Einfachheit ___ verwenden wir im Folgenden die Abkürzung.",
-   "loesungen": [
-    "halber"
+   "typ": "auswahl",
+   "frage": "Der Einfachheit ___ verwenden wir im Folgenden die Abkürzung.",
+   "optionen": [
+    "halber",
+    "halben",
+    "halb",
+    "willen"
    ],
+   "richtig": 0,
    "hinweis": "wegen, nachgestellt",
-   "erklaerung": "„halber“ steht nach dem Nomen im Genitiv: der Einfachheit halber."
+   "erklaerung": "„halber“ steht nach dem Nomen im Genitiv: der Einfachheit halber.",
+   "aus": "luecke"
   },
   {
    "id": "u07",
-   "typ": "luecke",
-   "satz": "___ von drei Wochen muss der Antrag eingereicht werden.",
-   "loesungen": [
-    "Innerhalb"
+   "typ": "auswahl",
+   "frage": "___ von drei Wochen muss der Antrag eingereicht werden.",
+   "optionen": [
+    "Binnen",
+    "Innerhalb",
+    "Inmitten",
+    "Während"
    ],
+   "richtig": 1,
    "hinweis": "in einem Zeitraum",
-   "erklaerung": "„innerhalb“ + Genitiv; ohne Artikel vor einer Zahl: innerhalb von + Dativ."
+   "erklaerung": "„innerhalb“ + Genitiv; ohne Artikel vor einer Zahl: innerhalb von + Dativ.",
+   "aus": "luecke"
   },
   {
    "id": "u08",
-   "typ": "luecke",
-   "satz": "Ich war so aufgeregt, dass ich ___ der Prüfung fast alles vergessen hätte.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Ich war so aufgeregt, dass ich ___ der Prüfung fast alles vergessen hätte.",
+   "optionen": [
     "in",
-    "bei",
-    "während"
+    "zu",
+    "über",
+    "an"
    ],
-   "hinweis": "Präposition",
-   "erklaerung": "Feste Fügung „in der Prüfung“ (auch: bei/während der Prüfung) – nicht „unter Prüfung“."
+   "richtig": 0,
+   "erklaerung": "Feste Fügung „in der Prüfung“ (auch: bei/während der Prüfung) – nicht „unter Prüfung“.",
+   "aus": "luecke"
   },
   {
    "id": "u10",
-   "typ": "luecke",
-   "satz": "Die Bibliothek bleibt wegen Bauarbeiten bis auf ___ geschlossen.",
-   "loesungen": [
-    "Weiteres"
+   "typ": "auswahl",
+   "frage": "Die Bibliothek bleibt wegen Bauarbeiten bis auf ___ geschlossen.",
+   "optionen": [
+    "Weiterer",
+    "Weiteres",
+    "Weiteren",
+    "Weiterem"
    ],
-   "hinweis": "weiter-",
-   "erklaerung": "„bis auf Weiteres“ (vorläufig) – großgeschrieben."
+   "richtig": 1,
+   "erklaerung": "„bis auf Weiteres“ (vorläufig) – großgeschrieben.",
+   "aus": "luecke"
   },
   {
    "id": "u12",
-   "typ": "luecke",
-   "satz": "___ ihres 100. Geburtstags erscheint eine kommentierte Werkausgabe.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "___ ihres 100. Geburtstags erscheint eine kommentierte Werkausgabe.",
+   "optionen": [
+    "Anlass",
+    "Bei Anlass",
+    "Zum Anlass",
     "Anlässlich"
    ],
+   "richtig": 3,
    "hinweis": "aus Anlass",
-   "erklaerung": "„anlässlich“ + Genitiv."
+   "erklaerung": "„anlässlich“ + Genitiv.",
+   "aus": "luecke"
   },
   {
    "id": "u13",
-   "typ": "luecke",
-   "satz": "Die Ergebnisse wurden ___ einer Stichprobe von 2000 Befragten ermittelt.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Die Ergebnisse wurden ___ einer Stichprobe von 2000 Befragten ermittelt.",
+   "optionen": [
+    "anhanden",
+    "über",
     "anhand",
-    "mithilfe"
+    "durch"
    ],
+   "richtig": 2,
    "hinweis": "auf der Grundlage von",
-   "erklaerung": "„anhand“ und „mithilfe“ verlangen den Genitiv: anhand einer Stichprobe."
+   "erklaerung": "„anhand“ und „mithilfe“ verlangen den Genitiv: anhand einer Stichprobe.",
+   "aus": "luecke"
   },
   {
    "id": "u14",
@@ -365,47 +413,64 @@
   },
   {
    "id": "u33",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Weil es an Geld fehlte, wurde das Theater geschlossen.",
    "anweisung": "Ersetzen Sie den Nebensatz durch eine Wendung mit „mangels“.",
-   "loesungen": [
-    "Mangels Geldes wurde das Theater geschlossen.",
-    "Mangels Geld wurde das Theater geschlossen."
+   "teile": [
+    "das Theater",
+    "wurde",
+    "Mangels Geldes",
+    "geschlossen"
    ],
-   "erklaerung": "„mangels“ + Genitiv; bei einem Nomen ohne Artikel und Attribut bleibt es oft endungslos (mangels Geld)."
+   "loesung": "Mangels Geldes wurde das Theater geschlossen.",
+   "erklaerung": "„mangels“ + Genitiv; bei einem Nomen ohne Artikel und Attribut bleibt es oft endungslos (mangels Geld).",
+   "aus": "umformen"
   },
   {
    "id": "u34",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Obwohl die Kritik heftig war, hielt der Intendant an seinem Spielplan fest.",
    "anweisung": "Ersetzen Sie den Nebensatz durch eine Wendung mit „ungeachtet“.",
-   "loesungen": [
-    "Ungeachtet der heftigen Kritik hielt der Intendant an seinem Spielplan fest."
+   "teile": [
+    "Ungeachtet der heftigen Kritik",
+    "an seinem Spielplan",
+    "der Intendant",
+    "fest",
+    "hielt"
    ],
-   "erklaerung": "„ungeachtet“ + Genitiv; das Adjektiv wird zum Attribut (der heftigen Kritik)."
+   "loesung": "Ungeachtet der heftigen Kritik hielt der Intendant an seinem Spielplan fest.",
+   "erklaerung": "„ungeachtet“ + Genitiv; das Adjektiv wird zum Attribut (der heftigen Kritik).",
+   "aus": "umformen"
   },
   {
    "id": "u37",
-   "typ": "luecke",
-   "satz": "___ der anhaltenden Kritik hielt der Vorstand an seinem Kurs fest.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "___ der anhaltenden Kritik hielt der Vorstand an seinem Kurs fest.",
+   "optionen": [
+    "Infolge",
+    "Wegen",
     "Trotz",
-    "Ungeachtet"
+    "Dank"
    ],
+   "richtig": 2,
    "hinweis": "Gegensatz, mit Genitiv",
-   "erklaerung": "„trotz“ und gehoben „ungeachtet“ stehen mit dem Genitiv: trotz der Kritik."
+   "erklaerung": "„trotz“ und gehoben „ungeachtet“ stehen mit dem Genitiv: trotz der Kritik.",
+   "aus": "luecke"
   },
   {
    "id": "u38",
-   "typ": "luecke",
-   "satz": "Die Entscheidung fiel ___ der Mitglieder, die gar nicht befragt worden waren.",
-   "loesungen": [
-    "zulasten",
-    "zu Lasten",
-    "auf Kosten"
+   "typ": "auswahl",
+   "frage": "Die Entscheidung fiel ___ der Mitglieder, die gar nicht befragt worden waren.",
+   "optionen": [
+    "zugunsten",
+    "seitens",
+    "zuwider",
+    "zulasten"
    ],
-   "hinweis": "zum Nachteil von, mit Genitiv",
-   "erklaerung": "„zulasten“ (auch: zu Lasten, auf Kosten) + Genitiv: zum Nachteil von jemandem."
+   "richtig": 3,
+   "hinweis": "zum Nachteil von",
+   "erklaerung": "„zulasten“ (auch: zu Lasten, auf Kosten) + Genitiv: zum Nachteil von jemandem.",
+   "aus": "luecke"
   }
  ]
 }

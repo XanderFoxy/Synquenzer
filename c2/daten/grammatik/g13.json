@@ -52,105 +52,149 @@
  "uebungen": [
   {
    "id": "u01",
-   "typ": "luecke",
-   "satz": "Der Vertrag ___ gestern von beiden Seiten unterschrieben.",
-   "loesungen": [
-    "wurde"
+   "typ": "auswahl",
+   "frage": "Der Vertrag ___ gestern von beiden Seiten unterschrieben.",
+   "optionen": [
+    "hat",
+    "wurde",
+    "wird",
+    "worden"
    ],
+   "richtig": 1,
    "hinweis": "Präteritum",
-   "erklaerung": "Vorgangspassiv im Präteritum: wurde + Partizip II."
+   "erklaerung": "Vorgangspassiv im Präteritum: wurde + Partizip II.",
+   "aus": "luecke"
   },
   {
    "id": "u02",
-   "typ": "luecke",
-   "satz": "Die Ergebnisse sind bis heute nicht veröffentlicht ___.",
-   "loesungen": [
-    "worden"
+   "typ": "auswahl",
+   "frage": "Die Ergebnisse sind bis heute nicht veröffentlicht ___.",
+   "optionen": [
+    "werden",
+    "wurden",
+    "worden",
+    "geworden"
    ],
-   "erklaerung": "Perfekt Passiv: sein + Partizip II + worden – nicht „geworden“."
+   "richtig": 2,
+   "erklaerung": "Perfekt Passiv: sein + Partizip II + worden – nicht „geworden“.",
+   "aus": "luecke"
   },
   {
    "id": "u03",
-   "typ": "luecke",
-   "satz": "Diese Frage lässt ___ nicht pauschal beantworten.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Diese Frage lässt ___ nicht pauschal beantworten.",
+   "optionen": [
+    "es",
+    "ihr",
+    "man",
     "sich"
    ],
-   "erklaerung": "sich lassen + Infinitiv bedeutet „kann … werden“: Die Frage kann nicht pauschal beantwortet werden."
+   "richtig": 3,
+   "erklaerung": "sich lassen + Infinitiv bedeutet „kann … werden“: Die Frage kann nicht pauschal beantwortet werden.",
+   "aus": "luecke"
   },
   {
    "id": "u04",
-   "typ": "luecke",
-   "satz": "Die Anträge sind bis spätestens Ende Mai ___.",
-   "loesungen": [
-    "einzureichen"
+   "typ": "auswahl",
+   "frage": "Die Anträge sind bis spätestens Ende Mai ___.",
+   "optionen": [
+    "einzureichen",
+    "zu einreichen",
+    "einreichen",
+    "einzureichende"
    ],
+   "richtig": 0,
    "hinweis": "einreichen",
-   "erklaerung": "sein + zu + Infinitiv; bei trennbaren Verben steht „zu“ zwischen Präfix und Stamm."
+   "erklaerung": "sein + zu + Infinitiv; bei trennbaren Verben steht „zu“ zwischen Präfix und Stamm.",
+   "aus": "luecke"
   },
   {
    "id": "u05",
-   "typ": "luecke",
-   "satz": "Seit Jahren ___ über eine Reform des Systems diskutiert, doch geschehen ist wenig.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Seit Jahren ___ über eine Reform des Systems diskutiert, doch geschehen ist wenig.",
+   "optionen": [
+    "hat",
     "wird",
-    "wurde"
+    "würde",
+    "ist"
    ],
+   "richtig": 1,
    "hinweis": "Passiv ohne Subjekt",
-   "erklaerung": "Unpersönliches Passiv: Es gibt kein Subjekt, das Verb steht in der 3. Person Singular."
+   "erklaerung": "Unpersönliches Passiv: Es gibt kein Subjekt, das Verb steht in der 3. Person Singular.",
+   "aus": "luecke"
   },
   {
    "id": "u06",
-   "typ": "luecke",
-   "satz": "Nach ihrer Bewerbung ___ sie innerhalb einer Woche eine Zusage zugeschickt.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Nach ihrer Bewerbung ___ sie innerhalb einer Woche eine Zusage zugeschickt.",
+   "optionen": [
+    "war",
+    "gab",
     "bekam",
-    "erhielt",
-    "kriegte"
+    "wurde"
    ],
+   "richtig": 2,
    "hinweis": "bekommen-Passiv, Präteritum",
-   "erklaerung": "bekommen-Passiv: Die Person, die etwas erhält (sonst Dativ), wird Subjekt: Man schickte ihr eine Zusage zu. → Sie bekam eine Zusage zugeschickt."
+   "erklaerung": "bekommen-Passiv: Die Person, die etwas erhält (sonst Dativ), wird Subjekt: Man schickte ihr eine Zusage zu. → Sie bekam eine Zusage zugeschickt.",
+   "aus": "luecke"
   },
   {
    "id": "u07",
-   "typ": "luecke",
-   "satz": "Das Gebäude wurde ___ ein Feuer schwer beschädigt.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Das Gebäude wurde ___ ein Feuer schwer beschädigt.",
+   "optionen": [
+    "mit",
+    "von",
+    "aus",
     "durch"
    ],
-   "erklaerung": "„ein Feuer“ steht im Akkusativ – das verlangt „durch“ (Mittel, Ursache). Mit „von“ hieße es „von einem Feuer“."
+   "richtig": 3,
+   "erklaerung": "„ein Feuer“ steht im Akkusativ – das verlangt „durch“ (Mittel, Ursache). Mit „von“ hieße es „von einem Feuer“.",
+   "aus": "luecke"
   },
   {
    "id": "u08",
-   "typ": "luecke",
-   "satz": "Die Entscheidung wurde ___ der Geschäftsführerin selbst getroffen.",
-   "loesungen": [
-    "von"
+   "typ": "auswahl",
+   "frage": "Die Entscheidung wurde ___ der Geschäftsführerin selbst getroffen.",
+   "optionen": [
+    "von",
+    "über",
+    "durch",
+    "aus"
    ],
-   "erklaerung": "Die handelnde Person wird mit „von“ + Dativ angeschlossen („von der“)."
+   "richtig": 0,
+   "erklaerung": "Die handelnde Person wird mit „von“ + Dativ angeschlossen („von der“).",
+   "aus": "luecke"
   },
   {
    "id": "u09",
-   "typ": "luecke",
-   "satz": "Das Dokument ___ schon seit Tagen unterschrieben, aber niemand hat es abgeschickt.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Das Dokument ___ schon seit Tagen unterschrieben, aber niemand hat es abgeschickt.",
+   "optionen": [
+    "hat",
+    "worden",
     "ist",
-    "war"
+    "wurde"
    ],
+   "richtig": 2,
    "hinweis": "Zustand",
-   "erklaerung": "Zustandspassiv: sein + Partizip II beschreibt das Ergebnis eines abgeschlossenen Vorgangs."
+   "erklaerung": "Zustandspassiv: sein + Partizip II beschreibt das Ergebnis eines abgeschlossenen Vorgangs.",
+   "aus": "luecke"
   },
   {
    "id": "u10",
-   "typ": "luecke",
-   "satz": "Der Fehler hätte viel früher entdeckt werden ___.",
-   "loesungen": [
-    "müssen",
-    "können",
-    "sollen"
+   "typ": "auswahl",
+   "frage": "Der Fehler hätte viel früher entdeckt werden ___.",
+   "optionen": [
+    "gemusst",
+    "gekonnt",
+    "worden",
+    "müssen"
    ],
+   "richtig": 3,
    "hinweis": "Modalverb im Infinitiv",
-   "erklaerung": "Passiv mit Modalverb im Konjunktiv II der Vergangenheit: hätte + Partizip II + werden + Modalverb im Infinitiv (Ersatzinfinitiv)."
+   "erklaerung": "Passiv mit Modalverb im Konjunktiv II der Vergangenheit: hätte + Partizip II + werden + Modalverb im Infinitiv (Ersatzinfinitiv).",
+   "aus": "luecke"
   },
   {
    "id": "u11",
@@ -232,67 +276,100 @@
   },
   {
    "id": "u17",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Man kann diese Behauptung nicht beweisen.",
    "anweisung": "Formulieren Sie mit „sich lassen“.",
-   "loesungen": [
-    "Diese Behauptung lässt sich nicht beweisen."
+   "teile": [
+    "lässt",
+    "Diese Behauptung",
+    "nicht beweisen",
+    "sich"
    ],
-   "erklaerung": "sich lassen + Infinitiv ohne „zu“; das Akkusativobjekt wird Subjekt."
+   "loesung": "Diese Behauptung lässt sich nicht beweisen.",
+   "erklaerung": "sich lassen + Infinitiv ohne „zu“; das Akkusativobjekt wird Subjekt.",
+   "aus": "umformen"
   },
   {
    "id": "u18",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Man muss die Sicherheitsregeln unbedingt beachten.",
    "anweisung": "Formulieren Sie mit „sein + zu“.",
-   "loesungen": [
-    "Die Sicherheitsregeln sind unbedingt zu beachten."
+   "teile": [
+    "unbedingt zu beachten",
+    "Die Sicherheitsregeln",
+    "sind"
    ],
-   "erklaerung": "sein + zu + Infinitiv ersetzt „muss … werden“."
+   "loesung": "Die Sicherheitsregeln sind unbedingt zu beachten.",
+   "erklaerung": "sein + zu + Infinitiv ersetzt „muss … werden“.",
+   "aus": "umformen"
   },
   {
    "id": "u19",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Man kann seine Handschrift kaum lesen.",
    "anweisung": "Formulieren Sie mit einem Adjektiv auf -lich oder -bar.",
-   "loesungen": [
-    "Seine Handschrift ist kaum leserlich.",
-    "Seine Handschrift ist kaum lesbar."
+   "teile": [
+    "ist",
+    "kaum leserlich",
+    "Seine Handschrift"
    ],
-   "erklaerung": "„leserlich“ sagt man vor allem von Handschrift, „lesbar“ allgemein. Beide ersetzen „kann gelesen werden“."
+   "loesung": "Seine Handschrift ist kaum leserlich.",
+   "erklaerung": "„leserlich“ sagt man vor allem von Handschrift, „lesbar“ allgemein. Beide ersetzen „kann gelesen werden“.",
+   "aus": "umformen"
   },
   {
    "id": "u20",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Die Kommission hat den Bericht noch nicht veröffentlicht.",
    "anweisung": "Formulieren Sie im Passiv Perfekt mit Urheber.",
-   "loesungen": [
-    "Der Bericht ist von der Kommission noch nicht veröffentlicht worden.",
-    "Der Bericht ist noch nicht von der Kommission veröffentlicht worden."
+   "teile": [
+    "ist",
+    "noch nicht veröffentlicht",
+    "Der Bericht",
+    "von der Kommission",
+    "worden"
    ],
-   "erklaerung": "Perfekt Passiv: ist + Partizip II + worden; der Urheber steht mit „von“ + Dativ."
+   "loesung": "Der Bericht ist von der Kommission noch nicht veröffentlicht worden.",
+   "erklaerung": "Perfekt Passiv: ist + Partizip II + worden; der Urheber steht mit „von“ + Dativ.",
+   "aus": "umformen"
   },
   {
    "id": "u21",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Man schenkte ihr zum Abschied ein Buch.",
    "anweisung": "Formulieren Sie mit dem bekommen-Passiv.",
+   "teile": [
+    "zum Abschied",
+    "ein Buch",
+    "Sie",
+    "bekam",
+    "geschenkt"
+   ],
+   "loesung": "Sie bekam zum Abschied ein Buch geschenkt.",
    "loesungen": [
-    "Sie bekam zum Abschied ein Buch geschenkt.",
     "Zum Abschied bekam sie ein Buch geschenkt."
    ],
-   "erklaerung": "Die Person im Dativ (ihr) wird Subjekt (sie), „bekommen“ trägt Tempus und Person."
+   "erklaerung": "Die Person im Dativ (ihr) wird Subjekt (sie), „bekommen“ trägt Tempus und Person.",
+   "aus": "umformen"
   },
   {
    "id": "u22",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Man musste das Konzert wegen des Sturms absagen.",
    "anweisung": "Formulieren Sie im Passiv mit Modalverb.",
+   "teile": [
+    "musste",
+    "wegen des Sturms",
+    "abgesagt",
+    "Das Konzert",
+    "werden"
+   ],
+   "loesung": "Das Konzert musste wegen des Sturms abgesagt werden.",
    "loesungen": [
-    "Das Konzert musste wegen des Sturms abgesagt werden.",
     "Wegen des Sturms musste das Konzert abgesagt werden."
    ],
-   "erklaerung": "Modalverb + Partizip II + werden: musste … abgesagt werden."
+   "erklaerung": "Modalverb + Partizip II + werden: musste … abgesagt werden.",
+   "aus": "umformen"
   },
   {
    "id": "u23",

@@ -51,91 +51,133 @@
  "uebungen": [
   {
    "id": "u01",
-   "typ": "luecke",
-   "satz": "Sie bedauert, die Chance nicht genutzt zu ___.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Sie bedauert, die Chance nicht genutzt zu ___.",
+   "optionen": [
+    "werden",
+    "hatten",
+    "sein",
     "haben"
    ],
-   "erklaerung": "Vorzeitigkeit: Infinitiv Perfekt (Partizip II + zu haben)."
+   "richtig": 3,
+   "erklaerung": "Vorzeitigkeit: Infinitiv Perfekt (Partizip II + zu haben).",
+   "aus": "luecke"
   },
   {
    "id": "u02",
-   "typ": "luecke",
-   "satz": "Er verließ den Raum, ___ sich zu verabschieden.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Er verließ den Raum, ___ sich zu verabschieden.",
+   "optionen": [
     "ohne",
-    "anstatt",
-    "statt"
+    "indem",
+    "damit",
+    "dass"
    ],
+   "richtig": 0,
+   "hinweis": "eine erwartete Handlung bleibt aus",
    "erklaerung": "ohne … zu: Eine erwartete Handlung findet nicht statt. Auch „(an)statt … zu“ ist möglich: Er tut etwas anderes an ihrer Stelle.",
-   "hinweis": "eine erwartete Handlung bleibt aus"
+   "aus": "luecke"
   },
   {
    "id": "u03",
-   "typ": "luecke",
-   "satz": "Ich freue mich ___, euch bald wiederzusehen.",
-   "loesungen": [
-    "darauf"
+   "typ": "auswahl",
+   "frage": "Ich freue mich ___, euch bald wiederzusehen.",
+   "optionen": [
+    "daran",
+    "davon",
+    "darauf",
+    "dafür"
    ],
+   "richtig": 2,
    "hinweis": "Korrelat",
-   "erklaerung": "sich freuen auf → Korrelat „darauf“ (Vorfreude auf etwas Zukünftiges)."
+   "erklaerung": "sich freuen auf → Korrelat „darauf“ (Vorfreude auf etwas Zukünftiges).",
+   "aus": "luecke"
   },
   {
    "id": "u04",
-   "typ": "luecke",
-   "satz": "Es ist nicht leicht, nach so langer Zeit wieder ___.",
-   "loesungen": [
-    "anzufangen"
+   "typ": "auswahl",
+   "frage": "Es ist nicht leicht, nach so langer Zeit wieder ___.",
+   "optionen": [
+    "anzufangen",
+    "angefangen",
+    "anfangen",
+    "zu anfangen"
    ],
+   "richtig": 0,
    "hinweis": "anfangen",
-   "erklaerung": "Trennbares Verb: an-zu-fangen."
+   "erklaerung": "Trennbares Verb: an-zu-fangen.",
+   "aus": "luecke"
   },
   {
    "id": "u05",
-   "typ": "luecke",
-   "satz": "___ die Ursachen zu bekämpfen, behandelt man nur die Symptome.",
-   "loesungen": [
-    "Statt",
-    "Anstatt"
+   "typ": "auswahl",
+   "frage": "___ die Ursachen zu bekämpfen, behandelt man nur die Symptome.",
+   "optionen": [
+    "Indem",
+    "Obwohl",
+    "Damit",
+    "Statt"
    ],
-   "erklaerung": "(an)statt … zu: Eine Handlung ersetzt eine andere, erwartete."
+   "richtig": 3,
+   "erklaerung": "(an)statt … zu: Eine Handlung ersetzt eine andere, erwartete.",
+   "aus": "luecke"
   },
   {
    "id": "u06",
-   "typ": "luecke",
-   "satz": "Der Patient hofft, bald aus dem Krankenhaus entlassen zu ___.",
-   "loesungen": [
-    "werden"
+   "typ": "auswahl",
+   "frage": "Der Patient hofft, bald aus dem Krankenhaus entlassen zu ___.",
+   "optionen": [
+    "geworden",
+    "worden",
+    "werden",
+    "wurden"
    ],
-   "erklaerung": "Infinitiv Passiv: Partizip II + zu werden."
+   "richtig": 2,
+   "erklaerung": "Infinitiv Passiv: Partizip II + zu werden.",
+   "aus": "luecke"
   },
   {
    "id": "u07",
-   "typ": "luecke",
-   "satz": "Sie ist froh, die Prüfung endlich hinter sich gebracht zu ___.",
-   "loesungen": [
-    "haben"
+   "typ": "auswahl",
+   "frage": "Sie ist froh, die Prüfung endlich hinter sich gebracht zu ___.",
+   "optionen": [
+    "sein",
+    "haben",
+    "hatten",
+    "werden"
    ],
-   "erklaerung": "Infinitiv Perfekt: „bringen“ bildet das Perfekt mit „haben“."
+   "richtig": 1,
+   "erklaerung": "Infinitiv Perfekt: „bringen“ bildet das Perfekt mit „haben“.",
+   "aus": "luecke"
   },
   {
    "id": "u08",
-   "typ": "luecke",
-   "satz": "Er bestand ___, die Rechnung allein zu bezahlen.",
-   "loesungen": [
-    "darauf"
+   "typ": "auswahl",
+   "frage": "Er bestand ___, die Rechnung allein zu bezahlen.",
+   "optionen": [
+    "dafür",
+    "darüber",
+    "darauf",
+    "daran"
    ],
+   "richtig": 2,
    "hinweis": "Korrelat",
-   "erklaerung": "bestehen auf → Korrelat „darauf“."
+   "erklaerung": "bestehen auf → Korrelat „darauf“.",
+   "aus": "luecke"
   },
   {
    "id": "u10",
-   "typ": "luecke",
-   "satz": "Der Angeklagte bestreitet, am Tatort gewesen zu ___.",
-   "loesungen": [
-    "sein"
+   "typ": "auswahl",
+   "frage": "Der Angeklagte bestreitet, am Tatort gewesen zu ___.",
+   "optionen": [
+    "haben",
+    "gewesen",
+    "sein",
+    "werden"
    ],
-   "erklaerung": "„sein“ bildet das Perfekt mit „sein“: gewesen zu sein."
+   "richtig": 2,
+   "erklaerung": "„sein“ bildet das Perfekt mit „sein“: gewesen zu sein.",
+   "aus": "luecke"
   },
   {
    "id": "u11",
@@ -204,70 +246,98 @@
   },
   {
    "id": "u17",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Er hat sich nicht verabschiedet. Er ist gegangen.",
    "anweisung": "Verbinden Sie mit „ohne … zu“.",
-   "loesungen": [
-    "Er ist gegangen, ohne sich zu verabschieden.",
-    "Ohne sich zu verabschieden, ist er gegangen."
+   "teile": [
+    "ist",
+    "Er",
+    "zu verabschieden",
+    "gegangen,",
+    "ohne sich"
    ],
-   "erklaerung": "Gleiches Subjekt: ohne … zu; das Reflexivpronomen steht vor „zu“."
+   "loesung": "Er ist gegangen, ohne sich zu verabschieden.",
+   "erklaerung": "Gleiches Subjekt: ohne … zu; das Reflexivpronomen steht vor „zu“.",
+   "aus": "umformen"
   },
   {
    "id": "u18",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Ich habe den Termin verpasst. Das bedaure ich.",
    "anweisung": "Formulieren Sie mit einem Infinitivsatz: Ich bedaure, …",
-   "loesungen": [
-    "Ich bedaure, den Termin verpasst zu haben."
+   "teile": [
+    "Ich",
+    "bedaure,",
+    "zu haben",
+    "verpasst",
+    "den Termin"
    ],
-   "erklaerung": "Vorzeitigkeit: Infinitiv Perfekt."
+   "loesung": "Ich bedaure, den Termin verpasst zu haben.",
+   "erklaerung": "Vorzeitigkeit: Infinitiv Perfekt.",
+   "aus": "umformen"
   },
   {
    "id": "u19",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Sie lernt Spanisch. Sie möchte in Madrid studieren.",
    "anweisung": "Verbinden Sie mit „um … zu“.",
-   "loesungen": [
-    "Sie lernt Spanisch, um in Madrid zu studieren.",
-    "Sie lernt Spanisch, um in Madrid studieren zu können.",
-    "Um in Madrid zu studieren, lernt sie Spanisch.",
-    "Um in Madrid studieren zu können, lernt sie Spanisch."
+   "teile": [
+    "lernt",
+    "um in Madrid",
+    "zu studieren",
+    "Sie",
+    "Spanisch,"
    ],
-   "erklaerung": "Zweck bei gleichem Subjekt; „möchte“ fällt weg (oder: studieren zu können)."
+   "loesung": "Sie lernt Spanisch, um in Madrid zu studieren.",
+   "erklaerung": "Zweck bei gleichem Subjekt; „möchte“ fällt weg (oder: studieren zu können).",
+   "aus": "umformen"
   },
   {
    "id": "u20",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Er hofft, dass er bald befördert wird.",
    "anweisung": "Formulieren Sie mit einem Infinitivsatz.",
-   "loesungen": [
-    "Er hofft, bald befördert zu werden."
+   "teile": [
+    "bald befördert",
+    "hofft,",
+    "Er",
+    "zu werden"
    ],
-   "erklaerung": "Gleiches Subjekt: Infinitiv Passiv mit „zu werden“."
+   "loesung": "Er hofft, bald befördert zu werden.",
+   "erklaerung": "Gleiches Subjekt: Infinitiv Passiv mit „zu werden“.",
+   "aus": "umformen"
   },
   {
    "id": "u21",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Statt dass er sich entschuldigt, macht er anderen Vorwürfe.",
    "anweisung": "Formulieren Sie mit „(an)statt … zu“.",
-   "loesungen": [
-    "Statt sich zu entschuldigen, macht er anderen Vorwürfe.",
-    "Anstatt sich zu entschuldigen, macht er anderen Vorwürfe.",
-    "Er macht anderen Vorwürfe, statt sich zu entschuldigen.",
-    "Er macht anderen Vorwürfe, anstatt sich zu entschuldigen."
+   "teile": [
+    "Vorwürfe",
+    "er",
+    "zu entschuldigen,",
+    "Statt sich",
+    "macht",
+    "anderen"
    ],
-   "erklaerung": "Gleiches Subjekt: (an)statt … zu ist eleganter als „statt dass“."
+   "loesung": "Statt sich zu entschuldigen, macht er anderen Vorwürfe.",
+   "erklaerung": "Gleiches Subjekt: (an)statt … zu ist eleganter als „statt dass“.",
+   "aus": "umformen"
   },
   {
    "id": "u22",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Es ist wichtig, dass man regelmäßig übt.",
    "anweisung": "Formulieren Sie mit einem Infinitivsatz.",
-   "loesungen": [
-    "Es ist wichtig, regelmäßig zu üben."
+   "teile": [
+    "Es",
+    "regelmäßig zu üben",
+    "wichtig,",
+    "ist"
    ],
-   "erklaerung": "Unpersönliches „man“ fällt im Infinitivsatz weg."
+   "loesung": "Es ist wichtig, regelmäßig zu üben.",
+   "erklaerung": "Unpersönliches „man“ fällt im Infinitivsatz weg.",
+   "aus": "umformen"
   },
   {
    "id": "u23",

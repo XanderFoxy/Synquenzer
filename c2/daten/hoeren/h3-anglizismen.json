@@ -152,14 +152,18 @@
   },
   {
    "id": "t3",
-   "typ": "luecke",
-   "satz": "Das Wort „Fenster“ stammt ursprünglich aus dem ___.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Das Wort „Fenster“ stammt ursprünglich aus dem ___.",
+   "optionen": [
     "Lateinischen",
-    "Latein"
+    "Englischen",
+    "Griechischen",
+    "Französischen"
    ],
+   "richtig": 0,
    "erklaerung": "„das ursprünglich aus dem Lateinischen kommt“",
-   "nur_training": true
+   "nur_training": true,
+   "aus": "luecke"
   }
  ]
 }

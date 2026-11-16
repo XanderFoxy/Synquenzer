@@ -136,13 +136,18 @@
   },
   {
    "id": "t3",
-   "typ": "luecke",
-   "satz": "Noras Kompromiss: ordentliche Bezahlung, und das Jahr wird für das ___ angerechnet.",
-   "loesungen": [
-    "Studium"
+   "typ": "auswahl",
+   "frage": "Noras Kompromiss: ordentliche Bezahlung, und das Jahr wird für das ___ angerechnet.",
+   "optionen": [
+    "Abitur",
+    "Referendariat",
+    "Studium",
+    "Praktikum"
    ],
+   "richtig": 2,
    "erklaerung": "„es wird fürs Studium angerechnet“",
-   "nur_training": true
+   "nur_training": true,
+   "aus": "luecke"
   }
  ]
 }

@@ -51,75 +51,105 @@
  "uebungen": [
   {
    "id": "u02",
-   "typ": "luecke",
-   "satz": "Immer ___ ich nach Hause komme, koche ich zuerst einen Tee.",
-   "loesungen": [
-    "wenn"
+   "typ": "auswahl",
+   "frage": "Immer ___ ich nach Hause komme, koche ich zuerst einen Tee.",
+   "optionen": [
+    "als",
+    "ob",
+    "wenn",
+    "wann"
    ],
-   "erklaerung": "Wiederholung: (immer) wenn."
+   "richtig": 2,
+   "erklaerung": "Wiederholung: (immer) wenn.",
+   "aus": "luecke"
   },
   {
    "id": "u04",
-   "typ": "luecke",
-   "satz": "Ich habe sie ___ drei Jahren zum letzten Mal gesehen.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Ich habe sie ___ drei Jahren zum letzten Mal gesehen.",
+   "optionen": [
+    "seit",
+    "von",
+    "für",
     "vor"
    ],
-   "erklaerung": "Zeitpunkt in der Vergangenheit: vor + Dativ."
+   "richtig": 3,
+   "erklaerung": "Zeitpunkt in der Vergangenheit: vor + Dativ.",
+   "aus": "luecke"
   },
   {
    "id": "u05",
-   "typ": "luecke",
-   "satz": "Wir wohnen ___ drei Jahren in dieser Wohnung.",
-   "loesungen": [
-    "seit"
+   "typ": "auswahl",
+   "frage": "Wir wohnen ___ drei Jahren in dieser Wohnung.",
+   "optionen": [
+    "ab",
+    "nach",
+    "seit",
+    "vor"
    ],
-   "erklaerung": "Dauer von der Vergangenheit bis jetzt: seit + Dativ, Verb im Präsens."
+   "richtig": 2,
+   "erklaerung": "Dauer von der Vergangenheit bis jetzt: seit + Dativ, Verb im Präsens.",
+   "aus": "luecke"
   },
   {
    "id": "u07",
-   "typ": "luecke",
-   "satz": "Sie beschäftigt sich schon seit ___ mit diesem Thema.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Sie beschäftigt sich schon seit ___ mit diesem Thema.",
+   "optionen": [
     "Langem",
-    "langem"
+    "Langen",
+    "Lange",
+    "Länge"
    ],
+   "richtig": 0,
    "hinweis": "Adverb, Dativ",
-   "erklaerung": "seit Langem (auch: seit langem) = schon lange."
+   "erklaerung": "seit Langem (auch: seit langem) = schon lange.",
+   "aus": "luecke"
   },
   {
    "id": "u08",
-   "typ": "luecke",
-   "satz": "___ du mit der Arbeit fertig bist, ruf mich bitte an.",
-   "loesungen": [
-    "Sobald",
-    "Wenn",
-    "Sowie"
+   "typ": "auswahl",
+   "frage": "___ du mit der Arbeit fertig bist, ruf mich bitte an.",
+   "optionen": [
+    "Als",
+    "Seit",
+    "Ob",
+    "Sobald"
    ],
+   "richtig": 3,
    "hinweis": "sofort danach",
-   "erklaerung": "sobald: Die zweite Handlung folgt unmittelbar."
+   "erklaerung": "sobald: Die zweite Handlung folgt unmittelbar.",
+   "aus": "luecke"
   },
   {
    "id": "u09",
-   "typ": "luecke",
-   "satz": "Er ist noch nicht da? Er ___ den Zug verpasst haben.",
-   "loesungen": [
-    "wird"
+   "typ": "auswahl",
+   "frage": "Er ist noch nicht da? Er ___ den Zug verpasst haben.",
+   "optionen": [
+    "hat",
+    "ist",
+    "wird",
+    "wurde"
    ],
+   "richtig": 2,
    "hinweis": "Futur II",
-   "erklaerung": "Futur II als Vermutung über Vergangenes: wird + Partizip II + haben."
+   "erklaerung": "Futur II als Vermutung über Vergangenes: wird + Partizip II + haben.",
+   "aus": "luecke"
   },
   {
    "id": "u10",
-   "typ": "luecke",
-   "satz": "___ ich hier wohne, fahre ich jeden Tag mit dem Fahrrad.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "___ ich hier wohne, fahre ich jeden Tag mit dem Fahrrad.",
+   "optionen": [
     "Seit",
-    "Seitdem",
-    "Solange"
+    "Nachdem",
+    "Als",
+    "Vor"
    ],
+   "richtig": 0,
    "hinweis": "Beginn in der Vergangenheit",
-   "erklaerung": "seit(dem) + Präsens: Der Zustand dauert bis jetzt."
+   "erklaerung": "seit(dem) + Präsens: Der Zustand dauert bis jetzt.",
+   "aus": "luecke"
   },
   {
    "id": "u11",
@@ -188,74 +218,109 @@
   },
   {
    "id": "u17",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Sie beendete das Studium. Danach zog sie nach Hamburg.",
    "anweisung": "Verbinden Sie mit „nachdem“.",
-   "loesungen": [
-    "Nachdem sie das Studium beendet hatte, zog sie nach Hamburg.",
-    "Sie zog nach Hamburg, nachdem sie das Studium beendet hatte."
+   "teile": [
+    "sie",
+    "zog",
+    "hatte,",
+    "nach Hamburg",
+    "beendet",
+    "das Studium",
+    "sie",
+    "Nachdem"
    ],
-   "erklaerung": "Vorzeitigkeit: Plusquamperfekt im Nebensatz."
+   "loesung": "Nachdem sie das Studium beendet hatte, zog sie nach Hamburg.",
+   "erklaerung": "Vorzeitigkeit: Plusquamperfekt im Nebensatz.",
+   "aus": "umformen"
   },
   {
    "id": "u18",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Er kommt nach Hause. Gleich danach ruft er seine Mutter an.",
    "anweisung": "Verbinden Sie mit „sobald“.",
-   "loesungen": [
-    "Sobald er nach Hause kommt, ruft er seine Mutter an.",
-    "Er ruft seine Mutter an, sobald er nach Hause kommt.",
-    "Sobald er nach Hause gekommen ist, ruft er seine Mutter an.",
-    "Er ruft seine Mutter an, sobald er nach Hause gekommen ist."
+   "teile": [
+    "nach Hause",
+    "er",
+    "Sobald",
+    "seine Mutter",
+    "ruft",
+    "er",
+    "an",
+    "kommt,"
    ],
-   "erklaerung": "sobald: unmittelbare Folge; Präsens (oder Perfekt für Vorzeitigkeit)."
+   "loesung": "Sobald er nach Hause kommt, ruft er seine Mutter an.",
+   "erklaerung": "sobald: unmittelbare Folge; Präsens (oder Perfekt für Vorzeitigkeit).",
+   "aus": "umformen"
   },
   {
    "id": "u19",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Wir müssen noch die Tickets kaufen. Erst dann fahren wir los.",
    "anweisung": "Verbinden Sie mit „bevor“.",
-   "loesungen": [
-    "Bevor wir losfahren, müssen wir noch die Tickets kaufen.",
-    "Wir müssen noch die Tickets kaufen, bevor wir losfahren."
+   "teile": [
+    "Bevor",
+    "wir",
+    "müssen",
+    "wir",
+    "kaufen",
+    "noch die Tickets",
+    "losfahren,"
    ],
-   "erklaerung": "bevor: Die Handlung im Nebensatz kommt später."
+   "loesung": "Bevor wir losfahren, müssen wir noch die Tickets kaufen.",
+   "erklaerung": "bevor: Die Handlung im Nebensatz kommt später.",
+   "aus": "umformen"
   },
   {
    "id": "u20",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Sie wohnt jetzt in Köln. Seitdem ist sie glücklicher.",
    "anweisung": "Verbinden Sie mit „seit“.",
-   "loesungen": [
-    "Seit sie in Köln wohnt, ist sie glücklicher.",
-    "Sie ist glücklicher, seit sie in Köln wohnt.",
-    "Seitdem sie in Köln wohnt, ist sie glücklicher.",
-    "Sie ist glücklicher, seitdem sie in Köln wohnt."
+   "teile": [
+    "sie",
+    "ist",
+    "in Köln",
+    "Seit sie",
+    "glücklicher",
+    "wohnt,"
    ],
-   "erklaerung": "seit(dem) + Präsens: Der Zustand dauert an."
+   "loesung": "Seit sie in Köln wohnt, ist sie glücklicher.",
+   "erklaerung": "seit(dem) + Präsens: Der Zustand dauert an.",
+   "aus": "umformen"
   },
   {
    "id": "u21",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Vermutlich hat sie die Nachricht schon gelesen.",
    "anweisung": "Formulieren Sie mit Futur II.",
-   "loesungen": [
-    "Sie wird die Nachricht schon gelesen haben."
+   "teile": [
+    "wird",
+    "schon gelesen",
+    "haben",
+    "Sie",
+    "die Nachricht"
    ],
-   "erklaerung": "Futur II drückt eine Vermutung über Vergangenes aus."
+   "loesung": "Sie wird die Nachricht schon gelesen haben.",
+   "erklaerung": "Futur II drückt eine Vermutung über Vergangenes aus.",
+   "aus": "umformen"
   },
   {
    "id": "u22",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Bis zu ihrer Rückkehr kümmert sich der Nachbar um die Katze.",
    "anweisung": "Formulieren Sie mit „bis“ als Subjunktion.",
-   "loesungen": [
-    "Bis sie zurückkehrt, kümmert sich der Nachbar um die Katze.",
-    "Bis sie zurückkommt, kümmert sich der Nachbar um die Katze.",
-    "Der Nachbar kümmert sich um die Katze, bis sie zurückkehrt.",
-    "Der Nachbar kümmert sich um die Katze, bis sie zurückkommt."
+   "teile": [
+    "um die Katze",
+    "sich",
+    "Bis sie",
+    "kümmert",
+    "zurückkehrt,",
+    "der Nachbar"
    ],
-   "erklaerung": "„bis zu“ + Nomen → „bis“ + Nebensatz."
+   "loesung": "Bis sie zurückkehrt, kümmert sich der Nachbar um die Katze.",
+   "erklaerung": "„bis zu“ + Nomen → „bis“ + Nebensatz.",
+   "aus": "umformen"
   },
   {
    "id": "u23",

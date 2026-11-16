@@ -144,13 +144,18 @@
   },
   {
    "id": "t3",
-   "typ": "luecke",
-   "satz": "Besonders gefährdet: ältere Menschen, die allein leben und zu wenig ___.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Besonders gefährdet: ältere Menschen, die allein leben und zu wenig ___.",
+   "optionen": [
+    "essen",
+    "lüften",
+    "schlafen",
     "trinken"
    ],
+   "richtig": 3,
    "erklaerung": "„die allein leben und schlicht zu wenig trinken“",
-   "nur_training": true
+   "nur_training": true,
+   "aus": "luecke"
   }
  ]
 }

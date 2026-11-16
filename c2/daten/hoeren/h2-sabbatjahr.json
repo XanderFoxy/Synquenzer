@@ -148,14 +148,18 @@
   },
   {
    "id": "t3",
-   "typ": "luecke",
-   "satz": "Carla hat das Geld für das Sabbatjahr ___ Jahre lang angespart.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Carla hat das Geld für das Sabbatjahr ___ Jahre lang angespart.",
+   "optionen": [
+    "fünf",
+    "vier",
     "drei",
-    "3"
+    "zwei"
    ],
+   "richtig": 2,
    "erklaerung": "„Das Geld dafür habe ich mir übrigens drei Jahre lang angespart“",
-   "nur_training": true
+   "nur_training": true,
+   "aus": "luecke"
   }
  ]
 }

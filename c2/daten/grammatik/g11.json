@@ -49,138 +49,189 @@
  "uebungen": [
   {
    "id": "u01",
-   "typ": "luecke",
-   "satz": "Das ist eine App, ___ mir beim Wiederholen wirklich hilft.",
-   "loesungen": [
-    "die",
-    "welche"
+   "typ": "auswahl",
+   "frage": "Das ist eine App, ___ mir beim Wiederholen wirklich hilft.",
+   "optionen": [
+    "der",
+    "das",
+    "den",
+    "die"
    ],
-   "hinweis": "Relativpronomen",
-   "erklaerung": "„die App“ ist feminin, im Relativsatz Subjekt: die."
+   "richtig": 3,
+   "erklaerung": "„die App“ ist feminin, im Relativsatz Subjekt: die.",
+   "aus": "luecke"
   },
   {
    "id": "u02",
-   "typ": "luecke",
-   "satz": "Die Autorin, ___ Roman gerade verfilmt wird, lebt zurückgezogen in Triest.",
-   "loesungen": [
-    "deren"
+   "typ": "auswahl",
+   "frage": "Die Autorin, ___ Roman gerade verfilmt wird, lebt zurückgezogen in Triest.",
+   "optionen": [
+    "der",
+    "dessen",
+    "deren",
+    "ihr"
    ],
+   "richtig": 2,
    "hinweis": "Relativpronomen, Genitiv",
-   "erklaerung": "Feminines Bezugswort, Genitiv: deren Roman."
+   "erklaerung": "Feminines Bezugswort, Genitiv: deren Roman.",
+   "aus": "luecke"
   },
   {
    "id": "u03",
-   "typ": "luecke",
-   "satz": "Der Philosoph, ___ Thesen heftig umstritten sind, hält morgen einen Vortrag.",
-   "loesungen": [
-    "dessen"
+   "typ": "auswahl",
+   "frage": "Der Philosoph, ___ Thesen heftig umstritten sind, hält morgen einen Vortrag.",
+   "optionen": [
+    "deren",
+    "dessen",
+    "dem",
+    "denen"
    ],
+   "richtig": 1,
    "hinweis": "Relativpronomen, Genitiv",
-   "erklaerung": "Maskulines Bezugswort, Genitiv: dessen Thesen."
+   "erklaerung": "Maskulines Bezugswort, Genitiv: dessen Thesen.",
+   "aus": "luecke"
   },
   {
    "id": "u04",
-   "typ": "luecke",
-   "satz": "Die Studierenden, ___ wir ein Stipendium vermittelt haben, bedanken sich herzlich.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Die Studierenden, ___ wir ein Stipendium vermittelt haben, bedanken sich herzlich.",
+   "optionen": [
     "denen",
-    "welchen"
+    "deren",
+    "dem",
+    "den"
    ],
-   "hinweis": "Relativpronomen",
-   "erklaerung": "„jemandem etwas vermitteln“: Dativ Plural – denen."
+   "richtig": 0,
+   "erklaerung": "„jemandem etwas vermitteln“: Dativ Plural – denen.",
+   "aus": "luecke"
   },
   {
    "id": "u05",
-   "typ": "luecke",
-   "satz": "Das Thema, über ___ wir gestern diskutiert haben, wird uns noch lange beschäftigen.",
-   "loesungen": [
-    "das",
-    "welches"
+   "typ": "auswahl",
+   "frage": "Das Thema, über ___ wir gestern diskutiert haben, wird uns noch lange beschäftigen.",
+   "optionen": [
+    "dem",
+    "den",
+    "dessen",
+    "das"
    ],
-   "hinweis": "Relativpronomen",
-   "erklaerung": "„diskutieren über“ + Akkusativ; „das Thema“ ist neutral: über das."
+   "richtig": 3,
+   "erklaerung": "„diskutieren über“ + Akkusativ; „das Thema“ ist neutral: über das.",
+   "aus": "luecke"
   },
   {
    "id": "u06",
-   "typ": "luecke",
-   "satz": "Alles, ___ sie über die Epoche weiß, hat sie aus Romanen gelernt.",
-   "loesungen": [
-    "was"
+   "typ": "auswahl",
+   "frage": "Alles, ___ sie über die Epoche weiß, hat sie aus Romanen gelernt.",
+   "optionen": [
+    "was",
+    "dass",
+    "welches",
+    "wie"
    ],
-   "hinweis": "Relativwort",
-   "erklaerung": "Nach „alles“ steht „was“."
+   "richtig": 0,
+   "erklaerung": "Nach „alles“ steht „was“.",
+   "aus": "luecke"
   },
   {
    "id": "u07",
-   "typ": "luecke",
-   "satz": "Das Beste, ___ man über dieses Buch sagen kann, ist seine Kürze.",
-   "loesungen": [
-    "was"
+   "typ": "auswahl",
+   "frage": "Das Beste, ___ man über dieses Buch sagen kann, ist seine Kürze.",
+   "optionen": [
+    "wo",
+    "was",
+    "dass",
+    "welches"
    ],
-   "hinweis": "Relativwort",
-   "erklaerung": "Nach einem substantivierten Superlativ (das Beste) steht „was“."
+   "richtig": 1,
+   "erklaerung": "Nach einem substantivierten Superlativ (das Beste) steht „was“.",
+   "aus": "luecke"
   },
   {
    "id": "u08",
-   "typ": "luecke",
-   "satz": "Er bestand die Prüfung auf Anhieb, ___ niemand erwartet hatte.",
-   "loesungen": [
-    "was"
+   "typ": "auswahl",
+   "frage": "Er bestand die Prüfung auf Anhieb, ___ niemand erwartet hatte.",
+   "optionen": [
+    "was",
+    "dass",
+    "welches",
+    "das"
    ],
-   "hinweis": "Relativwort",
-   "erklaerung": "Weiterführender Relativsatz: „was“ bezieht sich auf den ganzen Satz."
+   "richtig": 0,
+   "erklaerung": "Weiterführender Relativsatz: „was“ bezieht sich auf den ganzen Satz.",
+   "aus": "luecke"
   },
   {
    "id": "u09",
-   "typ": "luecke",
-   "satz": "Es gibt nichts, ___ sie sich mehr freut als auf ein freies Wochenende.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Es gibt nichts, ___ sie sich mehr freut als auf ein freies Wochenende.",
+   "optionen": [
+    "woran",
+    "wofür",
+    "worüber",
     "worauf"
    ],
+   "richtig": 3,
    "hinweis": "Relativwort mit Präposition",
-   "erklaerung": "„sich freuen auf“; Bezug „nichts“ → wo(r) + auf = worauf."
+   "erklaerung": "„sich freuen auf“; Bezug „nichts“ → wo(r) + auf = worauf.",
+   "aus": "luecke"
   },
   {
    "id": "u10",
-   "typ": "luecke",
-   "satz": "___ die Wahrheit sagt, braucht ein schnelles Pferd.",
-   "loesungen": [
-    "Wer"
+   "typ": "auswahl",
+   "frage": "___ die Wahrheit sagt, braucht ein schnelles Pferd.",
+   "optionen": [
+    "Was",
+    "Wer",
+    "Welcher",
+    "Wen"
    ],
-   "hinweis": "Relativwort",
-   "erklaerung": "„wer“ leitet einen Relativsatz ohne Bezugswort ein (Sprichwort)."
+   "richtig": 1,
+   "erklaerung": "„wer“ leitet einen Relativsatz ohne Bezugswort ein (Sprichwort).",
+   "aus": "luecke"
   },
   {
    "id": "u11",
-   "typ": "luecke",
-   "satz": "Die Kollegin, mit ___ ich das Projekt geleitet habe, ist inzwischen Professorin.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Die Kollegin, mit ___ ich das Projekt geleitet habe, ist inzwischen Professorin.",
+   "optionen": [
+    "dem",
+    "die",
     "der",
-    "welcher"
+    "denen"
    ],
-   "hinweis": "Relativpronomen",
-   "erklaerung": "„mit“ + Dativ, feminin: mit der."
+   "richtig": 2,
+   "erklaerung": "„mit“ + Dativ, feminin: mit der.",
+   "aus": "luecke"
   },
   {
    "id": "u12",
-   "typ": "luecke",
-   "satz": "Der Verein, ___ Mitglieder überwiegend ehrenamtlich arbeiten, feiert sein hundertjähriges Bestehen.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Der Verein, ___ Mitglieder überwiegend ehrenamtlich arbeiten, feiert sein hundertjähriges Bestehen.",
+   "optionen": [
+    "denen",
+    "dem",
+    "deren",
     "dessen"
    ],
+   "richtig": 3,
    "hinweis": "Relativpronomen, Genitiv",
-   "erklaerung": "Maskulines Bezugswort: dessen Mitglieder."
+   "erklaerung": "Maskulines Bezugswort: dessen Mitglieder.",
+   "aus": "luecke"
   },
   {
    "id": "u13",
-   "typ": "luecke",
-   "satz": "In dem Jahr, ___ die Mauer fiel, wurde sie eingeschult.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "In dem Jahr, ___ die Mauer fiel, wurde sie eingeschult.",
+   "optionen": [
     "als",
-    "in dem"
+    "nachdem",
+    "wenn",
+    "wann"
    ],
-   "hinweis": "Relativwort",
-   "erklaerung": "Nach Zeitangaben: „als“ (Vergangenheit) oder „in dem“; „wo“ ist hier umgangssprachlich."
+   "richtig": 0,
+   "erklaerung": "Nach Zeitangaben: „als“ (Vergangenheit) oder „in dem“; „wo“ ist hier umgangssprachlich.",
+   "aus": "luecke"
   },
   {
    "id": "u14",
@@ -400,34 +451,63 @@
   },
   {
    "id": "u33",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Ich habe den Film gestern gesehen. Der Film hat mich tief bewegt.",
    "anweisung": "Verbinden Sie die Sätze mit einem Relativsatz. Beginnen Sie mit „Der Film“.",
-   "loesungen": [
-    "Der Film, den ich gestern gesehen habe, hat mich tief bewegt."
+   "teile": [
+    "den",
+    "hat",
+    "gestern gesehen",
+    "Der Film,",
+    "ich",
+    "bewegt",
+    "mich",
+    "habe,",
+    "tief"
    ],
-   "erklaerung": "Akkusativ maskulin: den; Verb am Ende des Relativsatzes."
+   "loesung": "Der Film, den ich gestern gesehen habe, hat mich tief bewegt.",
+   "erklaerung": "Akkusativ maskulin: den; Verb am Ende des Relativsatzes.",
+   "aus": "umformen"
   },
   {
    "id": "u34",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Die Autorin stellt heute ihr Buch vor. Ihr Debüt war ein Bestseller.",
    "anweisung": "Verbinden Sie die Sätze mit einem Relativsatz. Beginnen Sie mit „Die Autorin“.",
+   "teile": [
+    "Die Autorin,",
+    "vor",
+    "Debüt",
+    "deren",
+    "heute",
+    "ihr Buch",
+    "ein Bestseller",
+    "stellt",
+    "war,"
+   ],
+   "loesung": "Die Autorin, deren Debüt ein Bestseller war, stellt heute ihr Buch vor.",
    "loesungen": [
-    "Die Autorin, deren Debüt ein Bestseller war, stellt heute ihr Buch vor.",
     "Die Autorin, deren Debüt ein Bestseller war, stellt ihr Buch heute vor."
    ],
-   "erklaerung": "„ihr Debüt“ wird zu „deren Debüt“."
+   "erklaerung": "„ihr Debüt“ wird zu „deren Debüt“.",
+   "aus": "umformen"
   },
   {
    "id": "u35",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Er kam zu spät. Das ärgerte alle.",
    "anweisung": "Verbinden Sie die Sätze mit einem weiterführenden Relativsatz.",
-   "loesungen": [
-    "Er kam zu spät, was alle ärgerte."
+   "teile": [
+    "Er",
+    "zu spät,",
+    "kam",
+    "was",
+    "alle",
+    "ärgerte"
    ],
-   "erklaerung": "„was“ bezieht sich auf den ganzen vorangehenden Satz."
+   "loesung": "Er kam zu spät, was alle ärgerte.",
+   "erklaerung": "„was“ bezieht sich auf den ganzen vorangehenden Satz.",
+   "aus": "umformen"
   }
  ]
 }

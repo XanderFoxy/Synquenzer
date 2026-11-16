@@ -225,43 +225,63 @@
   },
   {
    "id": "u15",
-   "typ": "luecke",
-   "satz": "Nach langem Zögern ___ die Jury dem Debütanten den Preis zugesprochen.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Nach langem Zögern ___ die Jury dem Debütanten den Preis zugesprochen.",
+   "optionen": [
+    "wird",
+    "wurde",
+    "ist",
     "hat"
    ],
+   "richtig": 3,
    "hinweis": "haben, Präsens",
-   "erklaerung": "Das finite Hilfsverb steht an Position 2, das Partizip am Ende."
+   "erklaerung": "Das finite Hilfsverb steht an Position 2, das Partizip am Ende.",
+   "aus": "luecke"
   },
   {
    "id": "u17",
-   "typ": "luecke",
-   "satz": "Die Kommission ___ vor, die Frist um zwei Monate zu verlängern.",
-   "loesungen": [
-    "schlägt"
+   "typ": "auswahl",
+   "frage": "Die Kommission ___ vor, die Frist um zwei Monate zu verlängern.",
+   "optionen": [
+    "vorschlägt",
+    "schlägt",
+    "schlägst",
+    "schlagen"
    ],
+   "richtig": 1,
    "hinweis": "vorschlagen, Präsens",
-   "erklaerung": "Der Verbstamm steht an Position 2, „vor“ am Klammerende vor dem Infinitivsatz."
+   "erklaerung": "Der Verbstamm steht an Position 2, „vor“ am Klammerende vor dem Infinitivsatz.",
+   "aus": "luecke"
   },
   {
    "id": "u18",
-   "typ": "luecke",
-   "satz": "Seit der Reform ___ deutlich mehr Studierende ihr Studium in der Regelstudienzeit ab.",
-   "loesungen": [
-    "schließen"
+   "typ": "auswahl",
+   "frage": "Seit der Reform ___ deutlich mehr Studierende ihr Studium in der Regelstudienzeit ab.",
+   "optionen": [
+    "schließen",
+    "geschlossen",
+    "schließt",
+    "abschließen"
    ],
+   "richtig": 0,
    "hinweis": "abschließen, Präsens",
-   "erklaerung": "Vorfeld „Seit der Reform“, dann das finite Verb; „ab“ steht am Ende."
+   "erklaerung": "Vorfeld „Seit der Reform“, dann das finite Verb; „ab“ steht am Ende.",
+   "aus": "luecke"
   },
   {
    "id": "u19",
-   "typ": "luecke",
-   "satz": "Nach den Protesten ___ die Regierung die umstrittene Reform vorerst zurück.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Nach den Protesten ___ die Regierung die umstrittene Reform vorerst zurück.",
+   "optionen": [
+    "nehmen",
+    "genommen",
+    "zurücknimmt",
     "nimmt"
    ],
+   "richtig": 3,
    "hinweis": "zurücknehmen, Präsens",
-   "erklaerung": "Klammer: nimmt … zurück."
+   "erklaerung": "Klammer: nimmt … zurück.",
+   "aus": "luecke"
   },
   {
    "id": "u20",
@@ -380,45 +400,73 @@
   },
   {
    "id": "u29",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Ich habe den Artikel gestern im Zug gelesen.",
    "anweisung": "Stellen Sie „gestern“ ins Vorfeld.",
-   "loesungen": [
-    "Gestern habe ich den Artikel im Zug gelesen."
+   "teile": [
+    "im Zug",
+    "habe",
+    "Gestern",
+    "gelesen",
+    "ich",
+    "den Artikel"
    ],
-   "erklaerung": "Nach dem Vorfeld folgt das finite Verb, dann das Subjekt."
+   "loesung": "Gestern habe ich den Artikel im Zug gelesen.",
+   "erklaerung": "Nach dem Vorfeld folgt das finite Verb, dann das Subjekt.",
+   "aus": "umformen"
   },
   {
    "id": "u30",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Die Kuratorin hat dem Publikum das Gemälde erklärt.",
    "anweisung": "Ersetzen Sie beide Objekte durch Pronomen.",
-   "loesungen": [
-    "Die Kuratorin hat es ihm erklärt."
+   "teile": [
+    "hat",
+    "erklärt",
+    "ihm",
+    "Die Kuratorin",
+    "es"
    ],
-   "erklaerung": "Zwei Pronomen: Akkusativ vor Dativ."
+   "loesung": "Die Kuratorin hat es ihm erklärt.",
+   "erklaerung": "Zwei Pronomen: Akkusativ vor Dativ.",
+   "aus": "umformen"
   },
   {
    "id": "u31",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Die Firma hat das Angebot abgelehnt.",
    "anweisung": "Verneinen Sie den ganzen Satz mit „nicht“.",
-   "loesungen": [
-    "Die Firma hat das Angebot nicht abgelehnt."
+   "teile": [
+    "abgelehnt",
+    "hat",
+    "Die Firma",
+    "nicht",
+    "das Angebot"
    ],
-   "erklaerung": "Satznegation steht vor dem Klammerende."
+   "loesung": "Die Firma hat das Angebot nicht abgelehnt.",
+   "erklaerung": "Satznegation steht vor dem Klammerende.",
+   "aus": "umformen"
   },
   {
    "id": "u32",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Das Ministerium veröffentlicht den Bericht.",
-   "anweisung": "Setzen Sie den Satz ins Perfekt und ergänzen Sie „erst nach der Wahl“.",
+   "anweisung": "Setzen Sie den Satz ins Perfekt und bauen Sie „erst nach der Wahl“ ein.",
+   "teile": [
+    "Das Ministerium",
+    "nach der Wahl",
+    "den Bericht",
+    "erst",
+    "veröffentlicht",
+    "hat"
+   ],
+   "loesung": "Das Ministerium hat den Bericht erst nach der Wahl veröffentlicht.",
    "loesungen": [
-    "Das Ministerium hat den Bericht erst nach der Wahl veröffentlicht.",
     "Erst nach der Wahl hat das Ministerium den Bericht veröffentlicht.",
     "Das Ministerium hat erst nach der Wahl den Bericht veröffentlicht."
    ],
-   "erklaerung": "Perfekt: hat … veröffentlicht; die Zeitangabe steht im Mittelfeld oder im Vorfeld."
+   "erklaerung": "Perfekt: hat … veröffentlicht; die Zeitangabe steht im Mittelfeld oder im Vorfeld.",
+   "aus": "umformen"
   }
  ]
 }

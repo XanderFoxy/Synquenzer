@@ -556,83 +556,121 @@
   },
   {
    "id": "u41",
-   "typ": "luecke",
-   "satz": "Die Ergebnisse ___ erst nach Abschluss der Prüfung veröffentlicht werden.",
-   "loesungen": [
-    "sollen"
+   "typ": "auswahl",
+   "frage": "Die Ergebnisse ___ erst nach Abschluss der Prüfung veröffentlicht werden.",
+   "optionen": [
+    "soll",
+    "sollen",
+    "gesollt",
+    "sollst"
    ],
+   "richtig": 1,
    "hinweis": "sollen, Präsens",
-   "erklaerung": "Modalverb an Position 2, Passivinfinitiv (veröffentlicht werden) am Ende."
+   "erklaerung": "Modalverb an Position 2, Passivinfinitiv (veröffentlicht werden) am Ende.",
+   "aus": "luecke"
   },
   {
    "id": "u42",
-   "typ": "luecke",
-   "satz": "Ich bin sicher, dass sie die Prüfung bestehen ___.",
-   "loesungen": [
-    "wird"
+   "typ": "auswahl",
+   "frage": "Ich bin sicher, dass sie die Prüfung bestehen ___.",
+   "optionen": [
+    "wird",
+    "hat",
+    "ist",
+    "wurde"
    ],
+   "richtig": 0,
    "hinweis": "werden, Präsens",
-   "erklaerung": "Futur im Nebensatz: „wird“ ganz am Ende."
+   "erklaerung": "Futur im Nebensatz: „wird“ ganz am Ende.",
+   "aus": "luecke"
   },
   {
    "id": "u43",
-   "typ": "luecke",
-   "satz": "Er bedauert, dass er die Chance nicht ___ nutzen können.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Er bedauert, dass er die Chance nicht ___ nutzen können.",
+   "optionen": [
+    "wurde",
+    "sei",
+    "ist",
     "hat"
    ],
+   "richtig": 3,
    "hinweis": "haben, Präsens",
-   "erklaerung": "Ersatzinfinitiv: „hat“ steht vor „nutzen können“."
+   "erklaerung": "Ersatzinfinitiv: „hat“ steht vor „nutzen können“.",
+   "aus": "luecke"
   },
   {
    "id": "u44",
-   "typ": "luecke",
-   "satz": "Die Zeitung berichtet, dass der Minister zum Rücktritt gedrängt ___ sei.",
-   "loesungen": [
-    "worden"
+   "typ": "auswahl",
+   "frage": "Die Zeitung berichtet, dass der Minister zum Rücktritt gedrängt ___ sei.",
+   "optionen": [
+    "werden",
+    "geworden",
+    "worden",
+    "wurde"
    ],
-   "hinweis": "Hilfsverb",
-   "erklaerung": "Passiv Perfekt im Konjunktiv I: gedrängt worden sei."
+   "richtig": 2,
+   "erklaerung": "Passiv Perfekt im Konjunktiv I: gedrängt worden sei.",
+   "aus": "luecke"
   },
   {
    "id": "u45",
-   "typ": "luecke",
-   "satz": "Wenn das Wetter mitspielt, ___ das Fest im Park statt.",
-   "loesungen": [
-    "findet"
+   "typ": "auswahl",
+   "frage": "Wenn das Wetter mitspielt, ___ das Fest im Park statt.",
+   "optionen": [
+    "stattfindet",
+    "findet",
+    "finden",
+    "fand"
    ],
+   "richtig": 1,
    "hinweis": "stattfinden, Präsens",
-   "erklaerung": "Nebensatz im Vorfeld, dann das finite Verb; „statt“ am Ende."
+   "erklaerung": "Nebensatz im Vorfeld, dann das finite Verb; „statt“ am Ende.",
+   "aus": "luecke"
   },
   {
    "id": "u46",
-   "typ": "luecke",
-   "satz": "Hätten wir die Warnungen ernst genommen, ___ uns viel erspart geblieben.",
-   "loesungen": [
-    "wäre"
+   "typ": "auswahl",
+   "frage": "Hätten wir die Warnungen ernst genommen, ___ uns viel erspart geblieben.",
+   "optionen": [
+    "wäre",
+    "sei",
+    "war",
+    "ist"
    ],
+   "richtig": 0,
    "hinweis": "sein, Konjunktiv II",
-   "erklaerung": "Nach dem Bedingungssatz ohne „wenn“ folgt sofort das finite Verb des Hauptsatzes."
+   "erklaerung": "Nach dem Bedingungssatz ohne „wenn“ folgt sofort das finite Verb des Hauptsatzes.",
+   "aus": "luecke"
   },
   {
    "id": "u47",
-   "typ": "luecke",
-   "satz": "Die Daten, die gestern veröffentlicht ___ sind, zeigen einen klaren Trend.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Die Daten, die gestern veröffentlicht ___ sind, zeigen einen klaren Trend.",
+   "optionen": [
+    "werden",
+    "wurde",
+    "geworden",
     "worden"
    ],
-   "hinweis": "Hilfsverb",
-   "erklaerung": "Passiv Perfekt im Relativsatz: veröffentlicht worden sind."
+   "richtig": 3,
+   "erklaerung": "Passiv Perfekt im Relativsatz: veröffentlicht worden sind.",
+   "aus": "luecke"
   },
   {
    "id": "u48",
-   "typ": "luecke",
-   "satz": "Niemand weiß, ob der Vertrag jemals unterzeichnet ___.",
-   "loesungen": [
-    "wird"
+   "typ": "auswahl",
+   "frage": "Niemand weiß, ob der Vertrag jemals unterzeichnet ___.",
+   "optionen": [
+    "worden",
+    "werden",
+    "wird",
+    "hat"
    ],
+   "richtig": 2,
    "hinweis": "werden, Präsens",
-   "erklaerung": "Passiv Präsens im Nebensatz: unterzeichnet wird."
+   "erklaerung": "Passiv Präsens im Nebensatz: unterzeichnet wird.",
+   "aus": "luecke"
   },
   {
    "id": "u49",
@@ -708,44 +746,78 @@
   },
   {
    "id": "u55",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Es regnete. Trotzdem fand das Konzert statt.",
    "anweisung": "Verbinden Sie die Sätze mit „obwohl“ und beginnen Sie mit dem Nebensatz.",
-   "loesungen": [
-    "Obwohl es regnete, fand das Konzert statt."
+   "teile": [
+    "regnete,",
+    "statt",
+    "Obwohl",
+    "fand",
+    "das Konzert",
+    "es"
    ],
-   "erklaerung": "Nebensatz im Vorfeld, danach sofort das finite Verb."
+   "loesung": "Obwohl es regnete, fand das Konzert statt.",
+   "erklaerung": "Nebensatz im Vorfeld, danach sofort das finite Verb.",
+   "aus": "umformen"
   },
   {
    "id": "u56",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Wenn die Stadt die Pläne früher veröffentlicht hätte, hätte es weniger Widerstand gegeben.",
    "anweisung": "Formen Sie den Bedingungssatz ohne „wenn“ um.",
-   "loesungen": [
-    "Hätte die Stadt die Pläne früher veröffentlicht, hätte es weniger Widerstand gegeben."
+   "teile": [
+    "gegeben",
+    "die Pläne",
+    "hätte",
+    "früher",
+    "Hätte",
+    "die Stadt",
+    "es",
+    "weniger Widerstand",
+    "veröffentlicht,"
    ],
-   "erklaerung": "Ohne „wenn“ rückt das finite Verb an Position 1."
+   "loesung": "Hätte die Stadt die Pläne früher veröffentlicht, hätte es weniger Widerstand gegeben.",
+   "erklaerung": "Ohne „wenn“ rückt das finite Verb an Position 1.",
+   "aus": "umformen"
   },
   {
    "id": "u57",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Die Stadt muss die Schule sanieren.",
    "anweisung": "Formen Sie den Satz ins Passiv um.",
-   "loesungen": [
-    "Die Schule muss von der Stadt saniert werden.",
-    "Die Schule muss saniert werden."
+   "teile": [
+    "werden",
+    "saniert",
+    "muss",
+    "Die Schule",
+    "von der Stadt"
    ],
-   "erklaerung": "Passiv mit Modalverb: muss … saniert werden."
+   "loesung": "Die Schule muss von der Stadt saniert werden.",
+   "erklaerung": "Passiv mit Modalverb: muss … saniert werden.",
+   "aus": "umformen"
   },
   {
    "id": "u58",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Sie hat die Einladung nicht annehmen dürfen.",
    "anweisung": "Beginnen Sie mit „Es tut ihr leid, dass“.",
-   "loesungen": [
-    "Es tut ihr leid, dass sie die Einladung nicht hat annehmen dürfen."
+   "teile": [
+    "ihr",
+    "tut",
+    "dass",
+    "hat",
+    "dürfen",
+    "annehmen",
+    "die Einladung",
+    "leid,",
+    "nicht",
+    "sie",
+    "Es"
    ],
-   "erklaerung": "Ersatzinfinitiv im Nebensatz: hat + annehmen + dürfen."
+   "loesung": "Es tut ihr leid, dass sie die Einladung nicht hat annehmen dürfen.",
+   "erklaerung": "Ersatzinfinitiv im Nebensatz: hat + annehmen + dürfen.",
+   "aus": "umformen"
   },
   {
    "id": "u59",

@@ -7,7 +7,7 @@ import { lade, ladeIndex, liste, allesVorladen } from './daten.js';
 import { waehle, poolStand } from './wiederholung.js';
 import { einst, setzeEinst, serie, zielStand, wocheAktiv, summe, heutePunkte } from './konto.js';
 
-export const VERSION = '0.4.0';
+export const VERSION = '0.5.0';
 export const BEREICHE = [
   { id: 'hoeren', name: 'Hören', text: 'Ohne Text, wie in der Prüfung' },
   { id: 'lesen', name: 'Lesen', text: 'Kommentare, Sachtexte, Literatur' },
@@ -103,7 +103,7 @@ export async function starteHeute() {
 
 // Mischung für „Deine 10 Minuten“: 6 Grammatik + 4 Wortschatz. Grammatik: ein schwaches Thema (zufällig unter den drei
 // schwächsten unter 80 %) und zwei Themen, die am wenigsten geübt wurden – so kommen nach und nach alle 28 Themen dran.
-// Typen: höchstens 3 Auswahlaufgaben, möglichst eine Verbinden- oder Sortieraufgabe.
+// Typen: Grammatik 3 aktiv (Sortieren/Fehler/Verbinden), 2 Lücken, 1 Auswahl; Wortschatz 1 Verbinden, 2 Lücken, 1 Auswahl.
 export async function heuteMischung(idx, th = speicher.lies('themen', {}), n = 10) {
   const gram = idx.bereiche?.grammatik || [];
   const st = (e) => th['grammatik/' + e.id]; const quote = (e) => { const x = st(e); return x && x.n >= 3 ? x.r / x.n : null; };
@@ -116,12 +116,14 @@ export async function heuteMischung(idx, th = speicher.lies('themen', {}), n = 1
   if (wsWahl.length) { const { kandidatenFuer } = await import('./wortschatz.js'); for (const e of wsWahl) { try { kw.push(...await kandidatenFuer(e)); } catch { /* offline */ } } }
   if (!kg.length && !kw.length) throw new Error('keine Daten');
   const nG = kw.length ? Math.round(n * 0.6) : n;
-  const aktiv = (k) => k.typ !== 'auswahl' && k.typ !== 'rf'; const T = { durchlauf: false };
-  const gAktiv = waehle(kg.filter(aktiv), nG - 1, T); const gAus = waehle(kg.filter((k) => !aktiv(k)), nG - gAktiv.length, T);
+  const aktiv = (k) => k.typ === 'sortieren' || k.typ === 'fehler' || k.typ === 'zuordnen'; const T = { durchlauf: false };
+  const gAktiv = waehle(kg.filter(aktiv), Math.min(3, nG - 1), T);
+  const gLuecke = waehle(kg.filter((k) => k.typ === 'luecke'), Math.min(2, nG - gAktiv.length - 1), T);
+  const gAus = waehle(kg.filter((k) => !aktiv(k) && k.typ !== 'luecke'), nG - gAktiv.length - gLuecke.length, T);
   const wVerb = waehle(kw.filter((k) => k.typ === 'zuordnen'), 1, T);
   const wRest = waehle(kw.filter((k) => k.typ !== 'zuordnen' && k.typ !== 'auswahl'), n - nG - wVerb.length - 1, T);
   const wAus = waehle(kw.filter((k) => k.typ === 'auswahl'), n - nG - wVerb.length - wRest.length, T);
-  let alle = [...gAktiv, ...gAus, ...wVerb, ...wRest, ...wAus];
+  let alle = [...gAktiv, ...gLuecke, ...gAus, ...wVerb, ...wRest, ...wAus];
   if (alle.length < n) { const da = new Set(alle.map((k) => k.uid)); alle.push(...waehle([...kg, ...kw].filter((k) => !da.has(k.uid)), n - alle.length)); }
   const r = mische(alle.slice(0, n));   // Typen streuen: nie zweimal derselbe Typ hintereinander, wenn möglich
   for (let i = 1; i < r.length; i++) if (r[i].typ === r[i - 1].typ) { const j = r.findIndex((k, x) => x > i && k.typ !== r[i - 1].typ); if (j > 0) [r[i], r[j]] = [r[j], r[i]]; }
@@ -161,7 +163,7 @@ async function bereich(id) {
   }
   v.innerHTML = `${kopf(b.name, '#/bereiche', id)}<div class="bereich-seite" data-bereich="${id}">${html || '<p class="karte">Hier kommen bald Inhalte.</p>'}</div>`;
   v.querySelector('[data-gemischt]')?.addEventListener('click', () => gemischt('grammatik'));
-  v.querySelector('[data-umformen]')?.addEventListener('click', () => gemischt('grammatik', (u) => u.typ === 'umformen', 'Umformulieren (Schreiben Teil 1)', '#/bereich/schreiben'));
+  v.querySelector('[data-umformen]')?.addEventListener('click', () => gemischt('grammatik', (u) => u.aus === 'umformen' || u.typ === 'umformen', 'Umformulieren (Schreiben Teil 1)', '#/bereich/schreiben'));
   v.querySelector('[data-vorlage]')?.addEventListener('click', (e) => kopiereVorlage(e.target.closest('button'), 'buch_quintessenz', {}));
   if (v.querySelector('[data-vorlage]')) vorlagenVorladen();
 }

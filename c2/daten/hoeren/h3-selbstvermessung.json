@@ -144,13 +144,18 @@
   },
   {
    "id": "t3",
-   "typ": "luecke",
-   "satz": "Wer nur misst, weil man messen kann, sammelt am Ende vor allem ein schlechtes ___.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Wer nur misst, weil man messen kann, sammelt am Ende vor allem ein schlechtes ___.",
+   "optionen": [
+    "Gedächtnis",
+    "Gewicht",
+    "Ergebnis",
     "Gewissen"
    ],
+   "richtig": 3,
    "erklaerung": "„sammelt am Ende vor allem eines: ein schlechtes Gewissen“",
-   "nur_training": true
+   "nur_training": true,
+   "aus": "luecke"
   }
  ]
 }

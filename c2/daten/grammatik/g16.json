@@ -52,104 +52,150 @@
  "uebungen": [
   {
    "id": "u01",
-   "typ": "luecke",
-   "satz": "Laut Zeitungsberichten ___ der Politiker Steuern hinterzogen haben.",
-   "loesungen": [
-    "soll"
+   "typ": "auswahl",
+   "frage": "Laut Zeitungsberichten ___ der Politiker Steuern hinterzogen haben.",
+   "optionen": [
+    "soll",
+    "muss",
+    "will",
+    "kann"
    ],
+   "richtig": 0,
    "hinweis": "Behauptung anderer",
-   "erklaerung": "sollen = Man sagt, es heißt. Die Quelle sind andere."
+   "erklaerung": "sollen = Man sagt, es heißt. Die Quelle sind andere.",
+   "aus": "luecke"
   },
   {
    "id": "u02",
-   "typ": "luecke",
-   "satz": "Der Angeklagte ___ zur Tatzeit zu Hause gewesen sein – das behauptet er jedenfalls.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Der Angeklagte ___ zur Tatzeit zu Hause gewesen sein – das behauptet er jedenfalls.",
+   "optionen": [
+    "soll",
+    "mag",
+    "muss",
     "will"
    ],
-   "erklaerung": "wollen = Das Subjekt behauptet es selbst."
+   "richtig": 3,
+   "erklaerung": "wollen = Das Subjekt behauptet es selbst.",
+   "aus": "luecke"
   },
   {
    "id": "u03",
-   "typ": "luecke",
-   "satz": "Die marode Brücke droht ___.",
-   "loesungen": [
-    "einzustürzen"
+   "typ": "auswahl",
+   "frage": "Die marode Brücke droht ___.",
+   "optionen": [
+    "einstürzen",
+    "eingestürzt",
+    "einzustürzen",
+    "zu einstürzen"
    ],
+   "richtig": 2,
    "hinweis": "einstürzen",
-   "erklaerung": "drohen + zu + Infinitiv = Es besteht die Gefahr. Bei trennbaren Verben steht „zu“ zwischen Präfix und Stamm."
+   "erklaerung": "drohen + zu + Infinitiv = Es besteht die Gefahr. Bei trennbaren Verben steht „zu“ zwischen Präfix und Stamm.",
+   "aus": "luecke"
   },
   {
    "id": "u04",
-   "typ": "luecke",
-   "satz": "Sie ___ den Zug verpasst haben, sonst wäre sie längst hier.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Sie ___ den Zug verpasst haben, sonst wäre sie längst hier.",
+   "optionen": [
+    "soll",
+    "darf",
     "muss",
-    "wird"
+    "will"
    ],
+   "richtig": 2,
    "hinweis": "fast sicher",
-   "erklaerung": "„muss“ (oder Futur II „wird … haben“) = logische Schlussfolgerung, fast sicher."
+   "erklaerung": "„muss“ (oder Futur II „wird … haben“) = logische Schlussfolgerung, fast sicher.",
+   "aus": "luecke"
   },
   {
    "id": "u05",
-   "typ": "luecke",
-   "satz": "Das ___ sein, aber es ändert nichts an der Sache.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Das ___ sein, aber es ändert nichts an der Sache.",
+   "optionen": [
     "mag",
-    "kann",
-    "könnte"
+    "will",
+    "muss",
+    "soll"
    ],
+   "richtig": 0,
    "hinweis": "gehoben, einräumend",
-   "erklaerung": "„Das mag sein, aber …“ räumt etwas ein, um dann zu widersprechen."
+   "erklaerung": "„Das mag sein, aber …“ räumt etwas ein, um dann zu widersprechen.",
+   "aus": "luecke"
   },
   {
    "id": "u06",
-   "typ": "luecke",
-   "satz": "Der alte Herr ___ morgens zuerst die Zeitung zu lesen.",
-   "loesungen": [
-    "pflegt",
-    "pflegte"
+   "typ": "auswahl",
+   "frage": "Der alte Herr ___ morgens zuerst die Zeitung zu lesen.",
+   "optionen": [
+    "neigt",
+    "hält",
+    "gewöhnt",
+    "pflegt"
    ],
+   "richtig": 3,
    "hinweis": "Gewohnheit",
-   "erklaerung": "pflegen + zu = etwas gewöhnlich tun."
+   "erklaerung": "pflegen + zu = etwas gewöhnlich tun.",
+   "aus": "luecke"
   },
   {
    "id": "u07",
-   "typ": "luecke",
-   "satz": "Die Verhandlungen scheinen endgültig gescheitert zu ___.",
-   "loesungen": [
-    "sein"
+   "typ": "auswahl",
+   "frage": "Die Verhandlungen scheinen endgültig gescheitert zu ___.",
+   "optionen": [
+    "werden",
+    "gewesen",
+    "sein",
+    "haben"
    ],
-   "erklaerung": "Infinitiv Perfekt mit zu: gescheitert zu sein („scheitern“ bildet das Perfekt mit sein)."
+   "richtig": 2,
+   "erklaerung": "Infinitiv Perfekt mit zu: gescheitert zu sein („scheitern“ bildet das Perfekt mit sein).",
+   "aus": "luecke"
   },
   {
    "id": "u08",
-   "typ": "luecke",
-   "satz": "Der Täter ___ das Land bereits verlassen haben, vermutet die Polizei.",
-   "loesungen": [
-    "dürfte"
+   "typ": "auswahl",
+   "frage": "Der Täter ___ das Land bereits verlassen haben, vermutet die Polizei.",
+   "optionen": [
+    "dürften",
+    "dürfte",
+    "darf",
+    "durfte"
    ],
+   "richtig": 1,
    "hinweis": "wahrscheinlich",
-   "erklaerung": "dürfte (Konjunktiv II von „dürfen“) = wahrscheinlich."
+   "erklaerung": "dürfte (Konjunktiv II von „dürfen“) = wahrscheinlich.",
+   "aus": "luecke"
   },
   {
    "id": "u09",
-   "typ": "luecke",
-   "satz": "Das Wochenende verspricht sonnig zu ___.",
-   "loesungen": [
-    "werden"
+   "typ": "auswahl",
+   "frage": "Das Wochenende verspricht sonnig zu ___.",
+   "optionen": [
+    "werden",
+    "worden",
+    "geworden",
+    "wurden"
    ],
-   "erklaerung": "versprechen + zu = Es sieht gut aus, dass …"
+   "richtig": 0,
+   "erklaerung": "versprechen + zu = Es sieht gut aus, dass …",
+   "aus": "luecke"
   },
   {
    "id": "u10",
-   "typ": "luecke",
-   "satz": "Kaum jemand ___ zu sagen, wie es weitergehen wird.",
-   "loesungen": [
-    "vermag"
+   "typ": "auswahl",
+   "frage": "Kaum jemand ___ zu sagen, wie es weitergehen wird.",
+   "optionen": [
+    "vermag",
+    "mag",
+    "darf",
+    "kann"
    ],
+   "richtig": 0,
    "hinweis": "gehoben für „kann“",
-   "erklaerung": "vermögen + zu = können (gehoben)."
+   "erklaerung": "vermögen + zu = können (gehoben).",
+   "aus": "luecke"
   },
   {
    "id": "u11",
@@ -231,66 +277,96 @@
   },
   {
    "id": "u17",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Es heißt, dass der Regisseur an einem neuen Film arbeitet.",
    "anweisung": "Formulieren Sie mit „sollen“.",
-   "loesungen": [
-    "Der Regisseur soll an einem neuen Film arbeiten."
+   "teile": [
+    "arbeiten",
+    "Der Regisseur",
+    "soll",
+    "an einem neuen Film"
    ],
-   "erklaerung": "Subjektives „sollen“ ersetzt „Es heißt, dass …“."
+   "loesung": "Der Regisseur soll an einem neuen Film arbeiten.",
+   "erklaerung": "Subjektives „sollen“ ersetzt „Es heißt, dass …“.",
+   "aus": "umformen"
   },
   {
    "id": "u18",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Er behauptet, dass er den Unfall nicht verursacht hat.",
    "anweisung": "Formulieren Sie mit „wollen“.",
-   "loesungen": [
-    "Er will den Unfall nicht verursacht haben."
+   "teile": [
+    "nicht verursacht",
+    "Er",
+    "will",
+    "den Unfall",
+    "haben"
    ],
-   "erklaerung": "Subjektives „wollen“ + Infinitiv Perfekt für Vergangenes."
+   "loesung": "Er will den Unfall nicht verursacht haben.",
+   "erklaerung": "Subjektives „wollen“ + Infinitiv Perfekt für Vergangenes.",
+   "aus": "umformen"
   },
   {
    "id": "u19",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Wahrscheinlich hat sie die Mail übersehen.",
    "anweisung": "Formulieren Sie mit „dürfte“.",
-   "loesungen": [
-    "Sie dürfte die Mail übersehen haben."
+   "teile": [
+    "Sie",
+    "die Mail",
+    "übersehen",
+    "dürfte",
+    "haben"
    ],
-   "erklaerung": "dürfte + Infinitiv Perfekt = wahrscheinlich in der Vergangenheit."
+   "loesung": "Sie dürfte die Mail übersehen haben.",
+   "erklaerung": "dürfte + Infinitiv Perfekt = wahrscheinlich in der Vergangenheit.",
+   "aus": "umformen"
   },
   {
    "id": "u20",
-   "typ": "umformen",
-   "ausgang": "Es sieht so aus, als ob das Projekt scheitert.",
-   "anweisung": "Formulieren Sie mit „drohen“.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Es sieht so aus, als ob das Projekt scheitert. – Formulieren Sie mit „drohen“.",
+   "optionen": [
+    "Das Projekt droht, dass es scheitert.",
+    "Das Projekt droht scheitern.",
+    "Das Projekt droht zu scheitert.",
     "Das Projekt droht zu scheitern."
    ],
-   "erklaerung": "drohen + zu + Infinitiv für eine bevorstehende Gefahr."
+   "richtig": 3,
+   "erklaerung": "drohen + zu + Infinitiv für eine bevorstehende Gefahr.",
+   "aus": "umformen"
   },
   {
    "id": "u21",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Ich bin mir sicher, dass er die Wahrheit gesagt hat.",
    "anweisung": "Formulieren Sie mit „müssen“.",
-   "loesungen": [
-    "Er muss die Wahrheit gesagt haben."
+   "teile": [
+    "gesagt",
+    "Er",
+    "muss",
+    "haben",
+    "die Wahrheit"
    ],
-   "erklaerung": "Subjektives „müssen“ + Infinitiv Perfekt = fast sicher."
+   "loesung": "Er muss die Wahrheit gesagt haben.",
+   "erklaerung": "Subjektives „müssen“ + Infinitiv Perfekt = fast sicher.",
+   "aus": "umformen"
   },
   {
    "id": "u22",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Es ist möglich, dass die Daten verloren gegangen sind.",
    "anweisung": "Formulieren Sie mit „können“.",
-   "loesungen": [
-    "Die Daten können verloren gegangen sein.",
-    "Die Daten könnten verloren gegangen sein.",
-    "Die Daten können verlorengegangen sein.",
-    "Die Daten könnten verlorengegangen sein."
+   "teile": [
+    "Die Daten",
+    "können",
+    "sein",
+    "gegangen",
+    "verloren"
    ],
-   "erklaerung": "können/könnte + Infinitiv Perfekt = möglich. Beide Schreibungen (verloren gegangen / verlorengegangen) sind zulässig."
+   "loesung": "Die Daten können verloren gegangen sein.",
+   "erklaerung": "können/könnte + Infinitiv Perfekt = möglich. Beide Schreibungen (verloren gegangen / verlorengegangen) sind zulässig.",
+   "aus": "umformen"
   },
   {
    "id": "u23",

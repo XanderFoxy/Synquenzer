@@ -50,126 +50,178 @@
  "uebungen": [
   {
    "id": "u02",
-   "typ": "luecke",
-   "satz": "Verglichen mit dem Nutzen fallen die Kosten kaum ins ___.",
-   "loesungen": [
-    "Gewicht"
+   "typ": "auswahl",
+   "frage": "Verglichen mit dem Nutzen fallen die Kosten kaum ins ___.",
+   "optionen": [
+    "Gewicht",
+    "Gewähr",
+    "Lot",
+    "Maß"
    ],
-   "hinweis": "Nomen",
-   "erklaerung": "„ins Gewicht fallen“ = bedeutsam sein."
+   "richtig": 0,
+   "erklaerung": "„ins Gewicht fallen“ = bedeutsam sein.",
+   "aus": "luecke"
   },
   {
    "id": "u03",
-   "typ": "luecke",
-   "satz": "Diese Behauptung ist völlig aus der ___ gegriffen.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Diese Behauptung ist völlig aus der ___ gegriffen.",
+   "optionen": [
+    "Wolke",
+    "Ferne",
+    "Hand",
     "Luft"
    ],
-   "hinweis": "Nomen",
-   "erklaerung": "„aus der Luft gegriffen“ = frei erfunden, ohne Grundlage."
+   "richtig": 3,
+   "erklaerung": "„aus der Luft gegriffen“ = frei erfunden, ohne Grundlage.",
+   "aus": "luecke"
   },
   {
    "id": "u04",
-   "typ": "luecke",
-   "satz": "Sie hat das Problem in wenigen Sätzen auf den ___ gebracht.",
-   "loesungen": [
-    "Punkt"
+   "typ": "auswahl",
+   "frage": "Sie hat das Problem in wenigen Sätzen auf den ___ gebracht.",
+   "optionen": [
+    "Strich",
+    "Kern",
+    "Punkt",
+    "Fleck"
    ],
-   "hinweis": "Nomen",
-   "erklaerung": "„etwas auf den Punkt bringen“ = knapp und treffend formulieren."
+   "richtig": 2,
+   "erklaerung": "„etwas auf den Punkt bringen“ = knapp und treffend formulieren.",
+   "aus": "luecke"
   },
   {
    "id": "u05",
-   "typ": "luecke",
-   "satz": "Bei der Reform sind die Interessen der Pflegekräfte unter den ___ gefallen.",
-   "loesungen": [
-    "Tisch"
+   "typ": "auswahl",
+   "frage": "Bei der Reform sind die Interessen der Pflegekräfte unter den ___ gefallen.",
+   "optionen": [
+    "Teppich",
+    "Tisch",
+    "Stuhl",
+    "Boden"
    ],
-   "hinweis": "Nomen",
-   "erklaerung": "„unter den Tisch fallen“ = nicht berücksichtigt werden."
+   "richtig": 1,
+   "erklaerung": "„unter den Tisch fallen“ = nicht berücksichtigt werden.",
+   "aus": "luecke"
   },
   {
    "id": "u06",
-   "typ": "luecke",
-   "satz": "Die Studie ___ eine Reihe unbequemer Fragen auf.",
-   "loesungen": [
-    "wirft"
+   "typ": "auswahl",
+   "frage": "Die Studie ___ eine Reihe unbequemer Fragen auf.",
+   "optionen": [
+    "wirft",
+    "legt",
+    "bringt",
+    "stellt"
    ],
+   "richtig": 0,
    "hinweis": "Verb, Präsens",
-   "erklaerung": "„Fragen aufwerfen“ = Fragen entstehen lassen."
+   "erklaerung": "„Fragen aufwerfen“ = Fragen entstehen lassen.",
+   "aus": "luecke"
   },
   {
    "id": "u08",
-   "typ": "luecke",
-   "satz": "Mit ihrer Forschung hat sie einen wichtigen Beitrag zur Demenzforschung ___.",
-   "loesungen": [
-    "geleistet"
+   "typ": "auswahl",
+   "frage": "Mit ihrer Forschung hat sie einen wichtigen Beitrag zur Demenzforschung ___.",
+   "optionen": [
+    "geleistet",
+    "gegeben",
+    "gemacht",
+    "getan"
    ],
+   "richtig": 0,
    "hinweis": "Partizip II",
-   "erklaerung": "„einen Beitrag leisten“."
+   "erklaerung": "„einen Beitrag leisten“.",
+   "aus": "luecke"
   },
   {
    "id": "u09",
-   "typ": "luecke",
-   "satz": "Nach zähen Verhandlungen ___ die Parteien einen Kompromiss.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Nach zähen Verhandlungen ___ die Parteien einen Kompromiss.",
+   "optionen": [
+    "nahmen",
+    "fassten",
     "schlossen",
-    "fanden",
-    "erzielten",
-    "erreichten"
+    "gaben"
    ],
+   "richtig": 2,
    "hinweis": "Verb, Präteritum",
-   "erklaerung": "„einen Kompromiss schließen“ oder „finden“."
+   "erklaerung": "„einen Kompromiss schließen“ oder „finden“.",
+   "aus": "luecke"
   },
   {
    "id": "u10",
-   "typ": "luecke",
-   "satz": "Was früher die Ausnahme war, ist heute gang und ___.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Was früher die Ausnahme war, ist heute gang und ___.",
+   "optionen": [
+    "gebe",
+    "gabe",
+    "geben",
     "gäbe"
    ],
+   "richtig": 3,
    "hinweis": "Zwillingsformel",
-   "erklaerung": "„gang und gäbe“ = allgemein üblich."
+   "erklaerung": "„gang und gäbe“ = allgemein üblich.",
+   "aus": "luecke"
   },
   {
    "id": "u11",
-   "typ": "luecke",
-   "satz": "Man kann mit Fug und ___ behaupten, dass dieser Roman ein Meilenstein ist.",
-   "loesungen": [
-    "Recht"
+   "typ": "auswahl",
+   "frage": "Man kann mit Fug und ___ behaupten, dass dieser Roman ein Meilenstein ist.",
+   "optionen": [
+    "Recht",
+    "Sinn",
+    "Grund",
+    "Rat"
    ],
+   "richtig": 0,
    "hinweis": "Zwillingsformel",
-   "erklaerung": "„mit Fug und Recht“ = mit voller Berechtigung."
+   "erklaerung": "„mit Fug und Recht“ = mit voller Berechtigung.",
+   "aus": "luecke"
   },
   {
    "id": "u12",
-   "typ": "luecke",
-   "satz": "Wer die Fehler der eigenen Partei verzeiht und die der anderen anprangert, misst mit zweierlei ___.",
-   "loesungen": [
-    "Maß"
+   "typ": "auswahl",
+   "frage": "Wer die Fehler der eigenen Partei verzeiht und die der anderen anprangert, misst mit zweierlei ___.",
+   "optionen": [
+    "Waage",
+    "Maß",
+    "Mal",
+    "Gewicht"
    ],
-   "hinweis": "Nomen",
-   "erklaerung": "„mit zweierlei Maß messen“ = ungleich, ungerecht urteilen."
+   "richtig": 1,
+   "erklaerung": "„mit zweierlei Maß messen“ = ungleich, ungerecht urteilen.",
+   "aus": "luecke"
   },
   {
    "id": "u13",
-   "typ": "luecke",
-   "satz": "Über kurz oder ___ wird sich das Unternehmen neu aufstellen müssen.",
-   "loesungen": [
-    "lang"
+   "typ": "auswahl",
+   "frage": "Über kurz oder ___ wird sich das Unternehmen neu aufstellen müssen.",
+   "optionen": [
+    "lang",
+    "weit",
+    "später",
+    "breit"
    ],
+   "richtig": 0,
    "hinweis": "Adjektiv",
-   "erklaerung": "„über kurz oder lang“ = früher oder später."
+   "erklaerung": "„über kurz oder lang“ = früher oder später.",
+   "aus": "luecke"
   },
   {
    "id": "u14",
-   "typ": "luecke",
-   "satz": "Bei der maroden Brücke besteht dringender ___.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Bei der maroden Brücke besteht dringender ___.",
+   "optionen": [
+    "Handlungsbedarfs",
+    "Handelsbedarf",
+    "Handlungsbedürfnis",
     "Handlungsbedarf"
    ],
+   "richtig": 3,
    "hinweis": "Kompositum: man muss handeln",
-   "erklaerung": "Kollokation: Es besteht dringender Handlungsbedarf."
+   "erklaerung": "Kollokation: Es besteht dringender Handlungsbedarf.",
+   "aus": "luecke"
   },
   {
    "id": "u15",
@@ -377,33 +429,51 @@
   },
   {
    "id": "u36",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Gewerkschaft und Arbeitgeber einigten sich auf einen Kompromiss.",
    "anweisung": "Verwenden Sie „einen Kompromiss schließen“.",
-   "loesungen": [
-    "Gewerkschaft und Arbeitgeber schlossen einen Kompromiss."
+   "teile": [
+    "Arbeitgeber",
+    "schlossen",
+    "Gewerkschaft",
+    "einen Kompromiss",
+    "und"
    ],
-   "erklaerung": "„sich einigen auf“ → „einen Kompromiss schließen“."
+   "loesung": "Gewerkschaft und Arbeitgeber schlossen einen Kompromiss.",
+   "loesungen": [
+    "Arbeitgeber und Gewerkschaft schlossen einen Kompromiss."
+   ],
+   "erklaerung": "„sich einigen auf“ → „einen Kompromiss schließen“.",
+   "aus": "umformen"
   },
   {
    "id": "u37",
-   "typ": "luecke",
-   "satz": "Die neue Studie wirft ein schlechtes ___ auf die Arbeitsbedingungen in der Branche.",
-   "loesungen": [
-    "Licht"
+   "typ": "auswahl",
+   "frage": "Die neue Studie wirft ein schlechtes ___ auf die Arbeitsbedingungen in der Branche.",
+   "optionen": [
+    "Auge",
+    "Zeichen",
+    "Licht",
+    "Bild"
    ],
-   "hinweis": "Nomen",
-   "erklaerung": "„ein schlechtes Licht auf etwas werfen“: etwas negativ erscheinen lassen."
+   "richtig": 2,
+   "erklaerung": "„ein schlechtes Licht auf etwas werfen“: etwas negativ erscheinen lassen.",
+   "aus": "luecke"
   },
   {
    "id": "u38",
-   "typ": "luecke",
-   "satz": "Der Vorschlag der Opposition stieß bei der Regierung auf taube ___.",
-   "loesungen": [
-    "Ohren"
+   "typ": "auswahl",
+   "frage": "Der Vorschlag der Opposition stieß bei der Regierung auf taube ___.",
+   "optionen": [
+    "Augen",
+    "Herzen",
+    "Ohren",
+    "Ohr"
    ],
+   "richtig": 2,
    "hinweis": "Nomen, Plural",
-   "erklaerung": "„auf taube Ohren stoßen“: kein Gehör finden, ignoriert werden."
+   "erklaerung": "„auf taube Ohren stoßen“: kein Gehör finden, ignoriert werden.",
+   "aus": "luecke"
   }
  ]
 }

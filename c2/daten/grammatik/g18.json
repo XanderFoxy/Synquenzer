@@ -51,106 +51,152 @@
  "uebungen": [
   {
    "id": "u01",
-   "typ": "luecke",
-   "satz": "___ dem Abschluss ihres Studiums zog sie nach Wien.",
-   "loesungen": [
-    "Nach"
+   "typ": "auswahl",
+   "frage": "___ dem Abschluss ihres Studiums zog sie nach Wien.",
+   "optionen": [
+    "Nach",
+    "Auf",
+    "Zu",
+    "Um"
    ],
+   "richtig": 0,
    "hinweis": "nachdem → ?",
-   "erklaerung": "„nachdem“ wird im Nominalstil zu „nach“ + Dativ."
+   "erklaerung": "„nachdem“ wird im Nominalstil zu „nach“ + Dativ.",
+   "aus": "luecke"
   },
   {
    "id": "u02",
-   "typ": "luecke",
-   "satz": "___ intensiver Bemühungen fand man keine Lösung.",
-   "loesungen": [
-    "Trotz"
+   "typ": "auswahl",
+   "frage": "___ intensiver Bemühungen fand man keine Lösung.",
+   "optionen": [
+    "Wegen",
+    "Trotz",
+    "Infolge",
+    "Dank"
    ],
+   "richtig": 1,
    "hinweis": "obwohl → ?",
-   "erklaerung": "„obwohl“ wird zu „trotz“ + Genitiv."
+   "erklaerung": "„obwohl“ wird zu „trotz“ + Genitiv.",
+   "aus": "luecke"
   },
   {
    "id": "u03",
-   "typ": "luecke",
-   "satz": "___ der Planung des Projekts wurden mehrere Fehler gemacht.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "___ der Planung des Projekts wurden mehrere Fehler gemacht.",
+   "optionen": [
+    "Mit",
+    "An",
     "Bei",
-    "Während"
+    "Zu"
    ],
-   "erklaerung": "„bei“ (oder „während“) + Dativ/Genitiv steht für „als“ bzw. „während man plante“."
+   "richtig": 2,
+   "erklaerung": "„bei“ (oder „während“) + Dativ/Genitiv steht für „als“ bzw. „während man plante“.",
+   "aus": "luecke"
   },
   {
    "id": "u04",
-   "typ": "luecke",
-   "satz": "___ Verbesserung der Luftqualität wurden Fahrverbote verhängt.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "___ Verbesserung der Luftqualität wurden Fahrverbote verhängt.",
+   "optionen": [
+    "Zum",
+    "Für",
+    "Um",
     "Zur"
    ],
+   "richtig": 3,
    "hinweis": "um … zu → ?",
-   "erklaerung": "Zweck im Nominalstil: zu + Artikel = „zur“ (zu der)."
+   "erklaerung": "Zweck im Nominalstil: zu + Artikel = „zur“ (zu der).",
+   "aus": "luecke"
   },
   {
    "id": "u05",
-   "typ": "luecke",
-   "satz": "___ Nichteinhaltung der Regeln droht eine Geldstrafe.",
-   "loesungen": [
-    "Bei"
+   "typ": "auswahl",
+   "frage": "___ Nichteinhaltung der Regeln droht eine Geldstrafe.",
+   "optionen": [
+    "Bei",
+    "Mit",
+    "Zu",
+    "An"
    ],
+   "richtig": 0,
    "hinweis": "wenn → ?",
-   "erklaerung": "Bedingung im Nominalstil: „bei“ + Dativ (= wenn man die Regeln nicht einhält)."
+   "erklaerung": "Bedingung im Nominalstil: „bei“ + Dativ (= wenn man die Regeln nicht einhält).",
+   "aus": "luecke"
   },
   {
    "id": "u06",
-   "typ": "luecke",
-   "satz": "Die Firma wurde ___ die Einführung neuer Technik konkurrenzfähiger.",
-   "loesungen": [
-    "durch"
+   "typ": "auswahl",
+   "frage": "Die Firma wurde ___ die Einführung neuer Technik konkurrenzfähiger.",
+   "optionen": [
+    "mit",
+    "durch",
+    "aus",
+    "von"
    ],
+   "richtig": 1,
    "hinweis": "indem → ?",
-   "erklaerung": "„indem“ wird zu „durch“ + Akkusativ."
+   "erklaerung": "„indem“ wird zu „durch“ + Akkusativ.",
+   "aus": "luecke"
   },
   {
    "id": "u07",
-   "typ": "luecke",
-   "satz": "___ Beginn der Veranstaltung müssen alle Plätze reserviert sein.",
-   "loesungen": [
-    "Vor"
+   "typ": "auswahl",
+   "frage": "___ Beginn der Veranstaltung müssen alle Plätze reserviert sein.",
+   "optionen": [
+    "An",
+    "Für",
+    "Vor",
+    "Um"
    ],
+   "richtig": 2,
    "hinweis": "bevor → ?",
-   "erklaerung": "„bevor“ wird zu „vor“ + Dativ."
+   "erklaerung": "„bevor“ wird zu „vor“ + Dativ.",
+   "aus": "luecke"
   },
   {
    "id": "u08",
-   "typ": "luecke",
-   "satz": "___ seiner Krankheit konnte er nicht an der Sitzung teilnehmen.",
-   "loesungen": [
-    "Wegen",
-    "Aufgrund",
-    "Auf Grund",
-    "Infolge"
+   "typ": "auswahl",
+   "frage": "___ seiner Krankheit konnte er nicht an der Sitzung teilnehmen.",
+   "optionen": [
+    "Dank",
+    "Statt",
+    "Trotz",
+    "Wegen"
    ],
+   "richtig": 3,
    "hinweis": "weil → ?",
-   "erklaerung": "Grund im Nominalstil: wegen, aufgrund oder infolge + Genitiv."
+   "erklaerung": "Grund im Nominalstil: wegen, aufgrund oder infolge + Genitiv.",
+   "aus": "luecke"
   },
   {
    "id": "u09",
-   "typ": "luecke",
-   "satz": "Die ___ des Hauses dauerte zwei Jahre.",
-   "loesungen": [
-    "Renovierung"
+   "typ": "auswahl",
+   "frage": "Die ___ des Hauses dauerte zwei Jahre.",
+   "optionen": [
+    "Renovierung",
+    "Renovierens",
+    "Renovierungen",
+    "Renovieren"
    ],
+   "richtig": 0,
    "hinweis": "renovieren",
-   "erklaerung": "Nominalisierung auf -ung; das Akkusativobjekt wird Genitivattribut."
+   "erklaerung": "Nominalisierung auf -ung; das Akkusativobjekt wird Genitivattribut.",
+   "aus": "luecke"
   },
   {
    "id": "u10",
-   "typ": "luecke",
-   "satz": "Sein plötzlicher ___ überraschte alle.",
-   "loesungen": [
-    "Rücktritt"
+   "typ": "auswahl",
+   "frage": "Sein plötzlicher ___ überraschte alle.",
+   "optionen": [
+    "Rücktritt",
+    "Rücktreten",
+    "Zurücktreten",
+    "Rücktrittes"
    ],
+   "richtig": 0,
    "hinweis": "zurücktreten",
-   "erklaerung": "Nominalisierung ohne Endung: zurücktreten → der Rücktritt."
+   "erklaerung": "Nominalisierung ohne Endung: zurücktreten → der Rücktritt.",
+   "aus": "luecke"
   },
   {
    "id": "u11",
@@ -232,81 +278,109 @@
   },
   {
    "id": "u17",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Nachdem sie ihr Studium abgeschlossen hatte, zog sie nach Wien.",
    "anweisung": "Formulieren Sie im Nominalstil.",
-   "loesungen": [
-    "Nach dem Abschluss ihres Studiums zog sie nach Wien.",
-    "Nach Abschluss ihres Studiums zog sie nach Wien.",
-    "Nach ihrem Studienabschluss zog sie nach Wien.",
-    "Nach dem Studienabschluss zog sie nach Wien."
+   "teile": [
+    "Nach dem Abschluss",
+    "nach Wien",
+    "zog",
+    "ihres Studiums",
+    "sie"
    ],
-   "erklaerung": "nachdem → nach + Dativ; das Objekt „ihr Studium“ wird Genitiv „ihres Studiums“."
+   "loesung": "Nach dem Abschluss ihres Studiums zog sie nach Wien.",
+   "erklaerung": "nachdem → nach + Dativ; das Objekt „ihr Studium“ wird Genitiv „ihres Studiums“.",
+   "aus": "umformen"
   },
   {
    "id": "u18",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Obwohl die Kosten hoch sind, wird das Projekt fortgesetzt.",
    "anweisung": "Formulieren Sie mit „trotz“.",
-   "loesungen": [
-    "Trotz der hohen Kosten wird das Projekt fortgesetzt.",
-    "Trotz hoher Kosten wird das Projekt fortgesetzt."
+   "teile": [
+    "das Projekt",
+    "wird",
+    "Trotz der hohen Kosten",
+    "fortgesetzt"
    ],
-   "erklaerung": "obwohl → trotz + Genitiv; das prädikative Adjektiv wird Attribut."
+   "loesung": "Trotz der hohen Kosten wird das Projekt fortgesetzt.",
+   "erklaerung": "obwohl → trotz + Genitiv; das prädikative Adjektiv wird Attribut.",
+   "aus": "umformen"
   },
   {
    "id": "u19",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Wegen der Erkrankung der Sängerin fiel das Konzert aus.",
    "anweisung": "Formulieren Sie mit „weil“.",
-   "loesungen": [
-    "Weil die Sängerin erkrankt war, fiel das Konzert aus.",
-    "Das Konzert fiel aus, weil die Sängerin erkrankt war.",
-    "Weil die Sängerin krank war, fiel das Konzert aus.",
-    "Das Konzert fiel aus, weil die Sängerin krank war.",
-    "Weil die Sängerin erkrankte, fiel das Konzert aus.",
-    "Das Konzert fiel aus, weil die Sängerin erkrankte."
+   "teile": [
+    "fiel",
+    "das Konzert",
+    "erkrankt",
+    "die Sängerin",
+    "aus",
+    "war,",
+    "Weil"
    ],
-   "erklaerung": "wegen → weil; das Genitivattribut „der Sängerin“ wird Subjekt."
+   "loesung": "Weil die Sängerin erkrankt war, fiel das Konzert aus.",
+   "erklaerung": "wegen → weil; das Genitivattribut „der Sängerin“ wird Subjekt.",
+   "aus": "umformen"
   },
   {
    "id": "u20",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Bei schlechtem Wetter findet die Veranstaltung im Saal statt.",
    "anweisung": "Formulieren Sie mit „wenn“.",
-   "loesungen": [
-    "Wenn das Wetter schlecht ist, findet die Veranstaltung im Saal statt.",
-    "Die Veranstaltung findet im Saal statt, wenn das Wetter schlecht ist."
+   "teile": [
+    "das Wetter",
+    "die Veranstaltung",
+    "findet",
+    "schlecht",
+    "ist,",
+    "Wenn",
+    "statt",
+    "im Saal"
    ],
-   "erklaerung": "bei → wenn; das Adjektiv wird prädikativ."
+   "loesung": "Wenn das Wetter schlecht ist, findet die Veranstaltung im Saal statt.",
+   "erklaerung": "bei → wenn; das Adjektiv wird prädikativ.",
+   "aus": "umformen"
   },
   {
    "id": "u21",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Um die Qualität zu sichern, werden alle Texte zweimal geprüft.",
    "anweisung": "Formulieren Sie im Nominalstil mit „zur“.",
-   "loesungen": [
-    "Zur Sicherung der Qualität werden alle Texte zweimal geprüft.",
-    "Zur Qualitätssicherung werden alle Texte zweimal geprüft.",
-    "Alle Texte werden zur Sicherung der Qualität zweimal geprüft.",
-    "Alle Texte werden zur Qualitätssicherung zweimal geprüft."
+   "teile": [
+    "der Qualität",
+    "zweimal geprüft",
+    "alle Texte",
+    "Zur Sicherung",
+    "werden"
    ],
-   "erklaerung": "um … zu → zur + Nomen auf -ung; das Objekt wird Genitiv."
+   "loesung": "Zur Sicherung der Qualität werden alle Texte zweimal geprüft.",
+   "loesungen": [
+    "Alle Texte werden zur Sicherung der Qualität zweimal geprüft."
+   ],
+   "erklaerung": "um … zu → zur + Nomen auf -ung; das Objekt wird Genitiv.",
+   "aus": "umformen"
   },
   {
    "id": "u22",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Durch die regelmäßige Wiederholung des Stoffs verbesserten sich ihre Noten.",
    "anweisung": "Formulieren Sie mit „dadurch, dass“.",
-   "loesungen": [
-    "Dadurch, dass sie den Stoff regelmäßig wiederholte, verbesserten sich ihre Noten.",
-    "Ihre Noten verbesserten sich dadurch, dass sie den Stoff regelmäßig wiederholte.",
-    "Dadurch, dass der Stoff regelmäßig wiederholt wurde, verbesserten sich ihre Noten.",
-    "Ihre Noten verbesserten sich dadurch, dass der Stoff regelmäßig wiederholt wurde.",
-    "Dadurch, dass sie den Stoff regelmäßig wiederholt hatte, verbesserten sich ihre Noten.",
-    "Ihre Noten verbesserten sich dadurch, dass sie den Stoff regelmäßig wiederholt hatte."
+   "teile": [
+    "sie",
+    "den Stoff",
+    "regelmäßig wiederholte,",
+    "verbesserten",
+    "sich",
+    "ihre Noten",
+    "dass",
+    "Dadurch,"
    ],
-   "erklaerung": "„indem“ passt hier nicht, weil die Subjekte verschieden sind (sie – ihre Noten); „dadurch, dass“ geht immer."
+   "loesung": "Dadurch, dass sie den Stoff regelmäßig wiederholte, verbesserten sich ihre Noten.",
+   "erklaerung": "„indem“ passt hier nicht, weil die Subjekte verschieden sind (sie – ihre Noten); „dadurch, dass“ geht immer.",
+   "aus": "umformen"
   },
   {
    "id": "u23",

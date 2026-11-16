@@ -156,13 +156,18 @@
   },
   {
    "id": "t3",
-   "typ": "luecke",
-   "satz": "Am Ende wetten die beiden um ein ___.",
-   "loesungen": [
-    "Abendessen"
+   "typ": "auswahl",
+   "frage": "Am Ende wetten die beiden um ein ___.",
+   "optionen": [
+    "Frühstück",
+    "Abendessen",
+    "Bier",
+    "Mittagessen"
    ],
+   "richtig": 1,
    "erklaerung": "„Ich wette mit dir um ein Abendessen“",
-   "nur_training": true
+   "nur_training": true,
+   "aus": "luecke"
   }
  ]
 }

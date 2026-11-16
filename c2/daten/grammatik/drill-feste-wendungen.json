@@ -48,319 +48,465 @@
  "uebungen": [
   {
    "id": "u01",
-   "typ": "luecke",
-   "satz": "Unser letzter gemeinsamer Urlaub? Ach, das ist schon ewig ___.",
-   "loesungen": [
-    "her"
+   "typ": "auswahl",
+   "frage": "Unser letzter gemeinsamer Urlaub? Ach, das ist schon ewig ___.",
+   "optionen": [
+    "hin",
+    "her",
+    "zurück",
+    "weg"
    ],
-   "erklaerung": "Feste Wendung: Das ist (lange/ewig) her."
+   "richtig": 1,
+   "erklaerung": "Feste Wendung: Das ist (lange/ewig) her.",
+   "aus": "luecke"
   },
   {
    "id": "u02",
-   "typ": "luecke",
-   "satz": "Während der mündlichen Prüfung hat sie sich nicht unter Druck ___ gefühlt.",
-   "loesungen": [
-    "gesetzt"
+   "typ": "auswahl",
+   "frage": "Während der mündlichen Prüfung hat sie sich nicht unter Druck ___ gefühlt.",
+   "optionen": [
+    "gesetzt",
+    "gebracht",
+    "gelegt",
+    "gestellt"
    ],
-   "erklaerung": "sich unter Druck gesetzt fühlen: Partizip II von „setzen“."
+   "richtig": 0,
+   "erklaerung": "sich unter Druck gesetzt fühlen: Partizip II von „setzen“.",
+   "aus": "luecke"
   },
   {
    "id": "u03",
-   "typ": "luecke",
-   "satz": "Nach langem Überlegen hat er endlich eine Entscheidung ___.",
-   "loesungen": [
-    "getroffen",
-    "gefällt"
+   "typ": "auswahl",
+   "frage": "Nach langem Überlegen hat er endlich eine Entscheidung ___.",
+   "optionen": [
+    "genommen",
+    "gegeben",
+    "gemacht",
+    "getroffen"
    ],
-   "erklaerung": "eine Entscheidung treffen oder fällen."
+   "richtig": 3,
+   "erklaerung": "eine Entscheidung treffen oder fällen.",
+   "aus": "luecke"
   },
   {
    "id": "u04",
-   "typ": "luecke",
-   "satz": "Die Firma legt großen ___ auf nachhaltige Produktion.",
-   "loesungen": [
-    "Wert"
+   "typ": "auswahl",
+   "frage": "Die Firma legt großen ___ auf nachhaltige Produktion.",
+   "optionen": [
+    "Sinn",
+    "Preis",
+    "Wert",
+    "Anteil"
    ],
-   "erklaerung": "Wert legen auf + Akkusativ."
+   "richtig": 2,
+   "erklaerung": "Wert legen auf + Akkusativ.",
+   "aus": "luecke"
   },
   {
    "id": "u05",
-   "typ": "luecke",
-   "satz": "Die überarbeitete Verordnung ___ erst im kommenden Herbst in Kraft.",
-   "loesungen": [
-    "tritt"
+   "typ": "auswahl",
+   "frage": "Die überarbeitete Verordnung ___ erst im kommenden Herbst in Kraft.",
+   "optionen": [
+    "kommt",
+    "tritt",
+    "setzt",
+    "geht"
    ],
-   "erklaerung": "in Kraft treten = gültig werden."
+   "richtig": 1,
+   "erklaerung": "in Kraft treten = gültig werden.",
+   "aus": "luecke"
   },
   {
    "id": "u06",
-   "typ": "luecke",
-   "satz": "Dass die Reform nötig ist, liegt eigentlich auf der ___.",
-   "loesungen": [
-    "Hand"
+   "typ": "auswahl",
+   "frage": "Dass die Reform nötig ist, liegt eigentlich auf der ___.",
+   "optionen": [
+    "Hand",
+    "Kippe",
+    "Straße",
+    "Zunge"
    ],
-   "erklaerung": "auf der Hand liegen = offensichtlich sein."
+   "richtig": 0,
+   "erklaerung": "auf der Hand liegen = offensichtlich sein.",
+   "aus": "luecke"
   },
   {
    "id": "u07",
-   "typ": "luecke",
-   "satz": "In der Diskussion hat sie ihre Bedenken deutlich zum ___ gebracht.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "In der Diskussion hat sie ihre Bedenken deutlich zum ___ gebracht.",
+   "optionen": [
+    "Wort",
+    "Äußern",
+    "Ausspruch",
     "Ausdruck"
    ],
-   "erklaerung": "zum Ausdruck bringen = ausdrücken."
+   "richtig": 3,
+   "erklaerung": "zum Ausdruck bringen = ausdrücken.",
+   "aus": "luecke"
   },
   {
    "id": "u08",
-   "typ": "luecke",
-   "satz": "Geld ___ für viele Menschen bei der Berufswahl eine große Rolle.",
-   "loesungen": [
-    "spielt"
+   "typ": "auswahl",
+   "frage": "Geld ___ für viele Menschen bei der Berufswahl eine große Rolle.",
+   "optionen": [
+    "spielt",
+    "hat",
+    "macht",
+    "nimmt"
    ],
-   "erklaerung": "eine Rolle spielen."
+   "richtig": 0,
+   "erklaerung": "eine Rolle spielen.",
+   "aus": "luecke"
   },
   {
    "id": "u09",
-   "typ": "luecke",
-   "satz": "Die Behörden mussten sofort Maßnahmen ___.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Die Behörden mussten sofort Maßnahmen ___.",
+   "optionen": [
+    "machen",
+    "führen",
     "ergreifen",
-    "treffen"
+    "nehmen"
    ],
-   "erklaerung": "Maßnahmen ergreifen oder treffen."
+   "richtig": 2,
+   "erklaerung": "Maßnahmen ergreifen oder treffen.",
+   "aus": "luecke"
   },
   {
    "id": "u10",
-   "typ": "luecke",
-   "satz": "Am Ende des Jahres ___ das Team Bilanz.",
-   "loesungen": [
-    "zog",
-    "zieht"
+   "typ": "auswahl",
+   "frage": "Am Ende des Jahres ___ das Team Bilanz.",
+   "optionen": [
+    "machte",
+    "stellte",
+    "nahm",
+    "zog"
    ],
-   "erklaerung": "Bilanz ziehen = Ergebnisse zusammenfassen und bewerten."
+   "richtig": 3,
+   "erklaerung": "Bilanz ziehen = Ergebnisse zusammenfassen und bewerten.",
+   "aus": "luecke"
   },
   {
    "id": "u11",
-   "typ": "luecke",
-   "satz": "Sie hat das Rätsel mit einem einfachen Trick ___.",
-   "loesungen": [
-    "gelöst"
+   "typ": "auswahl",
+   "frage": "Sie hat das Rätsel mit einem einfachen Trick ___.",
+   "optionen": [
+    "gelöst",
+    "abgelöst",
+    "erlöst",
+    "ausgelöst"
    ],
-   "hinweis": "nicht: ausgelöst",
-   "erklaerung": "ein Problem oder Rätsel lösen = eine Lösung finden."
+   "richtig": 0,
+   "erklaerung": "ein Problem oder Rätsel lösen = eine Lösung finden.",
+   "aus": "luecke"
   },
   {
    "id": "u12",
-   "typ": "luecke",
-   "satz": "Die Äußerung des Ministers hat eine heftige Debatte ___.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Die Äußerung des Ministers hat eine heftige Debatte ___.",
+   "optionen": [
+    "gemacht",
+    "angezündet",
     "ausgelöst",
-    "entfacht",
-    "losgetreten",
-    "entfesselt",
-    "angestoßen",
-    "angefacht",
-    "hervorgerufen",
-    "provoziert"
+    "erhoben"
    ],
-   "erklaerung": "eine Debatte auslösen/entfachen/lostreten = verursachen. Nicht verwechseln mit „lösen“ (ein Problem lösen)."
+   "richtig": 2,
+   "erklaerung": "eine Debatte auslösen/entfachen/lostreten = verursachen. Nicht verwechseln mit „lösen“ (ein Problem lösen).",
+   "aus": "luecke"
   },
   {
    "id": "u13",
-   "typ": "luecke",
-   "satz": "Der Roman ist lose ___ eine wahre Geschichte angelehnt.",
-   "loesungen": [
-    "an"
+   "typ": "auswahl",
+   "frage": "Der Roman ist lose ___ eine wahre Geschichte angelehnt.",
+   "optionen": [
+    "an",
+    "über",
+    "auf",
+    "für"
    ],
-   "erklaerung": "angelehnt an + Akkusativ = nach dem Vorbild von."
+   "richtig": 0,
+   "erklaerung": "angelehnt an + Akkusativ = nach dem Vorbild von.",
+   "aus": "luecke"
   },
   {
    "id": "u14",
-   "typ": "luecke",
-   "satz": "Bitte halte mich über die Verhandlungen auf dem ___.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Bitte halte mich über die Verhandlungen auf dem ___.",
+   "optionen": [
+    "Laufen",
+    "Lauf",
+    "Laufendem",
     "Laufenden"
    ],
-   "erklaerung": "jemanden auf dem Laufenden halten = regelmäßig informieren."
+   "richtig": 3,
+   "erklaerung": "jemanden auf dem Laufenden halten = regelmäßig informieren.",
+   "aus": "luecke"
   },
   {
    "id": "u15",
-   "typ": "luecke",
-   "satz": "Sie hat in kurzer Zeit erstaunliche Fortschritte ___.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Sie hat in kurzer Zeit erstaunliche Fortschritte ___.",
+   "optionen": [
     "gemacht",
-    "erzielt"
+    "gebracht",
+    "genommen",
+    "getan"
    ],
-   "erklaerung": "Fortschritte machen oder erzielen."
+   "richtig": 0,
+   "erklaerung": "Fortschritte machen oder erzielen.",
+   "aus": "luecke"
   },
   {
    "id": "u16",
-   "typ": "luecke",
-   "satz": "Wer im Ausland Fuß ___ will, braucht Geduld.",
-   "loesungen": [
-    "fassen"
+   "typ": "auswahl",
+   "frage": "Wer im Ausland Fuß ___ will, braucht Geduld.",
+   "optionen": [
+    "fangen",
+    "setzen",
+    "fassen",
+    "fallen"
    ],
-   "erklaerung": "Fuß fassen = sich etablieren, heimisch werden."
+   "richtig": 2,
+   "erklaerung": "Fuß fassen = sich etablieren, heimisch werden.",
+   "aus": "luecke"
   },
   {
    "id": "u17",
-   "typ": "luecke",
-   "satz": "Er hat die Hilfe seiner Freunde nie in ___ genommen.",
-   "loesungen": [
-    "Anspruch"
+   "typ": "auswahl",
+   "frage": "Er hat die Hilfe seiner Freunde nie in ___ genommen.",
+   "optionen": [
+    "Anspruch",
+    "Acht",
+    "Betracht",
+    "Anrecht"
    ],
-   "erklaerung": "in Anspruch nehmen = nutzen."
+   "richtig": 0,
+   "erklaerung": "in Anspruch nehmen = nutzen.",
+   "aus": "luecke"
   },
   {
    "id": "u18",
-   "typ": "luecke",
-   "satz": "Wir sollten auch andere Möglichkeiten in ___ ziehen.",
-   "loesungen": [
-    "Betracht",
-    "Erwägung"
+   "typ": "auswahl",
+   "frage": "Wir sollten auch andere Möglichkeiten in ___ ziehen.",
+   "optionen": [
+    "Anspruch",
+    "Bedacht",
+    "Rechnung",
+    "Betracht"
    ],
-   "erklaerung": "in Betracht (Erwägung) ziehen = erwägen."
+   "richtig": 3,
+   "erklaerung": "in Betracht (Erwägung) ziehen = erwägen.",
+   "aus": "luecke"
   },
   {
    "id": "u19",
-   "typ": "luecke",
-   "satz": "Der Konzern wollte zu den Berichten keine ___ nehmen.",
-   "loesungen": [
-    "Stellung"
+   "typ": "auswahl",
+   "frage": "Der Konzern wollte zu den Berichten keine ___ nehmen.",
+   "optionen": [
+    "Stellung",
+    "Haltung",
+    "Aussage",
+    "Meinung"
    ],
-   "erklaerung": "Stellung nehmen zu = sich äußern."
+   "richtig": 0,
+   "erklaerung": "Stellung nehmen zu = sich äußern.",
+   "aus": "luecke"
   },
   {
    "id": "u20",
-   "typ": "luecke",
-   "satz": "Der Vorschlag fand bei den Mitgliedern großen ___.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Der Vorschlag fand bei den Mitgliedern großen ___.",
+   "optionen": [
     "Anklang",
-    "Zuspruch"
+    "Anstand",
+    "Anhang",
+    "Anschluss"
    ],
-   "erklaerung": "Anklang finden = gut ankommen."
+   "richtig": 0,
+   "erklaerung": "Anklang finden = gut ankommen.",
+   "aus": "luecke"
   },
   {
    "id": "u21",
-   "typ": "luecke",
-   "satz": "Viele Bürger machen von ihrem Recht auf Widerspruch keinen ___.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Viele Bürger machen von ihrem Recht auf Widerspruch keinen ___.",
+   "optionen": [
+    "Einsatz",
+    "Verbrauch",
+    "Nutzen",
     "Gebrauch"
    ],
-   "erklaerung": "Gebrauch machen von = nutzen."
+   "richtig": 3,
+   "erklaerung": "Gebrauch machen von = nutzen.",
+   "aus": "luecke"
   },
   {
    "id": "u22",
-   "typ": "luecke",
-   "satz": "Die Kürzungen werden schwerwiegende Folgen nach sich ___.",
-   "loesungen": [
-    "ziehen"
+   "typ": "auswahl",
+   "frage": "Die Kürzungen werden schwerwiegende Folgen nach sich ___.",
+   "optionen": [
+    "führen",
+    "bringen",
+    "ziehen",
+    "tragen"
    ],
-   "erklaerung": "etwas nach sich ziehen = zur Folge haben."
+   "richtig": 2,
+   "erklaerung": "etwas nach sich ziehen = zur Folge haben.",
+   "aus": "luecke"
   },
   {
    "id": "u23",
-   "typ": "luecke",
-   "satz": "Wer seine Ziele erreichen will, muss manchmal ein Risiko ___.",
-   "loesungen": [
-    "eingehen"
+   "typ": "auswahl",
+   "frage": "Wer seine Ziele erreichen will, muss manchmal ein Risiko ___.",
+   "optionen": [
+    "nehmen",
+    "fassen",
+    "eingehen",
+    "machen"
    ],
-   "erklaerung": "ein Risiko eingehen."
+   "richtig": 2,
+   "erklaerung": "ein Risiko eingehen.",
+   "aus": "luecke"
   },
   {
    "id": "u24",
-   "typ": "luecke",
-   "satz": "Nach zähen Verhandlungen konnten beide Seiten einen Kompromiss ___.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Nach zähen Verhandlungen konnten beide Seiten einen Kompromiss ___.",
+   "optionen": [
     "schließen",
-    "finden",
-    "erzielen",
-    "eingehen",
-    "erreichen",
-    "aushandeln"
+    "fassen",
+    "geben",
+    "nehmen"
    ],
-   "erklaerung": "einen Kompromiss schließen, finden oder erzielen."
+   "richtig": 0,
+   "erklaerung": "einen Kompromiss schließen, finden oder erzielen.",
+   "aus": "luecke"
   },
   {
    "id": "u25",
-   "typ": "luecke",
-   "satz": "Wir müssen die Frist für den Antrag unbedingt ___.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Wir müssen die Frist für den Antrag unbedingt ___.",
+   "optionen": [
+    "festhalten",
+    "aufhalten",
+    "behalten",
     "einhalten"
    ],
-   "erklaerung": "eine Frist einhalten (Gegenteil: versäumen, überschreiten)."
+   "richtig": 3,
+   "erklaerung": "eine Frist einhalten (Gegenteil: versäumen, überschreiten).",
+   "aus": "luecke"
   },
   {
    "id": "u26",
-   "typ": "luecke",
-   "satz": "Er trägt die volle ___ für das Scheitern des Projekts.",
-   "loesungen": [
-    "Verantwortung"
+   "typ": "auswahl",
+   "frage": "Er trägt die volle ___ für das Scheitern des Projekts.",
+   "optionen": [
+    "Rechenschaft",
+    "Antwort",
+    "Verantwortung",
+    "Verpflichtung"
    ],
-   "erklaerung": "die Verantwortung tragen für."
+   "richtig": 2,
+   "erklaerung": "die Verantwortung tragen für.",
+   "aus": "luecke"
   },
   {
    "id": "u27",
-   "typ": "luecke",
-   "satz": "Das ist mir auf ___ gelungen – gleich beim ersten Versuch!",
-   "loesungen": [
-    "Anhieb"
+   "typ": "auswahl",
+   "frage": "Das ist mir auf ___ gelungen – gleich beim ersten Versuch!",
+   "optionen": [
+    "Anlauf",
+    "Anhieb",
+    "Anstoß",
+    "Abhieb"
    ],
-   "erklaerung": "auf Anhieb = sofort, beim ersten Versuch."
+   "richtig": 1,
+   "erklaerung": "auf Anhieb = sofort, beim ersten Versuch.",
+   "aus": "luecke"
   },
   {
    "id": "u28",
-   "typ": "luecke",
-   "satz": "Kannst du mir bitte ___ geben, ob du morgen kommst?",
-   "loesungen": [
-    "Bescheid"
+   "typ": "auswahl",
+   "frage": "Kannst du mir bitte ___ geben, ob du morgen kommst?",
+   "optionen": [
+    "Bescheid",
+    "Meldung",
+    "Wissen",
+    "Kenntnis"
    ],
-   "erklaerung": "jemandem Bescheid geben (sagen) = informieren."
+   "richtig": 0,
+   "erklaerung": "jemandem Bescheid geben (sagen) = informieren.",
+   "aus": "luecke"
   },
   {
    "id": "u29",
-   "typ": "luecke",
-   "satz": "Mit ihrer Bemerkung hat sie den Nagel auf den ___ getroffen.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Mit ihrer Bemerkung hat sie den Nagel auf den ___ getroffen.",
+   "optionen": [
+    "Punkt",
+    "Hammer",
+    "Kern",
     "Kopf"
    ],
-   "erklaerung": "den Nagel auf den Kopf treffen = genau das Richtige sagen."
+   "richtig": 3,
+   "erklaerung": "den Nagel auf den Kopf treffen = genau das Richtige sagen.",
+   "aus": "luecke"
   },
   {
    "id": "u30",
-   "typ": "luecke",
-   "satz": "Bei diesem Autor muss man oft zwischen den ___ lesen.",
-   "loesungen": [
-    "Zeilen"
+   "typ": "auswahl",
+   "frage": "Bei diesem Autor muss man oft zwischen den ___ lesen.",
+   "optionen": [
+    "Wörtern",
+    "Zeichen",
+    "Zeilen",
+    "Seiten"
    ],
-   "erklaerung": "zwischen den Zeilen lesen = das Unausgesprochene verstehen."
+   "richtig": 2,
+   "erklaerung": "zwischen den Zeilen lesen = das Unausgesprochene verstehen.",
+   "aus": "luecke"
   },
   {
    "id": "u31",
-   "typ": "luecke",
-   "satz": "Mitten in seinem Vortrag hat er plötzlich den ___ verloren.",
-   "loesungen": [
-    "Faden"
+   "typ": "auswahl",
+   "frage": "Mitten in seinem Vortrag hat er plötzlich den ___ verloren.",
+   "optionen": [
+    "Faden",
+    "Strang",
+    "Fluss",
+    "Strich"
    ],
-   "erklaerung": "den Faden verlieren = nicht mehr wissen, was man sagen wollte."
+   "richtig": 0,
+   "erklaerung": "den Faden verlieren = nicht mehr wissen, was man sagen wollte.",
+   "aus": "luecke"
   },
   {
    "id": "u32",
-   "typ": "luecke",
-   "satz": "Dieses kleine Detail fällt kaum ins ___.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Dieses kleine Detail fällt kaum ins ___.",
+   "optionen": [
+    "Maß",
+    "Gewähr",
+    "Lot",
     "Gewicht"
    ],
-   "erklaerung": "ins Gewicht fallen = wichtig sein."
+   "richtig": 3,
+   "erklaerung": "ins Gewicht fallen = wichtig sein.",
+   "aus": "luecke"
   },
   {
    "id": "u33",
-   "typ": "luecke",
-   "satz": "Ihr größter Wunsch ist endlich in ___ gegangen.",
-   "loesungen": [
-    "Erfüllung"
+   "typ": "auswahl",
+   "frage": "Ihr größter Wunsch ist endlich in ___ gegangen.",
+   "optionen": [
+    "Erledigung",
+    "Vollzug",
+    "Erfüllung",
+    "Ausführung"
    ],
-   "erklaerung": "in Erfüllung gehen = wahr werden."
+   "richtig": 2,
+   "erklaerung": "in Erfüllung gehen = wahr werden.",
+   "aus": "luecke"
   },
   {
    "id": "u34",
@@ -749,72 +895,99 @@
   },
   {
    "id": "u58",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Er entschied sich spontan.",
    "anweisung": "Formulieren Sie mit „Entscheidung“.",
-   "loesungen": [
-    "Er traf spontan eine Entscheidung.",
-    "Er fällte spontan eine Entscheidung.",
-    "Er hat spontan eine Entscheidung getroffen.",
-    "Er hat spontan eine Entscheidung gefällt."
+   "teile": [
+    "spontan eine Entscheidung",
+    "traf",
+    "Er"
    ],
-   "erklaerung": "sich entscheiden → eine Entscheidung treffen/fällen."
+   "loesung": "Er traf spontan eine Entscheidung.",
+   "erklaerung": "sich entscheiden → eine Entscheidung treffen/fällen.",
+   "aus": "umformen"
   },
   {
    "id": "u59",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Sie drückte ihre Dankbarkeit aus.",
    "anweisung": "Formulieren Sie mit „zum Ausdruck bringen“.",
-   "loesungen": [
-    "Sie brachte ihre Dankbarkeit zum Ausdruck."
+   "teile": [
+    "ihre Dankbarkeit",
+    "zum Ausdruck",
+    "Sie",
+    "brachte"
    ],
-   "erklaerung": "ausdrücken → zum Ausdruck bringen."
+   "loesung": "Sie brachte ihre Dankbarkeit zum Ausdruck.",
+   "erklaerung": "ausdrücken → zum Ausdruck bringen.",
+   "aus": "umformen"
   },
   {
    "id": "u60",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Wir erwägen auch andere Lösungen.",
    "anweisung": "Formulieren Sie mit „in Betracht ziehen“.",
-   "loesungen": [
-    "Wir ziehen auch andere Lösungen in Betracht."
+   "teile": [
+    "auch andere Lösungen",
+    "in Betracht",
+    "Wir",
+    "ziehen"
    ],
-   "erklaerung": "erwägen → in Betracht ziehen."
+   "loesung": "Wir ziehen auch andere Lösungen in Betracht.",
+   "erklaerung": "erwägen → in Betracht ziehen.",
+   "aus": "umformen"
   },
   {
    "id": "u61",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Das Gesetz gilt ab Januar.",
    "anweisung": "Formulieren Sie mit „in Kraft treten“.",
+   "teile": [
+    "tritt",
+    "in Kraft",
+    "im Januar",
+    "Das Gesetz"
+   ],
+   "loesung": "Das Gesetz tritt im Januar in Kraft.",
    "loesungen": [
-    "Das Gesetz tritt im Januar in Kraft.",
     "Im Januar tritt das Gesetz in Kraft."
    ],
-   "erklaerung": "gültig werden → in Kraft treten."
+   "erklaerung": "gültig werden → in Kraft treten.",
+   "aus": "umformen"
   },
   {
    "id": "u62",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Die Ministerin äußerte sich nicht zu den Vorwürfen.",
    "anweisung": "Formulieren Sie mit „Stellung nehmen“.",
-   "loesungen": [
-    "Die Ministerin nahm zu den Vorwürfen keine Stellung.",
-    "Die Ministerin nahm keine Stellung zu den Vorwürfen.",
-    "Zu den Vorwürfen nahm die Ministerin keine Stellung.",
-    "Die Ministerin hat zu den Vorwürfen keine Stellung genommen.",
-    "Die Ministerin nahm nicht zu den Vorwürfen Stellung.",
-    "Die Ministerin hat keine Stellung zu den Vorwürfen genommen."
+   "teile": [
+    "Die Ministerin",
+    "zu den Vorwürfen",
+    "nahm",
+    "keine Stellung"
    ],
-   "erklaerung": "sich äußern zu → Stellung nehmen zu; „nicht“ wird zu „keine“."
+   "loesung": "Die Ministerin nahm zu den Vorwürfen keine Stellung.",
+   "loesungen": [
+    "Die Ministerin nahm keine Stellung zu den Vorwürfen.",
+    "Zu den Vorwürfen nahm die Ministerin keine Stellung."
+   ],
+   "erklaerung": "sich äußern zu → Stellung nehmen zu; „nicht“ wird zu „keine“.",
+   "aus": "umformen"
   },
   {
    "id": "u63",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Viele Menschen nutzen dieses Angebot.",
    "anweisung": "Formulieren Sie mit „in Anspruch nehmen“.",
-   "loesungen": [
-    "Viele Menschen nehmen dieses Angebot in Anspruch."
+   "teile": [
+    "in Anspruch",
+    "Viele Menschen",
+    "nehmen",
+    "dieses Angebot"
    ],
-   "erklaerung": "nutzen → in Anspruch nehmen."
+   "loesung": "Viele Menschen nehmen dieses Angebot in Anspruch.",
+   "erklaerung": "nutzen → in Anspruch nehmen.",
+   "aus": "umformen"
   },
   {
    "id": "u65",

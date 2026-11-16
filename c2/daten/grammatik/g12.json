@@ -49,136 +49,178 @@
  "uebungen": [
   {
    "id": "u01",
-   "typ": "luecke",
-   "satz": "Das Projekt ist ___ teuer, aber es wird sich langfristig lohnen.",
-   "loesungen": [
-    "zwar"
+   "typ": "auswahl",
+   "frage": "Das Projekt ist ___ teuer, aber es wird sich langfristig lohnen.",
+   "optionen": [
+    "entweder",
+    "sowohl",
+    "zwar",
+    "weder"
    ],
-   "hinweis": "Konnektor",
-   "erklaerung": "„zwar … aber“: Man räumt etwas ein und setzt etwas dagegen."
+   "richtig": 2,
+   "erklaerung": "„zwar … aber“: Man räumt etwas ein und setzt etwas dagegen.",
+   "aus": "luecke"
   },
   {
    "id": "u02",
-   "typ": "luecke",
-   "satz": "Die Studie überzeugt ___ durch ihre Methode als auch durch ihre klare Sprache.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Die Studie überzeugt ___ durch ihre Methode als auch durch ihre klare Sprache.",
+   "optionen": [
+    "weder",
+    "entweder",
+    "zwar",
     "sowohl"
    ],
-   "hinweis": "Konnektor",
-   "erklaerung": "„sowohl … als auch“ = beides."
+   "richtig": 3,
+   "erklaerung": "„sowohl … als auch“ = beides.",
+   "aus": "luecke"
   },
   {
    "id": "u03",
-   "typ": "luecke",
-   "satz": "Der Roman ist ___ spannend noch gut geschrieben.",
-   "loesungen": [
-    "weder"
+   "typ": "auswahl",
+   "frage": "Der Roman ist ___ spannend noch gut geschrieben.",
+   "optionen": [
+    "weder",
+    "zwar",
+    "sowohl",
+    "entweder"
    ],
-   "hinweis": "Konnektor",
-   "erklaerung": "„weder … noch“ = nicht das eine und nicht das andere."
+   "richtig": 0,
+   "erklaerung": "„weder … noch“ = nicht das eine und nicht das andere.",
+   "aus": "luecke"
   },
   {
    "id": "u04",
-   "typ": "luecke",
-   "satz": "___ früher man sich anmeldet, desto günstiger ist die Tagung.",
-   "loesungen": [
-    "Je"
+   "typ": "auswahl",
+   "frage": "___ früher man sich anmeldet, desto günstiger ist die Tagung.",
+   "optionen": [
+    "Umso",
+    "So",
+    "Je",
+    "Desto"
    ],
-   "hinweis": "Konnektor",
-   "erklaerung": "„je + Komparativ …, desto + Komparativ …“"
+   "richtig": 2,
+   "erklaerung": "„je + Komparativ …, desto + Komparativ …“",
+   "aus": "luecke"
   },
   {
    "id": "u05",
-   "typ": "luecke",
-   "satz": "Die Messwerte waren unvollständig; ___ ließ sich die Hypothese nicht überprüfen.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Die Messwerte waren unvollständig; ___ ließ sich die Hypothese nicht überprüfen.",
+   "optionen": [
     "deshalb",
-    "daher",
-    "folglich",
-    "somit",
-    "deswegen",
-    "darum",
-    "also"
+    "weil",
+    "trotzdem",
+    "obwohl"
    ],
+   "richtig": 0,
    "hinweis": "Konnektor: Folge",
-   "erklaerung": "Konjunktionaladverb im Vorfeld, danach das Verb (ließ)."
+   "erklaerung": "Konjunktionaladverb im Vorfeld, danach das Verb (ließ).",
+   "aus": "luecke"
   },
   {
    "id": "u06",
-   "typ": "luecke",
-   "satz": "Sie lernte die Sprache, ___ sie täglich Zeitungen und Romane las.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Sie lernte die Sprache, ___ sie täglich Zeitungen und Romane las.",
+   "optionen": [
+    "trotzdem",
+    "dadurch",
+    "obwohl",
     "indem"
    ],
+   "richtig": 3,
    "hinweis": "Konnektor: Mittel",
-   "erklaerung": "„indem“ nennt das Mittel oder die Art und Weise: Wie? – Indem …"
+   "erklaerung": "„indem“ nennt das Mittel oder die Art und Weise: Wie? – Indem …",
+   "aus": "luecke"
   },
   {
    "id": "u07",
-   "typ": "luecke",
-   "satz": "Er gab sich gelassen, ___ er innerlich vor Wut kochte.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Er gab sich gelassen, ___ er innerlich vor Wut kochte.",
+   "optionen": [
     "obwohl",
-    "obgleich",
-    "wenngleich"
+    "sodass",
+    "trotzdem",
+    "weil"
    ],
+   "richtig": 0,
    "hinweis": "Konnektor: Gegengrund",
-   "erklaerung": "Konzessiver Nebensatz: Verb am Ende."
+   "erklaerung": "Konzessiver Nebensatz: Verb am Ende.",
+   "aus": "luecke"
   },
   {
    "id": "u08",
-   "typ": "luecke",
-   "satz": "In den Städten steigen die Mieten, ___ die Löhne seit Jahren stagnieren.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "In den Städten steigen die Mieten, ___ die Löhne seit Jahren stagnieren.",
+   "optionen": [
+    "weil",
     "während",
-    "wohingegen"
+    "dagegen",
+    "sodass"
    ],
+   "richtig": 1,
    "hinweis": "Konnektor: Gegensatz",
-   "erklaerung": "„während“ oder „wohingegen“ stellen zwei Sachverhalte gegenüber."
+   "erklaerung": "„während“ oder „wohingegen“ stellen zwei Sachverhalte gegenüber.",
+   "aus": "luecke"
   },
   {
    "id": "u09",
-   "typ": "luecke",
-   "satz": "Die Bibliothek verlängerte ihre Öffnungszeiten, ___ auch Berufstätige sie nutzen können.",
-   "loesungen": [
-    "damit"
+   "typ": "auswahl",
+   "frage": "Die Bibliothek verlängerte ihre Öffnungszeiten, ___ auch Berufstätige sie nutzen können.",
+   "optionen": [
+    "indem",
+    "obwohl",
+    "damit",
+    "dafür"
    ],
+   "richtig": 2,
    "hinweis": "Konnektor: Zweck",
-   "erklaerung": "„damit“ bei unterschiedlichen Subjekten (die Bibliothek – Berufstätige)."
+   "erklaerung": "„damit“ bei unterschiedlichen Subjekten (die Bibliothek – Berufstätige).",
+   "aus": "luecke"
   },
   {
    "id": "u10",
-   "typ": "luecke",
-   "satz": "Der Vortrag war ___ lehrreich, sondern auch unterhaltsam.",
-   "loesungen": [
-    "nicht nur"
+   "typ": "auswahl",
+   "frage": "Der Vortrag war ___ lehrreich, sondern auch unterhaltsam.",
+   "optionen": [
+    "sowohl",
+    "nicht",
+    "nicht nur",
+    "zwar"
    ],
-   "hinweis": "zwei Wörter",
-   "erklaerung": "„nicht nur …, sondern auch …“"
+   "richtig": 2,
+   "erklaerung": "„nicht nur …, sondern auch …“",
+   "aus": "luecke"
   },
   {
    "id": "u11",
-   "typ": "luecke",
-   "satz": "Es regnete stundenlang, ___ das Konzert abgesagt werden musste.",
-   "loesungen": [
-    "sodass",
-    "so dass"
+   "typ": "auswahl",
+   "frage": "Es regnete stundenlang, ___ das Konzert abgesagt werden musste.",
+   "optionen": [
+    "damit",
+    "indem",
+    "obwohl",
+    "sodass"
    ],
+   "richtig": 3,
    "hinweis": "Konnektor: Folge",
-   "erklaerung": "„sodass“ leitet einen Folgesatz ein; Verb am Ende."
+   "erklaerung": "„sodass“ leitet einen Folgesatz ein; Verb am Ende.",
+   "aus": "luecke"
   },
   {
    "id": "u12",
-   "typ": "luecke",
-   "satz": "Sie war völlig erschöpft, ___ arbeitete sie bis Mitternacht weiter.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Sie war völlig erschöpft, ___ arbeitete sie bis Mitternacht weiter.",
+   "optionen": [
     "trotzdem",
-    "dennoch",
-    "gleichwohl",
-    "doch"
+    "deshalb",
+    "obwohl",
+    "weil"
    ],
+   "richtig": 0,
    "hinweis": "Konnektor: Gegengrund",
-   "erklaerung": "Konjunktionaladverb im Vorfeld des zweiten Hauptsatzes, danach das Verb."
+   "erklaerung": "Konjunktionaladverb im Vorfeld des zweiten Hauptsatzes, danach das Verb.",
+   "aus": "luecke"
   },
   {
    "id": "u14",
@@ -445,37 +487,68 @@
   },
   {
    "id": "u34",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Das Konzept ist originell. Es ist schwer umzusetzen.",
    "anweisung": "Verbinden Sie die Sätze mit „zwar … aber“.",
-   "loesungen": [
-    "Das Konzept ist zwar originell, aber es ist schwer umzusetzen.",
-    "Zwar ist das Konzept originell, aber es ist schwer umzusetzen.",
-    "Das Konzept ist zwar originell, aber schwer umzusetzen."
+   "teile": [
+    "ist",
+    "es",
+    "umzusetzen",
+    "schwer",
+    "zwar",
+    "aber",
+    "ist",
+    "Das Konzept",
+    "originell,"
    ],
-   "erklaerung": "„zwar“ im Mittelfeld oder im Vorfeld; nach „aber“ Hauptsatzstellung."
+   "loesung": "Das Konzept ist zwar originell, aber es ist schwer umzusetzen.",
+   "loesungen": [
+    "Zwar ist das Konzept originell, aber es ist schwer umzusetzen."
+   ],
+   "erklaerung": "„zwar“ im Mittelfeld oder im Vorfeld; nach „aber“ Hauptsatzstellung.",
+   "aus": "umformen"
   },
   {
    "id": "u35",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Weil die Nachfrage gestiegen ist, erhöht der Verlag die Auflage.",
    "anweisung": "Verwenden Sie „deshalb“.",
+   "teile": [
+    "Die Nachfrage",
+    "der Verlag",
+    "gestiegen,",
+    "die Auflage",
+    "erhöht",
+    "deshalb",
+    "ist"
+   ],
+   "loesung": "Die Nachfrage ist gestiegen, deshalb erhöht der Verlag die Auflage.",
    "loesungen": [
-    "Die Nachfrage ist gestiegen, deshalb erhöht der Verlag die Auflage.",
-    "Die Nachfrage ist gestiegen. Deshalb erhöht der Verlag die Auflage.",
     "Die Nachfrage ist gestiegen, der Verlag erhöht deshalb die Auflage."
    ],
-   "erklaerung": "„deshalb“ besetzt das Vorfeld (Verb danach) oder steht im Mittelfeld."
+   "erklaerung": "„deshalb“ besetzt das Vorfeld (Verb danach) oder steht im Mittelfeld.",
+   "aus": "umformen"
   },
   {
    "id": "u36",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Er spricht Englisch. Er spricht auch Französisch.",
    "anweisung": "Verbinden Sie die Sätze mit „sowohl … als auch“.",
-   "loesungen": [
-    "Er spricht sowohl Englisch als auch Französisch."
+   "teile": [
+    "spricht",
+    "Englisch",
+    "als",
+    "Er",
+    "Französisch",
+    "sowohl",
+    "auch"
    ],
-   "erklaerung": "„sowohl … als auch“ verbindet hier zwei Objekte."
+   "loesung": "Er spricht sowohl Englisch als auch Französisch.",
+   "loesungen": [
+    "Er spricht sowohl Französisch als auch Englisch."
+   ],
+   "erklaerung": "„sowohl … als auch“ verbindet hier zwei Objekte.",
+   "aus": "umformen"
   }
  ]
 }

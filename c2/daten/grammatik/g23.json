@@ -46,112 +46,151 @@
  "uebungen": [
   {
    "id": "u01",
-   "typ": "luecke",
-   "satz": "Du kennst ihn ___! Er kommt immer zu spät.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Du kennst ihn ___! Er kommt immer zu spät.",
+   "optionen": [
     "doch",
-    "ja"
+    "denn",
+    "mal",
+    "etwa"
    ],
+   "richtig": 0,
    "hinweis": "Erinnerung an Bekanntes",
-   "erklaerung": "doch/ja: Der Sprecher erinnert an etwas, das beide wissen."
+   "erklaerung": "doch/ja: Der Sprecher erinnert an etwas, das beide wissen.",
+   "aus": "luecke"
   },
   {
    "id": "u02",
-   "typ": "luecke",
-   "satz": "Was ist ___ los? Du siehst so traurig aus.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Was ist ___ los? Du siehst so traurig aus.",
+   "optionen": [
+    "ja",
+    "halt",
+    "eben",
     "denn"
    ],
+   "richtig": 3,
    "hinweis": "interessierte Frage",
-   "erklaerung": "„denn“ macht die Frage persönlicher und interessierter."
+   "erklaerung": "„denn“ macht die Frage persönlicher und interessierter.",
+   "aus": "luecke"
   },
   {
    "id": "u03",
-   "typ": "luecke",
-   "satz": "Komm ___ mal vorbei, wenn du Zeit hast!",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Komm ___ mal vorbei, wenn du Zeit hast!",
+   "optionen": [
     "doch",
-    "ruhig",
-    "einfach"
+    "denn",
+    "etwa",
+    "ja"
    ],
+   "richtig": 0,
    "hinweis": "freundliche Aufforderung",
-   "erklaerung": "„doch mal“: freundlich, leicht drängend; „ruhig“: Ermunterung, Erlaubnis; „einfach“: ohne Umstände."
+   "erklaerung": "„doch mal“: freundlich, leicht drängend; „ruhig“: Ermunterung, Erlaubnis; „einfach“: ohne Umstände.",
+   "aus": "luecke"
   },
   {
    "id": "u04",
-   "typ": "luecke",
-   "satz": "Das ist ___ unglaublich! So etwas habe ich noch nie gesehen.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Das ist ___ unglaublich! So etwas habe ich noch nie gesehen.",
+   "optionen": [
+    "denn",
     "ja",
-    "doch",
-    "einfach",
-    "wirklich"
+    "bloß",
+    "etwa"
    ],
+   "richtig": 1,
    "hinweis": "Staunen",
-   "erklaerung": "„ja“ im Ausrufesatz drückt Staunen aus; „doch“, „einfach“ und „wirklich“ verstärken ebenfalls."
+   "erklaerung": "„ja“ im Ausrufesatz drückt Staunen aus; „doch“, „einfach“ und „wirklich“ verstärken ebenfalls.",
+   "aus": "luecke"
   },
   {
    "id": "u05",
-   "typ": "luecke",
-   "satz": "Wenn der Zug nicht fährt, müssen wir ___ ein Taxi nehmen.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Wenn der Zug nicht fährt, müssen wir ___ ein Taxi nehmen.",
+   "optionen": [
+    "denn",
+    "etwa",
     "eben",
-    "halt"
+    "überhaupt"
    ],
+   "richtig": 2,
    "hinweis": "Es lässt sich nicht ändern.",
-   "erklaerung": "eben/halt: Man nimmt eine unabänderliche Lage hin."
+   "erklaerung": "eben/halt: Man nimmt eine unabänderliche Lage hin.",
+   "aus": "luecke"
   },
   {
    "id": "u06",
-   "typ": "luecke",
-   "satz": "Sie ist heute nicht gekommen. Sie ist ___ krank.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Sie ist heute nicht gekommen. Sie ist ___ krank.",
+   "optionen": [
+    "etwa",
+    "denn",
+    "mal",
     "wohl"
    ],
+   "richtig": 3,
    "hinweis": "Modalpartikel der Vermutung",
-   "erklaerung": "„wohl“ = vermutlich."
+   "erklaerung": "„wohl“ = vermutlich.",
+   "aus": "luecke"
   },
   {
    "id": "u07",
-   "typ": "luecke",
-   "satz": "Keine Sorge, das wird ___ klappen.",
-   "loesungen": [
-    "schon"
+   "typ": "auswahl",
+   "frage": "Keine Sorge, das wird ___ klappen.",
+   "optionen": [
+    "schon",
+    "denn",
+    "überhaupt",
+    "etwa"
    ],
+   "richtig": 0,
    "hinweis": "Beruhigung",
-   "erklaerung": "„schon“ beruhigt: Es wird gut gehen."
+   "erklaerung": "„schon“ beruhigt: Es wird gut gehen.",
+   "aus": "luecke"
   },
   {
    "id": "u08",
-   "typ": "luecke",
-   "satz": "Wie spät ist es ___? Ich habe die Zeit ganz vergessen.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Wie spät ist es ___? Ich habe die Zeit ganz vergessen.",
+   "optionen": [
+    "ja",
     "eigentlich",
-    "denn"
+    "eben",
+    "halt"
    ],
-   "erklaerung": "„eigentlich“ oder „denn“ machen die Frage beiläufiger."
+   "richtig": 1,
+   "erklaerung": "„eigentlich“ oder „denn“ machen die Frage beiläufiger.",
+   "aus": "luecke"
   },
   {
    "id": "u09",
-   "typ": "luecke",
-   "satz": "Hör ___ zu, ich muss dir etwas erzählen!",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Hör ___ zu, ich muss dir etwas erzählen!",
+   "optionen": [
+    "denn",
+    "etwa",
     "mal",
-    "doch"
+    "wohl"
    ],
-   "erklaerung": "„mal“ (oder „doch“) macht den Imperativ weniger hart."
+   "richtig": 2,
+   "erklaerung": "„mal“ (oder „doch“) macht den Imperativ weniger hart.",
+   "aus": "luecke"
   },
   {
    "id": "u10",
-   "typ": "luecke",
-   "satz": "Das stimmt ___, aber man muss auch die andere Seite sehen.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Das stimmt ___, aber man muss auch die andere Seite sehen.",
+   "optionen": [
+    "etwa",
+    "mal",
     "schon",
-    "zwar",
-    "ja"
+    "denn"
    ],
+   "richtig": 2,
    "hinweis": "einräumend",
-   "erklaerung": "„schon“ räumt etwas ein, bevor „aber“ widerspricht."
+   "erklaerung": "„schon“ räumt etwas ein, bevor „aber“ widerspricht.",
+   "aus": "luecke"
   },
   {
    "id": "u11",
@@ -232,66 +271,101 @@
   },
   {
    "id": "u17",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Das ist klar, das weißt du auch.",
    "anweisung": "Drücken Sie das in einem kurzen Satz mit „doch“ aus.",
-   "loesungen": [
-    "Das ist doch klar."
+   "teile": [
+    "klar",
+    "Das",
+    "ist",
+    "doch"
    ],
-   "erklaerung": "„doch“ erinnert an Bekanntes und klingt leicht vorwurfsvoll."
+   "loesung": "Das ist doch klar.",
+   "erklaerung": "„doch“ erinnert an Bekanntes und klingt leicht vorwurfsvoll.",
+   "aus": "umformen"
   },
   {
    "id": "u18",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Komm mit!",
    "anweisung": "Machen Sie die Aufforderung mit „doch“ und „mal“ freundlicher.",
-   "loesungen": [
-    "Komm doch mal mit!"
+   "teile": [
+    "Komm",
+    "mal",
+    "mit",
+    "doch"
    ],
-   "erklaerung": "Reihenfolge: doch vor mal."
+   "loesung": "Komm doch mal mit!",
+   "erklaerung": "Reihenfolge: doch vor mal.",
+   "aus": "umformen"
   },
   {
    "id": "u19",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Was ist los?",
    "anweisung": "Fragen Sie interessiert mit „denn“.",
-   "loesungen": [
-    "Was ist denn los?"
+   "teile": [
+    "ist",
+    "denn",
+    "los",
+    "Was"
    ],
-   "erklaerung": "„denn“ steht in der Frage nach dem Verb im Mittelfeld."
+   "loesung": "Was ist denn los?",
+   "erklaerung": "„denn“ steht in der Frage nach dem Verb im Mittelfeld.",
+   "aus": "umformen"
   },
   {
    "id": "u20",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Er ist vermutlich schon zu Hause.",
    "anweisung": "Ersetzen Sie „vermutlich“ durch eine Modalpartikel.",
-   "loesungen": [
-    "Er ist wohl schon zu Hause."
+   "teile": [
+    "ist",
+    "wohl",
+    "schon zu Hause",
+    "Er"
    ],
-   "erklaerung": "wohl = vermutlich."
+   "loesung": "Er ist wohl schon zu Hause.",
+   "erklaerung": "wohl = vermutlich.",
+   "aus": "umformen"
   },
   {
    "id": "u21",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Wir wissen alle, dass das nicht einfach ist.",
    "anweisung": "Betonen Sie mit „ja“, dass es bekannt ist.",
-   "loesungen": [
-    "Wir wissen ja alle, dass das nicht einfach ist.",
-    "Wir alle wissen ja, dass das nicht einfach ist."
+   "teile": [
+    "Wir",
+    "alle,",
+    "dass",
+    "wissen",
+    "nicht einfach",
+    "ist",
+    "ja",
+    "das"
    ],
-   "erklaerung": "„ja“ markiert gemeinsames Wissen."
+   "loesung": "Wir wissen ja alle, dass das nicht einfach ist.",
+   "erklaerung": "„ja“ markiert gemeinsames Wissen.",
+   "aus": "umformen"
   },
   {
    "id": "u22",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "So ist das Leben, man kann es nicht ändern.",
    "anweisung": "Formulieren Sie kurz mit „eben“.",
+   "teile": [
+    "eben",
+    "So",
+    "ist",
+    "das Leben"
+   ],
+   "loesung": "So ist das Leben eben.",
    "loesungen": [
-    "So ist das Leben eben.",
     "So ist eben das Leben.",
     "Das Leben ist eben so."
    ],
-   "erklaerung": "„eben“ drückt aus, dass man sich damit abfinden muss."
+   "erklaerung": "„eben“ drückt aus, dass man sich damit abfinden muss.",
+   "aus": "umformen"
   },
   {
    "id": "u23",

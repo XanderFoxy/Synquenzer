@@ -213,14 +213,18 @@
   },
   {
    "id": "t3",
-   "typ": "luecke",
-   "satz": "Erzählcafé: Schülerinnen und Schüler einer ___ Klasse treffen Bewohner eines Seniorenheims.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Erzählcafé: Schülerinnen und Schüler einer ___ Klasse treffen Bewohner eines Seniorenheims.",
+   "optionen": [
     "zehnten",
-    "10."
+    "neunten",
+    "elften",
+    "achten"
    ],
+   "richtig": 0,
    "erklaerung": "„Schülerinnen und Schüler einer zehnten Klasse“",
-   "nur_training": true
+   "nur_training": true,
+   "aus": "luecke"
   }
  ]
 }

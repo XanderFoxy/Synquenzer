@@ -51,96 +51,145 @@
  "uebungen": [
   {
    "id": "u01",
-   "typ": "luecke",
-   "satz": "Wenn ich das früher gewusst ___, hätte ich anders entschieden.",
-   "loesungen": [
-    "hätte"
+   "typ": "auswahl",
+   "frage": "Wenn ich das früher gewusst ___, hätte ich anders entschieden.",
+   "optionen": [
+    "habe",
+    "wäre",
+    "hätte",
+    "hat"
    ],
-   "erklaerung": "Irreale Bedingung in der Vergangenheit: hätte + Partizip II."
+   "richtig": 2,
+   "erklaerung": "Irreale Bedingung in der Vergangenheit: hätte + Partizip II.",
+   "aus": "luecke"
   },
   {
    "id": "u02",
-   "typ": "luecke",
-   "satz": "___ wir uns doch nur rechtzeitig angemeldet!",
-   "loesungen": [
-    "Hätten"
+   "typ": "auswahl",
+   "frage": "___ wir uns doch nur rechtzeitig angemeldet!",
+   "optionen": [
+    "Wären",
+    "Hätten",
+    "Haben",
+    "Hatten"
    ],
+   "richtig": 1,
    "hinweis": "irrealer Wunsch",
-   "erklaerung": "Irrealer Wunsch ohne „wenn“: Das Verb steht an erster Stelle, dazu „doch (nur)“."
+   "erklaerung": "Irrealer Wunsch ohne „wenn“: Das Verb steht an erster Stelle, dazu „doch (nur)“.",
+   "aus": "luecke"
   },
   {
    "id": "u03",
-   "typ": "luecke",
-   "satz": "Er sieht aus, als ___ er die ganze Nacht nicht geschlafen.",
-   "loesungen": [
-    "hätte"
+   "typ": "auswahl",
+   "frage": "Er sieht aus, als ___ er die ganze Nacht nicht geschlafen.",
+   "optionen": [
+    "hätte",
+    "hat",
+    "wäre",
+    "hatte"
    ],
-   "erklaerung": "„als“ + Konjunktiv II direkt danach; Vergangenheit: hätte + Partizip II."
+   "richtig": 0,
+   "erklaerung": "„als“ + Konjunktiv II direkt danach; Vergangenheit: hätte + Partizip II.",
+   "aus": "luecke"
   },
   {
    "id": "u04",
-   "typ": "luecke",
-   "satz": "Ohne deine Hilfe ___ ich die Prüfung nie bestanden.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Ohne deine Hilfe ___ ich die Prüfung nie bestanden.",
+   "optionen": [
+    "hat",
+    "wäre",
+    "würde",
     "hätte"
    ],
-   "erklaerung": "„ohne deine Hilfe“ steht für eine irreale Bedingung (wenn du mir nicht geholfen hättest)."
+   "richtig": 3,
+   "erklaerung": "„ohne deine Hilfe“ steht für eine irreale Bedingung (wenn du mir nicht geholfen hättest).",
+   "aus": "luecke"
   },
   {
    "id": "u05",
-   "typ": "luecke",
-   "satz": "Du ___ mir ruhig Bescheid sagen können.",
-   "loesungen": [
-    "hättest"
+   "typ": "auswahl",
+   "frage": "Du ___ mir ruhig Bescheid sagen können.",
+   "optionen": [
+    "hättest",
+    "habest",
+    "hätte",
+    "wärst"
    ],
-   "erklaerung": "Vorwurf mit Modalverb in der Vergangenheit: hättest + Infinitiv + können."
+   "richtig": 0,
+   "erklaerung": "Vorwurf mit Modalverb in der Vergangenheit: hättest + Infinitiv + können.",
+   "aus": "luecke"
   },
   {
    "id": "u06",
-   "typ": "luecke",
-   "satz": "An Ihrer Stelle ___ ich mir diese Entscheidung gut überlegen.",
-   "loesungen": [
-    "würde"
+   "typ": "auswahl",
+   "frage": "An Ihrer Stelle ___ ich mir diese Entscheidung gut überlegen.",
+   "optionen": [
+    "würden",
+    "würde",
+    "wird",
+    "wurde"
    ],
-   "erklaerung": "Ratschlag: würde + Infinitiv. „wurde“ wäre Präteritum."
+   "richtig": 1,
+   "erklaerung": "Ratschlag: würde + Infinitiv. „wurde“ wäre Präteritum.",
+   "aus": "luecke"
   },
   {
    "id": "u07",
-   "typ": "luecke",
-   "satz": "Es sieht so aus, als ob es bald regnen ___.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Es sieht so aus, als ob es bald regnen ___.",
+   "optionen": [
     "würde",
-    "könnte"
+    "wurde",
+    "würden",
+    "hätte"
    ],
+   "richtig": 0,
    "hinweis": "Konjunktiv II",
-   "erklaerung": "Nach „als ob“ steht das konjugierte Verb am Ende, im Konjunktiv II."
+   "erklaerung": "Nach „als ob“ steht das konjugierte Verb am Ende, im Konjunktiv II.",
+   "aus": "luecke"
   },
   {
    "id": "u08",
-   "typ": "luecke",
-   "satz": "Beinahe ___ ich vergessen, dir zu gratulieren.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Beinahe ___ ich vergessen, dir zu gratulieren.",
+   "optionen": [
+    "hat",
+    "hätten",
+    "wäre",
     "hätte"
    ],
-   "erklaerung": "„beinahe“ oder „fast“ mit Konjunktiv II der Vergangenheit: Es ist knapp nicht passiert."
+   "richtig": 3,
+   "erklaerung": "„beinahe“ oder „fast“ mit Konjunktiv II der Vergangenheit: Es ist knapp nicht passiert.",
+   "aus": "luecke"
   },
   {
    "id": "u09",
-   "typ": "luecke",
-   "satz": "Mir ___ es lieber, wenn wir das Treffen verschieben könnten.",
-   "loesungen": [
-    "wäre"
+   "typ": "auswahl",
+   "frage": "Mir ___ es lieber, wenn wir das Treffen verschieben könnten.",
+   "optionen": [
+    "würde",
+    "hätte",
+    "wäre",
+    "sei"
    ],
-   "erklaerung": "Höflicher Wunsch: Mir wäre es lieber, wenn …"
+   "richtig": 2,
+   "erklaerung": "Höflicher Wunsch: Mir wäre es lieber, wenn …",
+   "aus": "luecke"
   },
   {
    "id": "u10",
-   "typ": "luecke",
-   "satz": "Wenn sie nur ein wenig geduldiger ___!",
-   "loesungen": [
-    "wäre"
+   "typ": "auswahl",
+   "frage": "Wenn sie nur ein wenig geduldiger ___!",
+   "optionen": [
+    "sei",
+    "ist",
+    "wäre",
+    "würde"
    ],
-   "erklaerung": "Irrealer Wunsch mit „wenn … nur“: Das Verb steht am Ende."
+   "richtig": 2,
+   "erklaerung": "Irrealer Wunsch mit „wenn … nur“: Das Verb steht am Ende.",
+   "aus": "luecke"
   },
   {
    "id": "u11",
@@ -222,75 +271,106 @@
   },
   {
    "id": "u17",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Ich habe keine Zeit. Deshalb komme ich nicht mit.",
    "anweisung": "Bilden Sie einen irrealen Bedingungssatz mit „wenn“.",
-   "loesungen": [
-    "Wenn ich Zeit hätte, käme ich mit.",
-    "Wenn ich Zeit hätte, würde ich mitkommen.",
-    "Ich käme mit, wenn ich Zeit hätte.",
-    "Ich würde mitkommen, wenn ich Zeit hätte."
+   "teile": [
+    "Wenn",
+    "Zeit",
+    "käme",
+    "ich",
+    "mit",
+    "hätte,",
+    "ich"
    ],
-   "erklaerung": "Die Verneinung kehrt sich um: keine Zeit → Zeit hätte; nicht mitkommen → käme mit."
+   "loesung": "Wenn ich Zeit hätte, käme ich mit.",
+   "erklaerung": "Die Verneinung kehrt sich um: keine Zeit → Zeit hätte; nicht mitkommen → käme mit.",
+   "aus": "umformen"
   },
   {
    "id": "u18",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Er hat den Bus verpasst. Deshalb ist er zu spät gekommen.",
    "anweisung": "Bilden Sie einen irrealen Bedingungssatz ohne „wenn“.",
-   "loesungen": [
-    "Hätte er den Bus nicht verpasst, wäre er nicht zu spät gekommen.",
-    "Hätte er den Bus nicht verpasst, so wäre er nicht zu spät gekommen."
+   "teile": [
+    "Hätte",
+    "den Bus",
+    "wäre",
+    "nicht verpasst,",
+    "nicht zu spät",
+    "er",
+    "er",
+    "gekommen"
    ],
-   "erklaerung": "Ohne „wenn“ steht das Verb an Position 1; im Hauptsatz folgt sofort das Verb (oder „so“ + Verb)."
+   "loesung": "Hätte er den Bus nicht verpasst, wäre er nicht zu spät gekommen.",
+   "erklaerung": "Ohne „wenn“ steht das Verb an Position 1; im Hauptsatz folgt sofort das Verb (oder „so“ + Verb).",
+   "aus": "umformen"
   },
   {
    "id": "u19",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Leider habe ich mich nicht beworben.",
    "anweisung": "Formulieren Sie einen irrealen Wunsch mit „doch“.",
-   "loesungen": [
-    "Hätte ich mich doch beworben!",
-    "Hätte ich mich doch nur beworben!",
-    "Hätte ich mich doch bloß beworben!",
-    "Wenn ich mich doch beworben hätte!",
-    "Wenn ich mich doch nur beworben hätte!",
-    "Wenn ich mich doch bloß beworben hätte!"
+   "teile": [
+    "Hätte",
+    "beworben",
+    "mich",
+    "doch",
+    "ich"
    ],
-   "erklaerung": "Irrealer Wunsch in der Vergangenheit: hätte + Partizip II, mit „doch (nur/bloß)“."
+   "loesung": "Hätte ich mich doch beworben!",
+   "erklaerung": "Irrealer Wunsch in der Vergangenheit: hätte + Partizip II, mit „doch (nur/bloß)“.",
+   "aus": "umformen"
   },
   {
    "id": "u20",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Es wäre richtig gewesen, ihn anzurufen, aber du hast es nicht getan.",
    "anweisung": "Formulieren Sie einen Vorwurf mit „sollen“.",
-   "loesungen": [
-    "Du hättest ihn anrufen sollen."
+   "teile": [
+    "Du",
+    "ihn",
+    "sollen",
+    "anrufen",
+    "hättest"
    ],
-   "erklaerung": "Vorwurf: hätte + Infinitiv + sollen (Ersatzinfinitiv)."
+   "loesung": "Du hättest ihn anrufen sollen.",
+   "erklaerung": "Vorwurf: hätte + Infinitiv + sollen (Ersatzinfinitiv).",
+   "aus": "umformen"
   },
   {
    "id": "u21",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Er benimmt sich wie der Chef, ist es aber nicht.",
    "anweisung": "Bilden Sie einen irrealen Vergleich mit „als“ ohne „ob“: Er benimmt sich, …",
-   "loesungen": [
-    "Er benimmt sich, als wäre er der Chef.",
-    "Er benimmt sich, als sei er der Chef."
+   "teile": [
+    "benimmt",
+    "als",
+    "wäre",
+    "der Chef",
+    "er",
+    "Er",
+    "sich,"
    ],
-   "erklaerung": "Nach „als“ folgt das konjugierte Verb direkt. Im irrealen Vergleich ist auch der Konjunktiv I möglich."
+   "loesung": "Er benimmt sich, als wäre er der Chef.",
+   "erklaerung": "Nach „als“ folgt das konjugierte Verb direkt. Im irrealen Vergleich ist auch der Konjunktiv I möglich.",
+   "aus": "umformen"
   },
   {
    "id": "u22",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Schicken Sie mir die Unterlagen!",
    "anweisung": "Formulieren Sie eine höfliche Bitte mit „könnten“.",
-   "loesungen": [
-    "Könnten Sie mir die Unterlagen schicken?",
-    "Könnten Sie mir bitte die Unterlagen schicken?",
-    "Könnten Sie mir die Unterlagen bitte schicken?"
+   "teile": [
+    "Könnten",
+    "mir",
+    "die Unterlagen",
+    "schicken",
+    "Sie"
    ],
-   "erklaerung": "Der Konjunktiv II macht die Aufforderung zur höflichen Frage."
+   "loesung": "Könnten Sie mir die Unterlagen schicken?",
+   "erklaerung": "Der Konjunktiv II macht die Aufforderung zur höflichen Frage.",
+   "aus": "umformen"
   },
   {
    "id": "u23",

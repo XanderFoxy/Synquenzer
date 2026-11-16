@@ -18,8 +18,6 @@ export function norm(s, { komma = true } = {}) {
 const anfangKlein = (s) => s.charAt(0).toLowerCase() + s.slice(1);
 // anfang:false → Lücke mitten im Satz: Groß-/Kleinschreibung zählt genau (Nomen groß, „dem“ klein)
 const gleichStreng = (a, b, opt, anfang = true) => { const x = norm(a, opt), y = norm(b, opt); return x === y || (anfang && anfangKlein(x) === anfangKlein(y)); };
-// Steht eine Lücke am Satzanfang? (Text davor leer oder endet mit . ! ? : bzw. Anführungszeichen danach)
-export const amSatzanfang = (davor) => /^\s*$|[.!?:…]["“”„»«']?\s*$|^\s*["„»«(]\s*$/.test(String(davor ?? ''));
 export const liste = (l) => (Array.isArray(l) ? l : l == null ? [] : [l]).map(String);
 // → { richtig, komma (nur Komma anders), treffer }
 export function vergleiche(antwort, loesungen, { ganzKlein = false, anfang = true } = {}) {
@@ -39,7 +37,9 @@ export function lueckenLoesungen(u) {
 }
 // Token für "fehler": Satzzeichen am Rand zählen nicht
 export const kern = (w) => String(w).replace(/^[„“"»«‚‘'(\[]+|[.,;:!?“”"»«‘’')\]]+$/g, '');
-export function fehlerTreffer(u, gewaehlt) {
-  const soll = String(u.fehler).split(/\s+/).map(kern).join(' ');
-  return gewaehlt.map(kern).join(' ') === soll;
+// Wortpositionen des Fehlers im Satz (erste Fundstelle der Wortfolge)
+export function fehlerSpanne(u) {
+  const w = String(u.satz).split(/\s+/).map(kern); const f = String(u.fehler).split(/\s+/).map(kern);
+  for (let i = 0; i + f.length <= w.length; i++) if (f.every((x, j) => w[i + j] === x)) return f.map((_, j) => i + j);
+  return [];
 }

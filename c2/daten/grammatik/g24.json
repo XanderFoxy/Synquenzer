@@ -52,103 +52,151 @@
  "uebungen": [
   {
    "id": "u01",
-   "typ": "luecke",
-   "satz": "Die Stadt hat drei große ___.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Die Stadt hat drei große ___.",
+   "optionen": [
+    "Musea",
+    "Museumen",
+    "Museums",
     "Museen"
    ],
+   "richtig": 3,
    "hinweis": "das Museum, Plural",
-   "erklaerung": "Fremdwörter auf -um: Plural meist auf -en."
+   "erklaerung": "Fremdwörter auf -um: Plural meist auf -en.",
+   "aus": "luecke"
   },
   {
    "id": "u02",
-   "typ": "luecke",
-   "satz": "Für ihr Studium musste sie zwei ___ absolvieren.",
-   "loesungen": [
-    "Praktika"
+   "typ": "auswahl",
+   "frage": "Für ihr Studium musste sie zwei ___ absolvieren.",
+   "optionen": [
+    "Praktiken",
+    "Praktikums",
+    "Praktika",
+    "Praktikumme"
    ],
+   "richtig": 2,
    "hinweis": "das Praktikum, Plural",
-   "erklaerung": "Praktikum → Praktika (lateinischer Plural)."
+   "erklaerung": "Praktikum → Praktika (lateinischer Plural).",
+   "aus": "luecke"
   },
   {
    "id": "u03",
-   "typ": "luecke",
-   "satz": "Sie hat den Roman aus dem Englischen ___.",
-   "loesungen": [
-    "übersetzt"
+   "typ": "auswahl",
+   "frage": "Sie hat den Roman aus dem Englischen ___.",
+   "optionen": [
+    "übergesetzt",
+    "übersetzt",
+    "geübersetzt",
+    "überzusetzt"
    ],
+   "richtig": 1,
    "hinweis": "übersetzen, Partizip II",
-   "erklaerung": "In eine andere Sprache übertragen: untrennbar, kein ge-."
+   "erklaerung": "In eine andere Sprache übertragen: untrennbar, kein ge-.",
+   "aus": "luecke"
   },
   {
    "id": "u04",
-   "typ": "luecke",
-   "satz": "Der Fährmann hat uns ans andere Ufer ___.",
-   "loesungen": [
-    "übergesetzt"
+   "typ": "auswahl",
+   "frage": "Der Fährmann hat uns ans andere Ufer ___.",
+   "optionen": [
+    "übergesetzt",
+    "überzugesetzt",
+    "geübersetzt",
+    "übersetzt"
    ],
+   "richtig": 0,
    "hinweis": "übersetzen, Partizip II",
-   "erklaerung": "Ans andere Ufer bringen: trennbar, Partizip mit ge-."
+   "erklaerung": "Ans andere Ufer bringen: trennbar, Partizip mit ge-.",
+   "aus": "luecke"
   },
   {
    "id": "u05",
-   "typ": "luecke",
-   "satz": "Er hat aus Versehen ein Verkehrsschild ___.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Er hat aus Versehen ein Verkehrsschild ___.",
+   "optionen": [
+    "geumfahren",
+    "umgefahrt",
+    "umfahren",
     "umgefahren"
    ],
+   "richtig": 3,
    "hinweis": "umfahren = umstoßen",
-   "erklaerung": "Umstoßen: trennbar, Partizip mit ge-."
+   "erklaerung": "Umstoßen: trennbar, Partizip mit ge-.",
+   "aus": "luecke"
   },
   {
    "id": "u06",
-   "typ": "luecke",
-   "satz": "Um den Stau zu ___, nahmen wir die Landstraße.",
-   "loesungen": [
-    "umfahren"
+   "typ": "auswahl",
+   "frage": "Um den Stau zu ___, nahmen wir die Landstraße.",
+   "optionen": [
+    "umgefahren",
+    "umzufahren",
+    "umfahren",
+    "umfährt"
    ],
+   "richtig": 2,
    "hinweis": "um etwas herumfahren",
-   "erklaerung": "Untrennbar: „zu“ steht vor dem ganzen Verb (zu umfahren)."
+   "erklaerung": "Untrennbar: „zu“ steht vor dem ganzen Verb (zu umfahren).",
+   "aus": "luecke"
   },
   {
    "id": "u07",
-   "typ": "luecke",
-   "satz": "Wir haben den Stoff vor der Prüfung gründlich ___.",
-   "loesungen": [
-    "wiederholt"
+   "typ": "auswahl",
+   "frage": "Wir haben den Stoff vor der Prüfung gründlich ___.",
+   "optionen": [
+    "wiedergeholt",
+    "wiederhohlt",
+    "wiederholt",
+    "gewiederholt"
    ],
+   "richtig": 2,
    "hinweis": "wiederholen = noch einmal lernen",
-   "erklaerung": "Untrennbar im Sinne von „noch einmal tun“: wiederholt. Trennbar hieße es „zurückholen“: wiedergeholt."
+   "erklaerung": "Untrennbar im Sinne von „noch einmal tun“: wiederholt. Trennbar hieße es „zurückholen“: wiedergeholt.",
+   "aus": "luecke"
   },
   {
    "id": "u08",
-   "typ": "luecke",
-   "satz": "___ Freundschaft zwischen den beiden hielt ein Leben lang.",
-   "loesungen": [
-    "Die"
+   "typ": "auswahl",
+   "frage": "___ Freundschaft zwischen den beiden hielt ein Leben lang.",
+   "optionen": [
+    "Die",
+    "Den",
+    "Das",
+    "Der"
    ],
-   "hinweis": "Artikel",
-   "erklaerung": "Nomen auf -schaft sind feminin."
+   "richtig": 0,
+   "erklaerung": "Nomen auf -schaft sind feminin.",
+   "aus": "luecke"
   },
   {
    "id": "u09",
-   "typ": "luecke",
-   "satz": "___ Lehrbuch ist schon ziemlich alt, aber immer noch gut.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "___ Lehrbuch ist schon ziemlich alt, aber immer noch gut.",
+   "optionen": [
+    "Der",
+    "Dem",
+    "Die",
     "Das"
    ],
-   "hinweis": "Artikel",
-   "erklaerung": "Das Grundwort „Buch“ bestimmt das Genus: das Lehrbuch."
+   "richtig": 3,
+   "erklaerung": "Das Grundwort „Buch“ bestimmt das Genus: das Lehrbuch.",
+   "aus": "luecke"
   },
   {
    "id": "u10",
-   "typ": "luecke",
-   "satz": "Die beiden ___ wurden ausführlich diskutiert.",
-   "loesungen": [
-    "Themen"
+   "typ": "auswahl",
+   "frage": "Die beiden ___ wurden ausführlich diskutiert.",
+   "optionen": [
+    "Thema",
+    "Themen",
+    "Themes",
+    "Themas"
    ],
+   "richtig": 1,
    "hinweis": "das Thema, Plural",
-   "erklaerung": "Thema → Themen."
+   "erklaerung": "Thema → Themen.",
+   "aus": "luecke"
   },
   {
    "id": "u11",
@@ -229,65 +277,88 @@
   },
   {
    "id": "u17",
-   "typ": "umformen",
-   "ausgang": "Er stieß mit dem Auto gegen die Laterne, und sie fiel um.",
-   "anweisung": "Formulieren Sie mit „umfahren“ im Perfekt.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Er stieß mit dem Auto gegen die Laterne, und sie fiel um. – Formulieren Sie mit „umfahren“ im Perfekt.",
+   "optionen": [
     "Er hat die Laterne umgefahren.",
-    "Er hat mit dem Auto die Laterne umgefahren.",
-    "Er hat die Laterne mit dem Auto umgefahren."
+    "Er ist die Laterne umgefahren.",
+    "Er hat die Laterne umgefahrt.",
+    "Er hat die Laterne umfahren."
    ],
-   "erklaerung": "Umstoßen: trennbar, Partizip „umgefahren“."
+   "richtig": 0,
+   "erklaerung": "Umstoßen: trennbar, Partizip „umgefahren“.",
+   "aus": "umformen"
   },
   {
    "id": "u18",
-   "typ": "umformen",
-   "ausgang": "Wir fuhren um die Innenstadt herum.",
-   "anweisung": "Formulieren Sie mit „umfahren“ im Präteritum.",
-   "loesungen": [
-    "Wir umfuhren die Innenstadt."
+   "typ": "auswahl",
+   "frage": "Wir fuhren um die Innenstadt herum. – Formulieren Sie mit „umfahren“ im Präteritum.",
+   "optionen": [
+    "Wir fuhren die Innenstadt um.",
+    "Wir umfuhren die Innenstadt.",
+    "Wir umfuhren um die Innenstadt.",
+    "Wir umfahrten die Innenstadt."
    ],
-   "erklaerung": "Herumfahren: untrennbar, die Innenstadt wird Akkusativobjekt."
+   "richtig": 1,
+   "erklaerung": "Herumfahren: untrennbar, die Innenstadt wird Akkusativobjekt.",
+   "aus": "umformen"
   },
   {
    "id": "u19",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Man überträgt den Text in fünf Sprachen.",
    "anweisung": "Formulieren Sie im Passiv mit „übersetzen“.",
-   "loesungen": [
-    "Der Text wird in fünf Sprachen übersetzt."
+   "teile": [
+    "in fünf Sprachen",
+    "wird",
+    "Der Text",
+    "übersetzt"
    ],
-   "erklaerung": "Untrennbar: Partizip „übersetzt“."
+   "loesung": "Der Text wird in fünf Sprachen übersetzt.",
+   "erklaerung": "Untrennbar: Partizip „übersetzt“.",
+   "aus": "umformen"
   },
   {
    "id": "u20",
-   "typ": "umformen",
-   "ausgang": "die Planung der Stadt",
-   "anweisung": "Bilden Sie ein Kompositum mit Artikel.",
-   "loesungen": [
-    "die Stadtplanung"
+   "typ": "auswahl",
+   "frage": "die Planung der Stadt – Bilden Sie ein Kompositum mit Artikel.",
+   "optionen": [
+    "die Planungsstadt",
+    "die Stadtsplanung",
+    "die Stadtplanung",
+    "das Stadtplanung"
    ],
-   "erklaerung": "Das Grundwort „Planung“ bestimmt das Genus."
+   "richtig": 2,
+   "erklaerung": "Das Grundwort „Planung“ bestimmt das Genus.",
+   "aus": "umformen"
   },
   {
    "id": "u21",
-   "typ": "umformen",
-   "ausgang": "das Datum, das Zentrum, das Album",
-   "anweisung": "Nennen Sie die Pluralformen mit Artikel, durch Kommas getrennt.",
-   "loesungen": [
-    "die Daten, die Zentren, die Alben"
+   "typ": "auswahl",
+   "frage": "das Datum, das Zentrum, das Album – Nennen Sie die Pluralformen mit Artikel, durch Kommas getrennt.",
+   "optionen": [
+    "die Datums, die Zentrums, die Albums",
+    "die Daten, die Zentren, die Alben",
+    "die Daten, die Zentra, die Albums",
+    "die Data, die Zentra, die Alba"
    ],
-   "erklaerung": "Fremdwörter auf -um: Plural auf -en."
+   "richtig": 1,
+   "erklaerung": "Fremdwörter auf -um: Plural auf -en.",
+   "aus": "umformen"
   },
   {
    "id": "u22",
-   "typ": "umformen",
-   "ausgang": "Die Altstadt wurde wieder aufgebaut.",
-   "anweisung": "Nominalisieren Sie mit Genitiv: der …",
-   "loesungen": [
-    "der Wiederaufbau der Altstadt"
+   "typ": "auswahl",
+   "frage": "Die Altstadt wurde wieder aufgebaut. – Nominalisieren Sie mit Genitiv: der …",
+   "optionen": [
+    "der Wiederaufbau der Altstadt",
+    "der Wiederaufbau des Altstadts",
+    "die Wiederaufbauung der Altstadt",
+    "der Wiederaufbau die Altstadt"
    ],
-   "erklaerung": "wieder aufbauen → der Wiederaufbau (maskulin wie „der Bau“)."
+   "richtig": 0,
+   "erklaerung": "wieder aufbauen → der Wiederaufbau (maskulin wie „der Bau“).",
+   "aus": "umformen"
   },
   {
    "id": "u23",

@@ -40,305 +40,426 @@
  "uebungen": [
   {
    "id": "u01",
-   "typ": "luecke",
-   "satz": "Die Debatte über ___ Klimawandel wird oft sehr emotional geführt.",
-   "loesungen": [
-    "den"
+   "typ": "auswahl",
+   "frage": "Die Debatte über ___ Klimawandel wird oft sehr emotional geführt.",
+   "optionen": [
+    "den",
+    "die",
+    "der",
+    "das"
    ],
-   "hinweis": "d-",
-   "erklaerung": "„der Wandel“ → der Klimawandel; „über“ + Akkusativ: den."
+   "richtig": 0,
+   "erklaerung": "„der Wandel“ → der Klimawandel; „über“ + Akkusativ: den.",
+   "aus": "luecke"
   },
   {
    "id": "u02",
-   "typ": "luecke",
-   "satz": "Nach all den Formularen hat sie ___ Lust verloren, sich weiter mit Bürokratie zu befassen.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Nach all den Formularen hat sie ___ Lust verloren, sich weiter mit Bürokratie zu befassen.",
+   "optionen": [
+    "der",
+    "den",
+    "das",
     "die"
    ],
-   "hinweis": "d-",
-   "erklaerung": "„die Lust“ ist feminin."
+   "richtig": 3,
+   "erklaerung": "„die Lust“ ist feminin.",
+   "aus": "luecke"
   },
   {
    "id": "u03",
-   "typ": "luecke",
-   "satz": "___ Oberstufenbuch, mit dem sie früher gearbeitet hat, steht noch im Regal.",
-   "loesungen": [
-    "Das"
+   "typ": "auswahl",
+   "frage": "___ Oberstufenbuch, mit dem sie früher gearbeitet hat, steht noch im Regal.",
+   "optionen": [
+    "Die",
+    "Den",
+    "Das",
+    "Der"
    ],
-   "hinweis": "d-",
-   "erklaerung": "Das Grundwort „das Buch“ bestimmt das Genus: das Oberstufenbuch."
+   "richtig": 2,
+   "erklaerung": "Das Grundwort „das Buch“ bestimmt das Genus: das Oberstufenbuch.",
+   "aus": "luecke"
   },
   {
    "id": "u04",
-   "typ": "luecke",
-   "satz": "Gibt es eine App, ___ Fremdwörter mit Beispielsätzen erklärt?",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Gibt es eine App, ___ Fremdwörter mit Beispielsätzen erklärt?",
+   "optionen": [
+    "den",
     "die",
-    "welche"
+    "der",
+    "das"
    ],
-   "hinweis": "Relativpronomen",
-   "erklaerung": "„die App“ ist feminin; Subjekt im Relativsatz: die."
+   "richtig": 1,
+   "erklaerung": "„die App“ ist feminin; Subjekt im Relativsatz: die.",
+   "aus": "luecke"
   },
   {
    "id": "u05",
-   "typ": "luecke",
-   "satz": "Das Intensivseminar hat ___ Teilnehmerinnen einiges abverlangt.",
-   "loesungen": [
-    "den"
+   "typ": "auswahl",
+   "frage": "Das Intensivseminar hat ___ Teilnehmerinnen einiges abverlangt.",
+   "optionen": [
+    "den",
+    "der",
+    "die",
+    "das"
    ],
-   "hinweis": "d-, Plural",
-   "erklaerung": "„jemandem etwas abverlangen“: Dativ Plural – den Teilnehmerinnen."
+   "richtig": 0,
+   "erklaerung": "„jemandem etwas abverlangen“: Dativ Plural – den Teilnehmerinnen.",
+   "aus": "luecke"
   },
   {
    "id": "u06",
-   "typ": "luecke",
-   "satz": "Der Dozent empfahl ___ einen Podcast über Sprachgeschichte.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Der Dozent empfahl ___ einen Podcast über Sprachgeschichte.",
+   "optionen": [
+    "wir",
+    "unsere",
+    "unser",
     "uns"
    ],
+   "richtig": 3,
    "hinweis": "wir",
-   "erklaerung": "„jemandem etwas empfehlen“: Person im Dativ – uns."
+   "erklaerung": "„jemandem etwas empfehlen“: Person im Dativ – uns.",
+   "aus": "luecke"
   },
   {
    "id": "u07",
-   "typ": "luecke",
-   "satz": "Wir sprachen über das neue Gesetz; ___ hatte ich bis dahin nichts gehört.",
-   "loesungen": [
-    "davon"
+   "typ": "auswahl",
+   "frage": "Wir sprachen über das neue Gesetz; ___ hatte ich bis dahin nichts gehört.",
+   "optionen": [
+    "darauf",
+    "damit",
+    "davon",
+    "daran"
    ],
+   "richtig": 2,
    "hinweis": "von + Pronomen, Sache",
-   "erklaerung": "Für eine Sache steht das Pronominaladverb: davon (nicht „von das“)."
+   "erklaerung": "Für eine Sache steht das Pronominaladverb: davon (nicht „von das“).",
+   "aus": "luecke"
   },
   {
    "id": "u08",
-   "typ": "luecke",
-   "satz": "Die Veranstalter wiesen ausdrücklich auf ___ Gefahr einer Überfüllung hin.",
-   "loesungen": [
-    "die"
+   "typ": "auswahl",
+   "frage": "Die Veranstalter wiesen ausdrücklich auf ___ Gefahr einer Überfüllung hin.",
+   "optionen": [
+    "der",
+    "den",
+    "die",
+    "das"
    ],
-   "hinweis": "d-",
-   "erklaerung": "„hinweisen auf“ + Akkusativ; „die Gefahr“ ist feminin."
+   "richtig": 2,
+   "erklaerung": "„hinweisen auf“ + Akkusativ; „die Gefahr“ ist feminin.",
+   "aus": "luecke"
   },
   {
    "id": "u09",
-   "typ": "luecke",
-   "satz": "In ___ Vorwort erläutert die Herausgeberin ihre Auswahlkriterien.",
-   "loesungen": [
-    "ihrem"
+   "typ": "auswahl",
+   "frage": "In ___ Vorwort erläutert die Herausgeberin ihre Auswahlkriterien.",
+   "optionen": [
+    "ihrem",
+    "ihrer",
+    "ihren",
+    "ihres"
    ],
-   "hinweis": "ihr-",
-   "erklaerung": "„das Vorwort“ ist neutral; „in“ (wo?) + Dativ: in ihrem Vorwort."
+   "richtig": 0,
+   "erklaerung": "„das Vorwort“ ist neutral; „in“ (wo?) + Dativ: in ihrem Vorwort.",
+   "aus": "luecke"
   },
   {
    "id": "u10",
-   "typ": "luecke",
-   "satz": "Die Wahl fiel schließlich auf ___ Kandidaten, den niemand auf der Rechnung hatte.",
-   "loesungen": [
-    "einen"
+   "typ": "auswahl",
+   "frage": "Die Wahl fiel schließlich auf ___ Kandidaten, den niemand auf der Rechnung hatte.",
+   "optionen": [
+    "einen",
+    "einer",
+    "eines",
+    "einem"
    ],
-   "hinweis": "ein-",
-   "erklaerung": "„fallen auf“ + Akkusativ; „der Kandidat“ (n-Deklination): einen Kandidaten."
+   "richtig": 0,
+   "erklaerung": "„fallen auf“ + Akkusativ; „der Kandidat“ (n-Deklination): einen Kandidaten.",
+   "aus": "luecke"
   },
   {
    "id": "u11",
-   "typ": "luecke",
-   "satz": "Der Minister stellte sich ___ Fragen der Journalisten.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Der Minister stellte sich ___ Fragen der Journalisten.",
+   "optionen": [
+    "der",
+    "dem",
+    "das",
     "den"
    ],
-   "hinweis": "d-, Plural",
-   "erklaerung": "„sich einer Sache stellen“: Dativ Plural – den Fragen."
+   "richtig": 3,
+   "erklaerung": "„sich einer Sache stellen“: Dativ Plural – den Fragen.",
+   "aus": "luecke"
   },
   {
    "id": "u12",
-   "typ": "luecke",
-   "satz": "___ Interesse an historischen Romanen ist ungebrochen.",
-   "loesungen": [
-    "Das"
+   "typ": "auswahl",
+   "frage": "___ Interesse an historischen Romanen ist ungebrochen.",
+   "optionen": [
+    "Das",
+    "Der",
+    "Die",
+    "Den"
    ],
-   "hinweis": "d-",
-   "erklaerung": "„das Interesse“ ist neutral, obwohl es auf -e endet."
+   "richtig": 0,
+   "erklaerung": "„das Interesse“ ist neutral, obwohl es auf -e endet.",
+   "aus": "luecke"
   },
   {
    "id": "u13",
-   "typ": "luecke",
-   "satz": "Die Rezensentin lobte vor allem ___ Fazit des Buches.",
-   "loesungen": [
-    "das"
+   "typ": "auswahl",
+   "frage": "Die Rezensentin lobte vor allem ___ Fazit des Buches.",
+   "optionen": [
+    "den",
+    "das",
+    "der",
+    "die"
    ],
-   "hinweis": "d-",
-   "erklaerung": "„das Fazit“ ist neutral."
+   "richtig": 1,
+   "erklaerung": "„das Fazit“ ist neutral.",
+   "aus": "luecke"
   },
   {
    "id": "u14",
-   "typ": "luecke",
-   "satz": "Die Forschungsgruppe konnte ___ Hypothese nicht bestätigen.",
-   "loesungen": [
-    "ihre"
+   "typ": "auswahl",
+   "frage": "Die Forschungsgruppe konnte ___ Hypothese nicht bestätigen.",
+   "optionen": [
+    "ihre",
+    "ihrem",
+    "ihrer",
+    "ihren"
    ],
-   "hinweis": "ihr-",
-   "erklaerung": "„die Hypothese“ ist feminin."
+   "richtig": 0,
+   "erklaerung": "„die Hypothese“ ist feminin.",
+   "aus": "luecke"
   },
   {
    "id": "u15",
-   "typ": "luecke",
-   "satz": "Der Artikel beleuchtet ___ Phänomen aus soziologischer Sicht.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Der Artikel beleuchtet ___ Phänomen aus soziologischer Sicht.",
+   "optionen": [
+    "der",
+    "die",
+    "den",
     "das"
    ],
-   "hinweis": "d-",
-   "erklaerung": "„das Phänomen“ ist neutral."
+   "richtig": 3,
+   "erklaerung": "„das Phänomen“ ist neutral.",
+   "aus": "luecke"
   },
   {
    "id": "u16",
-   "typ": "luecke",
-   "satz": "Ohne ___ Kontext ist das Zitat kaum zu verstehen.",
-   "loesungen": [
-    "den"
+   "typ": "auswahl",
+   "frage": "Ohne ___ Kontext ist das Zitat kaum zu verstehen.",
+   "optionen": [
+    "den",
+    "der",
+    "die",
+    "das"
    ],
-   "hinweis": "d-",
-   "erklaerung": "„der Kontext“ ist maskulin; „ohne“ + Akkusativ."
+   "richtig": 0,
+   "erklaerung": "„der Kontext“ ist maskulin; „ohne“ + Akkusativ.",
+   "aus": "luecke"
   },
   {
    "id": "u17",
-   "typ": "luecke",
-   "satz": "Der Roman bricht mit jedem ___ Klischee über das Landleben.",
-   "loesungen": [
-    "gängigen"
+   "typ": "auswahl",
+   "frage": "Der Roman bricht mit jedem ___ Klischee über das Landleben.",
+   "optionen": [
+    "gängige",
+    "gängigen",
+    "gängiges",
+    "gängiger"
    ],
+   "richtig": 1,
    "hinweis": "gängig",
-   "erklaerung": "„das Klischee“; „mit“ + Dativ, nach „jedem“ schwach: jedem gängigen Klischee."
+   "erklaerung": "„das Klischee“; „mit“ + Dativ, nach „jedem“ schwach: jedem gängigen Klischee.",
+   "aus": "luecke"
   },
   {
    "id": "u18",
-   "typ": "luecke",
-   "satz": "In ___ Fußnote verweist der Autor auf eine ältere Quelle.",
-   "loesungen": [
-    "einer"
+   "typ": "auswahl",
+   "frage": "In ___ Fußnote verweist der Autor auf eine ältere Quelle.",
+   "optionen": [
+    "einem",
+    "eines",
+    "einer",
+    "einen"
    ],
-   "hinweis": "ein-",
-   "erklaerung": "„die Fußnote“ ist feminin; „in“ (wo?) + Dativ: in einer."
+   "richtig": 2,
+   "erklaerung": "„die Fußnote“ ist feminin; „in“ (wo?) + Dativ: in einer.",
+   "aus": "luecke"
   },
   {
    "id": "u19",
-   "typ": "luecke",
-   "satz": "Die Zeugin widersprach ___ Protokoll in einem entscheidenden Punkt.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Die Zeugin widersprach ___ Protokoll in einem entscheidenden Punkt.",
+   "optionen": [
+    "der",
+    "die",
+    "das",
     "dem"
    ],
-   "hinweis": "d-",
-   "erklaerung": "„widersprechen“ + Dativ; „das Protokoll“ ist neutral."
+   "richtig": 3,
+   "erklaerung": "„widersprechen“ + Dativ; „das Protokoll“ ist neutral.",
+   "aus": "luecke"
   },
   {
    "id": "u20",
-   "typ": "luecke",
-   "satz": "Der Verlag lehnte ___ Manuskript ohne jede Begründung ab.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Der Verlag lehnte ___ Manuskript ohne jede Begründung ab.",
+   "optionen": [
+    "der",
+    "den",
+    "die",
     "das"
    ],
-   "hinweis": "d-",
-   "erklaerung": "„das Manuskript“ ist neutral."
+   "richtig": 3,
+   "erklaerung": "„das Manuskript“ ist neutral.",
+   "aus": "luecke"
   },
   {
    "id": "u21",
-   "typ": "luecke",
-   "satz": "Kritiker bemängeln ___ fehlende Tiefe des Films.",
-   "loesungen": [
-    "die"
+   "typ": "auswahl",
+   "frage": "Kritiker bemängeln ___ fehlende Tiefe des Films.",
+   "optionen": [
+    "die",
+    "den",
+    "das",
+    "der"
    ],
-   "hinweis": "d-",
-   "erklaerung": "„die Tiefe“ ist feminin."
+   "richtig": 0,
+   "erklaerung": "„die Tiefe“ ist feminin.",
+   "aus": "luecke"
   },
   {
    "id": "u22",
-   "typ": "luecke",
-   "satz": "Die Kommission prüft derzeit ___ Antrag der Bürgerinitiative.",
-   "loesungen": [
-    "den"
+   "typ": "auswahl",
+   "frage": "Die Kommission prüft derzeit ___ Antrag der Bürgerinitiative.",
+   "optionen": [
+    "der",
+    "das",
+    "den",
+    "die"
    ],
-   "hinweis": "d-",
-   "erklaerung": "„der Antrag“ ist maskulin, Akkusativ: den."
+   "richtig": 2,
+   "erklaerung": "„der Antrag“ ist maskulin, Akkusativ: den.",
+   "aus": "luecke"
   },
   {
    "id": "u23",
-   "typ": "luecke",
-   "satz": "Sie widmete ___ ersten Roman ihrer Großmutter.",
-   "loesungen": [
-    "ihren"
+   "typ": "auswahl",
+   "frage": "Sie widmete ___ ersten Roman ihrer Großmutter.",
+   "optionen": [
+    "ihren",
+    "ihrer",
+    "ihrem",
+    "ihres"
    ],
-   "hinweis": "ihr-",
-   "erklaerung": "„der Roman“ im Akkusativ: ihren ersten Roman; die Person steht im Dativ (ihrer Großmutter)."
+   "richtig": 0,
+   "erklaerung": "„der Roman“ im Akkusativ: ihren ersten Roman; die Person steht im Dativ (ihrer Großmutter).",
+   "aus": "luecke"
   },
   {
    "id": "u24",
-   "typ": "luecke",
-   "satz": "Wir gratulieren ___ Preisträgerin herzlich zu dieser Auszeichnung.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Wir gratulieren ___ Preisträgerin herzlich zu dieser Auszeichnung.",
+   "optionen": [
+    "die",
+    "den",
+    "das",
     "der"
    ],
-   "hinweis": "d-",
-   "erklaerung": "„gratulieren“ + Dativ, feminin: der."
+   "richtig": 3,
+   "erklaerung": "„gratulieren“ + Dativ, feminin: der.",
+   "aus": "luecke"
   },
   {
    "id": "u25",
-   "typ": "luecke",
-   "satz": "Die Ärztin riet ___ Patienten dringend zu mehr Bewegung.",
-   "loesungen": [
-    "dem"
+   "typ": "auswahl",
+   "frage": "Die Ärztin riet ___ Patienten dringend zu mehr Bewegung.",
+   "optionen": [
+    "die",
+    "das",
+    "dem",
+    "der"
    ],
-   "hinweis": "d-, Singular",
-   "erklaerung": "„raten“ + Dativ: dem Patienten (n-Deklination)."
+   "richtig": 2,
+   "erklaerung": "„raten“ + Dativ: dem Patienten (n-Deklination).",
+   "aus": "luecke"
   },
   {
    "id": "u26",
-   "typ": "luecke",
-   "satz": "Nach drei Verhandlungstagen sprach das Gericht ___ Angeklagten frei.",
-   "loesungen": [
-    "den"
+   "typ": "auswahl",
+   "frage": "Nach drei Verhandlungstagen sprach das Gericht ___ Angeklagten frei.",
+   "optionen": [
+    "der",
+    "das",
+    "den",
+    "die"
    ],
-   "hinweis": "d-, Singular",
-   "erklaerung": "„freisprechen“ + Akkusativ: den Angeklagten."
+   "richtig": 2,
+   "erklaerung": "„freisprechen“ + Akkusativ: den Angeklagten.",
+   "aus": "luecke"
   },
   {
    "id": "u27",
-   "typ": "luecke",
-   "satz": "Die Debatte drehte sich vor allem um ___ rechtlichen Status der Geflüchteten.",
-   "loesungen": [
-    "den"
+   "typ": "auswahl",
+   "frage": "Die Debatte drehte sich vor allem um ___ rechtlichen Status der Geflüchteten.",
+   "optionen": [
+    "den",
+    "die",
+    "der",
+    "das"
    ],
-   "hinweis": "d-",
-   "erklaerung": "„der Status“ ist maskulin; „um“ + Akkusativ."
+   "richtig": 0,
+   "erklaerung": "„der Status“ ist maskulin; „um“ + Akkusativ.",
+   "aus": "luecke"
   },
   {
    "id": "u28",
-   "typ": "luecke",
-   "satz": "Die Statistik verschleiert ___ eigentliche Ausmaß des Problems.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Die Statistik verschleiert ___ eigentliche Ausmaß des Problems.",
+   "optionen": [
+    "der",
+    "den",
+    "die",
     "das"
    ],
-   "hinweis": "d-",
-   "erklaerung": "„das Ausmaß“ ist neutral."
+   "richtig": 3,
+   "erklaerung": "„das Ausmaß“ ist neutral.",
+   "aus": "luecke"
   },
   {
    "id": "u29",
-   "typ": "luecke",
-   "satz": "Der Text folgt ___ klassischen Aufbau einer Novelle.",
-   "loesungen": [
-    "dem"
+   "typ": "auswahl",
+   "frage": "Der Text folgt ___ klassischen Aufbau einer Novelle.",
+   "optionen": [
+    "die",
+    "das",
+    "dem",
+    "der"
    ],
-   "hinweis": "d-",
-   "erklaerung": "„folgen“ + Dativ; „der Aufbau“: dem klassischen Aufbau."
+   "richtig": 2,
+   "erklaerung": "„folgen“ + Dativ; „der Aufbau“: dem klassischen Aufbau.",
+   "aus": "luecke"
   },
   {
    "id": "u30",
-   "typ": "luecke",
-   "satz": "Am Ende des Seminars überreichte die Professorin ___ Teilnehmenden eine Urkunde.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Am Ende des Seminars überreichte die Professorin ___ Teilnehmenden eine Urkunde.",
+   "optionen": [
+    "jedes",
+    "jeden",
     "jedem",
-    "jeder"
+    "jede"
    ],
-   "hinweis": "jed-",
-   "erklaerung": "„jemandem etwas überreichen“: Dativ – jedem Teilnehmenden (Singular, maskulin/neutral) oder jeder Teilnehmenden (feminin)."
+   "richtig": 2,
+   "erklaerung": "„jemandem etwas überreichen“: Dativ – jedem Teilnehmenden (Singular, maskulin/neutral) oder jeder Teilnehmenden (feminin).",
+   "aus": "luecke"
   },
   {
    "id": "u31",
@@ -704,24 +825,39 @@
   },
   {
    "id": "u61",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Ich habe von dem Projekt erst gestern gehört.",
    "anweisung": "Ersetzen Sie „von dem Projekt“ durch ein Pronominaladverb.",
+   "teile": [
+    "davon",
+    "gestern",
+    "Ich",
+    "gehört",
+    "habe",
+    "erst"
+   ],
+   "loesung": "Ich habe davon erst gestern gehört.",
    "loesungen": [
-    "Ich habe davon erst gestern gehört.",
     "Ich habe erst gestern davon gehört."
    ],
-   "erklaerung": "Sache nach Präposition → davon."
+   "erklaerung": "Sache nach Präposition → davon.",
+   "aus": "umformen"
   },
   {
    "id": "u62",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Der Dozent gibt den Studierenden jede Woche neue Texte.",
    "anweisung": "Ersetzen Sie „den Studierenden“ durch ein Pronomen.",
-   "loesungen": [
-    "Der Dozent gibt ihnen jede Woche neue Texte."
+   "teile": [
+    "Der Dozent",
+    "neue Texte",
+    "ihnen",
+    "jede Woche",
+    "gibt"
    ],
-   "erklaerung": "Dativ Plural des Personalpronomens: ihnen."
+   "loesung": "Der Dozent gibt ihnen jede Woche neue Texte.",
+   "erklaerung": "Dativ Plural des Personalpronomens: ihnen.",
+   "aus": "umformen"
   }
  ]
 }

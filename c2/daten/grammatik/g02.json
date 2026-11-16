@@ -48,123 +48,180 @@
  "uebungen": [
   {
    "id": "u01",
-   "typ": "luecke",
-   "satz": "Die Delegation führte ein langes Gespräch mit dem ___ des Verbandes.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Die Delegation führte ein langes Gespräch mit dem ___ des Verbandes.",
+   "optionen": [
+    "Präsident",
+    "Präsidents",
+    "Präsidente",
     "Präsidenten"
    ],
+   "richtig": 3,
    "hinweis": "Präsident",
-   "erklaerung": "„der Präsident“ gehört zur n-Deklination: dem Präsidenten, des Präsidenten."
+   "erklaerung": "„der Präsident“ gehört zur n-Deklination: dem Präsidenten, des Präsidenten.",
+   "aus": "luecke"
   },
   {
    "id": "u02",
-   "typ": "luecke",
-   "satz": "Die Ausstellung widmet sich dem Leben eines jüdischen ___ im Prag der Zwanzigerjahre.",
-   "loesungen": [
-    "Journalisten"
+   "typ": "auswahl",
+   "frage": "Die Ausstellung widmet sich dem Leben eines jüdischen ___ im Prag der Zwanzigerjahre.",
+   "optionen": [
+    "Journalisten",
+    "Journalist",
+    "Journalists",
+    "Journalistes"
    ],
+   "richtig": 0,
    "hinweis": "Journalist",
-   "erklaerung": "Personen auf -ist folgen der n-Deklination; Genitiv: eines Journalisten."
+   "erklaerung": "Personen auf -ist folgen der n-Deklination; Genitiv: eines Journalisten.",
+   "aus": "luecke"
   },
   {
    "id": "u03",
-   "typ": "luecke",
-   "satz": "Der Aufsatz behandelt die Rolle des religiösen ___ in der Aufklärung.",
-   "loesungen": [
-    "Glaubens"
+   "typ": "auswahl",
+   "frage": "Der Aufsatz behandelt die Rolle des religiösen ___ in der Aufklärung.",
+   "optionen": [
+    "Glaubes",
+    "Glaubens",
+    "Glauben",
+    "Glaube"
    ],
+   "richtig": 1,
    "hinweis": "Glaube",
-   "erklaerung": "„der Glaube“ hat im Genitiv -ns: des Glaubens (ebenso des Namens, des Gedankens, des Willens)."
+   "erklaerung": "„der Glaube“ hat im Genitiv -ns: des Glaubens (ebenso des Namens, des Gedankens, des Willens).",
+   "aus": "luecke"
   },
   {
    "id": "u04",
-   "typ": "luecke",
-   "satz": "Im ___ aller Beteiligten danke ich der Stiftung für ihre großzügige Unterstützung.",
-   "loesungen": [
-    "Namen"
+   "typ": "auswahl",
+   "frage": "Im ___ aller Beteiligten danke ich der Stiftung für ihre großzügige Unterstützung.",
+   "optionen": [
+    "Namen",
+    "Namens",
+    "Names",
+    "Name"
    ],
+   "richtig": 0,
    "hinweis": "Name",
-   "erklaerung": "„im Namen“ ist Dativ; „der Name“ bekommt außer im Nominativ ein -n, im Genitiv -ns."
+   "erklaerung": "„im Namen“ ist Dativ; „der Name“ bekommt außer im Nominativ ein -n, im Genitiv -ns.",
+   "aus": "luecke"
   },
   {
    "id": "u05",
-   "typ": "luecke",
-   "satz": "Gegen jede Vernunft folgte sie der Stimme ihres ___.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Gegen jede Vernunft folgte sie der Stimme ihres ___.",
+   "optionen": [
+    "Herzen",
+    "Herz",
+    "Herzes",
     "Herzens"
    ],
+   "richtig": 3,
    "hinweis": "Herz",
-   "erklaerung": "„das Herz“ ist unregelmäßig: des Herzens, dem Herzen, aber Akkusativ das Herz."
+   "erklaerung": "„das Herz“ ist unregelmäßig: des Herzens, dem Herzen, aber Akkusativ das Herz.",
+   "aus": "luecke"
   },
   {
    "id": "u06",
-   "typ": "luecke",
-   "satz": "Die Biografie eines ___ zu schreiben, verlangt besondere Distanz.",
-   "loesungen": [
-    "Zeitgenossen"
+   "typ": "auswahl",
+   "frage": "Die Biografie eines ___ zu schreiben, verlangt besondere Distanz.",
+   "optionen": [
+    "Zeitgenosses",
+    "Zeitgenosse",
+    "Zeitgenossen",
+    "Zeitgenossens"
    ],
+   "richtig": 2,
    "hinweis": "Zeitgenosse",
-   "erklaerung": "Maskuline Personenbezeichnungen auf -e gehören zur n-Deklination: eines Zeitgenossen."
+   "erklaerung": "Maskuline Personenbezeichnungen auf -e gehören zur n-Deklination: eines Zeitgenossen.",
+   "aus": "luecke"
   },
   {
    "id": "u07",
-   "typ": "luecke",
-   "satz": "Das Ministerium hat ___ Antrag auf Förderung stattgegeben.",
-   "loesungen": [
-    "unserem"
+   "typ": "auswahl",
+   "frage": "Das Ministerium hat ___ Antrag auf Förderung stattgegeben.",
+   "optionen": [
+    "unseren",
+    "unserem",
+    "unseres",
+    "unserer"
    ],
-   "hinweis": "unser-",
-   "erklaerung": "„einer Sache stattgeben“ verlangt den Dativ: unserem Antrag."
+   "richtig": 1,
+   "erklaerung": "„einer Sache stattgeben“ verlangt den Dativ: unserem Antrag.",
+   "aus": "luecke"
   },
   {
    "id": "u08",
-   "typ": "luecke",
-   "satz": "Die Stiftung vergibt Stipendien an Studierende aus allen ___.",
-   "loesungen": [
-    "Ländern"
+   "typ": "auswahl",
+   "frage": "Die Stiftung vergibt Stipendien an Studierende aus allen ___.",
+   "optionen": [
+    "Ländern",
+    "Landen",
+    "Lände",
+    "Länder"
    ],
+   "richtig": 0,
    "hinweis": "Land, Plural",
-   "erklaerung": "Im Dativ Plural bekommt das Nomen ein -n: aus allen Ländern."
+   "erklaerung": "Im Dativ Plural bekommt das Nomen ein -n: aus allen Ländern.",
+   "aus": "luecke"
   },
   {
    "id": "u09",
-   "typ": "luecke",
-   "satz": "Die Dozentin hat ___ die Aufzeichnung ihrer Vorlesung geschickt.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Die Dozentin hat ___ die Aufzeichnung ihrer Vorlesung geschickt.",
+   "optionen": [
+    "meiner",
+    "ich",
+    "mich",
     "mir"
    ],
+   "richtig": 3,
    "hinweis": "ich",
-   "erklaerung": "„jemandem etwas schicken“: Person im Dativ (mir), Sache im Akkusativ."
+   "erklaerung": "„jemandem etwas schicken“: Person im Dativ (mir), Sache im Akkusativ.",
+   "aus": "luecke"
   },
   {
    "id": "u10",
-   "typ": "luecke",
-   "satz": "Die Opposition warf ___ Minister vor, die Öffentlichkeit getäuscht zu haben.",
-   "loesungen": [
-    "dem"
+   "typ": "auswahl",
+   "frage": "Die Opposition warf ___ Minister vor, die Öffentlichkeit getäuscht zu haben.",
+   "optionen": [
+    "das",
+    "dem",
+    "der",
+    "die"
    ],
-   "hinweis": "d-",
-   "erklaerung": "„jemandem etwas vorwerfen“: Person im Dativ."
+   "richtig": 1,
+   "erklaerung": "„jemandem etwas vorwerfen“: Person im Dativ.",
+   "aus": "luecke"
   },
   {
    "id": "u11",
-   "typ": "luecke",
-   "satz": "Die Regisseurin erinnerte ___ Publikum an die Ursprünge des Stoffes.",
-   "loesungen": [
-    "das"
+   "typ": "auswahl",
+   "frage": "Die Regisseurin erinnerte ___ Publikum an die Ursprünge des Stoffes.",
+   "optionen": [
+    "das",
+    "die",
+    "der",
+    "den"
    ],
-   "hinweis": "d-",
-   "erklaerung": "„jemanden an etwas erinnern“: Person im Akkusativ – nicht im Dativ."
+   "richtig": 0,
+   "erklaerung": "„jemanden an etwas erinnern“: Person im Akkusativ – nicht im Dativ.",
+   "aus": "luecke"
   },
   {
    "id": "u12",
-   "typ": "luecke",
-   "satz": "Die Wirkung des ___ übertraf die Erwartungen des Verlags bei Weitem.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Die Wirkung des ___ übertraf die Erwartungen des Verlags bei Weitem.",
+   "optionen": [
+    "Essay",
+    "Essayen",
+    "Essayes",
     "Essays"
    ],
+   "richtig": 3,
    "hinweis": "Essay",
-   "erklaerung": "Maskuline und neutrale Nomen bekommen im Genitiv Singular -s: des Essays."
+   "erklaerung": "Maskuline und neutrale Nomen bekommen im Genitiv Singular -s: des Essays.",
+   "aus": "luecke"
   },
   {
    "id": "u13",
@@ -380,25 +437,42 @@
   },
   {
    "id": "u31",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Die Romane von Fontane werden bis heute im Unterricht gelesen.",
    "anweisung": "Ersetzen Sie „von Fontane“ durch einen vorangestellten Genitiv.",
+   "teile": [
+    "Fontanes",
+    "Romane",
+    "werden",
+    "im Unterricht",
+    "gelesen",
+    "bis heute"
+   ],
+   "loesung": "Fontanes Romane werden bis heute im Unterricht gelesen.",
    "loesungen": [
-    "Fontanes Romane werden bis heute im Unterricht gelesen.",
     "Fontanes Romane werden im Unterricht bis heute gelesen."
    ],
-   "erklaerung": "Eigennamen im Genitiv stehen gern vor dem Nomen: Fontanes Romane (ohne Artikel, ohne Apostroph)."
+   "erklaerung": "Eigennamen im Genitiv stehen gern vor dem Nomen: Fontanes Romane (ohne Artikel, ohne Apostroph).",
+   "aus": "umformen"
   },
   {
    "id": "u32",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Die Forscherin bekam für ihre Entdeckung einen renommierten Preis.",
    "anweisung": "Formen Sie um. Beginnen Sie mit „Man verlieh“.",
+   "teile": [
+    "Man",
+    "der Forscherin",
+    "verlieh",
+    "für ihre Entdeckung",
+    "einen renommierten Preis"
+   ],
+   "loesung": "Man verlieh der Forscherin für ihre Entdeckung einen renommierten Preis.",
    "loesungen": [
-    "Man verlieh der Forscherin für ihre Entdeckung einen renommierten Preis.",
     "Man verlieh der Forscherin einen renommierten Preis für ihre Entdeckung."
    ],
-   "erklaerung": "„jemandem etwas verleihen“: Person im Dativ (der Forscherin), Sache im Akkusativ (einen Preis)."
+   "erklaerung": "„jemandem etwas verleihen“: Person im Dativ (der Forscherin), Sache im Akkusativ (einen Preis).",
+   "aus": "umformen"
   }
  ]
 }

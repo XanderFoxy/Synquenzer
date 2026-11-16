@@ -1,32 +1,45 @@
-// Feinschliff – Übungs-Engine für alle Typen (luecke, auswahl, umformen, zuordnen, sortieren, fehler, rf, rfn)
-// und der Sitzungs-Ablauf in zwei Modi: „ueben“ (sofort richtig/falsch + Erklärung) und „pruefung“ (Korrektur am Ende).
+// Feinschliff – Übungs-Engine (auswahl, zuordnen, sortieren, fehler, rf, rfn) und Sitzung in zwei Modi: „ueben“ / „pruefung“.
+// Seit 0.2 wird nichts getippt: Lücke = Auswahl, Umformen = Sortieren, Fehler = Antippen; alte luecke/umformen nur aufdecken.
 import { esc, mische } from './speicher.js';
-import { vergleiche, liste, luecken, lueckenLoesungen, fehlerTreffer, amSatzanfang, kern } from './pruefen.js';
+import { vergleiche, liste, lueckenLoesungen, fehlerSpanne } from './pruefen.js';
 import { SYM } from './symbole.js';
 import { wunschLink } from './wunsch-link.js';
 import { vermerke } from './wiederholung.js';
 import { buche, einheit } from './konto.js';
 
 export const TYP_NAME = { luecke: 'Lücke', auswahl: 'Auswahl', umformen: 'Umformen', zuordnen: 'Verbinden', sortieren: 'Sortieren', fehler: 'Fehler finden', rf: 'Richtig oder falsch', rfn: 'Richtig, falsch, nicht im Text' };
-const ANLEITUNG = { luecke: 'Ergänze die Lücke.', zuordnen: 'Tippe links, dann rechts, um zu verbinden.', sortieren: 'Tippe die Teile in die richtige Reihenfolge. Ziehen stellt um.', fehler: 'Tippe auf den Fehler und schreibe die Korrektur.', rf: 'Stimmt die Aussage?', rfn: 'Stimmt das laut Text?' };
+const ANLEITUNG = { luecke: 'Wie heißt es richtig?', umformen: 'Wie heißt die Umformung?', zuordnen: 'Tippe links, dann rechts, um zu verbinden.', sortieren: 'Tippe die Teile in die richtige Reihenfolge. Ziehen stellt um.', fehler: 'Tippe auf das falsche Wort.', rf: 'Stimmt die Aussage?', rfn: 'Stimmt das laut Text?' };
+const LUECKE = /_{3,}/;
+const istLuecke = (u) => u.typ === 'auswahl' && LUECKE.test(String(u.frage || ''));
+export function typName(u) { return u.typ === 'auswahl' && u.aus === 'luecke' ? 'Lücke' : u.aus === 'umformen' ? 'Umformen' : TYP_NAME[u.typ] || u.typ; }
+function anleitung(u) {
+  if (istLuecke(u)) return 'Tippe auf das passende Wort für die Lücke.';
+  if (u.typ === 'auswahl' && u.aus === 'umformen') return 'Welche Umformung ist richtig?';
+  if (u.typ === 'sortieren' && u.ausgang) return 'Bau die Umformung aus den Teilen. Ziehen stellt um.';
+  return ANLEITUNG[u.typ] || '';
+}
+// Mischtyp: Lücken-Auswahl zählt eigen
+export const mischTyp = (u) => (istLuecke(u) ? 'luecke' : u.typ);
 const SOFORT = new Set(['auswahl', 'rf', 'rfn']);
-const OFFEN = new Set(['luecke', 'umformen', 'sortieren', 'fehler']);   // hier kann es mehr richtige Antworten geben als in der Lösungsliste   // im Übungsmodus prüft schon das Antippen
+const OFFEN = new Set(['sortieren']);   // mehr richtige Reihenfolgen möglich
+const ALT = new Set(['luecke', 'umformen']);   // alte Eintipp-Typen
+const lueckeHtml = (t) => String(t).split(LUECKE).map(esc).join('<span class="luecke-platz" aria-label="Lücke">&#8202;</span>');
 const RF_STD = ['richtig', 'falsch'], RFN = ['richtig', 'falsch', 'nicht im Text'];
 const q = (s) => `„${esc(s)}“`;
 
 // Kurzbeschreibung einer Aufgabe für Übersichten
 export function kurz(u) {
-  const t = u.satz || u.frage || u.ausgang || u.aussage || (u.typ === 'zuordnen' ? 'Verbinden: ' + u.paare.map((p) => p[0]).join(', ') : u.typ === 'sortieren' ? 'Satz bauen: ' + u.teile.join(' · ') : '');
+  const t = (u.ausgang && u.typ === 'sortieren' ? `${u.ausgang} → ${u.anweisung || ''}` : '') || u.satz || u.frage || u.ausgang || u.aussage || (u.typ === 'zuordnen' ? 'Verbinden: ' + u.paare.map((p) => p[0]).join(', ') : u.typ === 'sortieren' ? 'Satz bauen: ' + u.teile.join(' · ') : '');
   return String(t).length > 140 ? String(t).slice(0, 137) + '…' : String(t);
 }
 export function loesungText(u) {
   switch (u.typ) {
     case 'luecke': return lueckenLoesungen(u).map((l) => l[0]).join(' / ');
     case 'auswahl': return u.optionen[u.richtig];
-    case 'umformen': return liste(u.loesungen)[0];
     case 'zuordnen': return u.paare.map((p) => `${p[0]} – ${p[1]}`).join('; ');
     case 'sortieren': return u.loesung;
     case 'fehler': return `${u.fehler} → ${liste(u.korrektur)[0]}`;
+    case 'umformen': return liste(u.loesungen)[0] || '';
     case 'rf': return (u.beschriftung || RF_STD)[u.wert ? 0 : 1];
     case 'rfn': return u.wert;
     default: return '';
@@ -37,13 +50,8 @@ export function auswerten(u, a) {
   const leer = { richtig: false, komma: false, antwortText: '–' };
   if (a == null) return leer;
   switch (u.typ) {
-    case 'luecke': {
-      const ls = lueckenLoesungen(u); const werte = [].concat(a); const vor = luecken(u.satz);
-      const erg = ls.map((alt, i) => vergleiche(werte[i], alt, { anfang: i === 0 ? amSatzanfang(vor[0]) : vor[i].trim() !== '' && amSatzanfang(vor[i]) }));
-      return { richtig: erg.every((e) => e.richtig), komma: false, antwortText: werte.map((w) => w || '–').join(' / '), teile: erg.map((e) => e.richtig) };
-    }
+    case 'luecke': case 'umformen': return { richtig: a === true, komma: false, antwortText: a === true ? 'gewusst (selbst eingeschätzt)' : 'noch nicht gewusst' };
     case 'auswahl': return { richtig: a === u.richtig, komma: false, antwortText: u.optionen[a] ?? '–' };
-    case 'umformen': { const e = vergleiche(a, u.loesungen); return { richtig: e.richtig, komma: e.komma, antwortText: a || '–' }; }
     case 'zuordnen': {
       const ok = u.paare.map((p, i) => a[i] != null && a[i] === p[1]);
       return { richtig: ok.every(Boolean), komma: false, antwortText: u.paare.map((p, i) => `${p[0]} – ${a[i] ?? '?'}`).join('; '), teile: ok, anzahl: ok.filter(Boolean).length };
@@ -52,10 +60,10 @@ export function auswerten(u, a) {
       const satz = a.join(' '); const e = vergleiche(satz, [u.loesung, ...liste(u.loesungen)], { ganzKlein: true });
       return { richtig: e.richtig, komma: e.komma, antwortText: satz || '–' };
     }
-    case 'fehler': {
-      const erstes = kern(String(u.satz).split(/\s+/)[0]) === kern(String(u.fehler).split(/\s+/)[0]);
-      const t = fehlerTreffer(u, a.wahl || []); const k = vergleiche(a.korr, u.korrektur, { anfang: erstes });
-      return { richtig: t && k.richtig, komma: false, antwortText: `${(a.wahl || []).join(' ') || '–'} → ${a.korr || '–'}`, treffer: t };
+    case 'fehler': {   // richtig, wenn alle angetippten Wörter im Fehler liegen
+      const span = fehlerSpanne(u); const idx = a.idx || [];
+      const t = idx.length > 0 && span.length > 0 && idx.every((i) => span.includes(i));
+      return { richtig: t, komma: false, antwortText: (a.wahl || []).join(' ') || '–', treffer: t };
     }
     case 'rf': return { richtig: a === !!u.wert, komma: false, antwortText: (u.beschriftung || RF_STD)[a ? 0 : 1] };
     case 'rfn': return { richtig: a === u.wert, komma: false, antwortText: a };
@@ -64,8 +72,8 @@ export function auswerten(u, a) {
 }
 export function rueckHtml(u, erg) {
   const erkl = u.erklaerung ? `<p class="erkl">${esc(u.erklaerung)}</p>` : '';
-  if (erg.richtig) return `<div class="rueck gut" role="status">${SYM.haken}<div><b>Richtig.</b>${erg.komma ? ` <span class="leise">Achte auf das Komma: ${q(liste(u.loesungen || u.loesung)[0] || u.loesung)}</span>` : ''}${erkl}</div></div>`;
-  const teil = u.typ === 'zuordnen' && erg.anzahl ? ` <span class="leise">(${erg.anzahl} von ${u.paare.length} Paaren richtig)</span>` : u.typ === 'fehler' && erg.treffer ? ' <span class="leise">(Fehler gefunden, Korrektur passt noch nicht)</span>' : '';
+  if (erg.richtig) return `<div class="rueck gut" role="status">${SYM.haken}<div><b>Richtig.</b>${u.typ === 'fehler' ? `<p>Richtig heißt es: ${q(loesungText(u))}</p>` : ''}${erg.komma ? ` <span class="leise">Achte auf das Komma: ${q(liste(u.loesungen || u.loesung)[0] || u.loesung)}</span>` : ''}${erkl}</div></div>`;
+  const teil = u.typ === 'zuordnen' && erg.anzahl ? ` <span class="leise">(${erg.anzahl} von ${u.paare.length} Paaren richtig)</span>` : '';
   return `<div class="rueck schlecht" role="status">${SYM.kreuz}<div><b>Noch nicht.</b>${teil}<p>Richtig: ${q(loesungText(u))}</p>${erkl}</div></div>`;
 }
 
@@ -75,25 +83,23 @@ export function rueckHtml(u, erg) {
  */
 export function zeichneUebung(u, el, { modus = 'ueben', onFertig = () => {}, onAenderung = () => {} } = {}) {
   let a = null, fertig = false;
-  const kopf = `<div class="u-kopf"><span class="u-typ">${esc(TYP_NAME[u.typ] || u.typ)}</span>${u.grundlage ? '<span class="u-typ grundlage" title="Wiederholung von Grundlagen">Grundlagen</span>' : ''}${ANLEITUNG[u.typ] ? `<span class="u-anl">${ANLEITUNG[u.typ]}</span>` : ''}</div>`;
+  const anl = anleitung(u);
+  const kopf = `<div class="u-kopf"><span class="u-typ">${esc(typName(u))}</span>${u.grundlage ? '<span class="u-typ grundlage" title="Wiederholung von Grundlagen">Grundlagen</span>' : ''}${anl ? `<span class="u-anl">${anl}</span>` : ''}</div>`;
   el.className = 'uebung'; el.dataset.typ = u.typ; if (u.id) el.dataset.uid = el.dataset.uid || u.id;
-  const brauchtKnopf = modus === 'ueben' && !SOFORT.has(u.typ);
+  const brauchtKnopf = modus === 'ueben' && !SOFORT.has(u.typ) && !ALT.has(u.typ);
   let koerper = '';
   const reihe = { auswahl: null, zuordnen: null, sortieren: null };
   switch (u.typ) {
-    case 'luecke': {
-      const teile = luecken(u.satz), ls = lueckenLoesungen(u);
-      koerper = `<p class="satz">${teile.map((t, i) => esc(t) + (i < teile.length - 1 ? `<input class="feld luecke-feld" autocorrect="off" data-i="${i}" size="${Math.max(5, ...ls[i].map((x) => x.length)) + 1}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Lücke ${i + 1}">` : '')).join('')}</p>${u.hinweis ? `<p class="hinweis">${esc(u.hinweis)}</p>` : ''}`;
+    case 'luecke': case 'umformen': {   // alt: aufdecken + selbst einschätzen
+      const aufg = u.typ === 'luecke' ? `<p class="satz">${lueckeHtml(u.satz)}</p>` : `<blockquote class="ausgang">${esc(u.ausgang)}</blockquote><p class="frage">${esc(u.anweisung)}</p>`;
+      koerper = `${aufg}<div class="aufdecken"><button class="knopf zweit" data-aufdecken>Lösung zeigen</button></div>`;
       break;
     }
     case 'auswahl': {
       reihe.auswahl = mische(u.optionen.map((_, i) => i));
-      koerper = `<p class="frage">${esc(u.frage)}</p><div class="optionen">${reihe.auswahl.map((i, k) => `<button class="option" data-o="${i}"><span class="buchst">${'abcdef'[k]}</span><span>${esc(u.optionen[i])}</span></button>`).join('')}</div>`;
+      koerper = `<p class="frage${istLuecke(u) ? ' satz' : ''}">${istLuecke(u) ? lueckeHtml(u.frage) : esc(u.frage)}</p>${u.hinweis ? `<p class="hinweis">${esc(u.hinweis)}</p>` : ''}<div class="optionen">${reihe.auswahl.map((i, k) => `<button class="option" data-o="${i}"><span class="buchst">${'abcdef'[k]}</span><span>${esc(u.optionen[i])}</span></button>`).join('')}</div>`;
       break;
     }
-    case 'umformen':
-      koerper = `<blockquote class="ausgang">${esc(u.ausgang)}</blockquote><p class="frage">${esc(u.anweisung)}</p><textarea class="feld" rows="3" autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="false" aria-label="Deine Umformung"></textarea><button class="textknopf" data-uebernehmen>Ausgangssatz zum Bearbeiten einfügen</button>`;
-      break;
     case 'zuordnen': {
       reihe.zuordnen = mische(u.paare.map((p) => p[1]));
       koerper = `${u.anweisung ? `<p class="frage">${esc(u.anweisung)}</p>` : ''}<div class="verbinden"><div class="spalte">${u.paare.map((p, i) => `<button class="vchip" data-l="${i}">${esc(p[0])}</button>`).join('')}</div><div class="spalte">${reihe.zuordnen.map((r, j) => `<button class="vchip" data-r="${j}">${esc(r)}</button>`).join('')}</div></div>`;
@@ -103,13 +109,13 @@ export function zeichneUebung(u, el, { modus = 'ueben', onFertig = () => {}, onA
     case 'sortieren': {
       let m; do { m = mische(u.teile.map((_, i) => i)); } while (u.teile.length > 2 && m.every((x, i) => x === i));
       reihe.sortieren = m; a = [];
-      koerper = `<div class="bau" aria-label="Dein Satz"></div><div class="vorrat">${m.map((i) => `<button class="tchip" data-t="${i}">${esc(u.teile[i])}</button>`).join('')}</div><button class="textknopf" data-reset>Zurücksetzen</button>`;
+      koerper = `${u.ausgang ? `<blockquote class="ausgang">${esc(u.ausgang)}</blockquote><p class="frage">${esc(u.anweisung || '')}</p>` : ''}<div class="bau" aria-label="Dein Satz"></div><div class="vorrat">${m.map((i) => `<button class="tchip" data-t="${i}">${esc(u.teile[i])}</button>`).join('')}</div><button class="textknopf" data-reset>Zurücksetzen</button>`;
       break;
     }
     case 'fehler': {
       const w = String(u.satz).split(/\s+/);
-      koerper = `<p class="satz woerter">${w.map((x, i) => `<button class="wort" data-w="${i}">${esc(x)}</button>`).join(' ')}</p><label class="klein">Richtig heißt es:<input class="feld korr" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></label>`;
-      a = { wahl: [], korr: '' }; el._woerter = w;
+      koerper = `<p class="satz woerter">${w.map((x, i) => `<button class="wort" data-w="${i}">${esc(x)}</button>`).join(' ')}</p>`;
+      a = { wahl: [], idx: [] }; el._woerter = w;
       break;
     }
     case 'rf': case 'rfn': {
@@ -123,11 +129,9 @@ export function zeichneUebung(u, el, { modus = 'ueben', onFertig = () => {}, onA
   const knopf = el.querySelector('[data-pruefen]');
   const vollstaendig = () => {
     switch (u.typ) {
-      case 'luecke': return [...el.querySelectorAll('.luecke-feld')].some((f) => f.value.trim());
-      case 'umformen': return !!el.querySelector('textarea').value.trim();
       case 'zuordnen': return Object.keys(a).length === u.paare.length;
       case 'sortieren': return a.length === u.teile.length;
-      case 'fehler': return a.wahl.length > 0 && !!a.korr.trim();
+      case 'fehler': return a.idx.length > 0;
       default: return a != null;
     }
   };
@@ -137,27 +141,22 @@ export function zeichneUebung(u, el, { modus = 'ueben', onFertig = () => {}, onA
     fertig = true; const erg = auswerten(u, ctrl.antwort()); ctrl.zeige(erg); onFertig(erg, ctrl.antwort());
   };
   // ---- Ereignisse je Typ ----
-  if (u.typ === 'luecke' || u.typ === 'umformen' || u.typ === 'fehler') {
-    el.addEventListener('input', (e) => { if (u.typ === 'fehler' && e.target.classList.contains('korr')) a.korr = e.target.value; geaendert(); });
-    el.addEventListener('keydown', (e) => {
-      if (e.key !== 'Enter' || e.shiftKey) return;
-      const felder = [...el.querySelectorAll('.luecke-feld')]; const i = felder.indexOf(e.target);
-      if (i >= 0 && i < felder.length - 1) { e.preventDefault(); felder[i + 1].focus(); return; }
-      if (modus === 'ueben') { e.preventDefault(); pruefe(); }
-    });
-  }
   el.addEventListener('click', (e) => {
     if (fertig && modus === 'ueben') return;
     const b = e.target.closest('button'); if (!b || !el.contains(b)) return;
     if (b.hasAttribute('data-pruefen')) return pruefe();
-    if (b.hasAttribute('data-uebernehmen')) { const t = el.querySelector('textarea'); t.value = u.ausgang; t.focus(); geaendert(); return; }
+    if (b.hasAttribute('data-aufdecken')) {
+      b.parentElement.innerHTML = `<p class="loesung-zeige"><span class="leise">Lösung:</span> ${esc(loesungText(u))}</p><p class="leise">Wusstest du es?</p><div class="optionen reihe"><button class="option kurz" data-selbst="1">Gewusst</button><button class="option kurz" data-selbst="0">Noch nicht</button></div>`;
+      return;
+    }
+    if (b.dataset.selbst != null) { a = b.dataset.selbst === '1'; el.querySelectorAll('[data-selbst]').forEach((x) => x.setAttribute('aria-pressed', x === b)); geaendert(); if (modus === 'ueben') pruefe(); return; }
     if (b.dataset.o != null) { a = +b.dataset.o; el.querySelectorAll('.option').forEach((x) => x.setAttribute('aria-pressed', x === b)); geaendert(); if (modus === 'ueben') pruefe(); return; }
     if (b.dataset.v != null) { a = u.typ === 'rf' ? b.dataset.v === 'true' : b.dataset.v; el.querySelectorAll('.option').forEach((x) => x.setAttribute('aria-pressed', x === b)); geaendert(); if (modus === 'ueben') pruefe(); return; }
     if (u.typ === 'zuordnen') return zuordnenKlick(b);
     if (u.typ === 'sortieren') { if (b.classList.contains('drin') && e.detail === 0) { a.splice(+b.dataset.k, 1); zeichneBau(); geaendert(); return; } if (b.hasAttribute('data-reset')) { a = []; zeichneBau(); geaendert(); return; } if (b.dataset.t != null && b.parentElement.classList.contains('vorrat')) { a.push(+b.dataset.t); zeichneBau(); geaendert(); } return; }
     if (u.typ === 'fehler' && b.dataset.w != null) {
       const i = +b.dataset.w; const sel = new Set(el._wahlIdx || []); sel.has(i) ? sel.delete(i) : sel.add(i);
-      el._wahlIdx = [...sel].sort((x, y) => x - y); a.wahl = el._wahlIdx.map((k) => el._woerter[k]);
+      el._wahlIdx = [...sel].sort((x, y) => x - y); a.idx = el._wahlIdx; a.wahl = el._wahlIdx.map((k) => el._woerter[k]);
       b.setAttribute('aria-pressed', sel.has(i)); geaendert();
     }
   });
@@ -219,22 +218,20 @@ export function zeichneUebung(u, el, { modus = 'ueben', onFertig = () => {}, onA
     u, el,
     antwort() {
       switch (u.typ) {
-        case 'luecke': { const f = [...el.querySelectorAll('.luecke-feld')].map((x) => x.value); return f.some((x) => x.trim()) ? f : null; }
-        case 'umformen': return el.querySelector('textarea').value.trim() || null;
         case 'zuordnen': return Object.keys(a).length ? { ...a } : null;
         case 'sortieren': return a.length ? a.map((i) => u.teile[i]) : null;
-        case 'fehler': return a.wahl.length || a.korr ? { ...a } : null;
+        case 'fehler': return a.idx.length ? { wahl: [...a.wahl], idx: [...a.idx] } : null;
         default: return a;
       }
     },
     zeige(erg) {
       fertig = true;
       el.classList.add('fertig', erg.richtig ? 'ist-richtig' : 'ist-falsch');
-      el.querySelectorAll('input,textarea').forEach((f) => { f.readOnly = true; });
       el.querySelectorAll('button:not(.textknopf-bleibt)').forEach((b) => { b.disabled = true; });
       if (u.typ === 'auswahl') el.querySelectorAll('.option').forEach((b) => { if (+b.dataset.o === u.richtig) b.classList.add('loesung'); else if (b.getAttribute('aria-pressed') === 'true') b.classList.add('daneben'); });
       if (u.typ === 'rf' || u.typ === 'rfn') { const soll = u.typ === 'rf' ? String(!!u.wert) : u.wert; el.querySelectorAll('.option').forEach((b) => { if (b.dataset.v === soll) b.classList.add('loesung'); else if (b.getAttribute('aria-pressed') === 'true') b.classList.add('daneben'); }); }
-      if (u.typ === 'luecke' && erg.teile) el.querySelectorAll('.luecke-feld').forEach((f, i) => f.classList.add(erg.teile[i] ? 'ok' : 'nok'));
+      if (istLuecke(u)) { const p = el.querySelector('.luecke-platz'); if (p) { p.textContent = u.optionen[u.richtig]; p.classList.add('gefuellt'); } }
+      if (u.typ === 'fehler') { const span = fehlerSpanne(u); el.querySelectorAll('.wort').forEach((b) => { const i = +b.dataset.w; if (span.includes(i)) b.classList.add('loesung'); else if (b.getAttribute('aria-pressed') === 'true') b.classList.add('daneben'); }); }
       if (u.typ === 'zuordnen' && erg.teile) el.querySelectorAll('[data-l]').forEach((b) => b.classList.add(erg.teile[+b.dataset.l] ? 'ok' : 'nok'));
       el.querySelector('.u-rueck').innerHTML = rueckHtml(u, erg);
       knopf?.parentElement?.remove();
@@ -270,7 +267,6 @@ export function sitzung(view, { titel = 'Üben', bereich = 'grammatik', eintraeg
     });
     karte.dataset.uid = e.uid;
     fuss.innerHTML = modus === 'pruefung' ? `<button class="knopf haupt breit" data-weiter>${i < eintraege.length - 1 ? 'Weiter' : 'Abgeben'}</button>` : '';
-    const f = karte.querySelector('input,textarea'); if (f && matchMedia('(pointer:fine)').matches) f.focus({ preventScroll: true });
     view.querySelector('.sitzung').scrollIntoView?.({ block: 'start' });
   }
   fuss.addEventListener('click', (ev) => {
@@ -306,4 +302,4 @@ export function sitzung(view, { titel = 'Üben', bereich = 'grammatik', eintraeg
   zeige();
 }
 // Kandidaten aus einer Grammatik-Datei
-export const kandidatenAus = (d, bereich = 'grammatik') => (d.uebungen || []).map((u) => ({ u, uid: `${bereich}/${d.id}/${u.id}`, pool: `${bereich}/${d.id}`, bereich, thema: `${bereich}/${d.id}`, typ: u.typ }));
+export const kandidatenAus = (d, bereich = 'grammatik') => (d.uebungen || []).map((u) => ({ u, uid: `${bereich}/${d.id}/${u.id}`, pool: `${bereich}/${d.id}`, bereich, thema: `${bereich}/${d.id}`, typ: mischTyp(u) }));

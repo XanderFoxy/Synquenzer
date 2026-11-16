@@ -144,13 +144,18 @@
   },
   {
    "id": "t3",
-   "typ": "luecke",
-   "satz": "Jahrzehntelang galt die Devise: so billig wie möglich, so wenig ___ wie möglich.",
-   "loesungen": [
-    "Lager"
+   "typ": "auswahl",
+   "frage": "Jahrzehntelang galt die Devise: so billig wie möglich, so wenig ___ wie möglich.",
+   "optionen": [
+    "Lager",
+    "Bürokratie",
+    "Transport",
+    "Personal"
    ],
+   "richtig": 0,
    "erklaerung": "„so billig wie möglich, so wenig Lager wie möglich“",
-   "nur_training": true
+   "nur_training": true,
+   "aus": "luecke"
   }
  ]
 }

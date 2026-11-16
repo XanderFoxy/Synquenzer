@@ -49,133 +49,188 @@
  "uebungen": [
   {
    "id": "u01",
-   "typ": "luecke",
-   "satz": "Die Reform bedarf ___ gründlichen Prüfung durch unabhängige Fachleute.",
-   "loesungen": [
-    "einer"
+   "typ": "auswahl",
+   "frage": "Die Reform bedarf ___ gründlichen Prüfung durch unabhängige Fachleute.",
+   "optionen": [
+    "eines",
+    "einer",
+    "einen",
+    "einem"
    ],
-   "hinweis": "ein-",
-   "erklaerung": "„bedürfen“ verlangt den Genitiv: einer gründlichen Prüfung."
+   "richtig": 1,
+   "erklaerung": "„bedürfen“ verlangt den Genitiv: einer gründlichen Prüfung.",
+   "aus": "luecke"
   },
   {
    "id": "u02",
-   "typ": "luecke",
-   "satz": "Am 9. November gedenkt die Stadt ___ Opfer der Pogromnacht.",
-   "loesungen": [
-    "der"
+   "typ": "auswahl",
+   "frage": "Am 9. November gedenkt die Stadt ___ Opfer der Pogromnacht.",
+   "optionen": [
+    "das",
+    "den",
+    "der",
+    "die"
    ],
-   "hinweis": "d-",
-   "erklaerung": "„gedenken“ verlangt den Genitiv: der Opfer."
+   "richtig": 2,
+   "erklaerung": "„gedenken“ verlangt den Genitiv: der Opfer.",
+   "aus": "luecke"
   },
   {
    "id": "u03",
-   "typ": "luecke",
-   "satz": "Die Staatsanwaltschaft beschuldigte den Kassierer ___ Unterschlagung.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Die Staatsanwaltschaft beschuldigte den Kassierer ___ Unterschlagung.",
+   "optionen": [
+    "die",
+    "das",
+    "den",
     "der"
    ],
-   "hinweis": "d-",
-   "erklaerung": "„jemanden einer Sache beschuldigen“: Person im Akkusativ, Sache im Genitiv."
+   "richtig": 3,
+   "erklaerung": "„jemanden einer Sache beschuldigen“: Person im Akkusativ, Sache im Genitiv.",
+   "aus": "luecke"
   },
   {
    "id": "u04",
-   "typ": "luecke",
-   "satz": "In ihrem zweiten Roman bedient sich die Autorin ___ unzuverlässigen Erzählers.",
-   "loesungen": [
-    "eines"
+   "typ": "auswahl",
+   "frage": "In ihrem zweiten Roman bedient sich die Autorin ___ unzuverlässigen Erzählers.",
+   "optionen": [
+    "eines",
+    "einen",
+    "einem",
+    "einer"
    ],
-   "hinweis": "ein-",
-   "erklaerung": "„sich einer Sache bedienen“ verlangt den Genitiv."
+   "richtig": 0,
+   "erklaerung": "„sich einer Sache bedienen“ verlangt den Genitiv.",
+   "aus": "luecke"
   },
   {
    "id": "u05",
-   "typ": "luecke",
-   "satz": "Diesen Band kann ich ___ nur wärmstens empfehlen.",
-   "loesungen": [
-    "Ihnen"
+   "typ": "auswahl",
+   "frage": "Diesen Band kann ich ___ nur wärmstens empfehlen.",
+   "optionen": [
+    "Ihr",
+    "Ihnen",
+    "Sie",
+    "Ihrer"
    ],
+   "richtig": 1,
    "hinweis": "Sie (Höflichkeitsform)",
-   "erklaerung": "„empfehlen“: Person im Dativ – Ihnen."
+   "erklaerung": "„empfehlen“: Person im Dativ – Ihnen.",
+   "aus": "luecke"
   },
   {
    "id": "u06",
-   "typ": "luecke",
-   "satz": "Der Kritiker widersprach ___ Regisseur in nahezu allen Punkten.",
-   "loesungen": [
-    "dem"
+   "typ": "auswahl",
+   "frage": "Der Kritiker widersprach ___ Regisseur in nahezu allen Punkten.",
+   "optionen": [
+    "dem",
+    "die",
+    "das",
+    "der"
    ],
-   "hinweis": "d-",
-   "erklaerung": "„widersprechen“ verlangt den Dativ."
+   "richtig": 0,
+   "erklaerung": "„widersprechen“ verlangt den Dativ.",
+   "aus": "luecke"
   },
   {
    "id": "u07",
-   "typ": "luecke",
-   "satz": "Diese Debatte hat ___ mehr Kraft gekostet, als ich erwartet hatte.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Diese Debatte hat ___ mehr Kraft gekostet, als ich erwartet hatte.",
+   "optionen": [
+    "meiner",
+    "ich",
+    "meinen",
     "mich"
    ],
+   "richtig": 3,
    "hinweis": "ich",
-   "erklaerung": "„kosten“ verlangt standardsprachlich den Akkusativ der Person: Das hat mich Kraft gekostet."
+   "erklaerung": "„kosten“ verlangt standardsprachlich den Akkusativ der Person: Das hat mich Kraft gekostet.",
+   "aus": "luecke"
   },
   {
    "id": "u08",
-   "typ": "luecke",
-   "satz": "Die Regierung verweigerte ___ ausländischen Journalisten die Akkreditierung.",
-   "loesungen": [
-    "den"
+   "typ": "auswahl",
+   "frage": "Die Regierung verweigerte ___ ausländischen Journalisten die Akkreditierung.",
+   "optionen": [
+    "den",
+    "der",
+    "die",
+    "das"
    ],
-   "hinweis": "d-, Plural",
-   "erklaerung": "„jemandem etwas verweigern“: Dativ Plural den Journalisten."
+   "richtig": 0,
+   "erklaerung": "„jemandem etwas verweigern“: Dativ Plural den Journalisten.",
+   "aus": "luecke"
   },
   {
    "id": "u09",
-   "typ": "luecke",
-   "satz": "Niemand konnte ___ ein Fehlverhalten nachweisen.",
-   "loesungen": [
-    "ihm"
+   "typ": "auswahl",
+   "frage": "Niemand konnte ___ ein Fehlverhalten nachweisen.",
+   "optionen": [
+    "ihn",
+    "ihm",
+    "er",
+    "seiner"
    ],
+   "richtig": 1,
    "hinweis": "er",
-   "erklaerung": "„jemandem etwas nachweisen“: Person im Dativ."
+   "erklaerung": "„jemandem etwas nachweisen“: Person im Dativ.",
+   "aus": "luecke"
   },
   {
    "id": "u10",
-   "typ": "luecke",
-   "satz": "Den Erfolg der Ausstellung verdankt das Museum vor allem ___ neuen Kuratorin.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Den Erfolg der Ausstellung verdankt das Museum vor allem ___ neuen Kuratorin.",
+   "optionen": [
+    "die",
+    "das",
+    "den",
     "der"
    ],
-   "hinweis": "d-",
-   "erklaerung": "„jemandem etwas verdanken“: Person im Dativ (der Kuratorin)."
+   "richtig": 3,
+   "erklaerung": "„jemandem etwas verdanken“: Person im Dativ (der Kuratorin).",
+   "aus": "luecke"
   },
   {
    "id": "u11",
-   "typ": "luecke",
-   "satz": "Das neue Gesetz nützt vor allem ___ Mietern in Ballungsräumen.",
-   "loesungen": [
-    "den"
+   "typ": "auswahl",
+   "frage": "Das neue Gesetz nützt vor allem ___ Mietern in Ballungsräumen.",
+   "optionen": [
+    "den",
+    "die",
+    "das",
+    "der"
    ],
-   "hinweis": "d-",
-   "erklaerung": "„nützen“ verlangt den Dativ: den Mietern."
+   "richtig": 0,
+   "erklaerung": "„nützen“ verlangt den Dativ: den Mietern.",
+   "aus": "luecke"
   },
   {
    "id": "u12",
-   "typ": "luecke",
-   "satz": "Sie lehrte ___ jungen Kollegen das Handwerk des Übersetzens.",
-   "loesungen": [
-    "den"
+   "typ": "auswahl",
+   "frage": "Sie lehrte ___ jungen Kollegen das Handwerk des Übersetzens.",
+   "optionen": [
+    "der",
+    "den",
+    "das",
+    "die"
    ],
-   "hinweis": "d-, Singular",
-   "erklaerung": "„jemanden etwas lehren“ hat zwei Akkusative: den jungen Kollegen, das Handwerk."
+   "richtig": 1,
+   "erklaerung": "„jemanden etwas lehren“ hat zwei Akkusative: den jungen Kollegen, das Handwerk.",
+   "aus": "luecke"
   },
   {
    "id": "u13",
-   "typ": "luecke",
-   "satz": "Erst Jahre später entsann sie sich ___ Gesprächs wieder.",
-   "loesungen": [
-    "dieses"
+   "typ": "auswahl",
+   "frage": "Erst Jahre später entsann sie sich ___ Gesprächs wieder.",
+   "optionen": [
+    "diesem",
+    "diesen",
+    "dieses",
+    "dieser"
    ],
-   "hinweis": "dies-",
-   "erklaerung": "„sich einer Sache entsinnen“ verlangt den Genitiv."
+   "richtig": 2,
+   "erklaerung": "„sich einer Sache entsinnen“ verlangt den Genitiv.",
+   "aus": "luecke"
   },
   {
    "id": "u14",
@@ -406,39 +461,51 @@
   },
   {
    "id": "u33",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Das Gesundheitssystem braucht dringend eine Reform.",
    "anweisung": "Ersetzen Sie „braucht“ durch eine Form von „bedürfen“.",
-   "loesungen": [
-    "Das Gesundheitssystem bedarf dringend einer Reform."
+   "teile": [
+    "bedarf",
+    "dringend einer Reform",
+    "Das Gesundheitssystem"
    ],
-   "erklaerung": "„bedürfen“ verlangt den Genitiv: einer Reform."
+   "loesung": "Das Gesundheitssystem bedarf dringend einer Reform.",
+   "erklaerung": "„bedürfen“ verlangt den Genitiv: einer Reform.",
+   "aus": "umformen"
   },
   {
    "id": "u34",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Wir erinnern heute an die Opfer der Flutkatastrophe.",
    "anweisung": "Verwenden Sie „gedenken“.",
+   "teile": [
+    "heute",
+    "gedenken",
+    "Wir",
+    "der Opfer",
+    "der Flutkatastrophe"
+   ],
+   "loesung": "Wir gedenken heute der Opfer der Flutkatastrophe.",
    "loesungen": [
-    "Wir gedenken heute der Opfer der Flutkatastrophe.",
     "Heute gedenken wir der Opfer der Flutkatastrophe."
    ],
-   "erklaerung": "„gedenken“ steht ohne Präposition mit dem Genitiv."
+   "erklaerung": "„gedenken“ steht ohne Präposition mit dem Genitiv.",
+   "aus": "umformen"
   },
   {
    "id": "u35",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Man warf ihm vor, Geld unterschlagen zu haben.",
    "anweisung": "Verwenden Sie „beschuldigen“ und ein Nomen im Genitiv.",
-   "loesungen": [
-    "Man beschuldigte ihn der Unterschlagung.",
-    "Man beschuldigte ihn der Unterschlagung von Geld.",
-    "Man hat ihn der Unterschlagung beschuldigt.",
-    "Er wurde der Unterschlagung beschuldigt.",
-    "Man hat ihn der Unterschlagung von Geld beschuldigt.",
-    "Er wurde der Unterschlagung von Geld beschuldigt."
+   "teile": [
+    "Man",
+    "ihn",
+    "beschuldigte",
+    "der Unterschlagung"
    ],
-   "erklaerung": "„beschuldigen“: Person im Akkusativ (ihn), Tat im Genitiv (der Unterschlagung)."
+   "loesung": "Man beschuldigte ihn der Unterschlagung.",
+   "erklaerung": "„beschuldigen“: Person im Akkusativ (ihn), Tat im Genitiv (der Unterschlagung).",
+   "aus": "umformen"
   }
  ]
 }

@@ -53,105 +53,151 @@
  "uebungen": [
   {
    "id": "u01",
-   "typ": "luecke",
-   "satz": "Die Ministerin erklärte, sie ___ mit dem Ergebnis zufrieden.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Die Ministerin erklärte, sie ___ mit dem Ergebnis zufrieden.",
+   "optionen": [
+    "wäre",
+    "seie",
+    "ist",
     "sei"
    ],
-   "hinweis": "sein",
-   "erklaerung": "Konjunktiv I von „sein“ in der 3. Person Singular: sei."
+   "richtig": 3,
+   "hinweis": "Redewiedergabe mit Konjunktiv I",
+   "erklaerung": "Konjunktiv I von „sein“ in der 3. Person Singular: sei.",
+   "aus": "luecke"
   },
   {
    "id": "u02",
-   "typ": "luecke",
-   "satz": "Der Autor behauptet, er ___ den Roman in nur drei Monaten geschrieben.",
-   "loesungen": [
-    "habe"
+   "typ": "auswahl",
+   "frage": "Der Autor behauptet, er ___ den Roman in nur drei Monaten geschrieben.",
+   "optionen": [
+    "hätte",
+    "hat",
+    "habe",
+    "hatte"
    ],
-   "hinweis": "haben",
-   "erklaerung": "Vergangenheit im Konjunktiv I: habe + Partizip II."
+   "richtig": 2,
+   "hinweis": "Redewiedergabe mit Konjunktiv I",
+   "erklaerung": "Vergangenheit im Konjunktiv I: habe + Partizip II.",
+   "aus": "luecke"
   },
   {
    "id": "u03",
-   "typ": "luecke",
-   "satz": "Die Befragten gaben an, sie ___ zu wenig Zeit für Sport.",
-   "loesungen": [
-    "hätten"
+   "typ": "auswahl",
+   "frage": "Die Befragten gaben an, sie ___ zu wenig Zeit für Sport.",
+   "optionen": [
+    "haben",
+    "hätten",
+    "hatten",
+    "habe"
    ],
-   "hinweis": "haben",
-   "erklaerung": "Konjunktiv I „sie haben“ gleicht dem Indikativ – Ersatzform im Konjunktiv II: hätten."
+   "richtig": 1,
+   "hinweis": "Redewiedergabe im Konjunktiv",
+   "erklaerung": "Konjunktiv I „sie haben“ gleicht dem Indikativ – Ersatzform im Konjunktiv II: hätten.",
+   "aus": "luecke"
   },
   {
    "id": "u04",
-   "typ": "luecke",
-   "satz": "Der Sprecher teilte mit, das Unternehmen ___ keine Stellen abbauen.",
-   "loesungen": [
-    "werde"
+   "typ": "auswahl",
+   "frage": "Der Sprecher teilte mit, das Unternehmen ___ keine Stellen abbauen.",
+   "optionen": [
+    "werde",
+    "wurde",
+    "würde",
+    "wird"
    ],
-   "hinweis": "werden",
-   "erklaerung": "Zukunft in der indirekten Rede: werde + Infinitiv."
+   "richtig": 0,
+   "hinweis": "Redewiedergabe mit Konjunktiv I",
+   "erklaerung": "Zukunft in der indirekten Rede: werde + Infinitiv.",
+   "aus": "luecke"
   },
   {
    "id": "u05",
-   "typ": "luecke",
-   "satz": "___ Angaben der Veranstalter kamen mehr als zehntausend Menschen.",
-   "loesungen": [
-    "Nach",
-    "Laut",
-    "Gemäß"
+   "typ": "auswahl",
+   "frage": "___ Angaben der Veranstalter kamen mehr als zehntausend Menschen.",
+   "optionen": [
+    "Zu",
+    "Mit",
+    "Von",
+    "Nach"
    ],
-   "erklaerung": "Redewiedergabe ohne Konjunktiv: nach Angaben + Genitiv."
+   "richtig": 3,
+   "erklaerung": "Redewiedergabe ohne Konjunktiv: nach Angaben + Genitiv.",
+   "aus": "luecke"
   },
   {
    "id": "u06",
-   "typ": "luecke",
-   "satz": "Dem Gutachten ___ ist das Gebäude nicht mehr sicher.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Dem Gutachten ___ ist das Gebäude nicht mehr sicher.",
+   "optionen": [
+    "wegen",
+    "laut",
     "zufolge",
-    "nach",
-    "gemäß"
+    "zuliebe"
    ],
+   "richtig": 2,
    "hinweis": "nachgestellt",
-   "erklaerung": "„zufolge“ (ebenso „nach“, „gemäß“) steht hinter dem Nomen im Dativ."
+   "erklaerung": "„zufolge“ (ebenso „nach“, „gemäß“) steht hinter dem Nomen im Dativ.",
+   "aus": "luecke"
   },
   {
    "id": "u07",
-   "typ": "luecke",
-   "satz": "Sie fragte, ___ die Bibliothek auch am Sonntag geöffnet sei.",
-   "loesungen": [
-    "ob"
+   "typ": "auswahl",
+   "frage": "Sie fragte, ___ die Bibliothek auch am Sonntag geöffnet sei.",
+   "optionen": [
+    "wenn",
+    "ob",
+    "falls",
+    "dass"
    ],
-   "erklaerung": "Indirekte Ja-Nein-Frage: ob + Verb am Ende."
+   "richtig": 1,
+   "erklaerung": "Indirekte Ja-Nein-Frage: ob + Verb am Ende.",
+   "aus": "luecke"
   },
   {
    "id": "u08",
-   "typ": "luecke",
-   "satz": "Der Trainer forderte, man ___ die Regeln endlich ernst nehmen.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Der Trainer forderte, man ___ die Regeln endlich ernst nehmen.",
+   "optionen": [
     "solle",
-    "möge"
+    "sollen",
+    "gesollt",
+    "soll"
    ],
-   "hinweis": "Modalverb",
-   "erklaerung": "Aufforderung in der indirekten Rede: sollen (neutral) oder mögen (höflich) im Konjunktiv I."
+   "richtig": 0,
+   "hinweis": "Redewiedergabe mit Konjunktiv I",
+   "erklaerung": "Aufforderung in der indirekten Rede: sollen (neutral) oder mögen (höflich) im Konjunktiv I.",
+   "aus": "luecke"
   },
   {
    "id": "u09",
-   "typ": "luecke",
-   "satz": "Er versicherte, er ___ den Brief nie gelesen.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Er versicherte, er ___ den Brief nie gelesen.",
+   "optionen": [
+    "hat",
+    "hätte",
+    "hatte",
     "habe"
    ],
-   "erklaerung": "Vergangenheit im Konjunktiv I: habe + Partizip II."
+   "richtig": 3,
+   "hinweis": "Redewiedergabe mit Konjunktiv I",
+   "erklaerung": "Vergangenheit im Konjunktiv I: habe + Partizip II.",
+   "aus": "luecke"
   },
   {
    "id": "u10",
-   "typ": "luecke",
-   "satz": "Die Forscherin betonte, die Ergebnisse ___ noch vorläufig.",
-   "loesungen": [
-    "seien"
+   "typ": "auswahl",
+   "frage": "Die Forscherin betonte, die Ergebnisse ___ noch vorläufig.",
+   "optionen": [
+    "waren",
+    "seien",
+    "sind",
+    "wären"
    ],
-   "hinweis": "sein",
-   "erklaerung": "Konjunktiv I von „sein“ im Plural ist eindeutig: seien."
+   "richtig": 1,
+   "hinweis": "Redewiedergabe mit Konjunktiv I",
+   "erklaerung": "Konjunktiv I von „sein“ im Plural ist eindeutig: seien.",
+   "aus": "luecke"
   },
   {
    "id": "u11",
@@ -233,71 +279,108 @@
   },
   {
    "id": "u17",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "„Ich bin krank und kann nicht kommen“, schrieb sie.",
    "anweisung": "Geben Sie die Aussage in indirekter Rede wieder.",
-   "loesungen": [
-    "Sie schrieb, sie sei krank und könne nicht kommen.",
-    "Sie schrieb, dass sie krank sei und nicht kommen könne."
+   "teile": [
+    "Sie",
+    "und",
+    "könne",
+    "nicht kommen",
+    "sie",
+    "sei",
+    "krank",
+    "schrieb,"
    ],
-   "erklaerung": "Konjunktiv I: sei, könne; Pronomen ich → sie."
+   "loesung": "Sie schrieb, sie sei krank und könne nicht kommen.",
+   "loesungen": [
+    "Sie schrieb, sie könne nicht kommen und sei krank."
+   ],
+   "erklaerung": "Konjunktiv I: sei, könne; Pronomen ich → sie.",
+   "aus": "umformen"
   },
   {
    "id": "u18",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "„Wir haben keine Fehler gemacht“, erklärten die Verantwortlichen.",
    "anweisung": "Geben Sie die Aussage in indirekter Rede wieder.",
-   "loesungen": [
-    "Die Verantwortlichen erklärten, sie hätten keine Fehler gemacht.",
-    "Die Verantwortlichen erklärten, dass sie keine Fehler gemacht hätten."
+   "teile": [
+    "gemacht",
+    "hätten",
+    "erklärten,",
+    "keine Fehler",
+    "Die Verantwortlichen",
+    "sie"
    ],
-   "erklaerung": "„sie haben“ gleicht dem Indikativ, deshalb Konjunktiv II: hätten."
+   "loesung": "Die Verantwortlichen erklärten, sie hätten keine Fehler gemacht.",
+   "erklaerung": "„sie haben“ gleicht dem Indikativ, deshalb Konjunktiv II: hätten.",
+   "aus": "umformen"
   },
   {
    "id": "u19",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "„Wann beginnt die Veranstaltung?“, fragte der Gast.",
    "anweisung": "Geben Sie die Frage indirekt mit Konjunktiv I wieder.",
-   "loesungen": [
-    "Der Gast fragte, wann die Veranstaltung beginne."
+   "teile": [
+    "fragte,",
+    "beginne",
+    "die Veranstaltung",
+    "Der Gast",
+    "wann"
    ],
-   "erklaerung": "Indirekte W-Frage: Fragewort + Verb am Ende, Konjunktiv I: beginne."
+   "loesung": "Der Gast fragte, wann die Veranstaltung beginne.",
+   "erklaerung": "Indirekte W-Frage: Fragewort + Verb am Ende, Konjunktiv I: beginne.",
+   "aus": "umformen"
   },
   {
    "id": "u20",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "„Warten Sie bitte draußen!“, sagte die Ärztin zu mir.",
    "anweisung": "Geben Sie die Aufforderung mit „sollen“ wieder.",
-   "loesungen": [
-    "Die Ärztin sagte, ich solle draußen warten.",
-    "Die Ärztin sagte mir, ich solle draußen warten.",
-    "Die Ärztin sagte zu mir, ich solle draußen warten."
+   "teile": [
+    "ich",
+    "draußen",
+    "Die Ärztin",
+    "warten",
+    "solle",
+    "sagte,"
    ],
-   "erklaerung": "Imperativ in der indirekten Rede: sollen im Konjunktiv I."
+   "loesung": "Die Ärztin sagte, ich solle draußen warten.",
+   "erklaerung": "Imperativ in der indirekten Rede: sollen im Konjunktiv I.",
+   "aus": "umformen"
   },
   {
    "id": "u21",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Die Polizei teilte mit, dass es keine Verletzten gegeben habe.",
    "anweisung": "Formulieren Sie mit „laut“ und Indikativ.",
-   "loesungen": [
-    "Laut Polizei hat es keine Verletzten gegeben.",
-    "Laut Polizei gab es keine Verletzten.",
-    "Laut der Polizei hat es keine Verletzten gegeben.",
-    "Laut der Polizei gab es keine Verletzten."
+   "teile": [
+    "Laut Polizei",
+    "hat",
+    "es",
+    "gegeben",
+    "keine Verletzten"
    ],
-   "erklaerung": "Mit „laut“ ist die Quelle genannt, der Satz selbst steht im Indikativ."
+   "loesung": "Laut Polizei hat es keine Verletzten gegeben.",
+   "erklaerung": "Mit „laut“ ist die Quelle genannt, der Satz selbst steht im Indikativ.",
+   "aus": "umformen"
   },
   {
    "id": "u22",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Nach Angaben des Herstellers ist das Gerät sicher.",
    "anweisung": "Beginnen Sie mit „Der Hersteller gibt an, …“ und verwenden Sie den Konjunktiv I.",
-   "loesungen": [
-    "Der Hersteller gibt an, das Gerät sei sicher.",
-    "Der Hersteller gibt an, dass das Gerät sicher sei."
+   "teile": [
+    "Der Hersteller",
+    "gibt",
+    "sei",
+    "sicher",
+    "an,",
+    "das Gerät"
    ],
-   "erklaerung": "Redeeinleitung + Konjunktiv I: sei."
+   "loesung": "Der Hersteller gibt an, das Gerät sei sicher.",
+   "erklaerung": "Redeeinleitung + Konjunktiv I: sei.",
+   "aus": "umformen"
   },
   {
    "id": "u23",

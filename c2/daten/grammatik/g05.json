@@ -49,133 +49,185 @@
  "uebungen": [
   {
    "id": "u02",
-   "typ": "luecke",
-   "satz": "Die Autorin besteht ___, dass ihr Name nicht genannt wird.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Die Autorin besteht ___, dass ihr Name nicht genannt wird.",
+   "optionen": [
+    "daran",
+    "darüber",
+    "dafür",
     "darauf"
    ],
-   "hinweis": "Pronominaladverb",
-   "erklaerung": "„bestehen auf“ + Dativ; als Korrelat vor dem dass-Satz: darauf."
+   "richtig": 3,
+   "erklaerung": "„bestehen auf“ + Dativ; als Korrelat vor dem dass-Satz: darauf.",
+   "aus": "luecke"
   },
   {
    "id": "u03",
-   "typ": "luecke",
-   "satz": "___ hat sich die Kontroverse eigentlich entzündet?",
-   "loesungen": [
-    "Woran"
+   "typ": "auswahl",
+   "frage": "___ hat sich die Kontroverse eigentlich entzündet?",
+   "optionen": [
+    "Worüber",
+    "Wofür",
+    "Woran",
+    "Worauf"
    ],
-   "hinweis": "Fragewort",
-   "erklaerung": "„sich entzünden an“; Frage nach einer Sache: Woran?"
+   "richtig": 2,
+   "erklaerung": "„sich entzünden an“; Frage nach einer Sache: Woran?",
+   "aus": "luecke"
   },
   {
    "id": "u04",
-   "typ": "luecke",
-   "satz": "Viele Leser haben sich ___ beschwert, dass die Übersetzung zu frei sei.",
-   "loesungen": [
-    "darüber"
+   "typ": "auswahl",
+   "frage": "Viele Leser haben sich ___ beschwert, dass die Übersetzung zu frei sei.",
+   "optionen": [
+    "darum",
+    "darüber",
+    "davon",
+    "darauf"
    ],
-   "hinweis": "Pronominaladverb",
-   "erklaerung": "„sich beschweren über“ → darüber."
+   "richtig": 1,
+   "erklaerung": "„sich beschweren über“ → darüber.",
+   "aus": "luecke"
   },
   {
    "id": "u05",
-   "typ": "luecke",
-   "satz": "Die Studie zielt ___ ab, verdeckte Vorurteile sichtbar zu machen.",
-   "loesungen": [
-    "darauf"
+   "typ": "auswahl",
+   "frage": "Die Studie zielt ___ ab, verdeckte Vorurteile sichtbar zu machen.",
+   "optionen": [
+    "darauf",
+    "daran",
+    "dafür",
+    "darüber"
    ],
-   "hinweis": "Pronominaladverb",
-   "erklaerung": "„abzielen auf“ → darauf, hier vor einem Infinitiv mit zu."
+   "richtig": 0,
+   "erklaerung": "„abzielen auf“ → darauf, hier vor einem Infinitiv mit zu.",
+   "aus": "luecke"
   },
   {
    "id": "u06",
-   "typ": "luecke",
-   "satz": "Das Publikum reagierte ___ die Provokation mit eisigem Schweigen.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Das Publikum reagierte ___ die Provokation mit eisigem Schweigen.",
+   "optionen": [
+    "an",
+    "über",
+    "für",
     "auf"
    ],
-   "hinweis": "Präposition",
-   "erklaerung": "„reagieren auf“ + Akkusativ."
+   "richtig": 3,
+   "erklaerung": "„reagieren auf“ + Akkusativ.",
+   "aus": "luecke"
   },
   {
    "id": "u07",
-   "typ": "luecke",
-   "satz": "Die Ministerin warnte eindringlich ___ einer Spaltung der Gesellschaft.",
-   "loesungen": [
-    "vor"
+   "typ": "auswahl",
+   "frage": "Die Ministerin warnte eindringlich ___ einer Spaltung der Gesellschaft.",
+   "optionen": [
+    "für",
+    "gegen",
+    "vor",
+    "von"
    ],
-   "hinweis": "Präposition",
-   "erklaerung": "„warnen vor“ + Dativ."
+   "richtig": 2,
+   "erklaerung": "„warnen vor“ + Dativ.",
+   "aus": "luecke"
   },
   {
    "id": "u08",
-   "typ": "luecke",
-   "satz": "Die Jury war von dem Debüt so angetan, dass sie sich einstimmig ___ entschied.",
-   "loesungen": [
-    "dafür"
+   "typ": "auswahl",
+   "frage": "Die Jury war von dem Debüt so angetan, dass sie sich einstimmig ___ entschied.",
+   "optionen": [
+    "darüber",
+    "dafür",
+    "darauf",
+    "daran"
    ],
-   "hinweis": "Pronominaladverb",
-   "erklaerung": "„sich entscheiden für“ → dafür."
+   "richtig": 1,
+   "erklaerung": "„sich entscheiden für“ → dafür.",
+   "aus": "luecke"
   },
   {
    "id": "u09",
-   "typ": "luecke",
-   "satz": "Die Großmutter kommt nur selten zu Besuch; die Kinder freuen sich schon seit Wochen auf ___.",
-   "loesungen": [
-    "sie"
+   "typ": "auswahl",
+   "frage": "Die Großmutter kommt nur selten zu Besuch; die Kinder freuen sich schon seit Wochen auf ___.",
+   "optionen": [
+    "sie",
+    "ihr",
+    "ihre",
+    "sich"
    ],
-   "hinweis": "Pronomen",
-   "erklaerung": "Bei Personen kein Pronominaladverb: auf sie (die Großmutter), nicht „darauf“."
+   "richtig": 0,
+   "erklaerung": "Bei Personen kein Pronominaladverb: auf sie (die Großmutter), nicht „darauf“.",
+   "aus": "luecke"
   },
   {
    "id": "u10",
-   "typ": "luecke",
-   "satz": "Die Stadt ist zu Recht stolz ___ ihre behutsam restaurierte Altstadt.",
-   "loesungen": [
-    "auf"
+   "typ": "auswahl",
+   "frage": "Die Stadt ist zu Recht stolz ___ ihre behutsam restaurierte Altstadt.",
+   "optionen": [
+    "auf",
+    "für",
+    "über",
+    "an"
    ],
-   "hinweis": "Präposition",
-   "erklaerung": "„stolz auf“ + Akkusativ."
+   "richtig": 0,
+   "erklaerung": "„stolz auf“ + Akkusativ.",
+   "aus": "luecke"
   },
   {
    "id": "u11",
-   "typ": "luecke",
-   "satz": "Das Interesse ___ klassischer Musik ist bei Jugendlichen größer als vermutet.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Das Interesse ___ klassischer Musik ist bei Jugendlichen größer als vermutet.",
+   "optionen": [
+    "auf",
+    "über",
+    "für",
     "an"
    ],
-   "hinweis": "Präposition",
-   "erklaerung": "„das Interesse an“ + Dativ."
+   "richtig": 3,
+   "erklaerung": "„das Interesse an“ + Dativ.",
+   "aus": "luecke"
   },
   {
    "id": "u12",
-   "typ": "luecke",
-   "satz": "Der Roman handelt ___ einer Frau, die ihre Vergangenheit verschweigt.",
-   "loesungen": [
-    "von"
+   "typ": "auswahl",
+   "frage": "Der Roman handelt ___ einer Frau, die ihre Vergangenheit verschweigt.",
+   "optionen": [
+    "von",
+    "über",
+    "aus",
+    "an"
    ],
-   "hinweis": "Präposition",
-   "erklaerung": "„handeln von“ + Dativ."
+   "richtig": 0,
+   "erklaerung": "„handeln von“ + Dativ.",
+   "aus": "luecke"
   },
   {
    "id": "u13",
-   "typ": "luecke",
-   "satz": "Die Bevölkerung leidet seit Jahren ___ der hohen Inflation.",
-   "loesungen": [
-    "unter"
+   "typ": "auswahl",
+   "frage": "Die Bevölkerung leidet seit Jahren ___ der hohen Inflation.",
+   "optionen": [
+    "über",
+    "unter",
+    "von",
+    "mit"
    ],
-   "hinweis": "Präposition",
-   "erklaerung": "„leiden unter“ + Dativ."
+   "richtig": 1,
+   "erklaerung": "„leiden unter“ + Dativ.",
+   "aus": "luecke"
   },
   {
    "id": "u14",
-   "typ": "luecke",
-   "satz": "Nach dem Umzug musste sie sich erst ___ gewöhnen, dass die Geschäfte sonntags geschlossen sind.",
-   "loesungen": [
-    "daran"
+   "typ": "auswahl",
+   "frage": "Nach dem Umzug musste sie sich erst ___ gewöhnen, dass die Geschäfte sonntags geschlossen sind.",
+   "optionen": [
+    "daran",
+    "darüber",
+    "dafür",
+    "darauf"
    ],
-   "hinweis": "Pronominaladverb",
-   "erklaerung": "„sich gewöhnen an“ → daran."
+   "richtig": 0,
+   "erklaerung": "„sich gewöhnen an“ → daran.",
+   "aus": "luecke"
   },
   {
    "id": "u15",
@@ -390,34 +442,55 @@
   },
   {
    "id": "u35",
-   "typ": "umformen",
-   "ausgang": "Sie träumt von einer eigenen Buchhandlung.",
-   "anweisung": "Fragen Sie nach „von einer eigenen Buchhandlung“.",
-   "loesungen": [
-    "Wovon träumt sie?"
+   "typ": "auswahl",
+   "frage": "Sie träumt von einer eigenen Buchhandlung. – Fragen Sie nach „von einer eigenen Buchhandlung“.",
+   "optionen": [
+    "Worüber träumt sie?",
+    "Woran träumt sie?",
+    "Wovon träumt sie?",
+    "Von wem träumt sie?"
    ],
-   "erklaerung": "„träumen von“, Frage nach einer Sache: wo + von = wovon."
+   "richtig": 2,
+   "erklaerung": "„träumen von“, Frage nach einer Sache: wo + von = wovon.",
+   "aus": "umformen"
   },
   {
    "id": "u36",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Er hat nicht damit gerechnet. Die Jury würde ihn auszeichnen.",
    "anweisung": "Verbinden Sie die Sätze: Er hat nicht damit gerechnet, dass …",
+   "teile": [
+    "nicht",
+    "hat",
+    "die Jury",
+    "gerechnet,",
+    "ihn",
+    "dass",
+    "Er",
+    "würde",
+    "auszeichnen",
+    "damit"
+   ],
+   "loesung": "Er hat nicht damit gerechnet, dass die Jury ihn auszeichnen würde.",
    "loesungen": [
-    "Er hat nicht damit gerechnet, dass die Jury ihn auszeichnen würde.",
     "Er hat nicht damit gerechnet, dass ihn die Jury auszeichnen würde."
    ],
-   "erklaerung": "Korrelat „damit“ (rechnen mit) + dass-Satz mit Verb am Ende."
+   "erklaerung": "Korrelat „damit“ (rechnen mit) + dass-Satz mit Verb am Ende.",
+   "aus": "umformen"
   },
   {
    "id": "u37",
-   "typ": "luecke",
-   "satz": "Die Kommission hat sich lange ___ befasst, ob die Regel noch zeitgemäß ist.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Die Kommission hat sich lange ___ befasst, ob die Regel noch zeitgemäß ist.",
+   "optionen": [
+    "darüber",
+    "dazu",
+    "daran",
     "damit"
    ],
-   "hinweis": "Pronominaladverb",
-   "erklaerung": "„sich mit etwas befassen“: Der ob-Satz wird mit „damit“ angekündigt."
+   "richtig": 3,
+   "erklaerung": "„sich mit etwas befassen“: Der ob-Satz wird mit „damit“ angekündigt.",
+   "aus": "luecke"
   }
  ]
 }

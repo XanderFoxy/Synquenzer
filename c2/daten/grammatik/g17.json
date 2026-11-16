@@ -51,103 +51,153 @@
  "uebungen": [
   {
    "id": "u01",
-   "typ": "luecke",
-   "satz": "Die seit Jahren ___ Mieten belasten viele Familien.",
-   "loesungen": [
-    "steigenden"
+   "typ": "auswahl",
+   "frage": "Die seit Jahren ___ Mieten belasten viele Familien.",
+   "optionen": [
+    "steigende",
+    "steigendes",
+    "steigenden",
+    "steigender"
    ],
+   "richtig": 2,
    "hinweis": "steigen",
-   "erklaerung": "Partizip I = aktiv und gleichzeitig: die Mieten, die seit Jahren steigen."
+   "erklaerung": "Partizip I = aktiv und gleichzeitig: die Mieten, die seit Jahren steigen.",
+   "aus": "luecke"
   },
   {
    "id": "u02",
-   "typ": "luecke",
-   "satz": "Der vor einer Woche ___ Bericht sorgt für Diskussionen.",
-   "loesungen": [
-    "veröffentlichte"
+   "typ": "auswahl",
+   "frage": "Der vor einer Woche ___ Bericht sorgt für Diskussionen.",
+   "optionen": [
+    "veröffentlichte",
+    "veröffentlichtes",
+    "veröffentlichter",
+    "veröffentlichten"
    ],
+   "richtig": 0,
    "hinweis": "veröffentlichen",
-   "erklaerung": "Partizip II = passiv und abgeschlossen: der Bericht, der veröffentlicht wurde."
+   "erklaerung": "Partizip II = passiv und abgeschlossen: der Bericht, der veröffentlicht wurde.",
+   "aus": "luecke"
   },
   {
    "id": "u03",
-   "typ": "luecke",
-   "satz": "Die noch zu ___ Fragen besprechen wir morgen.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Die noch zu ___ Fragen besprechen wir morgen.",
+   "optionen": [
+    "klärender",
+    "klärendes",
+    "klärende",
     "klärenden"
    ],
+   "richtig": 3,
    "hinweis": "klären",
-   "erklaerung": "Gerundiv: die Fragen, die noch geklärt werden müssen."
+   "erklaerung": "Gerundiv: die Fragen, die noch geklärt werden müssen.",
+   "aus": "luecke"
   },
   {
    "id": "u04",
-   "typ": "luecke",
-   "satz": "Die in der Altstadt ___ Familien protestieren gegen den Lärm.",
-   "loesungen": [
-    "lebenden"
+   "typ": "auswahl",
+   "frage": "Die in der Altstadt ___ Familien protestieren gegen den Lärm.",
+   "optionen": [
+    "lebender",
+    "lebende",
+    "lebenden",
+    "lebendes"
    ],
+   "richtig": 2,
    "hinweis": "leben",
-   "erklaerung": "Partizip I: die Familien, die in der Altstadt leben."
+   "erklaerung": "Partizip I: die Familien, die in der Altstadt leben.",
+   "aus": "luecke"
   },
   {
    "id": "u05",
-   "typ": "luecke",
-   "satz": "Der gestern Abend ___ Zug hatte drei Stunden Verspätung.",
-   "loesungen": [
-    "angekommene"
+   "typ": "auswahl",
+   "frage": "Der gestern Abend ___ Zug hatte drei Stunden Verspätung.",
+   "optionen": [
+    "angekommenen",
+    "angekommenes",
+    "angekommene",
+    "angekommener"
    ],
+   "richtig": 2,
    "hinweis": "ankommen",
-   "erklaerung": "„ankommen“ bildet das Perfekt mit „sein“: der Zug, der angekommen ist."
+   "erklaerung": "„ankommen“ bildet das Perfekt mit „sein“: der Zug, der angekommen ist.",
+   "aus": "luecke"
   },
   {
    "id": "u06",
-   "typ": "luecke",
-   "satz": "Wir danken allen an der Planung ___ Personen.",
-   "loesungen": [
-    "beteiligten"
+   "typ": "auswahl",
+   "frage": "Wir danken allen an der Planung ___ Personen.",
+   "optionen": [
+    "beteiligten",
+    "beteiligtes",
+    "beteiligter",
+    "beteiligte"
    ],
+   "richtig": 0,
    "hinweis": "beteiligen",
-   "erklaerung": "„beteiligt“ (sich beteiligen → beteiligt sein) mit Adjektivendung nach „allen“: -en."
+   "erklaerung": "„beteiligt“ (sich beteiligen → beteiligt sein) mit Adjektivendung nach „allen“: -en.",
+   "aus": "luecke"
   },
   {
    "id": "u07",
-   "typ": "luecke",
-   "satz": "Man sollte die damit ___ Risiken nicht unterschätzen.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Man sollte die damit ___ Risiken nicht unterschätzen.",
+   "optionen": [
+    "verbundener",
+    "verbundenes",
+    "verbundene",
     "verbundenen"
    ],
+   "richtig": 3,
    "hinweis": "verbinden",
-   "erklaerung": "die Risiken, die damit verbunden sind – Partizip II als Attribut."
+   "erklaerung": "die Risiken, die damit verbunden sind – Partizip II als Attribut.",
+   "aus": "luecke"
   },
   {
    "id": "u08",
-   "typ": "luecke",
-   "satz": "Das von vielen Fachleuten seit Langem ___ Gesetz tritt endlich in Kraft.",
-   "loesungen": [
-    "geforderte"
+   "typ": "auswahl",
+   "frage": "Das von vielen Fachleuten seit Langem ___ Gesetz tritt endlich in Kraft.",
+   "optionen": [
+    "geforderte",
+    "geforderter",
+    "geforderten",
+    "gefordertes"
    ],
+   "richtig": 0,
    "hinweis": "fordern",
-   "erklaerung": "das Gesetz, das seit Langem gefordert wird – Partizip II, Endung nach „das“: -e."
+   "erklaerung": "das Gesetz, das seit Langem gefordert wird – Partizip II, Endung nach „das“: -e.",
+   "aus": "luecke"
   },
   {
    "id": "u09",
-   "typ": "luecke",
-   "satz": "Die ständig ___ Zahl der Anfragen überfordert das Team.",
-   "loesungen": [
-    "wachsende"
+   "typ": "auswahl",
+   "frage": "Die ständig ___ Zahl der Anfragen überfordert das Team.",
+   "optionen": [
+    "wachsenden",
+    "wachsendes",
+    "wachsende",
+    "wachsender"
    ],
+   "richtig": 2,
    "hinweis": "wachsen",
-   "erklaerung": "Partizip I: die Zahl, die ständig wächst."
+   "erklaerung": "Partizip I: die Zahl, die ständig wächst.",
+   "aus": "luecke"
   },
   {
    "id": "u10",
-   "typ": "luecke",
-   "satz": "Ein nicht zu ___ Problem ist der Personalmangel.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Ein nicht zu ___ Problem ist der Personalmangel.",
+   "optionen": [
+    "unterschätzenden",
+    "unterschätzende",
+    "unterschätzender",
     "unterschätzendes"
    ],
+   "richtig": 3,
    "hinweis": "unterschätzen",
-   "erklaerung": "Gerundiv mit starker Endung nach „ein“ (Neutrum, Nominativ): -es."
+   "erklaerung": "Gerundiv mit starker Endung nach „ein“ (Neutrum, Nominativ): -es.",
+   "aus": "luecke"
   },
   {
    "id": "u11",
@@ -229,67 +279,99 @@
   },
   {
    "id": "u17",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Die Studie, die gestern veröffentlicht wurde, widerspricht früheren Ergebnissen.",
    "anweisung": "Ersetzen Sie den Relativsatz durch ein Partizipialattribut.",
-   "loesungen": [
-    "Die gestern veröffentlichte Studie widerspricht früheren Ergebnissen."
+   "teile": [
+    "gestern veröffentlichte Studie",
+    "früheren",
+    "widerspricht",
+    "Die",
+    "Ergebnissen"
    ],
-   "erklaerung": "Passiv im Relativsatz → Partizip II; „gestern“ wandert vor das Partizip."
+   "loesung": "Die gestern veröffentlichte Studie widerspricht früheren Ergebnissen.",
+   "erklaerung": "Passiv im Relativsatz → Partizip II; „gestern“ wandert vor das Partizip.",
+   "aus": "umformen"
   },
   {
    "id": "u18",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Die Kinder, die im Garten spielen, sind sehr laut.",
    "anweisung": "Ersetzen Sie den Relativsatz durch ein Partizipialattribut.",
-   "loesungen": [
-    "Die im Garten spielenden Kinder sind sehr laut."
+   "teile": [
+    "im Garten",
+    "Die",
+    "Kinder",
+    "sehr laut",
+    "spielenden",
+    "sind"
    ],
-   "erklaerung": "Aktiv und gleichzeitig → Partizip I."
+   "loesung": "Die im Garten spielenden Kinder sind sehr laut.",
+   "erklaerung": "Aktiv und gleichzeitig → Partizip I.",
+   "aus": "umformen"
   },
   {
    "id": "u19",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Die Fragen, die noch geklärt werden müssen, besprechen wir morgen.",
    "anweisung": "Ersetzen Sie den Relativsatz durch ein Gerundiv.",
-   "loesungen": [
-    "Die noch zu klärenden Fragen besprechen wir morgen."
+   "teile": [
+    "noch zu klärenden Fragen",
+    "Die",
+    "morgen",
+    "besprechen",
+    "wir"
    ],
-   "erklaerung": "„müssen geklärt werden“ → zu + Partizip I: zu klärend."
+   "loesung": "Die noch zu klärenden Fragen besprechen wir morgen.",
+   "erklaerung": "„müssen geklärt werden“ → zu + Partizip I: zu klärend.",
+   "aus": "umformen"
   },
   {
    "id": "u20",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "die von allen Seiten scharf kritisierte Entscheidung",
    "anweisung": "Lösen Sie das Attribut in einen Relativsatz auf.",
-   "loesungen": [
-    "die Entscheidung, die von allen Seiten scharf kritisiert wurde",
-    "die Entscheidung, die von allen Seiten scharf kritisiert worden ist",
-    "die Entscheidung, die von allen Seiten scharf kritisiert wird",
-    "die Entscheidung, die alle Seiten scharf kritisiert haben"
+   "teile": [
+    "von allen Seiten",
+    "wurde",
+    "die Entscheidung,",
+    "kritisiert",
+    "scharf",
+    "die"
    ],
-   "erklaerung": "Partizip II transitiver Verben → Passiv im Relativsatz (oder aktiv mit „alle Seiten“ als Subjekt)."
+   "loesung": "die Entscheidung, die von allen Seiten scharf kritisiert wurde",
+   "erklaerung": "Partizip II transitiver Verben → Passiv im Relativsatz (oder aktiv mit „alle Seiten“ als Subjekt).",
+   "aus": "umformen"
   },
   {
    "id": "u21",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "die seit Monaten leer stehenden Wohnungen",
    "anweisung": "Lösen Sie das Attribut in einen Relativsatz auf.",
-   "loesungen": [
-    "die Wohnungen, die seit Monaten leer stehen",
-    "die Wohnungen, die seit Monaten leerstehen"
+   "teile": [
+    "stehen",
+    "seit Monaten",
+    "leer",
+    "die",
+    "die Wohnungen,"
    ],
-   "erklaerung": "Partizip I → aktiver Relativsatz im Präsens."
+   "loesung": "die Wohnungen, die seit Monaten leer stehen",
+   "erklaerung": "Partizip I → aktiver Relativsatz im Präsens.",
+   "aus": "umformen"
   },
   {
    "id": "u22",
-   "typ": "umformen",
-   "ausgang": "Der Politiker, der zurückgetreten ist, gab ein Interview.",
-   "anweisung": "Ersetzen Sie den Relativsatz durch ein Partizipialattribut.",
-   "loesungen": [
-    "Der zurückgetretene Politiker gab ein Interview."
+   "typ": "auswahl",
+   "frage": "Der Politiker, der zurückgetreten ist, gab ein Interview. – Ersetzen Sie den Relativsatz durch ein Partizipialattribut.",
+   "optionen": [
+    "Der zurückgetretene Politiker gab ein Interview.",
+    "Der zurücktretende Politiker gab ein Interview.",
+    "Der zurückgetretende Politiker gab ein Interview.",
+    "Der zurückgetretener Politiker gab ein Interview."
    ],
-   "erklaerung": "„zurücktreten“ bildet das Perfekt mit „sein“ → Partizip II mit aktiver Bedeutung."
+   "richtig": 0,
+   "erklaerung": "„zurücktreten“ bildet das Perfekt mit „sein“ → Partizip II mit aktiver Bedeutung.",
+   "aus": "umformen"
   },
   {
    "id": "u23",

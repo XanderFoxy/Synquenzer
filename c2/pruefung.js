@@ -82,7 +82,7 @@ async function teilZeigen(view, modul, t, { kopfzeile = '', fertig }) {
     return;
   }
   if (t.quelle === 'umformen') {
-    const kand = []; for (const g of await liste('grammatik')) kand.push(...kandidatenAus(await lade(g.datei)).filter((k) => k.u.typ === 'umformen'));
+    const kand = []; for (const g of await liste('grammatik')) kand.push(...kandidatenAus(await lade(g.datei)).filter((k) => k.u.aus === 'umformen' || k.u.typ === 'umformen'));   // 0.2: Umformung bauen oder auswählen statt tippen
     view.innerHTML = `${kopfzeile}<div class="lesen-leiste"><span class="uhr-chip" data-uhr>${SYM.uhr} ${t.zeit}:00</span></div><div data-s1></div>`;
     const chip = view.querySelector('[data-uhr]'); let rest = t.zeit * 60;
     const uhr = setInterval(() => { if (!chip.isConnected) return clearInterval(uhr); rest--; chip.innerHTML = rest > 0 ? `${SYM.uhr} ${Math.floor(rest / 60)}:${String(rest % 60).padStart(2, '0')}` : `${SYM.uhr} Zeit um – bitte abgeben`; if (rest <= 0) { chip.classList.add('vorbei'); clearInterval(uhr); } }, 1000);

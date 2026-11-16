@@ -317,86 +317,135 @@
   },
   {
    "id": "u22",
-   "typ": "luecke",
-   "satz": "Niemand verstand, warum der Antrag abgelehnt ___ war.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Niemand verstand, warum der Antrag abgelehnt ___ war.",
+   "optionen": [
+    "geworden",
+    "werden",
+    "wurde",
     "worden"
    ],
-   "hinweis": "Hilfsverb",
-   "erklaerung": "Plusquamperfekt Passiv: abgelehnt worden war."
+   "richtig": 3,
+   "erklaerung": "Plusquamperfekt Passiv: abgelehnt worden war.",
+   "aus": "luecke"
   },
   {
    "id": "u23",
-   "typ": "luecke",
-   "satz": "Ich glaube nicht, dass man das Problem so einfach ___ lösen können.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Ich glaube nicht, dass man das Problem so einfach ___ lösen können.",
+   "optionen": [
+    "würden",
+    "wurde",
     "hätte",
-    "wird"
+    "ist"
    ],
-   "hinweis": "Hilfsverb",
-   "erklaerung": "Ersatzinfinitiv: „hätte lösen können“ (Konjunktiv II der Vergangenheit) oder Futur „wird lösen können“; das Hilfsverb steht vor den Infinitiven."
+   "richtig": 2,
+   "erklaerung": "Ersatzinfinitiv: „hätte lösen können“ (Konjunktiv II der Vergangenheit) oder Futur „wird lösen können“; das Hilfsverb steht vor den Infinitiven.",
+   "aus": "luecke"
   },
   {
    "id": "u24",
-   "typ": "luecke",
-   "satz": "Je länger die Verhandlungen dauerten, ___ unwahrscheinlicher wurde eine Einigung.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Je länger die Verhandlungen dauerten, ___ unwahrscheinlicher wurde eine Einigung.",
+   "optionen": [
+    "wie",
     "desto",
-    "umso"
+    "so",
+    "als"
    ],
-   "hinweis": "Konnektor",
-   "erklaerung": "„je …, desto/umso …“; nach dem Komparativ folgt sofort das Verb."
+   "richtig": 1,
+   "erklaerung": "„je …, desto/umso …“; nach dem Komparativ folgt sofort das Verb.",
+   "aus": "luecke"
   },
   {
    "id": "u25",
-   "typ": "luecke",
-   "satz": "Der Autor, dessen Roman gerade verfilmt ___ ist, lebt zurückgezogen in der Uckermark.",
-   "loesungen": [
-    "worden"
+   "typ": "auswahl",
+   "frage": "Der Autor, dessen Roman gerade verfilmt ___ ist, lebt zurückgezogen in der Uckermark.",
+   "optionen": [
+    "worden",
+    "geworden",
+    "werden",
+    "wurde"
    ],
-   "hinweis": "Hilfsverb",
-   "erklaerung": "Passiv Perfekt im Relativsatz: verfilmt worden ist."
+   "richtig": 0,
+   "erklaerung": "Passiv Perfekt im Relativsatz: verfilmt worden ist.",
+   "aus": "luecke"
   },
   {
    "id": "u26",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Die Ministerin hätte zurücktreten müssen. Das meinen viele.",
    "anweisung": "Beginnen Sie mit „Viele meinen, dass“.",
-   "loesungen": [
-    "Viele meinen, dass die Ministerin hätte zurücktreten müssen."
+   "teile": [
+    "Viele",
+    "müssen",
+    "dass",
+    "hätte",
+    "die Ministerin",
+    "zurücktreten",
+    "meinen,"
    ],
-   "erklaerung": "Im Nebensatz: hätte + zurücktreten + müssen."
+   "loesung": "Viele meinen, dass die Ministerin hätte zurücktreten müssen.",
+   "erklaerung": "Im Nebensatz: hätte + zurücktreten + müssen.",
+   "aus": "umformen"
   },
   {
    "id": "u27",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Der Vertrag wurde unterzeichnet. Danach begannen die Bauarbeiten.",
    "anweisung": "Verbinden Sie die Sätze mit „nachdem“ und beginnen Sie mit dem Nebensatz.",
-   "loesungen": [
-    "Nachdem der Vertrag unterzeichnet worden war, begannen die Bauarbeiten."
+   "teile": [
+    "der Vertrag",
+    "worden",
+    "unterzeichnet",
+    "begannen",
+    "war,",
+    "die Bauarbeiten",
+    "Nachdem"
    ],
-   "erklaerung": "Vorzeitigkeit: Plusquamperfekt Passiv (unterzeichnet worden war), dann Verb an Position 2."
+   "loesung": "Nachdem der Vertrag unterzeichnet worden war, begannen die Bauarbeiten.",
+   "erklaerung": "Vorzeitigkeit: Plusquamperfekt Passiv (unterzeichnet worden war), dann Verb an Position 2.",
+   "aus": "umformen"
   },
   {
    "id": "u28",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Man konnte das Unglück nicht verhindern. Das ist tragisch.",
    "anweisung": "Beginnen Sie mit „Es ist tragisch, dass“.",
-   "loesungen": [
-    "Es ist tragisch, dass man das Unglück nicht verhindern konnte.",
-    "Es ist tragisch, dass das Unglück nicht verhindert werden konnte."
+   "teile": [
+    "dass",
+    "man",
+    "ist",
+    "das Unglück",
+    "Es",
+    "tragisch,",
+    "konnte",
+    "nicht verhindern"
    ],
-   "erklaerung": "Im Nebensatz steht das Modalverb am Ende."
+   "loesung": "Es ist tragisch, dass man das Unglück nicht verhindern konnte.",
+   "erklaerung": "Im Nebensatz steht das Modalverb am Ende.",
+   "aus": "umformen"
   },
   {
    "id": "u29",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Er hat den Brief nicht öffnen wollen.",
    "anweisung": "Beginnen Sie mit „Sie wunderte sich, dass“ und behalten Sie das Perfekt bei.",
-   "loesungen": [
-    "Sie wunderte sich, dass er den Brief nicht hat öffnen wollen."
+   "teile": [
+    "sich,",
+    "dass",
+    "er",
+    "nicht",
+    "Sie",
+    "wunderte",
+    "wollen",
+    "öffnen",
+    "den Brief",
+    "hat"
    ],
-   "erklaerung": "Ersatzinfinitiv im Nebensatz: hat + öffnen + wollen."
+   "loesung": "Sie wunderte sich, dass er den Brief nicht hat öffnen wollen.",
+   "erklaerung": "Ersatzinfinitiv im Nebensatz: hat + öffnen + wollen.",
+   "aus": "umformen"
   },
   {
    "id": "u30",

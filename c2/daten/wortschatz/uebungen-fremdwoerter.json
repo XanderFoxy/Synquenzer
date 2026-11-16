@@ -825,203 +825,303 @@
   },
   {
    "id": "ws-fremdwoerter-41",
-   "typ": "luecke",
-   "satz": "Es wäre ___ zu glauben, dass sich das Problem von selbst löst.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Es wäre ___ zu glauben, dass sich das Problem von selbst löst.",
+   "optionen": [
+    "obsolet",
+    "diffus",
+    "prekär",
     "naiv"
    ],
-   "hinweis": "arglos, unkritisch, kindlich (beginnt mit „n“)",
-   "erklaerung": "naiv: arglos, unkritisch, kindlich. Beispiel: Es wäre naiv zu glauben, dass sich das Problem von selbst löst. Herkunft: frz. naïf"
+   "richtig": 3,
+   "hinweis": "arglos, unkritisch, kindlich",
+   "erklaerung": "naiv: arglos, unkritisch, kindlich. Beispiel: Es wäre naiv zu glauben, dass sich das Problem von selbst löst. Herkunft: frz. naïf",
+   "aus": "luecke"
   },
   {
    "id": "ws-fremdwoerter-42",
-   "typ": "luecke",
-   "satz": "Ehrlichkeit war die oberste ___ seines Handelns.",
-   "loesungen": [
-    "Maxime"
+   "typ": "auswahl",
+   "frage": "Ehrlichkeit war die oberste ___ seines Handelns.",
+   "optionen": [
+    "Maxime",
+    "Bagatelle",
+    "Nuance",
+    "Routine"
    ],
-   "hinweis": "Leitsatz, Lebensgrundsatz (beginnt mit „M“)",
-   "erklaerung": "die Maxime: Leitsatz, Lebensgrundsatz. Beispiel: Ehrlichkeit war die oberste Maxime seines Handelns. Herkunft: lat. maxima (sententia) „oberster Satz“"
+   "richtig": 0,
+   "hinweis": "Leitsatz, Lebensgrundsatz",
+   "erklaerung": "die Maxime: Leitsatz, Lebensgrundsatz. Beispiel: Ehrlichkeit war die oberste Maxime seines Handelns. Herkunft: lat. maxima (sententia) „oberster Satz“",
+   "aus": "luecke"
   },
   {
    "id": "ws-fremdwoerter-43",
-   "typ": "luecke",
-   "satz": "Ihr ___ für den Umweltschutz ist beeindruckend.",
-   "loesungen": [
-    "Engagement"
+   "typ": "auswahl",
+   "frage": "Ihr ___ für den Umweltschutz ist beeindruckend.",
+   "optionen": [
+    "Dilemma",
+    "Defizit",
+    "Engagement",
+    "Phänomen"
    ],
-   "hinweis": "persönlicher Einsatz; Anstellung (bes. Künstler) (beginnt mit „E“)",
-   "erklaerung": "das Engagement: persönlicher Einsatz; Anstellung (bes. Künstler). Beispiel: Ihr Engagement für den Umweltschutz ist beeindruckend. Herkunft: frz. engagement"
+   "richtig": 2,
+   "hinweis": "persönlicher Einsatz; Anstellung (bes. Künstler)",
+   "erklaerung": "das Engagement: persönlicher Einsatz; Anstellung (bes. Künstler). Beispiel: Ihr Engagement für den Umweltschutz ist beeindruckend. Herkunft: frz. engagement",
+   "aus": "luecke"
   },
   {
    "id": "ws-fremdwoerter-44",
-   "typ": "luecke",
-   "satz": "Erst nach der ___ des Ministers kam Bewegung in die Verhandlungen.",
-   "loesungen": [
-    "Intervention"
+   "typ": "auswahl",
+   "frage": "Erst nach der ___ des Ministers kam Bewegung in die Verhandlungen.",
+   "optionen": [
+    "Quintessenz",
+    "Prävention",
+    "Intervention",
+    "Emanzipation"
    ],
-   "hinweis": "Eingreifen, Vermittlung (beginnt mit „I“)",
-   "erklaerung": "die Intervention: Eingreifen, Vermittlung. Beispiel: Erst nach der Intervention des Ministers kam Bewegung in die Verhandlungen. Herkunft: lat. intervenire „dazwischenkommen“"
+   "richtig": 2,
+   "hinweis": "Eingreifen, Vermittlung",
+   "erklaerung": "die Intervention: Eingreifen, Vermittlung. Beispiel: Erst nach der Intervention des Ministers kam Bewegung in die Verhandlungen. Herkunft: lat. intervenire „dazwischenkommen“",
+   "aus": "luecke"
   },
   {
    "id": "ws-fremdwoerter-45",
-   "typ": "luecke",
-   "satz": "Die Ärztin richtete einen ___ an alle Eltern.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Die Ärztin richtete einen ___ an alle Eltern.",
+   "optionen": [
+    "Konsens",
+    "Kontext",
+    "Aspekt",
     "Appell"
    ],
-   "hinweis": "eindringliche Aufforderung (beginnt mit „A“)",
-   "erklaerung": "der Appell: eindringliche Aufforderung. Beispiel: Die Ärztin richtete einen Appell an alle Eltern. Herkunft: frz. appel „Ruf“"
+   "richtig": 3,
+   "hinweis": "eindringliche Aufforderung",
+   "erklaerung": "der Appell: eindringliche Aufforderung. Beispiel: Die Ärztin richtete einen Appell an alle Eltern. Herkunft: frz. appel „Ruf“",
+   "aus": "luecke"
   },
   {
    "id": "ws-fremdwoerter-46",
-   "typ": "luecke",
-   "satz": "Ohne ___ verliert die Industrie ihre Wettbewerbsfähigkeit.",
-   "loesungen": [
-    "Innovation"
+   "typ": "auswahl",
+   "frage": "Ohne ___ verliert die Industrie ihre Wettbewerbsfähigkeit.",
+   "optionen": [
+    "Innovation",
+    "Bagatelle",
+    "Emanzipation",
+    "Nostalgie"
    ],
-   "hinweis": "Neuerung, Erneuerung (beginnt mit „I“)",
-   "erklaerung": "die Innovation: Neuerung, Erneuerung. Beispiel: Ohne Innovation verliert die Industrie ihre Wettbewerbsfähigkeit. Herkunft: lat. innovatio"
+   "richtig": 0,
+   "hinweis": "Neuerung, Erneuerung",
+   "erklaerung": "die Innovation: Neuerung, Erneuerung. Beispiel: Ohne Innovation verliert die Industrie ihre Wettbewerbsfähigkeit. Herkunft: lat. innovatio",
+   "aus": "luecke"
   },
   {
    "id": "ws-fremdwoerter-47",
-   "typ": "luecke",
-   "satz": "Er hatte nur eine ___ Vorstellung von seiner Zukunft.",
-   "loesungen": [
-    "diffuse"
+   "typ": "auswahl",
+   "frage": "Er hatte nur eine ___ Vorstellung von seiner Zukunft.",
+   "optionen": [
+    "prekäre",
+    "habituelle",
+    "diffuse",
+    "homogene"
    ],
-   "hinweis": "unklar, ohne klare Konturen (beginnt mit „d“)",
-   "erklaerung": "diffus: unklar, ohne klare Konturen. Beispiel: Er hatte nur eine diffuse Vorstellung von seiner Zukunft. Herkunft: lat. diffusus „ausgebreitet“"
+   "richtig": 2,
+   "hinweis": "unklar, ohne klare Konturen",
+   "erklaerung": "diffus: unklar, ohne klare Konturen. Beispiel: Er hatte nur eine diffuse Vorstellung von seiner Zukunft. Herkunft: lat. diffusus „ausgebreitet“",
+   "aus": "luecke"
   },
   {
    "id": "ws-fremdwoerter-48",
-   "typ": "luecke",
-   "satz": "Seine Frage enthielt einen ___ Vorwurf.",
-   "loesungen": [
-    "impliziten"
+   "typ": "auswahl",
+   "frage": "Seine Frage enthielt einen ___ Vorwurf.",
+   "optionen": [
+    "impliziten",
+    "prekären",
+    "habituellen",
+    "homogenen"
    ],
-   "hinweis": "mit enthalten, ohne ausdrücklich gesagt zu werden (beginnt mit „i“)",
-   "erklaerung": "implizit: mit enthalten, ohne ausdrücklich gesagt zu werden. Beispiel: Seine Frage enthielt einen impliziten Vorwurf. Herkunft: lat. implicitus „verwickelt“"
+   "richtig": 0,
+   "hinweis": "mit enthalten, ohne ausdrücklich gesagt zu werden",
+   "erklaerung": "implizit: mit enthalten, ohne ausdrücklich gesagt zu werden. Beispiel: Seine Frage enthielt einen impliziten Vorwurf. Herkunft: lat. implicitus „verwickelt“",
+   "aus": "luecke"
   },
   {
    "id": "ws-fremdwoerter-49",
-   "typ": "luecke",
-   "satz": "Gesundheitsexperten fordern, mehr Geld in die ___ zu investieren.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Gesundheitsexperten fordern, mehr Geld in die ___ zu investieren.",
+   "optionen": [
+    "Quintessenz",
+    "Emanzipation",
+    "Bagatelle",
     "Prävention"
    ],
-   "hinweis": "Vorbeugung (beginnt mit „P“)",
-   "erklaerung": "die Prävention: Vorbeugung. Beispiel: Gesundheitsexperten fordern, mehr Geld in die Prävention zu investieren. Herkunft: lat. praevenire „zuvorkommen“"
+   "richtig": 3,
+   "hinweis": "Vorbeugung",
+   "erklaerung": "die Prävention: Vorbeugung. Beispiel: Gesundheitsexperten fordern, mehr Geld in die Prävention zu investieren. Herkunft: lat. praevenire „zuvorkommen“",
+   "aus": "luecke"
   },
   {
    "id": "ws-fremdwoerter-50",
-   "typ": "luecke",
-   "satz": "Die ___ der Frau ist längst nicht abgeschlossen.",
-   "loesungen": [
-    "Emanzipation"
+   "typ": "auswahl",
+   "frage": "Die ___ der Frau ist längst nicht abgeschlossen.",
+   "optionen": [
+    "Prävention",
+    "Quintessenz",
+    "Emanzipation",
+    "Intervention"
    ],
-   "hinweis": "Befreiung aus Abhängigkeit, Gleichstellung (beginnt mit „E“)",
-   "erklaerung": "die Emanzipation: Befreiung aus Abhängigkeit, Gleichstellung. Beispiel: Die Emanzipation der Frau ist längst nicht abgeschlossen. Herkunft: lat. emancipatio „Entlassung aus der väterlichen Gewalt“"
+   "richtig": 2,
+   "hinweis": "Befreiung aus Abhängigkeit, Gleichstellung",
+   "erklaerung": "die Emanzipation: Befreiung aus Abhängigkeit, Gleichstellung. Beispiel: Die Emanzipation der Frau ist längst nicht abgeschlossen. Herkunft: lat. emancipatio „Entlassung aus der väterlichen Gewalt“",
+   "aus": "luecke"
   },
   {
    "id": "ws-fremdwoerter-51",
-   "typ": "luecke",
-   "satz": "Der Titel ist ___, der Inhalt dagegen differenziert.",
-   "loesungen": [
-    "plakativ"
+   "typ": "auswahl",
+   "frage": "Der Titel ist ___, der Inhalt dagegen differenziert.",
+   "optionen": [
+    "prekär",
+    "implizit",
+    "plakativ",
+    "habituell"
    ],
-   "hinweis": "bewusst vereinfachend, auffällig (beginnt mit „p“)",
-   "erklaerung": "plakativ: bewusst vereinfachend, auffällig. Beispiel: Der Titel ist plakativ, der Inhalt dagegen differenziert. Herkunft: zu „Plakat“, niederl. plakkaat"
+   "richtig": 2,
+   "hinweis": "bewusst vereinfachend, auffällig",
+   "erklaerung": "plakativ: bewusst vereinfachend, auffällig. Beispiel: Der Titel ist plakativ, der Inhalt dagegen differenziert. Herkunft: zu „Plakat“, niederl. plakkaat",
+   "aus": "luecke"
   },
   {
    "id": "ws-fremdwoerter-52",
-   "typ": "luecke",
-   "satz": "Das Urteil wurde in zweiter ___ aufgehoben.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Das Urteil wurde in zweiter ___ aufgehoben.",
+   "optionen": [
+    "Maxime",
+    "Dimension",
+    "Innovation",
     "Instanz"
    ],
-   "hinweis": "zuständige Stelle; Stufe eines Gerichtsverfahrens (beginnt mit „I“)",
-   "erklaerung": "die Instanz: zuständige Stelle; Stufe eines Gerichtsverfahrens. Beispiel: Das Urteil wurde in zweiter Instanz aufgehoben. Herkunft: lat. instantia „Bestehen auf etwas“"
+   "richtig": 3,
+   "hinweis": "zuständige Stelle; Stufe eines Gerichtsverfahrens",
+   "erklaerung": "die Instanz: zuständige Stelle; Stufe eines Gerichtsverfahrens. Beispiel: Das Urteil wurde in zweiter Instanz aufgehoben. Herkunft: lat. instantia „Bestehen auf etwas“",
+   "aus": "luecke"
   },
   {
    "id": "ws-fremdwoerter-53",
-   "typ": "luecke",
-   "satz": "Was er als ___ abtat, kostete die Firma Millionen.",
-   "loesungen": [
-    "Bagatelle"
+   "typ": "auswahl",
+   "frage": "Was er als ___ abtat, kostete die Firma Millionen.",
+   "optionen": [
+    "Bagatelle",
+    "Prävention",
+    "Quintessenz",
+    "Maxime"
    ],
-   "hinweis": "Kleinigkeit, unbedeutende Angelegenheit (beginnt mit „B“)",
-   "erklaerung": "die Bagatelle: Kleinigkeit, unbedeutende Angelegenheit. Beispiel: Was er als Bagatelle abtat, kostete die Firma Millionen. Herkunft: frz. bagatelle"
+   "richtig": 0,
+   "hinweis": "Kleinigkeit, unbedeutende Angelegenheit",
+   "erklaerung": "die Bagatelle: Kleinigkeit, unbedeutende Angelegenheit. Beispiel: Was er als Bagatelle abtat, kostete die Firma Millionen. Herkunft: frz. bagatelle",
+   "aus": "luecke"
   },
   {
    "id": "ws-fremdwoerter-54",
-   "typ": "luecke",
-   "satz": "Die ___ des Buches lässt sich in einem Satz sagen.",
-   "loesungen": [
-    "Quintessenz"
+   "typ": "auswahl",
+   "frage": "Die ___ des Buches lässt sich in einem Satz sagen.",
+   "optionen": [
+    "Bagatelle",
+    "Quintessenz",
+    "Instanz",
+    "Prävention"
    ],
-   "hinweis": "Kern, Wesentliches einer Sache (beginnt mit „Q“)",
-   "erklaerung": "die Quintessenz: Kern, Wesentliches einer Sache. Beispiel: Die Quintessenz des Buches lässt sich in einem Satz sagen. Herkunft: lat. quinta essentia „fünftes Seiendes“"
+   "richtig": 1,
+   "hinweis": "Kern, Wesentliches einer Sache",
+   "erklaerung": "die Quintessenz: Kern, Wesentliches einer Sache. Beispiel: Die Quintessenz des Buches lässt sich in einem Satz sagen. Herkunft: lat. quinta essentia „fünftes Seiendes“",
+   "aus": "luecke"
   },
   {
    "id": "ws-fremdwoerter-55",
-   "typ": "luecke",
-   "satz": "Sein ___ Zuspätkommen ärgerte das Team.",
-   "loesungen": [
-    "habituelles"
+   "typ": "auswahl",
+   "frage": "Sein ___ Zuspätkommen ärgerte das Team.",
+   "optionen": [
+    "homogenes",
+    "implizites",
+    "habituelles",
+    "prekäres"
    ],
-   "hinweis": "gewohnheitsmäßig (beginnt mit „h“)",
-   "erklaerung": "habituell: gewohnheitsmäßig. Beispiel: Sein habituelles Zuspätkommen ärgerte das Team. Herkunft: lat. habitus „Haltung“"
+   "richtig": 2,
+   "hinweis": "gewohnheitsmäßig",
+   "erklaerung": "habituell: gewohnheitsmäßig. Beispiel: Sein habituelles Zuspätkommen ärgerte das Team. Herkunft: lat. habitus „Haltung“",
+   "aus": "luecke"
   },
   {
    "id": "ws-fremdwoerter-56",
-   "typ": "luecke",
-   "satz": "Die Bevölkerung des Dorfes war nie so ___, wie man glaubt.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Die Bevölkerung des Dorfes war nie so ___, wie man glaubt.",
+   "optionen": [
+    "habituell",
+    "plakativ",
+    "implizit",
     "homogen"
    ],
-   "hinweis": "einheitlich, gleichartig (beginnt mit „h“)",
-   "erklaerung": "homogen: einheitlich, gleichartig. Beispiel: Die Bevölkerung des Dorfes war nie so homogen, wie man glaubt. Herkunft: griech. homogenḗs „gleichartig“"
+   "richtig": 3,
+   "hinweis": "einheitlich, gleichartig",
+   "erklaerung": "homogen: einheitlich, gleichartig. Beispiel: Die Bevölkerung des Dorfes war nie so homogen, wie man glaubt. Herkunft: griech. homogenḗs „gleichartig“",
+   "aus": "luecke"
   },
   {
    "id": "ws-fremdwoerter-57",
-   "typ": "luecke",
-   "satz": "Nach einigen Wochen stellte sich eine gewisse ___ ein.",
-   "loesungen": [
-    "Routine"
+   "typ": "auswahl",
+   "frage": "Nach einigen Wochen stellte sich eine gewisse ___ ein.",
+   "optionen": [
+    "Routine",
+    "Maxime",
+    "Instanz",
+    "Bagatelle"
    ],
-   "hinweis": "Gewohnheit, durch Übung gewonnene Fertigkeit (beginnt mit „R“)",
-   "erklaerung": "die Routine: Gewohnheit, durch Übung gewonnene Fertigkeit. Beispiel: Nach einigen Wochen stellte sich eine gewisse Routine ein. Herkunft: frz. routine"
+   "richtig": 0,
+   "hinweis": "Gewohnheit, durch Übung gewonnene Fertigkeit",
+   "erklaerung": "die Routine: Gewohnheit, durch Übung gewonnene Fertigkeit. Beispiel: Nach einigen Wochen stellte sich eine gewisse Routine ein. Herkunft: frz. routine",
+   "aus": "luecke"
   },
   {
    "id": "ws-fremdwoerter-58",
-   "typ": "luecke",
-   "satz": "Die Universitäten fordern mehr ___ bei der Mittelvergabe.",
-   "loesungen": [
-    "Autonomie"
+   "typ": "auswahl",
+   "frage": "Die Universitäten fordern mehr ___ bei der Mittelvergabe.",
+   "optionen": [
+    "Nostalgie",
+    "Autonomie",
+    "Quintessenz",
+    "Bagatelle"
    ],
-   "hinweis": "Selbstständigkeit, Unabhängigkeit (beginnt mit „A“)",
-   "erklaerung": "die Autonomie: Selbstständigkeit, Unabhängigkeit. Beispiel: Die Universitäten fordern mehr Autonomie bei der Mittelvergabe. Herkunft: griech. autós „selbst“ + nómos „Gesetz“"
+   "richtig": 1,
+   "hinweis": "Selbstständigkeit, Unabhängigkeit",
+   "erklaerung": "die Autonomie: Selbstständigkeit, Unabhängigkeit. Beispiel: Die Universitäten fordern mehr Autonomie bei der Mittelvergabe. Herkunft: griech. autós „selbst“ + nómos „Gesetz“",
+   "aus": "luecke"
   },
   {
    "id": "ws-fremdwoerter-59",
-   "typ": "luecke",
-   "satz": "Viele junge Wissenschaftler arbeiten unter ___ Bedingungen.",
-   "loesungen": [
-    "prekären"
+   "typ": "auswahl",
+   "frage": "Viele junge Wissenschaftler arbeiten unter ___ Bedingungen.",
+   "optionen": [
+    "impliziten",
+    "habituellen",
+    "prekären",
+    "plakativen"
    ],
-   "hinweis": "schwierig, heikel, unsicher (beginnt mit „p“)",
-   "erklaerung": "prekär: schwierig, heikel, unsicher. Beispiel: Viele junge Wissenschaftler arbeiten unter prekären Bedingungen. Herkunft: frz. précaire „unsicher“"
+   "richtig": 2,
+   "hinweis": "schwierig, heikel, unsicher",
+   "erklaerung": "prekär: schwierig, heikel, unsicher. Beispiel: Viele junge Wissenschaftler arbeiten unter prekären Bedingungen. Herkunft: frz. précaire „unsicher“",
+   "aus": "luecke"
   },
   {
    "id": "ws-fremdwoerter-60",
-   "typ": "luecke",
-   "satz": "Der Vorwurf ist so ___, dass man kaum darauf antworten mag.",
-   "loesungen": [
-    "absurd"
+   "typ": "auswahl",
+   "frage": "Der Vorwurf ist so ___, dass man kaum darauf antworten mag.",
+   "optionen": [
+    "absurd",
+    "habituell",
+    "homogen",
+    "autonom"
    ],
-   "hinweis": "widersinnig, sinnlos (beginnt mit „a“)",
-   "erklaerung": "absurd: widersinnig, sinnlos. Beispiel: Der Vorwurf ist so absurd, dass man kaum darauf antworten mag. Herkunft: lat. absurdus „misstönend“"
+   "richtig": 0,
+   "hinweis": "widersinnig, sinnlos",
+   "erklaerung": "absurd: widersinnig, sinnlos. Beispiel: Der Vorwurf ist so absurd, dass man kaum darauf antworten mag. Herkunft: lat. absurdus „misstönend“",
+   "aus": "luecke"
   }
  ]
 }

@@ -53,111 +53,149 @@
  "uebungen": [
   {
    "id": "u01",
-   "typ": "luecke",
-   "satz": "Sie verbessert ihr Deutsch, ___ sie täglich Zeitung liest.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Sie verbessert ihr Deutsch, ___ sie täglich Zeitung liest.",
+   "optionen": [
+    "obwohl",
+    "dadurch",
+    "trotzdem",
     "indem"
    ],
+   "richtig": 3,
    "hinweis": "Mittel",
-   "erklaerung": "indem: Wie erreicht sie es? – durch tägliches Lesen."
+   "erklaerung": "indem: Wie erreicht sie es? – durch tägliches Lesen.",
+   "aus": "luecke"
   },
   {
    "id": "u02",
-   "typ": "luecke",
-   "satz": "Ich nehme das Angebot nicht an, ___ ich ohnehin kaum Zeit habe.",
-   "loesungen": [
-    "zumal"
+   "typ": "auswahl",
+   "frage": "Ich nehme das Angebot nicht an, ___ ich ohnehin kaum Zeit habe.",
+   "optionen": [
+    "zumal",
+    "sodass",
+    "obwohl",
+    "damit"
    ],
+   "richtig": 0,
    "hinweis": "zusätzlicher Grund",
-   "erklaerung": "zumal: Der Grund verstärkt eine Entscheidung, die schon feststeht."
+   "erklaerung": "zumal: Der Grund verstärkt eine Entscheidung, die schon feststeht.",
+   "aus": "luecke"
   },
   {
    "id": "u03",
-   "typ": "luecke",
-   "satz": "Wir treffen uns morgen um zehn, es sei ___, es regnet.",
-   "loesungen": [
-    "denn"
+   "typ": "auswahl",
+   "frage": "Wir treffen uns morgen um zehn, es sei ___, es regnet.",
+   "optionen": [
+    "dann",
+    "wenn",
+    "denn",
+    "doch"
    ],
-   "erklaerung": "„es sei denn“ nennt eine Ausnahme."
+   "richtig": 2,
+   "erklaerung": "„es sei denn“ nennt eine Ausnahme.",
+   "aus": "luecke"
   },
   {
    "id": "u04",
-   "typ": "luecke",
-   "satz": "Die Studie ist insofern bemerkenswert, ___ sie erstmals Langzeitdaten auswertet.",
-   "loesungen": [
-    "als"
+   "typ": "auswahl",
+   "frage": "Die Studie ist insofern bemerkenswert, ___ sie erstmals Langzeitdaten auswertet.",
+   "optionen": [
+    "wie",
+    "wenn",
+    "als",
+    "dass"
    ],
-   "erklaerung": "insofern … als: Die Aussage gilt unter diesem Gesichtspunkt."
+   "richtig": 2,
+   "erklaerung": "insofern … als: Die Aussage gilt unter diesem Gesichtspunkt.",
+   "aus": "luecke"
   },
   {
    "id": "u05",
-   "typ": "luecke",
-   "satz": "Er hat das Haus verkauft, ___ seine Familie davon wusste.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Er hat das Haus verkauft, ___ seine Familie davon wusste.",
+   "optionen": [
+    "ohne",
+    "als dass",
+    "ohne zu",
     "ohne dass"
    ],
-   "hinweis": "zwei Wörter",
-   "erklaerung": "Verschiedene Subjekte (er – seine Familie): „ohne dass“ statt „ohne … zu“."
+   "richtig": 3,
+   "erklaerung": "Verschiedene Subjekte (er – seine Familie): „ohne dass“ statt „ohne … zu“.",
+   "aus": "luecke"
   },
   {
    "id": "u06",
-   "typ": "luecke",
-   "satz": "___ nichts dazwischenkommt, ist das Projekt im Mai fertig.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "___ nichts dazwischenkommt, ist das Projekt im Mai fertig.",
+   "optionen": [
     "Sofern",
-    "Falls",
-    "Wenn",
-    "Soweit"
+    "Damit",
+    "Obwohl",
+    "Sodass"
    ],
+   "richtig": 0,
    "hinweis": "gehoben für „falls“",
-   "erklaerung": "sofern: Bedingung, oft mit einschränkendem Sinn."
+   "erklaerung": "sofern: Bedingung, oft mit einschränkendem Sinn.",
+   "aus": "luecke"
   },
   {
    "id": "u07",
-   "typ": "luecke",
-   "satz": "Der Text ist zu lang, ___ man ihn in zehn Minuten lesen könnte.",
-   "loesungen": [
-    "als dass"
+   "typ": "auswahl",
+   "frage": "Der Text ist zu lang, ___ man ihn in zehn Minuten lesen könnte.",
+   "optionen": [
+    "sodass",
+    "dass",
+    "als dass",
+    "damit"
    ],
-   "hinweis": "zwei Wörter",
-   "erklaerung": "zu + Adjektiv, als dass + Konjunktiv II: Die Folge tritt nicht ein."
+   "richtig": 2,
+   "erklaerung": "zu + Adjektiv, als dass + Konjunktiv II: Die Folge tritt nicht ein.",
+   "aus": "luecke"
   },
   {
    "id": "u08",
-   "typ": "luecke",
-   "satz": "___ er erschöpft war, arbeitete er bis spät in die Nacht.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "___ er erschöpft war, arbeitete er bis spät in die Nacht.",
+   "optionen": [
+    "Trotzdem",
+    "Da",
     "Obwohl",
-    "Obgleich",
-    "Obschon",
-    "Wenngleich",
-    "Wiewohl"
+    "Weil"
    ],
+   "richtig": 2,
    "hinweis": "Gegengrund",
-   "erklaerung": "Konzessiv: obwohl und die gehobenen Varianten obgleich, obschon, wenngleich, wiewohl."
+   "erklaerung": "Konzessiv: obwohl und die gehobenen Varianten obgleich, obschon, wenngleich, wiewohl.",
+   "aus": "luecke"
   },
   {
    "id": "u09",
-   "typ": "luecke",
-   "satz": "___ sie zu Hause angekommen war, klingelte das Telefon.",
-   "loesungen": [
-    "Kaum dass",
-    "Sobald"
+   "typ": "auswahl",
+   "frage": "___ sie zu Hause angekommen war, klingelte das Telefon.",
+   "optionen": [
+    "Kaum",
+    "Indem",
+    "Während",
+    "Kaum dass"
    ],
+   "richtig": 3,
    "hinweis": "unmittelbar danach",
-   "erklaerung": "„kaum dass“ und „sobald“: Die zweite Handlung folgt sofort auf die erste."
+   "erklaerung": "„kaum dass“ und „sobald“: Die zweite Handlung folgt sofort auf die erste.",
+   "aus": "luecke"
   },
   {
    "id": "u10",
-   "typ": "luecke",
-   "satz": "Die Unfallgefahr lässt sich verringern, ___ die Straßen besser beleuchtet werden.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Die Unfallgefahr lässt sich verringern, ___ die Straßen besser beleuchtet werden.",
+   "optionen": [
+    "obwohl",
+    "dadurch",
     "dadurch, dass",
-    "indem",
-    "wenn"
+    "sodass"
    ],
+   "richtig": 2,
    "hinweis": "Mittel",
-   "erklaerung": "Mittel: „dadurch, dass“ (oder „indem“); „wenn“ betont die Bedingung."
+   "erklaerung": "Mittel: „dadurch, dass“ (oder „indem“); „wenn“ betont die Bedingung.",
+   "aus": "luecke"
   },
   {
    "id": "u11",
@@ -239,76 +277,114 @@
   },
   {
    "id": "u17",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Sie liest jeden Tag. So erweitert sie ihren Wortschatz.",
    "anweisung": "Verbinden Sie mit „indem“.",
-   "loesungen": [
-    "Sie erweitert ihren Wortschatz, indem sie jeden Tag liest.",
-    "Indem sie jeden Tag liest, erweitert sie ihren Wortschatz."
+   "teile": [
+    "liest",
+    "sie",
+    "jeden Tag",
+    "Sie",
+    "indem",
+    "ihren Wortschatz,",
+    "erweitert"
    ],
-   "erklaerung": "„indem“ nennt das Mittel; der Satz mit dem Ziel ist der Hauptsatz."
+   "loesung": "Sie erweitert ihren Wortschatz, indem sie jeden Tag liest.",
+   "erklaerung": "„indem“ nennt das Mittel; der Satz mit dem Ziel ist der Hauptsatz.",
+   "aus": "umformen"
   },
   {
    "id": "u18",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Er hat gekündigt. Sein Chef hat davon nichts gewusst.",
    "anweisung": "Verbinden Sie mit „ohne dass“.",
-   "loesungen": [
-    "Er hat gekündigt, ohne dass sein Chef davon gewusst hat.",
-    "Er hat gekündigt, ohne dass sein Chef davon wusste.",
-    "Er hat gekündigt, ohne dass sein Chef etwas davon gewusst hat.",
-    "Er hat gekündigt, ohne dass sein Chef etwas davon wusste.",
-    "Ohne dass sein Chef davon gewusst hat, hat er gekündigt.",
-    "Ohne dass sein Chef davon wusste, hat er gekündigt."
+   "teile": [
+    "ohne dass",
+    "sein Chef",
+    "hat",
+    "gekündigt,",
+    "davon",
+    "Er",
+    "hat",
+    "gewusst"
    ],
-   "erklaerung": "„ohne dass“ enthält schon die Verneinung – „nichts“ fällt weg."
+   "loesung": "Er hat gekündigt, ohne dass sein Chef davon gewusst hat.",
+   "erklaerung": "„ohne dass“ enthält schon die Verneinung – „nichts“ fällt weg.",
+   "aus": "umformen"
   },
   {
    "id": "u19",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Wir kommen, außer wenn es einen Streik gibt.",
    "anweisung": "Formulieren Sie mit „es sei denn“.",
-   "loesungen": [
-    "Wir kommen, es sei denn, es gibt einen Streik.",
-    "Wir kommen, es sei denn, dass es einen Streik gibt."
+   "teile": [
+    "es",
+    "kommen,",
+    "Wir",
+    "gibt",
+    "es",
+    "sei",
+    "denn,",
+    "einen Streik"
    ],
-   "erklaerung": "Nach „es sei denn“: Hauptsatz oder dass-Satz."
+   "loesung": "Wir kommen, es sei denn, es gibt einen Streik.",
+   "erklaerung": "Nach „es sei denn“: Hauptsatz oder dass-Satz.",
+   "aus": "umformen"
   },
   {
    "id": "u20",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Die Aufgabe ist sehr schwer. Niemand kann sie allein lösen.",
    "anweisung": "Verbinden Sie mit „zu … als dass“.",
-   "loesungen": [
-    "Die Aufgabe ist zu schwer, als dass man sie allein lösen könnte.",
-    "Die Aufgabe ist zu schwer, als dass jemand sie allein lösen könnte.",
-    "Die Aufgabe ist zu schwer, als dass sie jemand allein lösen könnte."
+   "teile": [
+    "sie",
+    "zu schwer,",
+    "als",
+    "lösen",
+    "Die Aufgabe",
+    "man",
+    "dass",
+    "könnte",
+    "allein",
+    "ist"
    ],
-   "erklaerung": "„als dass“ enthält die Verneinung: niemand → man/jemand; Konjunktiv II."
+   "loesung": "Die Aufgabe ist zu schwer, als dass man sie allein lösen könnte.",
+   "erklaerung": "„als dass“ enthält die Verneinung: niemand → man/jemand; Konjunktiv II.",
+   "aus": "umformen"
   },
   {
    "id": "u21",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Der Plan ist gut, aber nur in einer Hinsicht: Er spart Zeit.",
    "anweisung": "Formulieren Sie mit „insofern … als“.",
-   "loesungen": [
-    "Der Plan ist insofern gut, als er Zeit spart.",
-    "Der Plan ist insoweit gut, als er Zeit spart."
+   "teile": [
+    "gut,",
+    "Der Plan",
+    "ist",
+    "er",
+    "Zeit",
+    "spart",
+    "als",
+    "insofern"
    ],
-   "erklaerung": "insofern steht im Hauptsatz, „als“ leitet den Nebensatz ein."
+   "loesung": "Der Plan ist insofern gut, als er Zeit spart.",
+   "erklaerung": "insofern steht im Hauptsatz, „als“ leitet den Nebensatz ein.",
+   "aus": "umformen"
   },
   {
    "id": "u22",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Er schweigt. Er sollte eigentlich die Wahrheit sagen.",
    "anweisung": "Verbinden Sie mit „(an)statt … zu“.",
-   "loesungen": [
-    "Er schweigt, anstatt die Wahrheit zu sagen.",
-    "Er schweigt, statt die Wahrheit zu sagen.",
-    "Anstatt die Wahrheit zu sagen, schweigt er.",
-    "Statt die Wahrheit zu sagen, schweigt er."
+   "teile": [
+    "Er",
+    "zu sagen",
+    "anstatt die Wahrheit",
+    "schweigt,"
    ],
-   "erklaerung": "Gleiches Subjekt: (an)statt … zu."
+   "loesung": "Er schweigt, anstatt die Wahrheit zu sagen.",
+   "erklaerung": "Gleiches Subjekt: (an)statt … zu.",
+   "aus": "umformen"
   },
   {
    "id": "u23",

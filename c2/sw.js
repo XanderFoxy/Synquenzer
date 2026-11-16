@@ -4,11 +4,12 @@
 // damit Heute, Quiz und jedes Thema offline laufen. Die Startseite wird dadurch nicht langsamer (läuft nach dem Laden).
 // Audio bleibt bei Bedarf (erstes Abspielen) oder über „Alles offline speichern“ in Mehr.
 // 0.4.0: wuensche.js (Wünsche-Kanal zu Claude) und neu.json („Neu in dieser Version“) gehören zur Schale – neu.json kommt so mit jeder Version frisch.
+// 0.5.0: keine Eintipp-Übungen mehr (Ergänzen → Auswählen/Sortieren/Zuordnen) – neuer Daten-Cache fs-daten-v3, damit keine alten Übungsdateien aus dem Zwischenspeicher kommen.
 // Anfragen an die Datenbank (anderer Ursprung) gehen nie durch den Worker. Ab 0.4.0 lädt die App nach einem Wechsel des Workers
 // beim nächsten Seitenwechsel neu (app.js), damit nie alte und neue Module gemischt laufen.
 // Neue Fassung: VERSION hochzählen (und in app.js), dann lädt der nächste Start die Schale neu.
-const VERSION = '0.4.0';
-const SCHALE = 'fs-schale-' + VERSION, DATEN = 'fs-daten-v2', AUDIO = 'fs-audio-v1';
+const VERSION = '0.5.0';
+const SCHALE = 'fs-schale-' + VERSION, DATEN = 'fs-daten-v3', AUDIO = 'fs-audio-v1';
 const DATEIEN = ['./', './index.html', './app.css', './app.js', './speicher.js', './daten.js', './symbole.js', './pruefen.js', './wiederholung.js', './konto.js',
   './ueben.js', './block.js', './hoeren.js', './lesen.js', './quiz.js', './pruefung.js', './schreiben.js', './fortschritt.js', './wortschatz.js', './links.js',
   './erinnerung.js', './wuensche.js', './wunsch-link.js', './wuensche.css', './neu.json', './manifest.webmanifest', './icon.svg', './icon-180.png', './icon-192.png', './icon-512.png', './daten/index.json'];

@@ -51,86 +51,129 @@
  "uebungen": [
   {
    "id": "u01",
-   "typ": "luecke",
-   "satz": "___ freut mich sehr, dass du gekommen bist.",
-   "loesungen": [
-    "Es"
+   "typ": "auswahl",
+   "frage": "___ freut mich sehr, dass du gekommen bist.",
+   "optionen": [
+    "Er",
+    "Sich",
+    "Es",
+    "Man"
    ],
-   "erklaerung": "Korrelat-es im Vorfeld; es verweist auf den dass-Satz."
+   "richtig": 2,
+   "erklaerung": "Korrelat-es im Vorfeld; es verweist auf den dass-Satz.",
+   "aus": "luecke"
   },
   {
    "id": "u02",
-   "typ": "luecke",
-   "satz": "Ich finde ___ wichtig, dass alle mitreden dürfen.",
-   "loesungen": [
-    "es"
+   "typ": "auswahl",
+   "frage": "Ich finde ___ wichtig, dass alle mitreden dürfen.",
+   "optionen": [
+    "es",
+    "sich",
+    "ihn",
+    "mir"
    ],
-   "erklaerung": "Korrelat-es im Mittelfeld: „finden“ braucht ein Objekt, das der dass-Satz füllt."
+   "richtig": 0,
+   "erklaerung": "Korrelat-es im Mittelfeld: „finden“ braucht ein Objekt, das der dass-Satz füllt.",
+   "aus": "luecke"
   },
   {
    "id": "u03",
-   "typ": "luecke",
-   "satz": "Hast du an den Termin gedacht? – Nein, ___ habe ich gar nicht gedacht.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Hast du an den Termin gedacht? – Nein, ___ habe ich gar nicht gedacht.",
+   "optionen": [
+    "darauf",
+    "dafür",
+    "darüber",
     "daran"
    ],
-   "erklaerung": "denken an + Sache → daran."
+   "richtig": 3,
+   "erklaerung": "denken an + Sache → daran.",
+   "aus": "luecke"
   },
   {
    "id": "u04",
-   "typ": "luecke",
-   "satz": "Ich kann ___ gut vorstellen, wie schwierig das war.",
-   "loesungen": [
-    "mir"
+   "typ": "auswahl",
+   "frage": "Ich kann ___ gut vorstellen, wie schwierig das war.",
+   "optionen": [
+    "mir",
+    "meiner",
+    "mich",
+    "ich"
    ],
-   "erklaerung": "sich etwas vorstellen: Dativ, weil der wie-Satz das Akkusativobjekt ist."
+   "richtig": 0,
+   "erklaerung": "sich etwas vorstellen: Dativ, weil der wie-Satz das Akkusativobjekt ist.",
+   "aus": "luecke"
   },
   {
    "id": "u05",
-   "typ": "luecke",
-   "satz": "Wir freuen ___ schon sehr auf den Urlaub.",
-   "loesungen": [
-    "uns"
+   "typ": "auswahl",
+   "frage": "Wir freuen ___ schon sehr auf den Urlaub.",
+   "optionen": [
+    "euch",
+    "wir",
+    "uns",
+    "unser"
    ],
-   "erklaerung": "sich freuen auf: Reflexivpronomen im Akkusativ (1. Person Plural: uns)."
+   "richtig": 2,
+   "erklaerung": "sich freuen auf: Reflexivpronomen im Akkusativ (1. Person Plural: uns).",
+   "aus": "luecke"
   },
   {
    "id": "u07",
-   "typ": "luecke",
-   "satz": "___ sprecht ihr gerade? – Über das neue Projekt.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "___ sprecht ihr gerade? – Über das neue Projekt.",
+   "optionen": [
+    "Wofür",
+    "Worum",
+    "Worauf",
     "Worüber"
    ],
-   "erklaerung": "Frage nach einer Sache mit Präposition: wo(r)- + Präposition."
+   "richtig": 3,
+   "erklaerung": "Frage nach einer Sache mit Präposition: wo(r)- + Präposition.",
+   "aus": "luecke"
   },
   {
    "id": "u08",
-   "typ": "luecke",
-   "satz": "Ich habe von Frau Berger lange nichts gehört. Hast du etwas von ___ gehört?",
-   "loesungen": [
-    "ihr"
+   "typ": "auswahl",
+   "frage": "Ich habe von Frau Berger lange nichts gehört. Hast du etwas von ___ gehört?",
+   "optionen": [
+    "ihr",
+    "ihrer",
+    "sie",
+    "ihm"
    ],
-   "erklaerung": "Bei Personen: Präposition + Personalpronomen (von + Dativ: ihr)."
+   "richtig": 0,
+   "erklaerung": "Bei Personen: Präposition + Personalpronomen (von + Dativ: ihr).",
+   "aus": "luecke"
   },
   {
    "id": "u09",
-   "typ": "luecke",
-   "satz": "Sie hat sich zwei Wohnungen angesehen. ___ ist größer, Letztere aber günstiger.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Sie hat sich zwei Wohnungen angesehen. ___ ist größer, Letztere aber günstiger.",
+   "optionen": [
+    "Ersterer",
+    "Erstes",
     "Erstere",
-    "Die Erstere",
-    "Die erste"
+    "Ersteres"
    ],
-   "erklaerung": "Ersterer/Erstere/Ersteres verweist auf das zuerst Genannte, Letzterer auf das zuletzt Genannte."
+   "richtig": 2,
+   "erklaerung": "Ersterer/Erstere/Ersteres verweist auf das zuerst Genannte, Letzterer auf das zuletzt Genannte.",
+   "aus": "luecke"
   },
   {
    "id": "u10",
-   "typ": "luecke",
-   "satz": "Es kommt ganz ___ an, wie man die Frage stellt.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Es kommt ganz ___ an, wie man die Frage stellt.",
+   "optionen": [
+    "dafür",
+    "darüber",
+    "daran",
     "darauf"
    ],
-   "erklaerung": "Feste Verbindung: es kommt auf etwas an → darauf, wie …"
+   "richtig": 3,
+   "erklaerung": "Feste Verbindung: es kommt auf etwas an → darauf, wie …",
+   "aus": "luecke"
   },
   {
    "id": "u11",
@@ -212,68 +255,102 @@
   },
   {
    "id": "u17",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Ich habe nicht an die Unterlagen gedacht.",
    "anweisung": "Ersetzen Sie „an die Unterlagen“ durch ein Pronominaladverb.",
-   "loesungen": [
-    "Ich habe nicht daran gedacht.",
-    "Daran habe ich nicht gedacht."
+   "teile": [
+    "nicht daran",
+    "habe",
+    "Ich",
+    "gedacht"
    ],
-   "erklaerung": "Sache nach Präposition: da(r)- + Präposition."
+   "loesung": "Ich habe nicht daran gedacht.",
+   "erklaerung": "Sache nach Präposition: da(r)- + Präposition.",
+   "aus": "umformen"
   },
   {
    "id": "u18",
-   "typ": "umformen",
-   "ausgang": "Über welches Thema habt ihr diskutiert?",
-   "anweisung": "Fragen Sie mit einem Fragewort mit wo(r)-.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Über welches Thema habt ihr diskutiert? – Fragen Sie mit einem Fragewort mit wo(r)-.",
+   "optionen": [
+    "Woüber habt ihr diskutiert?",
+    "Wovon habt ihr diskutiert?",
+    "Worum habt ihr diskutiert?",
     "Worüber habt ihr diskutiert?"
    ],
-   "erklaerung": "Frage nach einer Sache: wo(r)- + Präposition."
+   "richtig": 3,
+   "erklaerung": "Frage nach einer Sache: wo(r)- + Präposition.",
+   "aus": "umformen"
   },
   {
    "id": "u19",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Dass er abgesagt hat, ärgert mich.",
    "anweisung": "Beginnen Sie mit „Es“.",
-   "loesungen": [
-    "Es ärgert mich, dass er abgesagt hat."
+   "teile": [
+    "mich,",
+    "dass",
+    "abgesagt",
+    "hat",
+    "ärgert",
+    "er",
+    "Es"
    ],
-   "erklaerung": "Steht der dass-Satz hinten, braucht das Vorfeld das Korrelat „es“."
+   "loesung": "Es ärgert mich, dass er abgesagt hat.",
+   "erklaerung": "Steht der dass-Satz hinten, braucht das Vorfeld das Korrelat „es“.",
+   "aus": "umformen"
   },
   {
    "id": "u20",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Viele Menschen demonstrierten vor dem Rathaus.",
    "anweisung": "Beginnen Sie mit dem Platzhalter „Es“.",
-   "loesungen": [
-    "Es demonstrierten viele Menschen vor dem Rathaus."
+   "teile": [
+    "Es",
+    "viele Menschen",
+    "vor dem Rathaus",
+    "demonstrierten"
    ],
-   "erklaerung": "Das Platzhalter-es besetzt nur das Vorfeld; das Verb richtet sich nach dem Subjekt (viele Menschen → demonstrierten)."
+   "loesung": "Es demonstrierten viele Menschen vor dem Rathaus.",
+   "erklaerung": "Das Platzhalter-es besetzt nur das Vorfeld; das Verb richtet sich nach dem Subjekt (viele Menschen → demonstrierten).",
+   "aus": "umformen"
   },
   {
    "id": "u21",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Ich bin mit ihrem Vorschlag einverstanden.",
    "anweisung": "Ersetzen Sie „mit ihrem Vorschlag“ durch ein Pronominaladverb.",
+   "teile": [
+    "bin",
+    "damit",
+    "einverstanden",
+    "Ich"
+   ],
+   "loesung": "Ich bin damit einverstanden.",
    "loesungen": [
-    "Ich bin damit einverstanden.",
     "Damit bin ich einverstanden."
    ],
-   "erklaerung": "einverstanden sein mit + Sache → damit."
+   "erklaerung": "einverstanden sein mit + Sache → damit.",
+   "aus": "umformen"
   },
   {
    "id": "u22",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Der Artikel behandelt die Folgen des Klimawandels.",
    "anweisung": "Formulieren Sie mit „es geht um“.",
-   "loesungen": [
-    "In dem Artikel geht es um die Folgen des Klimawandels.",
-    "Im Artikel geht es um die Folgen des Klimawandels.",
-    "Es geht in dem Artikel um die Folgen des Klimawandels.",
-    "Es geht im Artikel um die Folgen des Klimawandels."
+   "teile": [
+    "des Klimawandels",
+    "es",
+    "um die Folgen",
+    "In dem Artikel",
+    "geht"
    ],
-   "erklaerung": "„es geht um“ ist fest; das Thema steht mit „um“ + Akkusativ."
+   "loesung": "In dem Artikel geht es um die Folgen des Klimawandels.",
+   "loesungen": [
+    "Es geht in dem Artikel um die Folgen des Klimawandels."
+   ],
+   "erklaerung": "„es geht um“ ist fest; das Thema steht mit „um“ + Akkusativ.",
+   "aus": "umformen"
   },
   {
    "id": "u23",

@@ -49,125 +49,183 @@
  "uebungen": [
   {
    "id": "u01",
-   "typ": "luecke",
-   "satz": "Die Ansichten vieler ___ Erwachsener zur Wehrpflicht haben sich gewandelt.",
-   "loesungen": [
-    "junger"
+   "typ": "auswahl",
+   "frage": "Die Ansichten vieler ___ Erwachsener zur Wehrpflicht haben sich gewandelt.",
+   "optionen": [
+    "junger",
+    "junge",
+    "junges",
+    "jungen"
    ],
+   "richtig": 0,
    "hinweis": "jung",
-   "erklaerung": "Nach „viele, einige, mehrere“ wird das Adjektiv stark dekliniert, mit derselben Endung: vieler junger Erwachsener."
+   "erklaerung": "Nach „viele, einige, mehrere“ wird das Adjektiv stark dekliniert, mit derselben Endung: vieler junger Erwachsener.",
+   "aus": "luecke"
   },
   {
    "id": "u02",
-   "typ": "luecke",
-   "satz": "Trotz ___ Regens fand das Konzert unter freiem Himmel statt.",
-   "loesungen": [
-    "starken"
+   "typ": "auswahl",
+   "frage": "Trotz ___ Regens fand das Konzert unter freiem Himmel statt.",
+   "optionen": [
+    "starkes",
+    "starken",
+    "starke",
+    "starker"
    ],
+   "richtig": 1,
    "hinweis": "stark",
-   "erklaerung": "Genitiv Singular maskulin ohne Artikel: Das Nomen trägt das -s, das Adjektiv endet auf -en."
+   "erklaerung": "Genitiv Singular maskulin ohne Artikel: Das Nomen trägt das -s, das Adjektiv endet auf -en.",
+   "aus": "luecke"
   },
   {
    "id": "u03",
-   "typ": "luecke",
-   "satz": "Beide ___ Gutachten kommen zu demselben Schluss.",
-   "loesungen": [
-    "unabhängigen"
+   "typ": "auswahl",
+   "frage": "Beide ___ Gutachten kommen zu demselben Schluss.",
+   "optionen": [
+    "unabhängigen",
+    "unabhängige",
+    "unabhängiger",
+    "unabhängiges"
    ],
+   "richtig": 0,
    "hinweis": "unabhängig",
-   "erklaerung": "Nach „beide“ steht die schwache Endung -en, wie nach „die“."
+   "erklaerung": "Nach „beide“ steht die schwache Endung -en, wie nach „die“.",
+   "aus": "luecke"
   },
   {
    "id": "u04",
-   "typ": "luecke",
-   "satz": "Manche ___ Kritiker hielten den Roman für ein Machwerk.",
-   "loesungen": [
-    "zeitgenössischen",
-    "zeitgenössische"
+   "typ": "auswahl",
+   "frage": "Manche ___ Kritiker hielten den Roman für ein Machwerk.",
+   "optionen": [
+    "zeitgenössischer",
+    "zeitgenössisches",
+    "zeitgenössischem",
+    "zeitgenössischen"
    ],
+   "richtig": 3,
    "hinweis": "zeitgenössisch",
-   "erklaerung": "Nach „manche“ im Plural ist die schwache Endung (-en) üblich, die starke (-e) kommt aber ebenfalls vor; beides gilt als korrekt."
+   "erklaerung": "Nach „manche“ im Plural ist die schwache Endung (-en) üblich, die starke (-e) kommt aber ebenfalls vor; beides gilt als korrekt.",
+   "aus": "luecke"
   },
   {
    "id": "u05",
-   "typ": "luecke",
-   "satz": "Unter den ___ befanden sich auffallend viele Studierende.",
-   "loesungen": [
-    "Reisenden"
+   "typ": "auswahl",
+   "frage": "Unter den ___ befanden sich auffallend viele Studierende.",
+   "optionen": [
+    "Reisenden",
+    "Reisender",
+    "Reisendes",
+    "Reisende"
    ],
+   "richtig": 0,
    "hinweis": "reisend, substantiviert",
-   "erklaerung": "Substantivierte Partizipien werden wie Adjektive dekliniert: Dativ Plural nach Artikel: den Reisenden."
+   "erklaerung": "Substantivierte Partizipien werden wie Adjektive dekliniert: Dativ Plural nach Artikel: den Reisenden.",
+   "aus": "luecke"
   },
   {
    "id": "u06",
-   "typ": "luecke",
-   "satz": "Ein ___ des Archivs hat das verschollene Manuskript zufällig entdeckt.",
-   "loesungen": [
-    "Angestellter"
+   "typ": "auswahl",
+   "frage": "Ein ___ des Archivs hat das verschollene Manuskript zufällig entdeckt.",
+   "optionen": [
+    "Angestelltes",
+    "Angestellter",
+    "Angestellten",
+    "Angestellte"
    ],
+   "richtig": 1,
    "hinweis": "angestellt, substantiviert",
-   "erklaerung": "Nach „ein“ fehlt im Nominativ maskulin das Signal, also trägt es das substantivierte Partizip: ein Angestellter."
+   "erklaerung": "Nach „ein“ fehlt im Nominativ maskulin das Signal, also trägt es das substantivierte Partizip: ein Angestellter.",
+   "aus": "luecke"
   },
   {
    "id": "u07",
-   "typ": "luecke",
-   "satz": "Die Zeitung berichtete über etwas ___, das selbst Fachleute verblüffte.",
-   "loesungen": [
-    "Neues"
+   "typ": "auswahl",
+   "frage": "Die Zeitung berichtete über etwas ___, das selbst Fachleute verblüffte.",
+   "optionen": [
+    "Neues",
+    "Neuen",
+    "Neue",
+    "Neuer"
    ],
+   "richtig": 0,
    "hinweis": "neu",
-   "erklaerung": "Nach „etwas“ wird das Adjektiv großgeschrieben und stark dekliniert: etwas Neues."
+   "erklaerung": "Nach „etwas“ wird das Adjektiv großgeschrieben und stark dekliniert: etwas Neues.",
+   "aus": "luecke"
   },
   {
    "id": "u08",
-   "typ": "luecke",
-   "satz": "Nach zähen, ___ Verhandlungen einigten sich die Tarifparteien.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Nach zähen, ___ Verhandlungen einigten sich die Tarifparteien.",
+   "optionen": [
+    "wochenlange",
+    "wochenlanger",
+    "wochenlanges",
     "wochenlangen"
    ],
+   "richtig": 3,
    "hinweis": "wochenlang",
-   "erklaerung": "Mehrere Adjektive ohne Artikel bekommen dieselbe starke Endung: Dativ Plural -en."
+   "erklaerung": "Mehrere Adjektive ohne Artikel bekommen dieselbe starke Endung: Dativ Plural -en.",
+   "aus": "luecke"
   },
   {
    "id": "u09",
-   "typ": "luecke",
-   "satz": "Die Ergebnisse dieser ___ Studie sind umstritten.",
-   "loesungen": [
+   "typ": "auswahl",
+   "frage": "Die Ergebnisse dieser ___ Studie sind umstritten.",
+   "optionen": [
     "groß angelegten",
-    "großangelegten"
+    "groß angelegter",
+    "groß angelegtes",
+    "groß angelegte"
    ],
+   "richtig": 0,
    "hinweis": "groß angelegt",
-   "erklaerung": "Nach „dieser“ (Genitiv feminin) steht die schwache Endung -en."
+   "erklaerung": "Nach „dieser“ (Genitiv feminin) steht die schwache Endung -en.",
+   "aus": "luecke"
   },
   {
    "id": "u10",
-   "typ": "luecke",
-   "satz": "Er sprach mit ___ Offenheit über seine Fehler.",
-   "loesungen": [
-    "entwaffnender"
+   "typ": "auswahl",
+   "frage": "Er sprach mit ___ Offenheit über seine Fehler.",
+   "optionen": [
+    "entwaffnende",
+    "entwaffnenden",
+    "entwaffnender",
+    "entwaffnendes"
    ],
+   "richtig": 2,
    "hinweis": "entwaffnend",
-   "erklaerung": "Dativ feminin ohne Artikel: Das Adjektiv übernimmt das Signal -r."
+   "erklaerung": "Dativ feminin ohne Artikel: Das Adjektiv übernimmt das Signal -r.",
+   "aus": "luecke"
   },
   {
    "id": "u11",
-   "typ": "luecke",
-   "satz": "Der Preis geht an eine junge Autorin, deren ___ Debüt die Kritik begeistert hat.",
-   "loesungen": [
-    "furioses"
+   "typ": "auswahl",
+   "frage": "Der Preis geht an eine junge Autorin, deren ___ Debüt die Kritik begeistert hat.",
+   "optionen": [
+    "furiosen",
+    "furioses",
+    "furioser",
+    "furiose"
    ],
+   "richtig": 1,
    "hinweis": "furios",
-   "erklaerung": "Nach „deren“ steht die starke Endung, denn „deren“ zeigt kein Signal für das Nomen: deren furioses Debüt."
+   "erklaerung": "Nach „deren“ steht die starke Endung, denn „deren“ zeigt kein Signal für das Nomen: deren furioses Debüt.",
+   "aus": "luecke"
   },
   {
    "id": "u12",
-   "typ": "luecke",
-   "satz": "Alle ___ Beiträge erscheinen im Herbst in einem Sammelband.",
-   "loesungen": [
-    "eingereichten"
+   "typ": "auswahl",
+   "frage": "Alle ___ Beiträge erscheinen im Herbst in einem Sammelband.",
+   "optionen": [
+    "eingereichten",
+    "eingereichtes",
+    "eingereichter",
+    "eingereichte"
    ],
+   "richtig": 0,
    "hinweis": "eingereicht",
-   "erklaerung": "Nach „alle“ endet das Adjektiv auf -en."
+   "erklaerung": "Nach „alle“ endet das Adjektiv auf -en.",
+   "aus": "luecke"
   },
   {
    "id": "u13",
@@ -397,24 +455,36 @@
   },
   {
    "id": "u32",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Die Mieten steigen seit Jahren. Sie verdrängen viele Familien aus der Innenstadt.",
    "anweisung": "Machen Sie aus dem ersten Satz ein Partizipialattribut.",
-   "loesungen": [
-    "Die seit Jahren steigenden Mieten verdrängen viele Familien aus der Innenstadt.",
-    "Seit Jahren steigende Mieten verdrängen viele Familien aus der Innenstadt."
+   "teile": [
+    "seit Jahren",
+    "viele Familien",
+    "Mieten",
+    "steigenden",
+    "verdrängen",
+    "Die",
+    "aus der Innenstadt"
    ],
-   "erklaerung": "Partizip I als Attribut: die seit Jahren steigenden Mieten (mit Artikel schwach), ohne Artikel: steigende Mieten."
+   "loesung": "Die seit Jahren steigenden Mieten verdrängen viele Familien aus der Innenstadt.",
+   "erklaerung": "Partizip I als Attribut: die seit Jahren steigenden Mieten (mit Artikel schwach), ohne Artikel: steigende Mieten.",
+   "aus": "umformen"
   },
   {
    "id": "u33",
-   "typ": "umformen",
+   "typ": "sortieren",
    "ausgang": "Die Menschen, die erkrankt sind, werden in einer Spezialklinik behandelt.",
    "anweisung": "Ersetzen Sie „Die Menschen, die erkrankt sind,“ durch ein substantiviertes Partizip.",
-   "loesungen": [
-    "Die Erkrankten werden in einer Spezialklinik behandelt."
+   "teile": [
+    "werden",
+    "behandelt",
+    "Die Erkrankten",
+    "in einer Spezialklinik"
    ],
-   "erklaerung": "Partizip II substantiviert: die Erkrankten (schwach nach „die“)."
+   "loesung": "Die Erkrankten werden in einer Spezialklinik behandelt.",
+   "erklaerung": "Partizip II substantiviert: die Erkrankten (schwach nach „die“).",
+   "aus": "umformen"
   }
  ]
 }
