@@ -31,7 +31,7 @@ const acorn = req('acorn'), parse5 = req('parse5'), postcss = req('postcss'), cs
 const VERS = Object.fromEntries(['acorn', 'parse5', 'postcss'].map(m => [m, JSON.parse(fs.readFileSync(new URL('node_modules/' + m + '/package.json', WZ))).version]));
 
 const KOMM_AN = !process.argv.includes('--ohne-komm');   // KOMM: --ohne-komm = Verhalten wie PERF2 (Vergleich)
-const [, , QUELLE, ZIEL, BERICHT] = process.argv.filter(a => a !== '--ohne-komm');   // KOMM
+const [, , QUELLE, ZIEL, BERICHT] = process.argv.filter(a => !a.startsWith('--'));   // KOMM (Schalter: --ohne-komm, --worklets-unberuehrt)
 if (!QUELLE || !ZIEL) { console.error('Aufruf: node ausliefern.mjs <quelle.html> <auslieferung.html> [<bericht.json>]'); process.exit(2); }
 const fail = m => { console.error('ABBRUCH: ' + m); process.exit(1); };
 
@@ -91,6 +91,7 @@ function jsOhneKommentare(src, info, opt) {   // KOMM: opt = Block-Regeln aus KO
     if (n.type === 'FunctionDeclaration' && n.id && SCHUTZ_FUNKTIONEN.includes(n.id.name)) { schutz.push([n.start, n.end, n.id.name]); return; }
     for (const k in n) { const v = n[k]; if (k === 'loc') continue; if (Array.isArray(v)) v.forEach(findFns); else if (v && typeof v.type === 'string') findFns(v); } };
   findFns(ast);
+  if (KOMM_AN) kommSammeln(ast, src, opt, info);   // KOMM-P: Zugriffs-Funktionen, Such-Texte, toString sammeln
   // Schutz-Zeilen (Zeilennummer im Skript)
   const lines = src.split(/\r\n|[\n\r\u2028\u2029]/), zeilen = new Set();
   lines.forEach((l, i) => { if (SCHUTZ_ZEILEN.concat(opt.zeilen || []).some(r => r.test(l))) zeilen.add(i + 1); });   // KOMM
@@ -217,6 +218,106 @@ function kommZugriffe(id, alt, neu, regeln) {
   for (const k of regeln.kommentare || []) if (alt.split(k).length !== neu.split(k).length) fail(id + ': Schutz-Kommentar ' + k + ' nicht gleich oft');
 }
 function kommStellen(o, id) { const e = id.replace(/[-]/g, '\\-'); return (o.match(new RegExp("['\"`]" + e + "['\"`]|#" + e + '(?![\\w-])', 'g')) || []).length; }
+/* KOMM-P (Prüfung 16.11., Befund 1/3): der Wächter oben zählt nur Stellen mit dem Block-Namen. Eine NEUE Text-Suche an einer
+   BESTEHENDEN Zugriffs-Stelle (z. B. mkwEval sucht zusätzlich einen Kommentar-Text) blieb unbemerkt. Darum zusätzlich:
+   (1) Zugriffs-Funktionen = jede Funktion, die einen KOMM-Block-Namen als Zeichenkette nennt; dazu die Funktionen, die sie mit
+       dem Namen als Argument aufruft (formLoad → blockLoad), und – wenn sie den Text zurückgibt (… textContent) – ihre Aufrufer
+       im selben Umfeld (MDX: src() → load).
+   (2) In diesen Funktionen (samt inneren Funktionen) jede Such-Zeichenkette / jeden Such-Regex (indexOf, includes, split, replace,
+       match, search, exec, test, new RegExp …; auch über eine const im Umfeld) auf Quell-Block und gekürztem Block nachrechnen:
+       Zeichenkette gleich oft, Regex dieselben Treffer (alle, mit Gruppen). Abweichung → ABBRUCH.
+   (3) Funktions-Texte aus den Blöcken per toString() (Worker aus g9ErkMake / g9AsrWorkerMain): je Name die erwartete Zahl
+       (fnText); eine neue toString-Stelle (z. B. als Schlüssel eines Zwischenspeichers wie clCoreVer) → ABBRUCH.
+   Schalter --worklets-unberuehrt: beide Worklet-Module (sq-worklet-src, sq-md-src) bleiben bytegleich (OFFEN A8 wörtlich). */
+if (process.argv.includes('--worklets-unberuehrt')) for (const id of Object.keys(KOMM_BLOECKE)) if (KOMM_BLOECKE[id].sourceType === 'module') delete KOMM_BLOECKE[id];
+KOMM_BLOECKE['sq-g9-src'] && (KOMM_BLOECKE['sq-g9-src'].fnText = {g9ErkMake: 1, g9AsrWorkerMain: 2});
+const KOMM_SUCH = new Set(['indexOf', 'lastIndexOf', 'includes', 'startsWith', 'endsWith', 'split', 'replace', 'replaceAll', 'search', 'match', 'matchAll']);
+const KOMM_P = {fn: [], wurzeln: [], rufe: [], offen: [], tostr: {}, blockFn: {}, text: {}, skript: 0};
+function kommLit(n) {
+  if (!n) return null;
+  if (n.type === 'Literal' && n.regex) return {re: {pattern: n.regex.pattern, flags: n.regex.flags}};
+  if (n.type === 'Literal' && typeof n.value === 'string' && n.value !== '') return {v: n.value};
+  if (n.type === 'TemplateLiteral' && !n.expressions.length && n.quasis[0].value.cooked) return {v: n.quasis[0].value.cooked};
+  if ((n.type === 'NewExpression' || n.type === 'CallExpression') && n.callee.type === 'Identifier' && n.callee.name === 'RegExp' && n.arguments[0] && n.arguments[0].type === 'Literal' && typeof n.arguments[0].value === 'string')
+    return {re: {pattern: n.arguments[0].value, flags: n.arguments[1] && typeof n.arguments[1].value === 'string' ? n.arguments[1].value : ''}};
+  return null;
+}
+function kommSammeln(ast, src, opt, info) {
+  const ids = Object.keys(KOMM_BLOECKE), sk = ++KOMM_P.skript, z0 = +((String(info).match(/Zeile (\d+)/) || [])[1] || 1) - 1;
+  const blockId = opt ? ids.find(k => KOMM_BLOECKE[k] === opt) : null;
+  if (blockId) { const s = KOMM_P.blockFn[blockId] = new Set(); for (const n of ast.body) { if (n.type === 'FunctionDeclaration' && n.id) s.add(n.id.name); else if (n.type === 'VariableDeclaration') for (const d of n.declarations) if (d.id.type === 'Identifier' && d.init && /Function/.test(d.init.type)) s.add(d.id.name); } }
+  const wurzel = {name: '(oberste Ebene ' + info + ')', a: 0, b: src.length, sk, lits: [], ids: new Set(), mitId: [], ret: false, consts: {}, eltern: null, zeile: z0 + 1};
+  KOMM_P.wurzeln.push(wurzel); const stapel = [wurzel];
+  const merk = (n, wo) => { const L = kommLit(n); if (L) { L.wo = wo; for (const r of stapel) r.lits.push(L); } else if (n && n.type === 'Identifier') KOMM_P.offen.push({name: n.name, wo, stapel: stapel.slice()}); };
+  const plus = k => { KOMM_P.tostr[k] = (KOMM_P.tostr[k] || 0) + 1; };
+  const fnName = (n, p) => n.id ? n.id.name : !p ? null : p.type === 'VariableDeclarator' && p.id.type === 'Identifier' ? p.id.name
+    : (p.type === 'Property' || p.type === 'MethodDefinition') && !p.computed && p.key ? (p.key.name || String(p.key.value))
+    : p.type === 'AssignmentExpression' && p.left.type === 'MemberExpression' && !p.left.computed ? p.left.property.name : null;
+  const besuch = (n, p) => {
+    if (!n || typeof n.type !== 'string') return;
+    const fn = n.type === 'FunctionDeclaration' || n.type === 'FunctionExpression' || n.type === 'ArrowFunctionExpression';
+    if (fn) { const r = {name: fnName(n, p), a: n.start, b: n.end, sk, lits: [], ids: new Set(), mitId: [], ret: false, consts: {}, eltern: stapel[stapel.length - 1], zeile: z0 + n.loc.start.line};
+      if (n.type === 'ArrowFunctionExpression' && n.expression && src.slice(n.body.start, n.body.end).includes('textContent')) r.ret = true;
+      stapel.push(r); KOMM_P.fn.push(r); }
+    const top = stapel[stapel.length - 1], wo = z0 + (n.loc ? n.loc.start.line : 0);
+    if (n.type === 'Literal' && typeof n.value === 'string') { const v = n.value.replace(/^#/, ''); if (ids.includes(v)) top.ids.add(v); }
+    else if (n.type === 'ReturnStatement' && n.argument && src.slice(n.argument.start, n.argument.end).includes('textContent')) top.ret = true;
+    else if (n.type === 'VariableDeclarator' && n.id.type === 'Identifier') { const L = kommLit(n.init); if (L) top.consts[n.id.name] = L; }
+    else if (n.type === 'CallExpression' || n.type === 'NewExpression') {
+      const c = n.callee, a0 = n.arguments[0];
+      if (c.type === 'Identifier') {
+        if (n.type === 'CallExpression') KOMM_P.rufe.push({name: c.name, sk, pos: n.start});
+        if (n.arguments.some(x => x.type === 'Literal' && ids.includes(x.value))) top.mitId.push(c.name);
+        if (c.name === 'RegExp') merk(n, wo);
+        if (c.name === 'String' && a0 && a0.type === 'Identifier') plus(a0.name);
+      } else if (c.type === 'MemberExpression' && !c.computed) {
+        const m = c.property.name;
+        if (KOMM_SUCH.has(m)) merk(a0, wo);
+        if (m === 'exec' || m === 'test') merk(c.object, wo);
+        if (m === 'toString' && c.object.type === 'Identifier') plus(c.object.name);
+        if (m === 'map' && c.object.type === 'ArrayExpression' && a0 && src.slice(a0.start, a0.end).includes('toString')) for (const e of c.object.elements) if (e && e.type === 'Identifier') plus(e.name);
+      }
+    }
+    for (const k in n) { if (k === 'loc') continue; const v = n[k]; if (Array.isArray(v)) { for (const x of v) besuch(x, n); } else if (v && typeof v.type === 'string') besuch(v, n); }
+    if (fn) stapel.pop();
+  };
+  besuch(ast, null);
+}
+function kommPruefen() {
+  // offene Bezeichner (s.indexOf(K) mit const K = '…' in derselben oder einer umgebenden Funktion) auflösen
+  for (const o of KOMM_P.offen) { let r = o.stapel[o.stapel.length - 1]; while (r && !(o.name in r.consts)) r = r.eltern; if (r) { const L = Object.assign({wo: o.wo}, r.consts[o.name]); for (const x of o.stapel) x.lits.push(L); } }
+  const ziel = new Map(), add = (r, id) => { if (!ziel.has(r)) ziel.set(r, new Set()); ziel.get(r).add(id); };
+  const innen = (sk, pos) => { let best = null; for (const r of KOMM_P.fn) if (r.sk === sk && r.a <= pos && pos < r.b && (!best || r.b - r.a < best.b - best.a)) best = r; return best; };
+  for (const w of KOMM_P.wurzeln) if (w.ids.size) fail([...w.ids].join(', ') + ': Block-Name auf oberster Ebene eines Skripts (' + w.name + ') – Zugriff von Hand prüfen, dann KOMM-P erweitern');
+  for (const r of KOMM_P.fn) for (const id of r.ids) {
+    add(r, id);
+    for (const c of r.mitId) for (const f of KOMM_P.fn) if (f.name === c) add(f, id);
+    if (r.ret && r.name) { const P = r.eltern; for (const k of KOMM_P.rufe) if (k.name === r.name && k.sk === r.sk && k.pos >= P.a && k.pos < P.b && !(k.pos >= r.a && k.pos < r.b)) { const f = innen(k.sk, k.pos); if (f) add(f, id); } }
+  }
+  const zahl = (s, v) => s.split(v).length - 1;
+  const treffer = (s, re) => { let R; try { R = new RegExp(re.pattern, re.flags.replace(/[gy]/g, '') + 'g'); } catch (e) { return 'ungültig'; } const o = []; let m; while ((m = R.exec(s)) && o.length < 5000) { o.push(m.slice(0)); if (m[0] === '') R.lastIndex++; } return JSON.stringify(o); };
+  const fehler = [], fns = []; let n = 0;
+  for (const [r, ids] of ziel) {
+    fns.push((r.name || 'anonym') + '@' + r.zeile + '→' + [...ids].map(x => x.replace(/^sq-|-src$/g, '')).join('+'));
+    const seen = new Set();
+    for (const L of r.lits) {
+      const key = L.v != null ? 's' + L.v : 'r/' + L.re.pattern + '/' + L.re.flags; if (seen.has(key)) continue; seen.add(key);
+      for (const id of ids) { const t = KOMM_P.text[id]; if (!t) continue; n++;
+        const ok = L.v != null ? zahl(t.alt, L.v) === zahl(t.neu, L.v) : treffer(t.alt, L.re) === treffer(t.neu, L.re);
+        if (!ok) fehler.push(id + ': ' + (r.name || 'Funktion') + ' (Zeile ' + r.zeile + ', Suche Zeile ' + L.wo + ') sucht ' + (L.v != null ? JSON.stringify(L.v).slice(0, 80) : '/' + L.re.pattern.slice(0, 80) + '/' + L.re.flags)); }
+    }
+  }
+  if (fehler.length) fail('Text-Suche an einer Zugriffs-Stelle liefert im gekürzten Block ein anderes Ergebnis (' + fehler.length + '):\n  ' + fehler.slice(0, 12).join('\n  ') +
+    '\n  → Zugriff prüfen: Such-Text schützen (KOMM_BLOECKE kommentare/zeilen) oder den Block aus KOMM_BLOECKE nehmen');
+  const fnText = {};
+  for (const id in KOMM_P.blockFn) { const soll = KOMM_BLOECKE[id].fnText || {};
+    for (const name of KOMM_P.blockFn[id]) { const ist = KOMM_P.tostr[name] || 0; if (ist) fnText[name] = ist;
+      if (ist !== (soll[name] || 0)) fail(id + ': Funktions-Text von ' + name + ' wird ' + ist + '× per toString/String gelesen, erwartet ' + (soll[name] || 0) + ' – neuer Zugriff? (Schlüssel/Suche im Text?) prüfen, dann fnText anpassen'); }
+    for (const name in soll) if (!KOMM_P.blockFn[id].has(name)) fail(id + ': erwartete Funktion ' + name + ' fehlt im Block'); }
+  const erg = {zugriffsFunktionen: fns, vergleiche: n, fnText, worklets: process.argv.includes('--worklets-unberuehrt') ? 'unberührt' : 'gekürzt'};
+  console.log('KOMM-P: ' + fns.length + ' Zugriffs-Funktionen, ' + n + ' Such-Vergleiche gleich, toString ' + JSON.stringify(fnText) + ', Worklets ' + erg.worklets);
+  return erg;
+}
 /* KOMM-END */
 
 // ---------- Ablauf ----------
@@ -230,7 +331,7 @@ for (const b of B) {
   const alsSkript = b.tag === 'script' && b.type === 'text/plain' && (TEXT_PLAIN_ALS_SKRIPT.includes(b.id) || KOMM_AN && b.id in KOMM_BLOECKE) && !('src' in b.attrs);   // KOMM
   if ((b.tag === 'script' && JS_TYPES.has(b.type) && !('src' in b.attrs)) || alsSkript) {
     const r = jsOhneKommentare(inhalt, (alsSkript ? 'Block ' + b.id : 'Skript') + ' bei Zeile ' + (nlCount(html.slice(0, b.a)) + 1), alsSkript ? KOMM_BLOECKE[b.id] : null); neu = r.out; art = alsSkript ? 'js-block' : 'js';   // KOMM
-    if (alsSkript && KOMM_BLOECKE[b.id]) kommZugriffe(b.id, inhalt, neu, KOMM_BLOECKE[b.id]);   // KOMM
+    if (alsSkript && KOMM_BLOECKE[b.id]) { kommZugriffe(b.id, inhalt, neu, KOMM_BLOECKE[b.id]); KOMM_P.text[b.id] = {alt: inhalt, neu}; }   // KOMM (+ KOMM-P Texte merken)
     bericht.bloecke.push({art, id: b.id || undefined, quellart: alsSkript && KOMM_BLOECKE[b.id] ? KOMM_BLOECKE[b.id].sourceType : undefined, zeile: nlCount(html.slice(0, b.a)) + 1, vorher: inhalt.length, nachher: neu.length, kommentare: r.kommentare, tokens: r.tokens, schutz: r.schutz, schutzZeilen: r.schutzZeilen, kommentareGeschuetzt: r.kommentareGeschuetzt});   // KOMM (quellart)
   } else if (b.tag === 'style' && (!b.attrs.type || b.type === 'text/css')) {
     const r = cssOhneKommentare(inhalt); neu = r.out; art = 'css';
@@ -251,6 +352,7 @@ for (const id of TEXT_PLAIN_ALS_SKRIPT) {
   if (n !== 2 || !o.includes("blockLoad('" + id + "'")) fail(id + ': ' + n + ' Erwähnungen statt 2 (id + blockLoad) – neuer Text-Zugriff? Block dann aus TEXT_PLAIN_ALS_SKRIPT nehmen oder Zugriff prüfen');
 }
 if (KOMM_AN) for (const id in KOMM_BLOECKE) { if (!B.some(b => b.id === id && b.type === 'text/plain')) continue; const n = kommStellen(o, id); if (n !== KOMM_BLOECKE[id].stellen) fail(id + ': ' + n + ' Text-Stellen statt ' + KOMM_BLOECKE[id].stellen + ' – neuer Zugriff per Text? prüfen, dann KOMM_BLOECKE anpassen'); }   // KOMM
+if (KOMM_AN) bericht.kommPruefung = kommPruefen();   // KOMM-P: Text-Suchen an den Zugriffs-Stellen + toString nachrechnen
 const zaehl = (s, re) => (s.match(re) || []).length;
 function zaehlId(s, id) { let n = 0, i = -1; while ((i = s.indexOf(id, i + 1)) >= 0) n++; return n; }
 const marken = {
