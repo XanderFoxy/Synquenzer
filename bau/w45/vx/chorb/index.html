@@ -77321,7 +77321,9 @@ function chbText(o) {
   if (o.list.some(x => x.pre)) notes.push('Anfang vor Takt 1 gekürzt (' + o.list.filter(x => x.pre).map(x => x.datei).join(', ') + ').');
   if (o.skipped.length) notes.push('Ohne Ton, keine Datei: ' + o.skipped.join(', ') + '.');
   if (notes.length) L.push('', 'Hinweise:', ...notes);
-  L.push('', 'In Cubasis: Datei in eine Audiospur ziehen. Raster (Snap) an. Anfang genau auf den Takt aus dem Dateinamen legen.',
+  L.push('', 'So kommen die Stücke in deine DAW: das ZIP in der Dateien-App antippen – es wird entpackt. In deiner DAW die WAV-Dateien importieren.',
+    'Fragt die DAW wegen einer anderen Abtastrate, „umwandeln“ (Ja) wählen.',
+    'In deiner DAW: Datei in eine Audiospur ziehen. Raster (Snap) an. Anfang genau auf den Takt aus dem Dateinamen legen.',
     'Tempo und Taktart im Projekt müssen wie oben sein; der Song beginnt bei Takt 1.', '');
   return L.join('\r\n');
 }
@@ -77407,9 +77409,9 @@ const chbImpHtml = () => '<div class="imp1r"><button class="mbtn rb" data-i="chb
 const CHB_HELP = [
   'Cubasis › <b>MediaBay</b> › deinen Song antippen › <b>Duplicate</b>, die Kopie öffnen.',
   'Lineal oben: linken <b>Locator auf Takt 1</b>, rechten <b>2 Takte hinter das Songende</b>.',
-  '<b>MediaBay › Mixdown › Create Mixdown › WAV.</b> Häkchen: <b>Create separate files for tracks</b> an, <b>Exclude all effects (dry)</b> an, <b>Mixdown between locators</b> an, <b>Normalize</b> aus. Starten.',
+  '<b>MediaBay › Mixdown › Create Mixdown › WAV.</b> Häkchen: <b>Create separate files for tracks</b> an, <b>Exclude all effects (dry)</b> an, <b>Mixdown between locators</b> an, <b>Normalize</b> aus, <b>Include effect tail</b> aus, <b>Mono downmix</b> aus. Starten. Tipp: Sind alle anderen Spuren stumm, entsteht nur die Gesangsdatei.',
   'Oben auf die <b>Tempo-Anzeige</b> tippen und die Zahl merken (zum Beispiel 118.0).',
-  'Hier: <b>Neues Projekt</b> › <b>Audio/MIDI importieren</b> › die Datei deiner Gesangsspur wählen › Tempo eintragen › <b>Als Gesang</b>.',
+  'Hier: <b>Neu ▾</b> › <b>Leer (Init)</b> › <b>Audio/MIDI importieren</b> › die Datei deiner Gesangsspur wählen › Tempo eintragen › <b>Als Gesang</b>.',
   'Chor erzeugen › Export › <b>Chor als Einzelstücke</b>. Jede Datei trägt den Takt im Namen. Dort legst du sie mit Raster genau an diesen Takt.'];
 function chbHelp() {
   chbCss();

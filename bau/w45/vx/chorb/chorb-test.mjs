@@ -109,7 +109,7 @@ if (ex.b64) {
   ok('Die drei Stimmen-Durchläufe klingen verschieden (Solo wirkt)', diff.d12 > 1 && diff.d13 > 1 && diff.E.every(v => v > 1), diff);
   const T = Buffer.from(txt.data).toString('utf8');
   fs.writeFileSync(path.join(OUT, 'Chor-Stuecke.txt'), T);
-  ok('Begleittext: Tempo, Taktart, Abtastrate, je Stück eine Zeile (Takt von–bis, Sekunden, Teil Refrain, Stimme), Anleitung für die DAW', /Tempo .* BPM · Taktart 4\/4 · \d+ Hz/.test(T) && L.every(x => T.includes(x.datei + ' · Takt ' + (x.a + 1) + '–' + x.b)) && (T.match(/ · Refrain · /g) || []).length === 6 && /In Cubasis: Datei in eine Audiospur ziehen\. Raster \(Snap\) an\./.test(T), T.split('\r\n').slice(0, 7));
+  ok('Begleittext: Tempo, Taktart, Abtastrate, je Stück eine Zeile (Takt von–bis, Sekunden, Teil Refrain, Stimme), Anleitung für die DAW', /Tempo .* BPM · Taktart 4\/4 · \d+ Hz/.test(T) && L.every(x => T.includes(x.datei + ' · Takt ' + (x.a + 1) + '–' + x.b)) && (T.match(/ · Refrain · /g) || []).length === 6 && /In deiner DAW: Datei in eine Audiospur ziehen\. Raster \(Snap\) an\./.test(T) && /ZIP in der Dateien-App antippen/.test(T) && /Abtastrate/.test(T) && !/Cubasis/.test(T), T.split('\r\n').slice(0, 7));
   ok('Sekunden ab Takt 1 im Text: Takt 5 = 4 Takte, Takt 13 = 12 Takte', L.every(x => Math.abs(x.t - x.a * barSec) < 1e-3), L.map(x => [x.datei, +x.t.toFixed(4)]));
 }
 ok('Nach dem Export: Solo, Nur-Wahl und Auftrag zurückgesetzt', ex.solo == null && !ex.only && !ex.job, {solo: ex.solo, only: ex.only, job: ex.job});
