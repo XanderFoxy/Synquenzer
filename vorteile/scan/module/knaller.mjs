@@ -17,8 +17,23 @@
 // gelesene Angebote des Markts je Seite.
 // Prüfer 16.11.2026: Rabatt abgerundet (29,5 % ist nicht „ab 30 %“); ohne UVP-Kennzeichen vorherArt 'unbekannt' (kein
 // Goldrahmen); Doppel aus parallelen Prospekten desselben Markts über Bilddatei und Marke/Preis/Vergleichspreis/Ende erkannt.
+// Xander 16.11.2026 (2. Runde): „Gelten die Angebote wirklich für die Woche? Staffel 20/30/40/50 %. Was erst Ende der Woche
+// kommt, anders kennzeichnen … Bist du sicher, dass alle Angebote drin sind? Bei Aldi Nord die Crunchips mit 50 % finde ich
+// nicht.“ Befund (Roh-Läufe 43797380195 und 43818792502): die Döbelner Händlerseite zeigt nur 16 von z. B. 359 Aldi-Angeboten;
+// die Crunchips (0,99 statt 1,99 UVP, Seite 20 des Döbelner Aldi-Prospekts) standen nie darauf. Darum jetzt zusätzlich:
+//  - Stichwortseiten /Angebote/<Begriff> (bundesweit, bis 16 Angebote je Begriff) – ein Angebot zählt nur, wenn seine
+//    Prospekt-id (parentContent.id) einer der Prospekte ist, die die Döbelner Händlerseite nennt (= derselbe Prospekt);
+//    je Lauf höchstens maxStichwortSeiten Begriffe, die am längsten nicht gelesenen zuerst (Merkworte immer);
+//  - Sammeln über die Läufe der Woche: noch gültige Angebote aus Döbelner Prospekten bleiben stehen (Pool), bis sie ablaufen
+//    oder ihr Prospekt nicht mehr genannt wird;
+//  - Gültigkeit je Angebot: kaufDA kennt nur die Prospekt-Gültigkeit (Mo–Sa); „ab Donnerstag“/„Fr.+Sa.“/„Wochenende“ im Text
+//    und – wo vorhanden – der Starttag aus marktguru (PLZ 04720, je Angebot, z. B. Lidl Doritos ab 19.11.) setzen gueltigAb;
+//  - ohne Vergleichspreis in der Quelle: „statt …“ im Text oder der Vergleichspreis desselben Produkts im selben Markt aus
+//    früheren Läufen (zustand.knaller.preise) -> vorherArt 'geschaetzt' (Seite: grau, „geschätzt“). Nie erfundene Prozente;
+//  - Staffel ab 20 % (minProzent 20, Seite startet bei 30).
 import { leseKaufdaSeite, kaufdaZeit, kaufdaSlug } from '../lib/kaufda.mjs';
-import { norm, schluessel, round } from '../lib/text.mjs';
+import { norm, schluessel, round, parsePrice } from '../lib/text.mjs';
+import { berlinTag } from '../lib/ende.mjs';
 
 export const STANDARD = {
   basis: 'https://www.kaufda.de',
@@ -27,12 +42,60 @@ export const STANDARD = {
   orte: ['Döbeln', 'Chemnitz', 'Leipzig'],
   ort: 'Döbeln',
   maxFilialeKm: 30,
-  minProzent: 30,
-  stufen: [30, 40, 50],
-  maxJeMarkt: 40,
+  minProzent: 20,
+  stufen: [20, 30, 40, 50],
+  maxJeMarkt: 60,
   maxProzent: 85, // mehr Rabatt ist im Prospekt nicht plausibel (Tippfehler in den Daten) -> keine Prozentangabe
   abPreise: true,
+  // Stichwortseiten (bundesweit) für die übrigen Angebote der Döbelner Prospekte
+  stichwortPfad: '/Angebote/{slug}',
+  stichworte: [],
+  maxStichwortSeiten: 20,
+  stichwortLeerTage: 7, // 404 („keine Angebote zu …“) -> so lange nicht noch einmal fragen
+  merkworte: [], // dauerhafte Wünsche (wie wunschliste.json): Treffer = gemerkt, Erinnerung am ersten Gültigkeitstag
+  verlaufTage: 120, // Vergleichspreise aus früheren Läufen so lange merken
+  marktguru: null, // { aktiv, start, api, plz, limit }: Starttag je Angebot (nur Gültigkeit, keine Preise)
 };
+
+const TAG_NR = { mo: 1, montag: 1, di: 2, dienstag: 2, mi: 3, mittwoch: 3, do: 4, donnerstag: 4, fr: 5, freitag: 5, sa: 6, samstag: 6 };
+/**
+ * Starttag aus dem Text („ab Donnerstag“, „ab Do.“, „Fr. + Sa.“, „Freitag und Samstag“, „Wochenend-Knüller“) -> { tag 1–6,
+ * wochenende } oder null. Nur eindeutige Formen – „Montag bis Samstag“ ist kein später Start.
+ */
+export function startHinweis(text) {
+  const t = String(text || '').toLowerCase();
+  if (!t) return null;
+  const wochenende = /wochenend|weekend/.test(t);
+  const frsa = /\b(?:fr|freitag)\.?\s*(?:\+|&|und|\/|-|–|bis)\s*(?:sa|samstag)\b/.test(t);
+  const ab = t.match(/\bab\s+(mo(?:ntag)?|di(?:enstag)?|mi(?:ttwoch)?|do(?:nnerstag)?|fr(?:eitag)?|sa(?:mstag)?)\b\.?/);
+  if (ab) { const tag = TAG_NR[ab[1]]; return { tag, wochenende: wochenende || tag >= 5 }; }
+  if (frsa) return { tag: 5, wochenende: true };
+  if (wochenende) return { tag: 5, wochenende: true };
+  return null;
+}
+
+const STD = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Berlin', hour: '2-digit', hourCycle: 'h23' });
+/** 00:00 Berliner Zeit des Kalendertags (YYYY-MM-DD) als ISO */
+export function berlinMitternacht(tag) {
+  const [y, mo, d] = String(tag).split('-').map(Number);
+  if (!y || !mo || !d) return null;
+  const roh = Date.UTC(y, mo - 1, d, 0, 0);
+  // Versatz Berlin (1 oder 2 h) an diesem Tag: was zeigt die Berliner Uhr um roh (UTC-Mitternacht)?
+  const h = Number(STD.formatToParts(new Date(roh)).find(x => x.type === 'hour')?.value);
+  return new Date(roh - h * 3600e3).toISOString();
+}
+const WT = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Berlin', weekday: 'short' });
+const WT_NR = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+/** erster Tag mit Wochentag `tag` (1 = Mo) ab dem Prospektbeginn `abIso` (Berlin), höchstens 6 Tage später -> ISO 00:00 */
+export function tagAb(abIso, tag) {
+  const t0 = Date.parse(abIso || '');
+  if (!Number.isFinite(t0) || !(tag >= 1 && tag <= 6)) return null;
+  for (let i = 0; i < 7; i++) {
+    const t = t0 + i * 864e5 + 3 * 3600e3; // +3 h: sicher im richtigen Berliner Tag
+    if (WT_NR[WT.format(new Date(t))] === tag) return i === 0 ? null : berlinMitternacht(berlinTag(new Date(t).toISOString()));
+  }
+  return null;
+}
 
 const APP = /\bapp\b|\bcard\b|lidl\s*plus|payback|kundenkarte|mit karte|nur mit (?:der )?(?:app|karte)|coupon|deutschland\s*card|rewe[\s-]*bonus|bonus[\s-]*guthaben|mitglied/i;
 // dieselben Kennzeichen im Beschreibungstext (dort ohne das allgemeine „app“/„card“, die in Produktnamen vorkommen)
@@ -74,10 +137,17 @@ export function knallerAngebot(o, { markt, seite, region, jetztMs, opt }) {
   if (preis == null) return { grund: 'ohne Preis' };
   const bis = kaufdaZeit(o.validUntil), ab = kaufdaZeit(o.validFrom);
   if (bis && Date.parse(bis) < jetztMs) return { grund: 'abgelaufen' };
-  const vorher = typeof p.secondaryPrice === 'number' && p.secondaryPrice > preis ? p.secondaryPrice : null;
-  if (vorher == null) return { grund: 'ohne Vergleichspreis' };
-  const pct = rabattProzent(preis, vorher);
-  if (pct > opt.maxProzent) return { grund: 'Rabatt unplausibel' };
+  let vorher = typeof p.secondaryPrice === 'number' && p.secondaryPrice > preis ? p.secondaryPrice : null;
+  let artText = null;
+  if (vorher == null) {
+    // „statt 1,99“ im Text des Prospekts = Vergleichspreis des Händlers selbst
+    const m = /\bstatt\s*(?:bisher\s*)?(\d{1,3}(?:[.,]\d{1,2})?)\s*(?:€|eur)?/i.exec(`${o.description || ''} ${p.description || ''}`);
+    const v = m ? parsePrice(m[1]) : null;
+    if (v && v > preis) { vorher = v; artText = 'streich'; }
+  }
+  if (vorher == null && !opt.ohneVergleich) return { grund: 'ohne Vergleichspreis' };
+  const pct = vorher != null ? rabattProzent(preis, vorher) : null;
+  if (pct != null && pct > opt.maxProzent) return { grund: 'Rabatt unplausibel' };
   const abPreis = p.priceRange === true;
   if (abPreis && !opt.abPreise) return { grund: 'ab-Preis' };
   const marke = String(o.brand || '').trim();
@@ -89,18 +159,24 @@ export function knallerAngebot(o, { markt, seite, region, jetztMs, opt }) {
   const bedingung = kurzText(bedingungen.filter(c => !APP.test(c)).join(', '), 60);
   const info = kurzText([String(o.description || '').split('\n').map(s => s.trim()).filter(Boolean).join(' '), p.priceByBaseUnit].filter(Boolean).join(' · '), 90);
   const bilder = o.offerImages?.url || {};
+  // Starttag später als der Prospekt („ab Donnerstag“, „Wochenend-Knüller“): aus Titel, Beschreibung, Bedingungen, Bildtitel
+  const hinweis = startHinweis([o.title, o.description, p.description, ...bedingungen, o.offerImages?.metaData?.imageTitle].filter(Boolean).join(' · '));
+  const abText = hinweis ? tagAb(ab, hinweis.tag) : null;
   return {
     angebot: {
       id: o.id ? `kd:${o.id}` : `kd:${schluessel(markt, titel, preis, bis)}`,
       // Art nur, wenn die Quelle sie sagt: true = UVP, false = Streichpreis; fehlt das Feld -> 'unbekannt' (kein Goldrahmen)
-      markt, titel, info, preis: round(preis), vorher: round(vorher), vorherArt: p.secondaryPriceIsUVP === true ? 'uvp' : p.secondaryPriceIsUVP === false ? 'streich' : 'unbekannt', pct,
+      markt, titel, info, preis: round(preis), vorher: vorher != null ? round(vorher) : null,
+      vorherArt: vorher == null ? null : artText || (p.secondaryPriceIsUVP === true ? 'uvp' : p.secondaryPriceIsUVP === false ? 'streich' : 'unbekannt'), pct,
+      ...(artText ? { vorherQuelle: 'Prospekttext „statt“' } : {}),
       ...(abPreis ? { abPreis: true } : {}),
       app, bedingung,
       bild: httpsOder(bilder.normal) || httpsOder(bilder.thumbnail) || httpsOder(bilder.large) || null,
       ...(typeof o.parentContent?.id === 'string' && o.parentContent.id ? { prospekt: o.parentContent.id.slice(0, 40) } : {}),
       _marke: norm(marke), _bildDatei: bildDatei(bilder.large || bilder.normal || bilder.thumbnail),
       link: httpsOder(seite),
-      gueltigAb: ab, gueltigBis: bis,
+      gueltigAb: abText && (!ab || Date.parse(abText) > Date.parse(ab)) ? abText : ab, gueltigBis: bis,
+      ...(abText ? { abQuelle: 'text' } : {}), ...(hinweis?.wochenende ? { wochenende: true } : {}),
       regional: true, region,
       bereich: bereichVon(o),
     },
@@ -117,7 +193,52 @@ export function standortVon(liste, orte) {
 
 const ist404 = e => /HTTP 404|HTTP 410/.test(String(e?.message || e));
 
-export default async function knaller({ holeText, cfg, jetzt = new Date(), zustand = {}, vorherDatei = null, env = {} }) {
+/** Schlüssel desselben Produkts im selben Markt (für den Vergleichspreis aus früheren Läufen) */
+export const produktKey = (markt, titel) => `${markt}|${norm(titel).replace(/[^a-z0-9]+/g, ' ').trim().slice(0, 60)}`;
+
+/**
+ * Vergleichspreis aus früheren Läufen (zustand.knaller.preise): derselbe Markt, dasselbe Produkt (Titel), dort einmal mit
+ * Vergleichspreis aus dem Prospekt gesehen (Streichpreis oder UVP) -> { vorher, art, tag } oder null. Nur wenn höher als jetzt.
+ */
+export function verlaufVergleich(preise, markt, titel, preis) {
+  const v = preise?.[produktKey(markt, titel)];
+  return v && typeof v.v === 'number' && v.v > preis ? v : null;
+}
+
+/** Vergleichspreise dieses Laufs merken (nur echte aus dem Prospekt), alte nach verlaufTage weg, höchstens 3000 */
+export function merkeVergleich(zk, angebote, jetztMs, tage) {
+  const p = (zk.preise ||= {});
+  const tag = berlinTag(new Date(jetztMs).toISOString());
+  for (const a of angebote) {
+    if (!a || a.vorher == null || !['streich', 'uvp', 'unbekannt'].includes(a.vorherArt)) continue;
+    p[produktKey(a.markt, a.titel)] = { v: a.vorher, a: a.vorherArt, t: tag };
+  }
+  const grenze = berlinTag(new Date(jetztMs - tage * 864e5).toISOString());
+  for (const [k, v] of Object.entries(p)) if (!v || !v.t || v.t < grenze) delete p[k];
+  const keys = Object.keys(p);
+  if (keys.length > 3000) for (const k of keys.sort((a, b) => (p[a].t < p[b].t ? -1 : 1)).slice(0, keys.length - 3000)) delete p[k];
+}
+
+/** marktguru-Antwort -> [{ markt, preis, marke, produkt, ab, bis }] (nur Gültigkeit je Angebot, kein Vorher-Preis bei marktguru) */
+export function marktguruGueltig(json, maerkte) {
+  const out = [];
+  for (const r of Array.isArray(json?.results) ? json.results : []) {
+    const markt = marktVon(r?.advertisers?.[0]?.name || '', maerkte);
+    const g = Array.isArray(r?.validityDates) ? r.validityDates[0] : null;
+    if (!markt || typeof r.price !== 'number' || !g?.from) continue;
+    out.push({ markt, preis: r.price, marke: norm(r.brand?.name || ''), produkt: norm(r.product?.name || ''), ab: new Date(Date.parse(g.from)).toISOString(), bis: g.to ? new Date(Date.parse(g.to)).toISOString() : null });
+  }
+  return out;
+}
+/** passt ein marktguru-Angebot zu einem Knaller-Angebot? gleicher Markt, gleicher Preis, Marke oder erstes Produktwort im Titel */
+export function passtMarktguru(a, g) {
+  if (a.markt !== g.markt || Math.abs(a.preis - g.preis) > 0.005) return false;
+  const t = norm(a.titel);
+  const wort = g.produkt.split(/\s+/).find(w => w.length > 3);
+  return (!!g.marke && t.includes(g.marke)) || (!!wort && t.includes(wort));
+}
+
+export default async function knaller({ holeText, cfg, jetzt = new Date(), zustand = {}, vorherDatei = null }) {
   const m = { ...STANDARD, ...(cfg.module?.knaller || {}) };
   const maerkte = (Array.isArray(m.maerkte) ? m.maerkte : []).filter(x => x && x.id && x.kaufda);
   const jetztMs = new Date(jetzt).getTime();
@@ -132,7 +253,26 @@ export default async function knaller({ holeText, cfg, jetzt = new Date(), zusta
   const jeMarkt = {};
   const info = {};
   const leer = [];
+  // Prospekte der Orts-/Händlerseite je Markt (id -> { titel, ab, bis, seiten }), dazu gesehen = alle Angebote dieses Markts
+  const prospekte = {};
+  const gesehenIds = {};
+  const optOhne = { ...m, ohneVergleich: true };
   let okSeiten = 0;
+  // Doppel: dieselbe Aktion steht oft in mehreren parallelen (regionalen) Prospekten desselben Markts – mit anderer id und
+  // leicht anderem Titel („Knoppers Nussriegel oder Knoppers“ / „Knoppers Nussriegel“). Gleich ist dann: dasselbe Foto, oder
+  // Marke + erstes Titelwort + Preis + Vergleichspreis + Ende.
+  const doppel = {};
+  const nimm = (mkId, r) => {
+    const { _marke, _bildDatei, ...a } = r.angebot;
+    const g = (doppel[mkId] ||= new Set());
+    const wort = norm(a.titel).split(/\s+/).find(w => w.length > 2 && w !== _marke) || '';
+    const keys = [a.id, `t|${norm(a.titel)}|${a.preis}`, `m|${_marke}|${wort}|${a.preis}|${a.vorher}|${a.gueltigBis || ''}`];
+    if (_bildDatei) keys.push(`b|${_bildDatei}`);
+    if (keys.some(k => g.has(k))) return false;
+    for (const k of keys) g.add(k);
+    (jeMarkt[mkId] ||= []).push(a);
+    return true;
+  };
   for (const mk of maerkte) {
     const slug = kaufdaSlug(mk.kaufda);
     const pfad = String(m.geschaefte).replace('{slug}', slug);
@@ -201,75 +341,175 @@ export default async function knaller({ holeText, cfg, jetzt = new Date(), zusta
     const region = lokal ? seite.v.ort : seite.ort ? `bundesweit (${seite.ort})` : 'bundesweit';
     st.orte[mk.id] = lokal ? seite.v.ort : 'bundesweit';
     const link = (seite.url && /^https:\/\//.test(seite.url) ? seite.url : null) || seite.v.url;
-    info[mk.id] = { link, ort: region, lokal: lokal ? seite.v.ort : null, filiale };
-    // Doppel: dieselbe Aktion steht oft in mehreren parallelen (regionalen) Prospekten desselben Markts – mit anderer id und
-    // leicht anderem Titel („Knoppers Nussriegel oder Knoppers“ / „Knoppers Nussriegel“). Gleich ist dann: dasselbe Foto, oder
-    // Marke + erstes Titelwort + Preis + Vergleichspreis + Ende.
-    const liste = [], gesehen = new Set();
+    // Ort-Prospekt gilt für Döbeln (orte[0]) -> nicht „regional“; Nachbarstadt/bundesweit -> „in Döbeln prüfen“
+    const regional = !(lokal && gleichOrt(seite.v.ort, m.ort));
+    info[mk.id] = { link, ort: region, lokal: lokal ? seite.v.ort : null, filiale, gesamt: seite.gesamt ?? null, region, regional };
+    // nur Prospekte, deren Angebote hier gezählt werden dürfen: die der Orts-Seite (bundesweit: die der Berliner Seite)
+    prospekte[mk.id] = new Map((seite.prospekte || []).filter(p => !p.bis || Date.parse(p.bis) >= jetztMs).map(p => [p.id, p]));
+    gesehenIds[mk.id] = new Set();
+    jeMarkt[mk.id] = [];
     for (const o of seite.items) {
       if (marktVon(o.publisherName, maerkte) !== mk.id) continue;
-      const r = knallerAngebot(o, { markt: mk.id, seite: link, region, jetztMs, opt: m });
+      if (o.id) gesehenIds[mk.id].add(o.id);
+      const r = knallerAngebot(o, { markt: mk.id, seite: link, region, jetztMs, opt: optOhne });
       if (!r.angebot) continue;
-      const { _marke, _bildDatei, ...a } = r.angebot;
-      // Ort-Prospekt gilt für Döbeln (orte[0]) -> nicht „regional“; Nachbarstadt/bundesweit -> „in Döbeln prüfen“
-      a.regional = !(lokal && gleichOrt(seite.v.ort, m.ort));
-      const wort = norm(a.titel).split(/\s+/).find(w => w.length > 2 && w !== _marke) || '';
-      const keys = [a.id, `t|${norm(a.titel)}|${a.preis}`, `m|${_marke}|${wort}|${a.preis}|${a.vorher}|${a.gueltigBis || ''}`];
-      if (_bildDatei) keys.push(`b|${_bildDatei}`);
-      if (keys.some(k => gesehen.has(k))) continue;
-      for (const k of keys) gesehen.add(k);
-      liste.push(a);
+      r.angebot.regional = regional;
+      nimm(mk.id, r);
     }
-    st.seiten[mk.id] = liste.length;
-    jeMarkt[mk.id] = liste;
-  }
-  // SONDE (nur Probe-Zweig mv3-knaller, wird wieder entfernt): zusätzliche Seiten nur abrufen, damit der Roh-Mitschnitt sie hat
-  if (env?.ROH_DIR && Array.isArray(m.sonde)) {
-    let mgKeys = null;
-    for (const s of m.sonde) {
-      try {
-        if (s.mgStart) { const h = await holeText(s.mgStart, opts); const a = h.match(/"apiKey"\s*:\s*"([^"]+)"/), c = h.match(/"clientKey"\s*:\s*"([^"]+)"/); mgKeys = a && c ? { apiKey: a[1], clientKey: c[1] } : null; continue; }
-        if (s.mg) { if (mgKeys) await holeText(s.mg, { headers: { 'x-apikey': mgKeys.apiKey, 'x-clientkey': mgKeys.clientKey, accept: 'application/json' } }); continue; }
-        await holeText(s.url, s.url.endsWith('.txt') ? {} : opts);
-      } catch { /* nur Mitschnitt */ }
-    }
+    st.seiten[mk.id] = jeMarkt[mk.id].length;
   }
   if (leer.length >= 2 && leer.length > okSeiten) fehler.push(`Seiten ohne Angebote (${leer.join(', ')}) – Aufbau bei kaufDA geändert?`);
   if (maerkte.length && !okSeiten && fehler.length) throw new Error(`kaufDA: keine Händlerseite gelesen – ${fehler[0]}`);
+
+  // --- Stichwortseiten: die übrigen Angebote der Döbelner Prospekte (die Händlerseite zeigt nur 16) ------------------------
+  const merkworte = (Array.isArray(m.merkworte) ? m.merkworte : []).map(w => String(w || '').trim()).filter(Boolean);
+  const mitProspekt = Object.values(prospekte).some(p => p.size);
+  const sw = { gelesen: 0, leer: 0, fehler: 0, treffer: 0, begriffe: [] };
+  const mgListe = [];
+  if (mitProspekt && (m.stichworte?.length || merkworte.length)) {
+    const zeit = (zk.stichwortZeit ||= {});
+    const leerBis = (zk.stichwortLeer ||= {});
+    for (const [k, v] of Object.entries(leerBis)) if (!(Date.parse(v) > jetztMs)) delete leerBis[k];
+    const alle = [...new Set([...merkworte, ...(m.stichworte || [])].map(w => String(w).trim()).filter(Boolean))];
+    const offen = alle.filter(w => !leerBis[w]);
+    // Merkworte immer, sonst die am längsten nicht gelesenen zuerst
+    const reihe = [...offen.filter(w => merkworte.includes(w)),
+      ...offen.filter(w => !merkworte.includes(w)).sort((a, b) => (Date.parse(zeit[a] || 0) || 0) - (Date.parse(zeit[b] || 0) || 0)).slice(0, m.maxStichwortSeiten)];
+    let mgKeys = null, mgAus = !m.marktguru?.aktiv;
+    for (const w of reihe) {
+      const url = `${basis}${String(m.stichwortPfad).replace('{slug}', kaufdaSlug(w))}`;
+      let s = null;
+      try { st.abrufe++; s = leseKaufdaSeite(await holeText(url, opts)); } catch (e) {
+        if (ist404(e)) { sw.leer++; leerBis[w] = new Date(jetztMs + m.stichwortLeerTage * 864e5).toISOString(); } else sw.fehler++;
+      }
+      zeit[w] = new Date(jetztMs).toISOString();
+      if (s) {
+        sw.gelesen++;
+        let n = 0;
+        for (const o of s.items) {
+          const mkId = marktVon(o.publisherName, maerkte);
+          const pid = o.parentContent?.id;
+          if (!mkId || !pid || !prospekte[mkId]?.has(pid)) continue; // nur derselbe Prospekt wie für Döbeln
+          if (o.id) gesehenIds[mkId].add(o.id);
+          const i = info[mkId];
+          const r = knallerAngebot(o, { markt: mkId, seite: i.link, region: i.region, jetztMs, opt: optOhne });
+          if (!r.angebot) continue;
+          r.angebot.regional = i.regional;
+          r.angebot.fund = w.slice(0, 30);
+          if (nimm(mkId, r)) n++;
+        }
+        sw.treffer += n;
+        if (n) sw.begriffe.push(w);
+      }
+      // marktguru (PLZ): Starttag je Angebot – nur, wenn die Schlüssel der Web-Seite da sind (wie im Schnäppchen-Wecker)
+      if (!mgAus) {
+        try {
+          if (!mgKeys) {
+            const h = await holeText(m.marktguru.start, {});
+            const a = h.match(/"apiKey"\s*:\s*"([^"]+)"/), c = h.match(/"clientKey"\s*:\s*"([^"]+)"/);
+            if (!a || !c) throw new Error('marktguru: Schlüssel nicht gefunden');
+            mgKeys = { apiKey: a[1], clientKey: c[1] };
+          }
+          const u = `${m.marktguru.api}?as=web&limit=${m.marktguru.limit ?? 48}&offset=0&q=${encodeURIComponent(w)}&zipCode=${m.marktguru.plz || cfg.plz}`;
+          mgListe.push(...marktguruGueltig(JSON.parse(await holeText(u, { headers: { 'x-apikey': mgKeys.apiKey, 'x-clientkey': mgKeys.clientKey, accept: 'application/json' } })), maerkte));
+        } catch (e) { mgAus = true; hinweise.push(`marktguru (Starttag je Angebot): ${String(e?.message || e).slice(0, 80)}`); }
+      }
+    }
+    sw.begriffe = sw.begriffe.slice(0, 40);
+  }
+
+  // --- Sammeln über die Woche: noch gültige Angebote aus Döbelner Prospekten der letzten Datei bleiben ------------------
+  let ausPool = 0;
+  for (const a of Array.isArray(vorherDatei?.angebote) ? vorherDatei.angebote : []) {
+    if (!a || !a.markt || !prospekte[a.markt] || st.alt.includes(a.markt)) continue;
+    if (a.gueltigBis && Date.parse(a.gueltigBis) < jetztMs) continue;
+    if (!a.prospekt || !prospekte[a.markt].has(a.prospekt)) continue; // Prospekt nicht mehr genannt -> weg
+    if ((jeMarkt[a.markt] || []).some(b => b.id === a.id)) continue;
+    const { _marke, _bildDatei, ...rest } = a;
+    const g = (doppel[a.markt] ||= new Set());
+    if (g.has(a.id) || g.has(`t|${norm(a.titel)}|${a.preis}`)) continue;
+    g.add(a.id); g.add(`t|${norm(a.titel)}|${a.preis}`);
+    (jeMarkt[a.markt] ||= []).push(rest);
+    ausPool++;
+  }
+
+  // --- Gültigkeit je Angebot aus marktguru (Lidl/Netto/Penny/Kaufland: „ab Donnerstag“ steht dort je Angebot) -----------
+  let mgTreffer = 0;
+  for (const liste of Object.values(jeMarkt)) for (const a of liste) {
+    // passend und zeitlich überlappend (Lidl hat z. B. Chips 1,79 € diese Woche und andere 1,79-€-Chips ab nächster Woche)
+    const g = mgListe.find(x => passtMarktguru(a, x) && !(a.gueltigBis && Date.parse(x.ab) >= Date.parse(a.gueltigBis)) && !(a.gueltigAb && x.bis && Date.parse(x.bis) <= Date.parse(a.gueltigAb)));
+    if (!g) continue;
+    mgTreffer++;
+    if (!a.gueltigAb || Date.parse(g.ab) > Date.parse(a.gueltigAb) + 3600e3) { a.gueltigAb = g.ab; a.abQuelle = 'marktguru'; }
+    if (g.bis && (!a.gueltigBis || Date.parse(g.bis) < Date.parse(a.gueltigBis) - 3600e3)) a.gueltigBis = g.bis;
+  }
+
+  // --- Vergleichspreis fehlt: aus früheren Läufen (derselbe Markt, dasselbe Produkt) – sonst bleibt es ohne Rabatt -------
+  let geschaetzt = 0;
+  for (const liste of Object.values(jeMarkt)) for (const a of liste) {
+    if (a.vorher != null) continue;
+    const v = verlaufVergleich(zk.preise, a.markt, a.titel, a.preis);
+    if (!v) continue;
+    const pct = rabattProzent(a.preis, v.v);
+    if (pct > m.maxProzent) continue;
+    a.vorher = round(v.v); a.vorherArt = 'geschaetzt'; a.pct = pct;
+    a.vorherQuelle = `${v.a === 'uvp' ? 'UVP' : 'Vergleichspreis'} im Prospekt vom ${v.t.slice(8, 10)}.${v.t.slice(5, 7)}.`;
+    geschaetzt++;
+  }
+  merkeVergleich(zk, Object.values(jeMarkt).flat(), jetztMs, m.verlaufTage);
 
   // nur ab minProzent, je Markt höchstens maxJeMarkt (die größten zuerst)
   const angebote = [];
   const maerkteOut = {};
   for (const mk of maerkte) {
-    const l = (jeMarkt[mk.id] || []).filter(a => a.pct >= m.minProzent)
+    const alleM = (jeMarkt[mk.id] || []).filter(a => a.vorher != null && a.pct != null && !(a.gueltigBis && Date.parse(a.gueltigBis) < jetztMs));
+    const l = alleM.filter(a => a.pct >= m.minProzent)
       .sort((a, b) => b.pct - a.pct || (a.vorherArt === 'streich' ? -1 : 1) - (b.vorherArt === 'streich' ? -1 : 1) || a.preis - b.preis)
       .slice(0, m.maxJeMarkt);
     angebote.push(...l);
     const bis = l.map(a => a.gueltigBis).filter(Boolean).sort().pop() || null;
     const i = info[mk.id] || {};
+    const pr = prospekte[mk.id] ? [...prospekte[mk.id].values()] : [];
     maerkteOut[mk.id] = {
       name: mk.name, link: i.link || null, anzahl: l.length, ...(bis ? { prospektBis: bis } : {}), ...(st.alt.includes(mk.id) ? { alt: true } : {}),
       // Prospekt-Ort dieses Markts (Döbeln/Chemnitz/Leipzig oder „bundesweit (Berlin)“), nächste Filiale von Döbeln aus
       ...(i.ort ? { ort: i.ort } : {}), ...(i.keinMarkt ? { keinMarkt: true } : {}), ...(i.filiale ? { filiale: i.filiale } : {}),
+      // Vollständigkeit: kaufDA zählt gesamt Angebote in den Prospekten, gelesen = davon hier gesehen (Seite + Stichworte + Pool)
+      ...(i.gesamt != null ? { gesamt: i.gesamt } : {}),
+      ...(prospekte[mk.id] ? { gelesen: new Set([...(gesehenIds[mk.id] || []), ...(jeMarkt[mk.id] || []).map(a => String(a.id).replace(/^kd:/, ''))]).size, mitVergleich: alleM.length } : {}),
+      ...(pr.length ? { prospekte: pr.slice(0, 6).map(p => ({ titel: p.titel, ab: p.ab, bis: p.bis, ...(p.seiten ? { seiten: p.seiten } : {}), ...(p.bald ? { bald: true } : {}) })) } : {}),
     };
   }
   angebote.sort((a, b) => b.pct - a.pct || a.preis - b.preis);
+  // Merkworte (config): Treffer tragen „merkwort“ – die Seite zeigt sie als gemerkt, der Radar erinnert am ersten Tag
+  if (merkworte.length) {
+    const mw = merkworte.map(w => [w, norm(w)]);
+    for (const a of angebote) { const t = mw.find(([, n]) => n && norm(a.titel).includes(n)); if (t) a.merkwort = t[0].slice(0, 30); }
+    zk.merkRadar = angebote.filter(a => a.merkwort).slice(0, 30).map(a => ({ id: a.id, titel: a.titel, markt: a.markt, preis: a.preis, vorher: a.vorher, pct: a.pct, ab: a.gueltigAb, bis: a.gueltigBis }));
+  } else delete zk.merkRadar;
   st.anzahl = angebote.length;
   st.fehler = fehler.slice(0, 10);
   st.ok = !fehler.length;
+  if (sw.gelesen || sw.leer || sw.fehler) st.stichworte = sw;
+  if (ausPool) st.pool = ausPool;
+  if (geschaetzt) st.geschaetzt = geschaetzt;
+  if (mgListe.length || mgTreffer) st.marktguru = { angebote: mgListe.length, treffer: mgTreffer };
   if (hinweise.length) st.hinweise = hinweise.slice(0, 10);
   if (!st.alt.length) delete st.alt;
   if (!Object.keys(st.roh).length) delete st.roh;
   const standort = standortVon(Object.values(st.orte).filter(o => o !== 'kein Markt in der Nähe'), orte);
   if (!Object.keys(st.orte).length) delete st.orte;
   const stufen = (Array.isArray(m.stufen) && m.stufen.length ? m.stufen : STANDARD.stufen).filter(n => Number.isFinite(n));
-  const ab = Object.fromEntries(stufen.map(n => [n, angebote.filter(a => a.pct >= n).length]));
-  const nameVon = id => maerkte.find(x => x.id === id)?.name || id;
   const spaeter = a => !!(a.gueltigAb && Date.parse(a.gueltigAb) > jetztMs);
+  const jetztGilt = angebote.filter(a => !spaeter(a));
+  // Zähler je Stufe nur für das, was HEUTE gilt; was später kommt, steht extra (kommt)
+  const ab = Object.fromEntries(stufen.map(n => [n, jetztGilt.filter(a => a.pct >= n).length]));
+  const kommt = Object.fromEntries(stufen.map(n => [n, angebote.filter(a => spaeter(a) && a.pct >= n).length]));
+  const nameVon = id => maerkte.find(x => x.id === id)?.name || id;
   const kurz = {
-    anzahl: angebote.length, ab,
+    anzahl: angebote.length, ab, kommt,
     // erst was jetzt gilt, dann was ab Montag/Donnerstag kommt (mit „ab“, damit die Start-Kachel „ab Mo“ sagen kann)
-    top: [...angebote.filter(a => !spaeter(a)), ...angebote.filter(spaeter)].slice(0, 3).map(a => ({ titel: a.titel, markt: nameVon(a.markt), pct: a.pct, preis: a.preis, vorherArt: a.vorherArt, ...(a.abPreis ? { abPreis: true } : {}), ...(a.app ? { app: true } : {}), ...(spaeter(a) ? { ab: a.gueltigAb } : {}) })),
+    top: [...jetztGilt, ...angebote.filter(spaeter)].slice(0, 3).map(a => ({ titel: a.titel, markt: nameVon(a.markt), pct: a.pct, preis: a.preis, vorherArt: a.vorherArt, ...(a.abPreis ? { abPreis: true } : {}), ...(a.app ? { app: true } : {}), ...(spaeter(a) ? { ab: a.gueltigAb } : {}) })),
   };
   const datei = {
     version: 1,
@@ -282,7 +522,7 @@ export default async function knaller({ holeText, cfg, jetzt = new Date(), zusta
     maerkte: maerkteOut,
     angebote,
     status: { kaufda: st },
-    hinweis: 'Prospekt-Ort je Markt in maerkte.<id>.ort (regional = nicht der Prospekt für Döbeln, dort prüfen). Rabatt nur mit Vergleichspreis aus dem Prospekt, abgerundet: vorherArt streich = Streichpreis, uvp = unverbindliche Preisempfehlung des Herstellers, unbekannt = Art nicht angegeben. abPreis = „ab“-Preis (bis zu). app = nur mit App/Karte. prospekt = Prospekt-id bei kaufDA.',
+    hinweis: 'Prospekt-Ort je Markt in maerkte.<id>.ort (regional = nicht der Prospekt für Döbeln, dort prüfen). Rabatt mit Vergleichspreis, abgerundet: vorherArt streich = Streichpreis im Prospekt, uvp = unverbindliche Preisempfehlung des Herstellers, unbekannt = Art nicht angegeben, geschaetzt = kein Vergleichspreis im Prospekt, sondern derselbe Artikel im selben Markt aus einem früheren Prospekt (vorherQuelle). abPreis = „ab“-Preis (bis zu). app = nur mit App/Karte. prospekt = Prospekt-id bei kaufDA. gueltigAb später als heute = kommt noch (abQuelle text/marktguru, wochenende = Fr/Sa-Angebot). maerkte.<id>.gesamt = Angebote in den Prospekten laut kaufDA, gelesen = davon gesehen.',
   };
   return { eintraege: [], fehler, hinweise, datei, kurz };
 }

@@ -8,6 +8,7 @@ import { readFile, appendFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { berlin } from './benachrichtigen.mjs';
+import { erinnerungFaellig } from './lib/merken.mjs';
 
 export const TOLERANZ_MS = 5 * 60e3; // ein Lauf darf bis zu 5 Min. früher kommen (Zeitpläne schwanken)
 // Scheitert das Senden der Zusammenfassung (ntfy weg), bleibt digestTag offen. Damit nicht jeder der vielen Starts einen
@@ -41,7 +42,10 @@ export function faelligkeit(cfg, zustand, jetzt = new Date()) {
   const versuch = Date.parse(zustand?.digestVersuch || '');
   const digest = !erstlauf && stunde >= (cfg.ntfy?.digestStunde ?? 18) && zustand?.digestTag !== tag
     && !(Number.isFinite(versuch) && jetztMs - versuch < DIGEST_PAUSE_MS);
-  return { module, digest, erstlauf, faellig: erstlauf || digest || module.length > 0, naechstes };
+  // gemerkter Wochen-Knaller gilt ab heute und ist noch nicht erinnert -> laufen (sonst käme die Erinnerung erst mit dem
+  // nächsten fälligen Modul)
+  const erinnerung = !erstlauf && erinnerungFaellig(cfg, zustand || {}, new Date(jetztMs));
+  return { module, digest, erstlauf, erinnerung, faellig: erstlauf || digest || erinnerung || module.length > 0, naechstes };
 }
 
 async function leseJson(pfad, fallback) { try { return JSON.parse(await readFile(pfad, 'utf8')); } catch { return fallback; } }
