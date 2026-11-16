@@ -1,3 +1,9 @@
+## 4.78.0 — Chor als Einzelstücke für deine DAW · 16.11.2026
+
+- **Neu: Chor als Einzelstücke** (Menü › Export › Audio · WAV, direkt unter „Nur Chor“, oder Chor-Blatt › „Als Einzelstücke speichern“): Jede Chor-Stimme kommt einzeln, aber nur die Stellen, an denen sie wirklich singt. Jedes Stück ist am Takt geschnitten, der Takt steht im Dateinamen (z. B. „Chor-Terz-oben-Takt05.wav“), alles kommt in einem ZIP. In deiner DAW legst du jedes Stück mit Raster genau auf diesen Takt. Mit „alle zusammen“ statt „je Stimme“ kommt der ganze Chor in einer Datei je Stelle.
+- **Hilfe „Gesang aus deiner DAW holen“** (im Export- und im Import-Blatt, auch in „Wo finde ich …?“): In 6 Schritten kommt dein Gesang aus der DAW in die App und der Chor als Einzelstücke zurück.
+Tests: Chor als Einzelstücke 37/37, auch in der Auslieferung (6 WAV + Liste, jedes Stück auf die Probe genau am Takt, alle Stücke zusammen = Chor-Export bis auf einen Rest unter −90 dB, Fortschritt und Abbrechen im Bild), Bedienung per Touch hochkant und quer 44/44, Chor-Blatt 77/78 (wie 4.77.0), Chor 82/82, Auswahl als Clip 109/109, Auslieferung: 12 Werksklänge bitgleich, Probe „Blöcke“ ALLES OK, 0 Seitenfehler, App nur 15 KB größer (+0,2 %). Gesamt-Regression gegen 4.77.0 (55 Tests): kein Rückschritt gefunden – 46 grün, was nicht grün war, zeigt 4.77.0 genauso oder es war nur eine Zeitgrenze unter Last.
+
 ## 4.77.0 — Erstes ▶ und Zerlegen schneller, Töne und Tempo genauer, App leichter
 
 - **Erstes ▶ leichter:** Beim ersten Tipp auf ▶ hat die App weniger Arbeit auf einmal, weil sie einiges schon vorher in kleinen Pausen vorbereitet. In der Probe wie auf einem Handy ist das bei ruhigem Gerät spürbar schneller. Am echten Handy ist es noch nicht nachgemessen. Klang und Noten sind genau wie vorher.
