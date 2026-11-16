@@ -6,13 +6,17 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import auftraege, { bewerte, feldVon, betrugPruefen, ohneKontakt, verguetungAusText, inEuro, FELD_NAME } from '../module/auftraege.mjs';
+import auftraege, { bewerte, feldVon, betrugPruefen, ohneKontakt, verguetungAusText, inEuro, FELD_NAME, agbSperre, welchesWort } from '../module/auftraege.mjs';
 import { leseRobots, regelnFuer, erlaubt, robotsErlaubt, agentAus } from '../lib/robots.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
 const F = join(HIER, 'fixtures', 'auftraege');
 const cfg = JSON.parse(await readFile(join(HIER, '..', '..', 'config.json'), 'utf8'));
 const m = cfg.module.auftraege;
+// Freelancer.com ist in der echten config AUS (Nutzungsbedingungen, agbVerbot). Die Regeln für Freelancer-Antworten werden
+// trotzdem geprüft – mit einer Test-config, in der die Quellen „erlaubnis: true“ hätten (registrierte App mit Erlaubnis).
+const cfgFL = structuredClone(cfg);
+for (const q of cfgFL.module.auftraege.quellen) if (q.art === 'freelancer') q.erlaubnis = true;
 const JETZT = new Date('2026-11-16T10:00:00Z');
 
 const KARTE = [
@@ -29,7 +33,7 @@ function abruf(karte = KARTE, abrufe = []) {
     return readFile(join(F, t[1]), 'utf8');
   };
 }
-const lauf = async (karte, zustand = {}, c = cfg) => { const abrufe = []; const r = await auftraege({ holeText: abruf(karte, abrufe), cfg: c, jetzt: JETZT, zustand }); return { ...r, abrufe, zustand }; };
+const lauf = async (karte, zustand = {}, c = cfgFL) => { const abrufe = []; const r = await auftraege({ holeText: abruf(karte, abrufe), cfg: c, jetzt: JETZT, zustand }); return { ...r, abrufe, zustand }; };
 
 test('robots.txt: längste Regel gewinnt, Allow bei Gleichstand, *, $, eigene Gruppe vor *', () => {
   const g = leseRobots('User-agent: *\nDisallow: /api/\nAllow: /api/projects/\nDisallow: /*.pdf$\n\nUser-agent: vorteils-radar\nUser-agent: other\nDisallow: /privat\n');
@@ -245,7 +249,7 @@ test('Doppelte mit Zähler/Zeitstempel im Titel raus, nur Deutsch/Englisch, kaum
   const projekte = [pr(1, 'Learn VirtualDJ Mixing Online -- 3'), pr(2, 'Learn VirtualDJ Mixing Online -- 4'), pr(3, 'Learn VirtualDJ Mixing Online -- 5'),
     pr(4, 'Jepretan Alam Gunung Langit Cerah', { language: 'id' }), pr(5, 'Tiny Reels Edit', { budget: { minimum: 600, maximum: 700 }, currency: { code: 'INR' } }), pr(6, 'Normal Reels Edit')];
   const c = structuredClone(cfg); c.module.auftraege.robotsPruefen = false;
-  c.module.auftraege.quellen = [{ art: 'freelancer', name: 'Test', feld: 'bildvideo', jobs: [688] }];
+  c.module.auftraege.quellen = [{ art: 'freelancer', name: 'Test', feld: 'bildvideo', jobs: [688], erlaubnis: true }];
   const r = await auftraege({ holeText: async () => JSON.stringify({ status: 'success', result: { projects: projekte } }), cfg: c, jetzt: JETZT, zustand: {} });
   const titel = r.eintraege.filter(e => !e.extra.fundort).map(e => e.titel);
   assert.equal(titel.filter(t => /VirtualDJ/.test(t)).length, 1, 'Zähler-Duplikate zusammengefasst');
@@ -275,4 +279,110 @@ test('Passt nicht (echter Lauf 16.11.2026): Kamera-Auftritt, Vor-Ort-Fotos woand
 
 test('Gesuche + fertige Suchen passen in die 40 Einträge je Bereich (scan/main.mjs) – keine Suche fällt weg', () => {
   assert.ok((m.maxEintraege ?? 30) + (m.suchLinks || []).length <= 40, `${m.maxEintraege} + ${m.suchLinks.length} > 40`);
+});
+
+// ---- Prüfbericht 16.11.2026 (Zweig mv5-gesuche, Stand 856d88ab) ----------------------------------------------------------
+
+test('Befund 1: Freelancer.com – AGB verbieten automatisches Lesen -> kein einziger Abruf (auch keine robots.txt), nur Such-Links', async () => {
+  const abrufe = [];
+  const r = await auftraege({ holeText: abruf(KARTE, abrufe), cfg, jetzt: JETZT, zustand: {} });
+  assert.ok(!abrufe.some(u => /freelancer\.com/.test(u)), `Abruf trotz AGB-Verbot: ${abrufe.filter(u => /freelancer/.test(u)).join(' ')}`);
+  assert.equal(r.hinweise.filter(h => /Nutzungsbedingungen/.test(h) && /nur Such-Link/.test(h)).length, m.quellen.filter(q => q.art === 'freelancer').length);
+  assert.ok(r.eintraege.some(e => e.quelle === 'Hacker News: Seeking freelancer'), 'erlaubte Quellen laufen weiter');
+  assert.ok(!r.eintraege.some(e => !e.extra.fundort && /freelancer\.com/.test(e.link)), 'kein Freelancer-Treffer ohne Abruf');
+  assert.deepEqual(r.fehler, []);
+  // fertige Suchen: je Feld eine Freelancer-Suche (nur Link), alle Suchen passen in die 40 je Bereich
+  const fl = r.eintraege.filter(e => e.extra.fundort && e.quelle === 'Freelancer');
+  assert.deepEqual(new Set(fl.map(e => e.extra.feld)), new Set(['unterricht', 'ki', 'bildvideo']));
+  for (const e of fl) assert.match(e.link, /^https:\/\/www\.freelancer\.com\/search\/projects\?q=/);
+  // Regel selbst
+  assert.match(agbSperre('https://www.freelancer.com/api/projects/0.1/projects/active/', m), /Nutzungsbedingungen/);
+  assert.match(agbSperre('https://freelancer.com/x', m), /Nutzungsbedingungen/);
+  assert.equal(agbSperre('https://www.freelancer.com/api/', m, { erlaubnis: true }), null, 'nur mit schriftlicher Erlaubnis');
+  assert.equal(agbSperre('https://hnrss.org/whoishiring/freelance', m), null);
+  assert.equal(agbSperre('https://notfreelancer.com/x', m), null, 'nur der Host selbst und Unter-Hosts');
+});
+
+test('Befund 5: robots.txt wird vor dem ERSTEN Abruf eines Hosts geholt (auch vor der Fähigkeits-Abfrage)', async () => {
+  const r = await lauf();
+  const fl = r.abrufe.filter(u => /freelancer\.com/.test(u));
+  assert.match(fl[0], /freelancer\.com\/robots\.txt$/, fl.slice(0, 2).join(' '));
+  for (const h of ['hnrss.org', 'service.bund.de']) assert.match(r.abrufe.find(u => u.includes(h)), /robots\.txt$/, h);
+  // robots verbietet -> auch die Fähigkeits-Abfrage unterbleibt
+  const r2 = await lauf([['freelancer.com/robots.txt', 'robots-verbot.txt'], ...KARTE]);
+  assert.ok(!r2.abrufe.some(u => /freelancer\.com\/api/.test(u)), r2.abrufe.join(' '));
+});
+
+test('Befund 2: „allein machbar“ – vor Ort ohne Stadt raus, Rechtsgutachten/Dreh/Profiltext/fremdsprachige Lieder raus, Mix-Automation ≠ KI', async () => {
+  const basis = { time_submitted: Date.parse('2026-11-16T08:00:00Z') / 1000, budget: { minimum: 250, maximum: 750 }, currency: { code: 'USD' }, language: 'en', frontend_project_status: 'open' };
+  const pr = (id, title, description, jobs, extra = {}) => ({ id, seo_url: `x/p-${id}`, title, description, jobs: jobs.map(name => ({ name })), ...basis, ...extra });
+  const projekte = [
+    pr(1, 'US/EU News Monitoring Legal Analysis', 'News monitoring platform with AI summaries. I need a clear, written legal opinion that covers United States law and every EU member state.', ['Artificial Intelligence', 'Legal Analysis']),
+    pr(2, 'Cinematic Music Video Production', "I'm looking for a talented videographer to shoot an emotional and cinematic music video for my song. Video editing and color grading.", ['Video Production', 'Video Editing'], { local: true, location: { city: null } }),
+    pr(3, 'Craft My Video-Editing Profile', "I'm just getting started on Freelancer and want my profile to make a strong first impression. Rewrite or refine my bio. Premiere Pro, DaVinci Resolve.", ['Video Editing']),
+    pr(4, 'Animated Rhymes & Songs for Kids', "I'm launching a fresh Telugu-language kids channel and want original rhymes and songs. Music production, clean WAV masters.", ['Music Production', 'Audio Production']),
+    pr(5, 'Professional Editing of Hindi–Urdu Music Video', 'We are seeking a professional video editor to refine and complete a music video. Premiere Pro, color grading, subtitles.', ['Video Editing']),
+    pr(6, 'Wedding Reels Editing in Leipzig', 'Edit short wedding reels, Premiere Pro, simple cuts.', ['Video Editing'], { local: true, location: { city: 'Leipzig' } }),
+    pr(7, 'iPhone Wedding Reels Editing', 'Edit short wedding reels shot on iPhone, Premiere Pro, simple cuts.', ['Video Editing'], { local: true, location: { city: null } }),
+  ];
+  const c = structuredClone(cfg); c.module.auftraege.robotsPruefen = false; c.module.auftraege.maxEintraege = 99;
+  c.module.auftraege.quellen = [{ art: 'freelancer', name: 'Test', feld: 'bildvideo', jobs: [688], erlaubnis: true }];
+  const r = await auftraege({ holeText: async () => JSON.stringify({ status: 'success', result: { projects: projekte } }), cfg: c, jetzt: JETZT, zustand: {} });
+  const titel = r.eintraege.filter(e => !e.extra.fundort).map(e => e.titel);
+  for (const raus of ['US/EU News', 'Cinematic Music Video', 'Craft My Video-Editing', 'Animated Rhymes', 'iPhone Wedding Reels']) assert.ok(!titel.some(t => t.startsWith(raus)), raus);
+  assert.ok(titel.some(t => t.startsWith('Professional Editing of Hindi')), 'Schnitt eines Hindi-Musikvideos bleibt (Sprachwort allein reicht nicht)');
+  const leipzig = r.eintraege.find(e => e.titel.startsWith('Wedding Reels'));
+  assert.ok(leipzig && leipzig.extra.ort === 'Leipzig' && leipzig.extra.online === false, 'vor Ort MIT Stadt in der Nähe bleibt');
+  assert.equal(r.kurz.ort, 1, 'vor Ort ohne Stadt (iPhone Wedding Reels) zählt als „Ort“, nicht als online');
+  // Feld: „automation“ (Mix-Automation) macht keinen KI-Auftrag; „workflow automation“ schon
+  const fl = 'FL Studio producers to recreate tracks: arrangement, melodies, chords, bass, drums, sound design, automation and mix balance by ear';
+  assert.equal(feldVon(fl, m, null, 'Music Production · FL Studio · Audio Production', 'FL Studio Remake Producers'), 'bildvideo');
+  assert.equal(feldVon('Workflow automation for my small shop: orders to spreadsheet', m, null, '', 'Workflow automation for my shop'), 'ki');
+});
+
+test('Befund 3: Betrugsfilter – Plural, „mail you a check“, Gebühr für Schulung, Geld weiterleiten; Messenger-Kontakt = Warnung mit dem gefundenen Wort', () => {
+  const b = 'I need a short video edited for YouTube, simple cuts and subtitles.';
+  for (const t of [`${b} Ich schicke dir zwei Schecks.`, `${b} I will mail you a check to buy the equipment from our vendor.`, `${b} You must pay $50 for the training materials before we start.`,
+    `${b} Receive funds in your bank account and forward them.`, `${b} Payment by cheques only.`])
+    assert.ok(betrugPruefen(t, m).raus, t);
+  const warn = [[`${b} Contact me via Telegram for details.`, 'contact me via telegram'], [`${b} Add me on WhatsApp to discuss.`, 'add me on'],
+    [`${b} Bitte melde dich bei Telegram.`, 'melde dich bei telegram'], [`${b} Let's continue outside the platform.`, 'outside the platform'], [`${b} WhatsApp only please.`, 'whatsapp only']];
+  for (const [t, wort] of warn) assert.equal(betrugPruefen(t, m).warnung, `Vorsicht: „${wort}“ – nur über die Plattform schreiben, nie vorab zahlen`, t);
+  // echte Aufträge mit Messenger/„check“/„pay“ im Text bleiben ohne Warnung
+  for (const t of ['Build an AI chatbot on WhatsApp for my shop', 'Send alerts via Telegram when an order arrives', 'Piano lessons via Skype, 2x per week',
+    'Please check the reference video', 'You need to pay attention to detail', 'Export the files and forward them to my editor', 'Melde dich über die Plattform'])
+    assert.deepEqual(betrugPruefen(t, m), {}, t);
+  assert.equal(welchesWort('Payment by cheque', m.betrugWoerter), 'cheque');
+});
+
+test('Befund 4: Kontaktdaten auch im Freelancer-Titel und in versteckter Form raus', async () => {
+  for (const [ein, aus] of [['Kontakt: max(at)web(dot)de', 'Kontakt: [Mail]'], ['max [at] web [dot] de', '[Mail]'], ['max at web dot de', '[Mail]'],
+    ['skype: max.muster', 'skype [Name]'], ['discord maxi#1234', 'discord [Name]'], ['Telegram-ID: maxi_99', 'Telegram [Name]'],
+    ['Build a Telegram bot for my shop', 'Build a Telegram bot for my shop'], ['Bottom line: 3 videos', 'Bottom line: 3 videos'], ['Budget 2025 bis 2026, 3 Videos à 60 Sekunden', 'Budget 2025 bis 2026, 3 Videos à 60 Sekunden']])
+    assert.equal(ohneKontakt(ein), aus, ein);
+  const pr = { id: 1, seo_url: 'video-editing/kontakt', title: 'Video edit - call me +49 151 23456789 or max.muster@example.com', description: 'Short YouTube video edit, simple cuts and subtitles, Premiere Pro.',
+    time_submitted: Date.parse('2026-11-16T08:00:00Z') / 1000, frontend_project_status: 'open', currency: { code: 'USD' }, budget: { minimum: 100, maximum: 200 }, language: 'en', jobs: [{ name: 'Video Editing' }] };
+  const c = structuredClone(cfg); c.module.auftraege.robotsPruefen = false;
+  c.module.auftraege.quellen = [{ art: 'freelancer', name: 'Test', feld: 'bildvideo', jobs: [688], erlaubnis: true }];
+  const r = await auftraege({ holeText: async () => JSON.stringify({ status: 'success', result: { projects: [pr] } }), cfg: c, jetzt: JETZT, zustand: {} });
+  const e = r.eintraege.find(x => /kontakt/.test(x.link));
+  assert.equal(e.titel, 'Video edit - call me [Telefon] or [Mail]');
+  assert.ok(!/23456789|max\.muster/.test(JSON.stringify(r.eintraege)));
+});
+
+test('Ausschreibungen: Ort = Erfüllungsort, nicht die Vergabestelle (Wismut-Lose in Aue standen als „Chemnitz 35 km“)', async () => {
+  const item = (n, titel, desc) => `<item><title>${titel}</title><description>${desc}</description><pubDate>Sun, 15 Nov 2026 08:00:00 +0000</pubDate><link>https://www.service.bund.de/beispiel/a-${n}</link></item>`;
+  const xml = `<?xml version="1.0"?><rss version="2.0"><channel><title>A</title>${[
+    item(1, 'Neue Website mit Video für die Wismut GmbH', 'Erfüllungsort: 08280 Aue-Bad Schlema Vergabestelle: Wismut GmbH, Chemnitz Angebotsfrist: 16.12.2026'),
+    item(2, 'Neue Website mit Video für das Rathaus', 'Erfüllungsort: 04720 Döbeln Vergabestelle: Landratsamt Mittelsachsen, Freiberg Angebotsfrist: 16.12.2026'),
+  ].join('')}</channel></rss>`;
+  const c = structuredClone(cfg); c.module.auftraege.robotsPruefen = false;
+  c.module.auftraege.quellen = [{ art: 'rss', name: 'service.bund.de Ausschreibungen', url: 'https://www.service.bund.de/x.xml', ausschreibung: true }];
+  const r = await auftraege({ holeText: async () => xml, cfg: c, jetzt: JETZT, zustand: {} });
+  const t = r.eintraege.filter(e => !e.extra.fundort);
+  assert.ok(!t.some(e => /Wismut/.test(e.titel)), 'Erfüllungsort Aue (unbekannt/weit) -> nicht „hier“');
+  const doebeln = t.find(e => /Rathaus/.test(e.titel));
+  assert.ok(doebeln, t.map(e => e.titel).join(' | '));
+  assert.equal(doebeln.extra.ort, 'Döbeln');
+  assert.equal(doebeln.extra.allein, false);
 });

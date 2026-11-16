@@ -6,8 +6,11 @@
 // Drei Felder: unterricht („Unterricht geben“: Musik), ki („KI & Apps“), bildvideo („Bild & Video“, auch Musik für Videos).
 // Quellen (config module.auftraege.quellen), jede nur nach Prüfung ihrer robots.txt (lib/robots.mjs):
 //   - freelancer: öffentliche Projekt-API von Freelancer.com (JSON, ohne Konto) – Fähigkeiten als Zahl oder Name; Namen
-//     löst einmal im Monat /projects/0.1/jobs/?job_names[]=… auf (Zustand quellen.freelancerJobs)
+//     löst einmal im Monat /projects/0.1/jobs/?job_names[]=… auf (Zustand quellen.freelancerJobs). AUS (Prüfer 16.11.2026):
+//     die Nutzungsbedingungen verbieten das automatische Lesen ohne schriftliche Erlaubnis -> config agbVerbot; nur mit
+//     erlaubnis: true an der Quelle (registrierte App mit Erlaubnis) wird wieder gelesen.
 //   - rss: beliebiger RSS-Feed (z. B. hnrss.org „Seeking freelancer“), optional nurMit = Wörter, die drinstehen müssen
+// Vor JEDEM Abruf (auch dem der robots.txt): Nutzungsbedingungen (config agbVerbot) – verboten = gar kein Abruf.
 // Plattformen ohne offenen Zugang (Kleinanzeigen, Upwork, Fiverr …) und Quellen, deren robots.txt es verbietet, stehen als
 // fertige Suchen in config suchLinks – sie erscheinen IMMER (Fundorte, extra.fundort).
 // Bewertung je Treffer (bewerte): passt (0–100, Xanders Können), aufwand (klein/mittel/groß), allein (machbar ja/nein),
@@ -29,8 +32,14 @@ const MAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 const TEL = /(?:\+|00)\d[\d\s/().-]{6,}\d|\b0\d{2,5}[\s/-]?\d{3,}[\s-]?\d{0,6}\b/g;
 const URL_ = /\bhttps?:\/\/[^\s,;)<>"]+|\bwww\.[^\s,;)<>"]+/gi;
 const HANDLE = /(^|\s)@[A-Za-z0-9_.]{2,}/g;
+// versteckte Mail-Adressen: „max(at)web(dot)de“, „max [at] web [dot] de“, „max at web dot de“, „max(at)web.de“ (Prüfer 16.11.2026)
+const AT = String.raw`\s*(?:\(at\)|\[at\]|\{at\}|\(ät\)|\[ät\])\s*`, DOT = String.raw`\s*(?:\(dot\)|\[dot\]|\{dot\}|\(punkt\)|\[punkt\]|\.)\s*`;
+const MAIL_VERSTECKT = new RegExp(String.raw`[A-Za-z0-9._%+-]+${AT}[A-Za-z0-9-]+(?:${DOT}[A-Za-z0-9-]+)*${DOT}[A-Za-z]{2,}\b|[A-Za-z0-9._%+-]+\s+at\s+[A-Za-z0-9-]+\s+dot\s+[A-Za-z]{2,}\b`, 'gi');
+// Messenger-Namen: „skype: max.muster“, „Telegram-ID = maxi“, „discord maxi#1234“ – „Telegram bot“ (Auftrag) bleibt stehen
+const MESSENGER = /\b(skype|discord|telegram|signal|whatsapp|wechat|snapchat|instagram|insta|kik|threema)([\s-]*(?:id|name|handle|user(?:name)?|nick))?\s*[:=]\s*@?[A-Za-z0-9_.#-]{2,}|\b(discord)\s+@?[A-Za-z0-9_.]{2,}#\d{4}\b/gi;
 /** Kontaktdaten raus (Xander-Regel: keine Kontaktdaten speichern – der Link zur Anzeige reicht) */
-export const ohneKontakt = s => String(s ?? '').replace(MAIL, '[Mail]').replace(URL_, '[Link]').replace(TEL, '[Telefon]').replace(HANDLE, '$1[Name]').replace(/\s+/g, ' ').trim();
+export const ohneKontakt = s => String(s ?? '').replace(MAIL, '[Mail]').replace(MAIL_VERSTECKT, '[Mail]').replace(URL_, '[Link]')
+  .replace(MESSENGER, (_, a, b, c) => `${a || c} [Name]`).replace(TEL, '[Telefon]').replace(HANDLE, '$1[Name]').replace(/\s+/g, ' ').trim();
 const klar = s => entities(entities(String(s ?? ''))).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 /** Titel ohne Zähler/Zeitstempel am Ende („Learn VirtualDJ Mixing Online -- 5“, „Promo Video - 15/11/2026 20:10 EST“) – für „doppelt“ */
 export const titelKern = s => String(s ?? '').replace(/\s*[-–—]+\s*\d{1,2}\/\d{1,2}\/\d{2,4}(\s+\d{1,2}:\d{2}(\s*[A-Z]{2,4})?)?\s*$/, '').replace(/\s*(--|[-–—#]|\()\s*\d{1,3}\)?\s*$/, '').trim();
@@ -74,13 +83,32 @@ export function verguetungAusText(text) {
   return { eur: inEuro(betrag, code), stunde, text: `${Math.round(betrag)} ${code === 'EUR' ? '€' : code}${stunde ? ' pro Std.' : ''}` };
 }
 
-/** Betrug? -> { raus: grund } | { warnung: grund } | {} */
+/** Welches Wort einer Wortliste („a|b|=c“-Gruppen) steht im Text? -> das gefundene Wort (ohne „=“) | null */
+export function welchesWort(text, gruppen = []) {
+  for (const g of gruppen) for (const alt of String(g).split('|')) if (alt.trim() && enthaelt(text, [alt])) return alt.trim().replace(/^=/, '');
+  return null;
+}
+
+/** Betrug? -> { raus: grund } | { warnung: grund } | {} – der Grund nennt das GEFUNDENE Wort (Prüfer 16.11.2026: nicht das
+ *  erste der Gruppe, sonst stand „contact me on whatsapp“ auch bei „outside the platform“) */
 export function betrugPruefen(text, w) {
   const t = String(text || '');
-  const raus = (w.betrugWoerter || []).find(x => enthaelt(t, [x]));
-  if (raus) return { raus: `Betrugsmuster (${String(raus).split('|')[0].replace(/^=/, '')})` };
-  const warn = (w.warnWoerter || []).find(x => enthaelt(t, [x]));
-  return warn ? { warnung: `Vorsicht: ${String(warn).split('|')[0].replace(/^=/, '')} – nur über die Plattform schreiben, nie vorab zahlen` } : {};
+  const raus = welchesWort(t, w.betrugWoerter || []);
+  if (raus) return { raus: `Betrugsmuster („${raus}“)` };
+  const warn = welchesWort(t, w.warnWoerter || []);
+  return warn ? { warnung: `Vorsicht: „${warn}“ – nur über die Plattform schreiben, nie vorab zahlen` } : {};
+}
+
+/**
+ * Nutzungsbedingungen verbieten das automatische Lesen? (config agbVerbot: [{ host, grund }]) -> Grund | null.
+ * Gilt vor JEDEM Abruf (auch robots.txt). Ausnahme nur mit erlaubnis: true an der Quelle (schriftliche Erlaubnis/registrierte App).
+ */
+export function agbSperre(url, m, q = {}) {
+  if (q?.erlaubnis === true) return null;
+  let host;
+  try { host = new URL(url).hostname.toLowerCase(); } catch { return null; }
+  const v = (m?.agbVerbot || []).find(x => x?.host && (host === x.host || host.endsWith(`.${x.host}`)));
+  return v ? (v.grund || 'Nutzungsbedingungen verbieten automatisches Lesen') : null;
 }
 
 /**
@@ -141,15 +169,18 @@ export const freelancerProjekteUrl = (ids, limit = 100) => `${FL}/projects/activ
 export const freelancerLink = seo => `https://www.freelancer.com/projects/${String(seo).replace(/^\/+/, '')}`;
 
 /** Fähigkeiten (Zahlen oder Namen) -> IDs; Namen einmal im Monat über die API auflösen (Zustand) */
-async function freelancerIds(holeText, jobs, zustand, jetztMs, hinweise) {
+async function freelancerIds(holeText, jobs, zustand, jetztMs, hinweise, pruefeRobots = async () => ({ ok: true })) {
   const ids = jobs.filter(j => Number.isInteger(j));
   const namen = jobs.filter(j => typeof j === 'string' && j.trim());
   if (!namen.length) return ids;
   const z = ((zustand.quellen ||= {}).freelancerJobs ||= { zeit: null, ids: {} });
   const fehlt = namen.filter(n => !(n in z.ids));
-  if (fehlt.length || !(jetztMs - Date.parse(z.zeit || 0) < 30 * 864e5)) {
+  // robots.txt VOR dem ersten Abruf (Prüfer 16.11.2026: die Namens-Abfrage lief vor der Prüfung); verboten -> nur Zahlen-IDs,
+  // den Hinweis gibt danach die Projekt-Abfrage
+  const url = freelancerJobsUrl(namen);
+  if ((fehlt.length || !(jetztMs - Date.parse(z.zeit || 0) < 30 * 864e5)) && (await pruefeRobots(url)).ok) {
     try {
-      const j = JSON.parse(await holeText(freelancerJobsUrl(namen), { headers: { accept: 'application/json' } }));
+      const j = JSON.parse(await holeText(url, { headers: { accept: 'application/json' } }));
       const liste = Array.isArray(j.result) ? j.result : Object.values(j.result || {});
       for (const n of namen) z.ids[n] = liste.find(x => norm(x?.name) === norm(n))?.id ?? null;
       z.zeit = new Date(jetztMs).toISOString();
@@ -165,7 +196,10 @@ function ausFreelancer(pr, q) {
   const city = pr.local && pr.location?.city ? pr.location.city : '';
   const b = pr.budget || {};
   return {
-    titel: klar(pr.title), text, tags: jobs.join(' · '), auszugText: text, link: freelancerLink(pr.seo_url),
+    // Titel ohne Kontaktdaten (Prüfer 16.11.2026: Telefon/Mail im Titel landeten sonst im öffentlichen Daten-Zweig)
+    titel: ohneKontakt(klar(pr.title)), text,
+    // „local“ ohne Stadt: vor Ort irgendwo – die API ohne Konto liefert die Stadt nie (echter Lauf: city=null bei allen 23)
+    vorOrtOhneStadt: !!pr.local && !city, tags: jobs.join(' · '), auszugText: text, link: freelancerLink(pr.seo_url),
     datum: new Date(Number(pr.time_submitted || pr.submitdate) * 1000).toISOString(), quelle: 'Freelancer', art: 'freelancer', vorgabe: q.feld || null,
     budget: b.minimum != null || b.maximum != null ? { min: b.minimum ?? null, max: b.maximum ?? null, code: pr.currency?.code || 'USD', stunde: pr.type === 'hourly' } : null,
     gebote: pr.bid_stats?.bid_count ?? null, stadt: city, sprache: pr.language || null, upfront: !!pr.requires_upfront_funding,
@@ -186,7 +220,10 @@ function ausRss(it, q) {
     titel = satz.split(/(?<=[.!?])\s/)[0];
   }
   titel = kurz(titel, 120);
-  return { titel, text: roh, auszugText: roh, link: it.link, datum: it.datum, quelle: q.name || 'RSS', art: 'rss', vorgabe: q.feld || null, budget: null, gebote: null, stadt: '', ausschreibung: !!q.ausschreibung };
+  // Ausschreibungen (service.bund.de): Ort = „Erfüllungsort: 09111 Chemnitz“ – nicht die Vergabestelle (Prüfer 16.11.2026:
+  // Wismut-Lose in Aue/Ronneburg standen als „Chemnitz 35 km“ da, weil die Vergabestelle in Chemnitz sitzt)
+  const erfuellungsort = q.ausschreibung ? (/Erf(?:ü|ue)llungsort:\s*(.+?)\s*(?:Vergabestelle:|Angebotsfrist:|Ver(?:ö|oe)ffentlichungsende:|$)/i.exec(roh)?.[1] ?? null) : null;
+  return { titel, text: roh, auszugText: roh, link: it.link, datum: it.datum, quelle: q.name || 'RSS', art: 'rss', vorgabe: q.feld || null, budget: null, gebote: null, stadt: '', ausschreibung: !!q.ausschreibung, erfuellungsort };
 }
 
 const SO = {
@@ -213,8 +250,10 @@ export default async function auftraege({ holeText, cfg, jetzt = new Date(), zus
 
   for (const q of quellen) {
     try {
+      const agb = agbSperre(q.art === 'freelancer' ? FL : q.url, m, q);
+      if (agb) { hinweise.push(`Nebenverdienst: ${q.name || q.art} nicht gelesen – ${agb} (nur Such-Link)`); continue; }
       if (q.art === 'freelancer') {
-        const ids = await freelancerIds(holeText, [].concat(q.jobs || []), zustand, jetztMs, hinweise);
+        const ids = await freelancerIds(holeText, [].concat(q.jobs || []), zustand, jetztMs, hinweise, pruefeRobots);
         if (!ids.length) { hinweise.push(`Nebenverdienst: ${q.name}: keine Fähigkeit gefunden`); continue; }
         const url = freelancerProjekteUrl(ids, q.limit ?? 100);
         const r = await pruefeRobots(url);
@@ -253,8 +292,9 @@ export default async function auftraege({ holeText, cfg, jetzt = new Date(), zus
     if (!feld) { zahlen.passtNicht++; continue; }
     // Ort: Feld der Quelle (Freelancer „local“) > Text; vor Ort weiter als vorOrtKm (ohne „online/remote“) raus
     // Freelancer: nur Aufträge mit „local“ + Stadt sind vor Ort (eine Stadt im Text eines Online-Auftrags zählt nicht)
+    if (f.vorOrtOhneStadt) { zahlen.ort++; continue; } // vor Ort, aber wo? (Freelancer ohne Konto) -> nicht „online“
     if (f.stadt && !ortNach(f.stadt)) { zahlen.ort++; continue; } // vor Ort in einer Stadt, die nicht in der Nähe liegt
-    const o = f.art === 'freelancer' ? (f.stadt ? ortNach(f.stadt) : null) : ortAus(f.titel) || ortAus(f.text);
+    const o = f.art === 'freelancer' ? (f.stadt ? ortNach(f.stadt) : null) : f.erfuellungsort ? ortAus(f.erfuellungsort) : ortAus(f.titel) || ortAus(f.text);
     const vorOrt = !!o && (f.art === 'freelancer' || !istOnline(text));
     if (vorOrt && o.km > (m.vorOrtKm ?? 80)) { zahlen.ort++; continue; }
     if (f.ausschreibung && !vorOrt) { zahlen.ort++; continue; } // Ausschreibungen nur aus der Gegend (ohne Ort = nicht hier)

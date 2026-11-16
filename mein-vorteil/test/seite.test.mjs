@@ -1644,6 +1644,9 @@ test('Stand: „vor 22 Min.“ ohne doppelten Punkt; nach 3 Tagen rot ohne „l�
 async function nebenDaten() {
   const { default: auftraege } = await import('../../vorteile/scan/module/auftraege.mjs');
   const cfg = JSON.parse(readFileSync(join(WURZEL, 'vorteile', 'config.json'), 'utf8'));
+  // Freelancer.com ist in der echten config aus (Nutzungsbedingungen, agbVerbot – Prüfung 16.11.2026); für die Karten-Tests der
+  // Seite liefern die Fixtures trotzdem Freelancer-Antworten, als hätte die Quelle eine Erlaubnis
+  for (const q of cfg.module.auftraege.quellen) if (q.art === 'freelancer') q.erlaubnis = true;
   const F = join(WURZEL, 'vorteile', 'scan', 'test', 'fixtures', 'auftraege');
   const karte = [['robots.txt', 'robots-erlaubt.txt'], ['jobs/?job_names', 'freelancer-jobs.json'], ['jobs%5B%5D=44&', 'freelancer-ki.json'], ['jobs%5B%5D=688&', 'freelancer-bildvideo.json'],
     ['jobs%5B%5D=3501&', 'freelancer-unterricht.json'], ['hnrss.org/whoishiring', 'hnrss-freelance.xml'], ['RSSGenerator_Ausschreibungen', 'bund-ausschreibungen.xml']];
