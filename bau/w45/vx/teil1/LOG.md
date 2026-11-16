@@ -5,3 +5,5 @@
 23:53 Fixes: Teste Streifen bei 13 px (Chrome-Touch-Anpassung zum Regler), spk11Seg Pegel jede 16. Probe; Lauf 3 Größen, Last 4.33 4.30 3.28
 23:56 Streifen greift keine Loop-Klammer mehr; Pegel jede 32. Probe; Long-Task-Fenster im Test. Last 3.09 3.98 3.34
 23:58 mess/ (Demo-Stems) aus fokus1 kopiert, spk2-loop-test wird am Ende von Strom B wiederholt. Last 12.78 6.67 4.37
+00:00 teil1Sync: Neu-Zuschnitt nur noch über den ResizeObserver (spart 1 volles Neuzeichnen je Umschalten). Last 13.74 8.76 5.34
+00:00 Regression läuft (spk11 41/0, fokus1-kern 26/0, imp1 ALLE OK), NOTES-Entwurf. Last 12.32 8.87 5.48

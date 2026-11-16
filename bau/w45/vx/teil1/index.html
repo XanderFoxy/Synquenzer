@@ -108007,7 +108007,7 @@ function teil1Sync(U) {
   if (!U || !U.meta || !U.sh || !SPK1.doc) return;
   const tl = teil1Of(U), on = !!tl, g = U.meta.grid || {};
   if (tl) { const k = teil1Key(U); if (!SPK11.ana.has(k)) SPK11.ana.set(k, teil1T(U)); }
-  if (U.sh.classList.contains('spk13-tl') !== on) { teil1Css(); U.sh.classList.toggle('spk13-tl', on); if (!on) { U.tl1 = []; U.ttl.lastChild.textContent = U.meta.name || ''; } if (SPK1.open) { spk1Size(U); spk1Dirty(U, 'all'); } }
+  if (U.sh.classList.contains('spk13-tl') !== on) { teil1Css(); U.sh.classList.toggle('spk13-tl', on); if (!on) { U.tl1 = []; U.ttl.lastChild.textContent = U.meta.name || ''; } if (SPK1.open && !U.ro) { spk1Size(U); spk1Dirty(U, 'all'); } }   // Neu-Zuschnitt macht der ResizeObserver auf mn (sonst zweimal ganz neu zeichnen)
   if (!on && g.from === 'imp1' && !Array.isArray(g.teile) && !TEIL1.bg.has(SPK1.doc)) teil1Bg(U);
 }
 // Alte Dokumente ohne Teile: einmal je Dokument im Hintergrund erkennen (U.busy bleibt frei, Dokumentwechsel = still verwerfen)
