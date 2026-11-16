@@ -38,16 +38,19 @@ Test: `node impk-test.mjs <index> <basis>`. Sonden: `lead-ons.mjs` (Einsätze), 
 ## Änderungen (nur in eigenen Blöcken + 3 einzeilige Haken mit „IMPK“)
 Diff: +48/−2 Zeilen, +4 440 Byte. `diff basis.html (index ohne IMPK-Blöcke)` = genau die 3 Haken-Zeilen.
 - Block 1 `IMPK-BEGIN … IMPK-END` **in imp1Core** (läuft damit auch im Worker, `imp1Core.toString()`), 23 Zeilen: `impkPeaks(o, fps, fe)` =
-  `peaks` + (a) Spitze mit fallendem Pegel (Mittel 40 ms danach < ½ × 40 ms davor, aus `fe`) ist ein Ausklang: zählt nicht und sperrt nichts;
+  `peaks` + (a) Spitze mit fallendem Pegel (Mittel 40 ms danach < ½ × 40 ms davor, aus `fe`), **auf die binnen 100 ms eine stärkere Spitze folgt**,
+  ist ein Ausklang: zählt nicht und sperrt nichts (Nachbesserung nach Prüfung, siehe „Prüfung“; vorher ohne die Bedingung „stärkere Spitze folgt“);
   (b) Lage per Parabel zwischen den Rahmen (±½ Rahmen). Haken: `const ons = impkPeaks(on, fps, fe);` (vorher `peaks(on, fps)`). `ons` benutzt
   nur der Gesang-Weg (Tempo-Suche, Feinsuche, Phase) – Mischungen/Bandaufnahmen rechnen bitgleich (imp2-node: alle Mix-Fälle zahlengleich).
-- Block 2 vor `imp1Html`, 9 Zeilen: `impkAsk(c)` – gewähltes Tempo zuerst, dann die übrigen Kandidaten (erkannt, ½×, 2×), jeder ganze Wert
-  nur einmal. Im Ausgangszustand (gewählt = erkannt) entsteht genau die alte Frage. Haken in `imp1Html` (typeof-geschützt).
+- Block 2 vor `imp1Html`, 10 Zeilen: `impkAsk(c)` – (nach Prüfung) dieselbe Vorschlagsliste wie die Basis (½×, 2× des erkannten Tempos); nur ein
+  Vorschlag, der auf das gewählte Tempo rundet, wird durch das erkannte Tempo ersetzt, jeder ganze Wert einmal. Ausgangszustand, +, −, Tippen: Frage
+  wie die Basis. Haken in `imp1Html` (typeof-geschützt).
 - Block 3 hinter `BEG1-END`, 13 Zeilen: `impkClickOff(t)` (kein Klick ab dem Schlusstaktstrich des laufenden Begleiter-Laufs, gleiche
   Bedingung wie `beg1Sched`: `run.stopB`, `run.id === R.runId`); Hülle um `applyCarrierChange` (wie BEG1 `songRecEnd` umhüllt): neu
   angeschlagene Töne, die eine Band-Stimme (log.src „beg“, gleiche Spur + Clip-Note) ersetzen, bekommen „beg“. Ohne offenen Begleiter
   ruft die Hülle nur das Original. Haken: erste Zeile in `click()` nach `UI.vvOff`.
-- Sichtbar: nichts an Aussehen/Bedienung; nur die falsche Frage „60 oder 60?“ heißt jetzt „60 oder 120?“ (#14 neu erkannt 120,3) bzw. „60 oder 121?“.
+- Sichtbar: nichts an Aussehen/Bedienung; nur Fragen mit zwei gleichen Knöpfen ändern sich: nach ½× „60 oder 60?“ → „60 oder 120?“ (#14 neu erkannt 120,3)
+  bzw. „60 oder 121?“, nach 2× bei 84 „168 oder 42 / 168?“ → „168 oder 42 / 84?“ (gleiche Zahl Knöpfe).
 
 ## Messung NACHHER
 1. Tempo: `lead-ons` 16 Einsätze, alle 12 Töne −4…−7 ms (übrig: 4 schwache Vibrato-Spitzen im Schlusston), 119,95 → **120**.
