@@ -127,6 +127,12 @@ test('Modul: eigene Datei, einmal am Tag OSM, Ausfall mit altem Stand = Hinweis 
   const r5 = await essen({ holeText: hole, cfg, jetzt: new Date('2026-11-18T10:00:00Z'), zustand, vorherDatei: vor, essenListen: { liste, seite } });
   assert.deepEqual(r5.datei.neu.map(x => x.name), ['Testhof Neu']);
   assert.deepEqual(r5.datei.weg.map(x => x.name), ['Alt-Lokal']);
+  // am nächsten Tag (gleicher OSM-Stand): „neu“ und „nicht mehr da“ bleiben stehen; ein leerer alter Stand zählt nicht
+  const r7 = await essen({ holeText: hole, cfg, jetzt: new Date('2026-11-19T10:00:00Z'), zustand, vorherDatei: r5.datei, essenListen: { liste, seite } });
+  assert.deepEqual(r7.datei.neu.map(x => x.name), ['Testhof Neu']);
+  assert.deepEqual(r7.datei.weg.map(x => x.name), ['Alt-Lokal']);
+  const r8 = await essen({ holeText: kaputt, cfg, jetzt, zustand: {}, vorherDatei: { ...r.datei, osmRoh: [] }, essenListen: { liste, seite } });
+  assert.ok(r8.fehler.some(f => /OpenStreetMap/.test(f)), 'leerer alter Stand = echter Fehler');
 });
 
 test('Push: nur gemerkte Lokale, nur am AYCE-Tag, nur tagsüber; ohne Merkliste nichts', async () => {

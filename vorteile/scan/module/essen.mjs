@@ -158,7 +158,8 @@ export default async function essen({ holeText, cfg, jetzt = new Date(), zustand
 
   // 1) OSM: höchstens alle osmStunden; sonst (oder bei Ausfall) der letzte Stand aus der alten Datei
   let osm = null, alt = false;
-  const faellig = !vorherDatei?.osmRoh || !zk.osmZeit || jetztMs - Date.parse(zk.osmZeit) >= m.osmStunden * 3600e3;
+  const altOsm = Array.isArray(vorherDatei?.osmRoh) && vorherDatei.osmRoh.length ? vorherDatei.osmRoh : null; // leer = kein Stand
+  const faellig = !altOsm || !zk.osmZeit || jetztMs - Date.parse(zk.osmZeit) >= m.osmStunden * 3600e3;
   if (faellig) {
     try {
       const url = `${m.overpass}?data=${encodeURIComponent(overpassAbfrage(z, radiusKm, kettenRadiusKm))}`;
@@ -167,25 +168,29 @@ export default async function essen({ holeText, cfg, jetzt = new Date(), zustand
       zk.osmZeit = new Date(jetztMs).toISOString();
     } catch (e) {
       // mit altem Stand nur ein Hinweis (die Seite zeigt den letzten Stand), ohne einen echten Fehler
-      (Array.isArray(vorherDatei?.osmRoh) ? hinweise : fehler).push(`OpenStreetMap: ${String(e.message || e).slice(0, 160)}`);
+      (altOsm ? hinweise : fehler).push(`OpenStreetMap: ${String(e.message || e).slice(0, 160)}`);
       osm = null;
     }
   }
-  if (!osm && Array.isArray(vorherDatei?.osmRoh)) { osm = vorherDatei.osmRoh; alt = faellig; }
+  if (!osm && altOsm) { osm = altOsm; alt = faellig; }
   osm ||= [];
 
   // 2) zusammenführen, Ketten, neu/verschwunden (nur wenn frisch abgefragt und es einen alten Stand gibt)
   const { lokale, weitere, nichtGefunden } = fuehreZusammen(liste, osm, { radiusKm, maxWeitere: m.maxWeitere });
   const ketten = naechsteFilialen(liste.ketten, osm);
   let neu = vorherDatei?.neu || [], weg = vorherDatei?.weg || [];
-  if (osm.length && !alt && faellig && Array.isArray(vorherDatei?.osmRoh)) {
-    const vorIds = new Set(vorherDatei.osmRoh.filter(x => x.km <= radiusKm).map(x => x.osm));
+  if (osm.length && !alt && faellig && altOsm) {
+    const vorIds = new Set(altOsm.filter(x => x.km <= radiusKm).map(x => x.osm));
     const jetztIds = new Set(osm.filter(x => x.km <= radiusKm).map(x => x.osm));
-    neu = osm.filter(x => x.km <= radiusKm && !vorIds.has(x.osm)).map(x => ({ osm: x.osm, name: x.name, ort: x.ort, km: x.km, seit: tag }));
-    weg = vorherDatei.osmRoh.filter(x => x.km <= radiusKm && !jetztIds.has(x.osm)).map(x => ({ osm: x.osm, name: x.name, ort: x.ort, km: x.km, seit: tag }));
+    const tage = t => (Date.parse(tag) - Date.parse(t)) / 864e5;
+    const frischNeu = osm.filter(x => x.km <= radiusKm && !vorIds.has(x.osm)).map(x => ({ osm: x.osm, name: x.name, ort: x.ort, km: x.km, seit: tag }));
+    const frischWeg = altOsm.filter(x => x.km <= radiusKm && !jetztIds.has(x.osm)).map(x => ({ osm: x.osm, name: x.name, ort: x.ort, km: x.km, seit: tag }));
+    // „neu“ bleibt 14 Tage stehen (solange das Lokal da ist), „nicht mehr da“ 30 Tage (solange es nicht wiederkommt)
+    neu = [...frischNeu, ...neu.filter(x => x.seit && tage(x.seit) <= 14 && jetztIds.has(x.osm) && !frischNeu.some(y => y.osm === x.osm))];
+    weg = [...frischWeg, ...weg.filter(x => x.seit && tage(x.seit) <= 30 && !jetztIds.has(x.osm) && !frischWeg.some(y => y.osm === x.osm))];
     // Rauschen vermeiden: ein Abruf, der fast alles „neu“ meldet, ist ein Abfrage-Wechsel, kein Neubau
-    if (neu.length > 25) { hinweise.push(`OSM: ${neu.length} „neue“ Lokale – Abfrage geändert, nicht als neu gezählt`); neu = []; }
-    if (weg.length > 25) { hinweise.push(`OSM: ${weg.length} „verschwundene“ Lokale – Abfrage geändert, nicht gezählt`); weg = []; }
+    if (frischNeu.length > 25) { hinweise.push(`OSM: ${frischNeu.length} „neue“ Lokale – Abfrage geändert, nicht als neu gezählt`); neu = neu.filter(x => !frischNeu.includes(x)); }
+    if (frischWeg.length > 25) { hinweise.push(`OSM: ${frischWeg.length} „verschwundene“ Lokale – Abfrage geändert, nicht gezählt`); weg = weg.filter(x => !frischWeg.includes(x)); }
   }
   if (nichtGefunden.length && osm.length) hinweise.push(`in OSM nicht gefunden: ${nichtGefunden.join(', ')}`.slice(0, 300));
 
