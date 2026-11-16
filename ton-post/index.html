@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ton-Post</title>
+<meta name="description" content="Spuren und Mixdown sicher an Claude schicken.">
+<meta name="theme-color" content="#101318">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<meta name="apple-mobile-web-app-title" content="Ton-Post">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23191e26'/%3E%3Cpath d='M14 22h36v22H14z' fill='none' stroke='%233ccf7a' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M14 22l18 13 18-13' fill='none' stroke='%233ccf7a' stroke-width='4' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="modulepreload" href="ton.js">
+<style>
+:root{color-scheme:dark;--bg:#101318;--fl:#191e26;--fl2:#232a34;--rand:#344050;--tx:#e9edf2;--tx2:#a9b3c0;--gr:#3ccf7a;--ge:#f2c94c;--grd:#11301f;--ged:#2c2711;--ger:#7a6a2a;--fo:#8fd3ff;--ro:#ff9a8a;--rod:#3a1d1a}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--tx);font:17px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent;overflow-x:hidden}
+main{max-width:680px;margin:0 auto;padding:max(10px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 0 max(16px,env(safe-area-inset-left));min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
+h1{font-size:27px;line-height:1.2;margin:6px 0 6px;outline:none}
+p{margin:8px 0}
+button,input,label{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--fo);outline-offset:2px}
+[hidden]{display:none!important}
+.sr,.sr-datei{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.sr-datei:focus-visible+label{outline:3px solid var(--fo);outline-offset:3px}
+.i{width:24px;height:24px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.knopf1{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:58px;border:0;border-radius:15px;background:var(--gr);color:#06140b;font-weight:700;font-size:19px;padding:0 20px;cursor:pointer;text-align:center}
+.knopf1:disabled{background:#2a3a31;color:#82918a;cursor:default}
+.knopf2{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;padding:0 16px;border-radius:13px;border:1px solid var(--rand);background:var(--fl2);text-align:center;cursor:pointer;margin:10px 0}
+.knopf2:disabled{opacity:.45;cursor:default}
+.link{background:none;border:0;padding:0 4px;min-height:44px;min-width:44px;color:var(--fo);text-decoration:underline;text-underline-offset:3px}
+.kopf{display:flex;align-items:center;gap:14px;margin-top:14px}
+.logo{width:56px;height:56px;border-radius:15px;background:var(--fl2);display:grid;place-items:center;color:var(--gr);flex:none}
+.logo .i{width:32px;height:32px}
+.unter{font-size:18px;color:var(--tx2);margin:0}
+.klein2{font-size:14px;color:var(--tx2)}
+.sicher{display:flex;gap:10px;align-items:flex-start;background:var(--grd);border:1px solid #23573a;border-radius:14px;padding:12px 14px;margin:14px 0 6px}
+.sicher .i{color:var(--gr);margin-top:1px}
+.feld{display:grid;gap:4px;margin:12px 0 4px}
+.feld>span{font-size:14px;color:var(--tx2)}
+input[type=text],input[type=password]{width:100%;min-height:52px;border-radius:12px;border:1px solid var(--rand);background:var(--fl2);padding:0 14px;font-size:18px}
+input.falsch{border-color:var(--ro);box-shadow:0 0 0 1px var(--ro)}
+.zeile{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hinweis{background:var(--ged);border:1px solid var(--ger);border-radius:14px;padding:10px 14px;margin:10px 0}
+.hinweis.rot{background:var(--rod);border-color:#7a3a33}
+.hinweis.gr{background:var(--grd);border-color:#23573a}
+.liste{list-style:none;padding:0;margin:6px 0 0;display:grid;gap:8px}
+.datei{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:2px 10px;align-items:center;background:var(--fl);border:1px solid var(--rand);border-radius:14px;padding:10px 6px 10px 12px}
+.datei .punkt{grid-row:1/3}
+.d-name{font-weight:650;overflow-wrap:anywhere;line-height:1.3}
+.d-info{font-size:14px;color:var(--tx2);grid-column:2}
+.d-warn{font-size:14px;color:var(--ge);grid-column:2/4}
+.d-bahn{grid-column:1/-1;height:6px;background:var(--fl2);border-radius:3px;overflow:hidden;margin:6px 6px 0 0}
+.d-bahn i{display:block;height:100%;width:0;background:var(--gr);border-radius:3px}
+.weg{grid-row:1/3;grid-column:3;width:44px;height:44px;border-radius:12px;border:0;background:none;color:var(--tx2);display:grid;place-items:center}
+.punkt{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--rand);flex:none}
+.punkt.ge{background:var(--ge)}.punkt.gr{background:var(--gr)}.punkt.ro{background:var(--ro)}
+.datei.da{border-color:#23573a}
+.summe{display:flex;justify-content:space-between;gap:10px;font-size:14px;color:var(--tx2);margin:14px 2px 0}
+.anzeige{background:var(--fl);border:1px solid var(--rand);border-radius:14px;padding:12px 14px;margin:12px 0}
+.a-kopf{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.a-kopf b{font-size:20px;font-variant-numeric:tabular-nums}
+.a-kopf small{color:var(--tx2);font-size:14px;font-variant-numeric:tabular-nums;text-align:right}
+.balken{height:14px;background:var(--fl2);border-radius:7px;overflow:hidden;margin:10px 0 6px}
+.balken i{display:block;height:100%;width:0;background:var(--gr);border-radius:7px;transition:width .3s}
+.fertig{text-align:center;padding:18px 6px 6px}
+.fertig .rund{width:72px;height:72px;border-radius:50%;background:var(--grd);border:2px solid var(--gr);color:var(--gr);display:grid;place-items:center;margin:4px auto 10px}
+.fertig .rund .i{width:38px;height:38px}
+.fertig h2{font-size:24px;margin:4px 0 6px}
+.fuss{position:sticky;bottom:0;margin-top:auto;padding:14px 0 max(12px,env(safe-area-inset-bottom));background:linear-gradient(rgba(16,19,24,0),var(--bg) 16px);z-index:2}
+.fuss p{text-align:center;margin:8px 0 0}
+.fuss .hinweis{margin:0 0 10px}.fuss .anzeige{margin:0 0 4px}.fuss .anzeige p{text-align:left;margin:0}
+.datei{scroll-margin-top:12px;scroll-margin-bottom:calc(var(--fuss,160px) + 8px)}
+@media (min-width:700px){h1{font-size:30px}}
+@media (max-height:500px) and (orientation:landscape){.fuss .anzeige{padding:8px 12px}.balken{margin:6px 0 4px}.fuss .hinweis{padding:8px 12px}.logo{display:none}.kopf{margin-top:4px}h1{font-size:23px;margin:2px 0}.unter{font-size:16px}.sicher{margin-top:8px}.fuss{padding-top:8px}.knopf1{min-height:52px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<symbol id="i-post" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3.5 7l8.5 6.5L20.5 7"/></symbol>
+<symbol id="i-schloss" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 018 0v3"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-hoch" viewBox="0 0 24 24"><path d="M12 19V6M6.5 11.5L12 6l5.5 5.5"/><path d="M5 20h14"/></symbol>
+<symbol id="i-zu" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="i-haken" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+</svg>
+<main id="app">
+<header class="kopf">
+<div class="logo" aria-hidden="true"><svg class="i"><use href="#i-post"/></svg></div>
+<div><h1 tabindex="-1">Ton-Post</h1><p class="unter">Spuren und Mixdown an Claude schicken.</p></div>
+</header>
+<p class="sicher"><svg class="i" aria-hidden="true"><use href="#i-schloss"/></svg><span>Deine Dateien gehen in deinen eigenen, privaten Speicher. Niemand sonst kann sie sehen.</span></p>
+
+<section id="eingabe">
+<div id="codeTeil">
+<label class="feld"><span>Code</span><input id="code" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="next" aria-describedby="codeHilfe"></label>
+<p class="klein2" id="codeHilfe">Nur beim ersten Mal. Er wird auf diesem Gerät gemerkt.</p>
+</div>
+<p id="codeDa" class="klein2 zeile" hidden><span class="punkt gr" aria-hidden="true"></span>Code ist gemerkt.<button type="button" class="link" id="codeNeu">Ändern</button></p>
+<label class="feld"><span>Name</span><input id="name" type="text" value="Song 1" maxlength="80" autocomplete="off" enterkeyhint="done"></label>
+</section>
+
+
+<div id="mehrTeil" hidden>
+<input type="file" id="mehr" class="sr-datei" multiple accept="audio/*,.wav,.wave,.flac,.aif,.aiff,.zip,application/zip">
+<label for="mehr" class="knopf2"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>Weitere Dateien wählen</label>
+</div>
+<div class="summe" id="summe" hidden><span id="summeText"></span><span id="summeGr"></span></div>
+<ul class="liste" id="liste" aria-label="Gewählte Dateien"></ul>
+
+
+<section class="fertig" id="fertig" hidden tabindex="-1">
+<div class="rund" aria-hidden="true"><svg class="i"><use href="#i-haken"/></svg></div>
+<h2 id="fText">Fertig</h2>
+<p>Nur Claude kann sie abholen. Nach dem Abholen werden sie gelöscht.</p>
+<p class="klein2" id="fRest" hidden></p>
+<button type="button" class="knopf2" id="neu">Neue Dateien senden</button>
+</section>
+
+<div class="fuss" id="fuss">
+<div id="meldung" class="hinweis" role="status" hidden></div>
+<div class="anzeige" id="gesamt" hidden>
+<div class="a-kopf"><b id="gText">0 %</b><small id="gZeit"></small></div>
+<div class="balken"><i id="gBalken"></i></div>
+<p class="klein2" id="gSchritt"></p>
+</div>
+<div id="wahlTeil">
+<input type="file" id="wahl" class="sr-datei" multiple accept="audio/*,.wav,.wave,.flac,.aif,.aiff,.zip,application/zip">
+<label for="wahl" class="knopf1"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>Dateien wählen</label>
+</div>
+<button type="button" class="knopf1" id="senden" hidden><svg class="i" aria-hidden="true"><use href="#i-hoch"/></svg><span id="sendenText">Senden</span></button>
+<p class="klein2" id="wachText">Beim Senden: Seite offen lassen, Bildschirm nicht sperren.</p>
+</div>
+</main>
+<div id="live" class="sr" aria-live="polite"></div>
+<script type="module" src="ton.js"></script>
+</body>
+</html>
