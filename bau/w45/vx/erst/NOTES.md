@@ -53,17 +53,34 @@ Worklet-Text → alter Blob-Weg (Adresse wird freigegeben); Tipp vor fertiger Vo
 Adresse (z. B. „nur nativ“) wird 15 s nach dem Start freigegeben. Neue Namen: ERST, ERST_MT_F, erstStart, erstIdle, erstStep,
 erstFree, erstWkUrl, erstBufs, erstWv, erstWvIdle. Kosten vor dem Tipp: ≈ 420 KB Blob + 345–384 KB Puffer.
 
-## Messung NACHHER (A/B abwechselnd, Rate bekannt; Zahlen siehe unten „A/B“)
-Siehe Abschnitt A/B am Ende (wird mit dem Stapel `mess/ab4.jsonl`, `mess/ab4b.jsonl`, `mess/ab1.jsonl` gefüllt).
+## Messung NACHHER (A/B abwechselnd basis/index, Rate bekannt, je frische Seite; Rohdaten `mess/ab4.jsonl`, `mess/ab4b.jsonl`, `mess/ab1.jsonl`)
+| | Basis | ERST | Δ |
+|---|---|---|---|
+| 4×, Stapel 1 (Last 7,6–9,5), Tipp-Aufgabe Median (4 Läufe) | 333 ms [331, 394, 318, 335] | 270 ms [288, 396, 251, 224] | −19 % |
+| 4×, Stapel 1, Tipp→Ton Median | 289 ms | 252 ms | −13 % |
+| 4×, beide Stapel (8 Paare; ERST ohne 1 Lauf bei Last 22) Tipp-Aufgabe | 340 ms | 288 ms | −15 % |
+| 4×, beide Stapel, Tipp→Ton | 293 ms | 269 ms | −8 % |
+| 1× (Last 5,6–6,7, 2 Paare) Tipp-Aufgabe | 118 ms [136, 99] | 82 ms [85, 79] | −30 % |
+| 1×, Tipp→Ton | 160 ms | 136 ms | −15 % |
+Direkt gemessen in der Tipp-Aufgabe (instr, 4×): makeWaves 50–208 ms → 0 (nur 0,6–3 ms für die Eingaben, 1,5 s später in
+Scheiben ≤ 12 ms, zusammen 26–60 ms); SynthHost.load 13–30 ms → 0,4–3 ms; buildBuffers 20–31 ms → 6–13 ms (nur noch das Rauschen).
+Vorarbeit vor dem Tipp: Blob 30–71 ms in 8 Leerlauf-Schritten, Metall 17–50 ms in 4 Schritten (keine lange Aufgabe; Summe je nach Last).
+Die Summe der langen Aufgaben in den ersten 2,5 s ändert sich wenig (861 → 775 ms Median): der Rest sind AudioContext, Knoten und
+die nativen Stimmen bis zum Worklet (Offen 1–3). Streuung unter Last ±30 %; der Unterschied ist in Stapel 1 und bei 1× in jedem
+Paar sichtbar, in Stapel 2 (Lastspitze bis 22) nur im Median.
 
 ## Tests
-`node erst-test.mjs index.html basis.html` → **13/13 OK** (`erst-test.out`, `erst-test.json`):
+`node erst-test.mjs index.html basis.html` → **13/13 OK** (Endfassung md5 bb817396b41d1e598b6378079773eca0) (`erst-test.out`, `erst-test.json`):
 01 kein (Offline)AudioContext vor dem Tipp · 02 Vorarbeit fertig · 03 Worklet über die vorbereitete Adresse ('blob', ready),
 Metall übernommen · 04 Metall byte-gleich zur Basis (FNV 6fe0a136) · 05 Rauschen bei gleicher Zufallsfolge ab dem Tipp byte-gleich
 (222a6644) · 06a Kontrolle Basis=Basis · 06 noteLog Schläge 2–8 gleich (61 Noten, Spur/Quelle/Ton/Schlag/Dauer/Stärke/Zeit ab
 Start) · 07 Wellen in Scheiben = dieselben 16 Eingaben in derselben Reihenfolge wie makeWaves · 08 keine Seitenfehler · 09 andere
 Rate → alter Weg, Metall byte-gleich · 10 geänderter Worklet-Text → alter Weg · 11 Tipp sofort bei bereit → spielt, keine Fehler ·
 12 WT-Wellen nicht mehr im Tipp (Basis: +77 ms über den Getter in spawnVoice; Index: erst +1585 ms aus den Scheiben).
+Endfassung (Last 22–23, viele Agenten): Lauf 1 11/13 (06a Kontrolle Basis≠Basis; 06: ERST 57 statt 61 Noten – nur FEHLENDE Noten
+bei Schlag 4,5–4,75, keine geänderte oder zusätzliche: `nurIdx` leer → vom Planer übersprungene Noten unter Last;
+`erst-test.lauf-last23.out`), Lauf 2 12/13 (06 OK: 61 = 61 identisch; nur die Kontrolle 06a rot, weil die zweite Basis unter Last
+11 Noten verlor). Die Kontrolle ist bei Last > 20 nicht stabil – Wiederholung bei ruhigem Rechner empfohlen (siehe Offen 6).
 Zum noteLog: die ersten Schläge sind schon Basis gegen Basis nicht gleich (Trommeln am Start hängen von der Hauptfaden-Zeit ab) –
 darum Schläge 2–8 mit Kontrolle.
 
@@ -79,3 +96,10 @@ darum Schläge 2–8 mit Kontrolle.
 4. Test-Falle PERF1B bei 44,1 kHz (Nebenbefund 5): für Messungen immer synq.perf1b.sr setzen; am Gerät prüfen, ob die iPhone-Rate
    wirklich 48 kHz ist (sonst greift PERF1B erst ab dem 2. Start).
 5. Am iPhone bestätigen (Chromium ist nur Näherung): erster ▶ nach Kaltstart fühlbar schneller, Ton sofort, kein Unterschied im Klang.
+6. erst-test ERST-06/06a (noteLog-Vergleich) ist unter Rechnerlast > 20 wackelig (übersprungene Noten, Zufallsfolge je nach Pfad
+   nativ/Worklet); bei ruhigem Rechner zweimal 13/13. Bei der Abnahme mit wenig Last wiederholen.
+
+## Pflicht (Endfassung, `pflicht.log`)
+topdefs: Skripte 26, Namen 7998, doppelt 0, Syntaxfehler 0 · dupkeys: 0 doppelte Schlüssel · smoke: `title SYNQUENZER errors []`
+(`smoke.png`) · „MS 2000“ 1× · `^  live: true,` 1× · VERSION '4.76.1'.
+md5: basis.html e4dc1b9599eef2656308cb990e407f37 · index.html bb817396b41d1e598b6378079773eca0

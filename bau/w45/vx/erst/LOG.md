@@ -22,3 +22,10 @@ Bau: `python3 bau.py` (basis.html + erst-block.js → index.html; Block nach PER
   zeitweise erst-test (gleich für A und B, Last steht je Lauf dabei). Rechnerlast insgesamt 9–13 (viele Agenten).
 - Erster A/B-Stapel (`mess/ab4-v1.jsonl`) war vor Haken (4) – nur Puffer/Blob: kein Unterschied im Rauschen sichtbar
   (Tipp-Aufgabe Median 403 → 393 ms, Streuung 282–686 ms).
+- 06:23 Kommentar im Block korrigiert (erstBufs plant keine Wellen mehr) → Endfassung md5 bb817396b41d1e598b6378079773eca0.
+- 06:23–06:27 zweiter A/B-Stapel (`mess/ab4b.jsonl`, Lastspitze bis 22–29) + 2 instrumentierte Paare (`mess/ab4i.jsonl`, Last 24–29:
+  Zeiten unbrauchbar, aber Beleg: makeWaves im Tipp Basis 67/208 ms, ERST 0,6/3 ms nur Eingaben).
+- 06:28 Pflicht auf der Endfassung grün (pflicht.log), erst-test auf der Endfassung erneut gelaufen (erst-test.out).
+- 06:29 erst-test Endfassung: Lauf 1 (Last 23) 11/13, Lauf 2 (Last 22) 12/13 – ERST-06 im 2. Lauf OK (61 = 61), rot nur die
+  Kontrolle Basis gegen Basis (zweite Basis verlor 11 Noten unter Last). Vorher auf der funktional gleichen Fassung 583dd0c6 zweimal
+  13/13 (Last 9–13).
