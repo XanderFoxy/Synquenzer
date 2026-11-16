@@ -12,3 +12,4 @@
 00:13 Probe 428 fertig (Kopf abgeschnitten, Still-Meldung, bg ok), spk2-loop A/B je 18 OK, Last 3.74 5.67 6.04
 00:14 Probe 926x428/428x926: keine Überdeckung im Streifen; 3. Tipp auf denselben Teil zoomt nicht mehr hinein (alle 3 Größen). Last 2.84 4.73 5.65
 00:16 Auftakt-Probe: Loop-Zeile 'Takt 0–4', Blatt 'Takt 1–4', Szene ohne Vorlauf-Takt; spk11 A/B läuft. Last 4.87 4.86 5.62
+00:18 spk11 A/B 41/0 beide. Ende Prüfung: 7 Befunde (2 mittel, 5 klein), Paketdateien unverändert (md5 7fcf0543). Last 7.54 5.70 5.81
