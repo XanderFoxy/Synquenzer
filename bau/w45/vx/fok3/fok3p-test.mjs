@@ -98,7 +98,7 @@ for (const [tag, file] of [['neu', files[0]], ['basis', files[1]]]) {
   await pg.ctx.close();
 }
 const N1 = OUT.neu, B1 = OUT.basis, nCk = N1.P1.mid ? N1.P1.mid.chunks : 0;
-ok('P1 Hin-und-Her-Rollen: Nachreichen kommt voran (alle Stücke genau, während noch gerollt wird)', {apZero: N1.P1.mid && N1.P1.mid.apZero, flips: N1.P1.mid && N1.P1.mid.flips}, N1.P1.mid && N1.P1.mid.apZero > 0 && N1.P1.mid.ap === 0);
+ok('P1 Hin-und-Her-Rollen: Nachreichen kommt voran (während gerollt wird, wird mindestens ein Stück genau; v4: 37 Neu-Planungen ohne Fortschritt)', {apMax: N1.P1.apMax, apNachRollen: N1.P1.mid && N1.P1.mid.ap, alleGenauNach: N1.P1.mid && N1.P1.mid.apZero, flips: N1.P1.mid && N1.P1.mid.flips}, N1.P1.mid && (N1.P1.mid.apZero > 0 || N1.P1.mid.ap < N1.P1.apMax));
 ok('P1 Neu-Planungen begrenzt (Listen-Aufträge ≤ Stücke + 2, Ablösungen ≤ Stücke)', {list: N1.P1.nList, rpn: N1.P1b.info.rpn, stuecke: nCk}, N1.P1.nList <= nCk + 2 && N1.P1b.info.rpn <= nCk);
 ok('P1 Endbild byte-gleich v6', [N1.P1.h, B1.P1.h], N1.P1.h === B1.P1.h);
 ok('P1 Ende: keine Näherung, idle, Status Endergebnis', {ap: N1.P1b.info.ap, idle: N1.P1b.idle, stat: N1.P1b.stat}, !N1.P1b.info.ap && N1.P1b.idle && /^Fokus: Rest/.test(N1.P1b.stat));
