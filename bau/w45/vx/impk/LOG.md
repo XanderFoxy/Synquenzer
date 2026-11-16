@@ -5,3 +5,4 @@
 - 05:49 Blöcke UI (½×-Frage) + BEG (Klick/Etikett) gebaut; topdefs 0/0, dupkeys 0; impk-test Lauf 1, Last: 2.66 2.89 2.87
 - 05:54 impk-test Lauf 1: 9/10 (B1 Testfehler, korrigiert); Etikett-Sonde Basis: clip 2–8 je Lage bei Wechsel am Schlag, Last: 1.55 2.14 2.55
 - 05:55 Regression gestartet (lauf.sh: impk-test, beg1, imp1, rv1, rv1k), Last: 1.21 2.02 2.50
+- 05:56 Pflicht: topdefs 0/0, dupkeys 0, smoke errors [], Last: 3.11 2.44 2.61
