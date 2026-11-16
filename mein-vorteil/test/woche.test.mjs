@@ -190,7 +190,7 @@ async function oeffne({ breite = 428, hoehe = 926, pfad = '/mein-vorteil/#woche'
         const snack = (n, titel, zeile) => ({ id: `test-snack-${n}`, kategorie: 'deals', titel, zeile, soGehts: 'TESTWERT', link: `https://www.mydealz.de/deals/test-snack-${n}`, quelle: 'mydealz Lebensmittel', wert: 60, sofort: false, grund: 'Deal durchgerechnet', frist: '2026-11-07', datum: '2026-10-31T10:00:00.000Z', bis: '2026-11-07T22:59:59.000Z', bisQuelle: 'text', ab: null, sichtbarBis: '2026-11-07T22:59:59.000Z', preisfehler: false, bild: `https://static.mydealz.de/threads/raw/snack${n}/150x150/qt/55/snack${n}.jpg` });
         d.kategorien.deals.push(snack(1, 'Haribo Goldbären 175 g für 0,79 € (TESTWERT)', '1 Packung für 0,79 € statt 1,29 € (−39 %)'), snack(2, 'Lindt Lindor Kugeln 200 g für 3,49 € (TESTWERT)', '1 Packung für 3,49 € statt 5,99 € (−42 %)'));
       }
-      d.status.knaller = { ok: true, anzahl: 0, kurz: { anzahl: 13, ab: { 30: 13, 40: 7, 50: 2 }, top: [
+      d.status.knaller = { ok: true, anzahl: 0, kurz: { anzahl: 13, ab: { 20: 13, 30: 13, 40: 7, 50: 2 }, kommt: { 20: 2, 30: 2, 40: 1, 50: 0 }, top: [
         { titel: 'Milka Schokolade 100 g', markt: 'Kaufland', pct: 54, preis: 0.69, vorherArt: 'streich', app: true },
         { titel: 'Kaffee Crema ganze Bohne 1 kg', markt: 'Aldi Nord', pct: 53, preis: 7.99, vorherArt: 'streich' },
         { titel: 'Haribo Fruchtgummi', markt: 'Netto', pct: 45, preis: 0.66, vorherArt: 'uvp' }] } };
@@ -258,6 +258,8 @@ test('Lazy: woche.js und knaller.json erst beim Öffnen; Start-Kachel und Zahl a
   assert.deepEqual(await k.locator('li b').allInnerTexts(), ['Milka Schokolade 100 g', 'Kaffee Crema ganze Bohne 1 kg']);
   assert.match(nbsp((await k.locator('li span').allInnerTexts())[0]), /^−54 % · 0,69 € · Kaufland · App$/);
   assert.equal(await k.locator('.kn').innerText(), '13');
+  // Radar kurz.kommt: was diese Woche noch beginnt, als Hinweis unter den Zeilen (Zahl oben = was heute gilt)
+  assert.equal(nbsp(await k.locator('.kw').innerText()), '+ 2 kommen diese Woche noch');
   assert.equal(await page.locator('.sprung a[data-reiter="woche"] .n').innerText(), '13');
   await k.click();
   await wocheDa(page);
