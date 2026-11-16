@@ -232,7 +232,7 @@ export default async function auftraege({ holeText, cfg, jetzt = new Date(), zus
   const eintraege = [], fehler = [], hinweise = [];
   const jetztMs = new Date(jetzt).getTime();
   const maxTage = m.maxAlterTage ?? 21;
-  const agent = agentAus(cfg.abruf?.userAgent) || 'vorteils-radar';
+  const agent = agentAus(cfg.abruf?.userAgent) || 'meinvorteil-radar';
   const pruefeRobots = async url => (m.robotsPruefen === false ? { ok: true } : robotsErlaubt(url, { holeRoh: holeRohMit(holeText), zustand, agent, jetzt }));
   const funde = [];
   let gelesen = 0;

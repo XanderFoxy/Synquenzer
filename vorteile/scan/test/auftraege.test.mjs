@@ -46,7 +46,7 @@ test('robots.txt: längste Regel gewinnt, Allow bei Gleichstand, *, $, eigene Gr
   assert.equal(erlaubt(wir, '/privat/x').ok, false);
   assert.equal(erlaubt(regelnFuer(leseRobots('User-agent: *\nDisallow:\n'), 'x'), '/alles').ok, true, 'leeres Disallow = alles erlaubt');
   assert.equal(erlaubt(regelnFuer(leseRobots('User-agent: *\nDisallow: /\n'), 'x'), '/r/German/new/.rss').ok, false);
-  assert.equal(agentAus(cfg.abruf.userAgent), 'vorteils-radar');
+  assert.equal(agentAus(cfg.abruf.userAgent), 'meinvorteil-radar');
 });
 
 test('robots.txt: fehlt (404) = erlaubt, Serverfehler = dieses Mal nicht lesen, Ergebnis im Zustand gemerkt', async () => {

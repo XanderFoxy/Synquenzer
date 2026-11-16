@@ -202,7 +202,11 @@ Die Daten kommen nur stündlich (Konzerte alle 3 h). Deshalb blendet die Seite s
   Ohne Netz bleibt er stehen (Stand-Zeile: „offline“). Ist nur eine Quelle gestört, steht „letzter Stand von
   17:35 Uhr – Quelle gerade gestört“ (auch oben im Reiter). Konzerte und Neuerscheinungen laden unabhängig.
 - `sw.js` (nur `/mein-vorteil/`): Seite erst aus dem Netz, nach 3 s oder ohne Netz die letzte Kopie; Daten von
-  `raw.githubusercontent.com` gehen nie durch den Worker.
+  `raw.githubusercontent.com` gehen nie durch den Worker. Cache-Stufe `mein-vorteil-10` (16.11.2026, MV7).
+- „Quellen & Hinweise (Vorteile)“ (unter „Mehr“): je Bereich Zahl und Stand, darunter klein je Quelle die Regel aus
+  `status.<bereich>.quellen` des Radars – „Schnittstelle“ (Programm-Schnittstelle trotz robots.txt, Xanders Entscheidung
+  vom 16.11.2026, siehe `vorteile/README.md`) bzw. „gesperrt (Regeln)“ (robots.txt/Nutzungsbedingungen). Ältere Daten
+  ohne diese Angabe: Zeile wie bisher.
 - Liest ältere Datenformate mit (ohne `packung`/`mengeSicher`/`tiefst`/`bis`): dann ohne Prozent und Packung,
   Tiefstpreis „unklar“.
 - Tests: `cd mein-vorteil && npm test` (Node ≥ 20, Playwright mit Chromium; ohne Playwright werden sie übersprungen).

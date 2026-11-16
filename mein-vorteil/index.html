@@ -335,6 +335,7 @@
   details.kasten p, details.kasten li { font-size: 14px; }
   .quellen { margin: 0; padding-left: 18px; }
   .quellen .stoerung { color: var(--warm); }
+  .quellen .q-regeln { display: block; color: var(--leise); font-size: 13px; }
   pre { white-space: pre-wrap; font: inherit; font-size: 15px; background: var(--flaeche); border-radius: 10px; padding: 12px; margin: 0 0 10px; }
   a.block { display: flex; align-items: center; min-height: 44px; color: var(--f); font-weight: 650; text-decoration: none; }
   .fundorte .reihe { background: var(--bg-hoch); }
@@ -1968,8 +1969,12 @@ function zeichneMehr(t) {
       }
       return `${q.anzahl ?? 0} gefunden`;
     };
+    // je Quelle kurz, nach welcher Regel sie gelesen wird (Radar ab MV7: status.<k>.quellen): „Schnittstelle“ = Programm-
+    // Schnittstelle trotz robots.txt (Xanders Entscheidung 16.11.2026), „gesperrt (Regeln)“ = robots.txt/Nutzungsbedingungen
+    const regeln = q => (Array.isArray(q.quellen) ? q.quellen : []).filter(x => x && typeof x.host === 'string' && (x.art === 'schnittstelle' || x.art === 'gesperrt')).slice(0, 10)
+      .map(x => `${String(x.art === 'schnittstelle' && typeof x.name === 'string' && x.name ? x.name : x.host).slice(0, 40)}: ${x.art === 'schnittstelle' ? 'Schnittstelle' : 'gesperrt (Regeln)'}`);
     const quellen = Object.entries(d.status || {}).filter(([k, q]) => !NIE_ZEIGEN.has(k) && !q.aus).map(([k, q]) =>
-      `<li class="${q.ok ? '' : 'stoerung'}">${esc(namen[k] || k)}: ${q.aus ? 'aus' : q.ok ? esc(menge(k, q)) : 'gestört – ' + esc((q.fehler || [])[0] || '')}${q.stand && zeit(q.stand) != null ? ` · ${esc(vor(q.stand))}` : ''}</li>`);
+      `<li class="${q.ok ? '' : 'stoerung'}">${esc(namen[k] || k)}: ${q.aus ? 'aus' : q.ok ? esc(menge(k, q)) : 'gestört – ' + esc((q.fehler || [])[0] || '')}${q.stand && zeit(q.stand) != null ? ` · ${esc(vor(q.stand))}` : ''}${(r => r.length ? `<span class="q-regeln">${esc(r.join(' · '))}</span>` : '')(regeln(q))}</li>`);
     teile.push(quellenKasten('Quellen & Hinweise (Vorteile)', quellen, weg.size ? '<button class="mehr" type="button" id="zeigen">Ausgeblendete wieder zeigen</button>' : ''));
   }
   return { html: teile.join(''), n };

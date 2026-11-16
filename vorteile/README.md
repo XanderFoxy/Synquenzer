@@ -274,19 +274,56 @@ App-Clients. `scan/lib/robots.mjs` → `macheRegelWache` liegt in `main.mjs` um 
 1. `abruf.agbVerbot` (Host + Grund): verboten → gar kein Abruf, auch nicht die robots.txt (Freelancer.com, Reddit).
 2. robots.txt des Hosts vor dem ersten Abruf (je Host einmal je Lauf, gemerkt höchstens 24 Stunden in `zustand.robots`
    wie RFC 9309 2.4 es verlangt; alle Regeln, keine Kürzung – mehr als 5000 = „nicht prüfbar“, Quelle nicht gelesen; eigene
-   Gruppe „vorteils-radar“ vor „*“, längste Regel gewinnt). Pfad verboten → Quelle übersprungen, **Hinweis** im Status
+   Gruppe „meinvorteil-radar“ (erster Teil des User-Agents, bis MV6 „vorteils-radar“) vor „*“, längste Regel gewinnt). Pfad verboten → Quelle übersprungen, **Hinweis** im Status
    („robots.txt von host: nicht gelesen – robots.txt: Disallow: /pfad“), keine Störung. Nicht lesbar (5xx/429/keine
    Antwort) → dieses Mal nicht gelesen, wie ein Ausfall (alter Stand bleibt). Keine robots.txt (4xx) = erlaubt.
 3. `abruf.robotsAusnahmen` nur für eigene Dienste (ntfy-Thema der Seite). `abruf.robotsPruefen: false` schaltet nur Schritt 2 ab.
+4. **Programm-Schnittstellen** (seit MV7, siehe unten): genau fünf API-Pfade werden trotz robots-Sperre gelesen – gedrosselt
+   und gemerkt nach den Regeln des Dienstes. Schritt 1 gilt ohne Ausnahme, alle anderen Pfade bleiben unter Schritt 2.
 
 **Ergebnis des ersten echten Laufs mit der Wache** (Roh-Lauf 43868228532 auf Zweig mv6, 16.11.2026, 20 Hosts, alle
 robots.txt im Mitschnitt): gesperrt sind `overpass-api.de` („Disallow: /api/“ → Filialen und Essen werden nicht mehr
 aufgefrischt, der letzte Stand bleibt), `news.google.com` („Disallow: /“, nur Start-/Themen-Seiten erlaubt → alle
 News-Suchen in Erleben, Tests, Remix, Auftritte, Unterricht, Ausflüge), `itunes.apple.com` („/*/rss/*“, „/search*“ →
-Filme-Charts und -Suche; Lookup bleibt erlaubt) und `remotive.com` („/api/*“, „/*search=“ → Unterricht). Erlaubt u. a.:
-kaufDA, marktguru-API („Allow: /api/“), mydealz, tv.apple.com, Audius, service.bund.de, hnrss. **Keine Ausnahme
-eingetragen** – ob für solche APIs (gebaut für Programme, robots.txt gegen Suchmaschinen-Crawler) eine Ausnahme gelten
-soll, entscheidet Xander.
+Filme-Charts und -Suche; Lookup bleibt erlaubt) und `remotive.com` („/api/*“, „/*search=“ → Unterricht); im Lauf
+43869290803 auf main zusätzlich `query.wikidata.org` („Disallow: /sparql“ → Filme). Erlaubt u. a.: kaufDA, marktguru-API
+(„Allow: /api/“), mydealz, tv.apple.com, Audius, service.bund.de, hnrss.
+
+### Ausnahme für Programm-Schnittstellen (MV7, Xanders Entscheidung vom 16.11.2026)
+
+Xander: „mach das, was für die Seite am besten ist“. robots.txt richtet sich an Crawler, die Webseiten einsammeln; die fünf
+Dienste oben bieten daneben eine Schnittstelle an, die ausdrücklich für Abrufe durch Programme gebaut ist (API, RSS-Feed,
+SPARQL-Endpunkt) – ihre robots.txt sperrt diese Pfade trotzdem pauschal. Darum gilt **nur für genau diese Pfade** eine
+Ausnahme. Die Liste steht absichtlich **nur im Code** (`scan/lib/schnittstellen.mjs`, eingefroren, nicht in `config.json`):
+
+| Dienst | Host | Pfad (genau) | Abstand | höchstens je Lauf | gemerkt | Regeln des Dienstes / unsere Häufigkeit |
+| --- | --- | --- | --- | --- | --- | --- |
+| OpenStreetMap (Overpass) | `overpass-api.de` | `/api/interpreter` | 10 s | 3 | – | unter 10 000 Abfragen und 1 GB am Tag, eine Abfrage zur Zeit; Filialen 1×/Woche, Essen-Lokale alle 20 h. Ausweich-Server (`overpass.private.coffee`) nur, wenn dessen eigene robots.txt es erlaubt (dort keine robots.txt = erlaubt; keine Ausnahme) |
+| Google News (RSS) | `news.google.com` | `/rss/search` | 3 s | 60 | 6 h | RSS-Suchfeed für Feed-Leser: selten, jede Suche höchstens alle 6 Stunden (dazwischen die gemerkte Antwort) |
+| Apple iTunes | `itunes.apple.com` | `/search` und `/<land>/rss/topmovies…/json`, `/<land>/rss/toptvseasons…/json` | 3,2 s | 60 | – | Search API etwa 20 Abrufe pro Minute; Filme-Bereich ohnehin höchstens 45 Apple-Abrufe je Lauf |
+| Wikidata (SPARQL) | `query.wikidata.org` | `/sparql` | 2 s | 20 | 24 h | eigener User-Agent, eine Abfrage zur Zeit, höchstens 60 s Rechenzeit pro Minute |
+| Remotive (API) | `remotive.com` | `/api/remote-jobs` | 30 s | 2 | – | laut API-Doku nur wenige Abrufe am Tag, Treffer verlinken auf Remotive und nennen Remotive als Quelle; Bereich Unterricht holt höchstens alle 6 h (`remotive.intervallStunden`) |
+
+So funktioniert es (`macheRegelWache`): Nutzungsbedingungen zuerst (Reddit, Freelancer.com: **nie**, auch nicht über eine
+Ausnahme – `NIE` in `schnittstellen.mjs`, die Liste darf diese Hosts nicht enthalten). Dann wird die robots.txt trotzdem
+gelesen (für die Anzeige und die Regel im Status), sperrt aber nur alles **außer** dem genauen Pfad: z. B.
+`news.google.com/rss/topics/…`, `itunes.apple.com/de/lookup?…`, `overpass-api.de/api/status` oder `remotive.com/jobs/…`
+bleiben gesperrt; Unterdomains (`z.overpass-api.de`) und `http:` zählen nicht. Für die Ausnahme gilt: Abstand je Host
+(`macheAbruf`, der größere von `abruf.pauseMsJeHost` und Schnittstelle), harte Obergrenze je Lauf (darüber: Fehler „Rest im
+nächsten Lauf“, kein weiterer Abruf), dieselbe Adresse nie zweimal im Lauf und – nur in echten Läufen, nicht im Roh-Lauf und
+nicht in Tests – die gemerkte Antwort aus `zustand.schnittstellen.cache` (gzip, höchstens 600 KB, Abgelaufenes fliegt jeden
+Lauf). `zustand.schnittstellen.lauf` zeigt je Host Abrufe, gemerkte Antworten und die robots-Regel des letzten Laufs.
+
+**User-Agent** (`abruf.userAgent`): „MeinVorteil-Radar/1.0 (privates Spar- und Freizeit-Radar; wenige Abrufe mit Pausen
+und Cache)“ – ehrlich, ohne Personennamen, ohne E-Mail und ohne persönliche Adresse. Wikidata bittet um Kontaktangaben im
+User-Agent; wir lassen sie bewusst weg. Antwortet Wikidata deshalb einmal mit 403, ist das eine Störung im Status (alter
+Stand bleibt) – dann eine neutrale Projekt-Adresse ergänzen, keine persönliche.
+
+**Quellen-Liste der Seite**: `status.<bereich>.quellen = [{ host, name?, art }]` – je Quelle kurz „Schnittstelle“
+(über die Ausnahme gelesen) bzw. „gesperrt (Regeln)“ (robots.txt/Nutzungsbedingungen); ein Host, der als Schnittstelle
+gelesen wurde, steht nicht zusätzlich als gesperrt da. Tests: `scan/test/schnittstellen.test.mjs` (genaue Pfade, andere
+gesperrte Pfade bleiben gesperrt, Reddit/Freelancer nie, Obergrenze, Lauf-Memo, Cache 6 h/24 h, Abstände, User-Agent,
+ganzer Lauf und `main()` mit zwei Läufen).
 
 Fundort-Links, die die robots.txt sperrt, heißen „nicht geprüft“ (nicht „Link gerade nicht erreichbar“). Gemerkte
 Forenbeiträge (`zustand.gesuche`) von Hosts mit Verbot werden verworfen und gelöscht, ebenso Gesuche von dort aus dem
