@@ -172,6 +172,12 @@ test('Abstände: Schnittstellen bringen ihre Pausen mit (größerer Wert gewinnt
     async (url, o) => { zeiten.push(Date.now()); ua.push(o.headers['user-agent']); return new Response('ok'); });
   await hole('https://langsam.example/a'); await hole('https://langsam.example/b');
   assert.ok(zeiten[1] - zeiten[0] >= 140, `${zeiten[1] - zeiten[0]} ms`);
+  // 429/5xx: die eine Wiederholung kommt frühestens nach dem Host-Abstand (Overpass „at capacity“: 10 s, nicht 3 s)
+  const z2 = [];
+  const hole2 = macheAbruf({ pauseMs: 1, wiederholMs: 10, timeoutMs: 2000, userAgent: 'x', pauseMsJeHost: { 'voll.example': 150 } },
+    async () => { z2.push(Date.now()); return new Response(z2.length === 1 ? 'at capacity' : 'ok', { status: z2.length === 1 ? 502 : 200 }); });
+  assert.equal(await hole2('https://voll.example/api'), 'ok');
+  assert.ok(z2[1] - z2[0] >= 140, `Wiederholung nach ${z2[1] - z2[0]} ms`);
   // eigener, ehrlicher User-Agent – ohne Personennamen, ohne E-Mail, ohne persönliche Adresse
   assert.match(cfg.abruf.userAgent, /^MeinVorteil-Radar\/1\.0 \(/);
   assert.doesNotMatch(cfg.abruf.userAgent, /xander|foxy|@|github|https?:/i);
@@ -180,7 +186,7 @@ test('Abstände: Schnittstellen bringen ihre Pausen mit (größerer Wert gewinnt
 
 test('Ganzer Lauf mit echten robots.txt: Unterricht liest Remotive, Filme die Apple-Charts – Quellen-Liste sagt „Schnittstelle“', async () => {
   const { hole, gefragt } = attrappe(ECHT_ROBOTS, { fixtures: true });
-  const nur = { ...cfg, module: Object.fromEntries(Object.entries(cfg.module).map(([k, v]) => [k, { ...v, aktiv: k === 'unterricht' || k === 'filme' }])) };
+  const nur = { ...cfg, module: Object.fromEntries(Object.entries(cfg.module).map(([k, v]) => [k, { ...v, aktiv: k === 'unterricht' || k === 'filme' || k === 'auftraege' }])) };
   const filmListen = JSON.parse(await readFile(join(HIER, '..', '..', 'filme.json'), 'utf8'));
   const zustand = {};
   const r = await lauf({ cfg: nur, wunschliste, filmListen, vorher: null, zustand, holeText: hole, jetzt: JETZT, alle: true });
@@ -193,6 +199,8 @@ test('Ganzer Lauf mit echten robots.txt: Unterricht liest Remotive, Filme die Ap
   assert.ok(gefragt.some(x => /itunes\.apple\.com\/de\/rss\/topmovies/.test(x)), 'Apple-Charts gelesen');
   assert.ok(f.quellen.some(q => q.host === 'itunes.apple.com' && q.art === 'schnittstelle'), JSON.stringify(f.quellen));
   assert.ok(!gefragt.some(x => /reddit|freelancer/.test(x)));
+  // Nebenverdienst lässt Freelancer.com selbst aus (Nutzungsbedingungen) -> trotzdem „gesperrt (Regeln)“ in der Quellen-Liste
+  assert.deepEqual(r.aktuell.status.auftraege.quellen, [{ host: 'freelancer.com', art: 'gesperrt' }]);
   // Zahlen des Laufs im Zustand (für den Bericht/Prüfer)
   assert.ok(zustand.schnittstellen.lauf['itunes.apple.com'].n > 0);
   assert.equal(zustand.schnittstellen.lauf['remotive.com'].regel, 'robots.txt: Disallow: /*search=', 'längste passende Regel (RFC 9309)');

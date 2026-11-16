@@ -24,7 +24,8 @@ export function macheAbruf(abruf, fetchImpl = globalThis.fetch) {
           method, body, signal: ctl.signal, redirect: 'follow',
           headers: { 'user-agent': abruf.userAgent, 'accept-language': 'de-DE,de;q=0.9', ...headers },
         });
-        if ((r.status === 429 || r.status >= 500) && versuch < 1) { await warte(3000); continue; }
+        // Wiederholung frühestens nach dem Host-Abstand (Overpass „at capacity“ 502: 10 s statt 3 s, Roh-Lauf 43887290010)
+        if ((r.status === 429 || r.status >= 500) && versuch < 1) { await warte(Math.max(abruf.wiederholMs ?? 3000, pause)); continue; }
         const text = await r.text();
         if (!r.ok) throw new Error(`HTTP ${r.status} bei ${host}`);
         return text;
