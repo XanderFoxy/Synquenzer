@@ -9,3 +9,4 @@
 00:00 Regression läuft (spk11 41/0, fokus1-kern 26/0, imp1 ALLE OK), NOTES-Entwurf. Last 12.32 8.87 5.48
 00:07 Ende: teil1-test 59 OK / 2 (T1 Zeitziel unter Last), Regression grün außer fokus1-test Long-Task-Schwellen (wie im FOKUS1-Release-Lauf), Rauchtest ok, md5 7fcf0543. Last 5.37 8.53 6.74
 00:11 A/B spk2-loop-test gestartet, Probe wird geschrieben, Last 3.81 6.26 6.25
+00:13 Probe 428 fertig (Kopf abgeschnitten, Still-Meldung, bg ok), spk2-loop A/B je 18 OK, Last 3.74 5.67 6.04
