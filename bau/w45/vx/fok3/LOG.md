@@ -12,3 +12,4 @@
 - 02:41:15 Lauf 4 (v4 Endfassung edfc49a6…) 28/0, alle 10 Hashes = v6; smoke errors [] auf v4; Pflicht grün. Ende. Last 4.08
 - 02:56:36 Nachbesserung nach Prüfung startet. Sicherung index.vor-pruef.html (= v4 edfc49a6…). Last 2.60 6.00 6.53
 - 03:00:15 v5: Befund 1 behoben (jedes Stück höchstens 1× ablösen, ab nC+2 ohne Ablösen, nie fertig mit Näherung, S.ok); Last 6.64 5.77 6.28
+- 03:01:46 fok3p-test Lauf 1 + Ketten A/B (reg5/) gestartet; Last 6.82 6.27 6.42
