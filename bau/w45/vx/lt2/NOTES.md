@@ -82,6 +82,14 @@ b) FFT-Größe umschalten, c) Import-Ablegen, d) Fokus „Alles / Nur Rest / Nur
 Einzelprobe b in Ruhe (`probe-b`, Last 1,0–1,3): index **0** / basis 60. Zähler index: b je Lauf 20 Kacheln einzeln hochgeladen, 19–28 Bilder
 mit ausgelassener Kachel (`skip`), `mk` 1 (Programm einmal übersetzt), `err` leer; d: nT 6–7 Bilder mit Tönung (Original-Programm), 11–12 ohne.
 
+**A/B `nach2.out`** (b und d, REPS 2, 05:37–05:40, gleiche md5):
+| Fall | Größe | basis | index | gleich |
+|---|---|---|---|---|
+| b | 926×428 (Last 4,8–5,6) | 100, 127 (6 Aufgaben > 50) | 53, 61 (3) | ja |
+| b | 428×926 (Last 3,1–5,2) | 61, 69 (5) | **0, 0 (0)** | ja |
+| d | 926×428 (Last 4,9–5,2) | 106, 93 (13) | 64, 63 (4) | ja |
+| d | 428×926 (Last 2,5–2,9) | 54, 0 (1) | 0, 52 (1) | ja |
+
 Lesart: Bei Last < 4 ist **b** jetzt ohne Long Task (vorher 8 / 8 Läufe mit 59–138 ms), **d** in 926×428 ohne bzw. mit einer (63 ms, Last 3);
 a/a2 waren bei Last < 4 schon in der Basis fast frei und bleiben es. Über Last 4 bleiben Long Tasks in A und B, im Index weniger
 (b 11 statt 21 Aufgaben > 50, d 8 statt 17). c (Import) unverändert 0 bei Last < 4 (vorher-Lauf).
@@ -97,7 +105,8 @@ a/a2 waren bei Last < 4 schon in der Basis fast frei und bleiben es. Über Last 
 | spk6-test | **ALLES OK** | OK | |
 | spk1-test | 17 OK, 1 FEHLER `verfeinern-verbessert-ziel` | **derselbe** FEHLER | vorbestehend (Noten-Verfeinerung, nicht Zeichnen) |
 | fokus1-test (LONG=0, ohne 3-min-Teil) | **47 OK / 3 FEHLER** | 44 / 7 (mit 3-min-Teil) | alle 3 = `umschalten-* longtasks<=50` in 926×428 bei **Last 5,5–9** (fremde Agenten + eigene Läufe); 428×926 alle drei Umschalten jetzt OK (4.76.0: FEHLER); Bild-/Byte-Prüfungen OK (alles-byte-gleich, endstand-byte-gleich, original-unberuehrt, CPU-Rückfall) |
-| spk5-test, spkfix-test | siehe unten (reg2) | OK | 1. Lauf ohne Hilfsdateien (lib.mjs, sonde/) → nachgeholt |
+| spk5-test | **ALLES OK · 24 Prüfungen** | OK | 1. Lauf ohne Hilfsdatei lib.mjs → mit Kopie nachgeholt (reg2.sh) |
+| spkfix-test | **ALLES OK 11 Prüfungen** | OK | brauchte Kopien von sonde/*.mjs und spk7/lib.mjs |
 | lt2-test a/a2/b/d | Bild/Ergebnis gleich in **allen** 48 + 16 Läufen | | |
 
 ## Pflicht (`pflicht.out`, index md5 **febbfca4bf95421608593fa7e5cebfef**, basis rel-4761 e4dc1b9599eef2656308cb990e407f37)
