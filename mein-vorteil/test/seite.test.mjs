@@ -1201,7 +1201,7 @@ test('Start „Heute für dich“ (v5): je Bereich eine Kachel mit den besten Tr
   assert.equal(await page.locator('#ort-name').innerText(), 'Heute für dich');
   assert.equal(await page.locator('.sprung a[data-ziel="start"]').getAttribute('aria-current'), 'true');
   const kacheln = page.locator('#kacheln a.kachel');
-  assert.deepEqual(await kacheln.evaluateAll(as => as.map(a => a.dataset.sprung)), ['deals', 'woche', 'essen', 'preisfehler', 'filme', 'auftritte', 'remix', 'unterricht', 'konzerte', 'gewinnspiele', 'krypto', 'spartricks', 'mehr']);
+  assert.deepEqual(await kacheln.evaluateAll(as => as.map(a => a.dataset.sprung)), ['deals', 'woche', 'essen', 'preisfehler', 'filme', 'auftritte', 'remix', 'unterricht', 'ausfluege', 'konzerte', 'gewinnspiele', 'krypto', 'spartricks', 'mehr']);
   // nie leer: jede Kachel hat mindestens eine Zeile
   for (const k of await kacheln.all()) assert.ok(await k.locator('li').count() >= 1, await k.innerText());
   const t = b => page.locator(`#kacheln a[data-sprung="${b}"]`).innerText().then(nbsp);

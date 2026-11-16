@@ -349,6 +349,40 @@
         { "id": "rewe", "name": "REWE", "kaufda": "REWE", "kaufdaId": 101, "haendler": ["REWE", "REWE Center", "REWE City"] },
         { "id": "marktkauf", "name": "Marktkauf", "kaufda": "Marktkauf", "kaufdaId": 60, "haendler": ["Marktkauf"] }
       ]
+    },
+    "events": {
+      "aktiv": true,
+      "intervallStunden": 12,
+      "_hinweis": "Ausflüge & Aktionen (Xander 16.11.2026): Feste/Märkte im Umkreis (maxKm ab Döbeln, Luftlinie), Gratis-Tage, Mitmachen mit Belohnung, Produkttests (Musiktechnik). Feste Liste mit Quellen: vorteile/ausfluege.json; dazu Google-News-Suchen je Art (nachrichten). Seite: <data>/events.json (Reiter „Ausflüge“). Push nur: Gratis-Tag morgen bis pushKm, neuer seriöser Produkttest Musiktechnik.",
+      "maxKm": 60,
+      "pushKm": 60,
+      "tageZurueck": 30,
+      "maxTermine": 80,
+      "nachrichten": {
+        "fest": [
+          "Stadtfest Döbeln OR Leisnig OR Waldheim OR Hartha OR Roßwein",
+          "Stadtfest Mittweida OR Grimma OR Meißen OR Riesa OR Freiberg",
+          "Weihnachtsmarkt Döbeln OR Leisnig OR Waldheim OR Roßwein OR Hartha",
+          "\"Tag der offenen Tür\" Döbeln OR Mittweida OR Freiberg OR Leipzig OR Chemnitz",
+          "Museumsnacht OR \"lange Nacht\" Leipzig OR Dresden OR Chemnitz"
+        ],
+        "gratis": [
+          "\"Eintritt frei\" Döbeln OR Mittelsachsen",
+          "\"freier Eintritt\" Leipzig OR Chemnitz OR Dresden Museum",
+          "kostenlos Aktionstag Leipzig OR Chemnitz OR Dresden OR Döbeln"
+        ],
+        "mitmachen": [
+          "Probanden gesucht Leipzig OR Dresden OR Chemnitz Aufwandsentschädigung",
+          "Teilnehmer gesucht Studie Vergütung Leipzig OR Chemnitz OR Dresden",
+          "Mitmachaktion Döbeln OR Mittelsachsen Gutschein"
+        ],
+        "testen": [
+          "Betatester gesucht Synthesizer OR Plugin OR DAW",
+          "\"Beta-Programm\" Synthesizer OR Ableton OR Bitwig OR \"Native Instruments\"",
+          "\"Produkttester gesucht\" Kopfhörer OR Lautsprecher OR Technik",
+          "\"testen und behalten\" Technik OR Kopfhörer OR Audio"
+        ]
+      }
     }
   }
 }

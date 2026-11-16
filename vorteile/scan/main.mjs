@@ -23,12 +23,13 @@ import remix from './module/remix.mjs';
 import auftritte from './module/auftritte.mjs';
 import unterricht from './module/unterricht.mjs';
 import knaller from './module/knaller.mjs';
+import events from './module/events.mjs';
 import { FIXTURE_KARTE } from './test/fixtures/karte.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
-export const MODULE = { deals, erleben, reisen, musik, nebenverdienst, tests, praemien, filme, remix, auftritte, unterricht, knaller };
+export const MODULE = { deals, erleben, reisen, musik, nebenverdienst, tests, praemien, filme, remix, auftritte, unterricht, knaller, events };
 // Fundorte (Remix/Auftritte/Unterricht) haben kein Datum und bleiben immer stehen
-const MAX_ALTER_TAGE = { knaller: 7, deals: 7, erleben: 21, reisen: 5, musik: 30, nebenverdienst: 21, tests: 21, praemien: 14, filme: 3, remix: 45, auftritte: 60, unterricht: 30 };
+const MAX_ALTER_TAGE = { knaller: 7, deals: 7, erleben: 21, reisen: 5, musik: 30, nebenverdienst: 21, tests: 21, praemien: 14, filme: 3, remix: 45, auftritte: 60, unterricht: 30, events: 14 };
 
 const mitZeitlimit = (p, ms, name) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(`${name}: Zeitlimit`)), ms).unref())]);
 
@@ -123,7 +124,7 @@ export async function main(args = process.argv.slice(2), env = process.env, test
   const wunschliste = JSON.parse(await readFile(join(basis, 'wunschliste.json'), 'utf8'));
   const filmListen = await leseJson(join(basis, 'filme.json'), null);
   const vorher = await leseJson(join(daten, 'aktuell.json'), null);
-  const dateienVorher = { filme: await leseJson(join(daten, 'filme.json'), null), knaller: await leseJson(join(daten, 'knaller.json'), null) };
+  const dateienVorher = { filme: await leseJson(join(daten, 'filme.json'), null), knaller: await leseJson(join(daten, 'knaller.json'), null), events: await leseJson(join(daten, 'events.json'), null) };
   const zustand = await leseJson(join(daten, 'zustand.json'), {});
   const fetchImpl = roh ? roh.fetch(test.fetchImpl) : test.fetchImpl;
   const holeText = fixtures ? macheFixtureAbruf(join(HIER, 'test', 'fixtures'), FIXTURE_KARTE) : macheAbruf({ ...cfg.abruf, ...test.abruf }, fetchImpl);
