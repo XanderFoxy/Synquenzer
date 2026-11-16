@@ -289,7 +289,10 @@ export default async function auftraege({ holeText, cfg, jetzt = new Date(), zus
 
   // Fertige Suchen (immer): Plattformen ohne offenen Zugang bzw. mit Verbot in der robots.txt
   const fund = fundortEintraege((m.suchLinks || []).map(s => ({ typ: 'suche', ...s })), { kategorie: 'auftraege', jetzt, kuenstler: cfg.kuenstler });
-  for (const e of fund) { const s = (m.suchLinks || []).find(x => x.link === e.link); e.extra.feld = s?.feld || null; e.extra.gesuch = true; }
+  for (const e of fund) {
+    const s = (m.suchLinks || []).find(x => x.link === e.link); e.extra.feld = s?.feld || null; e.extra.gesuch = true;
+    e.zeile = String(e.zeile || '').replace(/^([^·]+?) · [0-3] km\b/, '$1 · hier'); // „Döbeln · 0 km“ -> „Döbeln · hier“ (wie die Seite)
+  }
   eintraege.push(...fund);
   return { eintraege, fehler, hinweise, kurz: { ...zahlen, treffer: liste.length, gelesen } };
 }

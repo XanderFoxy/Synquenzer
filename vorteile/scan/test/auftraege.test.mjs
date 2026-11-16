@@ -256,3 +256,11 @@ test('Doppelte mit Zähler/Zeitstempel im Titel raus, nur Deutsch/Englisch, kaum
   assert.equal(winzig.sofort, false);
   assert.ok(r.kurz.doppelt >= 2 && r.kurz.passtNicht >= 1);
 });
+
+test('Fertige Suchen um Döbeln: „Döbeln · hier“ statt „0 km“', async () => {
+  const c = structuredClone(cfg); c.module.auftraege.quellen = [];
+  const r = await auftraege({ holeText: async () => '', cfg: c, jetzt: JETZT, zustand: {} });
+  const kl = r.eintraege.find(e => /Klavierunterricht“ um Döbeln/.test(e.titel));
+  assert.match(kl.zeile, /^Döbeln · hier · nur Gesuche/);
+  assert.ok(r.eintraege.every(e => !/ · 0 km/.test(e.zeile)));
+});
