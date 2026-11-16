@@ -866,6 +866,7 @@ const BEREICH = {
 // Nie zeigen (Xander 07.11.2026: „Prämien & Freunde werben“ – Strom, Bank, Konto, Freunde werben – komplett raus),
 // auch nicht aus älteren Daten
 const NIE_ZEIGEN = new Set(['praemien']);
+const DATEI_BEREICHE = new Set(['filialen', 'knaller', 'essen', 'events']); // liefern eine eigene Datei statt Einträge
 // Bereiche mit eigener Seite (Reiter in der Leiste): nicht noch einmal unter „Mehr“
 const EIGENE_SEITE = new Set(['filme', 'essen']); // essen: Reiter „Essen“ (Radar-Einträge der Kategorie essen dort unter „Aktuell“)
 // Geräte sind keine Filme (Lauf 08.11.2026: „Apple TV 4K (2026)“ aus der mydealz-Gruppe apple-tv stand unter Filmen) –
@@ -1954,9 +1955,21 @@ function zeichneMehr(t) {
     teile.push(`<details class="kasten"><summary>${esc(titel)}</summary><pre id="${id}">${esc(text)}</pre><button class="zweit kopie" type="button" data-ziel="${id}">Kopieren</button></details>`);
   }
   if (d) {
-    const namen = namenVorteile();
+    // Bereiche mit eigener Datei (Filialen, Wochen-Knaller, Essen, Ausflüge) liefern keine Einträge: Radar ab MV6 schickt
+    // status.<k>.zahl = { n, wort } („1468 Filialen“) – sonst stand dort „0 gefunden“ (Prüfer 16.11.2026, Befund B6)
+    const namen = { knaller: 'Wochen-Knaller', filialen: 'Filialen (OpenStreetMap)', essen: 'Essen', events: 'Ausflüge & Aktionen', ...namenVorteile() };
+    const menge = (k, q) => {
+      if (q.zahl && Number.isFinite(q.zahl.n) && typeof q.zahl.wort === 'string') return `${q.zahl.n} ${q.zahl.wort.slice(0, 30)}`;
+      if (!q.anzahl && DATEI_BEREICHE.has(k)) { // ältere Radar-Dateien ohne zahl: aus der Kurz-Übersicht
+        if (Number.isFinite(q.kurz?.anzahl)) return `${q.kurz.anzahl} Angebote`;
+        if (Number.isFinite(q.kurz?.n)) return `${q.kurz.n} Termine`;
+        if (typeof q.kurz === 'string' && q.kurz.trim()) return q.kurz.split(' · ')[0].slice(0, 40);
+        return 'eigene Liste';
+      }
+      return `${q.anzahl ?? 0} gefunden`;
+    };
     const quellen = Object.entries(d.status || {}).filter(([k, q]) => !NIE_ZEIGEN.has(k) && !q.aus).map(([k, q]) =>
-      `<li class="${q.ok ? '' : 'stoerung'}">${esc(namen[k] || k)}: ${q.aus ? 'aus' : q.ok ? `${esc(q.anzahl ?? 0)} gefunden` : 'gestört – ' + esc((q.fehler || [])[0] || '')}${q.stand && zeit(q.stand) != null ? ` · ${esc(vor(q.stand))}` : ''}</li>`);
+      `<li class="${q.ok ? '' : 'stoerung'}">${esc(namen[k] || k)}: ${q.aus ? 'aus' : q.ok ? esc(menge(k, q)) : 'gestört – ' + esc((q.fehler || [])[0] || '')}${q.stand && zeit(q.stand) != null ? ` · ${esc(vor(q.stand))}` : ''}</li>`);
     teile.push(quellenKasten('Quellen & Hinweise (Vorteile)', quellen, weg.size ? '<button class="mehr" type="button" id="zeigen">Ausgeblendete wieder zeigen</button>' : ''));
   }
   return { html: teile.join(''), n };

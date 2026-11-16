@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import events, { ARTEN, terminImJahr, naechsterTermin, ostern, ausListe, bewerteMeldung, ohneDoppel, seriositaet, fahrMinuten } from '../module/events.mjs';
-import { ORTE } from '../lib/orte.mjs';
+import { ORTE, ortAus, ortNach } from '../lib/orte.mjs';
 import { MODULE } from '../main.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
@@ -164,4 +164,56 @@ test('Radar kennt das Modul (main.mjs, config, Kategorie-Name)', async () => {
   assert.ok(M.intervallStunden >= 6);
   const { KATEGORIEN } = await import('../benachrichtigen.mjs');
   assert.equal(KATEGORIEN.events, 'Ausflüge & Aktionen');
+});
+
+// ---------------------------------------------------------------- Prüfer-Befunde 4–7 (MV6, 16.11.2026)
+test('Befund 4: Museumstag = Sonntag, der dem 18. Mai am nächsten liegt (nicht „letzter Sonntag davor“)', () => {
+  // echte Termine (museumstag.de / Prüfer): 2022-05-15, 2023-05-21, 2024-05-19, 2025-05-18, 2026-05-17, 2027-05-16
+  const echt = { 2022: '2022-05-15', 2023: '2023-05-21', 2024: '2024-05-19', 2025: '2025-05-18', 2026: '2026-05-17', 2027: '2027-05-16' };
+  for (const [j, d] of Object.entries(echt)) assert.equal(terminImJahr({ typ: 'sonntagNahe', monat: 5, tag: 18 }, Number(j)).ab, d, j);
+  assert.notEqual(terminImJahr({ typ: 'sonntagBis', monat: 5, tag: 18 }, 2023).ab, echt[2023], 'die alte Regel lag 2023 eine Woche daneben');
+  const e = LISTE.eintraege.find(x => x.id === 'internationaler-museumstag');
+  assert.deepEqual(e.muster, { typ: 'sonntagNahe', monat: 5, tag: 18 });
+  const { regelmaessig } = ausListe(LISTE, '2026-11-16');
+  assert.equal(regelmaessig.find(r => r.id === 'internationaler-museumstag').naechster.ab, '2027-05-16');
+});
+
+test('Befund 5: Museumsnacht Halle/Leipzig hat keine feste Regel – nur belegte Termine, kein ausgedachter 2027-Termin', () => {
+  const e = LISTE.eintraege.find(x => x.id === 'museumsnacht-halle-leipzig');
+  assert.equal(e.muster, undefined, '„2. Samstag im Mai“ traf 2024 (04.05.) nicht');
+  assert.deepEqual(e.termine.map(t => t.ab), ['2024-05-04', '2025-05-10', '2026-05-09']);
+  assert.match(e.wann, /2027 noch nicht veröffentlicht/);
+  const { termine, regelmaessig } = ausListe(LISTE, '2026-11-16');
+  assert.ok(!termine.some(t => t.id === 'museumsnacht-halle-leipzig'), 'kein Termin in der Liste, solange 2027 nicht bekannt ist');
+  const r = regelmaessig.find(x => x.id === 'museumsnacht-halle-leipzig');
+  assert.equal(r.naechster, null);
+  // im Mai 2026 stand der belegte Termin in der Liste
+  assert.equal(ausListe(LISTE, '2026-05-01').termine.find(t => t.id === 'museumsnacht-halle-leipzig').ab, '2026-05-09');
+});
+
+test('Befund 6: Fahrzeit über Landstraße – Freiberg nicht mehr „≈ 25 Min.“', () => {
+  const min = n => fahrMinuten(ortNach(n).km);
+  assert.ok(min('Freiberg') >= 35 && min('Freiberg') <= 45, `Freiberg ${min('Freiberg')}`); // echt etwa 40 Min. (B169/B101)
+  assert.ok(min('Leisnig') >= 15 && min('Leisnig') <= 25, `Leisnig ${min('Leisnig')}`);
+  assert.ok(min('Chemnitz') >= 40 && min('Chemnitz') <= 55, `Chemnitz ${min('Chemnitz')}`);
+  assert.ok(min('Dresden') >= 45 && min('Dresden') <= 60, `Dresden ${min('Dresden')}`);
+  assert.ok(min('Leipzig') >= 50 && min('Leipzig') <= 70, `Leipzig ${min('Leipzig')}`);
+  for (let km = 1; km < 120; km++) assert.ok(fahrMinuten(km + 1) >= fahrMinuten(km), 'weiter = nie schneller');
+  const { termine } = ausListe(LISTE, '2026-11-16');
+  assert.ok(termine.find(t => t.ort === 'Freiberg').fahrMin >= 35);
+});
+
+test('Befund 7: Frankenberg (Eder) in Hessen ist nicht Frankenberg/Sa.', () => {
+  assert.equal(bewerteMeldung(it('Frankenberg (Eder): Weihnachtsmarkt startet'), 'fest', M, '2026-11-16'), null);
+  for (const t of ['Frankenberg/Eder: Weihnachtsmarkt', 'Weihnachtsmarkt in Frankenberg an der Eder', 'Frankenberg in Hessen: Markt', 'Frankenberg, Hessen – Weihnachtsmarkt']) assert.equal(ortAus(t), null, t);
+  assert.equal(ortAus('Frankenberg (Sa.): Weihnachtsmarkt').ort, 'Frankenberg');
+  assert.equal(ortAus('Weihnachtsmarkt Frankenberg am Wochenende').ort, 'Frankenberg');
+  assert.equal(ortAus('Frankenberg (Eder) und Chemnitz feiern').ort, 'Chemnitz', 'weitersuchen statt aufgeben');
+  assert.ok(bewerteMeldung(it('Frankenberg: Weihnachtsmarkt am 1. Advent'), 'fest', M, '2026-11-16'));
+  assert.equal(ortNach('Frankenberg (Eder)'), null);
+  assert.equal(ortAus('Frankfurt (Oder): Stadtfest'), null);
+  assert.equal(ortAus('Freiberg am Neckar feiert'), null);
+  assert.equal(ortAus('Freiberg: Bergparade').ort, 'Freiberg');
+  assert.equal(ortAus('Leipzig (dpa) – Lichterfest').ort, 'Leipzig', 'Agenturkürzel ist kein anderer Ort');
+  assert.equal(ortAus('Halle (Saale) feiert').ort, 'Halle (Saale)');
 });

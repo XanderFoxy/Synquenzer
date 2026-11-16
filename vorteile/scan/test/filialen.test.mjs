@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import filialen, { overpassAbfrage, marktVon, leseFilialen, naechste, km, STANDARD } from '../module/filialen.mjs';
+import filialen, { overpassAbfrage, marktVon, leseFilialen, naechste, km, STANDARD, osmStandAus } from '../module/filialen.mjs';
 import { filialeAusOsm } from '../module/knaller.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
@@ -34,7 +34,11 @@ test('Marken: eindeutig zugeordnet, Fallen bleiben draußen', () => {
   assert.equal(marktVon({ shop: 'supermarket', name: 'Netto' }), null, '„Netto“ ohne Zusatz ist nicht eindeutig');
   assert.equal(marktVon({ shop: 'supermarket', brand: 'ALDI SÜD', 'brand:wikidata': 'Q41171672', name: 'ALDI SÜD' }), null);
   assert.equal(marktVon({ shop: 'convenience', brand: 'REWE To Go', name: 'REWE To Go' }), null);
-  assert.equal(marktVon({ shop: 'supermarket', brand: 'EDEKA', 'brand:wikidata': 'Q701755', name: 'EDEKA Lidl-Straße' }), null);
+  // MV6 (16.11.2026): EDEKA ist jetzt ein eigener Markt (Döbeln: Rudolf-Breitscheid-Straße 2) – der Name „Lidl-Straße“ ändert das nicht
+  assert.equal(marktVon({ shop: 'supermarket', brand: 'EDEKA', 'brand:wikidata': 'Q701755', name: 'EDEKA Lidl-Straße' }), 'edeka');
+  assert.equal(marktVon({ shop: 'supermarket', brand: 'E center', name: 'E center Döbeln' }), 'edeka');
+  assert.equal(marktVon({ shop: 'supermarket', brand: 'Marktkauf', 'brand:wikidata': 'Q1533254', name: 'Marktkauf' }), 'marktkauf', 'Marktkauf bleibt eigener Markt');
+  assert.equal(marktVon({ shop: 'supermarket', brand: 'Globus', name: 'Globus' }), null);
   assert.equal(marktVon({ shop: 'kiosk', name: 'Penny Kiosk' }), null);
 });
 
@@ -53,10 +57,18 @@ test('Lesen: Doppel zusammengelegt, Adresse, sortiert; nächste Filiale von Döb
 test('Modullauf: Datei mit Quelle/Stand, kurz nennt die fernen Märkte; Ausfall behält den alten Stand', async () => {
   const jetzt = new Date('2026-11-16T10:00:00Z');
   const zustand = {};
-  const r = await filialen({ holeText: async () => FIX, cfg: CFG, jetzt, zustand });
+  // Befund B6 (Prüfer 16.11.2026): osmStand = Datenstand von OpenStreetMap (osm3s.timestamp_osm_base), nicht die Abrufzeit
+  const MIT_STAND = JSON.stringify({ ...JSON.parse(FIX), osm3s: { timestamp_osm_base: '2026-11-16T09:52:00Z', copyright: 'ODbL' } });
+  const r = await filialen({ holeText: async () => MIT_STAND, cfg: CFG, jetzt, zustand });
   assert.deepEqual(r.fehler, []);
   assert.equal(r.datei.quelle.lizenz, 'ODbL');
-  assert.equal(r.datei.osmStand, '2026-11-16T10:00:00.000Z');
+  assert.equal(r.datei.osmStand, '2026-11-16T09:52:00.000Z');
+  assert.equal(r.datei.abgerufen, '2026-11-16T10:00:00.000Z');
+  assert.equal(osmStandAus({ elements: [] }), null, 'ohne osm3s kein erfundener Stand');
+  assert.equal((await filialen({ holeText: async () => FIX, cfg: CFG, jetzt, zustand: {} })).datei.osmStand, null);
+  // Befund B6: Quellen-Liste „N Filialen“ statt „0 gefunden“
+  assert.deepEqual(r.zahl, { n: Object.values(r.datei.zahlen).reduce((a, b) => a + b, 0), wort: 'Filialen' });
+  assert.ok(r.zahl.n > 0);
   assert.ok(r.datei.naechsteVomZentrum.rewe.km > 10);
   assert.match(r.kurz, /weiter weg: REWE \(nächste \d+,\d km\)/);
   assert.ok(!/Aldi Nord/.test(r.kurz.split('weiter weg')[1] || ''), 'Aldi Nord ist in der Nähe');
@@ -67,6 +79,7 @@ test('Modullauf: Datei mit Quelle/Stand, kurz nennt die fernen Märkte; Ausfall 
   assert.deepEqual(aus.fehler, []);
   assert.ok(!aus.datei, 'keine neue Datei -> alte bleibt stehen');
   assert.match(aus.hinweise.join(' '), /OpenStreetMap: overpass-api.de: HTTP 504 · overpass.private.coffee: HTTP 504/);
+  assert.deepEqual(aus.zahl, { n: r.zahl.n, wort: 'Filialen (letzter Stand)' });
   let n = 0;
   const zweite = await filialen({ holeText: async () => { if (!n++) throw new Error('HTTP 502'); return FIX; }, cfg: CFG0, jetzt, zustand: {} });
   assert.equal(zweite.datei.server, 'overpass.private.coffee');

@@ -319,5 +319,5 @@ export default async function essen({ holeText, cfg, jetzt = new Date(), zustand
   };
   const kurz = `${lokale.length + weitere.length} Lokale bis ${radiusKm} km · ${mitZeiten} mit Öffnungszeiten${neu.length ? ` · ${neu.length} neu` : ''}`;
   if (alt) hinweise.push('OpenStreetMap gerade nicht erreichbar – letzter Stand');
-  return { eintraege, fehler, hinweise, datei, kurz };
+  return { eintraege, fehler, hinweise, datei, kurz, zahl: { n: lokale.length + weitere.length, wort: 'Lokale' } };
 }

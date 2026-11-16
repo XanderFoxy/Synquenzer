@@ -1607,6 +1607,28 @@ test('Stand: nach 8 Std. kein Alarm, kleiner Hinweis; „Zuletzt gesucht“ je B
   await frisch.ctx.close();
 });
 
+// MV6 (16.11.2026, Prüfer-Befund B6): Bereiche mit eigener Datei (Filialen, Wochen-Knaller, Essen, Ausflüge) standen in der
+// Quellen-Liste als „0 gefunden“ – jetzt mit ihrer Zahl (Radar: status.<k>.zahl, ältere Dateien: aus kurz).
+test('Quellen-Liste: Filialen/Wochen-Knaller/Essen/Ausflüge mit ihrer Zahl statt „0 gefunden“', { skip: ohnePw }, async () => {
+  const patch = { 'vorteile-aktuell.json': d => {
+    const st = { ok: true, anzahl: 0, fehler: [], stand: d.aktualisiert };
+    d.status.filialen = { ...st, zahl: { n: 1513, wort: 'Filialen' }, kurz: '8 Märkte bis 10 km um Döbeln · weiter weg: REWE (nächste 15 km)' };
+    d.status.knaller = { ...st, kurz: { anzahl: 125, ab: { 30: 65 } } }; // ältere Radar-Datei ohne zahl
+    d.status.essen = { ...st, kurz: '696 Lokale bis 30 km · 400 mit Öffnungszeiten' };
+    d.status.events = { ...st, zahl: { n: 16, wort: 'Termine' }, kurz: { n: 16 } };
+  } };
+  const o = await oeffne({ satz: 'v5', jetzt: JETZT_V5, patch, pfad: '/mein-vorteil/#remix' });
+  const quellen = nbsp(await o.page.evaluate(() => [...document.querySelectorAll('details.kasten')].find(d => /Quellen & Hinweise \(Vorteile\)/.test(d.textContent))?.textContent || ''));
+  assert.match(quellen, /Filialen \(OpenStreetMap\): 1513 Filialen/);
+  assert.match(quellen, /Wochen-Knaller: 125 Angebote/);
+  assert.match(quellen, /Essen: 696 Lokale bis 30 km/);
+  assert.match(quellen, /Ausflüge & Aktionen: 16 Termine/);
+  assert.doesNotMatch(quellen, /(Filialen|Knaller|Essen|Ausflüge)[^:]*: 0 gefunden/);
+  assert.match(quellen, /Remix-Contests: \d+ gefunden/, 'normale Bereiche wie bisher');
+  assert.deepEqual(o.fehler, []);
+  await o.ctx.close();
+});
+
 // MV7-Prüfung (15.11.2026): kein doppelter Punkt („vor 22 Min..“), nach 36 h wieder rot und ohne Versprechen (wie der
 // Filme-Reiter), Frist um Mitternacht Berlin = Ende des Vortags, „Heute wichtig“ ohne doppeltes „Remix-Contest:“.
 test('Stand: „vor 22 Min.“ ohne doppelten Punkt; nach 3 Tagen rot ohne „läuft von selbst“; Frist 00:00 = Vortag', { skip: ohnePw }, async () => {

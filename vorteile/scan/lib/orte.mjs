@@ -53,7 +53,30 @@ export function distanzKm(a, b) {
 
 const NAMEN = Object.keys(ORTE).sort((a, b) => b.length - a.length);
 const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const MUSTER = NAMEN.map(n => [n, new RegExp(`(^|[^\\p{L}])${esc(n)}(?![\\p{L}])`, 'u')]);
+const MUSTER = NAMEN.map(n => [n, new RegExp(`(^|[^\\p{L}])${esc(n)}(?![\\p{L}])`, 'gu')]);
+
+// Gleichnamige Orte woanders (Prüfer 16.11.2026: „Frankenberg (Eder): Weihnachtsmarkt startet“ – Hessen, 300 km – stand als
+// Frankenberg/Sa. 24 km da). Steht direkt hinter dem Namen ein Zusatz wie „(Eder)“, „/Eder“, „an der Eder“, „in Hessen“,
+// „, Hessen“ und passt er zu diesem anderen Ort, zählt die Stelle nicht (der Text wird weiter nach Orten durchsucht).
+export const ANDERSWO = {
+  Frankenberg: /^(eder|hessen|hess|nordhessen|waldeck|waldeck-frankenberg)$/,
+  Frankfurt: /^(oder)$/,
+  Freiberg: /^(neckar|ludwigsburg|baden|württemberg|wuerttemberg|bw)$/,
+  Hainichen: /^(thüringen|thueringen|th|thür)$/,
+  Ostrau: /^(ostrava|tschechien|mähren|maehren|cz)$/,
+  Freiburg: /^(elbe|schweiz|üechtland|uechtland|fribourg)$/,
+  Borna: /^(oschatz|bei oschatz)$/,
+};
+const ZUSATZ = /^\s*(?:\(\s*([\p{L}.\- ]{1,30}?)\s*\)|\/\s*([\p{L}.\-]{1,30})|,?\s+(?:an der|an dem|am|im|in|bei)\s+([\p{L}.\-]{1,30})|,\s*([\p{L}.\-]{1,30}))/u;
+/** Steht hinter dem Ort (rest = Text direkt danach) ein Zusatz, der einen gleichnamigen Ort woanders meint? */
+export function anderswo(name, rest) {
+  const re = ANDERSWO[name];
+  if (!re) return false;
+  const m = ZUSATZ.exec(String(rest || ''));
+  if (!m) return false;
+  const z = norm(m[1] || m[2] || m[3] || m[4] || '').replace(/[.]/g, '').trim();
+  return re.test(z) || (m[1] && /^bei /.test(z) && re.test(z.slice(4)));
+}
 
 /**
  * Erster bekannter Ort im Text (Titel vor Beschreibung), mit Entfernung ab zuhause. Nur ganze Wörter.
@@ -63,10 +86,14 @@ export function ortAus(text, zuhause = DOEBELN) {
   const s = String(text || '');
   let best = null;
   for (const [n, re] of MUSTER) {
-    const m = re.exec(s);
-    if (!m) continue;
-    const pos = m.index + m[1].length;
-    if (!best || pos < best.pos) best = { n, pos };
+    re.lastIndex = 0;
+    let m;
+    while ((m = re.exec(s))) {
+      const pos = m.index + m[1].length;
+      if (anderswo(n, s.slice(pos + n.length, pos + n.length + 40))) continue; // gleichnamiger Ort woanders
+      if (!best || pos < best.pos) best = { n, pos };
+      break;
+    }
   }
   if (!best) return null;
   const [lat, lon] = ORTE[best.n];
@@ -80,6 +107,9 @@ export function ortNach(name, zuhause = DOEBELN) {
   if (!n) return null;
   const k = NAMEN.find(x => norm(x) === n) || NAMEN.find(x => n.startsWith(norm(x) + ' '));
   if (!k) return null;
+  // „Frankenberg (Eder)“, „Frankfurt/Oder“ als Stadtfeld: der andere Ort, nicht der aus der Tabelle
+  const roh = String(name).trim();
+  if (anderswo(k, roh.slice(roh.toLowerCase().indexOf(k.toLowerCase()) + k.length))) return null;
   const [lat, lon] = ORTE[k];
   return { ort: k, lat, lon, km: distanzKm(zuhause, { lat, lon }) };
 }

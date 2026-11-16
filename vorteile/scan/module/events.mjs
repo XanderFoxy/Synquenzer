@@ -35,6 +35,7 @@ export function ostern(j) {
 
 /** Termin eines Musters in einem Jahr -> { ab, bis } | null.
  *  wochentag: n-ter Wochentag wt (1 = Mo … 7 = So) im Monat (n = -1: letzter) · sonntagBis: letzter Sonntag am/vor Tag ·
+ *  sonntagNahe: der Sonntag, der dem Tag am nächsten liegt (Museumstag: 18.05. -> 2023: 21.05., 2024: 19.05., 2026: 17.05.) ·
  *  ostern: Ostersonntag + plus Tage · advent: n-ter Adventssonntag, tage = Länge bis einschließlich Sonntag (2 = Sa+So) ·
  *  datum: fester Tag (monat, tag) · dauer: Anzahl Tage (Standard 1). */
 export function terminImJahr(m, j) {
@@ -48,6 +49,10 @@ export function terminImJahr(m, j) {
     return mit(plusTage(d, 7 * (m.n - 1)));
   }
   if (m.typ === 'sonntagBis') { let d = iso(j, m.monat, m.tag); while (wochentag(d) !== 7) d = plusTage(d, -1); return mit(d); }
+  if (m.typ === 'sonntagNahe') { // Mo–Mi -> Sonntag davor, Do–Sa -> Sonntag danach (höchstens 3 Tage weg)
+    const d = iso(j, m.monat, m.tag), wt = wochentag(d);
+    return mit(wt === 7 ? d : wt <= 3 ? plusTage(d, -wt) : plusTage(d, 7 - wt));
+  }
   if (m.typ === 'ostern') return mit(plusTage(ostern(j), m.plus || 0));
   if (m.typ === 'advent') {
     let s4 = iso(j, 12, 24); while (wochentag(s4) !== 7) s4 = plusTage(s4, -1); // 4. Advent = letzter Sonntag vor/an 24.12.
@@ -71,8 +76,15 @@ export function naechsterTermin(e, heute) {
   return null;
 }
 
-/** Fahrzeit grob: Luftlinie × 1,2 (Straße), Schnitt 75 km/h, auf 5 Minuten gerundet */
-export const fahrMinuten = km => (km == null ? null : Math.max(5, Math.round((km * 1.2 / 75) * 60 / 5) * 5));
+/** Fahrzeit grob ab Döbeln (Prüfer 16.11.: Freiberg „≈ 25 Min.“ war zu kurz – echt rund 40 Min. über Landstraße):
+ *  Straße = Luftlinie × 1,3; die ersten 35 Straßen-km Landstraße/Ortsdurchfahrten mit 55 km/h, alles darüber mit 100 km/h
+ *  (weitere Ziele gehen meist über A14/A4). Auf 5 Minuten gerundet. Döbeln -> Freiberg (28 km Luftlinie) ≈ 40 Min.,
+ *  Leisnig (13 km) ≈ 20, Chemnitz (35 km) ≈ 45, Dresden (44 km) ≈ 50, Leipzig (58 km) ≈ 60. */
+export const fahrMinuten = km => {
+  if (km == null) return null;
+  const strasse = km * 1.3, land = Math.min(strasse, 35), schnell = Math.max(0, strasse - 35);
+  return Math.max(5, Math.round((land / 55 * 60 + schnell / 100 * 60) / 5) * 5);
+};
 
 // ---------------------------------------------------------------- Seriosität (Produkttests, Mitmachen)
 // Prüfer 16.11.: Kosten/Kontodaten fehlten; „seriös“ gab es schon für einen Markennamen im Text („Roland … bei Testerportal XY
@@ -236,5 +248,5 @@ export default async function events({ holeText, cfg, jetzt = new Date(), vorher
     termine: termine.slice(0, m.maxTermine ?? 80), regelmaessig,
     quellen: { liste: (liste.eintraege || []).length, meldungen: meldungen.length, feeds: feeds.length, fehler: fehler.length },
   };
-  return { eintraege, fehler, hinweise, datei, kurz: { n: termine.length, fest: zahl('fest'), gratis: zahl('gratis'), mitmachen: zahl('mitmachen'), testen: zahl('testen'), top: naechste } };
+  return { eintraege, fehler, hinweise, datei, kurz: { n: termine.length, fest: zahl('fest'), gratis: zahl('gratis'), mitmachen: zahl('mitmachen'), testen: zahl('testen'), top: naechste }, zahl: { n: termine.length, wort: 'Termine' } };
 }

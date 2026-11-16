@@ -442,8 +442,10 @@
         { "id": "netto", "name": "Netto", "kaufda": "Netto-Marken-Discount", "kaufdaId": 9, "haendler": ["Netto Marken-Discount", "Netto"] },
         { "id": "penny", "name": "Penny", "kaufda": "Penny-Markt", "kaufdaId": 75, "haendler": ["Penny", "Penny-Markt"] },
         { "id": "rewe", "name": "REWE", "kaufda": "REWE", "kaufdaId": 101, "haendler": ["REWE", "REWE Center", "REWE City"] },
-        { "id": "marktkauf", "name": "Marktkauf", "kaufda": "Marktkauf", "kaufdaId": 60, "haendler": ["Marktkauf"] }
-      ]
+        { "id": "marktkauf", "name": "Marktkauf", "kaufda": "Marktkauf", "kaufdaId": 60, "haendler": ["Marktkauf"] },
+        { "id": "edeka", "name": "EDEKA", "kaufda": "Edeka", "kaufdaOrt": "EDEKA", "kaufdaId": 107, "haendler": ["EDEKA", "EDEKA Center", "E center"] }
+      ],
+      "_edeka": "EDEKA (MV6, 16.11.2026): kaufDA führt für Döbeln eine Orts-Händlerseite /Doebeln/EDEKA/p-r107 mit eigenem Döbelner Prospekt („Wir lieben Lebensmittel!“, 40 Seiten, 16.–21.11.2026) und der Filiale Rudolf-Breitscheid-Straße 2, 04720 Döbeln (Roh-Lauf 43793492110: /Filialen/Doebeln und /Doebeln) – gleiche Quelle und gleiche Regeln wie bei den anderen Märkten. Marktkauf bleibt ein eigener Markt (eigener Prospekt)."
     },
     "filialen": {
       "aktiv": true,

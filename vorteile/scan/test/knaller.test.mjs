@@ -195,13 +195,14 @@ test('knaller: Einstellungen – minProzent, maxJeMarkt, ab-Preise aus; Händler
   const ohneAb = await knaller({ holeText: abruf(STANDARD_KARTE), cfg: mit({ abPreise: false }), jetzt: JETZT, zustand: {} });
   assert.ok(!ohneAb.datei.angebote.some(a => a.abPreis));
   assert.ok(!ohneAb.datei.angebote.some(a => /Lachgummi/.test(a.titel)));
-  // Zuordnung: Scottie, ALDI SÜD, EDEKA gehören zu keinem Markt der Liste
+  // Zuordnung: Scottie, ALDI SÜD, Globus gehören zu keinem Markt der Liste; EDEKA seit MV6 (16.11.2026) schon
   assert.equal(marktVon('Netto Marken-Discount', MAERKTE), 'netto');
   assert.equal(marktVon('Netto mit dem Scottie', MAERKTE), null);
   assert.equal(marktVon('ALDI NORD', MAERKTE), 'aldi-nord');
   assert.equal(marktVon('ALDI SÜD', MAERKTE), null);
   assert.equal(marktVon('PENNY', MAERKTE), 'penny');
-  assert.equal(marktVon('EDEKA', MAERKTE), null);
+  assert.equal(marktVon('EDEKA', MAERKTE), MAERKTE.some(m => m.id === 'edeka') ? 'edeka' : null);
+  assert.equal(marktVon('Globus', MAERKTE), null);
   assert.equal(bereichVon({ categoryPaths: [[{ name: 'Haus und Garten' }, { name: 'Werkzeug' }]] }), 'nonfood');
   assert.equal(bereichVon({}), null);
 });
@@ -339,4 +340,16 @@ test('knaller Prüfer: Start-Kachel-Übersicht – was jetzt gilt zuerst, Späte
   const r = await knaller({ holeText: async u => (u.includes('/Chemnitz/') ? seiteMit(items, 'Chemnitz') : seiteMit(items)), cfg: nurMarkt('rewe'), jetzt: JETZT, zustand: {} });
   assert.equal(r.datei.standort, 'Chemnitz');
   assert.deepEqual(r.kurz.top.map(x => [x.titel, x.ab || null]), [['Storck Knoppers Nussriegel', null], ['Lorenz Crunchips', '2026-11-15T23:00:00.000Z']]);
+});
+
+// MV6 (16.11.2026): EDEKA wie die anderen Märkte über die Döbelner Orts-Händlerseite von kaufDA (Roh-Lauf 43793492110:
+// /Doebeln verlinkt /Doebeln/EDEKA/p-r107, Prospekt „Wir lieben Lebensmittel!“ für Döbeln, Filiale Rudolf-Breitscheid-Straße 2)
+test('knaller: EDEKA wird über /Doebeln/EDEKA/p-r107 gelesen (erst Döbeln, dann Nachbarstädte, zuletzt bundesweit)', async () => {
+  const mk = MAERKTE.find(m => m.id === 'edeka');
+  assert.ok(mk, 'EDEKA in module.knaller.maerkte');
+  assert.deepEqual([mk.kaufdaOrt, mk.kaufdaId, mk.kaufda], ['EDEKA', 107, 'Edeka']);
+  const gefragt = [];
+  const nurEdeka = { ...cfg, module: { ...cfg.module, knaller: { ...cfg.module.knaller, maerkte: [mk], stichworte: [], merkworte: [], marktguru: null } } };
+  await knaller({ holeText: async u => { gefragt.push(u); throw new Error(`HTTP 404 bei ${new URL(u).host}`); }, cfg: nurEdeka, jetzt: new Date('2026-11-16T12:00:00Z'), zustand: {} }).catch(() => null);
+  assert.deepEqual(gefragt, ['https://www.kaufda.de/Doebeln/EDEKA/p-r107', 'https://www.kaufda.de/Chemnitz/EDEKA/p-r107', 'https://www.kaufda.de/Leipzig/EDEKA/p-r107', 'https://www.kaufda.de/Geschaefte/Edeka']);
 });

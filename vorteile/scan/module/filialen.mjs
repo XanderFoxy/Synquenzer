@@ -36,6 +36,9 @@ export const MARKEN = {
   penny: { wikidata: ['Q284688'], marken: ['penny', 'penny markt', 'penny-markt'], namen: ['penny'] },
   rewe: { wikidata: ['Q16968817'], marken: ['rewe', 'rewe city', 'rewe center', 'rewe markt'], namen: ['rewe'] },
   marktkauf: { wikidata: ['Q1533254'], marken: ['marktkauf'], namen: ['marktkauf'] },
+  // MV6 (16.11.2026): EDEKA (Döbeln: Rudolf-Breitscheid-Straße 2). Marktkauf, Netto und „nah & gut“ gehören zur Gruppe, haben
+  // aber eigene Prospekte bzw. keinen – sie zählen hier nicht als EDEKA (eigene Marke/Wikidata)
+  edeka: { wikidata: ['Q701755'], marken: ['edeka', 'edeka center', 'e center', 'e-center'], namen: ['edeka', 'e center', 'e-center'] },
 };
 const NICHT_WIKIDATA = new Set(['Q41171672', 'Q552652']); // ALDI SÜD, Netto (Scottie)
 const NICHT_TEXT = /\bto\s*go\b|tankstelle|aldi\s*s(?:ü|ue)d|getränke|getraenke/i;
@@ -83,6 +86,13 @@ function adresseVon(t) {
   const str = [t['addr:street'] || t['addr:place'] || '', t['addr:housenumber'] || ''].join(' ').trim();
   const ort = String(t['addr:city'] || t['addr:suburb'] || '').trim();
   return [str, ort].filter(Boolean).join(', ').replace(/\s+/g, ' ').slice(0, 60);
+}
+
+/** Stand der OpenStreetMap-Daten laut Overpass (osm3s.timestamp_osm_base, z. B. „2026-11-16T09:52:00Z“) – nicht die Abrufzeit
+ *  (Prüfer 16.11.2026, Befund B6: osmStand war bisher die Zeit des Abrufs). Fehlt/kaputt -> null */
+export function osmStandAus(d) {
+  const t = d?.osm3s?.timestamp_osm_base;
+  return typeof t === 'string' && Number.isFinite(Date.parse(t)) ? new Date(Date.parse(t)).toISOString() : null;
 }
 
 /** Overpass-JSON -> { <markt-id>: [[lat, lon, adresse], …] } (doppelte Objekte – Gebäude + Punkt – unter 60 m zusammengelegt) */
@@ -142,11 +152,13 @@ export default async function filialen({ holeText, cfg, jetzt = new Date(), zust
   for (const [i, basis] of server.entries()) {
     if (i && m.pauseMs) await new Promise(r => setTimeout(r, m.pauseMs));
     try {
-      const l = leseFilialen(await holeText(`${basis}?data=${abfrage}`, { headers: { accept: 'application/json' }, timeoutMs: m.timeoutMs }), ids);
+      const d = JSON.parse(await holeText(`${basis}?data=${abfrage}`, { headers: { accept: 'application/json' }, timeoutMs: m.timeoutMs }));
+      const l = leseFilialen(d, ids);
       const zahl = Object.values(l).reduce((s, x) => s + x.length, 0);
       if (zahl < m.minFilialen) throw new Error(`Overpass: nur ${zahl} Filialen (Abfrage geändert?)`);
       f = l;
-      zk.osmZeit = new Date(jetztMs).toISOString();
+      zk.osmZeit = new Date(jetztMs).toISOString(); // Abruf
+      zk.osmStand = osmStandAus(d); // Datenstand von OpenStreetMap
       zk.server = new URL(basis).host;
       break;
     } catch (e) {
@@ -155,9 +167,11 @@ export default async function filialen({ holeText, cfg, jetzt = new Date(), zust
     }
   }
   if (!f) (vorherDatei?.maerkte ? hinweise : fehler).push(`OpenStreetMap: ${probleme.join(' · ')}`.slice(0, 300));
+  // Quellen-Liste der Seite: „1468 Filialen“ statt „0 gefunden“ (Befund B6) – das Modul liefert eine Datei, keine Einträge
+  const summe = z => Object.values(z || {}).reduce((s, x) => s + (Number.isFinite(x) ? x : Array.isArray(x) ? x.length : 0), 0);
   if (!f) {
     if (!vorherDatei?.maerkte) return { eintraege: [], fehler, hinweise };
-    return { eintraege: [], fehler, hinweise: [...hinweise, 'letzter Stand bleibt'], datei: null, kurz: vorherDatei.kurz || '' };
+    return { eintraege: [], fehler, hinweise: [...hinweise, 'letzter Stand bleibt'], datei: null, kurz: vorherDatei.kurz || '', zahl: { n: summe(vorherDatei.zahlen || vorherDatei.maerkte), wort: 'Filialen (letzter Stand)' } };
   }
   const z = m.zentrum;
   const vonZentrum = naechste(f, z, m.nahKm);
@@ -168,11 +182,11 @@ export default async function filialen({ holeText, cfg, jetzt = new Date(), zust
     .map(id => `${namen[id]}${vonZentrum[id] ? ` (nächste ${String(vonZentrum[id].km).replace('.', ',')} km)` : ''}`);
   const kurz = `${nahNamen.length} Märkte bis ${m.nahKm} km um ${z.name}${fern.length ? ` · weiter weg: ${fern.join(', ')}` : ''}`;
   const datei = {
-    version: 1, aktualisiert: new Date(jetztMs).toISOString(), osmStand: zk.osmZeit, server: zk.server,
+    version: 1, aktualisiert: new Date(jetztMs).toISOString(), osmStand: zk.osmStand || null, abgerufen: zk.osmZeit, server: zk.server,
     quelle: { name: 'OpenStreetMap-Mitwirkende', lizenz: 'ODbL', url: 'https://www.openstreetmap.org/copyright' },
     gebiet: `Sachsen, Thüringen, Sachsen-Anhalt, Brandenburg im Rahmen ${m.bbox.join(', ')}`, bbox: m.bbox,
     zentrum: z, nahKm: m.nahKm, umkreisKm: m.umkreisKm,
     namen, zahlen, naechsteVomZentrum: vonZentrum, maerkte: f,
   };
-  return { eintraege: [], fehler, hinweise, datei, kurz };
+  return { eintraege: [], fehler, hinweise, datei, kurz, zahl: { n: summe(zahlen), wort: 'Filialen' } };
 }
