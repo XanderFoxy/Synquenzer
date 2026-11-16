@@ -116,6 +116,8 @@
     const marke = [`<span class="aus-art aus-${t.art}">${esc(ART_NAME[t.art])}</span>`];
     if (t.serioes === 'seriös') marke.push('<span class="aus-marke aus-ok">seriös</span>');
     if (t.serioes === 'vorsicht' || t.serioes === 'unseriös') marke.push('<span class="aus-marke aus-warn">Vorsicht</span>');
+    // Prüfer 16.11.: Testaufrufe/Mitmach-Aktionen ohne geprüfte Seriosität sichtbar kennzeichnen
+    else if (t.serioes !== 'seriös' && (t.art === 'testen' || (t.art === 'mitmachen' && t.herkunft === 'radar'))) marke.push('<span class="aus-marke aus-warn">Seriosität unbekannt – erst prüfen</span>');
     if (t.musik) marke.push('<span class="aus-marke">Musiktechnik</span>');
     if (t.ausMuster || t.sicherheit === 'muster') marke.push('<span class="aus-marke">aus Regel – vorher prüfen</span>');
     if (t.herkunft === 'radar') marke.push('<span class="aus-marke">neu gemeldet</span>');

@@ -75,12 +75,19 @@ export function naechsterTermin(e, heute) {
 export const fahrMinuten = km => (km == null ? null : Math.max(5, Math.round((km * 1.2 / 75) * 60 / 5) * 5));
 
 // ---------------------------------------------------------------- Seriosität (Produkttests, Mitmachen)
-const UNSERIOES = ['vorkasse', 'gebühr|gebuehr', 'kreditkarte', 'abo|abofalle|abo-falle', 'bearbeitungsgebühr|bearbeitungsgebuehr', 'gewinnspiel-hotline|mehrwertnummer', 'schneeballsystem', 'kaution'];
-const SERIOES_HOSTS = ['ableton.com', 'native-instruments.com', 'trnd.com', 'testbirds', 'rewe.de', 'dm.de', 'stiftung-warentest.de', 'mpg.de', 'uni-leipzig.de', 'tu-dresden.de', 'tu-chemnitz.de', 'haema.de', 'drk', 'blutspende'];
-export function seriositaet(text, link = '') {
-  if (enthaelt(text, UNSERIOES)) return 'vorsicht';
-  const h = String(link).toLowerCase();
-  return SERIOES_HOSTS.some(x => h.includes(x)) || /\b(beta[\w-]*|hersteller)\b|ableton|bitwig|native instruments|arturia|korg|roland|moog|elektron|novation|teenage engineering/i.test(text) ? 'seriös' : 'unbekannt';
+// Prüfer 16.11.: Kosten/Kontodaten fehlten; „seriös“ gab es schon für einen Markennamen im Text („Roland … bei Testerportal XY
+// registrieren“) -> jetzt nur noch über die echte Adresse (Link oder bei Google News die Quelle aus <source url>), sonst
+// „unbekannt“ (Seite: „Seriosität unbekannt – erst prüfen“). „keine Kosten“/„ohne Versandkosten“ zählt nicht als Kosten.
+const UNSERIOES = ['vorkasse', 'gebühr|gebuehr', 'kreditkarte', 'kontodaten|bankdaten|bankverbindung|=iban', '=abo|abofalle|abo-falle|abonnement', 'bearbeitungsgebühr|bearbeitungsgebuehr', 'gewinnspiel-hotline|mehrwertnummer', 'schneeballsystem', 'kaution',
+  'im monat|pro monat|monatlich', 'versandkosten', '=kosten|=kostet|=kostenpflichtig'];
+const SERIOES_HOSTS = ['ableton.com', 'native-instruments.com', 'bitwig.com', 'arturia.com', 'korg.com', 'roland.com', 'moogmusic.com', 'elektron.se', 'novationmusic.com', 'teenage.engineering',
+  'trnd.com', 'testbirds.com', 'testbirds.de', 'rewe.de', 'dm.de', 'test.de', 'stiftung-warentest.de', 'mpg.de', 'uni-leipzig.de', 'tu-dresden.de', 'tu-chemnitz.de', 'haema.de', 'drk.de', 'blutspende.de', 'blutspendedienst.com'];
+const hostVon = u => { try { return new URL(String(u)).hostname.toLowerCase().replace(/^www\./, ''); } catch { return ''; } };
+export function seriositaet(text, link = '', quelleUrl = '') {
+  const ohneVerneinung = String(text).replace(/\b(keine|ohne|null)\s+(versand)?kosten\b|\bkostenfrei\b/gi, ' ');
+  if (enthaelt(ohneVerneinung, UNSERIOES)) return 'vorsicht';
+  const echt = [hostVon(link), hostVon(quelleUrl)].filter(h => h && h !== 'news.google.com');
+  return echt.some(h => SERIOES_HOSTS.some(x => h === x || h.endsWith('.' + x))) ? 'seriös' : 'unbekannt';
 }
 
 // ---------------------------------------------------------------- Liste lesen
@@ -122,7 +129,11 @@ const MUSIK = ['synthesizer|synth', 'plugin|plug-in', 'daw', 'ableton|bitwig|nat
 // Polizei-/Unglücks-/Impf-Meldungen sind keine Ausflüge (echter Roh-Lauf 43820200074: „Massenschlägerei auf Dorffest“,
 // „Lange Nacht des Impfens“); config.module.events.ausschluss ergänzt die Liste
 export const AUSSCHLUSS = ['schlägerei|schlaegerei|prügelei|pruegelei', 'polizei', 'ermittlung|ermittelt', 'unfall|verletzt|=tot|=tote|=toter|tödlich|toedlich', '=brand|großbrand|grossbrand|brandstiftung|feuerwehreinsatz', 'festgenommen|festnahme|haftbefehl', '=gericht|amtsgericht|landgericht|=prozess|angeklagt', 'messerangriff|=angriff|überfall|ueberfall', 'diebstahl', 'abgesagt|fällt aus|faellt aus', 'impfen|impfung|impfschutz', '=jva|gefängnis|gefaengnis', 'insolvenz', '=streik']; // „=“ = ganzes Wort (Brandenburg, Prozession, Gerichte bleiben)
-const FEST = ['stadtfest', 'weihnachtsmarkt|christmarkt|adventsmarkt', 'markt', 'fest', 'messe', 'tag der offenen tür|tag der offenen tuer', 'museumsnacht|lange nacht', 'festival', 'parade', 'kirmes|rummel', 'feuerwerk'];
+// Prüfer 16.11.: „markt“/„fest“ als Wortteil trafen „Arbeitsmarkt“, „Supermarkt“, „Haushalt festgelegt“ -> ganze Wörter oder
+// zusammengesetzte Fest-/Markt-Wörter
+const FEST = ['stadtfest|dorffest|volksfest|strassenfest|straßenfest|vereinsfest|sommerfest|herbstfest|fruehlingsfest|frühlingsfest|weinfest|bierfest|oktoberfest|schuetzenfest|schützenfest|feuerwehrfest|kinderfest|heimatfest|hoffest|burgfest|schlossfest|parkfest|muehlenfest|mühlenfest|erntefest|lichterfest|brunnenfest|musikfest|sportfest|festumzug|festwoche|festmeile|=fest|=feste|=festes',
+  'weihnachtsmarkt|christmarkt|adventsmarkt|flohmarkt|troedelmarkt|trödelmarkt|bauernmarkt|toepfermarkt|töpfermarkt|mittelaltermarkt|handwerkermarkt|kunsthandwerkermarkt|ostermarkt|herbstmarkt|fruehlingsmarkt|frühlingsmarkt|martinimarkt|kreativmarkt|regionalmarkt|=markt|=markttag',
+  '=messe|fachmesse|verbrauchermesse|freizeitmesse|hochzeitsmesse|jobmesse|ausbildungsmesse|modellbahnmesse', 'tag der offenen tür|tag der offenen tuer', 'museumsnacht|lange nacht', 'festival', '=parade|bergparade', 'kirmes|rummel', 'feuerwerk'];
 
 /** Eine Meldung -> Termin | null. m = config.module.events, art aus dem Feed */
 export function bewerteMeldung(it, art, m, heute) {
@@ -141,10 +152,10 @@ export function bewerteMeldung(it, art, m, heute) {
   if (art === 'testen') {
     if (!enthaelt(text, TEST) || !zaehle(text, TECHNIK)) return null;
     musik = enthaelt(text, MUSIK);
-    serioes = seriositaet(text, it.link);
+    serioes = seriositaet(text, it.link, it.herkunftUrl);
     o = ortAus(text);
     if (o && o.km > 300) o = null; // weit weg: nur „online/deutschlandweit“ zeigen
-  } else if (art === 'mitmachen') serioes = seriositaet(text, it.link);
+  } else if (art === 'mitmachen') serioes = seriositaet(text, it.link, it.herkunftUrl);
   const ab = it.ab ? berlinTag(it.ab) : null;
   const bis = it.bis ? berlinTag(it.bis) : ab;
   if (bis && bis < heute) return null;

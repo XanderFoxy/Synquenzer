@@ -90,8 +90,19 @@ test('Meldungen: nur Ort im Umkreis, Art-Wort nötig, Testaufrufe mit Seriositä
   assert.equal(bewerteMeldung(it('Gemeinderat Waldheim tagt'), 'fest', M, '2026-11-16'), null, 'kein Fest');
   assert.equal(bewerteMeldung(it('Museum Leipzig zeigt neue Schau'), 'gratis', M, '2026-11-16'), null, 'nicht gratis');
   assert.ok(bewerteMeldung(it('Eintritt frei im Museum Leipzig'), 'gratis', M, '2026-11-16'));
-  const t = bewerteMeldung(it('Arturia sucht Betatester für neuen Synthesizer'), 'testen', M, '2026-11-16');
+  const t = bewerteMeldung(it('Arturia sucht Betatester für neuen Synthesizer', { link: 'https://news.google.com/rss/articles/x', herkunftUrl: 'https://www.arturia.com' }), 'testen', M, '2026-11-16');
   assert.equal(t.musik, true); assert.equal(t.serioes, 'seriös');
+  // Prüfer 16.11.: Markenname im Text macht nichts seriös; Kosten/Kontodaten = Vorsicht; „keine Kosten“ zählt nicht
+  assert.equal(bewerteMeldung(it('Produkttester gesucht: Roland Synthesizer testen – jetzt bei Testerportal XY registrieren', { link: 'https://news.google.com/rss/articles/y', herkunftUrl: 'https://testerportal-xy.example' }), 'testen', M, '2026-11-16').serioes, 'unbekannt');
+  assert.equal(seriositaet('Synthesizer kostenlos testen und behalten (Kosten 9,99 im Monat)'), 'vorsicht');
+  assert.equal(seriositaet('Kopfhörer testen – Anmeldung mit Kontodaten'), 'vorsicht');
+  assert.equal(seriositaet('Beta-Tester gesucht, es entstehen keine Kosten', 'https://www.ableton.com/beta'), 'seriös');
+  assert.equal(seriositaet('Betatester gesucht', 'https://example.org/ableton.com'), 'unbekannt', 'nur der echte Host zählt');
+  // Fest-Filter: ganze Wörter (Prüfer: „Arbeitsmarkt“, „Supermarkt“, „Haushalt festgelegt“ waren Feste)
+  for (const x of ['Arbeitsmarkt in Döbeln stabil', 'Neuer Supermarkt in Leisnig eröffnet', 'Haushalt in Döbeln festgelegt'])
+    assert.equal(bewerteMeldung(it(x), 'fest', M, '2026-11-16'), null, x);
+  for (const x of ['Weihnachtsmarkt Döbeln öffnet', 'Flohmarkt in Roßwein am Sonntag', 'Dorffest in Leisnig', 'Markt der Vereine in Waldheim'])
+    assert.ok(bewerteMeldung(it(x), 'fest', M, '2026-11-16'), x);
   assert.equal(bewerteMeldung(it('Produkttester gesucht: Kopfhörer testen – nur 2 € Bearbeitungsgebühr'), 'testen', M, '2026-11-16').serioes, 'vorsicht');
   assert.equal(seriositaet('Testen und behalten, Vorkasse 5 €'), 'vorsicht');
   // echter Roh-Lauf 43820200074 (16.11.2026): Polizei-/Impf-/JVA-Meldungen sind keine Ausflüge
