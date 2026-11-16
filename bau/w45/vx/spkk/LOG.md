@@ -8,3 +8,4 @@
 - 05:34:40 p-worker-finden (echter Worker): Basis 196 → 54/53/55, Index → 55; Zeit im Rauschen (Index 136/251/337 ms, Basis 82/181/138 ms bei Last 5–10). In spkk-test aufgenommen. Last: 9.53 4.85 2.74 9/537 30085
 - 05:35:15 Regression Teil 1: spk6k, spk6, spk9u, spk9poly, spk9f grün und gleich Basis; spk8s/spk10s/spk5 brauchen mess/ → Teil 2 (runb2.sh) gestartet. Last: 6.01 4.49 2.70 9/296 30643
 - 05:38:25 Regression Teil 2: spk8s 14/0, spk10s 16/0, spk5 24/24 – Index = Basis. spkk-test 18/18 (mit Worker-Sonde). Pflicht erneut: siehe pflicht.log. md5 804c037b. Ende. Last: 5.67 4.87 3.17 1/289 3221
+- 06:09:18 Prüfung/Nachbesserung Start (Sicherung index.vor-pruef.html, md5 804c037b). Last: 10.26 7.45 5.01 8/609 8266

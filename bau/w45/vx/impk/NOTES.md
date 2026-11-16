@@ -1,6 +1,6 @@
 # IMPK – Import/Begleiter-Kleinfehler · Basis 4.76.1 (VERSION bleibt '4.76.1')
 
-Paket: `basis.html` = rel-4761 (md5 e4dc1b95…), `index.html` = Basis + IMPK (md5 siehe Ende). Bau reproduzierbar: `apply.mjs`
+Paket: `basis.html` = rel-4761 (md5 e4dc1b9599eef2656308cb990e407f37), `index.html` = Basis + IMPK (md5 c0ac5b118bf3564d08a2c897dc2d5de4). Bau reproduzierbar: `apply.mjs`
 (basis.html + `block-tempo.js`, `block-ui.js`, `block-beg.js` → index.html, jede Ersetzung genau einmal).
 Test: `node impk-test.mjs <index> <basis>`. Sonden: `lead-ons.mjs` (Einsätze), `tempo-raten.mjs` (Kopie aus imp2b/pruef), `etikett-sonde.mjs`.
 
@@ -64,7 +64,7 @@ Alle Läufe an `index.html` (md5 c0ac5b11…), Logs im Paketordner. Test-Kopien 
 - **impk-test.mjs** (A Tempo · B Import-Blatt · C Begleiter · D Konsole): Lauf 1 9/10 (B1 maß gegen die Basis-Frage, die wegen des neuen
   Tempos 120 statt 121 lautet – Prüfung auf „alte Formel am selben Ergebnis“ umgestellt), Lauf 2/3 8/10 (C2: Zahl und Lage der beim Wechsel
   neu angeschlagenen Töne hängen am echten Finger-Zeitpunkt; die Basis streut selbst 192/194, `c2-streuung.mjs`; Lauf 3 lief neben beg1/rv1 →
-  Basis 174 Töne). C2 prüft jetzt: kein „clip“, Töne auf den Zwischen-Achteln gleich (60 gleich), Summe ±4. IMPK_LAUF4
+  Basis 174 Töne). C2 prüft jetzt: kein „clip“, Töne auf den Zwischen-Achteln gleich (60 gleich), Summe ±4. **Lauf 4 (Endstand, `impk-test-4.log`): OK IMPK 10/10** (C1 Klick 1 → 0 bei 120/157 BPM; C2 „clip“ 12 → 0, Summe 192 → 192, 60 Achtel-Töne gleich).
 - **beg1-test** (Kopie, `b1/basis.html` = Basis, `b1/neu/index.html` = IMPK): **57/59** (Auftrag: Basis 57/59; eigener Basislauf b0: 58/59).
   FEHLER 1 = Prüfung 5 (5/4 ohne Stil, Hinweis-Text) – derselbe Fehler mit demselben Text im Basislauf `beg1-vorher.log`.
   FEHLER 2 = „Eigener Block BEG1 … jede Zeile außerhalb trägt BEG1“ – zählt die 36 IMPK-Zeilen außerhalb des BEG1-Blocks (Test vergleicht
@@ -90,3 +90,6 @@ Alle Läufe an `index.html` (md5 c0ac5b11…), Logs im Paketordner. Test-Kopien 
 2. #14 (frei gesungen, keine Annotation) wechselt das Projekt-Tempo 121 → 120 (roh 120,64 → 120,33). Die Frage „120 oder 60?“ bleibt; ob 120
    oder 121 richtiger ist, lässt sich ohne Annotation nicht sagen (Stabilität spricht leicht für die neue Schätzung). rv1 siehe Tests.
 3. Vokal-Melodien mit Vibrato im langen Schlusston erzeugen weiter 3–4 schwache Spitzen (Gewicht 6–7 gegen 20–57 der Einsätze) – harmlos.
+4. **rv1-Original 52/53** (r4760: 53/53): der eine FEHLER (#14 Stück 31 links, Bezug „Fassung nach ↶“) entsteht aus dem neuen #14-Tempo (120 statt 121)
+   und ist mit der Basis bei gleichem Tempo/t1 zahlengleich nachgestellt; die korrigierte Kopie rv1k ist 53/53. Entscheidung beim Zusammenführen:
+   rv1k (vx/imp2b/fix/rv1-test-imp2b.mjs) als Abnahme nehmen – wie in IMP2B schon vorgeschlagen – oder IMPK-Tempo ohne #14-Wechsel nicht übernehmen.

@@ -25852,7 +25852,7 @@ function formNorm(f) { return FORM.norm(f); }
     }
     H.state = 'loading';
     const tries = [
-      ['blob', () => URL.createObjectURL(new Blob([src], {type: 'application/javascript'}))],
+      ['blob', () => (typeof erstWkUrl === 'function' && erstWkUrl(src)) || URL.createObjectURL(new Blob([src], {type: 'application/javascript'}))],   /* ERST */
       ['data', () => 'data:application/javascript;base64,' + btoa(src)],          // src is ASCII only (§1.1)
     ];
     const errs = [];
@@ -30059,6 +30059,7 @@ function onCtxState() {
 
 /* ---------- buffers & wavetables ---------- */
 function buildBuffers() {
+  if (typeof erstBufs === 'function' && erstBufs(AU.ctx)) return;   /* ERST */
   const c = AU.ctx, sr = c.sampleRate;
   const nb = c.createBuffer(1, Math.floor(sr * 2), sr), nd = nb.getChannelData(0);
   for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
@@ -113678,6 +113679,100 @@ function perf1bTake(c) {
 }
 try { addEventListener('load', () => { try { idle(perf1bStart); } catch (e) {} }); } catch (e) {}
 /* PERF1B-END */
+/* ERST-BEGIN */
+/* ERST (OFFEN-1611 A2): der erste Tipp auf ▶ ohne Stocken. Gemessen (4×, 428×926): die erste Aufgabe nach dem Tipp dauert
+   340–570 ms (ensureAudio + erster Planer-Schritt), danach 1,5 s nach dem Tipp noch einmal 50–60 ms für die WT-Wellen.
+   Was davon keine Audio-Umgebung braucht, entsteht jetzt vorher in Leerlauf-Schritten nach dem Laden (wie PERF1B; vor dem
+   Tipp nie ein AudioContext – iOS-Regel), der Rest nach dem Tipp in Scheiben:
+   (1) der Worklet-Quelltext als Blob-Adresse (bisher new Blob über ≈ 420 KB im Tipp, 10–55 ms) – in Scheiben zu 64 K Zeichen
+       (Teil-Blobs), zuletzt ein Sammel-Blob mit denselben Bytes; SynthHost.load nimmt die Adresse einmal (Haken), wenn der
+       Quelltext genau derselbe ist, sonst wie bisher;
+   (2) der Metall-Puffer von buildBuffers (6 Rechteckwellen über 2 s, 20–30 ms) als AudioBuffer ohne Umgebung bei der zuletzt
+       gesehenen Rate (perf1bRate: synq.perf1b.sr, sonst 48 kHz), in Scheiben mit fortgeführter Phase – dieselben Werte wie
+       buildBuffers. Das Rauschen entsteht weiter im Tipp (Math.random in derselben Reihenfolge wie bisher). Andere Rate →
+       der alte Weg (Haken in buildBuffers);
+   (3) nach dem ersten Tipp: die 16 WT-Wellen einzeln in Leerlauf-Schritten. makeWaves selbst rechnet die Eingaben (mit einer
+       Sammel-Umgebung), je Schritt entsteht eine Welle mit createPeriodicWave auf der echten Umgebung; braucht eine WT-Note sie
+       früher (oder kommt der bisherige 1,5-s-Leerlauf zuerst), baut der Getter wie bisher alles auf einmal und ERST hört auf.
+   Klänge, Zeitpunkte und Reihenfolge der Töne bleiben gleich – nur der Zeitpunkt der Vorarbeit ist früher bzw. verteilt. */
+const ERST = {wk: {src: null, parts: null, pos: 0, url: null, took: false}, mt: {sr: 0, buf: null, ph: null, i: 0, took: false}, wv: {c: null, jobs: null, T: null, k: 0, done: false},
+  wait: false, off: false, ms: {}};
+const ERST_MT_F = [205.3, 304.4, 369.6, 522.7, 540, 800];          // dieselben Frequenzen wie buildBuffers (Metall)
+function erstStart() {
+  if (ERST.off || AU.ctx || ERST.wk.src || typeof Blob !== 'function' || typeof URL === 'undefined' || !URL.createObjectURL) return;
+  try { const el = document.getElementById('sq-worklet-src'); ERST.wk.src = el ? el.textContent : null; } catch (e) { ERST.wk.src = null; }
+  if (ERST.wk.src) ERST.wk.parts = [];
+  try {
+    const sr = typeof perf1bRate === 'function' ? perf1bRate() : 48000, n = Math.floor(sr * 2);
+    ERST.mt.buf = new AudioBuffer({numberOfChannels: 1, length: n, sampleRate: sr}); ERST.mt.sr = sr; ERST.mt.ph = ERST_MT_F.map(() => 0); ERST.mt.i = 0;
+  } catch (e) { ERST.mt.buf = null; }
+  erstIdle();
+}
+function erstIdle() {
+  if (ERST.wait || ERST.off || AU.ctx) return;
+  const W = ERST.wk, M = ERST.mt;
+  if ((!W.parts || W.url) && (!M.buf || M.i >= M.buf.length)) return;    // alles fertig
+  ERST.wait = true;
+  idle(() => { ERST.wait = false; if (AU.ctx || ERST.off) return; try { erstStep(); } catch (e) { ERST.off = true; erstFree(); return; } erstIdle(); });
+}
+// ein Schritt: 64 K Zeichen des Worklet-Quelltexts als Teil-Blob, sonst ein Viertel des Metall-Puffers
+function erstStep() {
+  const W = ERST.wk, M = ERST.mt, t0 = performance.now();
+  if (W.parts && !W.url) {
+    const s = W.src, a = W.pos; let b = Math.min(s.length, a + 65536);
+    if (b < s.length) { const h = s.charCodeAt(b - 1); if (h >= 0xD800 && h <= 0xDBFF) b++; }   // kein halbes Ersatzpaar
+    if (a < s.length) { W.parts.push(new Blob([s.slice(a, b)])); W.pos = b; }
+    else { W.url = URL.createObjectURL(new Blob(W.parts, {type: 'application/javascript'})); W.parts = []; }
+    ERST.ms.wk = +((ERST.ms.wk || 0) + performance.now() - t0).toFixed(1); return;
+  }
+  if (M.buf && M.i < M.buf.length) {
+    const md = M.buf.getChannelData(0), sr = M.sr, inc = ERST_MT_F.map(f => f / sr), ph = M.ph, e = Math.min(md.length, M.i + Math.ceil(md.length / 4));
+    for (let i = M.i; i < e; i++) { let s = 0; for (let k = 0; k < 6; k++) { const p = ph[k]; s += p === 0 ? 0 : p < .5 ? 1 : -1; ph[k] = p + inc[k]; if (ph[k] >= 1) ph[k] -= 1; } md[i] = s / 6; }
+    M.i = e; ERST.ms.mt = +((ERST.ms.mt || 0) + performance.now() - t0).toFixed(1);
+  }
+}
+function erstFree() { const W = ERST.wk; if (W.url && !W.took) { try { URL.revokeObjectURL(W.url); } catch (e) {} } W.url = null; W.src = null; W.parts = null; if (!ERST.mt.took) ERST.mt.buf = null; }
+// Haken in SynthHost.load (Ladeweg 'blob'): die vorbereitete Adresse, einmal und nur für genau denselben Quelltext
+function erstWkUrl(src) {
+  const W = ERST.wk; if (W.took || !W.url) return null;
+  const ok = src === W.src, u = W.url; W.took = ok; if (!ok) { erstFree(); return null; }
+  W.url = null; W.src = null; W.parts = null; return u;
+}
+// Haken in buildBuffers (erster echter Start): Rauschen wie bisher, Metall aus der Vorarbeit (gleiche Rate, ganz fertig).
+// Startet außerdem die WT-Wellen in Scheiben für diese Umgebung.
+function erstBufs(c) {
+  if (!c) return false;
+  const AC = window.AudioContext || window.webkitAudioContext, live = !!AC && c instanceof AC;
+  if (live && !ERST.wv.c) { ERST.wv.c = c; setTimeout(() => erstWvIdle(), 250); setTimeout(() => { const W = ERST.wk; if (!W.took) erstFree(); }, 15000); }
+  const M = ERST.mt;
+  if (!live || M.took || !M.buf || M.i < M.buf.length || c.sampleRate !== M.sr) { if (!M.took) M.buf = null; return false; }
+  const sr = c.sampleRate, nb = c.createBuffer(1, Math.floor(sr * 2), sr), nd = nb.getChannelData(0);   // wie buildBuffers
+  for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+  AU.noise = nb; AU.metal = M.buf; M.took = true; M.buf = null;
+  return true;
+}
+// die WT-Wellen: makeWaves liefert mit einer Sammel-Umgebung Aufbau und Eingaben, je Leerlauf-Schritt eine echte Welle
+function erstWvIdle() {
+  const V = ERST.wv, c = V.c; if (V.done || !c) return;
+  if (WAVES_T || AU.ctx !== c || (UI && UI.vvOff)) { V.done = true; V.jobs = V.T = null; return; }   // schon gebaut / andere Umgebung
+  idle(dl => {
+    if (V.done) return;
+    if (WAVES_T || AU.ctx !== c || (UI && UI.vvOff)) { V.done = true; V.jobs = V.T = null; return; }
+    const t0 = performance.now();
+    try {
+      if (!V.jobs) { const jobs = [], fake = {createPeriodicWave: (re, im) => { const o = {re, im, w: null}; jobs.push(o); return o; }}; V.T = makeWaves(fake); V.jobs = jobs; V.k = 0; }
+      else do { const j = V.jobs[V.k++]; j.w = c.createPeriodicWave(j.re, j.im); } while (V.k < V.jobs.length && dl && dl.timeRemaining && dl.timeRemaining() > 8 && performance.now() - t0 < 12);
+      if (V.jobs.length && V.k >= V.jobs.length) {
+        const T = {}; for (const g in V.T) T[g] = V.T[g].map(o => o.w);
+        if (!WAVES_T && AU.ctx === c) WAVES_T = T; V.done = true; V.jobs = V.T = null;
+      }
+    } catch (e) { V.done = true; V.jobs = V.T = null; }
+    ERST.ms.wv = +((ERST.ms.wv || 0) + performance.now() - t0).toFixed(1);
+    if (!V.done) erstWvIdle();
+  });
+}
+try { addEventListener('load', () => { try { idle(erstStart); } catch (e) {} }); } catch (e) {}
+/* ERST-END */
 /* PERF1A-BEGIN */
 /* PERF1A (PERF1, Plan Nr. 1): eine neue Fassung nur einmal laden. Bisher lud vwReload die Seite unter ?v=<Fassung> – der
    Browser-Zwischenspeicher der normalen Adresse blieb dabei alt, also kam die Datei (≈ 2,9 MB) beim nächsten Start vom
