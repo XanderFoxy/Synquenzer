@@ -67,7 +67,8 @@ const sheet = async f => {
   await p.evaluate(async b => { ensureAudio(); closePop(); const ab = Uint8Array.from(atob(b), c => c.charCodeAt(0)).buffer; window.__imp1.ui.file(ab, 'gesang14.wav'); }, b64);
   for (let k = 0; k < 120; k++) { await p.waitForTimeout(250); if (await p.evaluate(() => { const c = window.__imp1.ui.cur(); return c && (c.st === 'fertig' || c.st === 'fehler'); })) break; }
   const read = () => p.evaluate(() => { const c = window.__imp1.ui.cur(), q = [...document.querySelectorAll('.imp1 .imp1st.warn')].map(e => e.textContent).find(t => / oder /.test(t)) || '';
-    return {bpm: c.bpm, det: c.r && c.r.bpm, frage: !!(c.r && c.r.frage), q, btn: [...document.querySelectorAll('.imp1 button[data-i="setbpm"]')].map(b => ({t: b.textContent, v: +b.dataset.v, on: b.classList.contains('on')}))}; });
+    const al = ((c.r && c.r.alt) || []).filter(v => v >= 40 && v <= 240), alt = (c.r && c.r.quelle === 'gesang' ? 'Aus Gesang geschätzt' : 'Tempo schwankt') + ' – ' + Math.round(c.bpm) + (al.length ? ' oder ' + al.map(Math.round).join(' / ') : '') + '?';   // die Frage nach der alten Formel
+    return {bpm: c.bpm, det: c.r && c.r.bpm, frage: !!(c.r && c.r.frage), q, alt, btn: [...document.querySelectorAll('.imp1 button[data-i="setbpm"]')].map(b => ({t: b.textContent, v: +b.dataset.v, on: b.classList.contains('on')}))}; });
   const s0 = await read(); await tapSel(p, '.imp1 button[data-i="half"]'); const s1 = await read();
   const other = s1.btn.findIndex(x => !x.on); if (other >= 0) await tapSel(p, `.imp1 button[data-i="setbpm"]:nth-of-type(${other + 1})`);
   const s2 = await read(); await p.screenshot({path: path.join(path.dirname(fi), 'impk-blatt-' + (f === fi ? 'nachher' : 'vorher') + '.png')}); await p.close(); return {s0, s1, s2};
@@ -77,7 +78,8 @@ const sheet = async f => {
   info('B vorher (Basis)', `Start ${f(B0.s0)} · nach ½× ${f(B0.s1)} · Knopf ${f(B0.s2)}`);
   info('B nachher', `Start ${f(B1.s0)} · nach ½× ${f(B1.s1)} · Knopf ${f(B1.s2)}`);
   const r1 = B1.s1.btn.map(x => Math.round(x.v)), dup = new Set(r1).size !== r1.length;
-  ok(B1.s0.frage && B1.s0.q === B0.s0.q && JSON.stringify(B1.s0.btn) === JSON.stringify(B0.s0.btn), 'B1 Import-Blatt Ausgangszustand: dieselbe Frage und dieselben Knöpfe wie vorher', f(B1.s0));
+  // die Basis erkennt #14 als 120,6 (121), die neue Fassung als 120,3 (120) – verglichen wird daher mit der alten Formel am selben Ergebnis
+  ok(B1.s0.frage && B0.s0.q === B0.s0.alt && B1.s0.q === B1.s0.alt && B1.s0.btn.length === B0.s0.btn.length && B1.s0.btn[0].on && !B1.s0.btn[1].on, 'B1 Import-Blatt Ausgangszustand: dieselbe Frage und dieselben Knöpfe wie mit der alten Formel', f(B1.s0) + ' (Formel: „' + B1.s0.alt + '“)');
   ok(!dup && r1.length >= 2 && r1.includes(Math.round(B1.s1.bpm)) && r1.includes(Math.round(B1.s1.det)) && B1.s1.btn[0].on && new RegExp(' – ' + Math.round(B1.s1.bpm) + ' oder ' + Math.round(B1.s1.det)).test(B1.s1.q),
     'B2 nach ½×: keine zwei gleichen Knöpfe, die Frage nennt das gewählte und das erkannte Tempo (z. B. 60 oder 121)', f(B1.s1) + (B0.s1.btn.length === 2 && B0.s1.btn[0].t === B0.s1.btn[1].t ? ' (vorher ' + f(B0.s1) + ')' : ''));
   ok(Math.abs(B1.s2.bpm - B1.s0.bpm) < .01 && B1.s2.q === B1.s0.q, 'B3 Tipp auf das erkannte Tempo: zurück zur Ausgangsfrage', f(B1.s2));
