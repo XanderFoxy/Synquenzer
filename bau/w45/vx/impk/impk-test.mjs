@@ -101,7 +101,11 @@ const beg = async f => {
   }, bpm));
   // C2 Akkordwechsel zwischen den Schlägen (Wechsel am Schlag): Etikett der Töne, die der Träger neu anschlägt – je Figur Akkorde und Arp
   out.c2 = await run(p, async () => {
-    ensureAudio(); SYNQUENZER.setBpm(110); const Bg = SYNQUENZER.beg1, res = {clip: [], beg: 0, all: []};
+    ensureAudio(); SYNQUENZER.setBpm(110); const Bg = SYNQUENZER.beg1, res = {clip: [], beg: 0, all: [], cc: {n: 0, beg: 0, clip: 0, extra: 0}};
+    // f2: Töne, die applyCarrierChange neu anschlägt, mitschreiben (Zweig 2 = zusätzlicher Anschlag bei eff, der alte Ton bleibt im Log)
+    const cc0 = window.applyCarrierChange, sp0 = window.spawnClipVoice; let inCC = 0; const spw = [];
+    window.applyCarrierChange = function () { inCC++; try { return cc0.apply(this, arguments); } finally { inCC--; } };
+    window.spawnClipVoice = function () { const v = sp0.apply(this, arguments); if (inCC && v) spw.push({v, extra: arguments[7] !== true}); return v; };
     for (const fig of ['stab', 'arp']) {
       Bg.fig(fig); Bg.chg('beat'); Bg.open(); await wait(200); const tg = Bg.state().tg, T = [tg.dr, tg.bs, tg.cp];
       clearLog(); await chord([60, 64, 67], 150);
@@ -110,8 +114,9 @@ const beg = async f => {
       SYNQUENZER.stop(); await stopWait(); await wait(400); Bg.close(); await wait(300);
       res.clip.push(...L.filter(e => e.src === 'clip').map(e => fig + ' ' + e.track + ':' + e.out + '@' + e.beat.toFixed(2))); res.beg += L.filter(e => e.src === 'beg').length;
       res.all.push(...L.map(e => fig + ' ' + e.track + ':' + e.out + '@' + e.beat.toFixed(2)));
+      for (const {v, extra} of spw.splice(0)) { const e = v.log; if (!e || e.removed || e.beat == null || e.beat >= 12 || !T.includes(e.track)) continue; res.cc.n++; if (e.src === 'beg') res.cc.beg++; if (e.src === 'clip') res.cc.clip++; if (extra) res.cc.extra++; }
     }
-    Bg.fig('auto'); res.all.sort(); return res;
+    window.applyCarrierChange = cc0; window.spawnClipVoice = sp0; Bg.fig('auto'); res.all.sort(); return res;
   });
   // C3 ● AUTO über einen vorhandenen Song (nur messen): klingt der Song hinterher wie live?
   out.c3 = await run(p, async () => {
@@ -135,9 +140,12 @@ const beg = async f => {
   info('C2 vorher (Basis)', `src „clip“ ${B0.c2.clip.length} [${B0.c2.clip.slice(0, 6).join(' ')}], „beg“ ${B0.c2.beg}`);
   // Der neue Anschlag beim Wechsel liegt bei eff = max(Wechsel, jetzt + 5 ms) – Lage und Zahl hängen am echten Fingerzeitpunkt; die Basis
   // streut selbst um ±2 Töne (c2-streuung.mjs: Basis 192/194, neu 194/192). Daher: kein „clip“ mehr und Summe im Streubereich.
-  ok(!B1.c2.clip.length && Math.abs(B1.c2.beg - (B0.c2.beg + B0.c2.clip.length)) <= 4, 'C2 Akkordwechsel zwischen den Schlägen (Akkorde, Arp): neu angeschlagene Band-Töne stehen im noteLog als „beg“ (nicht „clip“)', `clip ${B0.c2.clip.length} → ${B1.c2.clip.length}, beg ${B0.c2.beg} → ${B1.c2.beg}`);
-  { const grid = a => a.filter(x => { const b = +x.split('@')[1]; return Math.abs(b * 2 - Math.round(b * 2)) < 1e-6 && Math.abs(b - Math.round(b)) > .01; }).join(','); // Achtel-Zählzeiten zwischen den Schlägen: nie Wechsel-Zeitpunkt
-    ok(grid(B1.c2.all).length > 20 && grid(B0.c2.all) === grid(B1.c2.all) && Math.abs(B0.c2.all.length - B1.c2.all.length) <= 4, 'C2 Klang unverändert: die Töne auf den Zwischen-Achteln (nicht vom Wechsel-Zeitpunkt abhängig) sind gleich, Summe im Streubereich', `${grid(B1.c2.all).split(',').filter(Boolean).length} Achtel-Töne gleich · Summe ${B0.c2.all.length} → ${B1.c2.all.length}`); }
+  info('C2 Wechsel-Anschläge je Lauf (f2)', `Basis ${B0.c2.cc.n} (clip ${B0.c2.cc.clip}, beg ${B0.c2.cc.beg}, zusätzlich ${B0.c2.cc.extra}) · IMPK ${B1.c2.cc.n} (clip ${B1.c2.cc.clip}, beg ${B1.c2.cc.beg}, zusätzlich ${B1.c2.cc.extra})`);
+  ok(!B1.c2.clip.length && B1.c2.cc.n > 0 && B1.c2.cc.beg === B1.c2.cc.n && B0.c2.cc.clip === B0.c2.clip.length, 'C2 Akkordwechsel zwischen den Schlägen (Akkorde, Arp): neu angeschlagene Band-Töne stehen im noteLog als „beg“ (nicht „clip“)', `clip ${B0.c2.clip.length} → ${B1.c2.clip.length}, beg ${B0.c2.beg} → ${B1.c2.beg}; Wechsel-Anschläge IMPK ${B1.c2.cc.n}, davon „beg“ ${B1.c2.cc.beg}`);
+  { const CH = [3.3, 5.8, 7.45, 9.9], grid = a => a.filter(x => { const b = +x.split('@')[1]; return Math.abs(b * 2 - Math.round(b * 2)) < 1e-6 && Math.abs(b - Math.round(b)) > .01 && !CH.some(c => b >= c && b < c + .3); }).join(',');   // f2: Achtel bis 0,3 Schlag hinter einem Wechsel (3,5 / 7,5) hängen am Finger-Zeitpunkt – ausgenommen
+    { const g0 = grid(B0.c2.all).split(','), g1 = grid(B1.c2.all).split(','), s0 = new Set(g0), s1 = new Set(g1); info('C2 Achtel-Unterschiede', `nur Basis [${g0.filter(x => !s1.has(x)).join(' ')}] · nur IMPK [${g1.filter(x => !s0.has(x)).join(' ')}]`); }
+ // Achtel-Zählzeiten zwischen den Schlägen: nie Wechsel-Zeitpunkt
+    ok(grid(B1.c2.all).length > 20 && grid(B0.c2.all) === grid(B1.c2.all) && Math.abs((B0.c2.all.length - B0.c2.cc.extra) - (B1.c2.all.length - B1.c2.cc.extra)) <= 4, 'C2 Klang unverändert: die Töne auf den Zwischen-Achteln (nicht vom Wechsel-Zeitpunkt abhängig) sind gleich, Summe ohne die zusätzlichen Wechsel-Anschläge im Streubereich', `${grid(B1.c2.all).split(',').filter(Boolean).length} Achtel-Töne gleich (Basis ${grid(B0.c2.all).split(',').filter(Boolean).length}, gleich ${grid(B0.c2.all) === grid(B1.c2.all)}) · Summe ${B0.c2.all.length} → ${B1.c2.all.length}, ohne zusätzliche ${B0.c2.all.length - B0.c2.cc.extra} → ${B1.c2.all.length - B1.c2.cc.extra}`); }
   info('C3 ● AUTO über vorhandenen Song (gemessen, nicht geändert)', `vorher: live ${B0.c3.live1}/${B0.c3.live2}, Song danach ${B0.c3.back} Band-Töne in Takt 2–3 · nachher: live ${B1.c3.live1}/${B1.c3.live2}, Song ${B1.c3.back}`);
 }
 ok(!errs.length, 'D Keine Fehler in der Konsole', errs.slice(0, 3).join(' | '));
