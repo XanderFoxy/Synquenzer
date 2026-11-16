@@ -452,9 +452,9 @@ test('Sprungmarken: alte #angebote/#vorteile/#konzerte zeigen auf Bereiche, Leis
     await page.waitForFunction(b => document.querySelector(`.sprung a[data-ziel="${b}"]`).getAttribute('aria-current') === 'true', bereich);
   }
   // Leiste: Start + alle Bereiche in Xanders Reihenfolge (Filme ist ein eigener Reiter); wischbar ohne seitliches Scrollen der Seite
-  assert.deepEqual(await page.locator('.sprung a .t').allInnerTexts(), ['Start', 'Deals', 'Woche', 'Essen', 'Preisfehler', 'Filme', 'Auftritte', 'Remix', 'Unterricht', 'Konzerte', 'Gewinnspiele', 'Krypto', 'Spartricks', 'Mehr']);
+  assert.deepEqual(await page.locator('.sprung a .t').allInnerTexts(), ['Start', 'Deals', 'Woche', 'Essen', 'Preisfehler', 'Filme', 'Auftritte', 'Remix', 'Unterricht', 'Ausflüge', 'Konzerte', 'Gewinnspiele', 'Krypto', 'Spartricks', 'Mehr']);
   assert.equal(await page.locator('.sprung a[data-reiter="filme"]').count(), 1);
-  assert.equal(await page.locator('.sprung a svg.ic').count(), 14, 'jeder Bereich mit gezeichnetem Symbol');
+  assert.equal(await page.locator('.sprung a svg.ic').count(), 15, 'jeder Bereich mit gezeichnetem Symbol (15 seit Ausflüge)');
   // Push-Hilfe
   await page.locator('#push').click();
   assert.match(await page.locator('#push-hilfe').innerText(), /xander-schnaeppchen-b5cbf4442aaa9734f3/);

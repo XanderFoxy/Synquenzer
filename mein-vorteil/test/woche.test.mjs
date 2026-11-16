@@ -112,7 +112,7 @@ test('Haken: Leiste (Woche nach Deals), eigene Seite, Skript erst beim Öffnen, 
   assert.match(html, /status\?\.knaller\?\.kurz/);
   assert.match(html, /<a href="#woche" data-sprung="woche">Wochen-Knaller je Markt ab 30 % ›<\/a>/, 'Link aus Deals');
   const sw = readFileSync(join(MV, 'sw.js'), 'utf8');
-  assert.match(sw, /const CACHE = 'mein-vorteil-4'/);
+  assert.match(sw, /const CACHE = 'mein-vorteil-([4-9]|\d\d)'/); // ab 4 (Woche), 5 = Ausflüge
   assert.match(sw, /rest === 'woche\.js'/);
   assert.match(sw, /'essen\.js', 'woche\.js'/);
   assert.doesNotMatch(sw, /knaller\.json'/, 'Daten nicht im Worker');

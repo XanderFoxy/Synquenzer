@@ -101,7 +101,7 @@ export function ausListe(liste, heute) {
     if (!e || !ARTEN.includes(e.art) || !e.titel || !e.quelle?.url || !istIso(e.geprueft)) continue;
     const o = ortInfo(e.ort);
     const basis = {
-      id: e.id, art: e.art, titel: e.titel, ort: o?.ort || null, region: e.region || null, km: o?.km ?? null, fahrMin: fahrMinuten(o?.km ?? null),
+      id: e.id, art: e.art, titel: e.titel, ort: o ? e.ort : null, /* Schreibweise der Liste („Roßwein“, nicht „Rosswein“) */ region: e.region || null, km: o?.km ?? null, fahrMin: fahrMinuten(o?.km ?? null),
       vorteil: e.vorteil || '', wann: e.wann || '', quelle: { name: e.quelle.name || '', url: e.quelle.url }, stand: e.geprueft,
       sicherheit: e.sicherheit || 'belegt', ...(e.serioes ? { serioes: e.serioes } : {}), ...(e.musik ? { musik: true } : {}), ...(e.warnung ? { warnung: true } : {}),
       herkunft: 'liste',
@@ -119,11 +119,15 @@ const BELOHNUNG = ['vergütung|verguetung', 'aufwandsentschädigung|aufwandsents
 const TEST = ['produkttester', 'tester gesucht|testerin gesucht|testpersonen gesucht|testende gesucht', 'betatester|beta-tester|beta tester', 'beta-programm|betaprogramm|public beta', 'testen und behalten', 'kostenlos testen|gratis testen'];
 const TECHNIK = ['synthesizer|synth', 'plugin|plug-in', 'daw', 'ableton|bitwig|native instruments|arturia|korg|roland|moog|behringer|elektron|novation', 'kopfhörer|kopfhoerer', 'lautsprecher', 'audio', 'midi', 'controller', 'technik', 'smartphone|tablet|laptop', 'musik'];
 const MUSIK = ['synthesizer|synth', 'plugin|plug-in', 'daw', 'ableton|bitwig|native instruments|arturia|korg|roland|moog|behringer|elektron|novation', 'midi', 'musiksoftware|musik-software|audio-software'];
+// Polizei-/Unglücks-/Impf-Meldungen sind keine Ausflüge (echter Roh-Lauf 43820200074: „Massenschlägerei auf Dorffest“,
+// „Lange Nacht des Impfens“); config.module.events.ausschluss ergänzt die Liste
+export const AUSSCHLUSS = ['schlägerei|schlaegerei|prügelei|pruegelei', 'polizei', 'ermittlung|ermittelt', 'unfall|verletzt|=tot|=tote|=toter|tödlich|toedlich', '=brand|großbrand|grossbrand|brandstiftung|feuerwehreinsatz', 'festgenommen|festnahme|haftbefehl', '=gericht|amtsgericht|landgericht|=prozess|angeklagt', 'messerangriff|=angriff|überfall|ueberfall', 'diebstahl', 'abgesagt|fällt aus|faellt aus', 'impfen|impfung|impfschutz', '=jva|gefängnis|gefaengnis', 'insolvenz', '=streik']; // „=“ = ganzes Wort (Brandenburg, Prozession, Gerichte bleiben)
 const FEST = ['stadtfest', 'weihnachtsmarkt|christmarkt|adventsmarkt', 'markt', 'fest', 'messe', 'tag der offenen tür|tag der offenen tuer', 'museumsnacht|lange nacht', 'festival', 'parade', 'kirmes|rummel', 'feuerwerk'];
 
 /** Eine Meldung -> Termin | null. m = config.module.events, art aus dem Feed */
 export function bewerteMeldung(it, art, m, heute) {
   const text = `${it.titel} ${it.beschreibung || ''}`;
+  if (enthaelt(text, [...AUSSCHLUSS, ...(m.ausschluss || [])])) return null;
   const maxKm = m.maxKm ?? 60;
   let o = null;
   if (art !== 'testen') {

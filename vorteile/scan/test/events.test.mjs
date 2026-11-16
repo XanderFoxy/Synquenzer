@@ -50,6 +50,11 @@ test('Datumslogik: Muster (2. Samstag Mai, Sonntag um 18. Mai, Pfingstmontag, 2.
   assert.equal(terminImJahr({ typ: 'wochentag', monat: 9, n: 2, wt: 7 }, 2026).ab, '2026-09-13'); // Denkmaltag 2026
   assert.deepEqual(terminImJahr({ typ: 'advent', n: 3, tage: 2 }, 2026), { ab: '2026-12-12', bis: '2026-12-13' });
   assert.equal(terminImJahr({ typ: 'advent', n: 1 }, 2026).ab, '2026-11-29');
+  // Grimma „Freitag vor 1. Advent bis 3. Advent“ trifft beide belegten Jahre (l-iz 2024, visitsaxony 2025); Roßwein 2025 (Flyer)
+  assert.deepEqual(terminImJahr({ typ: 'advent', n: 3, tage: 17 }, 2024), { ab: '2024-11-29', bis: '2024-12-15' });
+  assert.deepEqual(terminImJahr({ typ: 'advent', n: 3, tage: 17 }, 2025), { ab: '2025-11-28', bis: '2025-12-14' });
+  assert.deepEqual(terminImJahr({ typ: 'advent', n: 3, tage: 17 }, 2026), { ab: '2026-11-27', bis: '2026-12-13' });
+  assert.deepEqual(terminImJahr({ typ: 'advent', n: 1, tage: 3 }, 2025), { ab: '2025-11-28', bis: '2025-11-30' });
   assert.equal(terminImJahr({ typ: 'wochentag', monat: 12, n: -1, wt: 5 }, 2026).ab, '2026-12-25');
   assert.equal(terminImJahr({ typ: 'datum', monat: 6, tag: 21, dauer: 3 }, 2026).bis, '2026-06-23');
 });
@@ -89,6 +94,11 @@ test('Meldungen: nur Ort im Umkreis, Art-Wort nötig, Testaufrufe mit Seriositä
   assert.equal(t.musik, true); assert.equal(t.serioes, 'seriös');
   assert.equal(bewerteMeldung(it('Produkttester gesucht: Kopfhörer testen – nur 2 € Bearbeitungsgebühr'), 'testen', M, '2026-11-16').serioes, 'vorsicht');
   assert.equal(seriositaet('Testen und behalten, Vorkasse 5 €'), 'vorsicht');
+  // echter Roh-Lauf 43820200074 (16.11.2026): Polizei-/Impf-/JVA-Meldungen sind keine Ausflüge
+  for (const t of ['Massenschlägerei auf Dorffest bei Döbeln: Polizei beendet Ermittlungen', 'Hinter Gittern: Tag der offenen Tür in der JVA Chemnitz', 'Lange Nacht des Impfens in Dresden: Impfen ohne Termin - DNN'])
+    assert.equal(bewerteMeldung(it(t), 'fest', M, '2026-11-16'), null, t);
+  assert.ok(bewerteMeldung(it('Lange Nacht der Unikate in Pirna'), 'fest', M, '2026-11-16'));
+  assert.ok(bewerteMeldung(it('Stadtfest Waldheim: Prozession, regionale Gerichte und Brandenburger Blasmusik bis zum Einbruch der Dunkelheit'), 'fest', M, '2026-11-16'), 'ganze Wörter');
   // vorbei
   assert.equal(bewerteMeldung(it('Stadtfest Waldheim', { ab: '2026-09-01T10:00:00Z', bis: '2026-09-02T20:00:00Z' }), 'fest', M, '2026-11-16'), null);
 });
