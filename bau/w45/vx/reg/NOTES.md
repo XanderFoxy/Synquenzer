@@ -120,3 +120,24 @@ e4dc1b95 (unverändert).
 4. Gleiche Ausgabedateien mehrerer Tests im selben Ordner (spk1-test.json, ki1-test.json …) – mit dem Wegfall der Doppelläufe in spk4 kleiner,
    aber nicht ganz weg (z. B. spk3/spk2-Dateien). Sauber wäre ein Unterordner je Test (Tests lesen mess/ neben der Datei → Verknüpfung je Ordner).
 5. spk4 „pflicht“ ist doppelt zur Pflicht-Prüfung von run.sh; könnte in spk4 per NUR wegfallen (≈ 10 s).
+
+## 7. Prüfung (Prüfer-Befunde, nachgeprüft und behoben, 16.11. 08:57–)
+
+Sicherung vorher: `vx/reg-sicherung-0858/`. index.html weiter unverändert (reines Werkzeug-Paket).
+
+| # | Befund (Prüfer) | Nachgeprüft | Behoben |
+|---|---|---|---|
+| 1 | spk8f-Job verliert spk10p still (11 Fälle ungeprüft), Tabelle merkt es nicht | **echt**: lauf-4761/run.out `[eval]:1 … SyntaxError`, spk8f.log 2. Teil „ERGEBNIS 1 OK“, ERGEBNIS.md 54 Tests | run.sh berechnet die Fallliste vorab (`cd messb`), spk8f und **spk10p eigene Jobs** (`env -C`, kein verschachteltes `$(…)`); stderr jedes Job-Skripts → `<name>.err`, nicht leer = ROT; **soll.json** (Prüfungen je Test aus r4760) → weniger Prüfungen = ROT „nur k von n“; tabelle.mjs: erwarteter Test ohne Ergebnis = ROT „kein Ergebnis“ |
+| 2 | Absturz/Zeitlimit hinter bekannter Zeile = BEKANNT, leerer Lauf = GRÜN | **echt** (lauf.mjs Z. 20) | Struktur-Fehler sind immer ROT, nie BEKANNT/LAST/UNGÜLTIG: Zeitlimit; Exit ≠ 0 (erlaubt nur `exit`-Code des Tests **mit** FEHLER-Zeilen und **ohne** Stacktrace – 13 Tests mit `process.exit(bad ? 1 : 0)`); Stacktrace; weniger Prüfungen als soll.json; leerer Lauf ohne muss-Regel; spk9p jetzt mit muss `^konsole []` |
+| 3 | VERSION-Soll prüft sich selbst | **echt** (run.sh `SOLL_VERSION` aus `$F`) | run.sh bricht ohne `SOLL_VERSION` ab (Exit 2); pflicht.sh: Soll Pflicht (3. Arg.) **und** VERSION > VERSION der Vorgänger-Datei (`sort -V`); spk4-Kopie: ohne SOLL_VERSION rot |
+| 4 | LAST-Grenze nach Gesamtlast (inkl. eigener 4 Tests) → Zeit-Rückschritte nie ROT | **echt** (Grenze Mittel > CPU bei 4 eigenen Tests auf 4 CPUs) | **Fremdlast** = Last − laufende REG-Tests (alle 5 s, /proc), Urteil LAST/UNGÜLTIG nur nach Fremdlast; im Pool **keine** Sofort-Wiederholung mehr (`WDH=0`), stattdessen am Ende **allein** wiederholen (`SOLO=1`): alle LAST/UNGÜLTIG und ROT-nur-in-Prüfzeilen bei Fremdlast > CPU → Urteil aus dem Allein-Lauf („GRÜN (allein)“ oder ROT/LAST mit Fremdlast), Pool-Ergebnis bleibt in `.json` → `pool` und `<name>.log`. Funktionale Prüfungen in Zeit-Regeln (beg1 Prüfung 6, spk4 klang-abstand) werden so allein nachgeprüft statt gelb |
+| 5 | Gesamtzeit und „alle grün oder bekannt“ nicht belegt | **echt** | s. §8 (voller Lauf lauf-4761b) |
+| – | spk12d ROT bei Last (Prüfer A/B 3×: beide 28/0) | echt Last | bekannt.json `spk12d.zeit` für `abtasten-aus-zauberstab-3min` (ms < 150 + Long Tasks) → Allein-Wiederholung |
+| – | clip1-Kopie schrieb fotos/ und clip1-ergebnis.json ins Werkzeug (tests/) | echt (tests/fotos, 07:27) | `CLIP1_OUT` (run.sh: `<ordner>/o-clip1`) |
+| – | r4760-dauer.json spk10p = −2 s | echt | 12 s (11 Fälle à ≈ 0,9 s + Start) |
+
+Tests der Werkzeuge:
+- `tests/selbsttest.mjs` → **17 OK / 0 FEHLER**: die vier Prüfer-Proben (spk1 Stacktrace nach bekannter Zeile, ki1 Zeitlimit, vxr2lyr `true`, spk9p ohne Ergebnis) jetzt ROT; spk10p „nur 1 von 11“ ROT, 11 → GRÜN; .err → ROT; beg1 Exit 1 mit bekannter Zeile + 58 Prüfungen → BEKANNT, 41 Prüfungen → ROT; Exit 1 ohne Regel → ROT; Fremdlast 1 → ROT, 9 → LAST; Echtzeit UNGÜLTIG nur bei Fremdlast > CPU; Struktur nie UNGÜLTIG; ALLEIN → „GRÜN (allein)“ mit Pool-Ergebnis; Tabelle: fehlender Test = ROT.
+- pflicht.sh-Versionslogik (`selbsttest-pflicht/`, 6 Kleindateien): ohne Soll → „SOLL_VERSION fehlt“; Soll 4.76.0 bei Datei 4.76.1 → rot; vorher = gleiche Version → „neuer 0“; 4.76.10 > 4.76.9 → „neuer 1“, umgekehrt „neuer 0“.
+- run.sh ohne SOLL_VERSION → Exit 2, kein Ordner angelegt.
+- Probelauf lauf-4761 mit den neuen Regeln neu gewertet (`neu-gewertet-4761/`, WERTEN=1): spk10p jetzt ROT „kein Ergebnis“ (vorher fehlte die Zeile), Tests 55 (erwartet 55); spk12d LAST statt ROT.

@@ -18,3 +18,12 @@
 - 07:06–07:10 spk4 neu: pflicht OK (Soll 4.76.1), 4 FEHLER: a2 bekannt, a3-Zeiten 2× langsamer (Last 30), reg-spk2 + klang-abstand-bekannt → Regel ergänzt.
   beg1 neu (Last 43): 15 FEHLER, alle Echtzeit-Wiedergabe → neues Urteil „UNGÜLTIG (Last)“ für Echtzeit-Tests bei Last > 2× CPU; WERTEN=1 zum Neu-Werten.
 - 07:12 Stand: 8/55 fertig (5 GRÜN, 1 INFO, spk4 LAST, beg1 UNGÜLTIG), Last 48. Pool läuft weiter (nohup), ERGEBNIS.md entsteht am Ende. Bericht.
+
+## Nachbesserung nach Prüfung (16.11. 08:57–)
+- 08:57 Sicherung → vx/reg-sicherung-0858/ (LOG, NOTES, run.sh, r4760-dauer.json, tests/ ohne fotos, md5.txt). Last 12–14.
+- 08:58 Befunde nachgeprüft: (1) run.out des Probelaufs zeigt `[eval]:1 … SyntaxError` aus dem spk8f-Job, spk8f.log 2. Teil „ERGEBNIS 1 OK“ statt r4760/spk10p 11 OK → echt. (2) lauf.mjs Z. 20 Exit nur ohne FEHLER-Zeile → echt. (3) SOLL_VERSION aus derselben Datei → echt. (4) LAST nach Gesamtlast inkl. eigener 4 Tests → echt. (5) Gesamtzeit/„alle grün“ nicht belegt → echt (2373 s bei Last bis 48).
+- 09:00 lauf.mjs neu: Struktur-Fehler (Zeitlimit, Exit ≠ 0 außer erlaubtem Test-Exit mit FEHLER-Zeilen ohne Stacktrace, Stacktrace, weniger Prüfungen als soll.json, leerer Lauf, muss fehlt, stderr des Job-Skripts) → immer ROT; Fremdlast = Last − laufende REG-Tests; WDH=0/ALLEIN=1.
+- 09:01 soll-gen.mjs + soll.json (Prüfungen je Test aus r4760, Anpassungen spk4 21 / beg1 58 / clip1 109); bekannt.json: exit-Listen (13 Tests mit process.exit(bad?1:0)), spk9p muss, spk12d zeit.
+- 09:02 run.sh: SOLL_VERSION Pflicht (sonst Exit 2), spk8f/spk10p getrennt (Fallliste vorab mit cd messb, env -C statt verschachteltem $(…)), stderr je Job → <name>.err, Allein-Wiederholung am Ende (SOLO=1), clip1 schreibt nach <ordner>/o-clip1. pflicht.sh: Soll Pflicht + VERSION > Vorgänger (sort -V). spk4: ohne SOLL_VERSION rot. tabelle.mjs: erwartete Tests ohne Ergebnis = ROT.
+- 09:02 selbsttest.mjs 17 OK / 0 FEHLER (alle vier Prüfer-Proben aus pruef/fake + spk10p „nur 1 von 11“ + .err + Fremdlast + Allein + Tabelle). pflicht.sh-Versionslogik mit 6 Kleindateien geprüft.
+- 09:03:24 Voller Lauf lauf-4761b gestartet (SOLL_VERSION=4.76.1, Last vor dem Start 2,2). Last stieg danach durch andere Agenten auf 16.
