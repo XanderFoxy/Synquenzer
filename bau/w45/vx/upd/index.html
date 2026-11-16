@@ -52791,9 +52791,9 @@ async function vwReload() {
   try { sessionStorage.setItem('synq.vw', JSON.stringify(o)); } catch (e) {}
   try { await Promise.race([saveNow(), new Promise(r => setTimeout(r, 1500))]); } catch (e) {}
   try { if (typeof cloudFlushNow === 'function') cloudFlushNow(); } catch (e) {}
+  if (typeof updPre === 'function' && await updPre(v, o)) return;   /* UPD */
   try { if (window.caches) { const ks = await caches.keys(); await Promise.all(ks.filter(k => /^synq-app-/.test(k)).map(k => caches.delete(k))); } } catch (e) {}
   try { const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration(); if (reg) await Promise.race([reg.update(), new Promise(r => setTimeout(r, 1500))]); } catch (e) {}
-  if (typeof updPre === 'function' && await updPre(v, o)) return;   /* UPD */
   if (typeof perf1aPre === 'function' && await perf1aPre(v, o)) return;   /* PERF1A */
   location.replace(location.pathname + '?v=' + encodeURIComponent(v || String(Date.now())) + location.hash);
 }
@@ -113741,37 +113741,59 @@ function perf1aPre(v, o) {
    noch eine Weile alt liefern. Dann lud der PERF1A-Vorlauf die alte Seite ganz (der Service-Worker liest seine Kopie zu Ende) und
    danach ?v= die neue – zwei volle Downloads, und der Browser-Zwischenspeicher der normalen Adresse blieb alt (nächster Start: alt,
    dann ein dritter). Jetzt fragt UPD vorher nur die Kopfzeilen ab (HEAD, ohne Inhalt; geht am Service-Worker vorbei, der nur GET
-   bearbeitet): normale Adresse und ?v=<Fassung>. Gleich (ETag oder Last-Modified) → wie bisher PERF1A (ein Download). Verschieden
-   → die normale Adresse ist noch alt: alle 15 s neu fragen, höchstens 60 s; wird sie neu → PERF1A (ein Download); bleibt sie alt →
-   gleich ?v= (ein Download, die alte Seite wird gar nicht geladen). Unklar (kein Netz, keine Kopfzeilen) → wie bisher.
-   Nur beim ersten Versuch je Fassung (wie PERF1A); kein Hinweis in der App. Neu geladen wird nur bei vwIdle() (vor und nach dem
-   Speichern geprüft), wie in PERF1A. */
-const UPD = {gen: 0, last: null, STEP: 15000, MAX: 60000};
+   bearbeitet): normale Adresse und ?v=<Fassung>, dazu die Kopfzeilen der Seiten-Kopie des Service-Workers (= die laufende Fassung).
+   Gleich (ETag oder Last-Modified) → wie bisher PERF1A (ein Download). „Alt“ gilt nur, wenn die normale Adresse von ?v= abweicht UND
+   genau die laufende Fassung liefert (alle Merkmale gleich wie die Kopie) – liefert Pages unter ?v= eigene ETag/Last-Modified, bleibt
+   es darum beim bisherigen Weg statt zu warten. Alt → alle 10 s neu fragen, höchstens 60 s; wird sie neu → PERF1A (ein Download);
+   bleibt sie alt → gleich ?v= (ein Download, die alte Seite wird gar nicht geladen). Unklar (kein Netz, keine Kopfzeilen, keine
+   Kopie) → wie bisher. Nur beim ersten Versuch je Fassung (wie PERF1A); kein Hinweis in der App. Neu geladen wird nur bei vwIdle()
+   (vor und nach dem Speichern geprüft), wie in PERF1A.
+   Prüfung: der Haken steht in vwReload VOR dem Löschen der synq-app-Kopie – während der Wartezeit bleibt die Offline-Kopie da; bei
+   „frei“ löscht vwReload danach wie bisher, im Zweig „alt“ ersetzt die ?v=-Seite die Kopie selbst (sw.js speichert sie). */
+const UPD = {gen: 0, last: null, ref: null, STEP: 10000, MAX: 60000};
 try { addEventListener('pageshow', e => { if (e.persisted) UPD.gen++; }); } catch (e) {}   // aus dem Zurück-Cache: alte Warteschleife endet
+const updKey = s => String(s || '').replace(/^W\//, '').replace(/-gzip"$/, '"');                  // schwach/stark und „-gzip“ gleich behandeln
+const updMk = h => ({et: updKey(h.get('etag')), lm: h.get('last-modified') || ''});
+const updCmp = (x, y) => [x.et && y.et ? x.et === y.et : null, x.lm && y.lm ? x.lm === y.lm : null].filter(z => z !== null);
 // Kopfzeilen einer Adresse ohne Inhalt und ohne Zwischenspeicher; null bei Fehler oder nach 8 s
 function updHead(u) {
   const ac = typeof AbortController === 'function' ? new AbortController() : null;
   const t = setTimeout(() => { try { if (ac) ac.abort(); } catch (e) {} }, 8000);
-  const k = s => String(s || '').replace(/^W\//, '').replace(/-gzip"$/, '"');                       // schwach/stark und „-gzip“ gleich behandeln
   return fetch(u, Object.assign({method: 'HEAD', cache: 'no-store', credentials: 'same-origin'}, ac ? {signal: ac.signal} : null))
-    .then(r => r && r.ok ? {et: k(r.headers.get('etag')), lm: r.headers.get('last-modified') || ''} : null, () => null)
+    .then(r => r && r.ok ? updMk(r.headers) : null, () => null)
     .then(x => { clearTimeout(t); return x; });
 }
-// 'neu': normale Adresse = dieselbe Datei wie ?v= · 'alt': Rand-Zwischenspeicher liefert dort noch eine andere · null: unklar
-async function updProbe(v) {
+// Kopfzeilen der Seiten-Kopie des Service-Workers (sw.js legt sie unter dem Ordner ab); nur Kopfzeilen, kein Inhalt; null ohne Kopie
+async function updRef() {
+  try {
+    if (typeof caches === 'undefined' || !caches) return null;
+    const u = location.origin + location.pathname.replace(/[^/]*$/, '');
+    for (const k of (await caches.keys()).filter(k => /^synq-app-/.test(k))) {
+      const r = await (await caches.open(k)).match(u);
+      if (r) { const x = updMk(r.headers); return x.et || x.lm ? x : null; }
+    }
+  } catch (e) {}
+  return null;
+}
+// 'neu': normale Adresse = dieselbe Datei wie ?v= · 'alt': sie liefert noch genau die laufende Fassung · null: unklar
+async function updProbe(v, ref) {
   const p = location.pathname, [a, b] = await Promise.all([updHead(p), updHead(p + '?v=' + encodeURIComponent(v))]);
   if (!a || !b) return null;
-  const f = [a.et && b.et ? a.et === b.et : null, a.lm && b.lm ? a.lm === b.lm : null].filter(x => x !== null);
-  return !f.length ? null : f.some(x => x) ? 'neu' : 'alt';                                      // 'alt' nur, wenn alle vorhandenen Merkmale abweichen
+  const f = updCmp(a, b);
+  if (!f.length) return null;
+  if (f.some(x => x)) return 'neu';
+  const g = ref ? updCmp(a, ref) : [];
+  return g.length && g.every(x => x) ? 'alt' : null;                                              // ohne Beleg „noch die laufende Fassung“: bisheriger Weg
 }
-// Haken in vwReload vor perf1aPre: false → weiter wie bisher (PERF1A); true → UPD übernimmt (?v=) oder die Seite ist weg
+// Haken in vwReload vor dem Löschen der Kopie: false → weiter wie bisher (Löschen, reg.update, PERF1A); true → UPD übernimmt (?v=) oder die Seite ist weg
 function updPre(v, o) {
   if (!v || !o || o.n !== 1 || typeof fetch !== 'function' || !/^https?:$/.test(location.protocol) || typeof PERF1A === 'undefined' || PERF1A.busy) return Promise.resolve(false);
   PERF1A.busy = true;                                                                            // zweite VW-Prüfung tut solange nichts
   const g = UPD.gen, t0 = Date.now(), wait = ms => new Promise(r => setTimeout(r, ms));
   const loop = async () => {
+    const ref = await updRef(); UPD.ref = ref;
     for (;;) {
-      let s = null; try { s = await updProbe(v); } catch (e) {}
+      let s = null; try { s = await updProbe(v, ref); } catch (e) {}
       UPD.last = s;
       if (g !== UPD.gen) return 'weg';
       if (s !== 'alt') return 'frei';
@@ -113780,9 +113802,10 @@ function updPre(v, o) {
       if (g !== UPD.gen) return 'weg';
     }
   };
-  return loop().then(r => {
-    if (r === 'frei') { PERF1A.busy = false; return false; }                                     // → perf1aPre: ein Download unter der normalen Adresse
+  return loop().then(async r => {
+    if (r === 'frei') { PERF1A.busy = false; return false; }                                     // → vwReload wie bisher: ein Download unter der normalen Adresse
     if (r === 'weg') return true;
+    try { const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration(); if (reg) await Promise.race([reg.update(), wait(1500)]); } catch (e) {}   // wie vwReload
     const go = async () => {                                                                     // normale Adresse bleibt alt: gleich ?v=, ohne die alte Seite zu laden
       if (g !== UPD.gen) return;
       if (!vwIdle()) { setTimeout(go, 3000); return; }
