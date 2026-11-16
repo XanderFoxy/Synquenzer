@@ -14,4 +14,5 @@
 00:16 Auftakt-Probe: Loop-Zeile 'Takt 0–4', Blatt 'Takt 1–4', Szene ohne Vorlauf-Takt; spk11 A/B läuft. Last 4.87 4.86 5.62
 00:18 spk11 A/B 41/0 beide. Ende Prüfung: 7 Befunde (2 mittel, 5 klein), Paketdateien unverändert (md5 7fcf0543). Last 7.54 5.70 5.81
 00:19 Nachbesserung Start (Prüfer-Befunde 1–7), Last 6.18 5.62 5.79
-00:33 Nachbesserung eingebaut (B1 Fokus 1,3×, B3 Pack+Zähler, B4 Auftakt, B5 Kopf, B7 Status, F selHit). Last 1.55 3.36 4.74
+00:25 Nachbesserung eingebaut (B1 Fokus 1,3×, B3 Pack+Zähler, B4 Auftakt, B5 Kopf, B7 Status, F selHit). Last 1.55 3.36 4.74
+00:29 Nachtest 428 11/0, Auftakt 4/0; gestartet: Nachtest quer, teil1-test, spk11, spk11b. Last 2.32 2.82 4.28

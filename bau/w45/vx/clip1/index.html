@@ -96877,24 +96877,43 @@ function clip1Span(c, ns) {
   return {bb, b0, len: clamp(Math.ceil((e - b0) / bb - 1e-6), 1, 64)};
 }
 // der Abschnitt im Blatt: je freier Szene der Spur ein Knopf, sonst eine kleine Zeile
-function clip1SecHtml(t, len, attr, alt) {
+function clip1SecHtml(t, len, attr, alt, from) {
   const nm = esc(String(S.tracks[t].name)), fr = clip1Free(t), lt = clip1LenTxt(len);
-  return '<div class="mtx3-sub">Als neuer Clip · ' + nm + '</div>' + (fr.length
+  return '<div class="mtx3-sub">Als neuer Clip · ' + nm + (from ? ' · ' + esc(from) : '') + '</div>' + (fr.length
     ? '<div class="mtx3-l clip1-l">' + fr.map(x => `<button class="mbtn rb" ${attr}="clip" data-x="${x}" aria-label="Als neuer Clip in Szene ${x + 1} (${lt})">Szene ${x + 1}<small>${lt}</small></button>`).join('') + '</div>'
     : '<div class="small mtx3-hint clip1-none">Keine freie Szene auf ' + nm + ' – Szene leeren' + (alt ? ' oder „' + alt + '“' : '') + '</div>');
 }
 // [Öffnen] des neuen Clips: Editor schließen, dann der gewohnte Weg (openRoll)
 const clip1Open = (t, x) => ({label: 'Öffnen', clip1: true, fn: () => { try { if (R.editor === 'roll') closeRoll(); } catch (e) { logErr(e); } openRoll(t, x); }});
-// toast-Haken: im Noten-Editor bleibt nur [Öffnen] des neuen Clips (die übrigen Knöpfe hat der Editor selbst: ↶ ↷)
-const clip1RollActs = acts => acts.filter(a => a && a.clip1);
-// toastHome-Haken: dort dockt der Toast auf dem Titel des Editors („Synth 1 · Szene 1“), nie über den Werkzeugen; quer ist der Titel schmal
-// (die Werkzeuge stehen daneben im Kopf) – dann auf der TAKT-Anzeige oben (eine Anzeige, quer ohne Tipp-Funktion)
+// wo ein Toast mit [Öffnen] im Noten-Editor liegen darf: auf dem Titel („Synth 1 · Szene 1“), wenn er breit genug ist (hochkant); quer ist er
+// schmal (die Werkzeuge stehen daneben im Kopf) – dann auf der TAKT-Anzeige oben, aber nur solange sie eine reine Anzeige ist: heißt sie
+// „FILL“ (JAM1, halten = Fill), ist sie eine Taste und bleibt frei. Sonst null = kein Platz (dann eine Meldung ohne Knopf, durchtippbar)
+function clip1Dock() {
+  if (R.editor !== 'roll' || !EL.rollSheet || !EL.rollSheet.classList.contains('open')) return null;
+  const v = q => !!(q && q.isConnected && q.offsetWidth > 0 && q.offsetHeight > 0), q = ED.rollHT, k = EL.takt;
+  if (v(q) && q.offsetWidth >= 240) return q;
+  const fill = typeof jam1Armed === 'function' && jam1Armed();
+  return !fill && v(k) && k.offsetWidth > (v(q) ? q.offsetWidth : 0) ? k : null;
+}
+// toast-Haken: im Noten-Editor bleibt nur [Öffnen] des neuen Clips (die übrigen Knöpfe hat der Editor selbst: ↶ ↷) – und nur mit freiem Platz
+const clip1RollActs = acts => (clip1Dock() ? acts.filter(a => a && a.clip1) : []);
+// toastHome-Haken (je Bild neu): der Platz von clip1Dock; wird die TAKT-Anzeige in den 5 s zur FILL-Taste, weicht er auf den Titel aus
 function clip1ToastHome() {
   if (R.editor !== 'roll' || !UI.toastActs || !EL.rollSheet || !EL.rollSheet.classList.contains('open')) return null;
-  const v = q => !!(q && q.isConnected && q.offsetWidth > 0 && q.offsetHeight > 0), q = ED.rollHT, k = EL.takt;
-  if (v(q) && q.offsetWidth >= 240) return {kind: 'lcd', ref: q, wp: true};
-  if (v(k) && k.offsetWidth > (v(q) ? q.offsetWidth : 0)) return {kind: 'lcd', ref: k, wp: true};
-  return v(q) ? {kind: 'lcd', ref: q, wp: true} : null;
+  const r = clip1Dock() || (vis(ED.rollHT) ? ED.rollHT : null);
+  return r ? {kind: 'lcd', ref: r, wp: true} : null;
+}
+
+// Lock-Reihen (I2a clip.ln, je Reihe eigene Länge len in Schritten des Rasters g, läuft ab Clip-Beginn durch): der neue Clip beginnt bei b0
+// der Quelle – die Schritte rücken um b0 / Raster nach vorn (rotiert), damit ab Takt 1 dieselben Werte kommen wie in der Quelle ab b0.
+// Passt b0 nicht auf das Raster der Reihe (nur bei 7/8 u. ä. mit 1/4), bleibt diese Reihe wie sie ist
+function clip1LnShift(ln, b0) {
+  return ln.map(l => {
+    if (!l || !Array.isArray(l.st) || !(l.len > 0)) return l;
+    const k = b0 / lnGb(l.g), k0 = Math.round(k); if (Math.abs(k - k0) > 1e-6) return l;
+    const o = Object.assign({}, l); o.st = l.st.map(s => Object.assign({}, s, {i: (((s.i - k0) % l.len) + l.len) % l.len})).sort((a, b) => a.i - b.i);
+    return o;
+  });
 }
 
 /* ---------- Noten-Editor: Auswahl → neuer Clip derselben Spur ---------- */
@@ -96907,10 +96926,12 @@ function mtx3NewClip(t, s, notes, x, copy, quiet) {
   x = +x; if (!(x >= 0 && x < NS()) || x !== (x | 0) || x === s || tr.clips[x]) return no('Szene ' + ((x | 0) + 1) + ' ist nicht frei');
   const sp = clip1Span(c, ns), cBefore = cleanClip(c);
   const nc = mtx3Jc(cleanClip(c)), nl = sp.len * sp.bb; delete nc.take; delete nc.pre; nc.len = sp.len;
+  delete nc.lw;                                                    // KL1: der neue Clip ist nur die Auswahl, ohne den verborgenen Rest der Quelle
   // wie [Zuschneiden] im Editor: Noten rücken um b0 nach vorn (auch der Lauf-Versatz o), die Kurven (BM8) nur der Ausschnitt
   const wo = o => { const w = ((o % nl) + nl) % nl; return +(w >= nl - 1e-4 ? 0 : w).toFixed(4); };
   nc.notes = ns.map(cleanNote).map(mtx3Jc).map(n => { n.t = +Math.max(0, n.t - sp.b0).toFixed(6); if (n.o != null) n.o = wo(Math.max(0, n.o - sp.b0)); return n; });
   if (nc.cv) { delete nc.cv; if (cvHas(c)) cvSet(nc, cvSlice(c.cv, sp.b0, sp.b0 + nl)); }
+  if (Array.isArray(nc.ln) && sp.b0 > 0) nc.ln = clip1LnShift(nc.ln, sp.b0);   // Lock-Reihen: ab b0 weiter wie in der Quelle
   const clip = normClip(nc, 'synth', S.key); if (!clip || clip.notes.length !== ns.length) return no('Neuer Clip ging nicht');
   tr.clips[x] = clip;
   const items = [{kind: 'clip', track: t, scene: x, before: null}];
@@ -96945,7 +96966,7 @@ function clip1DrumNew(s, notes, x, quiet) {
   if (mtx3Busy()) return no('Erst Aufnahme beenden');
   x = +x; if (!(x >= 0 && x < NS()) || x !== (x | 0) || D.clips[x]) return no('Szene ' + ((x | 0) + 1) + ' ist nicht frei');
   const ids = [...new Set(ns.map(mtx3bPad).filter(Boolean))], gms = new Set(ids.map(id => DRUM_BY_ID[id].gm));
-  const nc = mtx3Jc(cleanClip(c)); delete nc.take; delete nc.pre; nc.notes = ns.map(cleanNote).map(mtx3Jc);
+  const nc = mtx3Jc(cleanClip(c)); delete nc.take; delete nc.pre; delete nc.lw; nc.notes = ns.map(cleanNote).map(mtx3Jc);   // KL1: ohne den verborgenen Rest
   if (nc.lanes) { for (const k of Object.keys(nc.lanes)) if (!gms.has(+k)) delete nc.lanes[k]; if (!Object.keys(nc.lanes).length) delete nc.lanes; }   // D1-Spurlängen nur der Töne
   if (Array.isArray(nc.ln)) { nc.ln = nc.ln.filter(l => !(l && typeof l.p === 'string' && l.p.startsWith('drum.')) || ids.some(id => l.p.startsWith('drum.' + id + '.'))); if (!nc.ln.length) delete nc.ln; }   // Locks nur der Töne
   const clip = normClip(nc, 'drum', S.key); if (!clip) return no('Neuer Clip ging nicht');
@@ -96959,7 +96980,7 @@ function clip1DrumNew(s, notes, x, quiet) {
 // mtx3bOutSheet-Haken: der Abschnitt unter [Auf eigene Spur] (nur mit einem Clip in dieser Szene)
 function clip1DrumSec(p, s, c) {
   if (!p || !c) return;
-  const box = el('div', 'clip1-sec', clip1SecHtml(DRUM_T, c.len, 'data-m3b', ''));
+  const box = el('div', 'clip1-sec', clip1SecHtml(DRUM_T, c.len, 'data-m3b', '', 'aus Szene ' + (s + 1)));   // „Ganze Töne“ heißt hier: nur diese Szene
   const at = p.querySelector('[data-m3b="go"]'); if (at) at.after(box); else p.appendChild(box);
 }
 // mtx3bOutSheet-Haken im Tipp: was unter TÖNE / WAS gewählt ist
@@ -96967,7 +96988,11 @@ function clip1DrumTap(b, s, c, sel, mode, pick) {
   if (!b || b.dataset.m3b !== 'clip') return false;
   if (!c) return true;
   const ns = mode === 'steps' ? c.notes.filter(n => pick && pick.has(n)) : c.notes.filter(n => sel && sel.has(mtx3bPad(n)));
-  if (!ns.length) { toast(mode === 'steps' ? 'Erst Schritte wählen' : 'Erst Töne wählen'); haptic('err'); return true; }
+  if (!ns.length) {                                                // je Fall die richtige Meldung: nichts gewählt – oder die Töne spielen in dieser Szene nicht
+    const ids = sel ? [...sel] : [], nm = ids.map(id => (DRUM_BY_ID[id] && DRUM_BY_ID[id].sl) || id).join(', ');
+    toast(mode === 'steps' ? 'Erst Schritte wählen' : !ids.length ? 'Erst Töne wählen' : nm + (ids.length === 1 ? ' spielt' : ' spielen') + ' in Szene ' + (s + 1) + ' nicht');
+    haptic('err'); return true;
+  }
   closePop(); clip1DrumNew(s, ns, +b.dataset.x);
   return true;
 }
