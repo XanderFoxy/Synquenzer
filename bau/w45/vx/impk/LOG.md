@@ -1,3 +1,4 @@
 - 05:39 Start IMPK, Last: 2.89 4.25 3.04
 - 05:40 Ist-Messung Tempo, Last: 2.12 3.70 2.95
 - 05:42 Tempo-Block gebaut (lead-ons 10 → 4 daneben, 120,54 → 119,95), Node-Läufe starten, Last: 2.56 3.34 2.90
+- 05:46 impk-test.mjs geschrieben, Last: 1.51 2.78 2.83
