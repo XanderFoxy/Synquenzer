@@ -1,6 +1,6 @@
 # SPKK – Spektral-Kleinfehler (OFFEN A8) auf 4.76.1 · Notizen
 
-Basis: `rel-4761/index.html` (4.76.1, md5 e4dc1b95…, = `basis.html`). Endfassung `index.html` = Basis + Block
+Basis: `rel-4761/index.html` (4.76.1, md5 e4dc1b95…, = `basis.html`). Endfassung `index.html` (md5 804c037b8ab6d7b1c216164fb88a1e53) = Basis + Block
 `/* SPKK-BEGIN … SPKK-END */` direkt hinter `/* SPKFIX-END */` + 3 Ein-Zeilen-Haken `/* SPKK: … */` mit typeof-Schutz
 (`ins.cjs`, bricht ab, wenn ein Anker nicht genau einmal vorkommt). diff zur Basis: 0 `<`, 34 `>`. VERSION bleibt 4.76.1.
 Nichts Sichtbares neu (kein Knopf, kein Text, kein Blatt).
@@ -37,15 +37,26 @@ zu ±2 Halbtöne flach, Viterbi wandert darin, `segNotes` zerhackt die Note und 
 - p-finden: 220 → 57, 196 → 55, 261,63 → 60, 329,63 → 64, 233,08 → 58, 146,83 → 50, 392 → 67, je **eine** Note; obertonreich unverändert (57, f 220,00).
 - 60-s-Melodie reiner Ton: **112 Vorschläge, 112 richtig** (Basis 152/15); obertonreich 116/116 wie Basis (gleiche Noten).
 - Zeit „Überall finden“ 60 s (reiner Ton + obertonreich, bester von 2 Läufen abwechselnd): **Basis 1539 ms → Index 1448 ms** (reiner Ton 827 → 709 ms, obertonreich 762 → 739 ms; keine FFT dazu, weniger Stücke).
-- spkk-test: **17/17 OK** (49 s).
+- spkk-test: **18/18 OK** (58 s, inkl. echter Spektral-Worker: Basis 196 Hz → 54/53/55, Index → 55). Zweiter Tempo-Lauf: Basis 1641 → Index 1574 ms.
 
 ## Tests
 - `spkk-test.mjs <index> <basis>` (spkk-test.out/json): SPKFIX-Prüfungen (1)–(4) + Überall-finden-Namen + Gegenprobe Basis rot + Klangkorn-Nachfüttern + Tempo.
 - Regression: `reg/finden9.mjs` (SPK9 Legato „Überall finden“) Basis und Index **gleiche Ausgabe** (3/3 Treffer). smoke errors [].
+- Regression Spur B (Ausschnitt, Kopien der Tests in `reg/i` = Index und `reg/b` = Basis, `reg/runb.sh` + `runb2.sh`, parallel):
+  spk6k ALLES OK · spk6 26 OK/0 · spk8s 14/0 · spk10s 16/0 · spk9u ok · spk9poly ok · spk9f ok · spk5 24/24 – **Index = Basis**
+  (spk9u/spk9poly/spk9f/spk6k Ausgaben textgleich).
 - spkfix-test (Basis) 11/11.
 
 ## Offen
 - Zwei gleich laute reine Töne gleichzeitig (Akkord aus Sinustönen) → keine allein tragende Spitze → Raster wie bisher.
 - Bass-Ebenen gehen in „Überall finden“ einen eigenen Weg (SPK3/SPK8), nicht geändert.
 - SPKFIX-Offen (1) bleibt: ganze Ebene wird neu gerechnet, wenn sie vorher schon nicht passte, Noten sich in derselben Op ändern oder > 60 % betroffen sind.
-- Die volle Spur-B-Regression (spk4/5/6/8/9/10) wurde in den 45 min nicht gefahren; der Eingriff wirkt nur in `finden` (finden9 gleich).
+- Nicht gefahren: spk4, spk1, ki1, spk6p/spk6u, spk9p (laut SPKFIX vorbestehend rot bzw. ohne Bezug zu `finden`).
+
+## Pflicht (Endfassung 804c037b)
+topdefs: 26 Skripte, 7990 Namen, 0 doppelt, 0 Syntaxfehler · dupkeys: 0 · smoke: title SYNQUENZER, errors [] (smoke.png) · „MS 2000“ 1× ·
+„^  live: true,“ 1× · VERSION '4.76.1' · Markenwörter wie Basis (keine neuen) · diff zur Basis 0 `<`, 34 `>` (3 Haken + 31 Zeilen Block).
+
+## Funk
+Nichts sichtbar neu. Merkbar anders: „Überall finden“ benennt reine/fast reine Töne (Pfeife, Sinus-Lead, gepfiffene Melodie) richtig und
+zerhackt sie nicht mehr in 2–3 Stücke. Die übrigen A8-Punkte waren mit 4.72 (SPKFIX) schon erledigt – auf 4.76.1 nachgemessen.
