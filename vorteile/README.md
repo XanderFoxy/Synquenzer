@@ -272,11 +272,14 @@ Xanders Regel: nur Quellen, deren AGB/robots.txt das automatische Lesen erlauben
 App-Clients. `scan/lib/robots.mjs` → `macheRegelWache` liegt in `main.mjs` um **jeden** Abruf eines Moduls:
 
 1. `abruf.agbVerbot` (Host + Grund): verboten → gar kein Abruf, auch nicht die robots.txt (Freelancer.com, Reddit).
-2. robots.txt des Hosts vor dem ersten Abruf (je Host einmal je Lauf, gemerkt 7 Tage in `zustand.robots`; eigene Gruppe
-   „vorteils-radar“ vor „*“, längste Regel gewinnt). Pfad verboten → Quelle übersprungen, **Hinweis** im Status
+2. robots.txt des Hosts vor dem ersten Abruf (je Host einmal je Lauf, gemerkt höchstens 24 Stunden in `zustand.robots`
+   wie RFC 9309 2.4 es verlangt; alle Regeln, keine Kürzung – mehr als 5000 = „nicht prüfbar“, Quelle nicht gelesen; eigene
+   Gruppe „vorteils-radar“ vor „*“, längste Regel gewinnt). Pfad verboten → Quelle übersprungen, **Hinweis** im Status
    („robots.txt von host: nicht gelesen – robots.txt: Disallow: /pfad“), keine Störung. Nicht lesbar (5xx/429/keine
    Antwort) → dieses Mal nicht gelesen, wie ein Ausfall (alter Stand bleibt). Keine robots.txt (4xx) = erlaubt.
 3. `abruf.robotsAusnahmen` nur für eigene Dienste (ntfy-Thema der Seite). `abruf.robotsPruefen: false` schaltet nur Schritt 2 ab.
 
-Fundort-Links, die die robots.txt sperrt, heißen „nicht geprüft“ (nicht „Link gerade nicht erreichbar“). Tests:
+Fundort-Links, die die robots.txt sperrt, heißen „nicht geprüft“ (nicht „Link gerade nicht erreichbar“). Gemerkte
+Forenbeiträge (`zustand.gesuche`) von Hosts mit Verbot werden verworfen und gelöscht, ebenso Gesuche von dort aus dem
+letzten Stand (Prüfung Runde 6: zwei Reddit-Beiträge vom 09./15.11. wären sonst bis Anfang Dezember stehen geblieben). Tests:
 `scan/test/regeln.test.mjs` (u. a. ganzer Lauf: Reddit/Freelancer.com nie abgerufen, jeder Host erst nach seiner robots.txt).

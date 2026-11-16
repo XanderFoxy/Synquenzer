@@ -31,7 +31,7 @@
       {"host": "reddit.com", "grund": "robots.txt von Reddit verbietet allen Robotern alles („User-agent: *“ / „Disallow: /“), die Public Content Policy erlaubt automatischen Zugriff nur mit Vereinbarung; Läufe bekamen HTTP 429", "stand": "robots.txt und Public Content Policy, Stand 16.11.2026"}
     ],
     "robotsAusnahmen": ["ntfy.sh"],
-    "_regeln": "Regel-Wache (MV6, 16.11.2026, Xander-Regel „nur Quellen, deren AGB/robots.txt das erlauben; keine Sperren umgehen“): JEDER Abruf eines Moduls geht erst durch agbVerbot (Host verboten -> kein Abruf, auch nicht die robots.txt) und dann durch die robots.txt des Hosts (vor dem ersten Abruf je Host, 7 Tage gemerkt in zustand.robots; Pfad verboten -> Quelle übersprungen, Hinweis im Status statt Störung; robots.txt nicht lesbar -> dieses Mal nicht gelesen). robotsAusnahmen nur für eigene Dienste: ntfy.sh = das eigene Push-Thema der Seite (Merkliste), keine fremden Inhalte."
+    "_regeln": "Regel-Wache (MV6, 16.11.2026, Xander-Regel „nur Quellen, deren AGB/robots.txt das erlauben; keine Sperren umgehen“): JEDER Abruf eines Moduls geht erst durch agbVerbot (Host verboten -> kein Abruf, auch nicht die robots.txt) und dann durch die robots.txt des Hosts (vor dem ersten Abruf je Host, höchstens 24 Stunden gemerkt in zustand.robots (RFC 9309), alle Regeln ohne Kürzung; Pfad verboten -> Quelle übersprungen, Hinweis im Status statt Störung; robots.txt nicht lesbar -> dieses Mal nicht gelesen). robotsAusnahmen nur für eigene Dienste: ntfy.sh = das eigene Push-Thema der Seite (Merkliste), keine fremden Inhalte."
   },
   "module": {
     "deals": {

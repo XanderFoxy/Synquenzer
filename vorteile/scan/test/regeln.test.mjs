@@ -7,7 +7,7 @@ import { readFile } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { macheFixtureAbruf } from '../lib/http.mjs';
-import { macheRegelWache, istRegelSperre, agbGrund } from '../lib/robots.mjs';
+import { macheRegelWache, istRegelSperre, agbGrund, robotsErlaubt, ROBOTS_TAGE, ROBOTS_MAX_REGELN } from '../lib/robots.mjs';
 import { pruefeFundorte } from '../module/assistent.mjs';
 import { FIXTURE_KARTE } from './fixtures/karte.mjs';
 import { lauf } from '../main.mjs';
@@ -60,12 +60,40 @@ test('Regel-Wache: robots.txt vor dem ersten Abruf je Host, einmal (auch paralle
   assert.equal(gefragt.filter(u => u === 'https://remotive.com/robots.txt').length, 1);
   assert.ok(!gefragt.some(u => /remotive\.com\/api/.test(u)), 'verbotener Pfad nie abgerufen');
   assert.ok(gefragt.indexOf('https://news.google.com/robots.txt') < gefragt.findIndex(u => /news\.google\.com\/rss/.test(u)), 'robots.txt VOR dem ersten Abruf');
-  // gemerkt im Zustand: der nächste Lauf fragt die robots.txt nicht noch einmal (7 Tage)
+  // gemerkt im Zustand: ein Lauf innerhalb von 24 Stunden fragt die robots.txt nicht noch einmal
   assert.deepEqual(Object.keys(zustand.robots).sort(), ['news.google.com', 'remotive.com']);
-  const w2 = macheRegelWache(hole, { zustand, jetzt: new Date(JETZT.getTime() + 864e5) });
+  const w2 = macheRegelWache(hole, { zustand, jetzt: new Date(JETZT.getTime() + 12 * 3600e3) });
   gefragt.length = 0;
   await w2('https://news.google.com/rss/search?q=d');
   assert.deepEqual(gefragt, ['https://news.google.com/rss/search?q=d']);
+  // Prüfer R6, Befund 4 (RFC 9309 2.4): nach 24 Stunden wird sie neu geholt (vorher 7 Tage)
+  assert.equal(ROBOTS_TAGE, 1);
+  const w3 = macheRegelWache(hole, { zustand, jetzt: new Date(JETZT.getTime() + 24 * 3600e3 + 60e3) });
+  gefragt.length = 0;
+  await w3('https://news.google.com/rss/search?q=e');
+  assert.deepEqual(gefragt, ['https://news.google.com/robots.txt', 'https://news.google.com/rss/search?q=e']);
+});
+
+test('robots.txt: alle Regeln zählen (keine Kürzung auf 200), zu viele = nicht prüfbar, alte gekürzte Einträge neu holen', async () => {
+  // Prüfer R6, Befund 3: kleinanzeigen.de hat 257 Regeln für uns – die letzten 57 Disallow fielen bei 200 weg
+  const viele = n => 'User-agent: *\n' + Array.from({ length: n }, (_, i) => `Disallow: /pfad-${i}/`).join('\n') + '\n';
+  const holeRoh = text => async () => ({ status: 200, text });
+  const z = {};
+  assert.equal((await robotsErlaubt('https://www.kleinanzeigen.de/pfad-250/x', { holeRoh: holeRoh(viele(257)), zustand: z, jetzt: JETZT })).ok, false, 'Regel Nr. 251 gilt');
+  assert.equal(z.robots['www.kleinanzeigen.de'].regeln.length, 257);
+  assert.equal((await robotsErlaubt('https://www.kleinanzeigen.de/s-anzeigen/x', { holeRoh: holeRoh(viele(257)), zustand: z, jetzt: JETZT })).ok, true);
+  // mehr als ROBOTS_MAX_REGELN: nicht kürzen, sondern „nicht prüfbar“ -> die Wache liest die Quelle nicht
+  const r = await robotsErlaubt('https://riesig.example/frei', { holeRoh: holeRoh(viele(ROBOTS_MAX_REGELN + 1)), zustand: z, jetzt: JETZT });
+  assert.equal(r.ok, false);
+  assert.equal(r.nichtLesbar, true);
+  assert.match(r.grund, /nicht prüfbar/);
+  assert.deepEqual(z.robots['riesig.example'].regeln, [], 'keine Riesen-Liste im Zustand');
+  // ein Eintrag der alten Fassung (höchstens 200 Regeln, ohne v) wird sofort neu geholt, nicht erst nach Ablauf
+  let geholt = 0;
+  const z2 = { robots: { 'www.kleinanzeigen.de': { zeit: JETZT.toISOString(), status: 200, regeln: [{ erlaubt: false, pfad: '/pfad-0/' }] } } };
+  const r2 = await robotsErlaubt('https://www.kleinanzeigen.de/pfad-256/', { holeRoh: async () => { geholt++; return { status: 200, text: viele(257) }; }, zustand: z2, jetzt: JETZT });
+  assert.equal(geholt, 1);
+  assert.equal(r2.ok, false);
 });
 
 test('Regel-Wache: robots.txt nicht lesbar (503/429/Zeitüberschreitung) = dieses Mal nicht gelesen, normale Störung, nur ein Versuch je Lauf', async () => {

@@ -7,7 +7,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { aufraeumen } from './lib/ende.mjs';
 import { macheAbruf, macheFixtureAbruf } from './lib/http.mjs';
-import { macheRegelWache, agentAus, REGEL_TEXT } from './lib/robots.mjs';
+import { macheRegelWache, agentAus, agbGrund, REGEL_TEXT } from './lib/robots.mjs';
 import { rohOrdner, macheMitschnitt } from './lib/roh.mjs';
 import { tageBis } from './lib/text.mjs';
 import { modulFaellig } from './faellig.mjs';
@@ -63,7 +63,9 @@ export async function lauf({ cfg, wunschliste, filmListen = null, essenListen = 
   const neueModule = [];
   for (const [name, fn] of Object.entries(MODULE)) {
     const m = cfg.module[name];
-    const alt = vorher?.kategorien?.[name] || [];
+    // Prüfer R6 (Befund 1): gefundene Beiträge (keine Fundort-Links) von Hosts mit Nutzungsbedingungs-Verbot nicht aus dem
+    // letzten Stand übernehmen – auch nicht, wenn das Modul diesmal nicht dran ist oder abstürzt
+    const alt = (vorher?.kategorien?.[name] || []).filter(e => !(e?.extra?.gesuch && !e.extra.fundort && agbGrund(e.link, cfg.abruf?.agbVerbot || [])));
     if (!m || m.aktiv === false) { kategorien[name] = []; status[name] = { ok: true, aus: true }; continue; }
     const faellig = alle || modulFaellig(m, zustand.lauf[name], jetztMs); // gleiche Regel wie die Vorprüfung im Workflow
     if (!faellig) {

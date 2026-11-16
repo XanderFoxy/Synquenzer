@@ -15,6 +15,7 @@
 // Ort in OSM, „bei <Ort>“ vom nächsten Lokal mit Ort (≤ 1,5 km) statt eines falschen Orts; kein osmIds in der Seiten-Datei.
 // Fällt Overpass aus, bleibt der letzte OSM-Stand aus der alten Datei stehen (mit „alt“ im Status), die Liste selbst ist frisch.
 import { berlin } from '../benachrichtigen.mjs';
+import { osmStandAus } from './filialen.mjs';
 
 export const STANDARD = {
   overpass: 'https://overpass-api.de/api/interpreter',
@@ -260,13 +261,16 @@ export default async function essen({ holeText, cfg, jetzt = new Date(), zustand
   const altOsm = (a => (a.length ? a : null))(ausVorher(vorherDatei)); // leer = kein Stand
   // für neu/weg: die gezeigten OSM-Lokale der alten Datei (alle im Umkreis)
   const altIds = vergleichsStand(vorherDatei, radiusKm);
-  const faellig = !altOsm || !zk.osmZeit || jetztMs - Date.parse(zk.osmZeit) >= m.osmStunden * 3600e3;
+  // !('osmStand' in zk): Zustand von vor dem Befund B6 kennt nur die Abrufzeit -> einmal neu holen, damit der echte Stand dasteht
+  const faellig = !altOsm || !zk.osmZeit || !('osmStand' in zk) || jetztMs - Date.parse(zk.osmZeit) >= m.osmStunden * 3600e3;
   if (faellig) {
     try {
       const url = `${m.overpass}?data=${encodeURIComponent(overpassAbfrage(z, radiusKm, kettenRadiusKm))}`;
-      osm = leseOsm(await holeText(url, { headers: { accept: 'application/json' }, timeoutMs: m.timeoutMs }), z);
+      const d = JSON.parse(await holeText(url, { headers: { accept: 'application/json' }, timeoutMs: m.timeoutMs }));
+      osm = leseOsm(d, z);
       if (!osm.length) throw new Error('Overpass: 0 Lokale (Abfrage geändert?)');
-      zk.osmZeit = new Date(jetztMs).toISOString();
+      zk.osmZeit = new Date(jetztMs).toISOString(); // Abruf
+      zk.osmStand = osmStandAus(d); // Datenstand von OpenStreetMap (Prüfer R6, Rest von B6: vorher die Abrufzeit)
     } catch (e) {
       // mit altem Stand nur ein Hinweis (die Seite zeigt den letzten Stand), ohne einen echten Fehler
       (altOsm ? hinweise : fehler).push(`OpenStreetMap: ${String(e.message || e).slice(0, 160)}`);
@@ -313,7 +317,9 @@ export default async function essen({ holeText, cfg, jetzt = new Date(), zustand
 
   const mitZeiten = lokale.filter(l => l.oeffnung).length + weitere.filter(l => l.oeffnung).length;
   const datei = {
-    version: 1, aktualisiert: new Date(jetztMs).toISOString(), stand: liste.stand || null, osmStand: zk.osmZeit || vorherDatei?.osmStand || null,
+    version: 1, aktualisiert: new Date(jetztMs).toISOString(), stand: liste.stand || null,
+    // osmStand = Stand der OSM-Daten (osm3s.timestamp_osm_base), abgerufen = Zeit des Abrufs – wie bei den Filialen
+    osmStand: 'osmStand' in zk ? zk.osmStand || null : vorherDatei?.osmStand || null, abgerufen: zk.osmZeit || vorherDatei?.abgerufen || null,
     quelle: { name: 'OpenStreetMap-Mitwirkende', lizenz: 'ODbL', url: 'https://www.openstreetmap.org/copyright' },
     zentrum: z, radiusKm, kettenRadiusKm, lokale, weitere, ketten, neu, weg, nichtGefunden,
   };

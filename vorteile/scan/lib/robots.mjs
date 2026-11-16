@@ -3,13 +3,17 @@
 //  - Gruppe für unseren Namen („vorteils-radar“, aus dem User-Agent) vor „*“; mehrere passende Gruppen werden vereint,
 //  - längste passende Regel gewinnt, bei Gleichstand Allow; „*“ = beliebig viele Zeichen, „$“ = Ende,
 //  - robots.txt fehlt (HTTP 4xx außer 429) = alles erlaubt; Server-Fehler/429/keine Antwort = dieses Mal NICHT lesen (vorsichtig).
-// Ergebnis je Host im Zustand (zustand.robots[host] = { tag, status, regeln }) – höchstens einmal pro ROBOTS_TAGE neu holen.
+// Ergebnis je Host im Zustand (zustand.robots[host] = { zeit, status, regeln }) – höchstens ROBOTS_TAGE alt (RFC 9309 2.4:
+// eine zwischengespeicherte robots.txt höchstens 24 Stunden verwenden; Prüfer 16.11.2026, Befund 4: vorher 7 Tage).
+// Alle Regeln werden gemerkt (Befund 3: vorher nur die ersten 200 – bei kleinanzeigen.de fielen 57 Disallow weg); mehr als
+// ROBOTS_MAX_REGELN = „nicht sicher prüfbar“, die Quelle wird dann wie bei einer unlesbaren robots.txt nicht gelesen.
 // MV6 (16.11.2026, Regel-Verstoß im Bereich Unterricht: Reddit trotz „Disallow: /“, Freelancer.com trotz AGB-Verbot):
 // macheRegelWache legt sich um JEDEN Abruf des Radars (main.mjs) – nicht nur um einzelne Module:
 //  1. Nutzungsbedingungen (config abruf.agbVerbot): Host verboten -> gar kein Abruf, auch nicht der robots.txt;
 //  2. robots.txt je Host vor dem ersten Abruf (gemerkt wie oben): Pfad verboten -> Abruf übersprungen (Hinweis, kein Fehler).
 
-export const ROBOTS_TAGE = 7;
+export const ROBOTS_TAGE = 1;
+export const ROBOTS_MAX_REGELN = 5000;
 
 /** robots.txt -> Liste von Gruppen [{ agents: [..], regeln: [{ erlaubt, pfad }] }] */
 export function leseRobots(text) {
@@ -67,15 +71,20 @@ export async function robotsErlaubt(url, { holeRoh, zustand = null, agent = 'vor
   const speicher = zustand ? (zustand.robots ||= {}) : {};
   const jetztMs = new Date(jetzt).getTime();
   let e = speicher[u.host];
-  if (!e || !(jetztMs - Date.parse(e.zeit) < tage * 864e5) || e.status === 0 || e.status >= 500 || e.status === 429) {
+  // e.v 2 = ungekürzte Regeln (ältere Einträge mit höchstens 200 Regeln werden einmal neu geholt)
+  if (!e || e.v !== 2 || !(jetztMs - Date.parse(e.zeit) < tage * 864e5) || e.status === 0 || e.status >= 500 || e.status === 429) {
     let r;
     try { r = await holeRoh(`${u.protocol}//${u.host}/robots.txt`); } catch (err) { r = { status: 0, text: '', fehler: String(err?.message || err) }; }
     const regeln = r.status >= 200 && r.status < 300 ? regelnFuer(leseRobots(r.text), agent) : [];
-    e = { zeit: new Date(jetztMs).toISOString(), status: r.status, regeln: regeln.slice(0, 200) };
+    // nie kürzen: eine gekürzte Liste wäre zu großzügig (fehlende Disallow) -> lieber „nicht prüfbar“
+    e = regeln.length > ROBOTS_MAX_REGELN
+      ? { v: 2, zeit: new Date(jetztMs).toISOString(), status: r.status, regeln: [], zuViele: regeln.length }
+      : { v: 2, zeit: new Date(jetztMs).toISOString(), status: r.status, regeln };
     speicher[u.host] = e;
   }
   if (e.status === 0 || e.status >= 500 || e.status === 429) return { ok: false, nichtLesbar: true, grund: `robots.txt nicht lesbar (${e.status ? `HTTP ${e.status}` : 'keine Antwort'})` };
   if (e.status >= 400) return { ok: true, grund: `keine robots.txt (HTTP ${e.status})` };
+  if (e.zuViele || !Array.isArray(e.regeln)) return { ok: false, nichtLesbar: true, grund: `robots.txt nicht prüfbar (${e.zuViele || '?'} Regeln)` };
   const p = erlaubt(e.regeln, u.pathname + u.search);
   return p.ok ? { ok: true, grund: p.regel ? `robots.txt: ${p.regel}` : 'robots.txt erlaubt' } : { ok: false, grund: `robots.txt: ${p.regel}` };
 }

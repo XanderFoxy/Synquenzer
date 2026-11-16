@@ -112,13 +112,16 @@ test('Modul: eigene Datei, einmal am Tag OSM, Ausfall mit altem Stand = Hinweis 
   assert.equal(abrufe, 1);
   assert.equal(r.datei.lokale.length, liste.lokale.length);
   assert.ok(r.datei.weitere.length >= 2);
-  assert.ok(r.datei.osmStand);
+  // Prüfer R6 (Rest von B6): osmStand = Stand der OSM-Daten (osm3s.timestamp_osm_base), nicht die Abrufzeit
+  assert.equal(r.datei.osmStand, '2026-11-16T09:41:00.000Z');
+  assert.equal(r.datei.abgerufen, jetzt.toISOString());
   assert.match(r.kurz, /Lokale bis 30 km/);
   assert.deepEqual(r.eintraege, [], 'ohne gemerkte Lokale kein Push');
   // 2 Stunden später: kein neuer Abruf, Stand aus der alten Datei
   const r2 = await essen({ holeText: hole, cfg, jetzt: new Date('2026-11-16T12:00:00Z'), zustand, vorherDatei: r.datei, essenListen: { liste, seite } });
   assert.equal(abrufe, 1);
   assert.equal(r2.datei.weitere.length, r.datei.weitere.length);
+  assert.equal(r2.datei.osmStand, '2026-11-16T09:41:00.000Z', 'ohne Abruf bleibt der OSM-Stand des letzten Abrufs');
   // nächster Tag: Overpass weg -> alter Stand, nur Hinweis
   const kaputt = async () => { throw new Error('HTTP 504 bei overpass-api.de'); };
   const r3 = await essen({ holeText: kaputt, cfg, jetzt: new Date('2026-11-17T10:00:00Z'), zustand, vorherDatei: r.datei, essenListen: { liste, seite } });
@@ -273,4 +276,20 @@ test('Push: nur gemerkte Lokale, nur am AYCE-Tag, nur tagsüber; ohne Merkliste 
   assert.match(e.link, /^https:\/\//);
   assert.ok(e.bis.startsWith('2026-11-18'));
   assert.equal(e.id, 'essen-ayce-dd-play-off-2026-11-18');
+});
+
+test('Prüfer R6 (Rest von B6): alter Zustand nur mit Abrufzeit -> einmal neu holen, ohne osm3s kein erfundener Stand', async () => {
+  let abrufe = 0;
+  const ohneStand = fixture.replace(/"timestamp_osm_base":"[^"]+",/, '');
+  const hole = async url => { if (/^https:\/\/ntfy\.sh\//.test(url)) return ''; abrufe++; return ohneStand; };
+  const jetzt = new Date('2026-11-16T10:00:00Z');
+  const erst = await essen({ holeText: async u => (/ntfy/.test(u) ? '' : fixture), cfg, jetzt, zustand: {}, essenListen: { liste, seite } });
+  // Zustand von vor dem Fix: osmZeit 1 Stunde alt, kein osmStand; alte Datei trägt die Abrufzeit als „osmStand“
+  const zustand = { essen: { osmZeit: '2026-11-16T09:00:00.000Z' } };
+  const r = await essen({ holeText: hole, cfg, jetzt, zustand, vorherDatei: { ...erst.datei, osmStand: '2026-11-16T09:00:00.000Z' }, essenListen: { liste, seite } });
+  assert.equal(abrufe, 1, 'einmal neu geholt, obwohl osmStunden noch nicht um sind');
+  assert.equal(r.datei.osmStand, null, 'Overpass ohne timestamp_osm_base: kein Stand statt der Abrufzeit');
+  assert.ok('osmStand' in zustand.essen);
+  await essen({ holeText: hole, cfg, jetzt: new Date('2026-11-16T11:00:00Z'), zustand, vorherDatei: r.datei, essenListen: { liste, seite } });
+  assert.equal(abrufe, 1, 'danach wieder nur alle osmStunden');
 });

@@ -214,13 +214,25 @@ export async function gesucheAusNetz({ holeText, m, jetzt = new Date(), zustand 
   const merk = zustand ? (zustand.gesuche && typeof zustand.gesuche === 'object' ? zustand.gesuche : (zustand.gesuche = {})) : null;
   if (merk) {
     const frischeLinks = new Set(funde.map(f => linkKey(f.link)));
+    // Prüfer R6 (16.11.2026, Befund 1): gemerkte Beiträge von Hosts, die nicht (mehr) gelesen werden dürfen (agbVerbot oder in
+    // diesem Lauf von der robots.txt gesperrt), werden verworfen und aus dem Zustand gelöscht – sonst blieben die Reddit-
+    // Gesuche aus der Zeit vor der Regel-Wache noch bis zu 21 Tage sichtbar, obwohl nichts mehr abgerufen wird.
+    const wacheGesperrt = [...(holeText?.wache?.gesperrt?.values() || [])].map(g => String(g.host || '').toLowerCase().replace(/:\d+$/, ''));
+    const nichtErlaubt = link => {
+      if (agbGrund(link, verbot)) return true;
+      let h; try { h = new URL(link).hostname.toLowerCase(); } catch { return true; }
+      return wacheGesperrt.some(g => g && (h === g || h.endsWith(`.${g}`) || g.endsWith(`.${h}`)));
+    };
+    let verworfen = 0;
     for (const [k, s] of Object.entries(merk)) {
       if (frischeLinks.has(k) || !s?.titel || !s.link) continue;
+      if (nichtErlaubt(s.link)) { verworfen++; continue; }
       const d = Date.parse(s.datum || '');
       if (zuAlt(d)) continue;
       const p = pruefeGesuch(s.titel, s.text || '', m, { thema: s.thema || null, streng: true });
       if (p.was) funde.push({ titel: s.titel, link: s.link, datum: s.datum, auszug: auszugAus(s.text || ''), quelle: s.quelle, was: p.was, art: s.art, text: s.text || '', thema: s.thema || null });
     }
+    if (verworfen) hinweise.push(`Gesuche: ${verworfen} gemerkte ${verworfen === 1 ? 'Beitrag' : 'Beiträge'} verworfen – Quelle darf nicht gelesen werden (Nutzungsbedingungen/robots.txt)`);
     for (const k of Object.keys(merk)) delete merk[k];
     const foren = funde.filter(f => f.art === 'reddit' || f.art === 'lemmy').sort((a, b) => Date.parse(b.datum) - Date.parse(a.datum)).slice(0, 60);
     for (const f of foren) merk[linkKey(f.link)] = { titel: f.titel, link: f.link, datum: f.datum, quelle: f.quelle, art: f.art, thema: f.thema || null, text: String(f.text || '').slice(0, 500) };

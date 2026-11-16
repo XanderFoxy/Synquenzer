@@ -263,3 +263,49 @@ test('Regel: mit der echten config werden Reddit und Freelancer.com nie abgerufe
   assert.equal(r2.hinweise.filter(h => /^Gesuche: Freelancer\.com nicht gelesen – Nutzungsbedingungen/.test(h)).length, 1, r2.hinweise.join(' | '));
   assert.deepEqual(r2.fehler, []);
 });
+
+// ---------------------------------------------------------------- Prüfer R6 (16.11.2026), Befund 1
+test('Regel: gemerkte Reddit-Gesuche (vor der Regel-Wache gesammelt) werden verworfen und aus dem Zustand gelöscht', async () => {
+  // Nachbau des echten Zustands vom Zweig vorteile-daten (a59ea321): zwei Reddit-Beiträge in zustand.gesuche, die ohne
+  // diesen Fix bei jedem Lauf neu gespeichert und bis 30.11./06.12. als „Gesuch“ gezeigt worden wären
+  const gefragt = [];
+  const zaehlend = async (url, o) => { gefragt.push(url); return holeText(url, o); };
+  const jetzt = new Date('2026-11-16T12:00:00Z');
+  const zustand = { gesuche: {
+    'https://www.reddit.com/r/germany/comments/r6a/x': { titel: 'Need someone to correct my Motivationsschreiben', link: 'https://www.reddit.com/r/germany/comments/r6a/x/', datum: '2026-11-15T10:00:00.000Z', quelle: 'Reddit r/germany', art: 'reddit', thema: 'deutsch', text: 'Will pay 20 €.' },
+    'https://www.reddit.com/r/german/comments/r6b/y': { titel: 'Looking for a German tutor online', link: 'https://www.reddit.com/r/German/comments/r6b/y/', datum: '2026-11-09T10:00:00.000Z', quelle: 'Reddit r/German', art: 'reddit', thema: 'deutsch', text: 'Online, A2, paid.' },
+    'https://feddit.org/post/1': { titel: 'Suche Nachhilfe Deutsch online', link: 'https://feddit.org/post/1', datum: '2026-11-14T10:00:00.000Z', quelle: 'Lemmy deutsch@feddit.org', art: 'lemmy', thema: 'deutsch', text: 'Für die B2-Prüfung, bezahlt.' },
+  } };
+  const r = await unterricht({ holeText: zaehlend, cfg, jetzt, zustand });
+  assert.deepEqual(r.fehler, []);
+  assert.ok(!gefragt.some(u => /reddit\.com/i.test(u)), 'Reddit nicht abgerufen');
+  const gesuche = r.eintraege.filter(e => e.extra.gesuch && !e.extra.fundort);
+  assert.ok(!gesuche.some(e => /reddit\.com/.test(e.link)), gesuche.map(e => e.link).join(' | '));
+  assert.ok(gesuche.some(e => e.link === 'https://feddit.org/post/1'), 'erlaubte Foren-Beiträge bleiben gemerkt');
+  assert.deepEqual(Object.keys(zustand.gesuche), ['https://feddit.org/post/1'], 'Reddit-Beiträge aus dem Zustand gelöscht');
+  assert.ok(r.hinweise.some(h => /2 gemerkte Beiträge verworfen/.test(h)), r.hinweise.join(' | '));
+  // nächster Lauf: nichts mehr zu verwerfen, kein Hinweis mehr
+  const r2 = await unterricht({ holeText: zaehlend, cfg, jetzt: new Date(jetzt.getTime() + 3600e3), zustand });
+  assert.ok(!r2.hinweise.some(h => /verworfen/.test(h)));
+  // robots.txt sperrt einen Foren-Host in diesem Lauf (Regel-Wache) -> dessen gemerkte Beiträge ebenso
+  const wache = async () => '';
+  wache.wache = { gesperrt: new Map([['robots|feddit.org', { regel: 'robots', host: 'feddit.org', grund: 'robots.txt: Disallow: /' }]]) };
+  const r3 = await gesucheAusNetz({ holeText: wache, m: mEcht, jetzt, zustand, kuenstler: cfg.kuenstler, agbVerbot: cfg.abruf.agbVerbot });
+  assert.ok(!r3.eintraege.some(e => e.link === 'https://feddit.org/post/1'));
+  assert.deepEqual(Object.keys(zustand.gesuche), []);
+});
+
+test('Regel: Reddit-Gesuche aus dem letzten Stand (aktuell.json) verschwinden sofort – auch wenn Unterricht nicht dran ist', async () => {
+  const cfgU = { ...cfg, module: { unterricht: cfg.module.unterricht } };
+  const vorher = { kategorien: { unterricht: [
+    { id: 'g1', kategorie: 'unterricht', titel: 'Need help with German', link: 'https://www.reddit.com/r/germany/comments/r6a/x/', datum: '2026-11-15T10:00:00.000Z', sichtbarBis: '2026-12-06T10:00:00.000Z', wert: 70, extra: { typ: 'gesuch', gesuch: true, sortWert: 80 } },
+    { id: 'f1', kategorie: 'unterricht', titel: 'Reddit r/German: selbst suchen', link: 'https://www.reddit.com/r/German/search/?q=tutor', wert: 40, extra: { typ: 'gesuch', gesuch: true, fundort: true, sortWert: 40 } },
+    { id: 's1', kategorie: 'unterricht', titel: 'Online German Teacher – Firma', link: 'https://example.org/s1', datum: '2026-11-15T10:00:00.000Z', wert: 70, extra: { typ: 'online', sortWert: 70 } },
+  ] }, status: { unterricht: { ok: true } } };
+  const nie = async url => { throw new Error(`kein Abruf erwartet: ${url}`); };
+  const r = await lauf({ cfg: cfgU, wunschliste: {}, vorher, zustand: { lauf: { unterricht: '2026-11-16T11:30:00.000Z' } }, holeText: nie, jetzt: new Date('2026-11-16T12:00:00Z') });
+  const links = r.aktuell.kategorien.unterricht.map(e => e.link);
+  assert.ok(!links.includes('https://www.reddit.com/r/germany/comments/r6a/x/'), links.join(' | '));
+  assert.ok(links.includes('https://www.reddit.com/r/German/search/?q=tutor'), 'Fundort-Link (selbst suchen) bleibt');
+  assert.ok(links.includes('https://example.org/s1'));
+});
