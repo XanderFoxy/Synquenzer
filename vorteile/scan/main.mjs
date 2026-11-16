@@ -25,14 +25,15 @@ import unterricht from './module/unterricht.mjs';
 import knaller from './module/knaller.mjs';
 import essen from './module/essen.mjs';
 import filialen from './module/filialen.mjs';
+import events from './module/events.mjs';
 import { FIXTURE_KARTE } from './test/fixtures/karte.mjs';
 import { holeMerkliste, faelligeErinnerungen, erinnerungNachricht, verbucheErinnerung } from './lib/merken.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
 // filialen vor knaller: der Knaller nimmt die frische Filial-Liste (nächste Filiale je Markt von Döbeln, wenn kaufDA keine nennt)
-export const MODULE = { deals, erleben, reisen, musik, nebenverdienst, tests, praemien, filme, remix, auftritte, unterricht, filialen, knaller, essen };
+export const MODULE = { deals, erleben, reisen, musik, nebenverdienst, tests, praemien, filme, remix, auftritte, unterricht, filialen, knaller, essen, events };
 // Fundorte (Remix/Auftritte/Unterricht) haben kein Datum und bleiben immer stehen
-const MAX_ALTER_TAGE = { filialen: 30, essen: 1, knaller: 7, deals: 7, erleben: 21, reisen: 5, musik: 30, nebenverdienst: 21, tests: 21, praemien: 14, filme: 3, remix: 45, auftritte: 60, unterricht: 30 };
+const MAX_ALTER_TAGE = { filialen: 30, essen: 1, knaller: 7, deals: 7, erleben: 21, reisen: 5, musik: 30, nebenverdienst: 21, tests: 21, praemien: 14, filme: 3, remix: 45, auftritte: 60, unterricht: 30, events: 14 };
 
 const mitZeitlimit = (p, ms, name) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(`${name}: Zeitlimit`)), ms).unref())]);
 
@@ -142,7 +143,7 @@ export async function main(args = process.argv.slice(2), env = process.env, test
   // Essen: gepflegte Lokale/Ketten (vorteile/essen.json) + Einträge der Seite (mein-vorteil/essen.json, für gemerkte AYCE-Tage)
   const essenListen = { liste: await leseJson(join(basis, 'essen.json'), null), seite: await leseJson(join(basis, '..', 'mein-vorteil', 'essen.json'), null) };
   const vorher = await leseJson(join(daten, 'aktuell.json'), null);
-  const dateienVorher = { filme: await leseJson(join(daten, 'filme.json'), null), knaller: await leseJson(join(daten, 'knaller.json'), null), essen: await leseJson(join(daten, 'essen.json'), null), filialen: await leseJson(join(daten, 'filialen.json'), null) };
+  const dateienVorher = { filme: await leseJson(join(daten, 'filme.json'), null), knaller: await leseJson(join(daten, 'knaller.json'), null), essen: await leseJson(join(daten, 'essen.json'), null), filialen: await leseJson(join(daten, 'filialen.json'), null), events: await leseJson(join(daten, 'events.json'), null) };
   const zustand = await leseJson(join(daten, 'zustand.json'), {});
   const fetchImpl = roh ? roh.fetch(test.fetchImpl) : test.fetchImpl;
   const holeText = fixtures ? macheFixtureAbruf(join(HIER, 'test', 'fixtures'), FIXTURE_KARTE) : macheAbruf({ ...cfg.abruf, ...test.abruf }, fetchImpl);

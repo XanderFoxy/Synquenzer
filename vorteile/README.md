@@ -254,3 +254,13 @@ mydealz-Box-Tipps in `filme.json` bekommen `vorher`/`ersparnis`, wenn der Deal-T
 
 `zustand.json` (nur für den Radar): `lauf`, `gemeldet`, `sofortTage`, `digestTag`, `musik` (Preisverlauf Geräte),
 `dealSeiten` (geprüfte Deal-Seiten, 7 Tage).
+
+## Ausflüge & Aktionen (Modul `events`, seit 16.11.2026)
+
+Recherchierte Liste `ausfluege.json` (jeder Eintrag mit Quelle + Prüfdatum; `termine` = feste Daten, `muster` = Regel
+für jedes Jahr: `wochentag` (n-ter Wochentag im Monat), `sonntagBis`, `ostern` (+Tage), `advent` (n-ter Advent), `datum`;
+`dauerhaft` = immer) plus Google-News-Suchen je Art (`config.module.events.nachrichten`: fest, gratis, mitmachen,
+testen). Fest/Gratis/Mitmachen nur mit Ort bis `maxKm` (60 km Luftlinie ab Döbeln), Testen nur mit Test-Wort +
+Technik-Thema; Gebühr/Abo/Vorkasse = „Vorsicht“. Vergangenes und Doppel raus (auch Meldungen zu Listen-Einträgen über
+`stichwoerter`). Ausgabe `<data>/events.json` (termine, regelmaessig) für den Reiter „Ausflüge“; Push nur für
+Gratis-Tag morgen bis `pushKm` und neuen seriösen Produkttest Musiktechnik. Tests: `scan/test/events.test.mjs`.

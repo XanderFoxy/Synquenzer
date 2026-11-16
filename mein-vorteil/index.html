@@ -42,6 +42,7 @@
   .f-krypto { --f: #ff9f45; --f-hell: #48311e; --f-hell2: #604023; }
   .f-spartricks { --f: #5fd8e8; --f-hell: #233a3e; --f-hell2: #2b4d53; }
   .f-essen { --f: #ff9b7a; --f-hell: #48302a; --f-hell2: #603c33; }
+  .f-ausfluege { --f: #7fe0a0; --f-hell: #263d2e; --f-hell2: #2f5139; } /* Ausflüge & Aktionen (16.11.2026) */
   .f-woche { --f: #ffd84a; --f-hell: #47401d; --f-hell2: #5e5424; } /* Wochen-Knaller (16.11.2026): Gold = echter Streichpreis */
   .f-mehr { --f: #c2b2a1; --f-hell: #3d352e; --f-hell2: #4f453d; }
   [class*="f-"] { --akzent: var(--f); --akzent-hell: var(--f-hell); }
@@ -186,6 +187,7 @@
   @media (max-width: 699px) { .kachel li:nth-child(3) { display: none; } }
   @media (max-width: 699px) { .kacheln a.kachel:last-child:nth-child(odd) { grid-column: 1 / -1; } } /* ungerade Zahl Kacheln: die letzte füllt die Reihe (seit Essen 12, dann greift es nicht) */
   @media (min-width: 700px) { .kacheln a.kachel:last-child:nth-child(3n+1) { grid-column: 1 / -1; } } /* 3 Spalten: eine allein in der letzten Reihe füllt sie (13 Kacheln seit „Woche“) */
+  @media (min-width: 700px) { .kacheln a.kachel:last-child:nth-child(3n+2) { grid-column: span 2; } } /* 3 Spalten, zwei in der letzten Reihe: die letzte nimmt zwei Spalten (14 Kacheln seit „Ausflüge“) */
   .kachel .kw { margin-top: auto; padding-top: 6px; font-size: 12px; color: var(--f); font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   /* Karten */
@@ -622,6 +624,7 @@ const NTFY_IMPORT = (() => {
   <symbol id="ic-krypto" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 7.5h3.8a2 2 0 0 1 0 4H9.5zM9.5 11.5h4.3a2 2 0 0 1 0 4H9.5zM9.5 7.5v8M11 6v1.5M11 15.5V17"/></symbol>
   <symbol id="ic-spartricks" viewBox="0 0 24 24"><path d="M18.5 9.2c1 .5 1.8 1.4 2.1 2.4H22v3h-1.5c-.4.9-1.1 1.7-2 2.3V20h-3v-1.5a9.6 9.6 0 0 1-4 0V20h-3v-2.3C6.6 16.6 5 14.6 5 12.2 5 8.6 8.4 5.7 12.6 5.7c1 0 2 .2 2.9.5L18.5 5z"/><circle cx="15.6" cy="10.6" r=".8"/><path d="M9.6 8.8h3.2M2.5 10.5c0 1.4.9 2.2 2.5 2.2"/></symbol>
   <symbol id="ic-woche" viewBox="0 0 24 24"><path d="M3 4h2.4l2.3 10.3a1.5 1.5 0 0 0 1.5 1.2h8.2a1.5 1.5 0 0 0 1.5-1.1L21 8H6.3"/><circle cx="9.6" cy="19.6" r="1.4"/><circle cx="17.4" cy="19.6" r="1.4"/></symbol>
+  <symbol id="ic-ausfluege" viewBox="0 0 24 24"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.4"/></symbol>
   <symbol id="ic-essen" viewBox="0 0 24 24"><path d="M7 3v8M4.5 3v5.2a2.5 2.5 0 0 0 5 0V3M7 11v10"/><path d="M17 21V3c-2.3 1.3-3.6 3.8-3.6 7.2V14H17"/></symbol>
   <symbol id="ic-mehr" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></symbol>
   <symbol id="ic-weg" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
@@ -652,6 +655,7 @@ const NTFY_IMPORT = (() => {
     <a href="#auftritte" data-ziel="auftritte" class="f-auftritte"><svg class="ic" aria-hidden="true"><use href="#ic-auftritte"/></svg><span class="t">Auftritte</span><span class="n"></span></a>
     <a href="#remix" data-ziel="remix" class="f-remix"><svg class="ic" aria-hidden="true"><use href="#ic-remix"/></svg><span class="t">Remix</span><span class="n"></span></a>
     <a href="#unterricht" data-ziel="unterricht" class="f-unterricht"><svg class="ic" aria-hidden="true"><use href="#ic-unterricht"/></svg><span class="t">Unterricht</span><span class="n"></span></a>
+    <a href="#ausfluege" data-reiter="ausfluege" class="f-ausfluege"><svg class="ic" aria-hidden="true"><use href="#ic-ausfluege"/></svg><span class="t">Ausflüge</span><span class="n"></span></a>
     <a href="#konzerte" data-ziel="konzerte" class="f-konzerte"><svg class="ic" aria-hidden="true"><use href="#ic-konzerte"/></svg><span class="t">Konzerte</span><span class="n"></span></a>
     <a href="#gewinnspiele" data-ziel="gewinnspiele" class="f-gewinnspiele"><svg class="ic" aria-hidden="true"><use href="#ic-gewinnspiele"/></svg><span class="t">Gewinnspiele</span><span class="n"></span></a>
     <a href="#krypto" data-ziel="krypto" class="f-krypto"><svg class="ic" aria-hidden="true"><use href="#ic-krypto"/></svg><span class="t">Krypto</span><span class="n"></span></a>
@@ -773,6 +777,12 @@ const NTFY_IMPORT = (() => {
   <div class="bereich-kopf"><span class="gross" aria-hidden="true"><svg class="ic"><use href="#ic-spartricks"/></svg></span><h2 id="h-spartricks">Spartricks</h2></div>
   <p class="warum" id="w-spartricks">Geld zurück, clever einkaufen, gratis testen, Geburtstag, Freizeit – jeder Tipp mit Quelle und Stand.</p>
   <div id="i-spartricks"><p class="leer">Lade Spartricks …</p></div>
+</section>
+<!-- Ausflüge: Feste, Gratis-Tage, Mitmachen, Testen – Inhalt aus ausfluege.js, Daten events.json vom Vorteils-Radar (beides erst beim ersten Öffnen) -->
+<section id="p-ausfluege" class="reiter-seite breite f-ausfluege" aria-labelledby="h-ausfluege" hidden>
+  <div class="bereich-kopf"><span class="gross" aria-hidden="true"><svg class="ic"><use href="#ic-ausfluege"/></svg></span><h2 id="h-ausfluege">Ausflüge &amp; Aktionen</h2></div>
+  <p class="warum" id="w-ausfluege">Feste und Märkte im Umkreis, Gratis-Tage, Mitmachen mit Belohnung, Produkttests – mit Entfernung ab Döbeln, Quelle und Stand.</p>
+  <div id="i-ausfluege"><p class="leer">Lade Ausflüge …</p></div>
 </section>
 <!-- Essen: Inhalt kommt aus essen.js, Daten aus essen.json (beides erst beim ersten Öffnen) -->
 <section id="p-essen" class="reiter-seite breite f-essen" aria-labelledby="h-essen" hidden>
@@ -2245,9 +2255,19 @@ function wocheKachel() { // -> { z, w } wie kachelInhalt; höchstens 2 Zeilen
 }
 addEventListener('mein-vorteil-woche', () => zeichne()); // Stufe im Reiter geändert -> Kachel/Zahl neu
 
+// --- Ausflüge-Kachel (16.11.2026): aus status.events.kurz in aktuell.json (lädt die Startseite ohnehin) – kein eigener Abruf.
+function ausflugKurz() { const k = S.vorteile?.d?.status?.events?.kurz; return k && typeof k === 'object' ? k : null; }
+function ausflugKachel() { // -> { z, w } wie kachelInhalt; höchstens 2 Zeilen, nur Kommendes
+  const h = isoHeute();
+  const tmk = d => `${d.slice(8, 10)}.${d.slice(5, 7)}.`;
+  const top = (Array.isArray(ausflugKurz()?.top) ? ausflugKurz().top : []).filter(x => x && typeof x.titel === 'string' && typeof x.ab === 'string' && (x.bis || x.ab) >= h);
+  if (!top.length) return { z: [['Feste, Gratis-Tage, Mitmachen', 'im Umkreis – tippen zum Öffnen']], w: '' };
+  return { z: top.slice(0, 2).map(x => [kurzTitel(x.titel, 44), [x.ab <= h ? `läuft bis ${tmk(x.bis || x.ab)}` : `ab ${tmk(x.ab)}`, String(x.ort || '').slice(0, 20), zahl(x.km) > 0 ? `${Math.round(zahl(x.km))} km` : ''].filter(Boolean).join(' · '), x.art === 'gratis']), w: '' };
+}
+
 // --- Start: „Heute für dich“ – je Bereich 1–3 beste Treffer als Kachel, Tippen führt in den Bereich ------------------------
-const KACHEL_REIHE = ['deals', 'woche', 'essen', 'preisfehler', 'filme', 'auftritte', 'remix', 'unterricht', 'konzerte', 'gewinnspiele', 'krypto', 'spartricks', 'mehr'];
-const KACHEL_NAME = { deals: 'Deals', woche: 'Woche', essen: 'Essen', preisfehler: 'Preisfehler', filme: 'Filme', auftritte: 'Auftritte', remix: 'Remix', unterricht: 'Unterricht', konzerte: 'Konzerte', gewinnspiele: 'Gewinnspiele', krypto: 'Krypto', spartricks: 'Spartricks', mehr: 'Mehr' };
+const KACHEL_REIHE = ['deals', 'woche', 'essen', 'preisfehler', 'filme', 'auftritte', 'remix', 'unterricht', 'ausfluege', 'konzerte', 'gewinnspiele', 'krypto', 'spartricks', 'mehr'];
+const KACHEL_NAME = { deals: 'Deals', woche: 'Woche', essen: 'Essen', preisfehler: 'Preisfehler', filme: 'Filme', auftritte: 'Auftritte', remix: 'Remix', unterricht: 'Unterricht', ausfluege: 'Ausflüge', konzerte: 'Konzerte', gewinnspiele: 'Gewinnspiele', krypto: 'Krypto', spartricks: 'Spartricks', mehr: 'Mehr' };
 const ohnePrefix = s => String(s || '').replace(/^[\[(]?\s*(möglicher\s+)?preisfehler\s*[\])]?\s*[:!–-]?\s*/i, '');
 function fristKurz(e) { const b = bisZeit(zeit(e.bis)); return b == null ? '' : `bis ${tag(b)}`; }
 function kachelInhalt(b, t) { // -> { z: [[Titel, Zeile, gut?]], w: Satz }
@@ -2319,6 +2339,7 @@ function kachelInhalt(b, t) { // -> { z: [[Titel, Zeile, gut?]], w: Satz }
     return z.length ? { z, w: '' } : { z: [['Gerade keins ohne Kauf', 'neue kommen abends']], w: t.da ? 'feste Adressen im Bereich' : '' };
   }
   if (b === 'woche') return wocheKachel();
+  if (b === 'ausfluege') return ausflugKachel();
   if (b === 'spartricks') return sparKachel();
   if (b === 'essen') return essenKachel();
   if (b === 'krypto') {
@@ -2872,7 +2893,7 @@ function zeichne() {
     start: '', deals: `${(S.angebote?.d?.produkte || []).filter(p => !ausgeblendet(p.id)).length || ''} Produkte im Blick`.replace(/^ Produkte im Blick$/, ''),
     preisfehler: 'nur krasse', auftritte: `${t.auftritte.length} frisch · ${t.auftritteFund.length} feste Adressen`, remix: `${t.remix.length} laufend · ${t.remixFund.length} Fundorte`,
     unterricht: t.gesuche.length ? `${t.gesuche.length} ${t.gesuche.length === 1 ? 'Gesuch' : 'Gesuche'}${t.unterricht.length ? ` · ${t.unterricht.length} ${t.unterricht.length === 1 ? 'Stelle' : 'Stellen'}` : ` · ${t.unterrichtFund.length} feste Adressen`}` : `${t.unterricht.length} neu · ${t.unterrichtFund.length} feste Adressen`, konzerte: nurNah ? `bis ${konzertTeile().radius} km` : 'alle Termine',
-    gewinnspiele: 'ohne Kauf', krypto: 'nur auf diesem iPhone', mehr: '', filme: 'Apple TV · 3,99 €', woche: `ab ${wocheStufe()} % · Prospekte`, spartricks: 'jeder Tipp mit Quelle', essen: 'mit Quelle · Döbeln & Umgebung',
+    gewinnspiele: 'ohne Kauf', krypto: 'nur auf diesem iPhone', mehr: '', filme: 'Apple TV · 3,99 €', woche: `ab ${wocheStufe()} % · Prospekte`, spartricks: 'jeder Tipp mit Quelle', essen: 'mit Quelle · Döbeln & Umgebung', ausfluege: 'ab Döbeln · mit Quelle',
   });
   if (window.MeinVorteilEssen?.gestartet) try { MeinVorteilEssen.auffrischen(); } catch (e) { console.warn(e); } // „Aktuell“ (Radar) neu
   for (const [ab, n] of Object.entries(zahlen)) if (ab !== 'krypto') setzeZahl(ab, n);
@@ -2888,9 +2909,9 @@ function zeichne() {
 const zeichneAlles = () => zeichne();
 
 // --- Bereiche: immer nur einer zu sehen; Leiste markiert ihn, „Du bist in: …“ sagt es ----------------------------------------
-const BEREICHE = ['start', 'deals', 'woche', 'essen', 'preisfehler', 'filme', 'auftritte', 'remix', 'unterricht', 'konzerte', 'gewinnspiele', 'krypto', 'spartricks', 'mehr'];
-const IN_MAIN = BEREICHE.filter(b => b !== 'filme' && b !== 'spartricks' && b !== 'essen' && b !== 'woche');
-const BEREICH_NAME = { start: 'Heute für dich', deals: 'Deals', woche: 'Wochen-Knaller', essen: 'Essen', preisfehler: 'Preisfehler', filme: 'Filme & Serien', auftritte: 'Auftritte', remix: 'Remix-Contests', unterricht: 'Deutschunterricht', konzerte: 'Konzerte', gewinnspiele: 'Gewinnspiele', krypto: 'Krypto', spartricks: 'Spartricks', mehr: 'Mehr' };
+const BEREICHE = ['start', 'deals', 'woche', 'essen', 'preisfehler', 'filme', 'auftritte', 'remix', 'unterricht', 'ausfluege', 'konzerte', 'gewinnspiele', 'krypto', 'spartricks', 'mehr'];
+const IN_MAIN = BEREICHE.filter(b => b !== 'filme' && b !== 'spartricks' && b !== 'essen' && b !== 'woche' && b !== 'ausfluege');
+const BEREICH_NAME = { start: 'Heute für dich', deals: 'Deals', woche: 'Wochen-Knaller', essen: 'Essen', preisfehler: 'Preisfehler', filme: 'Filme & Serien', auftritte: 'Auftritte', remix: 'Remix-Contests', unterricht: 'Deutschunterricht', ausfluege: 'Ausflüge & Aktionen', konzerte: 'Konzerte', gewinnspiele: 'Gewinnspiele', krypto: 'Krypto', spartricks: 'Spartricks', mehr: 'Mehr' };
 // Ziele innerhalb eines Bereichs (Deals) und alte Sprungmarken (Push-Links, alte Seiten)
 const UNTERZIEL = { produkte: 'deals', cashback: 'deals', snacks: 'deals', technik: 'deals' };
 const ALTE_MARKEN = { angebote: 'produkte', schnaeppchen: 'produkte', vorteile: 'start' };
@@ -3015,6 +3036,21 @@ function starteEssen() {
 }
 REITER_START.essen = starteEssen;
 REITER_NEU.essen = () => { if (window.MeinVorteilEssen?.gestartet) MeinVorteilEssen.lade(); else if (reiterOffen === 'essen') starteEssen(); };
+// --- Ausflüge: alles in ausfluege.js (Logik + CSS), Daten events.json vom Radar – beides erst beim ersten Öffnen ------------
+let ausSkript = null;
+function starteAusfluege() {
+  if (ausSkript) return;
+  ausSkript = document.createElement('script');
+  ausSkript.src = 'ausfluege.js';
+  ausSkript.onload = () => window.MeinVorteilAusfluege?.start($('i-ausfluege'));
+  ausSkript.onerror = () => {
+    ausSkript.remove(); ausSkript = null; // ↻ versucht es noch einmal
+    $('i-ausfluege').innerHTML = '<p class="leer">Ausflüge gerade nicht erreichbar. Später noch einmal auf ↻ tippen.</p>';
+  };
+  document.head.appendChild(ausSkript);
+}
+REITER_START.ausfluege = starteAusfluege;
+REITER_NEU.ausfluege = () => { if (window.MeinVorteilAusfluege?.gestartet) MeinVorteilAusfluege.lade(); else if (reiterOffen === 'ausfluege') starteAusfluege(); };
 const reiterAusHash = () => { const h = location.hash.replace('#', '').toLowerCase(); return /^[a-z0-9-]+$/.test(h) && document.querySelector(`.sprung a[data-reiter="${h}"]`) && $('p-' + h) ? h : null; };
 function zeigeReiter(name) {
   if (!name) { zeigeBereich(aktiv); return; }

@@ -6,18 +6,19 @@
    „Standort verwenden“). Produktbilder (fremde Server) auch nicht.
    Symbole/Manifest: aus dem Zwischenspeicher. Daten (raw.githubusercontent.com) gehen nie durch diesen Worker –
    die Seite merkt sich den letzten Stand selbst. */
-const CACHE = 'mein-vorteil-6'; // 16.11.2026: Woche – Märkte vor Ort (nur Märkte mit Filiale in der Nähe, Standort auf Wunsch) – alte Kopie wird beim Aktivieren gelöscht (mein-vorteil-5: Woche/Filme/Essen zusammengeführt, mein-vorteil-4: woche.js, mein-vorteil-3: essen.js)
+const CACHE = 'mein-vorteil-7'; // 16.11.2026: Ausflüge (ausfluege.js) + Woche – Märkte vor Ort zusammengeführt – alte Kopie wird beim Aktivieren gelöscht (mein-vorteil-6: Märkte vor Ort, mein-vorteil-5: Woche/Filme/Essen zusammengeführt, mein-vorteil-4: woche.js, mein-vorteil-3: essen.js)
 const SEITE = new URL('./', self.registration.scope).href;
 const FILME = new URL('filme.js', self.registration.scope).href;
 const SPAR = new URL('spartricks.js', self.registration.scope).href;
 const ESSEN = new URL('essen.js', self.registration.scope).href;
 const WOCHE = new URL('woche.js', self.registration.scope).href;
-const SKRIPTE = { 'filme.js': FILME, 'spartricks.js': SPAR, 'essen.js': ESSEN, 'woche.js': WOCHE };
+const AUSFLUEGE = new URL('ausfluege.js', self.registration.scope).href;
+const SKRIPTE = { 'filme.js': FILME, 'spartricks.js': SPAR, 'essen.js': ESSEN, 'woche.js': WOCHE, 'ausfluege.js': AUSFLUEGE };
 const LANGSAM = 3000;
 const STATISCH = /\/(icon-\d+\.png|icon\.svg|manifest\.webmanifest)$/;
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll([SEITE, 'filme.js', 'spartricks.js', 'essen.js', 'woche.js', 'icon-192.png', 'icon.svg', 'manifest.webmanifest'])).catch(() => {}));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll([SEITE, 'filme.js', 'spartricks.js', 'essen.js', 'woche.js', 'ausfluege.js', 'icon-192.png', 'icon.svg', 'manifest.webmanifest'])).catch(() => {}));
   self.skipWaiting();
 });
 self.addEventListener('activate', e => {
@@ -32,7 +33,7 @@ self.addEventListener('fetch', e => {
   if (u.origin !== scope.origin || !u.pathname.startsWith(scope.pathname)) return;
   const rest = u.pathname.slice(scope.pathname.length);
   const seite = rq.mode === 'navigate' || rest === '' || rest === 'index.html';
-  if (seite || rest === 'filme.js' || rest === 'spartricks.js' || rest === 'essen.js' || rest === 'woche.js') {
+  if (seite || rest === 'filme.js' || rest === 'spartricks.js' || rest === 'essen.js' || rest === 'woche.js' || rest === 'ausfluege.js') {
     const schluessel = seite ? SEITE : SKRIPTE[rest];
     let ablegen = Promise.resolve();
     const netz = fetch(rq).then(r => {

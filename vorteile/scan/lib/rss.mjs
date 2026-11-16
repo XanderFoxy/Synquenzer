@@ -43,6 +43,7 @@ export function leseRss(xml) {
       preisText: merchant.price || '',
       temperatur: Number(tag(b, 'pepper:temperature')) || t.temperatur,
       herkunft: entities(ohneTags(tag(b, 'source'))),
+      herkunftUrl: attrs(b, 'source').url || '', // Google News: Seite der Zeitung/des Herstellers (der Link selbst führt auf news.google.com)
       bild: attrs(b, 'media:content').url || '',
     });
   }

@@ -1,0 +1,635 @@
+{
+ "version": 1,
+ "stand": "2026-11-16",
+ "aktualisiert": "2026-11-16T09:00:00.000Z",
+ "zuhause": "Döbeln",
+ "maxKm": 60,
+ "hinweis": "Fest/Gratis/Mitmachen/Testen – jede Angabe mit Quelle und Stand. Muster-Termine sind aus der Regel gerechnet: vor dem Losfahren prüfen.",
+ "termine": [
+  {
+   "id": "christmarkt-freiberg",
+   "art": "fest",
+   "titel": "Freiberger Christmarkt mit Bergparade",
+   "ort": "Freiberg",
+   "region": null,
+   "km": 28,
+   "fahrMin": 25,
+   "vorteil": "Eintritt frei, Bergparade im Fackelschein am 05.12.",
+   "wann": "jedes Jahr Ende November bis kurz vor Weihnachten",
+   "quelle": {
+    "name": "freiberg.de",
+    "url": "https://www.freiberg.de/en/culture-tourism/events/freiberg-christmas-market"
+   },
+   "stand": "2026-11-16",
+   "sicherheit": "belegt",
+   "herkunft": "liste",
+   "ab": "2026-11-24",
+   "bis": "2026-12-22"
+  },
+  {
+   "id": "weihnachtsmarkt-leipzig",
+   "art": "fest",
+   "titel": "Leipziger Weihnachtsmarkt",
+   "ort": "Leipzig",
+   "region": null,
+   "km": 57,
+   "fahrMin": 55,
+   "vorteil": "Eintritt frei, rund 300 Stände in der Innenstadt",
+   "wann": "jedes Jahr Ende November bis 23. Dezember",
+   "quelle": {
+    "name": "PRINZ Leipzig",
+    "url": "https://prinz.de/leipzig/events/leipziger-weihnachtsmarkt/"
+   },
+   "stand": "2026-11-16",
+   "sicherheit": "belegt",
+   "herkunft": "liste",
+   "ab": "2026-11-24",
+   "bis": "2026-12-23"
+  },
+  {
+   "id": "striezelmarkt-dresden",
+   "art": "fest",
+   "titel": "Dresdner Striezelmarkt (592.)",
+   "ort": "Dresden",
+   "region": null,
+   "km": 44,
+   "fahrMin": 40,
+   "vorteil": "Eintritt frei, Stollenfest am 2. Adventssamstag",
+   "wann": "jedes Jahr Ende November bis Heiligabend",
+   "quelle": {
+    "name": "dresden.de",
+    "url": "https://www.dresden.de/de/tourismus/sehen/weihnachtszeit/striezelmarkt.php"
+   },
+   "stand": "2026-11-16",
+   "sicherheit": "belegt",
+   "herkunft": "liste",
+   "ab": "2026-11-25",
+   "bis": "2026-12-24"
+  },
+  {
+   "id": "weihnachtsmarkt-chemnitz",
+   "art": "fest",
+   "titel": "Chemnitzer Weihnachtsmarkt mit Erzgebirgsdorf",
+   "ort": "Chemnitz",
+   "region": null,
+   "km": 35,
+   "fahrMin": 35,
+   "vorteil": "Eintritt frei, Bergparade am Samstag 28.11.",
+   "wann": "jedes Jahr Ende November bis 23. Dezember",
+   "quelle": {
+    "name": "Festivals in Deutschland",
+    "url": "https://www.festivalsindeutschland.de/festival/chemnitzer-weihnachtsmarkt"
+   },
+   "stand": "2026-11-16",
+   "sicherheit": "belegt",
+   "herkunft": "liste",
+   "ab": "2026-11-27",
+   "bis": "2026-12-23"
+  },
+  {
+   "id": "weihnachtsmarkt-doebeln",
+   "art": "fest",
+   "titel": "Döbelner Weihnachtsmarkt",
+   "ort": "Döbeln",
+   "region": null,
+   "km": 0,
+   "fahrMin": 5,
+   "vorteil": "direkt vor der Haustür, Eintritt frei",
+   "wann": "jedes Jahr am 3. Adventswochenende",
+   "quelle": {
+    "name": "leipzig.travel",
+    "url": "https://www.leipzig.travel/en/event/weihnachtsmarkt-doebeln"
+   },
+   "stand": "2026-11-16",
+   "sicherheit": "muster",
+   "herkunft": "liste",
+   "ab": "2026-12-12",
+   "bis": "2026-12-13",
+   "ausMuster": true
+  },
+  {
+   "id": "museumsnacht-halle-leipzig",
+   "art": "fest",
+   "titel": "Museumsnacht Halle & Leipzig",
+   "ort": "Leipzig",
+   "region": null,
+   "km": 57,
+   "fahrMin": 55,
+   "vorteil": "ein Abend, rund 90 Museen in Leipzig und Halle",
+   "wann": "jedes Jahr im Mai, Samstag 18–24 Uhr (2025: 10.05., 2026: 09.05.)",
+   "quelle": {
+    "name": "pressetext (Mai 2026)",
+    "url": "https://www.pressetext.com/news/-nachtgestalten-museumsnacht-in-leipzig-und-halle-am-9-mai-2026.html"
+   },
+   "stand": "2026-11-16",
+   "sicherheit": "muster",
+   "herkunft": "liste",
+   "ab": "2027-05-08",
+   "bis": "2027-05-08",
+   "ausMuster": true
+  },
+  {
+   "id": "gratis-comic-tag",
+   "art": "gratis",
+   "titel": "Gratis Comic Tag",
+   "ort": null,
+   "region": "Comicläden und Bibliotheken",
+   "km": null,
+   "fahrMin": null,
+   "vorteil": "kostenlose Comic-Hefte in teilnehmenden Läden (Liste auf der Seite)",
+   "wann": "jedes Jahr am 2. Samstag im Mai",
+   "quelle": {
+    "name": "gratiscomictag.de",
+    "url": "https://www.gratiscomictag.de/"
+   },
+   "stand": "2026-11-16",
+   "sicherheit": "muster",
+   "herkunft": "liste",
+   "ab": "2027-05-08",
+   "bis": "2027-05-08",
+   "ausMuster": true
+  },
+  {
+   "id": "internationaler-museumstag",
+   "art": "gratis",
+   "titel": "Internationaler Museumstag",
+   "ort": null,
+   "region": "Museen in ganz Sachsen",
+   "km": null,
+   "fahrMin": null,
+   "vorteil": "viele Museen mit Sonderprogramm, oft freiem Eintritt",
+   "wann": "jedes Jahr am Sonntag um den 18. Mai (2027: 16.05.)",
+   "quelle": {
+    "name": "museumstag.de",
+    "url": "https://museumstag.de/museumstag/international/"
+   },
+   "stand": "2026-11-16",
+   "sicherheit": "muster",
+   "herkunft": "liste",
+   "ab": "2027-05-16",
+   "bis": "2027-05-16",
+   "ausMuster": true
+  },
+  {
+   "id": "deutscher-muehlentag",
+   "art": "gratis",
+   "titel": "Deutscher Mühlentag",
+   "ort": null,
+   "region": "Mühlen in Sachsen",
+   "km": null,
+   "fahrMin": null,
+   "vorteil": "Mühlen öffnen zum Anschauen, oft ohne Eintritt",
+   "wann": "jedes Jahr am Pfingstmontag",
+   "quelle": {
+    "name": "Deutsche Gesellschaft für Mühlenkunde",
+    "url": "https://www.deutsche-muehlen.de/"
+   },
+   "stand": "2026-11-16",
+   "sicherheit": "muster",
+   "herkunft": "liste",
+   "ab": "2027-05-17",
+   "bis": "2027-05-17",
+   "ausMuster": true
+  },
+  {
+   "id": "tag-des-offenen-denkmals",
+   "art": "gratis",
+   "titel": "Tag des offenen Denkmals",
+   "ort": null,
+   "region": "Denkmäler in der ganzen Region",
+   "km": null,
+   "fahrMin": null,
+   "vorteil": "sonst geschlossene Denkmäler offen, meist ohne Eintritt",
+   "wann": "jedes Jahr am 2. Sonntag im September",
+   "quelle": {
+    "name": "tag-des-offenen-denkmals.de",
+    "url": "https://www.tag-des-offenen-denkmals.de/"
+   },
+   "stand": "2026-11-16",
+   "sicherheit": "muster",
+   "herkunft": "liste",
+   "ab": "2027-09-12",
+   "bis": "2027-09-12",
+   "ausMuster": true
+  },
+  {
+   "id": "n-5it6np",
+   "art": "fest",
+   "titel": "Lichterfest in Roßwein am 28. November",
+   "ort": "Roßwein",
+   "region": null,
+   "km": 7,
+   "fahrMin": 5,
+   "ab": null,
+   "bis": null,
+   "vorteil": "",
+   "wann": "Datum in der Meldung",
+   "quelle": {
+    "name": "Nachrichten „Stadtfest Döbeln OR Leisnig OR Waldheim OR Hartha OR Roßwein“",
+    "url": "https://news.example/Lichterfest%20in%20Ro%C3%9Fwein%20am%2028.%20November%20-%20LVZ"
+   },
+   "stand": "2026-11-16",
+   "sicherheit": "meldung",
+   "herkunft": "radar",
+   "veroeffentlicht": "Sat, 14 Nov 2026 10:00:00 GMT"
+  },
+  {
+   "id": "n-jb4lkm",
+   "art": "testen",
+   "titel": "Elektron sucht Betatester für neuen Synthesizer",
+   "ort": null,
+   "region": "deutschlandweit",
+   "km": null,
+   "fahrMin": null,
+   "ab": null,
+   "bis": null,
+   "vorteil": "Testaufruf",
+   "wann": "Datum in der Meldung",
+   "quelle": {
+    "name": "Nachrichten „Betatester gesucht Synthesizer OR Plugin OR DAW“",
+    "url": "https://news.example/Elektron%20sucht%20Betatester%20f%C3%BCr%20neuen%20Synthesizer%20-%20Amazona"
+   },
+   "stand": "2026-11-16",
+   "sicherheit": "meldung",
+   "serioes": "seriös",
+   "musik": true,
+   "herkunft": "radar",
+   "veroeffentlicht": "Sun, 15 Nov 2026 10:00:00 GMT"
+  }
+ ],
+ "regelmaessig": [
+  {
+   "id": "weihnachtsmarkt-leipzig",
+   "art": "fest",
+   "titel": "Leipziger Weihnachtsmarkt",
+   "ort": "Leipzig",
+   "region": null,
+   "km": 57,
+   "fahrMin": 55,
+   "vorteil": "Eintritt frei, rund 300 Stände in der Innenstadt",
+   "wann": "jedes Jahr Ende November bis 23. Dezember",
+   "quelle": {
+    "name": "PRINZ Leipzig",
+    "url": "https://prinz.de/leipzig/events/leipziger-weihnachtsmarkt/"
+   },
+   "stand": "2026-11-16",
+   "sicherheit": "belegt",
+   "herkunft": "liste",
+   "naechster": {
+    "ab": "2026-11-24",
+    "bis": "2026-12-23"
+   }
+  },
+  {
+   "id": "striezelmarkt-dresden",
+   "art": "fest",
+   "titel": "Dresdner Striezelmarkt (592.)",
+   "ort": "Dresden",
+   "region": null,
+   "km": 44,
+   "fahrMin": 40,
+   "vorteil": "Eintritt frei, Stollenfest am 2. Adventssamstag",
+   "wann": "jedes Jahr Ende November bis Heiligabend",
+   "quelle": {
+    "name": "dresden.de",
+    "url": "https://www.dresden.de/de/tourismus/sehen/weihnachtszeit/striezelmarkt.php"
+   },
+   "stand": "2026-11-16",
+   "sicherheit": "belegt",
+   "herkunft": "liste",
+   "naechster": {
+    "ab": "2026-11-25",
+    "bis": "2026-12-24"
+   }
+  },
+  {
+   "id": "christmarkt-freiberg",
+   "art": "fest",
+   "titel": "Freiberger Christmarkt mit Bergparade",
+   "ort": "Freiberg",
+   "region": null,
+   "km": 28,
+   "fahrMin": 25,
+   "vorteil": "Eintritt frei, Bergparade im Fackelschein am 05.12.",
+   "wann": "jedes Jahr Ende November bis kurz vor Weihnachten",
+   "quelle": {
+    "name": "freiberg.de",
+    "url": "https://www.freiberg.de/en/culture-tourism/events/freiberg-christmas-market"
+   },
+   "stand": "2026-11-16",
+   "sicherheit": "belegt",
+   "herkunft": "liste",
+   "naechster": {
+    "ab": "2026-11-24",
+    "bis": "2026-12-22"
+   }
+  },
+  {
+   "id": "weihnachtsmarkt-chemnitz",
+   "art": "fest",
+   "titel": "Chemnitzer Weihnachtsmarkt mit Erzgebirgsdorf",
+   "ort": "Chemnitz",
+   "region": null,
+   "km": 35,
+   "fahrMin": 35,
+   "vorteil": "Eintritt frei, Bergparade am Samstag 28.11.",
+   "wann": "jedes Jahr Ende November bis 23. Dezember",
+   "quelle": {
+    "name": "Festivals in Deutschland",
+    "url": "https://www.festivalsindeutschland.de/festival/chemnitzer-weihnachtsmarkt"
+   },
+   "stand": "2026-11-16",
+   "sicherheit": "belegt",
+   "herkunft": "liste",
+   "naechster": {
+    "ab": "2026-11-27",
+    "bis": "2026-12-23"
+   }
+  },
+  {
+   "id": "weihnachtsmarkt-doebeln",
+   "art": "fest",
+   "titel": "Döbelner Weihnachtsmarkt",
+   "ort": "Döbeln",
+   "region": null,
+   "km": 0,
+   "fahrMin": 5,
+   "vorteil": "direkt vor der Haustür, Eintritt frei",
+   "wann": "jedes Jahr am 3. Adventswochenende",
+   "quelle": {
+    "name": "leipzig.travel",
+    "url": "https://www.leipzig.travel/en/event/weihnachtsmarkt-doebeln"
+   },
+   "stand": "2026-11-16",
+   "sicherheit": "muster",
+   "herkunft": "liste",
+   "naechster": {
+    "ab": "2026-12-12",
+    "bis": "2026-12-13"
+   }
+  },
+  {
+   "id": "museumsnacht-halle-leipzig",
+   "art": "fest",
+   "titel": "Museumsnacht Halle & Leipzig",
+   "ort": "Leipzig",
+   "region": null,
+   "km": 57,
+   "fahrMin": 55,
+   "vorteil": "ein Abend, rund 90 Museen in Leipzig und Halle",
+   "wann": "jedes Jahr im Mai, Samstag 18–24 Uhr (2025: 10.05., 2026: 09.05.)",
+   "quelle": {
+    "name": "pressetext (Mai 2026)",
+    "url": "https://www.pressetext.com/news/-nachtgestalten-museumsnacht-in-leipzig-und-halle-am-9-mai-2026.html"
+   },
+   "stand": "2026-11-16",
+   "sicherheit": "muster",
+   "herkunft": "liste",
+   "naechster": {
+    "ab": "2027-05-08",
+    "bis": "2027-05-08"
+   }
+  },
+  {
+   "id": "gratis-comic-tag",
+   "art": "gratis",
+   "titel": "Gratis Comic Tag",
+   "ort": null,
+   "region": "Comicläden und Bibliotheken",
+   "km": null,
+   "fahrMin": null,
+   "vorteil": "kostenlose Comic-Hefte in teilnehmenden Läden (Liste auf der Seite)",
+   "wann": "jedes Jahr am 2. Samstag im Mai",
+   "quelle": {
+    "name": "gratiscomictag.de",
+    "url": "https://www.gratiscomictag.de/"
+   },
+   "stand": "2026-11-16",
+   "sicherheit": "muster",
+   "herkunft": "liste",
+   "naechster": {
+    "ab": "2027-05-08",
+    "bis": "2027-05-08"
+   }
+  },
+  {
+   "id": "internationaler-museumstag",
+   "art": "gratis",
+   "titel": "Internationaler Museumstag",
+   "ort": null,
+   "region": "Museen in ganz Sachsen",
+   "km": null,
+   "fahrMin": null,
+   "vorteil": "viele Museen mit Sonderprogramm, oft freiem Eintritt",
+   "wann": "jedes Jahr am Sonntag um den 18. Mai (2027: 16.05.)",
+   "quelle": {
+    "name": "museumstag.de",
+    "url": "https://museumstag.de/museumstag/international/"
+   },
+   "stand": "2026-11-16",
+   "sicherheit": "muster",
+   "herkunft": "liste",
+   "naechster": {
+    "ab": "2027-05-16",
+    "bis": "2027-05-16"
+   }
+  },
+  {
+   "id": "tag-des-offenen-denkmals",
+   "art": "gratis",
+   "titel": "Tag des offenen Denkmals",
+   "ort": null,
+   "region": "Denkmäler in der ganzen Region",
+   "km": null,
+   "fahrMin": null,
+   "vorteil": "sonst geschlossene Denkmäler offen, meist ohne Eintritt",
+   "wann": "jedes Jahr am 2. Sonntag im September",
+   "quelle": {
+    "name": "tag-des-offenen-denkmals.de",
+    "url": "https://www.tag-des-offenen-denkmals.de/"
+   },
+   "stand": "2026-11-16",
+   "sicherheit": "muster",
+   "herkunft": "liste",
+   "naechster": {
+    "ab": "2027-09-12",
+    "bis": "2027-09-12"
+   }
+  },
+  {
+   "id": "deutscher-muehlentag",
+   "art": "gratis",
+   "titel": "Deutscher Mühlentag",
+   "ort": null,
+   "region": "Mühlen in Sachsen",
+   "km": null,
+   "fahrMin": null,
+   "vorteil": "Mühlen öffnen zum Anschauen, oft ohne Eintritt",
+   "wann": "jedes Jahr am Pfingstmontag",
+   "quelle": {
+    "name": "Deutsche Gesellschaft für Mühlenkunde",
+    "url": "https://www.deutsche-muehlen.de/"
+   },
+   "stand": "2026-11-16",
+   "sicherheit": "muster",
+   "herkunft": "liste",
+   "naechster": {
+    "ab": "2027-05-17",
+    "bis": "2027-05-17"
+   }
+  },
+  {
+   "id": "leipzig-museen-frei",
+   "art": "gratis",
+   "titel": "Städtische Museen Leipzig: Dauerausstellungen gratis",
+   "ort": "Leipzig",
+   "region": null,
+   "km": 57,
+   "fahrMin": 55,
+   "vorteil": "Museum der bildenden Künste, Stadtgeschichtliches Museum, GRASSI Angewandte Kunst, Naturkundemuseum – Dauerausstellung ohne Eintritt",
+   "wann": "seit 2024 immer (zu den Öffnungszeiten)",
+   "quelle": {
+    "name": "Leipziger Internet Zeitung (01/2024)",
+    "url": "https://www.l-iz.de/kultur/ausstellungen/2024/01/nach-corona-museumsbesucher-zuruck-dauerausstellungen-kostenfrei-571854"
+   },
+   "stand": "2026-11-16",
+   "sicherheit": "belegt",
+   "herkunft": "liste",
+   "naechster": null,
+   "dauerhaft": true
+  },
+  {
+   "id": "haema-plasma-leipzig",
+   "art": "mitmachen",
+   "titel": "Plasmaspende bei Haema Leipzig",
+   "ort": "Leipzig",
+   "region": null,
+   "km": 57,
+   "fahrMin": 55,
+   "vorteil": "bis zu 25 € Aufwandsentschädigung je Spende (laut Haema)",
+   "wann": "jederzeit mit Termin (Spendezentren Leipzig-Markt, Gohlis, Connewitz)",
+   "quelle": {
+    "name": "Haema Broschüre",
+    "url": "https://www.haema.de/fileadmin/user_upload/downloads/informationen/digital-2025-broschuere-DIN-lang-105x210mm-wissenswertes-LK-spende-haema.pdf"
+   },
+   "stand": "2026-11-16",
+   "sicherheit": "belegt",
+   "herkunft": "liste",
+   "naechster": null,
+   "dauerhaft": true
+  },
+  {
+   "id": "mpi-cbs-probanden",
+   "art": "mitmachen",
+   "titel": "Studien am Max-Planck-Institut (Kognition), Leipzig",
+   "ort": "Leipzig",
+   "region": null,
+   "km": 57,
+   "fahrMin": 55,
+   "vorteil": "Aufwandsentschädigung je Stunde (im Aufruf 9–10 €/h – Stand vor Ort prüfen)",
+   "wann": "laufend neue Studien",
+   "quelle": {
+    "name": "cbs.mpg.de",
+    "url": "https://www.cbs.mpg.de/1034030/"
+   },
+   "stand": "2026-11-16",
+   "sicherheit": "pruefen",
+   "herkunft": "liste",
+   "naechster": null,
+   "dauerhaft": true
+  },
+  {
+   "id": "ableton-beta",
+   "art": "testen",
+   "titel": "Ableton Beta-Programm",
+   "ort": null,
+   "region": "online",
+   "km": null,
+   "fahrMin": null,
+   "vorteil": "neue Live-Versionen vor allen anderen testen (Feedback statt Geld)",
+   "wann": "Anmeldung jederzeit, Einladung je Beta-Phase",
+   "quelle": {
+    "name": "ableton.com",
+    "url": "https://www.ableton.com/en/beta-signup/"
+   },
+   "stand": "2026-11-16",
+   "sicherheit": "belegt",
+   "serioes": "seriös",
+   "musik": true,
+   "herkunft": "liste",
+   "naechster": null,
+   "dauerhaft": true
+  },
+  {
+   "id": "ni-testing-community",
+   "art": "testen",
+   "titel": "Native Instruments Testing Community",
+   "ort": null,
+   "region": "online",
+   "km": null,
+   "fahrMin": null,
+   "vorteil": "Software vorab testen, oft mit Verschwiegenheitserklärung",
+   "wann": "Konto anlegen, Einladung zu Betas (Kontakt, Reaktor, Traktor)",
+   "quelle": {
+    "name": "NI Community",
+    "url": "https://community.native-instruments.com/discussion/comment/47692"
+   },
+   "stand": "2026-11-16",
+   "sicherheit": "belegt",
+   "serioes": "seriös",
+   "musik": true,
+   "herkunft": "liste",
+   "naechster": null,
+   "dauerhaft": true
+  },
+  {
+   "id": "trnd-projekte",
+   "art": "testen",
+   "titel": "trnd Mitmach-Projekte",
+   "ort": null,
+   "region": "online",
+   "km": null,
+   "fahrMin": null,
+   "vorteil": "Produkte kostenlos zu Hause ausprobieren – ob man behalten darf, je Projekt prüfen",
+   "wann": "laufend neue Projekte",
+   "quelle": {
+    "name": "Trustpilot trnd",
+    "url": "https://nz.trustpilot.com/review/trnd.com"
+   },
+   "stand": "2026-11-16",
+   "sicherheit": "belegt",
+   "serioes": "seriös",
+   "herkunft": "liste",
+   "naechster": null,
+   "dauerhaft": true
+  },
+  {
+   "id": "warnung-produkttester-abo",
+   "art": "testen",
+   "titel": "Vorsicht: „Produkttester werden“-Seiten mit Abo",
+   "ort": null,
+   "region": "online",
+   "km": null,
+   "fahrMin": null,
+   "vorteil": "Seriöse Tests kosten nie etwas – keine Gebühr, kein Abo, keine Kontodaten",
+   "wann": "immer",
+   "quelle": {
+    "name": "Mimikama",
+    "url": "https://www.mimikama.org/?p=306034"
+   },
+   "stand": "2026-11-16",
+   "sicherheit": "belegt",
+   "serioes": "unseriös",
+   "warnung": true,
+   "herkunft": "liste",
+   "naechster": null,
+   "dauerhaft": true
+  }
+ ],
+ "quellen": {
+  "liste": 17,
+  "meldungen": 2,
+  "feeds": 15,
+  "fehler": 0
+ }
+}
