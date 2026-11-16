@@ -47,11 +47,11 @@ test('Nur bekannte: echte Wikidata-Antworten – Kinohits und große Studio-Prod
   assert.equal(grund('Q308920'), null, 'Der diskrete Charme – Verleih 20th Century Studios zählt nicht');
   assert.equal(grund('Q192409'), null, 'Down by Law – 1,5 Mio.');
   assert.equal(grund('Q68025431'), null, 'Antigone – Festivalfilm, 8 Sprachen');
-  // Besetzung: bekannteste zuerst (Wikipedia-Sprachen), Studio: das große zuerst, sonst die erste Produktionsfirma, sonst Verleih
+  // Besetzung: bekannteste zuerst (Wikipedia-Sprachen), Studio: das große zuerst, sonst die erste Produktionsfirma
   const s = detailKurz(roh.get('Q483815'), 't');
   assert.deepEqual(s.c, ['Eddie Murphy', 'Mike Myers']);
   assert.equal(s.st, 'DreamWorks'); assert.equal(s.gs, 1); assert.equal(s.b, 488); assert.equal(s.o, 1); assert.equal(s.v, DETAIL_V);
-  assert.equal(detailKurz(roh.get('Q18405'), 't').st, 'Paramount Pictures', 'ohne Produktionsfirma steht der Verleih da – zählt aber nicht als groß');
+  assert.equal(detailKurz(roh.get('Q18405'), 't').st, null, 'ohne Produktionsfirma kein Studio – der Verleih (Paramount, Netflix) ist keins');
   assert.equal(detailKurz(roh.get('Q18405'), 't').o, 0);
 });
 

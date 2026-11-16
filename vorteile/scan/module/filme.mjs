@@ -399,7 +399,7 @@ export function detailKurz(d, tag) {
     o: d.a.filter(x => /^Academy Award for /i.test(x) && !/foreign language|international feature/i.test(x)).length,
     g: d.a.filter(x => /^Golden Globe Award for /i.test(x)).length,
     a: d.a.length,
-    st: (gross || d.s[0] || d.v[0] || null)?.slice(0, 40) ?? null,
+    st: (gross || d.s[0] || null)?.slice(0, 40) ?? null, // nur Produktionsfirma – ein Verleih wie „Netflix“ ist kein Studio
     gs: gross ? 1 : 0,
     c: [...d.c].sort((x, y) => y.n - x.n).slice(0, 8).map(x => x.name.slice(0, 40)),
     tag, v: DETAIL_V,
