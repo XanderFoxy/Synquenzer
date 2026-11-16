@@ -21,7 +21,7 @@ const last = () => 'Last ' + os.loadavg()[0].toFixed(1);
 const HASH = `(() => { const u = __spk.page.ui(), gl = u.gl.gl; while (gl.getError()) ; u.dg = true; spk1Frame(u); const e = gl.getError(); const px = new Uint8Array(u.cw * u.ch * 4); gl.readPixels(0, 0, u.cw, u.ch, gl.RGBA, gl.UNSIGNED_BYTE, px); let h = 0x811c9dc5; for (let i = 0; i < px.length; i++) { h ^= px[i]; h = Math.imul(h, 16777619); } return {h: (h >>> 0).toString(16), e}; })()`;
 async function page(f) {
   const ctx = await b.newContext({viewport: {width: 926, height: 428}, hasTouch: true, isMobile: true, deviceScaleFactor: 2}), p = await ctx.newPage(), con = [];
-  p.on('console', m => { if (/WebGL|GL_INVALID|GL ERROR/i.test(m.text())) con.push(m.type() + ': ' + m.text().slice(0, 140)); });
+  p.on('console', m => { if (/WebGL|GL_INVALID|GL ERROR/i.test(m.text()) && !/GPU stall due to ReadPixels/.test(m.text())) con.push(m.type() + ': ' + m.text().slice(0, 140)); else if (/GPU stall due to ReadPixels/.test(m.text())) con.stall = (con.stall || 0) + 1; });   // Treiber-Hinweis „GPU stall due to ReadPixels“ kommt vom readPixels des Tests selbst (Leistungs-Hinweis, kein Fehler) → getrennt gezählt
   p.on('pageerror', e => con.push('pageerror: ' + String(e).slice(0, 140)));
   await p.goto(base + '/' + f + '.html');
   await p.evaluate(() => { window.__lt = []; new PerformanceObserver(l => { for (const e of l.getEntries()) window.__lt.push({t: e.startTime, d: e.duration}); }).observe({type: 'longtask', buffered: true}); });
@@ -79,7 +79,7 @@ async function fallR(f, uhr) {
   await p.waitForTimeout(1500);
   await p.evaluate(uhr => { const U = __spk.page.ui(), v = U.v; v.pps = U.W / 180.1; v.t0 = -0.05; v.rowH = U.H / 84; v.mTop = 110; spk1Clamp(U); spk1Dirty(U, 'all');
     window.__per = []; let cnt = 0; const G = U.gl, t0 = G.tex; G.tex = (w, h, fmt, data, mip) => { if (fmt === 'r') cnt++; return t0(w, h, fmt, data, mip); };
-    const o = spk1GlDraw; window.spk1GlDraw = function (u) { const c0 = cnt; o(u); window.__per.push({up: cnt - c0, k: typeof LT2 !== 'undefined' ? LT2.k : 0}); };
+    const o = spk1GlDraw; window.spk1GlDraw = function (u) { const c0 = cnt; o(u); window.__per.push({up: cnt - c0, k: typeof LT2 !== 'undefined' ? LT2.k : 0, sk: typeof LT2 !== 'undefined' ? LT2.skip : 0}); };
     if (typeof LT2 !== 'undefined' && uhr !== 'echt') { let t = 1000; const d = uhr === 'schnell' ? 16 : 50; LT2.now = () => (t += d); } }, uhr);
   await p.waitForTimeout(800);
   const rows = [];
@@ -90,13 +90,13 @@ async function fallR(f, uhr) {
       await new Promise(res => { const tick = () => { const now = performance.now(); if (!U.specQ && !tQ) { tQ = now - t0; fQ = window.__per.length; } const s = U.spec && U.spec.hop ? miss() : null; if (!U.specQ && s && s.m === 0 && s.vis > 0) { tDone = now - t0; res(); return; } if (now - t0 > 90000) { res(); return; } requestAnimationFrame(tick); }; requestAnimationFrame(tick); });
       const per = window.__per.slice(), upF = per.filter(x => x.up > 0);
       const lt = window.__lt.filter(e => e.t >= t0 && e.d > 50).map(e => Math.round(e.d)), s = miss();
-      return {N, rechnen: Math.round(tQ), komplett: Math.round(tDone), bilderMitUp: upF.length, upMax: Math.max(0, ...per.map(x => x.up)), kMax: Math.max(0, ...per.map(x => x.k)), kacheln: s.vis, fehlt: s.m, lt: lt.length, ltMax: Math.max(0, ...lt), upSeq: upF.map(x => x.up).join('')}; }, N);
+      return {N, rechnen: Math.round(tQ), komplett: Math.round(tDone), bilderMitUp: upF.length, upMax: Math.max(0, ...per.map(x => x.up)), kMax: Math.max(0, ...per.map(x => x.k)), kacheln: s.vis, fehlt: s.m, lt: lt.length, ltMax: Math.max(0, ...lt), upSeq: upF.map(x => x.up).join(''), skipBilder: per.filter(x => x.sk > 0).length}; }, N);
     await p.waitForTimeout(600);
     r.bild = await p.evaluate(HASH); rows.push(r);
     await p.waitForTimeout(600);
   }
   await ctx.close();
-  return {rows, meld: con};
+  return {rows, meld: con, stall: con.stall || 0};
 }
 
 if (FALL.includes('G')) {
@@ -114,11 +114,11 @@ if (FALL.includes('R')) {
   const out = {};
   for (const [f, uhr] of [['a', 'schnell'], ['b', 'echt'], ['a', 'langsam'], ['a', 'echt']]) {
     const r = await fallR(f, uhr); out[f + uhr] = r;
-    console.log('R', (f === 'a' ? 'index' : 'basis'), uhr.padEnd(7), last(), r.rows.map(x => `N${x.N}: rechnen ${x.rechnen} ms, komplett ${x.komplett} ms, ${x.bilderMitUp} Bilder mit Hochladen (${x.upSeq}), max ${x.upMax}/Bild, k≤${x.kMax}, ${x.kacheln} Kacheln, fehlt ${x.fehlt}, LT ${x.lt}× max ${x.ltMax}, Bild ${x.bild.h}${x.bild.e ? ' glErr' + x.bild.e : ''}`).join(' | '), 'Meldungen', r.meld.length);
+    console.log('R', (f === 'a' ? 'index' : 'basis'), uhr.padEnd(7), last(), r.rows.map(x => `N${x.N}: rechnen ${x.rechnen} ms, komplett ${x.komplett} ms, ${x.bilderMitUp} Bilder mit Hochladen (${x.upSeq}), max ${x.upMax}/Bild, k≤${x.kMax}, ${x.kacheln} Kacheln, fehlt ${x.fehlt}, ${x.skipBilder} Bilder mit zurückgestellten Kacheln, LT ${x.lt}× max ${x.ltMax}, Bild ${x.bild.h}${x.bild.e ? ' glErr' + x.bild.e : ''}`).join(' | '), 'Meldungen', r.meld.length, JSON.stringify(r.meld.slice(0, 3)), 'Treiber-Hinweise ReadPixels', r.stall);
   }
   const S = out.aschnell.rows, L = out.alangsam.rows, E = out.aecht.rows, BB = out.becht.rows;
   chk('R schnell: Rückwechsel mehrere Kacheln je Bild (k wächst)', S[1].kMax >= 4 && S[1].upMax >= 4, S.map(x => x.kMax + '/' + x.upMax).join(' '));   // beim ersten Rechnen kommen die Stücke langsamer als die Bilder → nichts auszulassen, k bleibt 1
-  chk('R schnell: Rückwechsel (schon gerechnet) in ≤ 6 Bildern mit Hochladen', S[1].bilderMitUp <= 6 && S[1].kacheln >= 8, S[1].bilderMitUp + ' Bilder, ' + S[1].kacheln + ' Kacheln');
+  chk('R schnell: Rückwechsel – Kacheln höchstens in den Anlauf-Bildern zurückgestellt (k 1→2→4→8→16: ≤ 5), langsam: in fast jedem', S[1].skipBilder <= 5 && L[1].skipBilder >= 8, 'schnell ' + S[1].skipBilder + ' / langsam ' + L[1].skipBilder + ' Bilder mit zurückgestellten Kacheln, Bilder mit Hochladen ' + S[1].bilderMitUp + ' / ' + L[1].bilderMitUp + ', komplett ' + S[1].komplett + ' / ' + L[1].komplett + ' ms (basis ' + BB[1].komplett + ' ms)');
   chk('R langsam: höchstens 1 Kachel je Bild, k = 1', L.every(x => x.upMax <= 1 && x.kMax === 1), L.map(x => x.kMax + '/' + x.upMax));
   chk('R alle: vollständig (keine fehlende Kachel)', [...S, ...L, ...E, ...BB].every(x => x.fehlt === 0 && x.komplett > 0));
   chk('R Endbild byte-gleich basis (schnell/langsam/echt × 2 Schritte)', [S, L, E].every(R => R.every((x, i) => x.bild.h === BB[i].bild.h)), [S, L, E, BB].map(R => R.map(x => x.bild.h).join('/')).join(' '));
