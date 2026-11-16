@@ -608,7 +608,7 @@
     const zeigen = S.lokMehr ? l : l.slice(0, LOK_ZEIGEN);
     const weit = f.ayce || f.xxl ? Math.max(f.km, WEIT_KM) : f.km;
     const kopf = `<p class="ess-standzeile">${l.length} von ${alle.length} Lokalen · bis ${weit} km${f.ayce || f.xxl ? ' (All-you-can-eat/XXL: bis Leipzig, Chemnitz, Dresden)' : ''}`
-      + ` · ${S.lokQuelle === 'radar' && S.lok.osmStand ? `Öffnungszeiten OpenStreetMap, Stand ${tmj(S.lok.osmStand)}` : 'Öffnungszeiten folgen mit dem nächsten Radar-Lauf'}</p>`;
+      + ` · ${S.lok.live && S.lok.osmStand ? `Öffnungszeiten OpenStreetMap, Stand ${tmj(S.lok.osmStand)}` : 'Öffnungszeiten folgen mit dem nächsten Radar-Lauf'}</p>`;
     const neu = S.lok.neu.length ? `<p class="ess-hinweis-box"><b>Neu bei OpenStreetMap:</b> ${S.lok.neu.slice(0, 6).map(x => esc(`${x.name} (${x.ort || 'Umgebung'}${x.km != null ? `, ${kmText(x.km)}` : ''})`)).join(' · ')}</p>` : '';
     const weg = S.lok.weg.length ? `<p class="ess-hinweis-box"><b>Nicht mehr bei OpenStreetMap</b> (vielleicht geschlossen): ${S.lok.weg.slice(0, 6).map(x => esc(x.name)).join(' · ')}</p>` : '';
     const leer = !l.length ? `<p class="ess-leer">${f.merk ? 'Noch nichts gemerkt – tippe auf den Stern an einem Lokal.' : 'Mit diesen Filtern nichts gefunden.'}</p>${f.km < 70 && !f.merk ? '<p class="ess-woanders"><button type="button" class="ess-link" data-ess-f="km" data-ess-v="70">Bis 70 km zeigen</button></p>' : ''}` : '';
