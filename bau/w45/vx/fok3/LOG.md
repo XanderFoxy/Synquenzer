@@ -10,3 +10,4 @@
 - 02:38:03 Lauf 3 fertig; fok3-zeit (neu / v6 / 4.75, s20 + m1) gestartet
 - 02:39:10 v4: Neu-Planen beim Rollen nach dem Stück in Arbeit (erstes genähertes der Liste); Lauf 4 (Endfassung) allein gestartet. fok3-zeit Lauf 1: s20 erstes Bild neu 345 / v6 598 / 4.75 261 ms; m1 235 / 574 / 683 ms; genau m1 5683 / 5829 / (4.75 Näherung 3016)
 - 02:41:15 Lauf 4 (v4 Endfassung edfc49a6…) 28/0, alle 10 Hashes = v6; smoke errors [] auf v4; Pflicht grün. Ende. Last 4.08
+- 02:56:36 Nachbesserung nach Prüfung startet. Sicherung index.vor-pruef.html (= v4 edfc49a6…). Last 2.60 6.00 6.53
