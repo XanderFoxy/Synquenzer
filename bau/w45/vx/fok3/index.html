@@ -109407,22 +109407,29 @@ function fokus1KMake(Z2, X) {
      für Spalten mit Ebenen-Wirkung fehlen (Masken-Streifen à 128 Basis-Rahmen mit Inhalt; Ebenen mit neuem id:ver → ihre Streifen alt ∪ neu gelten
      als neu), und FFT-Spalten ohne gültiges Rest-Bild (RS.tr). Kosten je Block / je Spalte werden beim Rechnen laufend gemessen (FK3.cB, FK3.cC,
      Startwerte aus der FOK2-Messung). Rückgabe {ms, sec (Rest-Audio-Dauer, die neu zu rechnen ist), blk, col}. */
-  const FK3 = {cB: 7, cC: 0.068, lx: new Map()};
-  const fk3Strips = (d, l) => {
-    const k = l.id + ':' + l.ver + ':' + inst(d); let s = FK3.lx.get(k); if (s) return s; s = []; const M = d.masks && d.masks.get(l.id);
-    if (M) for (const [i, st] of M) if (st && st.h && st.h.some(h => h)) s.push(+i);
-    FK3.lx.set(k, s); while (FK3.lx.size > 64) FK3.lx.delete(FK3.lx.keys().next().value); return s;
-  };
+  const FK3 = {cB: 7, cC: 0.068, tid: new WeakMap(), n: 0};
+  function fk3Sig(d) {   // je Masken-Streifen eine billige Kennung über alle Ebenen (Reihenfolge, Kopie-Kennung, Kachel-Köpfe h, Kennung der Kachel-Felder t)
+    const F = new Map(), MS = d.masks; if (!MS) return F;
+    for (const l of d.meta.layers) {
+      const M = MS.get(l.id); if (!M) continue; const pre = l.id + (l.k6 === 1 ? '#k6' : '') + ':';
+      for (const [s, st] of M) {
+        if (!st || !st.h) continue; let q = '';
+        for (let tr = 0; tr < st.h.length; tr++) { const h = st.h[tr]; if (!h) continue; const t = st.t && st.t[tr]; let id = 0; if (t && typeof t === 'object') { id = FK3.tid.get(t); if (!id) FK3.tid.set(t, id = ++FK3.n); } q += tr + '.' + h + '@' + id + ','; }
+        if (q) F.set(+s, (F.get(+s) || '') + pre + q + ';');
+      }
+    }
+    return F;
+  }
   function fk3Est(d, I, from, to, inC) {
     const z = {ms: 0, sec: 0, blk: 0, col: 0}; if (!FK2 || !d.meta.layers.length || !d.mid || d.mid.length < 2) return z;
     const n = d.meta.n, hb = d.meta.base.hop, Nb = d.meta.base.N, BL = X.BLK || 16384, N = I.N, hop = I.hop, mg = N / 2 + 2 * hb + Nb;
-    const base = d.meta.id + '#' + inst(d) + '#' + n, ok0 = !!(RS.mid && RS.done && RS.base === base && RS.mid.length === n), cur = new Map(), all = new Set();
-    for (const l of d.meta.layers) { const s = fk3Strips(d, l); cur.set(l.id + ':' + l.ver, s); for (const v of s) all.add(v); }
-    let dirty = null;   // null = alles neu (kein Rest-Audio dieses Dokuments im Speicher)
-    if (ok0) { dirty = new Set(); if (RS.key !== rsKey(d)) { const old = RS.lx || new Map(); for (const [k, s] of cur) if (!old.has(k)) for (const v of s) dirty.add(v); for (const [k, s] of old) if (!cur.has(k)) for (const v of s) dirty.add(v); } }
-    const sp = [...all].sort((p, q) => p - q), bs = new Set(), dz = s => dirty === null || dirty.has(s) || dirty.has(s - 1) || dirty.has(s + 1);
+    const base = d.meta.id + '#' + inst(d) + '#' + n, ok0 = !!(RS.mid && RS.done && RS.base === base && RS.mid.length === n && RS.sg), cur = fk3Sig(d);
+    let dirty = null;   // null = alles neu (kein Rest-Audio dieses Dokuments im Speicher); sonst Streifen, deren Kennung sich seit dem Rest-Audio geändert hat
+    if (ok0) { dirty = new Set(); if (RS.key !== rsKey(d)) { for (const [s, q] of cur) if (RS.sg.get(s) !== q) dirty.add(s); for (const s of RS.sg.keys()) if (!cur.has(s)) dirty.add(s); } }
+    const sp = [...cur.keys()].sort((p, q) => p - q), bs = new Set(), dz = s => dirty === null || dirty.has(s) || dirty.has(s - 1) || dirty.has(s + 1);
+    z.pp = new Float64Array(Math.max(0, to - from));   // Kosten je Stück (nur Stücke mit Kosten bekommen die Näherung)
     for (let ci = from; ci < to; ci++) {
-      if (inC(ci)) continue;
+      if (inC(ci)) continue; const nb0 = bs.size;
       const W = Math.min(1024, I.cols - ci * 1024), pa = ci * 1024 * hop - N / 2 - hb, pb = (ci * 1024 + W) * hop + N / 2 + hb;
       let pc = 0, pd = false;
       for (const s of sp) {
@@ -109430,8 +109437,9 @@ function fokus1KMake(Z2, X) {
         pc += (b - a) / hop; const ds = dz(s); if (ds) pd = true;
         for (let k = Math.max(0, Math.floor(a / BL)); k <= Math.floor(Math.max(0, b - 1) / BL); k++) if (ds || !RS.done[k]) bs.add(k);
       }
-      if (!pc) continue;
-      if (pd || !ok0 || !RS.tr.has(RS.base + ':' + N + ':' + hop + ':' + ci + ':' + W)) z.col += Math.min(W, pc);
+      if (!pc) continue; let cc = 0;
+      if (pd || !ok0 || !RS.tr.has(RS.base + ':' + N + ':' + hop + ':' + ci + ':' + W)) { cc = Math.min(W, pc); z.col += cc; }
+      z.pp[ci - from] = (bs.size - nb0) * FK3.cB + cc * FK3.cC * Math.pow(N / 4096, 1.4);
     }
     z.blk = bs.size; z.sec = bs.size * BL / d.meta.sr; z.ms = z.blk * FK3.cB + z.col * FK3.cC * Math.pow(N / 4096, 1.4);
     return z;
@@ -109521,7 +109529,7 @@ function fokus1KMake(Z2, X) {
         const W = Math.min(1024, I.cols - ci * 1024), have = await X.get('audio', 'spk:' + d.meta.id + ':v' + N + ':' + ci);   // Original nur lesen
         if (!same()) { stop = d.fkTok !== tok ? 'abgeloest' : 'geaendert'; break; }
         const src = have && have.byteLength === I.rows * W ? new Uint8Array(have) : X.specChunk(d, N, ci).data;
-        if (vb) { e = piece(d, I, ci, src, o, gf, NT, null); e.ap = 1; }   /* FOK3: Näherung sofort, nicht gespeichert */
+        if (vb && est.pp[ci - from] > 40) { e = piece(d, I, ci, src, o, gf, NT, null); e.ap = 1; }   /* FOK3: Näherung sofort (nur Stücke, die genau etwas kosten), nicht gespeichert */
         else {
         const TR = o.mode === 'rest' ? await trueRest(d, I, ci, W, src, same) : null;   /* FOK2: genauer Rest, wo Ebenen wirken */
         if (TR === false || !same()) { stop = d.fkTok !== tok ? 'abgeloest' : 'geaendert'; break; }
@@ -109582,7 +109590,7 @@ function fokus1KMake(Z2, X) {
             }
           }
         } else { RS.mid = new Float32Array(n); RS.done = new Uint8Array(Math.ceil(n / BL)); RS.tr = new Map(); }
-        RS.key = key; RS.base = base; RS.fp = fp; RS.lx = new Map(d.meta.layers.map(l => [l.id + ':' + l.ver, fk3Strips(d, l)]));   /* FOK3 */
+        RS.key = key; RS.base = base; RS.fp = fp; RS.sg = fk3Sig(d);   /* FOK3: Streifen-Kennungen zu diesem Rest-Audio (Schätzung) */
       })();
       await pend.p;
       if (tries > 60) break;

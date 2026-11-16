@@ -21,6 +21,9 @@ async function page(file) {
     window.__lt = []; try { new PerformanceObserver(l => { for (const e of l.getEntries()) window.__lt.push({t: e.startTime, d: e.duration}); }).observe({entryTypes: ['longtask']}); } catch (e) {}
     const fnv = (h, u8) => { for (let i = 0; i < u8.length; i++) { h ^= u8[i]; h = Math.imul(h, 16777619); } return h >>> 0; };
     const U = () => __spk.page.ui();
+    { const f0 = window.spk1Frame, p0 = window.fokus1Pre; window.__fr = [];   // JS-Zeit je Bild (Zeichnen inkl. fokus1Pre/Hochladen-Aufruf)
+      window.spk1Frame = function (u) { const t = performance.now(), r = f0.apply(this, arguments), d = performance.now() - t; if (d > 8) __fr.push({t, d}); return r; };
+      window.fokus1Pre = function (u) { const t = performance.now(), r = p0.apply(this, arguments), d = performance.now() - t; if (d > 8) __fr.push({t, d, w: 'pre'}); return r; }; }
     window.__T = {
       hash: () => { let h = 0x811c9dc5; for (const c of __fokus1.chunks().sort((a, b) => a.k - b.k)) h = fnv(h, c.data); return h.toString(16); },
       got: r => { const u = U(); spk1Got(u, r); spk1TintLoad(u); return r; },
@@ -37,11 +40,11 @@ async function page(file) {
           apMax = Math.max(apMax, i.ap || 0); if (i.gn) gnSeen = true;
           if (!midDone && ((i.gn && i.ap > 0) || (i.gn === undefined && first && t > first + 300))) { midDone = true; log.push(await mid(t)); }
           if (t > 30 && __T.fertig() && midDone) break;
-          if (t > 120000) { log.push('timeout'); break; }
+          if (t > 60000) { log.push('timeout'); break; }
         }
         const genau = performance.now() - t0; done = true; await pinger; pings.sort((a, b) => a - b);
-        const lt = __lt.filter(e => e.t >= t0).map(e => Math.round(e.d));
-        return {first: Math.round(first), genau: Math.round(genau), apMax, gn: gnSeen, h: __T.hash(), lt50: lt.filter(d => d > 50), ping: {n: pings.length, med: +(pings[pings.length >> 1] || 0).toFixed(1), p95: +(pings[Math.floor(pings.length * 0.95)] || 0).toFixed(1), max: +(pings[pings.length - 1] || 0).toFixed(1)}, stat: U().st.textContent, log};
+        const lt = __lt.filter(e => e.t >= t0).map(e => Math.round(e.d)), fr = __fr.filter(e => e.t >= t0).map(e => Math.round(e.d) + (e.w ? 'p' : ''));
+        return {first: Math.round(first), genau: Math.round(genau), apMax, gn: gnSeen, h: __T.hash(), lt50: lt.filter(d => d > 50), jsBild: fr, ping: {n: pings.length, med: +(pings[pings.length >> 1] || 0).toFixed(1), p95: +(pings[Math.floor(pings.length * 0.95)] || 0).toFixed(1), max: +(pings[pings.length - 1] || 0).toFixed(1)}, stat: U().st.textContent, log};
       }
     };
   });
@@ -94,7 +97,7 @@ for (const [tag, file] of [['neu', files[0]], ['basis', files[1]]]) {
     const U = __spk.page.ui(), F = U.f1, gk0 = F.gk, a = __fokus1.info(); U.v.t0 = 150; spk1Dirty(U, 'g');
     let gk1 = gk0, tt = performance.now(); while (performance.now() - tt < 4000) { await new Promise(r => setTimeout(r, 10)); if (F.gk !== gk0 && F.gk >= 0) { gk1 = F.gk; break; } if (!F.gn) break; }
     const hs = U.spec.hop / U.meta.sr, vis = [Math.floor(150 / hs / 1024), Math.floor((150 + U.W / U.v.pps) / hs / 1024)], ms = Math.round(performance.now() - tt);
-    __fokus1.mode('gef'); await new Promise(r => setTimeout(r, 120)); __fokus1.mode('rest');
+    __fokus1.mode('gef'); await new Promise(r => setTimeout(r, 120)); __fokus1.mode('rest'); await new Promise(r => setTimeout(r, 300)); U.v.t0 = 0; spk1Dirty(U, 'g');   // zurück an den Anfang (sonst bleiben unsichtbare Stücke ohne Textur)
     return {t: Math.round(t), gk0, gk1, vis, msBisNeu: ms, apVor: a.ap};
   }), rect(0.5, 179.5, 1500, 1900)); console.log(tag, 'mono-rollen+wechsel', JSON.stringify(R.m4));
   // Abbruch 2: neue Ebene über alles, während des Nachreichens ↶ → Endbild = Stand vor der Ebene (m4)
