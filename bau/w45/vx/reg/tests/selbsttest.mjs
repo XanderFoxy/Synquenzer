@@ -48,6 +48,9 @@ const wX = werte('OK a\nFEHL Akkord folgen xyz\nEXIT 1\n', {code: 1}, RG.beg1, {
 pr('echtzeit-ungueltig-nur-bei-fremdlast', urteil(wX, {last: {mittel: 9, fremd: 2}}, RG.beg1, false, false, 4) === 'ROT' && urteil(wX, {last: {mittel: 20, fremd: 16}}, RG.beg1, false, false, 4) === 'UNGÜLTIG (Last)');
 const wS = werte('OK a\n', {code: 'timeout'}, RG.beg1, {n: 1});
 pr('struktur-nie-ungueltig', urteil(wS, {last: {mittel: 40, fremd: 36}}, RG.beg1, false, false, 4) === 'ROT');
+// 9b Long-Task-Prüfungen mit Bindestrich (spk12b/spk12c) sind Zeit-Klasse (lauf-4761b: vorher ROT statt LAST)
+const wL = werte('OK a\nFEHL 428x926 keine-long-task-50ms {}\nFEHL 926x428 hauptfaden-ohne-long-task {}\n', {code: 0}, RG.spk12b || {}, {n: 3});
+pr('long-task-bindestrich-zeit', wL.Z.length === 2 && !wL.X.length, wL);
 // 10 ALLEIN-Lauf: Pool-Ergebnis bleibt erhalten, Urteil „GRÜN (allein)“
 lauf('fokus1', sh('a10', oks(44) + '\necho "FEHL 428x926 umschalten-rest longtasks<=50 {}"\nexit 1'));
 j = lauf('fokus1', sh('a10b', oks(51)), {ALLEIN: '1'});
