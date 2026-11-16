@@ -54,6 +54,10 @@ async function lauf(which, sek, sdr) {
     const pr = []; const t0 = performance.now(); const r = await spk1Call('spk12trans', {doc: id, t0: 0, t1: 180, hg: 0, del: 3}, undefined, {prog: (p, st) => pr.push([+p.toFixed(3), st, Math.round(performance.now() - t0)])});
     return {ms: Math.round(performance.now() - t0), n: r.hits.length, hits: r.hits.join(','), nF: r.nF, prog: pr.length, erster: pr[0] || null, letzter: pr[pr.length - 1] || null};
   }, doc);
+  if (sek === 180 && E.EBENE) res.ebene = await p.evaluate(async id => {   // ZRL2: „Alle Ebenen abtasten“ aus (s12src = Gesang-Ebene) + langer Transient – beide Fortschritte
+    const st = {}; const t0 = performance.now(); const r = await spk1Call('spk12trans', {doc: id, t0: 0, t1: 180, hg: 0, del: 3, s12src: window.__zl.gesang}, undefined, {prog: (p, s) => { const e = st[s] || (st[s] = {n: 0, erster: null, letzter: null}); e.n++; const v = [+p.toFixed(3), Math.round(performance.now() - t0)]; if (!e.erster) e.erster = v; e.letzter = v; }});
+    return {ms: Math.round(performance.now() - t0), n: r.hits.length, s12src: r.s12src || null, stufen: st};
+  }, doc);
   res.errs = errs; await ctx.close(); return res;
 }
 const out = {A, B, runden: []}, R20 = +(E.RUNDEN || 3), R180 = +(E.RUNDEN3 || 1);
