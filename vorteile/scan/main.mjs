@@ -23,12 +23,13 @@ import remix from './module/remix.mjs';
 import auftritte from './module/auftritte.mjs';
 import unterricht from './module/unterricht.mjs';
 import knaller from './module/knaller.mjs';
+import auftraege from './module/auftraege.mjs';
 import { FIXTURE_KARTE } from './test/fixtures/karte.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
-export const MODULE = { deals, erleben, reisen, musik, nebenverdienst, tests, praemien, filme, remix, auftritte, unterricht, knaller };
+export const MODULE = { deals, erleben, reisen, musik, nebenverdienst, tests, praemien, filme, remix, auftritte, unterricht, knaller, auftraege };
 // Fundorte (Remix/Auftritte/Unterricht) haben kein Datum und bleiben immer stehen
-const MAX_ALTER_TAGE = { knaller: 7, deals: 7, erleben: 21, reisen: 5, musik: 30, nebenverdienst: 21, tests: 21, praemien: 14, filme: 3, remix: 45, auftritte: 60, unterricht: 30 };
+const MAX_ALTER_TAGE = { knaller: 7, deals: 7, erleben: 21, reisen: 5, musik: 30, nebenverdienst: 21, tests: 21, praemien: 14, filme: 3, remix: 45, auftritte: 60, unterricht: 30, auftraege: 21 };
 
 const mitZeitlimit = (p, ms, name) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(`${name}: Zeitlimit`)), ms).unref())]);
 

@@ -1,0 +1,8 @@
+# NACHGEBAUT für Tests
+User-agent: *
+Disallow: /users/
+Disallow: /messages/
+Allow: /api/projects/
+
+User-agent: GPTBot
+Disallow: /

@@ -57,7 +57,10 @@ test('Gesamtlauf mit Fixtures: Erstlauf still, zweiter Lauf meldet nur Neues', a
     assert.equal(r1.plan.sofort.length, 0);
     assert.ok(r1.alleEintraege.length >= 10);
     const a = JSON.parse(await readFile(join(dir, 'aktuell.json'), 'utf8'));
-    assert.deepEqual(Object.keys(a.kategorien), ['deals', 'erleben', 'reisen', 'musik', 'nebenverdienst', 'tests', 'praemien', 'filme', 'remix', 'auftritte', 'unterricht', 'knaller']);
+    assert.deepEqual(Object.keys(a.kategorien), ['deals', 'erleben', 'reisen', 'musik', 'nebenverdienst', 'tests', 'praemien', 'filme', 'remix', 'auftritte', 'unterricht', 'knaller', 'auftraege']);
+    // Nebenverdienst (16.11.2026): Arbeitsagentur aus, neuer Bereich „auftraege“ mit den fertigen Suchen auch ohne Netz
+    assert.equal(a.status.nebenverdienst.aus, true);
+    assert.ok(a.kategorien.auftraege.some(e => e.extra?.fundort && e.extra.feld === 'unterricht'));
     assert.ok(a.sofort.length > 0);
     assert.equal(a.status.reisen.ok, false);
     const r2 = await main(['--fixtures', '--data', dir, '--jetzt', '2026-10-31T20:00:00Z']);
