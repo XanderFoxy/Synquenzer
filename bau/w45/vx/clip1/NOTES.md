@@ -27,7 +27,8 @@ Jetzt nach dem Wählen 2 Tipps ([Auslagern ▾], „Szene 3“), 0 von 8 Noten w
   bleibt ganz (Länge aufgerundet).
 - Wie [Zuschneiden] im Editor: der Lauf-Versatz o der Noten rückt mit, die Kurven (Modulation/Biegung/Druck, BM8) werden
   mit cvSlice auf den Ausschnitt [b0, b0 + len·bb) geschnitten (Startwert = Wert bei b0).
-- Tonart, Taktart, Raster, Locks wie die Quelle (cleanClip-Kopie, take/pre entfernt), normClip('synth').
+- Tonart, Taktart, Raster, Locks wie die Quelle (cleanClip-Kopie, take/pre/lw entfernt), normClip('synth'). Lock-Reihen (ln) rücken um b0 mit (rotiert).
+- Erweiterter Inhalt (KL1 clip.lw) der Quelle geht nicht mit: der neue Clip ist nur die Auswahl (Synth und Drums).
 - Drums: Kopie des Clips (len, ts) nur mit den gewählten Schlägen; D1-Spurlängen und drum.-Locks nur der beteiligten Töne.
 
 ## Haken-Liste (außerhalb des Blocks, je eine Zeile, typeof-gesichert, Marke /* CLIP1 */)
@@ -35,7 +36,7 @@ Jetzt nach dem Wählen 2 Tipps ([Auslagern ▾], „Szene 3“), 0 von 8 Noten w
 | Ort | Haken |
 |---|---|
 | toast() | `if (R.editor === 'roll') acts = typeof clip1RollActs === 'function' ? clip1RollActs(acts) : [];` – im Noten-Editor bleibt nur die mit clip1 markierte Aktion [Öffnen] |
-| toastHome() | `if (typeof clip1ToastHome === 'function') { const h = clip1ToastHome(); if (h) return h; }` – im Noten-Editor dockt diese Meldung hochkant auf dem Titel („Synth 1 · Szene 1“), quer auf der TAKT-Anzeige (der Titel ist dort 108 px schmal); nie über Werkzeugen |
+| toastHome() | `if (typeof clip1ToastHome === 'function') { const h = clip1ToastHome(); if (h) return h; }` – im Noten-Editor dockt diese Meldung hochkant auf dem Titel („Synth 1 · Szene 1“), quer auf der TAKT-Anzeige (der Titel ist dort 108 px schmal), aber nur solange sie eine reine Anzeige ist. Heißt sie „FILL“ (JAM1-Taste), bleibt sie frei: quer dann Meldung ohne [Öffnen] (durchtippbar, wie jede Meldung im Editor); nie über Werkzeugen oder Tasten |
 | mtx3OutSheet | `clip1OutSec(p, t, s, ns)` nach dem Blatt-HTML (Abschnitt hinter der Ziel-Liste) |
 | mtx3OutSheet onTap | `clip1OutTap(b, t, s, ns)` – data-m3="clip" → mtx3NewClip |
 | mtx3bOutSheet | `clip1DrumSec(p, s, c)` nach dem Blatt-HTML (Abschnitt hinter [Auf eigene Spur]) |
@@ -77,10 +78,14 @@ clip1-test.mjs auf der Endfassung: **73/73 grün** (428×926, 926×428, 926×370
 
 ## Offen
 
-- Synth-Clips: Lock-Reihen (ln/kl) werden unverändert mitkopiert (wie bei [Zuschneiden], das sie auch nicht verschiebt).
 - Drum-Schritt-Editor: „Ganze Töne“ nimmt für den neuen Clip nur die aktuelle Szene (für „Auf eigene Spur“ bedeutet es weiter: alle Szenen).
-- Guide-Eintrag („Wo finde ich …?“) für „Als neuer Clip“ nicht ergänzt; der vorhandene Eintrag „Noten auslagern“ führt zum selben Blatt.
+  Der Abschnitt sagt das jetzt („Als neuer Clip · DRUMS · aus Szene 1“), spielt der Ton dort nicht, kommt „CLAP spielt in Szene 1 nicht“.
+- Quer mit FILL-Schritten im Projekt: die Meldung kommt ohne [Öffnen] (kein freier Platz im Kopf); der neue Clip ist in der Matrix zu öffnen.
+- Lock-Reihen: passt b0 nicht auf das Raster einer Reihe (nur bei Taktarten mit halben Schlägen wie 7/8 und Raster 1/4), bleibt diese Reihe unverschoben.
+- Lauf-Start (LF1 clip.lf.st) wird wie bei [Zuschneiden] unverändert mitkopiert.
 - Toast-Haken: die Zeile in toast() ist eine geänderte Bestandszeile (statt `acts = []`), ohne den Block verhält sie sich wie vorher.
+- Nur der letzte Punkt von Xanders Gesamtwunsch (Auswahl im Clip → neuer Clip). Songteile erkennen, Teil-Namen im Lineal, Fokus je Teil,
+  Teil → Matrix mit Noten je Ebene sind andere Pakete.
 
 ## Regression und Pflichtprüfungen (Endfassung md5 76557351b4b52697aa7844028006750b, 9 426 061 Byte, +12 284 gegenüber rel-4750)
 
@@ -95,3 +100,23 @@ clip1-test.mjs auf der Endfassung: **73/73 grün** (428×926, 926×428, 926×370
   (Bild der Matrix ≤ 16 ms, kein Long Task > 50 ms bei 64 dichten Clips) unter Lastmittel ~10; alle Funktionsprüfungen grün.
 - clip0-test (Kopie in reg/clip0n): Umweg A weiterhin wie vorher (7 Tipps, „Neuer Clip“ + „Einfügen“, 3 Noten, 1 Takt);
   das Auslagern-Blatt zeigt zusätzlich „Szene 2 … Szene 8“; Konsole 0 Fehler in allen 3 Größen.
+
+## Prüfung (Nachbesserung 16.11., 00:24–00:40)
+
+Prüfer-Befunde (2 mittel, 3 klein) – alle behoben, je mit Test (clip1-test.mjs P1–P5, Touch, 3 Größen):
+
+| Befund | Schwere | Behebung | Beleg |
+|---|---|---|---|
+| Quer liegt der [Öffnen]-Toast 5 s auf der FILL-Taste | mittel | neues `clip1Dock()`: TAKT-Anzeige nur, wenn `!jam1Armed()`; sonst kein Platz → `clip1RollActs` gibt `[]` zurück, die Meldung kommt ohne Knopf als durchtippbares Schild (wie jede Meldung im Noten-Editor vorher). Hochkant bleibt [Öffnen] auf dem Titel. Wird die Anzeige in den 5 s zur FILL-Taste, weicht der Toast auf den Titel aus | P1: FILL-Schritt gesetzt, Anzeige „FILL“; quer 926×428 und 926×370: Überdeckung 0 px² (vorher 7 931 von 9 076), Mitte der Taste trifft #takt, Toast pointer-events none; hochkant [Öffnen] auf dem Titel, 0 Werkzeuge überdeckt; ohne FILL quer wieder TAKT-Anzeige. Fotos c8-fill-toast-* |
+| Neuer Clip erbt KL1 clip.lw (verborgener Rest der Quelle) | mittel | `delete nc.lw` in mtx3NewClip und clip1DrumNew | P2: Quelle 4 Takte + lw (ganzer Inhalt 32 Noten) → neuer Clip len 2, 8 Noten, kein lw, 0 Noten der Quelle außerhalb der Auswahl, kl1Beats 8; Drum-Quelle mit lw → neuer Clip 2 Schläge, kein lw |
+| Drum „Ganze Töne“: Meldung „Erst Töne wählen“, obwohl gewählt | klein | Meldung je Fall: nichts gewählt / „CLAP spielt in Szene 1 nicht“; Abschnitt heißt „Als neuer Clip · DRUMS · aus Szene 1“ | P3: CLAP nur in Szene 2, Blatt auf Szene 1, Ganze Töne → Toast „CLAP spielt in Szene 1 nicht“, kein Clip, kein ↶. Foto c9-drum-meldung-428x926 |
+| „Wo finde ich …?“ findet den Weg nicht | klein | eigener Eintrag „Auswahl als neuer Clip“ (Weg Noten-Editor › Noten wählen › Auslagern ▾ › Als neuer Clip › Szene n; Drums: SCHRITTE › Auslagern ▾), „Zeig es mir“ = mtx3GuideOut/mtx3GuideBtn | P4: Suche „neuer Clip“ und „Clip aus Auswahl“ → erster Treffer clip1new; „auslagern“ findet mtx3out und clip1new; Sprung öffnet den Noten-Editor, Rahmen auf [Auslagern ▾] |
+| Lock-Reihen (clip.ln) nicht um b0 verschoben | klein | `clip1LnShift`: Schritte jeder Reihe um b0 / Raster rotiert (Reihen laufen ab Clip-Beginn durch, eigene Länge), Länge/Raster/Saat bleiben | P5: Reihe 16 × 1/4, Schritte 0/8/9, Auswahl ab Takt 3 (b0 8) → 8→0, 9→1, 0→8; Quelle unverändert |
+
+Endstand **md5 f192a0534945b64d5acd0af845732094**, 9 429 143 Byte (+15 366 gegenüber rel-4750; +3 082 gegenüber 76557351…):
+- clip1-test.mjs: **109/109 grün** (73 alte + 36 neue, 3 Größen), Konsole 0 Fehler je Größe (lauf-nachbesserung.log)
+- mtx3-test 51/51 · mtx3b-test 87/87 (Last 4,7–9,5) · clip0-test (reg/n2/clip0n): Umweg wie vorher, Konsole [] in 3 Größen
+- Rauchtest errors [] (reg/n2/smoke.png) · topdefs: Skripte 26, Namen 7942, doppelt 0, Syntaxfehler 0 · dupkeys 0 · 'MS 2000' = 1 · '^  live: true,' = 1 · VERSION '4.75.0' · 0 Emojis im Block
+- mtx4-test nicht neu gelaufen: die Nachbesserung ändert nur CLIP1-Code (Toast im Noten-Editor, neuer Clip, Drum-Abschnitt, Guide-Eintrag), keinen MTX4-Weg
+- Außerhalb des Blocks unverändert die 6 Haken; diff gegen rel-4750 vor dem Block: nur die 2 Toast-Zeilen
+- Nebenbefund des Prüfers (Overdub-Toast „+4 Noten“, im Clip 1–3) liegt in rel-4750, nicht in CLIP1 – nicht angefasst

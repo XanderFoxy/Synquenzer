@@ -8,3 +8,5 @@
 - 00:24 Nachbesserung Start (Prüfer-Befunde: 2 mittel, 3 klein), Last: 2.32 3.74 4.92
 - 00:30 5 Befunde eingebaut (FILL-Platz, lw weg, ln rotiert, Drum-Meldung + „aus Szene n“, Guide-Eintrag), Test um P1–P5 ergänzt, Last: 9.15 5.88 5.25
 - 00:33 Endfassung f192a053…: clip1-test 109/109, mtx3 51/51; mtx3b + Rauchtest laufen, Last: 9.33 7.94 6.22
+- 00:35 mtx3b 87/87, Rauchtest errors [], Pflicht geprüft, Last: 4.49 6.93 6.09
+- 00:36 clip0 Umweg ok (Konsole [] 3 Größen), NOTES.md Prüfung, clip1-block.js neu aus index. Ende. Last: 3.07 5.88 5.79. Repo/Projektordner nicht angefasst.
