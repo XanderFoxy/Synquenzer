@@ -157,7 +157,10 @@ laufende Pakete: Last 16–29 auf 4 Kernen während fast aller Browser-Läufe.
   „Eigener Block BEG1“ (zählt die 39 IMPK-Zeilen außerhalb des BEG1-Blocks – erwartet, wie im ersten Bericht), CPU (Spitze 44,9 ms), Ein Finger,
   Prüfung 6 ↶ und Speichern/Laden (diese drei hatte die Basis im Prüfer-Lauf unter Last ebenfalls bzw. sind zeitkritisch). „Ein Finger“ zählt
   alle Quellen außer „retune“ – das IMPK-Etikett kann es nicht ändern; der Fehler ist ein F-Ton bei 12,00, der schon klang, als der Finger für
-  Em zu spät kam. Ohne Fremdlast war beg1 vor der Prüfung 57/59 (nur Prüfung 5 + Block-Zählung). Runde 2 siehe unten.
+  Em zu spät kam. Ohne Fremdlast war beg1 vor der Prüfung 57/59 (nur Prüfung 5 + Block-Zählung).
+  **Runde 2** (gleichzeitig, Last 9–12): **Basis 54/59, IMPK 56/59** (`f2/beg1-B2-f2.log`, `f2/beg1-I2-f2.log`). IMPK-FEHLER nur: Prüfung 5
+  (Bestand der Basis), Block-Zählung (erwartet), CPU (Spitze 17,8 ms unter Last); Ein Finger, Prüfung 6 und Aufnahme = Live diesmal OK. Basis:
+  Drums im Stil, Prüfung 5, dreimal Prüfung 6. Kein FEHLER lässt sich in beiden Runden auf IMPK zurückführen.
 - **imp1-test** ALLE OK (48), **imp2-node** ALLE OK (Mischungen zahlengleich), **rv1** 52/53 (der bekannte Bezugs-FEHLER #14 Stück 31 links),
   **rv1k** ALLE OK 53 – Läufe 07:00–07:19 an derselben Endfassung (`reg-imp1-p.log`, `imp2n-p.log`, `reg-rv1-p.log`, `reg-rv1k-p.log`; rechnen
   ohne Echtzeit, Last ändert die Zahlen nicht).
@@ -169,6 +172,6 @@ laufende Pakete: Last 16–29 auf 4 Kernen während fast aller Browser-Läufe.
 1. ● AUTO über einen vorhandenen Song nimmt die Band nicht mit (unverändert, siehe Offen 1 oben) – eigenes Paket.
 2. rv1-Original 52/53 (#14 Stück 31 links, Bezug „Fassung nach ↶“, mit der Basis bei gleichem Tempo/t1 zahlengleich nachgestellt); rv1k 53/53.
    Entscheidung beim Zusammenführen: rv1k als Abnahme nehmen oder #14-Tempowechsel 121 → 120 nicht übernehmen.
-3. Zeitkritische Browser-Prüfungen (beg1, impk-test C) streuen unter Fremdlast in Basis und IMPK; ein beg1-Lauf ohne Fremdlast steht für die
-   Endfassung noch aus (vor der Prüfung ohne Last: 57/59 = Basis-Stand).
+3. Zeitkritische Browser-Prüfungen (beg1, impk-test C) streuen unter Fremdlast in Basis und IMPK (A/B: 54/51 und 54/56); ein beg1-Lauf ganz
+   ohne Fremdlast steht für die Endfassung noch aus (vor der Prüfung ohne Last: 57/59 = Basis-Stand).
 4. tempo-raten vollständig (alle 14 Fälle × 4 Raten) an der Endfassung bei niedriger Last wiederholen (Teil: 44/44).
