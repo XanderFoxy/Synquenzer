@@ -80,7 +80,7 @@ const KL = rd('spk3-klang-probe.json');   // Klang-Probe (aus spk3-test, ggf. zw
 // ================= Wertung =================
 const R = (J, k) => J && J[k] || {v: null, ok: false}, R2 = k => R(S2 && S2.res, k), R3 = k => R(S3 && S3.res, k);
 if (PF) ok('pflicht', PF, PF.topdefs && PF.topdefs[0] === 0 && PF.topdefs[1] === 0 && PF.dupkeys === 0 && PF.smoke && !PF.smoke.length && PF.ms2000 === 1 && PF.live === 1 &&
-  (process.env.SOLL_VERSION ? PF.version[1] === process.env.SOLL_VERSION : !!PF.version[1]) /* REG: gegen die Soll-Version, nicht gegen basis5 (4.60.0) */ && PF.block[0] === 1 && PF.block[1] === 1 && PF.block[2]);
+  (process.env.SOLL_VERSION ? PF.version[1] === process.env.SOLL_VERSION : false /* REG: ohne Soll rot */) /* REG: gegen die Soll-Version, nicht gegen basis5 (4.60.0) */ && PF.block[0] === 1 && PF.block[1] === 1 && PF.block[2]);
 
 // ---- Auftrag 1: mehrstimmige Noten
 if (K) {

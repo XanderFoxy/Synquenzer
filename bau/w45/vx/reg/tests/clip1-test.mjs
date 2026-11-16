@@ -3,7 +3,7 @@
 import { createRequire } from 'node:module';
 const { chromium } = createRequire(import.meta.url)('/opt/node-tools/node_modules/playwright/index.js');
 import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path';
-const file = path.resolve(process.argv[2]), dir = path.dirname(file), here = path.dirname(new URL(import.meta.url).pathname), fotos = path.join(here, 'fotos'); fs.mkdirSync(fotos, {recursive: true});
+const file = path.resolve(process.argv[2]), dir = path.dirname(file), here = path.dirname(new URL(import.meta.url).pathname), AUS = process.env.CLIP1_OUT || here /* REG: Ausgabe nicht ins Werkzeug */, fotos = path.join(AUS, 'fotos'); fs.mkdirSync(fotos, {recursive: true});
 const srv = http.createServer((q, r) => { const p = path.join(dir, decodeURIComponent(q.url.split('?')[0])); if (!fs.existsSync(p) || fs.statSync(p).isDirectory()) { r.writeHead(404); r.end(); return; } r.writeHead(200, {'content-type': p.endsWith('.html') ? 'text/html; charset=utf-8' : 'application/octet-stream'}); fs.createReadStream(p).pipe(r); });
 await new Promise(ok => srv.listen(0, ok)); const url = 'http://127.0.0.1:' + srv.address().port + '/' + path.basename(file);
 const out = {}, res = []; const log = (k, v) => { out[k] = v; console.log(k + ' = ' + JSON.stringify(v)); };
@@ -215,4 +215,4 @@ for (const [W, H] of VIEWS) {
 }
 await b.close(); srv.close();
 const nOk = res.filter(r => r.ok).length; console.log('\nERGEBNIS ' + nOk + '/' + res.length + ' grün');
-fs.writeFileSync(path.join(here, 'clip1-ergebnis.json'), JSON.stringify({res, out}, null, 1));
+fs.writeFileSync(path.join(AUS, 'clip1-ergebnis.json'), JSON.stringify({res, out}, null, 1));
