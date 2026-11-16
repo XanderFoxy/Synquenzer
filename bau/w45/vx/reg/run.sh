@@ -6,6 +6,8 @@
 S=/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad; VX=$S/vx; T=$VX/reg/tests
 SRC=$(readlink -f "$1"); VOR=$(readlink -f "${2:-$S/rel-4750/index.html}"); O=${3:-$VX/reg/lauf-$(date +%H%M)}
 mkdir -p $O/jobs $O/b1/neu; cp "$SRC" $O/index.html; F=$O/index.html; cp "$SRC" $O/b1/neu/index.html; cp "$VOR" $O/b1/basis.html
+# Umfeld wie r4760: spk2/spk4-ui/spk4-rest lesen mess/*.f32 neben der Datei, spk2 vergleicht mit ../basis2.html (Probelauf 1: fehlte → spk4 neu gestartet)
+[ -d $O/mess ] || cp -r $VX/r4660/mess $O/mess; [ -e $O/../basis2.html ] || ln -s $VX/basis2.html $O/../basis2.html
 export SOLL_VERSION=${SOLL_VERSION:-$(grep -o "VERSION = '[0-9]*\.[0-9]*\.[0-9]*'" $F | head -1 | grep -o "[0-9][0-9.]*[0-9]")}
 SPUREN=${SPUREN:-$(nproc)}; T0=$(date +%s)
 echo "Start $(date -u +%H:%M:%S) UTC · Datei $SRC (md5 $(md5sum < $SRC | cut -c1-8), Soll $SOLL_VERSION) · vorher $VOR · Spuren $SPUREN · CPUs $(nproc) · Last $(cut -d' ' -f1-3 /proc/loadavg)" > $O/zeit.txt
