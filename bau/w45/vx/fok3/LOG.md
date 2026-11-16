@@ -6,3 +6,5 @@
 - 02:32:16 Lauf 2 (v2) gestartet; Regressionskette A (kern, spk6, spkfix, spk5, spk12×3) parallel als Kopie in reg/
 - 02:35:35 v3: Nachreichen als EIN Auftrag mit Liste (keine Wartezeit je Stück auf den Hauptfaden), neu planen nur bei neu sichtbaren genäherten Stücken (≤ alle 250 ms). Lauf 3 startet. Lauf 2 (v2): 10/10 Hashes gleich v6, m3 (↶) genau 2827 vs 1594 ms → Anlass für v3. Last 4.48
 - 02:35:53 Kette B (smoke, fok2-test LANG=0, fokus1-test LONG=0 CPU=0, kern v3, spkfix) parallel gestartet
+- 02:37:39 Regression (Kopien in reg/): kern 26/0 (v2 und v3), fok2-test 16/0, spk5 24/0, spk12 98/0, spk12-2 71/1 (Long Task 110 ms SPK12-Werkzeug), spk12-3 (läuft/LT), spk6 25/2 (nur „kern-messwerte-teil1“: Eingabedatei spk6-kern-test.json fehlt im Paketordner), fokus1-test (LONG=0 CPU=0) 43/5 – alle 5 Long Tasks unter Last 8 (auch „Alles“/„Gefundenes“), smoke errors [] (absoluter Pfad nötig). Last 6.78
+- 02:38:03 Lauf 3 fertig; fok3-zeit (neu / v6 / 4.75, s20 + m1) gestartet

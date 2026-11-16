@@ -39,3 +39,19 @@ Anzeige (fokus1Load, fokus1Pre, im Block):
 Keine neuen Haken. Im FOKUS1-Block (Kommentar FOK3): neu `FK3`, `fk3Sig`, `fk3Est`; `trueRest` (Zeitmessung je Spalte), `ops.fokus` (vorab,
 Näherung je Stück, `ap` im Stück, `vorab`/`est` in der Antwort), `rsSync` (`RS.sg`), `restMid` (Zeitmessung je Block), `fokus1Load`
 (onChunk, zweiter Durchgang), `fokus1Pre` (Rollen/Zoomen → neu planen), `FOKUS1_API.info/chunks`.
+
+## Messung (fok3-test.mjs über die Anzeige, Chromium 428×926 dpr 2, A/B neu/basis(=4.76.0=v6) im selben Lauf; Last 3–8 durch andere Agenten
+## und eigene Regressionsketten; „erstes Bild“ = erstes neues Fokus-Stück mit Textur, „genau“ = idle, alle Texturen, keine Näherung mehr)
+Lauf 2 (v2, Last 2,5–5,5) – ms:
+
+| Fall | v6 erstes Bild | FOK3 erstes Bild | v6 genau | FOK3 genau | Näherung (Stücke) |
+|---|---|---|---|---|---|
+| 20 s, Ebene über alles, N 4096 | 582 | 299 | 741 | 917 | 2 |
+| Kamm 8 s, N 16384 | 316 | 285 | 316 | 285 | 0 (direkt genau) |
+| Kamm 8 s, N 4096 (FFT-Wechsel) | 308 | 278 | 308 | 278 | 0 |
+| 3 min STEREO, Ebene über alles | 687 | 394 | 6262 | 7658 | 15 |
+| 3 min mono, Ebene über alles | 860 | 257 | 6635 | 6406 | 15 |
+| 3 min mono, örtliche Ebene 60–70 s | 187 | 180 | 1885 | 1813 | 3 |
+| 3 min mono, ↶ | 172 | 293 | 1594 | 2827 (v2, je Stück ein Auftrag) | 3 |
+
+Hashes Endbild (alle 10 Fälle, auch Abbruch-Fälle) gleich v6 – Lauf 2 und Lauf 3.
