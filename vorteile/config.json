@@ -356,6 +356,17 @@
         { "id": "rewe", "name": "REWE", "kaufda": "REWE", "kaufdaId": 101, "haendler": ["REWE", "REWE Center", "REWE City"] },
         { "id": "marktkauf", "name": "Marktkauf", "kaufda": "Marktkauf", "kaufdaId": 60, "haendler": ["Marktkauf"] }
       ]
+    },
+    "essen": {
+      "aktiv": true,
+      "intervallStunden": 3,
+      "_hinweis": "Essen (Xander 16.11.2026): Lokale um Döbeln. Liste mit Bewertungen/Quellen: vorteile/essen.json (handgepflegt). OpenStreetMap über Overpass (eine Abfrage, höchstens alle osmStunden) frischt Öffnungszeiten, Lage, neue/verschwundene Lokale und die nächste Filiale je Kette auf -> <data>/essen.json. Push nur für gemerkte Lokale an Tagen mit All-you-can-eat oder fester Tagesaktion, zwischen pushVon und pushBis Uhr: Stern auf der Seite (die Seite meldet die ids an das ntfy-Thema merkThema, öffentlich wie das Push-Thema; der Radar liest es bei jedem Lauf) und gemerkt (ids aus vorteile/essen.json oder mein-vorteil/essen.json, von Claude gepflegt).",
+      "overpass": "https://overpass-api.de/api/interpreter",
+      "osmStunden": 20,
+      "pushVon": 9,
+      "pushBis": 17,
+      "merkThema": "xander-schnaeppchen-b5cbf4442aaa9734f3-merken",
+      "gemerkt": []
     }
   }
 }

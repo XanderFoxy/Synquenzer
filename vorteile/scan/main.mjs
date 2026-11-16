@@ -23,13 +23,14 @@ import remix from './module/remix.mjs';
 import auftritte from './module/auftritte.mjs';
 import unterricht from './module/unterricht.mjs';
 import knaller from './module/knaller.mjs';
+import essen from './module/essen.mjs';
 import { FIXTURE_KARTE } from './test/fixtures/karte.mjs';
 import { holeMerkliste, faelligeErinnerungen, erinnerungNachricht, verbucheErinnerung } from './lib/merken.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
-export const MODULE = { deals, erleben, reisen, musik, nebenverdienst, tests, praemien, filme, remix, auftritte, unterricht, knaller };
+export const MODULE = { deals, erleben, reisen, musik, nebenverdienst, tests, praemien, filme, remix, auftritte, unterricht, knaller, essen };
 // Fundorte (Remix/Auftritte/Unterricht) haben kein Datum und bleiben immer stehen
-const MAX_ALTER_TAGE = { knaller: 7, deals: 7, erleben: 21, reisen: 5, musik: 30, nebenverdienst: 21, tests: 21, praemien: 14, filme: 3, remix: 45, auftritte: 60, unterricht: 30 };
+const MAX_ALTER_TAGE = { essen: 1, knaller: 7, deals: 7, erleben: 21, reisen: 5, musik: 30, nebenverdienst: 21, tests: 21, praemien: 14, filme: 3, remix: 45, auftritte: 60, unterricht: 30 };
 
 const mitZeitlimit = (p, ms, name) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(`${name}: Zeitlimit`)), ms).unref())]);
 
@@ -39,7 +40,7 @@ const mitZeitlimit = (p, ms, name) => Promise.race([p, new Promise((_, rej) => s
  * Ergebnis „dateien“: eigene Dateien der Module, die in diesem Lauf gelaufen sind ({ filme: {...} } -> <data>/filme.json);
  * ein übersprungenes oder abgestürztes Modul liefert keine -> die alte Datei bleibt stehen.
  */
-export async function lauf({ cfg, wunschliste, filmListen = null, dateienVorher = {}, vorher, zustand, holeText, env = {}, jetzt = new Date(), alle = false, log = () => {} }) {
+export async function lauf({ cfg, wunschliste, filmListen = null, essenListen = null, dateienVorher = {}, vorher, zustand, holeText, env = {}, jetzt = new Date(), alle = false, log = () => {} }) {
   const jetztMs = new Date(jetzt).getTime();
   zustand ||= {};
   zustand.lauf ||= {};
@@ -59,7 +60,7 @@ export async function lauf({ cfg, wunschliste, filmListen = null, dateienVorher 
     }
     const t0 = Date.now();
     try {
-      const r = await mitZeitlimit(fn({ holeText, cfg, wunschliste, zustand, env, jetzt, filmListen, vorherDatei: dateienVorher?.[name] ?? null }), 240000, name);
+      const r = await mitZeitlimit(fn({ holeText, cfg, wunschliste, zustand, env, jetzt, filmListen, essenListen, vorherDatei: dateienVorher?.[name] ?? null }), 240000, name);
       if (r.datei) dateien[name] = r.datei;
       // komplett kaputte Quelle -> alte Einträge behalten statt leere Liste (Remix/Auftritte/Unterricht: nur Fundorte
       // übrig und Fehler da = alle frischen Quellen tot -> alter Stand bleibt, statt nur die Fundorte zu zeigen)
@@ -135,8 +136,10 @@ export async function main(args = process.argv.slice(2), env = process.env, test
   if (env.NTFY_TOPIC) cfg.ntfy.topic = env.NTFY_TOPIC;
   const wunschliste = JSON.parse(await readFile(join(basis, 'wunschliste.json'), 'utf8'));
   const filmListen = await leseJson(join(basis, 'filme.json'), null);
+  // Essen: gepflegte Lokale/Ketten (vorteile/essen.json) + Einträge der Seite (mein-vorteil/essen.json, für gemerkte AYCE-Tage)
+  const essenListen = { liste: await leseJson(join(basis, 'essen.json'), null), seite: await leseJson(join(basis, '..', 'mein-vorteil', 'essen.json'), null) };
   const vorher = await leseJson(join(daten, 'aktuell.json'), null);
-  const dateienVorher = { filme: await leseJson(join(daten, 'filme.json'), null), knaller: await leseJson(join(daten, 'knaller.json'), null) };
+  const dateienVorher = { filme: await leseJson(join(daten, 'filme.json'), null), knaller: await leseJson(join(daten, 'knaller.json'), null), essen: await leseJson(join(daten, 'essen.json'), null) };
   const zustand = await leseJson(join(daten, 'zustand.json'), {});
   const fetchImpl = roh ? roh.fetch(test.fetchImpl) : test.fetchImpl;
   const holeText = fixtures ? macheFixtureAbruf(join(HIER, 'test', 'fixtures'), FIXTURE_KARTE) : macheAbruf({ ...cfg.abruf, ...test.abruf }, fetchImpl);
@@ -144,7 +147,7 @@ export async function main(args = process.argv.slice(2), env = process.env, test
   const modus = arg(args, '--modus') || env.MODUS || 'auto';
 
   let r;
-  try { r = await lauf({ cfg, wunschliste, filmListen, dateienVorher, vorher, zustand, holeText, env, jetzt, alle: fixtures || !!rohDir || args.includes('--alle'), log: console.log }); }
+  try { r = await lauf({ cfg, wunschliste, filmListen, essenListen, dateienVorher, vorher, zustand, holeText, env, jetzt, alle: fixtures || !!rohDir || args.includes('--alle'), log: console.log }); }
   catch (e) { roh?.abschluss({ absturz: String(e?.message || e) }); throw e; }
   // Erster Lauf überhaupt: nichts nachmelden, nur einmal Bescheid geben (kein Push-Gewitter)
   const erstlauf = !zustand.gemeldet;

@@ -48,7 +48,7 @@ Sprungmarken: `#start`, `#deals` (`#produkte`, `#cashback`, `#snacks` = Ziel im 
 | **Konzerte** | in der Nähe (bis `pushRadiusKm`), darunter **je Band der nächste Termin, auch weit weg, mit km**; Tourdaten-Links je Band (`../konzerte/artists.json`, erst beim Öffnen) | nächster Termin bzw. Tourdaten-Links |
 | **Gewinnspiele** | nur laufende ohne Kauf/Abo | sonst mydealz-Gruppen Gewinnspiele/Gratis |
 | **Krypto** | wie bisher (nur `localStorage`); Push-Kasten mit Feld „ntfy-Thema“ (nur auf dem Gerät) | Kurs immer |
-| **Essen** | eigener Reiter (`essen.js`, Daten `essen.json`): Heute · Fastfood & Ketten · Pizza & Abholen · All-you-can-eat · XXL & Challenges · Gratis-Tage (+ „Aktuell“, sobald der Radar Einträge der Kategorie `essen` liefert) | Start-Kachel: bester belegter Treffer des Tages (Aktionstag heute, Wochentags-Aktion, nächster Aktionstag ≤ 14 Tage, dauerhaft gratis), sobald der Reiter einmal offen war; vorher „Gratis-Tage, Aktionen, Buffets“ |
+| **Essen** | eigener Reiter (`essen.js`, Daten `essen.json`): Heute · Lokale · Regelmäßig · Fastfood & Ketten · Pizza & Abholen · All-you-can-eat · XXL & Challenges · Gratis-Tage (+ „Aktuell“, sobald der Radar Einträge der Kategorie `essen` liefert) | Start-Kachel: bester belegter Treffer des Tages (Aktionstag heute, Wochentags-Aktion, nächster Aktionstag ≤ 14 Tage, dauerhaft gratis), sobald der Reiter einmal offen war; vorher „Gratis-Tage, Aktionen, Buffets“ |
 | **Spartricks** | eigener Reiter (`spartricks.js`, Daten `spartricks.json`): Top 10 · Geld zurück · Clever einkaufen · Gratis & Proben · Geburtstag gratis · Freizeit & Reisen · Gewinnspiele, Suche, Stern | Start-Kachel: „Tipp des Tages“ (wechselt täglich) + nächste Frist, sobald der Reiter einmal offen war; vorher „Geld zurück, Gratis, Geburtstag“ |
 | **Mehr** | Erleben, Reisen, Nebenverdienst, Spar-Tipps, Vorlage Übersetzung, Quellen | – |
 
@@ -121,6 +121,20 @@ hier: „Geburtstag gratis ›“/„Gratis & Proben ›“ und „Ausführlich 
 letzter Stand im Cache Storage `mv-essen`. Der Service Worker (Cache `mein-vorteil-3`) hält `essen.js` wie die Seite, `essen.json` nicht.
 Radar: noch kein eigenes Modul (die mydealz-Gruppen `restaurant`/`lieferservice` sind von hier aus nicht als RSS belegt) – die Seite
 zeigt Einträge der Kategorie `essen` aber schon unter „Aktuell“. Tests: `test/essen.test.mjs`.
+
+**Lokale und Regelmäßig (seit 16.11.2026):** Xanders Wunsch vom 16.11. („die besten Italiener, Griechen, Inder, Türken … nach
+Bewertung und was die Leute sagen, in der Nähe von Döbeln; wann All-you-can-eat; Domino's in der Nähe?; wiederkehrende Muster
+zum Planen“). Chip **Lokale**: Filter Küche, Umkreis (5/15/30/70 km), Bewertung ab 4,0/4,5, Heute offen, All-you-can-eat und
+XXL (dann bis 70 km), Gemerkt; Beste zuerst (wenige Stimmen zur Mitte gezogen) oder Nächste zuerst. Karte: Küche, Ort · km,
+heute offen/Ruhetag (OSM-Öffnungszeiten), Bewertungen mit Portal/Stimmen/Stand, „Leute sagen“, Karte (OpenStreetMap) und Apple
+Karten, Merken-Stern (`mein-vorteil-essen-gemerkt`; die ids gehen als `{ v: 1, essen: [...] }` an das ntfy-Thema
+`…-merken` = `vorteile/config.json` `module.essen.merkThema`, beim Öffnen erneut, wenn älter als 6 h – der Radar erinnert am
+All-you-can-eat- oder Aktionstag), „Ketten in der Nähe“ (nächste Filiale laut OSM – fehlt dort der Ort, kein Ort aus der
+gepflegten Liste; Lieferung nach Döbeln, Aktionen mit Sprung in den passenden Chip). Lokale aus OSM: alle bis 30 km (ohne id in
+der Datei, die Seite bildet `osm-<typ>-<nr>`); bei „bis 70 km“ sagt die Kopfzeile, dass darüber nur All-you-can-eat/XXL kommen. Daten erst beim Öffnen: Radar-Datei `vorteile-daten/vorteile/data/essen.json`,
+sonst die gepflegte Liste `../vorteile/essen.json`; letzter Stand in `mv-essen` (Schlüssel `essen-lokale.json`). Filter in
+`mein-vorteil-essen-filter`. Chip **Regelmäßig**: 7 Tage ab heute mit festen Wochentagen aus allen Bereichen (All-you-can-eat,
+Tagesessen, Ketten-Aktionen, Subway-Tagesplan, Ruhetage der Lokale bis 15 km – in OSM nicht genannte Tage sind zu), „Fast täglich“ einmal darunter.
 
 **Reiter „Spartricks“ (seit 15.11.2026, `spartricks.js` + `spartricks.json`):** komprimiertes Wissen aus drei Recherchen
 (Geld zurück, Einkaufen & Gratis, Geburtstag & Freizeit; 133 Einträge → 94 Tipps: Doppelte vereint, Prämien-Themen Strom/Bank/Konto
