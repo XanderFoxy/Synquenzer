@@ -218,7 +218,7 @@ Marken „nur mit App/Karte“, „ab-Preis“, „ab Mo …“, Markt · gülti
 graue Plakette und „UVP“ hinter dem Vorher-Preis. Rabatt nur mit Vergleichspreis aus dem Prospekt – die Seite rechnet die %
 selbst nach. Skript und Daten erst beim ersten Öffnen; letzter Stand im Cache Storage `mv-woche` (offline sofort da).
 Start-Kachel „Woche“ und die Zahl in der Leiste kommen aus `status.knaller.kurz` in `aktuell.json` (kein eigener Abruf).
-Service Worker: Cache `mein-vorteil-4` hält `woche.js` wie die Seite, `knaller.json` und Bilder nicht.
+Service Worker: Cache `mein-vorteil-5` hält `woche.js` wie die Seite, `knaller.json` und Bilder nicht.
 Nachbesserung nach der Prüfung (16.11.2026): Bildfeld fest quadratisch, das Bild liegt absolut darin (ein Hochformat-Foto wie
 eine Flasche sprengt die Kachel nicht mehr, kein Sprung beim Nachladen); Rabatt abgerundet wie beim Radar; Ende um 00:00 des
 Folgetags (Penny) zählt zum Vortag („bis Sa“); Vergleichspreis ohne Art-Angabe grau und ohne „UVP“; Start-Kachel nennt „ab …“,

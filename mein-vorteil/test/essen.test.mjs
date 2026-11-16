@@ -249,7 +249,7 @@ test('Haken: index.html (Leiste nach Deals, eigene Seite, Skript erst beim Öffn
   const sw = readFileSync(join(MV, 'sw.js'), 'utf8');
   assert.match(sw, /addAll\(\[SEITE, 'filme\.js', 'spartricks\.js', 'essen\.js',/);
   assert.match(sw, /rest === 'essen\.js'/);
-  assert.match(sw, /const CACHE = 'mein-vorteil-4'/); // 16.11.2026: woche.js
+  assert.match(sw, /const CACHE = 'mein-vorteil-5'/); // 16.11.2026: woche.js
   assert.doesNotMatch(sw, /essen\.json'/, 'Daten nicht im Worker');
   assert.match(readFileSync(join(MV, 'README.md'), 'utf8'), /Reiter „Essen“/);
 });

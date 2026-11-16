@@ -5,7 +5,7 @@
    woche.js im eigenen Cache „mv-woche“, den dieser Worker beim Aktivieren nicht löscht). Produktbilder (fremde Server) auch nicht.
    Symbole/Manifest: aus dem Zwischenspeicher. Daten (raw.githubusercontent.com) gehen nie durch diesen Worker –
    die Seite merkt sich den letzten Stand selbst. */
-const CACHE = 'mein-vorteil-4'; // 16.11.2026: Reiter „Woche“ (woche.js) – alte Kopie wird beim Aktivieren gelöscht (15.11.: mein-vorteil-3 mit essen.js)
+const CACHE = 'mein-vorteil-5'; // 16.11.2026: Woche (kommt diese Woche/ab Mo, Merken), Filme 3,99 € mit Filtern, Essen-Lokale – alte Kopie wird beim Aktivieren gelöscht (mein-vorteil-4: woche.js, mein-vorteil-3: essen.js)
 const SEITE = new URL('./', self.registration.scope).href;
 const FILME = new URL('filme.js', self.registration.scope).href;
 const SPAR = new URL('spartricks.js', self.registration.scope).href;
