@@ -329,23 +329,25 @@
     "knaller": {
       "aktiv": true,
       "intervallStunden": 6,
-      "_hinweis": "Wochen-Knaller (Xander 16.11.2026): je Markt die krassesten Prospekt-Angebote ab minProzent Rabatt, mit Bild. Quelle: kaufDA-Händlerseite /[<stadt>/]Geschaefte/<kaufda> (eine Seite je Markt, Pause 2,1 s). Prozent nur mit Vergleichspreis aus dem Prospekt (Streichpreis oder UVP, die Art steht dabei). ab-Preise als „bis zu“ (abPreise false = weglassen). Seite: <data>/knaller.json, Start-Kachel aus status.knaller.kurz. Döbeln = Aldi Nord; „Netto mit dem Scottie“ und ALDI SÜD stehen nicht in der Liste.",
+      "_hinweis": "Wochen-Knaller (Xander 16.11.2026): je Markt die krassesten Prospekt-Angebote ab minProzent Rabatt, mit Bild. Quelle: kaufDA, je Markt die Orts-Händlerseite ortsSeite (/<Ort>/<kaufdaOrt>/p-r<kaufdaId>) für orte der Reihe nach (Döbeln, dann Chemnitz, Leipzig), erst danach bundesweit /Geschaefte/<kaufda> (Hinweis „in Döbeln prüfen“). Nächste Filiale weiter als maxFilialeKm = „kein Markt in der Nähe“ (Hinweis, keine Störung). Ids aus kaufDA /Filialen/Doebeln (Roh-Lauf 43793492110). Pause 2,1 s. Prozent nur mit Vergleichspreis aus dem Prospekt (Streichpreis oder UVP, die Art steht dabei). ab-Preise als „bis zu“ (abPreise false = weglassen). Seite: <data>/knaller.json, Start-Kachel aus status.knaller.kurz. Döbeln = Aldi Nord; „Netto mit dem Scottie“ und ALDI SÜD stehen nicht in der Liste.",
       "basis": "https://www.kaufda.de",
       "geschaefte": "/Geschaefte/{slug}",
-      "stadt": "Chemnitz",
+      "ortsSeite": "/{ort}/{slug}/p-r{id}",
+      "orte": ["Döbeln", "Chemnitz", "Leipzig"],
       "ort": "Döbeln",
+      "maxFilialeKm": 30,
       "minProzent": 30,
       "stufen": [30, 40, 50],
       "maxJeMarkt": 40,
       "abPreise": true,
       "maerkte": [
-        { "id": "aldi-nord", "name": "Aldi Nord", "kaufda": "Aldi-Nord", "haendler": ["Aldi Nord"] },
-        { "id": "lidl", "name": "Lidl", "kaufda": "Lidl", "haendler": ["Lidl"] },
-        { "id": "kaufland", "name": "Kaufland", "kaufda": "Kaufland", "haendler": ["Kaufland"] },
-        { "id": "netto", "name": "Netto", "kaufda": "Netto-Marken-Discount", "haendler": ["Netto Marken-Discount", "Netto"] },
-        { "id": "penny", "name": "Penny", "kaufda": "Penny-Markt", "haendler": ["Penny", "Penny-Markt"] },
-        { "id": "rewe", "name": "REWE", "kaufda": "REWE", "haendler": ["REWE", "REWE Center", "REWE City"] },
-        { "id": "marktkauf", "name": "Marktkauf", "kaufda": "Marktkauf", "haendler": ["Marktkauf"] }
+        { "id": "aldi-nord", "name": "Aldi Nord", "kaufda": "Aldi-Nord", "kaufdaOrt": "ALDI-Nord", "kaufdaId": 43, "haendler": ["Aldi Nord"] },
+        { "id": "lidl", "name": "Lidl", "kaufda": "Lidl", "kaufdaId": 74, "haendler": ["Lidl"] },
+        { "id": "kaufland", "name": "Kaufland", "kaufda": "Kaufland", "kaufdaId": 2801, "haendler": ["Kaufland"] },
+        { "id": "netto", "name": "Netto", "kaufda": "Netto-Marken-Discount", "kaufdaId": 9, "haendler": ["Netto Marken-Discount", "Netto"] },
+        { "id": "penny", "name": "Penny", "kaufda": "Penny-Markt", "kaufdaId": 75, "haendler": ["Penny", "Penny-Markt"] },
+        { "id": "rewe", "name": "REWE", "kaufda": "REWE", "kaufdaId": 101, "haendler": ["REWE", "REWE Center", "REWE City"] },
+        { "id": "marktkauf", "name": "Marktkauf", "kaufda": "Marktkauf", "kaufdaId": 60, "haendler": ["Marktkauf"] }
       ]
     }
   }

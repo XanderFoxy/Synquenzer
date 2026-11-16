@@ -32,6 +32,25 @@ function modul() {
 }
 
 // --- statisch ------------------------------------------------------------------------------------------------------------
+test('woche.js Fuß: Prospekt für Döbeln, Märkte aus Nachbarstadt/bundesweit sichtbar genannt, kein Markt in der Nähe', () => {
+  const I = modul()._intern;
+  const jetzt = Date.parse(JETZT);
+  const daten = standort => ({ ...plain(KNALLER), standort, ort: 'Döbeln', maerkte: {
+    kaufland: { name: 'Kaufland', ort: 'Döbeln', anzahl: 2 }, lidl: { name: 'Lidl', ort: 'Leipzig', anzahl: 1 },
+    penny: { name: 'Penny', ort: 'bundesweit (Berlin)', anzahl: 1 }, marktkauf: { name: 'Marktkauf', keinMarkt: true, anzahl: 0 } } });
+  const n = I.normalisiere(daten('Döbeln/Leipzig/bundesweit'), jetzt);
+  assert.deepEqual(plain(n.maerkte.filter(m => ['lidl', 'marktkauf'].includes(m.id)).map(m => [m.id, m.ort, m.keinMarkt])), [['lidl', 'Leipzig', false], ['marktkauf', '', true]]);
+  const text = nbsp(I.fuss(n).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' '));
+  assert.match(text, /Prospekte Döbeln\/Leipzig\/bundesweit von kaufDA – ob es das in Döbeln gibt/);
+  assert.match(text, /Nicht aus dem Prospekt für Döbeln: Lidl \(Leipzig\), Penny \(bundesweit \(Berlin\)\) – im Markt oder in der App prüfen\./);
+  assert.match(text, /Kein Markt in der Nähe: Marktkauf\./);
+  // alles aus dem Döbelner Prospekt -> kein „in Döbeln prüfen“
+  const nur = I.normalisiere({ ...daten('Döbeln'), maerkte: { kaufland: { name: 'Kaufland', ort: 'Döbeln' } } }, jetzt);
+  const t2 = nbsp(I.fuss(nur).replace(/<[^>]+>/g, ' '));
+  assert.match(t2, /Prospekte für Döbeln von kaufDA/);
+  assert.doesNotMatch(t2, /Nicht aus dem Prospekt|in Döbeln gibt/);
+});
+
 test('woche.js liest tolerant: ohne Vergleichspreis kein Knaller, % selbst nachgerechnet, nur https, abgelaufen raus', () => {
   const I = modul()._intern;
   const jetzt = Date.parse(JETZT);

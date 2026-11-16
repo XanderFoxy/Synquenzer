@@ -116,27 +116,62 @@ test('knaller: Ausfälle – 404 = Hinweis, kaputter Datenblock/503 = Fehler, al
   await assert.rejects(() => knaller({ holeText: tot, cfg, jetzt: JETZT, zustand: {} }), /kaufDA: keine Händlerseite gelesen/);
 });
 
-test('knaller: Stadt zuerst (Chemnitz), Stadt ohne Händlerseiten -> bundesweit und 7 Tage gemerkt; Pause 2,1 s je Abruf', async () => {
-  // Netto: Stadtseite da -> Ort Chemnitz, keine bundesweite Seite
-  const c1 = { ...cfg, module: { knaller: { ...cfg.module.knaller, maerkte: MAERKTE.filter(m => m.id === 'netto') } } };
-  const h1 = abruf({ '/Chemnitz/Geschaefte/Netto-Marken-Discount': 'knaller/netto-chemnitz.html' });
-  const r1 = await knaller({ holeText: h1, cfg: c1, jetzt: JETZT, zustand: {} });
-  assert.deepEqual(h1.log, ['https://www.kaufda.de/Chemnitz/Geschaefte/Netto-Marken-Discount']);
-  assert.equal(r1.datei.standort, 'Chemnitz');
-  assert.equal(r1.datei.angebote[0].region, 'Chemnitz');
-  // Stadt 404, bundesweit da -> ab dem nächsten Markt gleich bundesweit, im Zustand gemerkt
-  const zustand = {};
-  const h2 = abruf({ '/Chemnitz/Geschaefte/Aldi-Nord': 404, ...STANDARD_KARTE, '/Geschaefte/Aldi-Nord': 'knaller/rewe.html' });
-  const r2 = await knaller({ holeText: h2, cfg, jetzt: JETZT, zustand });
-  assert.equal(h2.log.filter(u => u.includes('/Chemnitz/')).length, 1, h2.log.join('\n'));
-  assert.ok(zustand.knaller.ohneStadt);
-  assert.equal(r2.datei.standort, 'bundesweit');
-  assert.match(r2.datei.angebote.find(a => a.markt === 'penny').region, /^bundesweit/);
-  // nächster Lauf: keine Stadtseite mehr (7 Tage)
-  const h3 = abruf(STANDARD_KARTE);
-  await knaller({ holeText: h3, cfg, jetzt: new Date(JETZT.getTime() + 864e5), zustand });
-  assert.equal(h3.log.filter(u => u.includes('/Chemnitz/')).length, 0);
-  assert.equal(h3.log.length, MAERKTE.length, 'eine Seite je Markt');
+test('knaller: Ortsseite zuerst (Döbeln, Chemnitz, Leipzig), dann bundesweit mit Hinweis; kein Markt in der Nähe = Hinweis; Pause 2,1 s', async () => {
+  // echte gekürzte Seite /Leipzig/Kaufland/p-r2801 (Roh-Lauf 43793492110): Döbeln und Chemnitz 404 -> Leipzig
+  const nurKaufland = { ...cfg, module: { knaller: { ...cfg.module.knaller, maerkte: MAERKTE.filter(m => m.id === 'kaufland') } } };
+  const h1 = abruf({ '/Leipzig/Kaufland/p-r2801': 'knaller/kaufland-leipzig.html' });
+  const r1 = await knaller({ holeText: h1, cfg: nurKaufland, jetzt: new Date('2026-11-16T10:00:00Z'), zustand: { knaller: { ohneStadt: '2026-11-16T02:27:17Z' } } });
+  assert.deepEqual(h1.log, [
+    'https://www.kaufda.de/Doebeln/Kaufland/p-r2801',
+    'https://www.kaufda.de/Chemnitz/Kaufland/p-r2801',
+    'https://www.kaufda.de/Leipzig/Kaufland/p-r2801',
+  ], 'Orts-Händlerseiten in der Reihenfolge der config, bundesweit nicht mehr nötig');
+  const d1 = r1.datei;
+  assert.equal(d1.standort, 'Leipzig');
+  assert.equal(d1.maerkte.kaufland.ort, 'Leipzig');
+  assert.equal(d1.maerkte.kaufland.link, 'https://www.kaufda.de/Leipzig/Kaufland/p-r2801');
+  assert.deepEqual(d1.status.kaufda.orte, { kaufland: 'Leipzig' });
+  // echte Werte: Schokolade 0,88 statt 1,99 (Streichpreis) = −55 %, Junge Ente 3,99 statt 7,98 = −50 %, Paprika −44 %
+  assert.deepEqual(d1.angebote.map(a => [a.titel.replace(/^\S+ /, ''), a.preis, a.vorher, a.pct, a.vorherArt]).slice(0, 3).map(x => x.slice(1)),
+    [[0.88, 1.99, 55, 'streich'], [3.99, 7.98, 50, 'streich'], [1.39, 2.49, 44, 'streich']]);
+  for (const a of d1.angebote) {
+    assert.equal(a.region, 'Leipzig');
+    assert.equal(a.regional, true, 'Leipziger Prospekt -> in Döbeln prüfen');
+    assert.match(a.bild, /^https:\/\/content-media\.bonial\.biz\//);
+  }
+  // alte 7-Tage-Sperre der Stadt ist weg
+  assert.equal(r1.datei.status.kaufda.abrufe, 3);
+  // Döbeln-Seite da (dieselbe echte Seite, Standort Döbeln) -> standort Döbeln, nicht „regional“, nächste Filiale gemerkt
+  const doebeln = (await readFile(join(FX, 'knaller/kaufland-leipzig.html'), 'utf8'))
+    .replace(/"city": ?"Leipzig", ?"cityDisplayName": ?"Leipzig"/, '"city": "Döbeln", "cityDisplayName": "Döbeln"');
+  const h2 = async u => { if (u.includes('/Doebeln/Kaufland/p-r2801')) return doebeln; throw new Error('HTTP 404 bei www.kaufda.de'); };
+  const r2 = await knaller({ holeText: h2, cfg: nurKaufland, jetzt: new Date('2026-11-16T10:00:00Z'), zustand: {} });
+  assert.equal(r2.datei.standort, 'Döbeln');
+  assert.ok(r2.datei.angebote.length && r2.datei.angebote.every(a => a.regional === false && a.region === 'Döbeln'));
+  assert.deepEqual(r2.datei.maerkte.kaufland.filiale, { adresse: 'Dresdner Straße 80, 04317 Leipzig', km: 2.4, von: 'Döbeln' });
+  // Ortsseite meldet einen anderen Standort (kaufDA kennt die Stadt nicht) -> zählt nicht als Döbeln
+  const h3 = async u => { if (u.includes('/Doebeln/') || u.includes('/Chemnitz/')) throw new Error('HTTP 404 bei www.kaufda.de'); if (u.includes('/Leipzig/')) return doebeln; return readFile(join(FX, 'knaller/rewe.html'), 'utf8'); };
+  const r3 = await knaller({ holeText: h3, cfg: nurKaufland, jetzt: new Date('2026-11-16T10:00:00Z'), zustand: {} });
+  assert.notEqual(r3.datei.maerkte.kaufland.ort, 'Leipzig');
+  // keine Ortsseite -> bundesweit, sichtbar als Hinweis und je Angebot regional
+  const h4 = abruf(STANDARD_KARTE);
+  const r4 = await knaller({ holeText: h4, cfg, jetzt: JETZT, zustand: {} });
+  assert.equal(r4.datei.standort, 'bundesweit');
+  assert.ok(r4.hinweise.some(h => /^Penny: kein Prospekt für Döbeln\/Chemnitz\/Leipzig gefunden – bundesweite Angebote, in Döbeln prüfen/.test(h)), r4.hinweise.join('\n'));
+  assert.match(r4.datei.angebote.find(a => a.markt === 'penny').region, /^bundesweit/);
+  assert.ok(r4.datei.angebote.every(a => a.regional === true));
+  // Marktkauf: nächste Filiale von Döbeln aus 45 km -> „kein Markt in der Nähe“ (Hinweis, keine Störung, kein Berlin-Prospekt)
+  const weit = doebeln.replace(/"distance": ?[0-9.]+/, '"distance": 45.27').replace(/"publisherName": ?"Kaufland"/g, '"publisherName": "Marktkauf"');
+  const nurMk = { ...cfg, module: { knaller: { ...cfg.module.knaller, maerkte: MAERKTE.filter(m => m.id === 'marktkauf') } } };
+  const h5 = abruf({});
+  const h5f = async u => { h5.log.push(u); if (u.includes('/Doebeln/Marktkauf/p-r60')) return weit; throw new Error('HTTP 404 bei www.kaufda.de'); };
+  const r5 = await knaller({ holeText: h5f, cfg: nurMk, jetzt: new Date('2026-11-16T10:00:00Z'), zustand: {} });
+  assert.deepEqual(h5.log, ['https://www.kaufda.de/Doebeln/Marktkauf/p-r60'], 'nach „kein Markt in der Nähe“ keine weiteren Abrufe');
+  assert.ok(r5.hinweise.includes('Marktkauf: kein Markt in der Nähe von Döbeln (nächste Filiale 45,3 km)'), r5.hinweise.join('\n'));
+  assert.deepEqual(r5.fehler, []);
+  assert.equal(r5.datei.status.kaufda.ok, true);
+  assert.equal(r5.datei.maerkte.marktkauf.keinMarkt, true);
+  assert.equal(r5.datei.angebote.length, 0);
   // höflich: robots.txt crawl-delay 2 -> 2,1 s je Abruf bei kaufDA
   assert.ok(cfg.abruf.pauseMsJeHost['www.kaufda.de'] >= 2000);
   assert.ok(cfg.module.knaller.intervallStunden >= 3);

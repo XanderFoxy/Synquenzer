@@ -93,7 +93,9 @@
     const angebote = liste(d?.angebote).map(a => angebotNorm(a, jetzt)).filter(a => a && !gesehen.has(a.id) && gesehen.add(a.id))
       .sort((a, b) => b.pct - a.pct || a.preis - b.preis);
     for (const a of angebote) if (!namen.has(a.markt)) namen.set(a.markt, a.markt);
-    const maerkte = [...namen.entries()].map(([id, name]) => ({ id, name, link: sicher(m[id]?.link), alt: m[id]?.alt === true }));
+    // ort = Prospekt-Ort dieses Markts (Radar ab 16.11.2026: Döbeln, Chemnitz, Leipzig oder „bundesweit (Berlin)“)
+    const maerkte = [...namen.entries()].map(([id, name]) => ({ id, name, link: sicher(m[id]?.link), alt: m[id]?.alt === true,
+      ort: typeof m[id]?.ort === 'string' ? m[id].ort.trim().slice(0, 40) : '', keinMarkt: m[id]?.keinMarkt === true }));
     const status = d && typeof d.status === 'object' && d.status ? d.status : {};
     return {
       aktualisiert: typeof d?.aktualisiert === 'string' ? d.aktualisiert : null,
@@ -186,12 +188,19 @@
   }
   function fussHtml() {
     const ort = S.n.standort && S.n.standort !== 'bundesweit' ? `Prospekte ${S.n.standort}` : 'Prospekte bundesweit';
+    // Prospekt für den eigenen Ort (Döbeln) oder nicht – Märkte aus Nachbarstadt/bundesweit sichtbar nennen
+    const lokal = !!S.n.standort && S.n.standort === S.n.ort;
+    const fremd = S.n.maerkte.filter(m => m.ort && m.ort !== S.n.ort && !m.keinMarkt);
+    const ohneMarkt = S.n.maerkte.filter(m => m.keinMarkt).map(m => m.name);
+    const ortText = lokal ? `Prospekte für ${S.n.ort} von kaufDA – einzelne Filialen können abweichen.` : `${ort} von kaufDA – ob es das in ${S.n.ort} gibt, im Markt oder in der App prüfen.`;
     const k = S.n.status.kaufda && typeof S.n.status.kaufda === 'object' ? S.n.status.kaufda : null;
     const stoer = k && Array.isArray(k.fehler) ? k.fehler.filter(x => typeof x === 'string').slice(0, 3) : [];
     const alt = S.n.maerkte.filter(m => m.alt).map(m => m.name);
     const markt = S.markt !== 'alle' ? S.n.maerkte.find(m => m.id === S.markt) : null;
     const ohneArt = S.n.angebote.some(a => a.art === 'unbekannt') ? ' Grau ohne „UVP“ = der Prospekt sagt nicht, welcher Preis verglichen wird.' : '';
-    return `<p class="wo-fuss-text"><b>Gold umrandet</b> = echter Streichpreis im Prospekt. <b>UVP</b> = gegen die Preisempfehlung des Herstellers gerechnet – die liegt oft über dem üblichen Ladenpreis.${esc(ohneArt)} „bis −n %“ = ab-Preis (die günstigste Sorte). Rabatte abgerundet. ${esc(ort)} von kaufDA – ob es das in ${esc(S.n.ort)} gibt, im Markt oder in der App prüfen.</p>`
+    return `<p class="wo-fuss-text"><b>Gold umrandet</b> = echter Streichpreis im Prospekt. <b>UVP</b> = gegen die Preisempfehlung des Herstellers gerechnet – die liegt oft über dem üblichen Ladenpreis.${esc(ohneArt)} „bis −n %“ = ab-Preis (die günstigste Sorte). Rabatte abgerundet. ${esc(ortText)}</p>`
+      + (fremd.length && S.n.standort !== 'bundesweit' ? `<p class="wo-fuss-text">Nicht aus dem Prospekt für ${esc(S.n.ort)}: ${esc(fremd.map(m => `${m.name} (${m.ort})`).join(', '))} – im Markt oder in der App prüfen.</p>` : '')
+      + (ohneMarkt.length ? `<p class="wo-fuss-text">Kein Markt in der Nähe: ${esc(ohneMarkt.join(', '))}.</p>` : '')
       + (markt?.link ? `<p class="wo-fuss-text"><a class="wo-link" href="${esc(markt.link)}" target="_blank" rel="noopener">Alle Angebote von ${esc(markt.name)} bei kaufDA ›</a></p>` : '')
       + (stoer.length || alt.length ? `<details class="wo-quellen"><summary>Quellen</summary><ul>${stoer.map(f => `<li class="wo-stoerung">${esc(f)}</li>`).join('')}${alt.length ? `<li>Letzter Stand behalten: ${esc(alt.join(', '))}</li>` : ''}</ul></details>` : '');
   }
@@ -412,6 +421,6 @@ a.wo-kachel:active { background: var(--flaeche); }
     start, lade,
     get gestartet() { return !!S.el; },
     // für Tests (ohne Browser): reine Funktionen
-    _intern: { normalisiere, angebotNorm, kachel: a => kachel(a), STUFEN, CSS: () => CSS },
+    _intern: { normalisiere, angebotNorm, kachel: a => kachel(a), fuss: n => { const vor = S.n; S.n = n; try { return fussHtml(); } finally { S.n = vor; } }, STUFEN, CSS: () => CSS },
   };
 })();

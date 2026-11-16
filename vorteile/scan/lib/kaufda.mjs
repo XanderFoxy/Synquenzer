@@ -9,6 +9,9 @@
 // prices.conditions[].other („Nur mit App“, „ab 6 Dosen“), prices.priceByBaseUnit, validFrom/validUntil
 // („2026-10-25T23:00:00.000+0000“), offerImages.url.thumbnail/normal/large (Ausschnitt aus dem Prospekt), categoryPaths.
 // robots.txt (31.10.2026): /Angebote/, /Geschaefte/ und /<Händler>/Sortiment/ erlaubt, crawl-delay 2 (abruf.pauseMsJeHost).
+// Ortsbezug (Roh-Lauf 43793492110, 16.11.2026): /Geschaefte/<Händler> zeigt immer den Standort Berlin 10178 (auch mit ?zip=
+// oder ?lat=&lng=); /<Stadt>/<Händler>/p-r<Händler-id> (z. B. /Doebeln/Kaufland/p-r2801) zeigt die Prospekte der Stadt
+// (eigene Prospekt-ids je Region) und die nächste Filiale. /<Stadt>/Angebote/<Begriff> und /<Stadt>/Geschaefte/... = 404.
 
 const NEXT = /<script[^>]*id="__NEXT_DATA__"[^>]*>([\s\S]+?)<\/script>/;
 
@@ -52,7 +55,21 @@ export function angeboteAus(pi) {
   return out;
 }
 
-/** HTML einer kaufDA-Seite -> { ort, plz, url, items[] } (wirft, wenn der Datenblock fehlt oder kaputt ist) */
+/**
+ * Nächste Filiale auf einer Orts-Händlerseite (/<Stadt>/<Händler>/p-r<id>, Roh-Lauf 43793492110 vom 16.11.2026):
+ * template.content.StoreInfobox = { header: "Nächste Filiale", storeInfo: { name, address, city: "04317 Leipzig" }, distance (km) }.
+ * Fehlt sie -> null.
+ */
+export function filialeAus(pi) {
+  const box = pi?.template?.content?.StoreInfobox;
+  const si = box?.storeInfo;
+  if (!si || typeof si !== 'object') return null;
+  const km = typeof box.distance === 'number' && Number.isFinite(box.distance) ? Math.round(box.distance * 10) / 10 : null;
+  const adresse = [si.address, si.city].filter(x => typeof x === 'string' && x.trim()).map(x => x.trim()).join(', ').slice(0, 80);
+  return adresse || km != null ? { adresse, km } : null;
+}
+
+/** HTML einer kaufDA-Seite -> { ort, plz, url, typ, filiale, items[] } (wirft, wenn der Datenblock fehlt oder kaputt ist) */
 export function leseKaufdaSeite(html) {
   const m = String(html || '').match(NEXT);
   if (!m) throw new Error('kaufDA: Datenblock __NEXT_DATA__ fehlt (Seite geändert?)');
@@ -60,5 +77,5 @@ export function leseKaufdaSeite(html) {
   try { d = JSON.parse(m[1]); } catch { throw new Error('kaufDA: Datenblock __NEXT_DATA__ nicht lesbar'); }
   const pi = d?.props?.pageProps?.pageInformation || {};
   const loc = pi.location || {};
-  return { ort: loc.cityDisplayName || loc.city || null, plz: loc.zip || null, url: typeof pi.url === 'string' ? pi.url : null, items: angeboteAus(pi) };
+  return { ort: loc.cityDisplayName || loc.city || null, plz: loc.zip || null, url: typeof pi.url === 'string' ? pi.url : null, typ: typeof pi.type === 'string' ? pi.type : null, filiale: filialeAus(pi), items: angeboteAus(pi) };
 }
