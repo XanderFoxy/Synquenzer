@@ -61,6 +61,10 @@ kürzere Auswertung beim ersten Öffnen.
   bytegleich zur bisherigen Auslieferung ist.)
 - Worker (Spektral zerlegen, Gesang-Analyse, Reinigen, Chor, G4, MIXA …) bauen ihren Text aus fn.toString() im Hauptskript:
   alle 24 ausführbaren Skripte + CSS sind bytegleich zur bisherigen Auslieferung (nur die 9 text/plain ändern sich) → unverändert.
+  **Berichtigt (Prüfung, Befund 2):** NICHT alle – drei Worker nehmen ihren Text aus Funktionen IM gekürzten Block sq-g9-src:
+  g9-Vorstufe (g9ErkMake.toString(), Quelle Zeile 6388), ASR-Worker (g9AsrWorkerMain, 6632, Modul-Worker) und KI1-Worker
+  (g9AsrWorkerMain + ki1WorkerMain, 98554). Ihr Text ist jetzt ohne Kommentare; Syntaxbaum gleich (Prüfer statisch.mjs), Start und
+  Ergebnis jetzt in test/lader.mjs geprüft (g9Plan = G9E.plan im Haupt-Faden, ASR/KI1 antworten) und vom Werkzeug bewacht (KOMM-P fnText).
 - Pflicht auf der Auslieferung: topdefs „Skripte 26, Namen 7988, doppelt 0, Syntaxfehler 0“; dupkeys „0 doppelte Schlüssel“;
   smoke „title SYNQUENZER errors []“; MS 2000 1×; '^  live: true,' 1×; VERSION '4.76.1'.
 - freigabe.sh (Kopie) ganzer Lauf auf rel-4761/index.html: **GRÜN** in 2 min 55 s unter Last (2 Läufe bytegleich, Pflicht Quelle + Auslieferung, Rauchtest); frei/index.html md5 dd5abfd2… = aus/index.html.
@@ -68,12 +72,20 @@ kürzere Auswertung beim ersten Öffnen.
 ## Offen
 1. Worklet-/Worker-Texte in Vorlagen-Zeichenketten bleiben wörtlich (ST_WK 3,6 K Kommentar-Zeichen, JAM2_PROC_SRC 1,0 K,
    MIXA_PROC_SRC 0,3 K, BM_WK im bm-Block; CSS-Vorlagen) – ≈ 2 KB gzip, eigenes kleines Paket (Vorlage neu escapen).
-2. sq-worklet-src weicht von der alten Notiz „Worklet-Texte bleiben unberührt“ ab – abgesichert durch Schutz + Nachrechnen +
-   golden bitgleich. Wer es nicht will: Eintrag aus KOMM_BLOECKE nehmen (Block bleibt dann bytegleich, Gewinn ≈ 48 KB statt 101 KB).
+2. Abweichung von OFFEN A8 „Worklet-Texte bleiben unberührt“: betrifft BEIDE Worklet-Module, sq-worklet-src (Klang-Worklet, auch
+   per Text gelesen) und sq-md-src (Trommel-Worklet „synq-md“, nur addModule) – Prüfung Befund 3. Abgesichert durch Schutz +
+   Nachrechnen + KOMM-P + golden bitgleich + lader.mjs. Wer es nicht will: Schalter `--worklets-unberuehrt` (beide Blöcke bleiben
+   bytegleich, Zahlen siehe Prüfung). Entscheidung gehört zur Auslieferungs-Freigabe.
 3. Nur Chromium geprüft; Safari/iPhone nach der ersten Auslieferung einmal Kaltstart + Klang ansehen.
-4. Neue Text-Zugriffe auf diese Blöcke (auch Fehlermeldungs-Strings in Anführungszeichen genau gleich dem Namen) lassen den Wächter
-   anschlagen – gewollt; dann Zugriff prüfen und `stellen` anpassen.
+4. Neue Text-Zugriffe: der Zähl-Wächter (`stellen`) merkt nur NEUE Stellen mit dem Block-Namen (auch Fehlermeldungs-Strings genau
+   gleich dem Namen). Eine neue Suche an einer BESTEHENDEN Zugriffs-Stelle merkte er nicht (Prüfung Befund 1) – dafür jetzt KOMM-P
+   (statisch, Such-Texte/Regex nachgerechnet) + lader.mjs in freigabe.sh (Laufzeit). Nicht erfasst bleiben: Block-Name dynamisch
+   zusammengesetzt (`'sq-' + x + '-src'`), Text über mehrere Funktionen/Objekte weitergereicht (über eine Ebene hinaus), Suche mit
+   einem erst zur Laufzeit gebauten Such-Text; Funktions-Text per `'' + fn` / `${fn}` statt toString/String.
 5. Fehler-Stapel aus diesen Blöcken: Zeilen bleiben gleich (Zeilenzahl erhalten), Spalten verschieben sich (Einrückung weg).
+6. Beobachtet (App, nicht KOMM): mkRender liefert unter Last ab und zu einen stillen Render – in Quelle, alter und neuer Auslieferung
+   gleich oft (Prüfer p3: 1/72, 4/72, 2/72). golden.mjs rendert stille Versuche jetzt neu und meldet die Zahl; Ursache (vermutlich
+   Worklet-Nachricht vor dem ersten Block im OfflineAudioContext) wäre ein eigenes kleines Paket.
 
 ## Anleitung: so nutzt freigabe.sh das Werkzeug
 - Sofort: `vx/komm/freigabe.sh rel-XXXX/index.html rel-XXXX/aus` (Kopie von perf2/freigabe.sh; nimmt `vx/komm/ausliefern.mjs` aus
