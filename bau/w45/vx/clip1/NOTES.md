@@ -81,3 +81,17 @@ clip1-test.mjs auf der Endfassung: **73/73 grün** (428×926, 926×428, 926×370
 - Drum-Schritt-Editor: „Ganze Töne“ nimmt für den neuen Clip nur die aktuelle Szene (für „Auf eigene Spur“ bedeutet es weiter: alle Szenen).
 - Guide-Eintrag („Wo finde ich …?“) für „Als neuer Clip“ nicht ergänzt; der vorhandene Eintrag „Noten auslagern“ führt zum selben Blatt.
 - Toast-Haken: die Zeile in toast() ist eine geänderte Bestandszeile (statt `acts = []`), ohne den Block verhält sie sich wie vorher.
+
+## Regression und Pflichtprüfungen (Endfassung md5 76557351b4b52697aa7844028006750b, 9 426 061 Byte, +12 284 gegenüber rel-4750)
+
+- topdefs: Skripte 26, Namen 7940, doppelt 0, Syntaxfehler 0 · dupkeys: 0 doppelte Schlüssel
+- grep 'MS 2000' = 1 · grep '^  live: true,' = 1 · VERSION '4.75.0'
+- Rauchtest (dirigent-test/smoke.mjs): errors [] (reg/smoke-final.png)
+- mtx3-test: 51/51
+- mtx3b-test: 87/87 (Endfassung, Last 3,9). Unter Last (Lastmittel 7–10, andere Läufe parallel) zweimal 86/87: nur
+  „Tastatur-Overdub auf HH ZU“ zählte 1–2 statt 3 Tastenschläge – reine Zeitfrage, die Basis rel-4750 lief dabei 87/87,
+  ein weiterer Lauf der Endfassung 87/87; CLIP1 berührt Tastatur/Aufnahme nicht.
+- mtx4-test: Endfassung 115/118, Basis rel-4750 im selben Zeitraum 114/118 – offen sind auf beiden nur Zeitmessungen
+  (Bild der Matrix ≤ 16 ms, kein Long Task > 50 ms bei 64 dichten Clips) unter Lastmittel ~10; alle Funktionsprüfungen grün.
+- clip0-test (Kopie in reg/clip0n): Umweg A weiterhin wie vorher (7 Tipps, „Neuer Clip“ + „Einfügen“, 3 Noten, 1 Takt);
+  das Auslagern-Blatt zeigt zusätzlich „Szene 2 … Szene 8“; Konsole 0 Fehler in allen 3 Größen.
