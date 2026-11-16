@@ -27571,7 +27571,7 @@ const LOGO_SVG='<svg role="img" aria-label="One Day in Rome" shape-rendering="ge
 
 
 
-const VERSION = '4.77.0';
+const VERSION = '4.78.0';
 const clamp=(v,a,b)=>(v<a?a:v>b?b:v);
 const isNum=v=>typeof v==='number'&&Number.isFinite(v);
 const deep=o=>(o==null?o:JSON.parse(JSON.stringify(o)));
@@ -55913,6 +55913,7 @@ E('stilklang','Stil-Klang: Sounddesign & Mischung','Song-Leiste › ⇋ REMIX �
 wegeGuide(UI1.ents);
 kf1Guide(UI1.ents);
 kf2Guide(UI1.ents);
+chbGuide(UI1.ents);
 spk1Guide(UI1.ents);
 if(typeof ki1Guide==='function')ki1Guide(UI1.ents);
 return UI1.ents;
@@ -72442,6 +72443,7 @@ h+=`<div class="g6pe-addrow"><button class="mbtn rb" data-pe="add"${G6PE.add?' a
 g6peDupHtml(a,c.voices.length>=G6PE_MAXV)+`<button class="mbtn rb" data-pe="x">OK</button></div>`;
 if(G6PE.add)h+=`<div class="g6pe-add pan-y">`+G6PE_ADD.map(([k,l])=>`<button class="mbtn rb" data-addr="${k}"${roles.has(k)?' disabled':''}>${esc(l)}</button>`).join('')+'</div>';
 h+=`<div class="small g6pe-st">${g6peStTxt(c,rd)}</div>`;
+h+=chbChorBtn();
 const sc=p.querySelector('.g6pe-lanes'),top=sc?sc.scrollTop:0;
 p.innerHTML=h;
 const sc2=p.querySelector('.g6pe-lanes');if(sc2)sc2.scrollTop=top;
@@ -72472,6 +72474,7 @@ const rec=p.querySelector('.g6rec');if(rec){rec.before(grid);}
 
 function g6peTap(b){
 if(b.dataset.ch1)return ch1Tap(b);
+if(b.dataset.chb)return chbTap(b);
 const X=g6peCur();if(!X)return false;const d=b.dataset,{r,st}=X;
 if(d.sty){
 if(G6PE.busy)return true;
@@ -76757,6 +76760,7 @@ const o=VA1.only;if(!o)return;
 for(let i=0;i<NT();i++){const A=AU.tracks[i];if(A&&A.cut&&!o.tracks.has(i)){try{A.cut.disconnect();}catch(e){}}}
 const s=o.vox==='lead'?-2:o.vox==='chor'?-1:null;
 if(s!=null){VA1.soloSet=s;G6.solo=s;}
+if(o.lane){VA1.soloSet=o.lane;G6.solo=o.lane;}
 }
 
 function va1SkipLead(o){return!!(VA1.only&&VA1.only.vox==='chor'&&!(o&&o.aud&&o.aud.chor));}
@@ -76835,6 +76839,7 @@ return new Blob([...parts,...central,new Uint8Array(eo.buffer)],{type:'applicati
 const VA1_KIND={song:'Ganzer Song',stems:'Einzelspuren',lead:'Nur Gesang',chor:'Nur Chor'};
 
 async function va1Run(kind){
+if(kind==='chorblk')return chbRun();
 if(!VA1_KIND[kind])return null;
 if(va1Busy()){toast('Läuft schon – bitte warten');return null;}
 if(!S.song||!S.song.bars){toast('Noch kein Song – erst ● SONG');return null;}
@@ -77129,6 +77134,7 @@ else if(X)h+=`<div class="va1job" role="status"><span class="va1jt">${esc('Ferti
 else h+=`<div class="va1job" role="status"><span class="va1jt">${esc(busy?'Gerade läuft eine andere Berechnung …':'Wähle, was du exportieren willst. Audio wird wie das Video offline berechnet.')}</span></div>`;
 h+='<h5>Audio · WAV</h5><div class="va1g">'+B('song','Ganzer Song','WAV · Stereo',song&&!busy)+B('stems','Einzelspuren','je Spur ein WAV · ZIP',song&&!busy)+
 B('lead','Nur Gesang','Lead · WAV',song&&hasV&&!busy)+B('chor','Nur Chor','Chöre · WAV',song&&hasC&&!busy)+'</div>';
+h+=chbVa1Html(song,hasC,busy);
 if(!song)h+='<div class="small">Audio und Video brauchen einen Song – erst ● SONG.</div>';
 const tg=va1MidiTarget(),mt=va1MidiTracks();
 h+='<h5>MIDI</h5><div class="va1g">'+B('midiall','Ganzer Song','alle Spuren · .mid',song&&!busy)+
@@ -77159,6 +77165,7 @@ return p;
 }
 function va1Tap(b){
 if(wegeVa1Tap(b))return;
+if(chbVa1Tap(b))return;
 const a=b.dataset.va;
 if(a==='cancel'){if(VA1.job)VV.cancel=true;return;}
 if(a==='share'){va1Share();return;}
@@ -77195,6 +77202,249 @@ va1VideoB64:async()=>(VV.res&&VV.res.blob?va1B64(VV.res.blob):null),
 va1HasSound:async()=>(VV.res&&VV.res.blob?va1HasSound(VV.res.blob):null),
 };
 }
+
+
+
+
+
+
+
+
+
+
+
+const CHB={css:false,last:null};
+const CHB_ON=-50,CHB_REL=-35,CHB_SIL=-60,CHB_DROP=-45,CHB_FI=0.002,CHB_FO=0.010,CHB_TAIL=10,CHB_TOL=3;
+const chbLin=db=>Math.pow(10,db/20);
+const chbDb=v=>(v>0?+(20*Math.log10(v)).toFixed(1):-200);
+VA1_KIND.chorblk='Chor als Einzelstücke';
+const chbJe=()=>{let v=null;try{v=uiPrefs().chbJe;}catch(e){}return v==='alle'?'alle':'stimme';};
+
+function chbGrid(r){
+const lead=r.lead||0,b0=barBeat(r.a||0),sp=60/r.bpm,out=[];
+for(let b=0;b<100000;b++){const s=Math.round((lead+(barBeat(b)-b0)*sp)*r.sr);out.push(s);if(s>=r.n&&b>=1)break;}
+return out;
+}
+
+
+function chbFind(ch,n,sr,grid){
+const L=ch[0],R=ch[1]||ch[0],blk=Math.max(1,Math.round(0.005*sr)),nb=Math.ceil(n/blk),r5=new Float32Array(nb);
+for(let k=0;k<nb;k++){
+const a=k*blk,e=Math.min(n,a+blk);let sl=0,sr2=0;
+for(let i=a;i<e;i++){const x=L[i],y=R[i];sl+=x*x;sr2+=y*y;}
+r5[k]=Math.sqrt(Math.max(sl,sr2)/Math.max(1,e-a));
+}
+const nf=Math.ceil(nb/10),r50=new Float32Array(nf);let top=0;
+for(let f=0;f<nf;f++){let s=0,c=0;for(let k=f*10;k<Math.min(nb,f*10+10);k++){s+=r5[k]*r5[k];c++;}r50[f]=Math.sqrt(s/Math.max(1,c));if(r50[f]>top)top=r50[f];}
+if(!(top>0)||!grid.length)return[];
+const on=Math.min(chbLin(CHB_ON),top*chbLin(CHB_REL)),sil=chbLin(CHB_SIL),tailB=Math.round(CHB_TAIL/0.005),G=grid.length;
+const loud=i=>(L[i]<0?-L[i]:L[i])>=sil||(R[i]<0?-R[i]:R[i])>=sil;
+const floorBar=s=>{let lo=0,hi=G-1;if(s<grid[0])return-1;while(lo<hi){const m=(lo+hi+1)>>1;if(grid[m]<=s)lo=m;else hi=m-1;}return lo;};
+const ceilBar=s=>{let lo=0,hi=G-1;if(s>grid[G-1])return G-1;while(lo<hi){const m=(lo+hi)>>1;if(grid[m]>=s)hi=m;else lo=m+1;}return lo;};
+const raw=[];
+for(let f=0;f<nf;){
+if(r50[f]<=on){f++;continue;}
+let g=f,mx=0;while(g<nf&&r50[g]>on){if(r50[g]>mx)mx=r50[g];g++;}
+
+let k=f*10;while(k<Math.min(nb,g*10)-1&&r5[k]<sil)k++;
+while(k>0&&r5[k-1]>=sil)k--;
+let sA=k*blk;if(k>0){const a0=(k-1)*blk;for(let i=a0;i<k*blk;i++)if(loud(i)){sA=i;break;}}
+for(let i=sA,e=Math.min(n,(k+1)*blk);i<e;i++){if(loud(i)){sA=i;break;}}
+
+let q=Math.min(nb,g*10),quiet=0,kEnd=nb;
+for(;q<nb&&q<g*10+tailB;q++){if(r5[q]<sil){if(++quiet>=10){kEnd=q-9;break;}}else quiet=0;}
+if(q>=g*10+tailB&&kEnd===nb)kEnd=Math.min(nb,g*10+tailB);
+let sE=Math.min(n,kEnd*blk);for(let i=sE-1,lo=Math.max(0,sE-blk);i>=lo;i--){if(loud(i)){sE=i+1;break;}}
+let a=floorBar(sA),pre=false;
+if(a<0){a=0;pre=true;}
+else if(a+1<G&&grid[a+1]-sA<=CHB_TOL)a++;
+let b=Math.max(a+1,ceilBar(Math.max(sE,sA+1)));
+if(b>=G)b=G-1;
+if(b>a)raw.push({a,b,mx,pre});
+f=Math.max(g,Math.ceil(kEnd/10));
+}
+raw.sort((x,y)=>x.a-y.a);
+const out=[];
+for(const x of raw){
+const c=out[out.length-1];
+if(c&&x.a<=c.b){c.b=Math.max(c.b,x.b);c.mx=Math.max(c.mx,x.mx);c.pre=c.pre||x.pre;}
+else out.push(Object.assign({},x));
+}
+return out.filter(x=>x.mx>=chbLin(CHB_DROP)).map(x=>({a:x.a,b:x.b,s0:grid[x.a],s1:grid[x.b],rmsDb:chbDb(x.mx),pre:x.pre}));
+}
+
+async function chbWav24(ch,n,s0,s1,sr,seed){
+const len=Math.max(0,s1-s0),out=new Uint8Array(44+len*6),dv=new DataView(out.buffer),w=(o,s)=>{for(let i=0;i<s.length;i++)out[o+i]=s.charCodeAt(i);};
+w(0,'RIFF');dv.setUint32(4,36+len*6,true);w(8,'WAVE');w(12,'fmt ');dv.setUint32(16,16,true);dv.setUint16(20,1,true);dv.setUint16(22,2,true);
+dv.setUint32(24,sr,true);dv.setUint32(28,sr*6,true);dv.setUint16(32,6,true);dv.setUint16(34,24,true);w(36,'data');dv.setUint32(40,len*6,true);
+const fi=Math.min(len,Math.max(1,Math.round(CHB_FI*sr))),fo=Math.min(len,Math.max(1,Math.round(CHB_FO*sr))),F=8388607;
+let z=(seed>>>0)||0x9E3779B9,pk=0,o=44;
+const rnd=()=>{z^=z<<13;z>>>=0;z^=z>>>17;z^=z<<5;z>>>=0;return z/4294967296;};
+const put=x=>{let v=0;if(x!==0){v=Math.round(x*F+rnd()-rnd());v=v>F?F:v<-F-1?-F-1:v;}out[o]=v&255;out[o+1]=(v>>8)&255;out[o+2]=(v>>16)&255;o+=3;};
+for(let j=0;j<len;j+=131072){
+const e=Math.min(len,j+131072);
+for(let i=j;i<e;i++){
+const s=s0+i,g=(i<fi?i/fi:1)*(i>=len-fo?(len-1-i)/fo:1);
+let l=s>=0&&s<n?ch[0][s]:0,r=s>=0&&s<n?(ch[1]||ch[0])[s]:0;
+l*=g;r*=g;const a=Math.max(l<0?-l:l,r<0?-r:r);if(a>pk)pk=a;
+put(l);put(r);
+}
+if(e<len&&typeof vvYield==='function'){await vvYield();if(VV.cancel)throw new Error('abgebrochen');}
+}
+return{u8:out,pk};
+}
+const chbDigits=bars=>Math.max(2,String(Math.max(1,bars|0)).length);
+const chbName=(voice,a,digits)=>'Chor-'+voice+'-Takt'+String(a+1).padStart(digits,'0')+'.wav';
+
+function chbVoices(st,je){
+const all=[{id:null,name:'alle zusammen',safe:'Alle'}];
+if(je==='alle')return all;
+const tr=S.tracks[st],lanes=tr&&tr.chor&&Array.isArray(tr.chor.lanes)?tr.chor.lanes:[];
+const used=lanes.filter(l=>!l.mute&&(typeof g6peLaneUsed!=='function'||g6peLaneUsed(st,l.id)));
+if(!used.length)return all;
+const nm=l=>{const v=va1Safe(l.name||l.id).replace(/^Chor-(?=.)/i,'');return v==='spur'||/^chor$/i.test(v)?va1Safe(l.id):v;};
+const out=used.map(l=>({id:l.id,name:String(l.name||l.id),safe:nm(l)}));
+for(const v of out)if(out.filter(x=>x.safe===v.safe).length>1)v.dup=true;
+for(const v of out)if(v.dup)v.safe=va1Safe(v.safe+'-'+v.id);
+return out;
+}
+
+function chbTeil(a){
+const ms=S.song&&Array.isArray(S.song.marks)?S.song.marks:[],m=ms.find(x=>a>=x.a&&a<x.a+x.len);if(!m)return'';
+const q=!m.name&&/^S(\d+)$/.exec(m.part||''),sc=q&&S.scenes[+q[1]-1];
+return String(sc&&sc.name?sc.name:markLabel(m)||'');
+}
+const chbSec=v=>v.toFixed(3).replace('.',',');
+function chbText(o){
+const L=['Chor als Einzelstücke – '+(S.name||'Song'),'Tempo '+String(+(+o.bpm).toFixed(2)).replace('.',',')+' BPM · Taktart '+o.ts+' · '+o.sr+' Hz · WAV 24 Bit Stereo',
+(o.je==='alle'?'Alle Chor-Stimmen zusammen':'Je Chor-Stimme eigene Dateien')+' · nur die Stellen mit Ton · Anfang und Ende auf einem Taktstrich (Takt 1 = Songanfang)','',
+'Datei · Takt von–bis · Länge · Sekunden ab Takt 1 · Teil · Stimme'];
+for(const x of o.list)L.push(x.datei+' · Takt '+(x.a+1)+'–'+x.b+' · '+(x.b-x.a)+(x.b-x.a===1?' Takt':' Takte')+' ('+chbSec(x.len)+' s) · '+chbSec(x.t)+' s · '+(x.teil||'–')+' · '+x.name);
+const notes=[];
+if(o.list.some(x=>x.pre))notes.push('Anfang vor Takt 1 gekürzt ('+o.list.filter(x=>x.pre).map(x=>x.datei).join(', ')+').');
+if(o.skipped.length)notes.push('Ohne Ton, keine Datei: '+o.skipped.join(', ')+'.');
+if(notes.length)L.push('','Hinweise:',...notes);
+L.push('','So kommen die Stücke in deine DAW: das ZIP in der Dateien-App antippen – es wird entpackt. In deiner DAW die WAV-Dateien importieren.',
+'Fragt die DAW wegen einer anderen Abtastrate, „umwandeln“ (Ja) wählen.',
+'In deiner DAW: Datei in eine Audiospur ziehen. Raster (Snap) an. Anfang genau auf den Takt aus dem Dateinamen legen.',
+'Tempo und Taktart im Projekt müssen wie oben sein; der Song beginnt bei Takt 1.','');
+return L.join('\r\n');
+}
+
+async function chbRun(je){
+je=je==='alle'||je==='stimme'?je:chbJe();
+if(va1Busy()){toast('Läuft schon – bitte warten');return null;}
+if(!S.song||!S.song.bars){toast('Noch kein Song – erst ● SONG');return null;}
+if(rec.state!=='off'||R.songRec){toast('Erst Aufnahme beenden');return null;}
+if(!va1HasChor()){toast('Kein Chor im Song');return null;}
+const st=stimmeT(),voices=chbVoices(st,je),digits=chbDigits(S.song.bars);
+VA1.job={kind:'chorblk',k:0,n:voices.length,p:0,name:''};VA1.res=null;VA1.pk=-1;clearTimeout(VA1.ttl);va1Paint();
+{const P=va1Pop();if(P&&P.scrollTop>0)P.scrollTop=0;}
+const keepLast=VV.last,keepMtr=VV.noMtr,T0=performance.now();VV.noMtr=true;
+try{
+const files=[],list=[],skipped=[],names=new Set();let sr=0,bpm=S.bpm;
+for(let k=0;k<voices.length;k++){
+const v=voices[k];Object.assign(VA1.job,{k,name:v.name});va1Prog(k/voices.length,true);
+let r=await va1Pass(v.id?{tracks:new Set([st]),vox:'chor',lane:v.id}:{tracks:new Set([st]),vox:'chor'},false,p=>va1Prog((k+p)/voices.length));
+sr=r.sr;bpm=r.bpm;
+const grid=chbGrid(r),blocks=vvLevelDb(r)<VV_SILENT?[]:chbFind(r.ch,r.n,r.sr,grid);
+if(!blocks.length){skipped.push(v.name);r=null;continue;}
+for(const B of blocks){
+let nm=chbName(v.safe,B.a,digits);if(names.has(nm))nm=nm.replace(/\.wav$/,'-'+(files.length+1)+'.wav');names.add(nm);
+let W=await chbWav24(r.ch,r.n,B.s0,B.s1,r.sr,0x51A7+files.length);
+const crc=await va1Crc(W.u8),size=W.u8.length;
+files.push({name:nm,blob:new Blob([W.u8],{type:'audio/wav'}),size,crc});
+list.push({datei:nm,a:B.a,b:B.b,lane:v.id,name:v.name,peakDb:chbDb(W.pk),rmsDb:B.rmsDb,s0:B.s0,s1:B.s1,t:(B.s0-grid[0])/r.sr,len:(B.s1-B.s0)/r.sr,teil:chbTeil(B.a),pre:B.pre,sr:r.sr});
+W=null;
+}
+r=null;
+}
+if(!files.length){toast('Im Song ist kein Chor zu hören');return null;}
+const ts=S.ts||'4/4',txt=new TextEncoder().encode(chbText({list,skipped,je,sr,bpm,ts}));
+files.push({name:'Chor-Stuecke.txt',blob:new Blob([txt],{type:'text/plain'}),size:txt.length,crc:await va1Crc(txt)});
+const z=va1ZipBlob(files),nW=files.length-1;
+VA1.res={base:'Chor-Stuecke-'+va1Safe(S.name||'Song'),data:z,kind:'zip',label:'Chor als Einzelstücke ('+nW+' WAV)',files:files.length,names:files.map(f=>f.name),skipped,size:z.size};
+VA1.res.ms=Math.round(performance.now()-T0);
+CHB.last={je,sr,bpm,ts,digits,list,skipped,ms:VA1.res.ms};
+VA1.ttl=setTimeout(()=>{VA1.res=null;va1Paint();},10*60000);
+haptic('pop');
+toast('Fertig: '+VA1.res.label+(skipped.length?' · ohne Ton: '+skipped.join(', '):''),{label:'Teilen',fn:()=>va1Share()});
+return VA1.res;
+}catch(e){
+const m=String(e&&e.message||e);
+if(m==='abgebrochen')toast('Export abgebrochen');else{if(!/Song|Läuft|Aufnahme|Wiedergabe/.test(m))logErr(e);toast('Export: '+m);}
+return null;
+}finally{VA1.job=null;VV.last=keepLast;VV.noMtr=keepMtr;VV.cancel=false;va1Paint();}
+}
+
+function chbCss(){
+if(CHB.css)return;CHB.css=true;
+const s=document.createElement('style');s.id='chbCss';
+s.textContent=['.va1 .chb-row{margin-top:6px}.va1 .chb-row .mbtn{grid-column:1/-1}',
+'.va1 .chb-je .mbtn[aria-pressed="true"]{box-shadow:inset 0 0 0 2px var(--amber,#f7c948)}',
+'.g6pe .chb-g6{display:block}.g6pe .chb-g6 .mbtn{width:100%;min-height:44px}',
+'.chbh{width:min(440px,calc(100vw - 16px));box-sizing:border-box}.chbh ol{margin:6px 0 10px;padding-left:22px;font:14px/1.45 var(--font-ui);color:var(--text)}',
+'.chbh li{margin:0 0 8px}.chbh p{margin:4px 0 8px;font:13px/1.4 var(--font-ui);color:var(--text-dim)}.chbh .mbtn{min-height:44px;margin:0}',
+'.chbh .va1tr{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px}'].join('\n');
+document.head.appendChild(s);
+}
+function chbVa1Html(song,hasC,busy){
+chbCss();
+const je=chbJe(),ok=song&&hasC&&!busy;
+const T=(v,t)=>`<button class="mbtn rb" data-va="chbje" data-v="${v}" aria-pressed="${je===v}"${busy?' disabled':''}>${esc(t)}</button>`;
+return'<div class="va1g chb-row">'+`<button class="mbtn rb" data-va="chorblk"${ok?'':' disabled'}><b>${esc(VA1_KIND.chorblk)}</b><small>${esc('nur die Stellen mit Ton · am Takt geschnitten · Takt im Dateinamen · ZIP')}</small></button></div>`+
+'<div class="va1tr chb-je" role="group" aria-label="Chor als Einzelstücke">'+T('stimme','je Stimme')+T('alle','alle zusammen')+
+'<button class="mbtn rb" data-va="chbhelp">Gesang aus deiner DAW holen</button></div>';
+}
+function chbVa1Tap(b){
+const a=b.dataset.va;
+if(a==='chbje'){setUiPref('chbJe',b.dataset.v==='alle'?'alle':'stimme');va1Paint();return true;}
+if(a==='chbhelp'){closePop();chbHelp();return true;}
+return false;
+}
+
+function chbOpen(){
+const p=va1Sheet();
+requestAnimationFrame(()=>{const h=p&&p.querySelector('.chb-row');if(h&&p.isConnected)p.scrollTop=Math.max(0,h.offsetTop-60);});
+return p;
+}
+const chbChorBtn=()=>{chbCss();return'<div class="g6pe-addrow chb-g6"><button class="mbtn rb" data-chb="open">Als Einzelstücke speichern</button></div>';};
+function chbTap(b){if(b.dataset.chb==='open'){closePop();chbOpen();}return true;}
+const chbImpHtml=()=>'<div class="imp1r"><button class="mbtn rb" data-i="chbhelp">Gesang aus deiner DAW holen</button></div>';
+const CHB_HELP=[
+'Cubasis › <b>MediaBay</b> › deinen Song antippen › <b>Duplicate</b>, die Kopie öffnen.',
+'Lineal oben: linken <b>Locator auf Takt 1</b>, rechten <b>2 Takte hinter das Songende</b>.',
+'<b>MediaBay › Mixdown › Create Mixdown › WAV.</b> Häkchen: <b>Create separate files for tracks</b> an, <b>Exclude all effects (dry)</b> an, <b>Mixdown between locators</b> an, <b>Normalize</b> aus, <b>Include effect tail</b> aus, <b>Mono downmix</b> aus. Starten. Tipp: Sind alle anderen Spuren stumm, entsteht nur die Gesangsdatei.',
+'Oben auf die <b>Tempo-Anzeige</b> tippen und die Zahl merken (zum Beispiel 118.0).',
+'Hier: <b>Neu ▾</b> › <b>Leer (Init)</b> › <b>Audio/MIDI importieren</b> › die Datei deiner Gesangsspur wählen › Tempo eintragen › <b>Als Gesang</b>.',
+'Chor erzeugen › Export › <b>Chor als Einzelstücke</b>. Jede Datei trägt den Takt im Namen. Dort legst du sie mit Raster genau an diesen Takt.'];
+function chbHelp(){
+chbCss();
+return openPop(EL.top,q=>{
+q.classList.add('chbh');guardTouch(q);
+const bd=el('div','chbh-bd');
+bd.innerHTML='<p>Dein Original bleibt unberührt – wir arbeiten mit einer Kopie.</p><ol>'+CHB_HELP.map(t=>'<li>'+t+'</li>').join('')+'</ol>'+
+'<div class="va1tr"><button class="mbtn rb" data-chbh="imp">Audio/MIDI importieren</button><button class="mbtn rb go" data-chbh="ok">OK</button></div>';
+q.appendChild(bd);
+onTap(q,b=>{const a=b.dataset.chbh;closePop();if(a==='imp')imp1Sheet();},'button[data-chbh]');
+},{name:'chbhelp',sheet:{title:()=>'Gesang aus Cubasis holen'}});
+}
+function chbGuide(ents){
+try{
+const E=(id,n,w,d,s,go,q)=>({id,n,w,d,s,go,q});
+ents.push(
+E('chbstk','Chor als Einzelstücke','Menü › Export › Audio · WAV (oder Chor-Blatt › Als Einzelstücke speichern)','Je Chor-Stimme nur die Stellen mit Ton als WAV, am Takt geschnitten, Takt im Dateinamen – in deiner DAW mit Raster an diesen Takt legen.','chor einzeln stuecke bloecke takt export wav zip stimmen daw',()=>{ui1Home();chbOpen();return true;},'.chb-row .mbtn'),
+E('chbhelp','Gesang aus deiner DAW holen','Menü › Export › Gesang aus deiner DAW holen','In 6 Schritten: Gesangsspur trocken als WAV aus deiner DAW, Tempo merken, hier als Gesang laden, Chor erzeugen, als Einzelstücke zurück.','gesang importieren daw mixdown tempo vocals chor zurueck',()=>{ui1Home();chbHelp();return true;},'.chbh ol'));
+}catch(e){logErr(e);}
+}
+
+const CHB_API={
+chbExport:async je=>{const r=await chbRun(je);return r?{base:r.base,label:r.label,files:r.files,names:r.names.slice(),skipped:r.skipped.slice(),size:r.size,ms:r.ms,last:JSON.parse(JSON.stringify(CHB.last))}:null;},
+chorBlocks:async o=>{const r=await chbRun(o&&o.je);return r&&CHB.last?CHB.last.list.map(x=>({datei:x.datei,a:x.a,b:x.b,lane:x.lane,name:x.name,peakDb:x.peakDb,s0:x.s0,s1:x.s1})):null;},
+chbInfo:()=>({je:chbJe(),last:CHB.last?JSON.parse(JSON.stringify(CHB.last)):null,voices:stimmeT()>=0?chbVoices(stimmeT(),chbJe()):[]}),
+chbFind:(L,R,sr,grid)=>chbFind([Float32Array.from(L),Float32Array.from(R||L)],L.length,sr,grid),
+chbOpen:()=>!!chbOpen(),chbHelp:()=>!!chbHelp()
+};
 
 
 
@@ -85670,6 +85920,7 @@ Object.assign(SYNQUENZER,vv4bdApi());
 Object.assign(SYNQUENZER,SX126_API);
 Object.assign(SYNQUENZER,vk2Api());
 Object.assign(SYNQUENZER,va1Api());
+Object.assign(SYNQUENZER,CHB_API);
 Object.assign(SYNQUENZER,vr1Api());
 
 function v6aSetState(t,s,st){
@@ -111298,6 +111549,7 @@ h+=`<div class="imp1st${c&&c.st==='fehler'?' warn':''}" role="status">${esc(st)}
 if(c&&c.st==='analyse')h+=`<div class="imp1bar"><i style="transform:scaleX(${(c.p||0).toFixed(3)})"></i></div>`;
 h+=`<div class="imp1r"><span class="lbl">Tempo bekannt</span><input class="imp1in imp1bpmin" type="text" inputmode="decimal" placeholder="—" value="${esc(kn)}" aria-label="Tempo bekannt in BPM"><span class="lbl">BPM</span>`+
 B('pick','Datei wählen',null,!(c&&(c.st==='lesen'||c.st==='analyse')),'go')+(c&&c.x&&c.st!=='analyse'?B('again','Erkennen'):'')+'</div>';
+h+=chbImpHtml();
 if(!c||c.st!=='fertig')return h;
 const G=imp1Geo(c),P=imp1Parts(c),r=c.r;
 if(r.frage){
@@ -111342,6 +111594,7 @@ return p;
 }
 function imp1Tap(b){
 const a=b.dataset.i,c=IMP1.cur;
+if(a==='chbhelp'){closePop();chbHelp();return;}
 if(a==='pick'){IMP1.known=imp1Known();imp1Pick(null);return;}
 if(!c||!c.x)return;
 if(a==='again'){c.known=IMP1.known=imp1Known();c.st='analyse';c.p=0;imp1Paint();imp1Run(c);return;}
