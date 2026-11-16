@@ -17,3 +17,4 @@
 00:25 Nachbesserung eingebaut (B1 Fokus 1,3×, B3 Pack+Zähler, B4 Auftakt, B5 Kopf, B7 Status, F selHit). Last 1.55 3.36 4.74
 00:29 Nachtest 428 11/0, Auftakt 4/0; gestartet: Nachtest quer, teil1-test, spk11, spk11b. Last 2.32 2.82 4.28
 00:30 Befund aus dem Nachtest: Kopf-Span quer wieder sichtbar (display:flex schlug display:none) → quer ausgeblendet; Läufe neu gestartet (Nachtest quer, teil1-test, spk11). Last 9.51 5.89 5.26
+00:31 Nachtest quer 22/0 (Endfassung 7d47c214); spk11b gestartet. Last 10.31 6.96 5.68

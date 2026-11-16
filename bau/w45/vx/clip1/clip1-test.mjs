@@ -117,7 +117,7 @@ for (const [W, H] of VIEWS) {
   await tap(await at(() => [...UI.pop.el.querySelectorAll('button')].find(x => /Nur diese Schritte/.test(x.textContent))));
   for (const lab of ['1', '4', '5', '8']) await tap(await at(l => [...UI.pop.el.querySelectorAll('.mtx3b-st .mbtn')].find(x => x.textContent.trim() === l), lab));
   const D8a = await p.evaluate(() => { const P = UI.pop.el, bs = [...P.querySelectorAll('[data-m3b="clip"]')]; return {sub: [...P.querySelectorAll('.clip1-sec .mtx3-sub')].map(x => x.textContent), n: bs.length, minW: Math.min(...bs.map(x => x.getBoundingClientRect().width)), minH: Math.min(...bs.map(x => x.getBoundingClientRect().height)), jeZeile: bs.length ? bs.filter(x => Math.round(x.getBoundingClientRect().top) === Math.round(bs[0].getBoundingClientRect().top)).length : 0, on: [...P.querySelectorAll('.mtx3b-st .mbtn.on')].map(x => x.textContent.trim())}; });
-  ok(T('C8 Drum-Blatt: Abschnitt „Als neuer Clip · DRUMS“, Knöpfe = freie Szenen, ≥ 44 px'), D8a.sub.some(x => x === 'Als neuer Clip · DRUMS · aus Szene 1') && D8a.n === d0.free.length && D8a.minW >= 44 && D8a.minH >= 44 && D8a.jeZeile <= (W < H ? 4 : 8) && D8a.on.join() === '2,3,6,7', D8a);
+  ok(T('C8 Drum-Blatt: Abschnitt „Als neuer Clip · DRUMS“, Knöpfe = freie Szenen, ≥ 44 px'), D8a.sub.some(x => x.toUpperCase() === 'ALS NEUER CLIP · DRUMS · AUS SZENE 1') && D8a.n === d0.free.length && D8a.minW >= 44 && D8a.minH >= 44 && D8a.jeZeile <= (W < H ? 4 : 8) && D8a.on.join() === '2,3,6,7', D8a);
   await at(() => UI.pop.el.querySelector('[data-m3b="clip"]'));
   await shot('c6-drum-blatt-als-neuer-clip');
   const x8 = d0.free[0];
@@ -196,7 +196,7 @@ for (const [W, H] of VIEWS) {
   await tap(await at(() => UI.pop.el.querySelector('[data-m3b="clip"]')));
   const P3 = await p.evaluate(() => { const t = document.getElementById('toast'); return {toast: t && t.classList.contains('show') ? t.textContent.replace(/\s+/g, ' ').trim() : null, n: S.tracks[DRUM_T].clips.filter(Boolean).length, u: UNDO.length}; });
   log(T('P3.drum'), {P3a, P3});
-  ok(T('P3 Abschnitt heißt „Als neuer Clip · DRUMS · aus Szene 1“'), P3a.sub.includes('Als neuer Clip · DRUMS · aus Szene 1'), P3a.sub);
+  ok(T('P3 Abschnitt heißt „Als neuer Clip · DRUMS · aus Szene 1“'), P3a.sub.some(x => x.toUpperCase() === 'ALS NEUER CLIP · DRUMS · AUS SZENE 1'), P3a.sub);
   ok(T('P3 CLAP gewählt, Ganze Töne → Meldung „CLAP spielt in Szene 1 nicht“, kein Clip, kein ↶'), P3a.on.includes('clap') && P3a.modus === 'all' && /CLAP spielt in Szene 1 nicht/i.test(P3.toast || '') && P3.n === p3n.n && P3.u === p3n.u, {on: P3a.on, toast: P3.toast});
   if (W === 428) await shot('c9-drum-meldung');
   await p.evaluate(() => { try { closePop(); hideToast(); closeEditor(); } catch (e) {} }); await sleep(300);
@@ -204,10 +204,10 @@ for (const [W, H] of VIEWS) {
   const P4 = await p.evaluate(() => { const c = S.tracks[0].clips[0]; c.len = 4; c.notes = []; for (let k = 0; k < 8; k++) c.notes.push({t: k, d: .5, n: 60, v: .8}); clipChanged(0, 0);
     return {a: SYNQUENZER.ui1.search('neuer Clip').map(e => e.id).slice(0, 3), b: SYNQUENZER.ui1.search('Clip aus Auswahl').map(e => e.id).slice(0, 3), c: SYNQUENZER.ui1.search('auslagern').map(e => e.id).slice(0, 4), e: SYNQUENZER.ui1.entries().find(e => e.id === 'clip1new'), j: SYNQUENZER.ui1.jump('clip1new')}; });
   await sleep(1200);
-  const P4j = await p.evaluate(() => ({j: SYNQUENZER.ui1.lastJump(), ed: R.editor}));
+  const P4j = await p.evaluate(() => { const b = ED.roll && ED.roll.el.acts.querySelector('.mtx3rb'), r = b ? b.getBoundingClientRect() : null; return {j: SYNQUENZER.ui1.lastJump(), ed: R.editor, knopf: b ? {x: Math.round(r.left), y: Math.round(r.top), txt: b.textContent.trim()} : null}; });
   log(T('P4.guide'), {P4, P4j});
   ok(T('P4 Suche „neuer Clip“ und „Clip aus Auswahl“: erster Treffer „Auswahl als neuer Clip“'), P4.a[0] === 'clip1new' && P4.b[0] === 'clip1new' && P4.c.includes('clip1new') && P4.c.includes('mtx3out'), {a: P4.a, b: P4.b, c: P4.c});
-  ok(T('P4 „Zeig es mir“ öffnet den Noten-Editor und zeigt [Auslagern ▾]'), P4j.j && P4j.j.ok && P4j.j.target && P4j.ed === 'roll' && /Auslagern/.test(P4j.j.txt || ''), P4j);
+  ok(T('P4 „Zeig es mir“ öffnet den Noten-Editor und zeigt [Auslagern ▾]'), P4j.j && P4j.j.ok && P4j.j.target && P4j.ed === 'roll' && P4j.knopf && /Auslagern/.test(P4j.knopf.txt) && P4j.j.at && P4j.j.at.x === P4j.knopf.x && P4j.j.at.y === P4j.knopf.y, P4j);
   await p.evaluate(() => { try { closeRoll(); } catch (e) {} }); await sleep(200);
   ok(T('C9 Konsole 0 Fehler'), errs.length === 0, errs.slice(0, 5));
   await ctx.close();
