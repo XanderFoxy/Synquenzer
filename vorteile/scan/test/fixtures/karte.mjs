@@ -3,6 +3,8 @@
 // Such-Fixtures (Therme, MicroFreak, Prämien, iTunes) stehen jetzt bei der Gruppe, die diese Deals liefert.
 export const FIXTURE_KARTE = [
   // Modul essen (16.11.2026): eine gekürzte, ausgedachte Overpass-Antwort (Lokale um Döbeln + Ketten)
+  // Modul filialen (16.11.2026): ausgedachte Overpass-Antwort (Märkte um Döbeln + Fallen: Scottie-Netto, ALDI SÜD, REWE To Go)
+  ['brand%3Awikidata', 'overpass-filialen.json'],
   ['overpass-api.de/api/interpreter', 'overpass-essen.json'],
   // Modul knaller (16.11.2026): gekürzte kaufDA-Händlerseiten (echte Angebote aus roh-daten 31.10./08.11.2026, nur
   // __NEXT_DATA__ mit gekürzten Feldern); Chemnitz nur für Netto, sonst eine Stadtseite ohne Angebote des Markts -> bundesweit

@@ -21,6 +21,7 @@ const FOTOS = join(process.env.MV_SHOTS || join(tmpdir(), 'mein-vorteil-shots'),
 const JETZT = '2026-11-10T11:00:00Z'; // Di 10.11.2026, 12:00 Berliner Zeit; Daten von 10:05
 const JETZT_DEALS = '2026-10-31T16:35:00Z'; // Stand der Vertrags-Daten (Deals mit Snack-Bildern)
 const PFAD = 'vorteile-daten/vorteile/data/knaller.json';
+const FIL_PFAD = 'vorteile-daten/vorteile/data/filialen.json';
 const KNALLER = JSON.parse(readFileSync(join(FIX, 'knaller.json'), 'utf8'));
 const plain = x => JSON.parse(JSON.stringify(x));
 const nbsp = s => s.replace(/[  ]/g, ' ');
@@ -147,7 +148,7 @@ test('Haken: Leiste (Woche nach Deals), eigene Seite, Skript erst beim Öffnen, 
   assert.match(html, /status\?\.knaller\?\.kurz/);
   assert.match(html, /<a href="#woche" data-sprung="woche">Wochen-Knaller je Markt ab 30 % ›<\/a>/, 'Link aus Deals');
   const sw = readFileSync(join(MV, 'sw.js'), 'utf8');
-  assert.match(sw, /const CACHE = 'mein-vorteil-5'/);
+  assert.match(sw, /const CACHE = 'mein-vorteil-6'/);
   assert.match(sw, /rest === 'woche\.js'/);
   assert.match(sw, /'essen\.js', 'woche\.js'/);
   assert.doesNotMatch(sw, /knaller\.json'/, 'Daten nicht im Worker');
@@ -204,17 +205,19 @@ function produktBild(url) {
     + w.map((s, i) => `<text x="150" y="${150 + i * 40}" font-family="sans-serif" font-size="30" font-weight="700" fill="#fff" text-anchor="middle">${esc(s.slice(0, 11))}</text>`).join('') + '</svg>';
 }
 
-async function oeffne({ breite = 428, hoehe = 926, pfad = '/mein-vorteil/#woche', foto = false, speicher = null, kurz = true, knaller = KNALLER, bildVerzug = 0, jetzt = JETZT, snackBilder = false } = {}) {
+async function oeffne({ breite = 428, hoehe = 926, pfad = '/mein-vorteil/#woche', foto = false, speicher = null, kurz = true, knaller = KNALLER, bildVerzug = 0, jetzt = JETZT, snackBilder = false, geo = null, filialen = null } = {}) {
   const ctx = await browser.newContext({
     viewport: { width: breite, height: hoehe }, deviceScaleFactor: foto ? 2 : 1, isMobile: true, hasTouch: true,
     locale: 'de-DE', timezoneId: 'Europe/Berlin', colorScheme: 'dark', serviceWorkers: 'block',
+    ...(geo ? { permissions: ['geolocation'], geolocation: { latitude: geo.lat, longitude: geo.lon, accuracy: 50 } } : {}),
   });
-  const z = { abrufe: [], offline: false, knaller };
+  const z = { abrufe: [], offline: false, knaller, filialen };
   await ctx.route('https://raw.githubusercontent.com/**', async route => {
     const rest = new URL(route.request().url()).pathname.replace(/^\/XanderFoxy\/Synquenzer\//, '');
     z.abrufe.push(rest);
     const kopf = { 'access-control-allow-origin': '*' };
     if (z.offline) return route.abort('internetdisconnected');
+    if (rest === FIL_PFAD) return z.filialen ? route.fulfill({ status: 200, contentType: 'application/json', headers: kopf, body: JSON.stringify(z.filialen) }) : route.fulfill({ status: 404, headers: kopf, body: '' });
     if (rest === PFAD) return z.knaller ? route.fulfill({ status: 200, contentType: 'application/json', headers: kopf, body: JSON.stringify(z.knaller) }) : route.fulfill({ status: 404, headers: kopf, body: '' });
     if (!DATEI[rest]) return route.fulfill({ status: 404, headers: kopf, body: '' });
     if (rest.endsWith('/aktuell.json') && kurz) {
@@ -601,3 +604,138 @@ for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
     await ctx.close();
   });
 }
+
+// --- Märkte vor Ort (Xander 16.11.2026: „nur Märkte, die wirklich in Döbeln sind … anhand von GPS … nur die Märkte der Gegend“)
+// Radar-Felder maerkte.<id>.nah/filiale (REWE: nächste in Leisnig, 15 km – wie Roh-Lauf 43843865340), Filial-Liste mit ausgedachten
+// Punkten um Döbeln und Leipzig (Lidl, Kaufland, REWE in Leipzig; Aldi/Netto/Penny/Marktkauf nur in Döbeln).
+const DOEBELN_TEST = { lat: 51.1211, lon: 13.1229 };
+const LEIPZIG_TEST = { lat: 51.3397, lon: 12.3731 };
+function knallerMitNaehe() {
+  const d = plain(KNALLER);
+  for (const [id, m] of Object.entries(d.maerkte)) {
+    if (id === 'rewe') Object.assign(m, { nah: false, ort: 'Chemnitz', filiale: { adresse: 'Wilhelm-Ostwald-Straße 10, Leisnig', km: 15, von: 'Döbeln', quelle: 'OpenStreetMap' } });
+    else Object.assign(m, { nah: true, ort: 'Döbeln', filiale: { adresse: `${m.name}-Straße 1, Döbeln (TESTWERT)`, km: 1.2, von: 'Döbeln' } });
+  }
+  return d;
+}
+const FILIALEN_TEST = { version: 1, aktualisiert: '2026-11-10T06:00:00.000Z', osmStand: '2026-11-10T06:00:00.000Z', maerkte: {
+  'aldi-nord': [[51.1265, 13.139, 'Grimmaische Straße 67, Döbeln']], lidl: [[51.115, 13.108, 'Schlachthofstraße 2, Döbeln'], [51.335, 12.38, 'Test 1, Leipzig']],
+  kaufland: [[51.1225, 13.1215, 'Schillerstraße 6, Döbeln'], [51.33, 12.36, 'Test 2, Leipzig']], netto: [[51.129, 13.118, 'Unnaer Straße 1d, Döbeln']],
+  penny: [[51.123, 13.125, 'Schillerstraße 38, Döbeln']], rewe: [[51.06, 13.29, 'Teststraße 1, Testort'], [51.345, 12.37, 'Test 3, Leipzig']],
+  marktkauf: [[51.114, 13.133, 'Richard-Köberlin-Straße 2, Döbeln']] } };
+
+test('Märkte vor Ort (statisch): Lage je Markt – Radar nah/filiale, ältere Dateien, Standort mit Filial-Liste', () => {
+  const I = modul()._intern;
+  const n = I.normalisiere(knallerMitNaehe(), Date.parse(JETZT));
+  const rewe = n.maerkte.find(m => m.id === 'rewe');
+  assert.deepEqual(plain(I.lageVon(rewe, n, null, null)), { nah: false, km: 15, adresse: 'Wilhelm-Ostwald-Straße 10, Leisnig' });
+  assert.equal(I.lageVon(n.maerkte.find(m => m.id === 'kaufland'), n, null, null).nah, true);
+  // ältere Datei (ohne nah): km entscheidet; weder Filiale noch Döbelner Prospekt -> nicht in der Nähe; ohne jeden Beleg -> bleibt
+  const alt = I.normalisiere({ ort: 'Döbeln', maerkte: { rewe: { name: 'REWE', ort: 'Chemnitz' }, penny: { name: 'Penny', filiale: { km: 0.2, adresse: 'x' } }, lidl: { name: 'Lidl', filiale: { km: 12.4 } }, kaufland: { name: 'Kaufland' } } }, Date.parse(JETZT));
+  const lage = id => I.lageVon(alt.maerkte.find(m => m.id === id), alt, null, null).nah;
+  assert.deepEqual([lage('rewe'), lage('penny'), lage('lidl'), lage('kaufland')], [false, true, false, true]);
+  // Standort Leipzig: nur Märkte mit Filiale bis 10 km (wie Döbeln)
+  const fil = I.filialenNorm(FILIALEN_TEST);
+  const nah = n.maerkte.filter(m => I.lageVon(m, n, LEIPZIG_TEST, fil).nah).map(m => m.id);
+  assert.deepEqual(plain(nah), ['lidl', 'kaufland', 'rewe']);
+  assert.equal(I.filialenNorm({ maerkte: { lidl: [] } }), null, 'leere Liste = keine Filial-Liste');
+  assert.ok(Math.abs(I.kmZwischen(DOEBELN_TEST, LEIPZIG_TEST) - 57) < 3);
+  // echte Filial-Liste (Kopie im Ordner, OSM 16.11.2026): Standort Döbeln -> alle außer REWE (nächste in Leisnig, 15 km)
+  const echt = I.filialenNorm(JSON.parse(readFileSync(join(MV, 'filialen.json'), 'utf8')));
+  const inDoebeln = n.maerkte.filter(m => I.lageVon(m, n, DOEBELN_TEST, echt).nah).map(m => m.id);
+  assert.deepEqual(plain(inDoebeln), ['aldi-nord', 'lidl', 'kaufland', 'netto', 'penny', 'marktkauf']);
+  const rewe2 = I.lageVon(rewe, n, DOEBELN_TEST, echt);
+  assert.ok(rewe2.km > 10 && /Leisnig/.test(rewe2.adresse), JSON.stringify(rewe2));
+  // Prüfer 16.11.: Standort außerhalb der Filial-Liste (Berlin, Hamburg) -> Döbeln-Regel statt „keine Filiale in der Nähe“
+  assert.equal(I.imGebiet(DOEBELN_TEST, echt), true);
+  for (const pos of [{ lat: 52.52, lon: 13.4 }, { lat: 53.55, lon: 9.99 }]) {
+    assert.equal(I.imGebiet(pos, echt), false, JSON.stringify(pos));
+    const dort = n.maerkte.filter(m => I.lageVon(m, n, pos, echt).nah).map(m => m.id);
+    assert.deepEqual(plain(dort), ['aldi-nord', 'lidl', 'kaufland', 'netto', 'penny', 'marktkauf'], 'wie Döbeln');
+  }
+  assert.equal(I.imGebiet({ lat: 51.34, lon: 12.37 }, I.filialenNorm({ maerkte: { lidl: [[51.1, 13.1, 'x']] } })), false, 'ohne Filiale bis 25 km');
+});
+
+test('Märkte vor Ort: ohne Standort nur Märkte bis 10 km um Döbeln, „weitere Märkte“ zeigt REWE gestrichelt (gemerkt)', { skip: ohnePw }, async () => {
+  const { ctx, page, fehler, z } = await oeffne({ knaller: knallerMitNaehe() });
+  const chips = async () => (await page.locator('.wo-chip').allInnerTexts()).map(t => t.replace(/\s+/g, ' '));
+  assert.deepEqual(await chips(), ['Alle 12', 'Aldi Nord 1', 'Lidl 1', 'Kaufland 2', 'Netto 1', 'Penny 6', 'Marktkauf 1']);
+  assert.equal(await kacheln(page).count(), 12);
+  const ort = nbsp(await page.locator('.wo-ort').innerText()).replace(/\s+/g, ' ');
+  assert.match(ort, /Märkte mit Filiale bis 10 km um Döbeln/);
+  assert.match(ort, /Standort verwenden/);
+  assert.match(ort, /Keine Filiale in der Nähe: REWE \(nächste 15 km, Wilhelm-Ostwald-Straße 10, Leisnig\) – ausgeblendet\./);
+  assert.ok(!z.abrufe.includes(FIL_PFAD), 'Filial-Liste erst mit Standort');
+  await page.locator('[data-wo-weitere]').click();
+  await page.waitForFunction(() => document.querySelector('[data-wo-weitere]')?.getAttribute('aria-pressed') === 'true');
+  assert.deepEqual(await chips(), ['Alle 13', 'Aldi Nord 1', 'Lidl 1', 'Kaufland 2', 'Netto 1', 'Penny 6', 'REWE 1', 'Marktkauf 1']);
+  assert.equal(await page.locator('.wo-chip.wo-fern').getAttribute('data-wo-markt'), 'rewe');
+  await markt(page, 'rewe');
+  assert.equal(await kacheln(page).count(), 1);
+  await pruefeLayout(page, 'hoch weitere');
+  // wieder aus: REWE-Wahl fällt auf „Alle“ zurück
+  await page.locator('[data-wo-weitere]').click();
+  await page.waitForFunction(() => document.querySelector('.wo-chip[aria-selected="true"]')?.dataset.woMarkt === 'alle');
+  assert.equal(await kacheln(page).count(), 12);
+  assert.equal(await page.evaluate(() => localStorage.getItem('mein-vorteil-woche-weitere')), 'false');
+  assert.deepEqual(fehler, []);
+  await ctx.close();
+});
+
+for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
+  test(`Märkte vor Ort ${lage}: „Standort verwenden“ (Leipzig) -> nur Märkte bis 10 km, Hinweis Prospekt Döbeln, nichts gesendet, „Döbeln“ zurück, Fotos`, { skip: ohnePw }, async () => {
+    await mkdir(FOTOS, { recursive: true });
+    const { ctx, page, fehler, z } = await oeffne({ breite, hoehe, foto: true, knaller: knallerMitNaehe(), geo: LEIPZIG_TEST, filialen: FILIALEN_TEST });
+    await pruefeLayout(page, `${lage} Döbeln`);
+    await page.screenshot({ path: join(FOTOS, `${lage}-markt-doebeln.png`) });
+    assert.equal(await page.evaluate(() => localStorage.getItem('mein-vorteil-woche-standort')), null, 'ohne Tipp kein Standort');
+    await page.locator('[data-wo-ort="an"]').click();
+    await page.waitForFunction(() => /um deinen Standort/.test(document.querySelector('.wo-ort')?.textContent || ''), null, { timeout: 10000 });
+    const chips = (await page.locator('.wo-chip').allInnerTexts()).map(t => t.replace(/\s+/g, ' '));
+    assert.deepEqual(chips, ['Alle 4', 'Lidl 1', 'Kaufland 2', 'REWE 1']);
+    const ort = nbsp(await page.locator('.wo-ort').innerText()).replace(/\s+/g, ' ');
+    assert.match(ort, /Märkte mit Filiale bis 10 km um deinen Standort \(\d+ km von Döbeln\)/);
+    assert.match(ort, /Keine Filiale in der Nähe: Aldi Nord \(nächste \d+ km\), Netto/, 'weit weg: ohne Adresse');
+    assert.match(ort, /Die Prospekte gelten für Döbeln/);
+    assert.match(ort, /Der Standort bleibt auf diesem Gerät/);
+    const gespeichert = JSON.parse(await page.evaluate(() => localStorage.getItem('mein-vorteil-woche-standort')));
+    assert.deepEqual([gespeichert.lat, gespeichert.lon], [51.34, 12.37], 'nur auf ~1 km gerundet gespeichert');
+    // nichts mit Koordinaten verlassen das Gerät: nur die Filial-Liste (ohne Parameter außer dem Zeitstempel)
+    assert.ok(z.abrufe.includes(FIL_PFAD));
+    assert.ok(!z.abrufe.some(a => /51[.,]3|12[.,]3|lat|lon/i.test(a)), z.abrufe.join(' '));
+    await pruefeLayout(page, `${lage} Standort`);
+    await page.screenshot({ path: join(FOTOS, `${lage}-markt-standort-leipzig.png`) });
+    await page.screenshot({ path: join(FOTOS, `${lage}-markt-standort-leipzig-ganz.png`), fullPage: true });
+    // neu laden: Standort bleibt (Freigabe da -> still neu geortet), Filial-Liste aus dem Cache
+    await page.reload();
+    await wocheDa(page);
+    await page.waitForFunction(() => /um deinen Standort/.test(document.querySelector('.wo-ort')?.textContent || ''), null, { timeout: 10000 });
+    // „Döbeln“ = Standort vergessen
+    await page.locator('[data-wo-ort="aus"]').click();
+    await page.waitForFunction(() => /um Döbeln/.test(document.querySelector('.wo-ort')?.textContent || ''));
+    assert.equal(await page.evaluate(() => localStorage.getItem('mein-vorteil-woche-standort')), null);
+    assert.equal((await page.locator('.wo-chip').allInnerTexts()).length, 7);
+    assert.deepEqual(fehler, []);
+    await ctx.close();
+  });
+}
+
+test('Märkte vor Ort: Standort abgelehnt -> Hinweis, es gilt Döbeln; Filial-Liste fehlt -> Ersatz aus dem Ordner', { skip: ohnePw }, async () => {
+  const { ctx, page, fehler } = await oeffne({ knaller: knallerMitNaehe() });
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'geolocation', { configurable: true, value: { getCurrentPosition: (ok, nein) => setTimeout(() => nein({ code: 1, message: 'denied' }), 50) } });
+  });
+  await page.locator('[data-wo-ort="an"]').click();
+  await page.waitForFunction(() => /nicht freigegeben/.test(document.querySelector('.wo-ort')?.textContent || ''));
+  assert.match(nbsp(await page.locator('.wo-ort').innerText()), /Standort nicht freigegeben – es gilt Döbeln/);
+  assert.equal((await page.locator('.wo-chip').allInnerTexts()).length, 7);
+  // Radar-Liste nicht erreichbar (404): die Kopie im Ordner (mein-vorteil/filialen.json) springt ein
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'geolocation', { configurable: true, value: { getCurrentPosition: ok => setTimeout(() => ok({ coords: { latitude: 51.12, longitude: 13.12 } }), 50) } });
+  });
+  await page.locator('[data-wo-ort="an"]').click();
+  await page.waitForFunction(() => /um deinen Standort|nicht erreichbar/.test(document.querySelector('.wo-ort')?.textContent || ''), null, { timeout: 10000 });
+  assert.match(nbsp(await page.locator('.wo-ort').innerText()), /um deinen Standort/);
+  assert.deepEqual(fehler, []);
+  await ctx.close();
+});

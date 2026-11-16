@@ -1,0 +1,454 @@
+{
+"version": 0.6,
+"generator": "Overpass API (Test)",
+"_hinweis": "Test-Fixture Modul filialen (16.11.2026): Adressen in Döbeln wie bei kaufDA, Lage und alle übrigen Einträge ausgedacht",
+"elements": [
+{
+"type": "way",
+"id": 1001,
+"tags": {
+"shop": "supermarket",
+"brand": "Aldi Nord",
+"brand:wikidata": "Q41171373",
+"name": "Aldi Nord",
+"addr:street": "Grimmaische Straße",
+"addr:housenumber": "67",
+"addr:city": "Döbeln"
+},
+"center": {
+"lat": 51.1265,
+"lon": 13.139
+}
+},
+{
+"type": "node",
+"id": 1002,
+"tags": {
+"shop": "supermarket",
+"brand": "Aldi Nord",
+"brand:wikidata": "Q41171373",
+"name": "Aldi Nord"
+},
+"lat": 51.1265,
+"lon": 13.1391
+},
+{
+"type": "way",
+"id": 1003,
+"tags": {
+"shop": "supermarket",
+"brand": "Lidl",
+"brand:wikidata": "Q151954",
+"name": "Lidl",
+"addr:street": "Schlachthofstraße",
+"addr:housenumber": "2",
+"addr:city": "Döbeln"
+},
+"center": {
+"lat": 51.115,
+"lon": 13.108
+}
+},
+{
+"type": "way",
+"id": 1004,
+"tags": {
+"shop": "supermarket",
+"brand": "Kaufland",
+"brand:wikidata": "Q685967",
+"name": "Kaufland",
+"addr:street": "Schillerstraße",
+"addr:housenumber": "6",
+"addr:city": "Döbeln"
+},
+"center": {
+"lat": 51.1225,
+"lon": 13.1215
+}
+},
+{
+"type": "node",
+"id": 1005,
+"tags": {
+"shop": "supermarket",
+"brand": "Netto Marken-Discount",
+"brand:wikidata": "Q879858",
+"name": "Netto Marken-Discount",
+"addr:street": "Unnaer Straße",
+"addr:housenumber": "1d",
+"addr:city": "Döbeln"
+},
+"lat": 51.129,
+"lon": 13.118
+},
+{
+"type": "node",
+"id": 1006,
+"tags": {
+"shop": "supermarket",
+"brand": "Penny",
+"brand:wikidata": "Q284688",
+"name": "Penny",
+"addr:street": "Schillerstraße",
+"addr:housenumber": "38",
+"addr:city": "Döbeln"
+},
+"lat": 51.123,
+"lon": 13.125
+},
+{
+"type": "way",
+"id": 1007,
+"tags": {
+"shop": "supermarket",
+"name": "Marktkauf",
+"addr:street": "Richard-Köberlin-Straße",
+"addr:housenumber": "2",
+"addr:city": "Döbeln"
+},
+"center": {
+"lat": 51.114,
+"lon": 13.133
+}
+},
+{
+"type": "node",
+"id": 1008,
+"tags": {
+"shop": "supermarket",
+"brand": "REWE",
+"brand:wikidata": "Q16968817",
+"name": "REWE",
+"addr:street": "Teststraße",
+"addr:housenumber": "1",
+"addr:city": "Testort"
+},
+"lat": 51.06,
+"lon": 13.29
+},
+{
+"type": "node",
+"id": 1009,
+"tags": {
+"shop": "supermarket",
+"brand": "REWE City",
+"name": "REWE City",
+"addr:city": "Chemnitz"
+},
+"lat": 50.833,
+"lon": 12.92
+},
+{
+"type": "node",
+"id": 1010,
+"tags": {
+"shop": "supermarket",
+"brand": "Netto",
+"brand:wikidata": "Q552652",
+"name": "Netto"
+},
+"lat": 51.12,
+"lon": 13.13
+},
+{
+"type": "node",
+"id": 1011,
+"tags": {
+"shop": "supermarket",
+"name": "Netto"
+},
+"lat": 51.121,
+"lon": 13.131
+},
+{
+"type": "node",
+"id": 1012,
+"tags": {
+"shop": "supermarket",
+"brand": "ALDI SÜD",
+"brand:wikidata": "Q41171672",
+"name": "ALDI SÜD"
+},
+"lat": 50.32,
+"lon": 11.92
+},
+{
+"type": "node",
+"id": 1013,
+"tags": {
+"shop": "convenience",
+"brand": "REWE To Go",
+"name": "REWE To Go"
+},
+"lat": 51.118,
+"lon": 13.12
+},
+{
+"type": "node",
+"id": 1014,
+"tags": {
+"shop": "kiosk",
+"name": "Penny Kiosk"
+},
+"lat": 51.119,
+"lon": 13.121
+},
+{
+"type": "node",
+"id": 1015,
+"tags": {
+"shop": "supermarket",
+"brand": "EDEKA",
+"brand:wikidata": "Q701755",
+"name": "EDEKA Lidl-Straße"
+},
+"lat": 51.13,
+"lon": 13.1
+},
+{
+"type": "node",
+"id": 1016,
+"tags": {
+"shop": "supermarket",
+"brand": "Penny",
+"brand:wikidata": "Q284688"
+},
+"lat": 51.123,
+"lon": 13.125
+},
+{
+"type": "node",
+"id": 1017,
+"tags": {
+"shop": "supermarket",
+"brand": "Lidl",
+"brand:wikidata": "Q151954",
+"name": "Lidl",
+"addr:city": "Ort 1"
+},
+"lat": 50.8914,
+"lon": 12.5319
+},
+{
+"type": "node",
+"id": 1018,
+"tags": {
+"shop": "supermarket",
+"brand": "Kaufland",
+"brand:wikidata": "Q685967",
+"name": "Kaufland",
+"addr:city": "Ort 2"
+},
+"lat": 51.1858,
+"lon": 12.3594
+},
+{
+"type": "node",
+"id": 1019,
+"tags": {
+"shop": "supermarket",
+"brand": "Penny",
+"brand:wikidata": "Q284688",
+"name": "Penny",
+"addr:city": "Ort 3"
+},
+"lat": 51.0823,
+"lon": 13.0045
+},
+{
+"type": "node",
+"id": 1020,
+"tags": {
+"shop": "supermarket",
+"brand": "Netto Marken-Discount",
+"brand:wikidata": "Q879858",
+"name": "Netto Marken-Discount",
+"addr:city": "Ort 4"
+},
+"lat": 50.6522,
+"lon": 13.3164
+},
+{
+"type": "node",
+"id": 1021,
+"tags": {
+"shop": "supermarket",
+"brand": "Aldi Nord",
+"brand:wikidata": "Q41171373",
+"name": "Aldi Nord",
+"addr:city": "Ort 5"
+},
+"lat": 50.6337,
+"lon": 13.154
+},
+{
+"type": "node",
+"id": 1022,
+"tags": {
+"shop": "supermarket",
+"brand": "REWE",
+"brand:wikidata": "Q16968817",
+"name": "REWE",
+"addr:city": "Ort 6"
+},
+"lat": 50.6629,
+"lon": 12.3996
+},
+{
+"type": "node",
+"id": 1023,
+"tags": {
+"shop": "supermarket",
+"brand": "Lidl",
+"brand:wikidata": "Q151954",
+"name": "Lidl",
+"addr:city": "Ort 7"
+},
+"lat": 50.9821,
+"lon": 14.0191
+},
+{
+"type": "node",
+"id": 1024,
+"tags": {
+"shop": "supermarket",
+"brand": "Kaufland",
+"brand:wikidata": "Q685967",
+"name": "Kaufland",
+"addr:city": "Ort 8"
+},
+"lat": 50.7114,
+"lon": 12.6911
+},
+{
+"type": "node",
+"id": 1025,
+"tags": {
+"shop": "supermarket",
+"brand": "Penny",
+"brand:wikidata": "Q284688",
+"name": "Penny",
+"addr:city": "Ort 9"
+},
+"lat": 51.1647,
+"lon": 14.285
+},
+{
+"type": "node",
+"id": 1026,
+"tags": {
+"shop": "supermarket",
+"brand": "Netto Marken-Discount",
+"brand:wikidata": "Q879858",
+"name": "Netto Marken-Discount",
+"addr:city": "Ort 10"
+},
+"lat": 51.1194,
+"lon": 13.0727
+},
+{
+"type": "node",
+"id": 1027,
+"tags": {
+"shop": "supermarket",
+"brand": "Aldi Nord",
+"brand:wikidata": "Q41171373",
+"name": "Aldi Nord",
+"addr:city": "Ort 11"
+},
+"lat": 51.4786,
+"lon": 12.3025
+},
+{
+"type": "node",
+"id": 1028,
+"tags": {
+"shop": "supermarket",
+"brand": "REWE",
+"brand:wikidata": "Q16968817",
+"name": "REWE",
+"addr:city": "Ort 12"
+},
+"lat": 51.3726,
+"lon": 12.8371
+},
+{
+"type": "node",
+"id": 1029,
+"tags": {
+"shop": "supermarket",
+"brand": "Lidl",
+"brand:wikidata": "Q151954",
+"name": "Lidl",
+"addr:city": "Ort 13"
+},
+"lat": 50.7298,
+"lon": 12.4591
+},
+{
+"type": "node",
+"id": 1030,
+"tags": {
+"shop": "supermarket",
+"brand": "Kaufland",
+"brand:wikidata": "Q685967",
+"name": "Kaufland",
+"addr:city": "Ort 14"
+},
+"lat": 50.8776,
+"lon": 13.9955
+},
+{
+"type": "node",
+"id": 1031,
+"tags": {
+"shop": "supermarket",
+"brand": "Penny",
+"brand:wikidata": "Q284688",
+"name": "Penny",
+"addr:city": "Ort 15"
+},
+"lat": 50.7627,
+"lon": 13.4795
+},
+{
+"type": "node",
+"id": 1032,
+"tags": {
+"shop": "supermarket",
+"brand": "Netto Marken-Discount",
+"brand:wikidata": "Q879858",
+"name": "Netto Marken-Discount",
+"addr:city": "Ort 16"
+},
+"lat": 51.175,
+"lon": 13.0193
+},
+{
+"type": "node",
+"id": 1033,
+"tags": {
+"shop": "supermarket",
+"brand": "Aldi Nord",
+"brand:wikidata": "Q41171373",
+"name": "Aldi Nord",
+"addr:city": "Ort 17"
+},
+"lat": 51.093,
+"lon": 12.3381
+},
+{
+"type": "node",
+"id": 1034,
+"tags": {
+"shop": "supermarket",
+"brand": "REWE",
+"brand:wikidata": "Q16968817",
+"name": "REWE",
+"addr:city": "Ort 18"
+},
+"lat": 50.6536,
+"lon": 12.6531
+}
+]
+}

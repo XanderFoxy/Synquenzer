@@ -2,10 +2,11 @@
    Seite, filme.js (Reiter „Filme“), spartricks.js (Reiter „Spartricks“), essen.js (Reiter „Essen“) und woche.js (Reiter „Woche“): erst Netz; antwortet es nicht binnen 3 s oder
    gar nicht, die letzte gute Kopie (Start ohne Netz). So passen Seite und Reiter-Skripte nach einer neuen Fassung immer
    zusammen. spartricks.json, essen.json und knaller.json gehen nicht durch den Worker (die Seite merkt sich den letzten Stand selbst;
-   woche.js im eigenen Cache „mv-woche“, den dieser Worker beim Aktivieren nicht löscht). Produktbilder (fremde Server) auch nicht.
+   woche.js im eigenen Cache „mv-woche“, den dieser Worker beim Aktivieren nicht löscht; dort auch filialen.json, erst nach
+   „Standort verwenden“). Produktbilder (fremde Server) auch nicht.
    Symbole/Manifest: aus dem Zwischenspeicher. Daten (raw.githubusercontent.com) gehen nie durch diesen Worker –
    die Seite merkt sich den letzten Stand selbst. */
-const CACHE = 'mein-vorteil-5'; // 16.11.2026: Woche (kommt diese Woche/ab Mo, Merken), Filme 3,99 € mit Filtern, Essen-Lokale – alte Kopie wird beim Aktivieren gelöscht (mein-vorteil-4: woche.js, mein-vorteil-3: essen.js)
+const CACHE = 'mein-vorteil-6'; // 16.11.2026: Woche – Märkte vor Ort (nur Märkte mit Filiale in der Nähe, Standort auf Wunsch) – alte Kopie wird beim Aktivieren gelöscht (mein-vorteil-5: Woche/Filme/Essen zusammengeführt, mein-vorteil-4: woche.js, mein-vorteil-3: essen.js)
 const SEITE = new URL('./', self.registration.scope).href;
 const FILME = new URL('filme.js', self.registration.scope).href;
 const SPAR = new URL('spartricks.js', self.registration.scope).href;
