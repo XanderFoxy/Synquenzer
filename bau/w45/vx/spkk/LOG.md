@@ -9,3 +9,4 @@
 - 05:35:15 Regression Teil 1: spk6k, spk6, spk9u, spk9poly, spk9f grün und gleich Basis; spk8s/spk10s/spk5 brauchen mess/ → Teil 2 (runb2.sh) gestartet. Last: 6.01 4.49 2.70 9/296 30643
 - 05:38:25 Regression Teil 2: spk8s 14/0, spk10s 16/0, spk5 24/24 – Index = Basis. spkk-test 18/18 (mit Worker-Sonde). Pflicht erneut: siehe pflicht.log. md5 804c037b. Ende. Last: 5.67 4.87 3.17 1/289 3221
 - 06:09:18 Prüfung/Nachbesserung Start (Sicherung index.vor-pruef.html, md5 804c037b). Last: 10.26 7.45 5.01 8/609 8266
+- 06:12:16 Befunde nachgestellt (pruef/fall-*.out, lang-*.out: Prüfer-Zahlen stimmen mit dem Code überein); Fassung 3: Fenster 2,6 HT/3 Bins + Lücken-Füllung (Kick-Rahmen, Anschlag) mit O/hopS am Haken. Last: 12.74 9.94 6.40 18/716 12558

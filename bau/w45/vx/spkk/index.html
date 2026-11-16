@@ -112560,23 +112560,24 @@ function spkkPk(best, Y, c0, c1, K, df, fa, fb, F) {   // je Rahmen der Suche: F
 }
 function spkkF0(f0, ok, best, df, fa, fb, O, hopS) {   // nach der Viterbi-Suche: Tonhöhe je Treffer-Rahmen aus der tragenden Spitze
   const P = best && best.spkk; if (!f0 || !ok || !P || !(df > 0)) return 0;
-  const md = f => 69 + 12 * Math.log2(f / 440), n = Math.min(f0.length, P.length), R = new Float32Array(n), near = (f, g, w) => Math.abs(md(f) - md(g)) <= w || Math.abs(f - g) <= 3 * df * w / 2.6; let c = 0;
+  const md = f => 69 + 12 * Math.log2(f / 440), n = Math.min(f0.length, P.length), R = new Float32Array(n), near = (f, g) => Math.abs(md(f) - md(g)) <= 2.6 || Math.abs(f - g) <= 3 * df; let c = 0;
   for (let i = 0; i < n; i++) {
     const fr = P[i], fc = f0[i]; if (!ok[i] || !(fr > 0) || !(fc > 0)) continue;
-    if (fr < fa * 0.94 || fr > fb * 1.06 || !near(fr, fc, 2.6)) continue;
+    if (fr < fa * 0.94 || fr > fb * 1.06 || !near(fr, fc)) continue;
     R[i] = fr; c++;
   }
   // Rahmen ohne eigene Spitze in einer Treffer-Strecke: Lücke zwischen zwei Spitzen-Rahmen gleicher Tonhöhe (< ½ HT, ≤ 0,3 s) → deren Tonhöhe;
-  // vor dem ersten Spitzen-Rahmen einer Note (Anschlag, ≤ 0,3 s, nicht über einen Anschlag zurück, Raster < 1 HT daneben) → dessen Tonhöhe
+  // vor dem ersten Spitzen-Rahmen einer Note (Anschlag, ≤ 0,3 s, nicht über einen Anschlag mit Pegel-Anstieg ≥ 3 dB zurück – wie segNotes –,
+  // Raster < 1 HT daneben) → dessen Tonhöhe
   const G = hopS > 0 ? Math.max(2, Math.round(0.3 / hopS)) : 2, on = new Uint8Array(n + 1);
-  if (O && O.ons && hopS > 0) for (const t of O.ons) { const k = Math.round(t / hopS); if (k >= 0 && k <= n) on[k] = 1; }
+  if (O && O.ons && hopS > 0) for (const t of O.ons) { const k = Math.round(t / hopS), e = O.envAt; if (k >= 0 && k <= n && !(typeof e === 'function' && e(t + 0.035) - Math.min(e(t - 0.03), e(t - 0.06)) < 3)) on[k] = 1; }
   for (let i = 0, s = 0; i < n; i++) {
     if (!ok[i]) { s = i + 1; continue; }
     if (!(R[i] > 0)) continue;
     let u = i; while (u > s && !(R[u - 1] > 0)) u--;
     if (u === i) continue;
     if (u > s && i - u <= G && Math.abs(md(R[u - 1]) - md(R[i])) < 0.5) {
-      for (let k = u; k < i; k++) { const g = k - u < i - k ? R[u - 1] : R[i]; if (near(f0[k], g, 2.6)) { f0[k] = g; c++; } }
+      for (let k = u; k < i; k++) { const g = k - u < i - k ? R[u - 1] : R[i]; if (near(f0[k], g)) { f0[k] = g; c++; } }
     } else {
       for (let k = i - 1; k >= u && i - k <= G; k--) { if (on[k + 1] || Math.abs(md(f0[k]) - md(R[i])) >= 1) break; f0[k] = R[i]; c++; }
     }
