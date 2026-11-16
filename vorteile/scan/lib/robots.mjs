@@ -11,6 +11,11 @@
 // macheRegelWache legt sich um JEDEN Abruf des Radars (main.mjs) – nicht nur um einzelne Module:
 //  1. Nutzungsbedingungen (config abruf.agbVerbot): Host verboten -> gar kein Abruf, auch nicht der robots.txt;
 //  2. robots.txt je Host vor dem ersten Abruf (gemerkt wie oben): Pfad verboten -> Abruf übersprungen (Hinweis, kein Fehler).
+// MV7 (Xanders Entscheidung 16.11.2026): Programm-Schnittstellen aus lib/schnittstellen.mjs (genau fünf Hosts, je genau die
+// API-Pfade) werden trotz robots-Sperre gelesen – gedrosselt und gemerkt nach den Regeln des Dienstes. Punkt 1 gilt weiter
+// ohne Ausnahme; alle anderen Pfade bleiben unter Punkt 2.
+
+import { SCHNITTSTELLEN, schnittstelleFuer, cacheLese, cacheSchreibe } from './schnittstellen.mjs';
 
 export const ROBOTS_TAGE = 1;
 export const ROBOTS_MAX_REGELN = 5000;
@@ -126,10 +131,17 @@ export const holeRohMit = holeText => async url => {
  *  - robots.txt nicht lesbar (5xx/429/keine Antwort) -> wirft einen normalen Fehler („… dieses Mal nicht gelesen“),
  *    die Quelle gilt wie bei jedem Ausfall als gestört (alter Stand bleibt);
  *  - /robots.txt selbst geht direkt durch; ausnahmen = Hosts ohne Prüfung (nur eigene Dienste, z. B. ntfy-Thema der Seite).
- * Rückgabe: holeText-Funktion mit .wache = { gesperrt: Map(host -> { regel, grund, n }), geprueft: Set(host), modul }.
+ *  - Programm-Schnittstelle (schnittstellen, Standard SCHNITTSTELLEN): robots.txt wird trotzdem gelesen (für die Anzeige
+ *    „Schnittstelle“ samt Regel), sperrt aber nicht; dafür Obergrenze je Lauf, keine Adresse zweimal im Lauf und – nur mit
+ *    cache: true (echte Läufe, main.mjs) – die gemerkte Antwort aus zustand.schnittstellen, solange sie jünger als
+ *    cacheStunden ist.
+ * Rückgabe: holeText-Funktion mit .wache = { gesperrt: Map(host -> { regel, grund, n }), geprueft: Set(host), modul,
+ *   jeModul: Map(modul -> Map), schnittstelle: Map(host -> { name, n, gemerkt, regel }), jeModulApi: Map(modul -> Map) }.
  */
-export function macheRegelWache(holeText, { zustand = null, agent = 'vorteils-radar', jetzt = new Date(), agbVerbot = [], robots = true, ausnahmen = [] } = {}) {
-  const wache = { gesperrt: new Map(), geprueft: new Set(), modul: null, jeModul: new Map() };
+export function macheRegelWache(holeText, { zustand = null, agent = 'vorteils-radar', jetzt = new Date(), agbVerbot = [], robots = true, ausnahmen = [], schnittstellen = SCHNITTSTELLEN, cache = false } = {}) {
+  const wache = { gesperrt: new Map(), geprueft: new Set(), modul: null, jeModul: new Map(), schnittstelle: new Map(), jeModulApi: new Map() };
+  const jetztMs = new Date(jetzt).getTime();
+  const memo = new Map(); // url -> Text (Schnittstellen: dieselbe Adresse nur einmal je Lauf)
   const ablage = zustand || {}; // ohne Zustand (Tests): nur für diesen Lauf merken
   const erste = new Map(); // host -> Promise der ersten Prüfung in diesem Lauf (robots.txt nur einmal holen, auch parallel)
   const holeRoh = holeRohMit(holeText);
@@ -148,15 +160,54 @@ export function macheRegelWache(holeText, { zustand = null, agent = 'vorteils-ra
     const agb = agbGrund(url, agbVerbot);
     if (agb) throw sperre('agb', host, agb);
     if (!robots || frei.has(host) || frei.has(u.hostname.toLowerCase()) || u.pathname === '/robots.txt') return holeText(url, opts);
+    const api = schnittstelleFuer(url, schnittstellen || []);
     if (!erste.has(host)) erste.set(host, robotsErlaubt(url, { holeRoh, zustand: ablage, agent, jetzt }).catch(e => ({ ok: false, nichtLesbar: true, grund: `robots.txt nicht lesbar (${String(e?.message || e).slice(0, 60)})` })));
     const e1 = await erste.get(host);
     wache.geprueft.add(host);
-    // nicht lesbar: in diesem Lauf nicht noch einmal fragen (sonst je Adresse ein Zeitlimit)
-    if (e1.nichtLesbar) throw new Error(`${e1.grund} bei ${host} – dieses Mal nicht gelesen`);
+    // nicht lesbar: in diesem Lauf nicht noch einmal fragen (sonst je Adresse ein Zeitlimit) – außer Schnittstelle
+    if (e1.nichtLesbar) {
+      if (!api) throw new Error(`${e1.grund} bei ${host} – dieses Mal nicht gelesen`);
+      return ueberSchnittstelle(api, url, opts, null);
+    }
     const r = await robotsErlaubt(url, { holeRoh, zustand: ablage, agent, jetzt }); // aus der Ablage, kein zweiter Abruf
+    if (api) return ueberSchnittstelle(api, url, opts, r.ok ? null : r.grund);
     if (!r.ok) throw sperre('robots', host, r.grund);
     return holeText(url, opts);
   }
+  // Schnittstelle: Obergrenze je Lauf, Lauf-Memo, gemerkte Antwort (cacheStunden), Anzeige je Modul
+  async function ueberSchnittstelle(api, url, opts, robotsRegel) {
+    const st = wache.schnittstelle.get(api.host) || { host: api.host, name: api.name, n: 0, gemerkt: 0, regel: null };
+    if (robotsRegel) st.regel = robotsRegel;
+    wache.schnittstelle.set(api.host, st);
+    if (wache.modul) { const m = wache.jeModulApi.get(wache.modul) || new Map(); m.set(api.host, { host: api.host, name: api.name, regel: st.regel }); wache.jeModulApi.set(wache.modul, m); }
+    const merkbar = String(opts?.method || 'GET').toUpperCase() === 'GET' && opts?.body == null;
+    if (merkbar && memo.has(url)) { st.gemerkt++; return memo.get(url); }
+    if (merkbar && cache && api.cacheStunden) {
+      const t = cacheLese(ablage, url, api.cacheStunden, jetztMs);
+      if (t != null) { st.gemerkt++; memo.set(url, t); return t; }
+    }
+    if (st.n >= api.maxJeLauf) throw new Error(`${api.name}: höchstens ${api.maxJeLauf} Abrufe je Lauf – Rest im nächsten Lauf`);
+    st.n++;
+    const text = await holeText(url, opts);
+    if (merkbar) {
+      memo.set(url, text);
+      if (cache && api.cacheStunden) cacheSchreibe(ablage, url, text, jetztMs);
+    }
+    return text;
+  }
   bewacht.wache = wache;
   return bewacht;
+}
+
+/** Für status.<modul>.quellen (Quellen-Liste der Seite): [{ host, name?, art: 'schnittstelle' | 'gesperrt' }] */
+export function regelQuellen(wache, modul) {
+  if (!wache || !modul) return [];
+  const aus = [];
+  for (const s of wache.jeModulApi.get(modul)?.values() || []) aus.push({ host: s.host, name: s.name, art: 'schnittstelle' });
+  for (const g of wache.jeModul.get(modul)?.values() || []) {
+    const host = g.host.replace(/^www\./, '');
+    // Host schon als Schnittstelle gelesen: ein anderer, gesperrter Pfad steht nur in den Hinweisen (kein „gesperrt“ daneben)
+    if (!aus.some(x => (x.host === host || x.host === g.host) && (x.art === 'gesperrt' || x.art === 'schnittstelle'))) aus.push({ host, art: 'gesperrt' });
+  }
+  return aus.slice(0, 10);
 }

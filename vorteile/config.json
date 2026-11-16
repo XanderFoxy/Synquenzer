@@ -20,18 +20,19 @@
     "releases": "https://raw.githubusercontent.com/XanderFoxy/Synquenzer/konzerte-daten/konzerte/data/releases.json"
   },
   "abruf": {
-    "userAgent": "Vorteils-Radar/1.0 (privat, wenige Abrufe pro Stunde; +https://github.com/XanderFoxy/Synquenzer/tree/vorteile/vorteile)",
+    "userAgent": "MeinVorteil-Radar/1.0 (privates Spar- und Freizeit-Radar; wenige Abrufe mit Pausen und Cache)",
+    "_userAgent": "Eigener ehrlicher Name ohne Personennamen und ohne E-Mail (MV7, 16.11.2026). Der erste Teil (meinvorteil-radar) ist auch der Name, unter dem die robots.txt-Regeln gesucht werden.",
     "timeoutMs": 20000,
     "pauseMs": 2000,
     "pauseMsJeHost": { "itunes.apple.com": 3200, "www.kaufda.de": 2100, "hnrss.org": 3000 },
-    "_pauseMsJeHost": "Apple erlaubt etwa 20 Abrufe pro Minute -> 3,2 s Abstand. kaufDA: robots.txt crawl-delay 2 -> 2,1 s.",
+    "_pauseMsJeHost": "Apple erlaubt etwa 20 Abrufe pro Minute -> 3,2 s Abstand. kaufDA: robots.txt crawl-delay 2 -> 2,1 s. Die Programm-Schnittstellen (scan/lib/schnittstellen.mjs) bringen ihre eigenen Abstände mit; der größere Wert gewinnt.",
     "robotsPruefen": true,
     "agbVerbot": [
       {"host": "freelancer.com", "grund": "Nutzungsbedingungen von Freelancer.com verbieten Robots/Scraper und das Sammeln von Projekten – ausdrücklich auch über die API – ohne schriftliche Erlaubnis", "stand": "User Agreement vom 05.06.2025"},
       {"host": "reddit.com", "grund": "robots.txt von Reddit verbietet allen Robotern alles („User-agent: *“ / „Disallow: /“), die Public Content Policy erlaubt automatischen Zugriff nur mit Vereinbarung; Läufe bekamen HTTP 429", "stand": "robots.txt und Public Content Policy, Stand 16.11.2026"}
     ],
     "robotsAusnahmen": ["ntfy.sh"],
-    "_regeln": "Regel-Wache (MV6, 16.11.2026, Xander-Regel „nur Quellen, deren AGB/robots.txt das erlauben; keine Sperren umgehen“): JEDER Abruf eines Moduls geht erst durch agbVerbot (Host verboten -> kein Abruf, auch nicht die robots.txt) und dann durch die robots.txt des Hosts (vor dem ersten Abruf je Host, höchstens 24 Stunden gemerkt in zustand.robots (RFC 9309), alle Regeln ohne Kürzung; Pfad verboten -> Quelle übersprungen, Hinweis im Status statt Störung; robots.txt nicht lesbar -> dieses Mal nicht gelesen). robotsAusnahmen nur für eigene Dienste: ntfy.sh = das eigene Push-Thema der Seite (Merkliste), keine fremden Inhalte."
+    "_regeln": "Regel-Wache (MV6, 16.11.2026, Xander-Regel „nur Quellen, deren AGB/robots.txt das erlauben; keine Sperren umgehen“): JEDER Abruf eines Moduls geht erst durch agbVerbot (Host verboten -> kein Abruf, auch nicht die robots.txt) und dann durch die robots.txt des Hosts (vor dem ersten Abruf je Host, höchstens 24 Stunden gemerkt in zustand.robots (RFC 9309), alle Regeln ohne Kürzung; Pfad verboten -> Quelle übersprungen, Hinweis im Status statt Störung; robots.txt nicht lesbar -> dieses Mal nicht gelesen). robotsAusnahmen nur für eigene Dienste: ntfy.sh = das eigene Push-Thema der Seite (Merkliste), keine fremden Inhalte. Programm-Schnittstellen (MV7, Xanders Entscheidung 16.11.2026): genau fünf API-Pfade (Overpass /api/interpreter, Google News /rss/search, iTunes Charts + /search, Wikidata /sparql, Remotive /api/remote-jobs) dürfen trotz robots-Sperre gelesen werden – die Liste steht absichtlich NUR im Code (scan/lib/schnittstellen.mjs), mit Abstand, Obergrenze je Lauf und Cache nach den Regeln des Dienstes; agbVerbot geht immer vor."
   },
   "module": {
     "deals": {

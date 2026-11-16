@@ -51,7 +51,8 @@ test('Regel-Wache: Host mit AGB-Verbot wird nie abgerufen – nicht einmal die r
 test('Regel-Wache: robots.txt vor dem ersten Abruf je Host, einmal (auch parallel); Disallow -> übersprungen', async () => {
   const { hole, gefragt } = attrappe({ 'remotive.com': 'User-agent: *\nDisallow: /api/\n', 'news.google.com': 'User-agent: *\nAllow: /rss/\nDisallow: /\n' });
   const zustand = {};
-  const w = macheRegelWache(hole, { zustand, jetzt: JETZT });
+  // reine robots-Regel (ohne die Schnittstellen-Ausnahme aus MV7, die für remotive.com/api/remote-jobs gilt)
+  const w = macheRegelWache(hole, { zustand, jetzt: JETZT, schnittstellen: [] });
   await assert.rejects(w('https://remotive.com/api/remote-jobs?search=german%20teacher'), e => e.regel === 'robots' && /Disallow: \/api\//.test(e.message));
   const r = await Promise.all(['q=a', 'q=b', 'q=c'].map(q => w(`https://news.google.com/rss/search?${q}`)));
   assert.equal(r.length, 3);
@@ -62,13 +63,13 @@ test('Regel-Wache: robots.txt vor dem ersten Abruf je Host, einmal (auch paralle
   assert.ok(gefragt.indexOf('https://news.google.com/robots.txt') < gefragt.findIndex(u => /news\.google\.com\/rss/.test(u)), 'robots.txt VOR dem ersten Abruf');
   // gemerkt im Zustand: ein Lauf innerhalb von 24 Stunden fragt die robots.txt nicht noch einmal
   assert.deepEqual(Object.keys(zustand.robots).sort(), ['news.google.com', 'remotive.com']);
-  const w2 = macheRegelWache(hole, { zustand, jetzt: new Date(JETZT.getTime() + 12 * 3600e3) });
+  const w2 = macheRegelWache(hole, { zustand, jetzt: new Date(JETZT.getTime() + 12 * 3600e3), schnittstellen: [] });
   gefragt.length = 0;
   await w2('https://news.google.com/rss/search?q=d');
   assert.deepEqual(gefragt, ['https://news.google.com/rss/search?q=d']);
   // Prüfer R6, Befund 4 (RFC 9309 2.4): nach 24 Stunden wird sie neu geholt (vorher 7 Tage)
   assert.equal(ROBOTS_TAGE, 1);
-  const w3 = macheRegelWache(hole, { zustand, jetzt: new Date(JETZT.getTime() + 24 * 3600e3 + 60e3) });
+  const w3 = macheRegelWache(hole, { zustand, jetzt: new Date(JETZT.getTime() + 24 * 3600e3 + 60e3), schnittstellen: [] });
   gefragt.length = 0;
   await w3('https://news.google.com/rss/search?q=e');
   assert.deepEqual(gefragt, ['https://news.google.com/robots.txt', 'https://news.google.com/rss/search?q=e']);
@@ -136,7 +137,8 @@ test('Ganzer Lauf (alle Module, Fixtures): Reddit und Freelancer.com nie abgeruf
 test('Ganzer Lauf: robots.txt verbietet eine Quelle -> übersprungen + Hinweis, Bereich bleibt ohne Störung', async () => {
   const { hole, gefragt } = attrappe({ 'remotive.com': 'User-agent: *\nDisallow: /api/\n' });
   const nur = { ...cfg, module: Object.fromEntries(Object.entries(cfg.module).map(([k, v]) => [k, { ...v, aktiv: k === 'unterricht' }])) };
-  const r = await lauf({ cfg: nur, wunschliste, vorher: null, zustand: {}, holeText: hole, jetzt: JETZT, alle: true });
+  // reine robots-Regel: ohne die Schnittstellen-Ausnahme (MV7), die Remotive sonst liest
+  const r = await lauf({ cfg: nur, wunschliste, vorher: null, zustand: {}, holeText: hole, jetzt: JETZT, alle: true, schnittstellen: [] });
   const st = r.aktuell.status.unterricht;
   assert.equal(st.ok, true, JSON.stringify(st));
   assert.deepEqual(st.fehler, []);
@@ -145,6 +147,7 @@ test('Ganzer Lauf: robots.txt verbietet eine Quelle -> übersprungen + Hinweis, 
   assert.ok(!gefragt.some(u => /remotive\.com\/api/.test(u)));
   assert.ok(!r.aktuell.kategorien.unterricht.some(e => e.quelle === 'Remotive'));
   assert.ok(r.aktuell.kategorien.unterricht.length > 0, 'News + Fundorte bleiben');
+  assert.deepEqual(st.quellen, [{ host: 'remotive.com', art: 'gesperrt' }], 'Quellen-Liste: remotive.com „gesperrt (Regeln)“');
 });
 
 test('Fundort-Prüfung: robots-Verbot heißt „nicht geprüft“, nicht „Link gerade nicht erreichbar“', async () => {
@@ -165,7 +168,8 @@ test('Roh-Lauf 43868228532: Apple-robots.txt sperrt /*/rss/* und /search* – Fi
   const { hole, gefragt } = attrappe({ 'itunes.apple.com': apple });
   const nur = { ...cfg, module: Object.fromEntries(Object.entries(cfg.module).map(([k, v]) => [k, { ...v, aktiv: k === 'filme' }])) };
   const filmListen = JSON.parse(await readFile(join(HIER, '..', '..', 'filme.json'), 'utf8'));
-  const r = await lauf({ cfg: nur, wunschliste, filmListen, vorher: null, zustand: {}, holeText: hole, jetzt: JETZT, alle: true });
+  // reine robots-Regel (ohne Schnittstellen-Ausnahme, MV7): so lief Roh-Lauf 43868228532
+  const r = await lauf({ cfg: nur, wunschliste, filmListen, vorher: null, zustand: {}, holeText: hole, jetzt: JETZT, alle: true, schnittstellen: [] });
   const st = r.aktuell.status.filme;
   assert.ok(!(st.fehler || []).some(f => /antwortet gerade nicht/.test(f)), (st.fehler || []).join(' | '));
   assert.ok((st.hinweise || []).some(h => /robots\.txt von itunes\.apple\.com: nicht gelesen/.test(h)), (st.hinweise || []).join(' | '));

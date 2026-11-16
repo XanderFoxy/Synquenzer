@@ -1629,6 +1629,28 @@ test('Quellen-Liste: Filialen/Wochen-Knaller/Essen/Ausflüge mit ihrer Zahl stat
   await o.ctx.close();
 });
 
+// MV7 (16.11.2026, Prüfer-Befund R6 + Xanders Entscheidung): je Quelle kurz, nach welcher Regel sie gelesen wird –
+// „Schnittstelle“ (Programm-Schnittstelle trotz robots.txt) bzw. „gesperrt (Regeln)“ (robots.txt/Nutzungsbedingungen).
+test('Quellen-Liste: je Quelle „Schnittstelle“ bzw. „gesperrt (Regeln)“, ohne Angabe wie bisher, kaputte Angaben still', { skip: ohnePw }, async () => {
+  const patch = { 'vorteile-aktuell.json': d => {
+    d.status.unterricht = { ...d.status.unterricht, ok: true, stand: d.aktualisiert, quellen: [
+      { host: 'remotive.com', name: 'Remotive (API)', art: 'schnittstelle' }, { host: 'news.google.com', name: 'Google News (RSS)', art: 'schnittstelle' },
+      { host: 'reddit.com', art: 'gesperrt' }, { host: 'x.example', art: 'quatsch' }, { art: 'gesperrt' }, null] };
+    d.status.filme = { ...d.status.filme, ok: true, stand: d.aktualisiert, quellen: [{ host: 'itunes.apple.com', name: '<b>Apple</b> iTunes (Charts + Suche)', art: 'schnittstelle' }] };
+    d.status.remix = { ...d.status.remix, quellen: 'kaputt' };
+  } };
+  const o = await oeffne({ satz: 'v5', jetzt: JETZT_V5, patch, pfad: '/mein-vorteil/#remix' });
+  const zeilen = await o.page.evaluate(() => [...[...document.querySelectorAll('details.kasten')].find(d => /Quellen & Hinweise \(Vorteile\)/.test(d.textContent))?.querySelectorAll('ul.quellen > li') || []].map(li => ({ t: li.textContent, r: li.querySelector('.q-regeln')?.textContent || '', b: !!li.querySelector('.q-regeln b') })));
+  const zu = name => zeilen.find(z => z.t.startsWith(name)) || {};
+  assert.equal(nbsp(zu('Deutschunterricht').r), 'Remotive (API): Schnittstelle · Google News (RSS): Schnittstelle · reddit.com: gesperrt (Regeln)');
+  assert.equal(nbsp(zu('Filme').r), '<b>Apple</b> iTunes (Charts + Suche): Schnittstelle', 'Name als Text');
+  assert.equal(zu('Filme').b, false, 'kein HTML aus den Daten');
+  assert.equal(zu('Remix').r, '', 'kaputte Angabe: nichts');
+  assert.equal(zu('Deals').r || zu('Deal').r, '', 'ohne Angabe wie bisher');
+  assert.deepEqual(o.fehler, []);
+  await o.ctx.close();
+});
+
 // MV7-Prüfung (15.11.2026): kein doppelter Punkt („vor 22 Min..“), nach 36 h wieder rot und ohne Versprechen (wie der
 // Filme-Reiter), Frist um Mitternacht Berlin = Ende des Vortags, „Heute wichtig“ ohne doppeltes „Remix-Contest:“.
 test('Stand: „vor 22 Min.“ ohne doppelten Punkt; nach 3 Tagen rot ohne „läuft von selbst“; Frist 00:00 = Vortag', { skip: ohnePw }, async () => {
