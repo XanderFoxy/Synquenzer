@@ -1,0 +1,1 @@
+- 21:54 Start NST1; Code lesen.
