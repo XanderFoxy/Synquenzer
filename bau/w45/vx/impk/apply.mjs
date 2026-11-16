@@ -10,6 +10,9 @@ rep('    const ons = peaks(on, fps);\n', '    const ons = impkPeaks(on, fps, fe)
 // (2) Import-Blatt: Frage nach ½×
 rep('function imp1Html() {\n', blk('block-ui.js') + 'function imp1Html() {\n');
 rep('    const al = (r.alt || []).filter(v => v >= 40 && v <= 240);\n', "    const al = typeof impkAsk === 'function' ? impkAsk(c) : (r.alt || []).filter(v => v >= 40 && v <= 240);   /* IMPK: Paar zum gewählten Tempo (nach ½× nicht „60 oder 60?“) */\n");
-if (fs.existsSync(K + '/apply-beg.mjs')) H = (await import(K + '/apply-beg.mjs')).default(H, rep, blk) || H;
+// (3) Begleiter-Rest: Block hinter BEG1-END, ein Haken in click()
+rep('/* BEG1-END */\n', '/* BEG1-END */\n' + blk('block-beg.js'));
+rep("  if (UI.vvOff) return;                                     // VV1: the practice metronome is not part of the song video\n",
+  "  if (UI.vvOff) return;                                     // VV1: the practice metronome is not part of the song video\n  if (typeof impkClickOff === 'function' && impkClickOff(t)) return;   /* IMPK: kein Metronom-Klick hinter dem SCHLUSS-Taktstrich des Begleiters */\n");
 fs.writeFileSync(K + '/index.html', H);
 console.log('index.html', H.length);

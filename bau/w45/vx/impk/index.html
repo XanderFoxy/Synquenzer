@@ -32554,6 +32554,7 @@ function mdHelp() {
 /* ---------- metronome ---------- */
 function click(t, accent, soft) {
   if (UI.vvOff) return;                                     // VV1: the practice metronome is not part of the song video
+  if (typeof impkClickOff === 'function' && impkClickOff(t)) return;   /* IMPK: kein Metronom-Klick hinter dem SCHLUSS-Taktstrich des Begleiters */
   const c = AU.ctx; if (!c) return;
   const o = c.createOscillator(), g = c.createGain(), L = Math.max(S.settings.metroVol * .3 * (soft ? .5 : 1), .0012);   // T1: soft = Zwischen-Zählzeit (halber Pegel)
   o.frequency.value = accent ? 1760 : 1100;
@@ -101616,6 +101617,19 @@ SYNQUENZER.beg1 = {
   rect: () => { const E = BEG1.el; if (!E) return null; const r = E.getBoundingClientRect(); return {x: r.left, y: r.top, w: r.width, h: r.height}; },
 };
 /* BEG1-END */
+/* IMPK-BEGIN · Begleiter-Rest (BEG1 Offen, nachgemessen in 4.76.1):
+   (b) Töne, die der Träger beim Akkordwechsel neu anschlägt (applyCarrierChange → spawnClipVoice), standen im noteLog als src „clip“
+       statt „beg“. Die Hülle gibt dem neuen Ton das Etikett der Band-Stimme, die er ersetzt (gleiche Spur und Clip-Note). Klang unverändert.
+   (c) SCHLUSS: Der Metronom-Klick auf der Eins hinter dem Schlusstakt kam noch – der Klick-Planer liegt außerhalb von beg1Sched.
+       impkClickOff sperrt Klicks ab dem Schlusstaktstrich dieses Laufs (wie beg1Sched die Spuren); Einzähler und neue Läufe unberührt. */
+function impkClickOff(t) { const B = R.beg1, rs = B && B.run; return !!(rs && rs.stopB != null && rs.id === R.runId && R.playing && t >= b2t(rs.stopB) - 1e-4); }
+{ const acc = applyCarrierChange; applyCarrierChange = function () {
+    if (!R.beg1) return acc.apply(this, arguments);
+    const pre = new Set(VOICES), bg = new Set(); for (const v of VOICES) if (!v.dead && v.log && v.log.src === 'beg') bg.add(v.track + ':' + v.clipNote);
+    const r = acc.apply(this, arguments);
+    if (bg.size) for (const v of VOICES) if (!pre.has(v) && v.log && v.log.src === 'clip' && bg.has(v.track + ':' + v.clipNote)) v.log.src = 'beg';
+    return r; }; }
+/* IMPK-END */
 /* ===== SPK1-BEGIN (Spektral-Seite Teil 1 · Kern) =====
    Eigene Seite „Spektral“ (wie eine Extra-App in der App). Dieser Teil ist der Rechen-Kern, ohne Bedienfläche:
    - Worker aus Text (Blob, wie vsWorker): STFT/ISTFT mit Hann, Hop N/4, Overlap-Add (Rekonstruktion bitnah), zwei reelle Rahmen je
