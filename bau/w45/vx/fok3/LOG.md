@@ -13,3 +13,4 @@
 - 02:56:36 Nachbesserung nach Prüfung startet. Sicherung index.vor-pruef.html (= v4 edfc49a6…). Last 2.60 6.00 6.53
 - 03:00:15 v5: Befund 1 behoben (jedes Stück höchstens 1× ablösen, ab nC+2 ohne Ablösen, nie fertig mit Näherung, S.ok); Last 6.64 5.77 6.28
 - 03:01:46 fok3p-test Lauf 1 + Ketten A/B (reg5/) gestartet; Last 6.82 6.27 6.42
+- 03:05:46 v6 (index.v5.html = nur Befund-1-Fix): Befund 2 – nur der sichtbare Teil wird genähert, unsichtbare teure Stücke direkt genau im zweiten Durchgang (vorab 2 / skip). Läufe auf v5 abgebrochen (Datei geändert); fok3p Lauf 1 auf v5 8/0. fok3-test Lauf 6 + fok3p Lauf 2 gestartet. Last 23.90 19.27 11.94

@@ -104,8 +104,8 @@ for (const [tag, file] of [['neu', files[0]], ['basis', files[1]]]) {
   R.m5 = await pg.p.evaluate(o => __T.meas(async () => { __T.got(await __spk.mask(o)); }, async t => { __T.got(await __spk.undo()); return {t: Math.round(t), undo: true}; }), rect(0.5, 179.5, 2600, 3000)); console.log(tag, 'mono-undo-waehrend', JSON.stringify(R.m5));
   // Zauberstab während der Näherung (genauer Weg): Ebene über alles, sofort nach dem ersten Bild tippen
   R.m6 = await pg.p.evaluate(o => __T.meas(async () => { __T.got(await __spk.mask(o)); }, async t => {
-    const U = __spk.page.ui(), ta = performance.now(), z = await spk1Call('spk12zauber', {doc: SPK1.doc, N: U.N, t: 30, f: 3400, fokus: 'rest', aus: 'sicher', tol: 15, lim: 5});
-    return {t: Math.round(t), zms: Math.round(performance.now() - ta), fokus: z && z.fokus, cells: z && z.cells, ap: __fokus1.info().ap};
+    const U = __spk.page.ui(), ap0 = __fokus1.info().ap, ta = performance.now(), z = await spk1Call('spk12zauber', {doc: SPK1.doc, N: U.N, t: 30, f: 3400, fokus: 'rest', aus: 'sicher', tol: 15, lim: 5});
+    return {t: Math.round(t), zms: Math.round(performance.now() - ta), fokus: z && z.fokus, cells: z && z.cells, ap0, ap: __fokus1.info().ap};
   }), rect(0.5, 179.5, 3200, 3600)); console.log(tag, 'mono-zauber-waehrend', JSON.stringify(R.m6));
   errsAll.push(...pg.errs); await pg.ctx.close();
   R.errs = errsAll.slice(0, 8); R.nErr = errsAll.length;
@@ -119,7 +119,7 @@ for (const k of ['kamm16', 'kamm4']) ok(k + ' klein → direkt genau (kein Zwisc
 for (const k of ['m2', 'm3']) ok(k + ' örtlich → Näherung nur für die betroffenen Stücke (≤ 4 von 16)', {apMax: N3[k].apMax}, N3[k].apMax <= 4);
 for (const k of ['s20', 'st', 'm1']) ok(k + ' erstes Bild ≤ 1,3× basis-Näherung (Ziel) / Zeit genau', {neu: {first: N3[k].first, genau: N3[k].genau}, v6: {first: B3[k].first, genau: B3[k].genau}}, true);
 ok('m4 rollen → neu geplant (sichtbares Stück zuerst)', N3.m4.log[0], N3.m4.log[0] && N3.m4.log[0].gk1 >= N3.m4.log[0].vis[0] && N3.m4.log[0].gk1 <= N3.m4.log[0].vis[1]);
-ok('m6 Zauberstab während Näherung: genauer Weg (Fokus-Prüfung), Bild noch genähert', N3.m6.log[0], N3.m6.log[0] && N3.m6.log[0].fokus && N3.m6.log[0].ap > 0);
+ok('m6 Zauberstab während Näherung: genauer Weg (Fokus-Prüfung), Bild noch genähert', N3.m6.log[0], N3.m6.log[0] && N3.m6.log[0].fokus && (N3.m6.log[0].ap0 > 0 || N3.m6.log[0].ap > 0));   // FOK3-P: genähert beim Tippen (ap0)
 const KS = ['s20', 'kamm16', 'kamm4', 'st', 'm1', 'm2', 'm3', 'm4', 'm5', 'm6'];
 ok('kein JS-Bild/fokus1Pre > 50 ms (neu) – Long Tasks außerhalb JS = Textur-Hochladen der Test-Grafik', Object.fromEntries(KS.map(k => [k, N3[k].jsBild])), KS.every(k => (N3[k].jsBild || []).every(v => parseInt(v) <= 50)));
 console.log('INFO Long Tasks > 50 ms Anzahl neu/basis', JSON.stringify(Object.fromEntries(KS.map(k => [k, [(N3[k].lt50 || []).length, (B3[k].lt50 || []).length]]))));

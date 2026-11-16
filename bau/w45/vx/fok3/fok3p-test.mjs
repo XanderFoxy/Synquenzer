@@ -82,7 +82,7 @@ for (const [tag, file] of [['neu', files[0]], ['basis', files[1]]]) {
   await P.evaluate(() => __fokus1.mode('alles')); await setN(P, 4096);
   R.P2a = await P.evaluate(() => __T.meas(async () => { __fokus1.mode('rest'); }, null));
   R.P2 = await P.evaluate(async o => {
-    const U = __spk.page.ui(), F = U.f1, k0 = __fokus1.info().key; __T.got(await __spk.mask(o)); const t0 = performance.now(); let hit = false, kNew = false;
+    const U = __spk.page.ui(), F = U.f1, k0 = __fokus1.info().key, hPre = __T.hash(); __T.got(await __spk.mask(o)); const t0 = performance.now(); let hit = false, kNew = false;
     for (;;) { await new Promise(r => setTimeout(r, 2)); if (F.run && F.sig === fokus1Sig(U)) { hit = true; kNew = __fokus1.chunks().some(c => U.f1.set.chunks[c.k] && U.f1.set.chunks[c.k].key && U.f1.set.chunks[c.k].key !== k0); __fokus1.mode('alles'); break; } if (performance.now() - t0 > 5000) break; }
     await new Promise(r => setTimeout(r, 150)); __fokus1.mode('rest');
     const t1 = performance.now(); for (;;) { await new Promise(r => setTimeout(r, 20)); if (__T.done() || performance.now() - t1 > 60000) break; }
@@ -91,8 +91,8 @@ for (const [tag, file] of [['neu', files[0]], ['basis', files[1]]]) {
     __fokus1.mode('gefunden'); await new Promise(r => setTimeout(r, 50)); __fokus1.mode('rest');   // anderer Modus → Satz verworfen → frisch gerechnet
     const t2 = performance.now(); for (;;) { await new Promise(r => setTimeout(r, 20)); if ((__T.done() && __fokus1.info().key) || performance.now() - t2 > 90000) break; }
     await new Promise(r => setTimeout(r, 300));
-    return {hit, kNew, h, hRef: __T.hash(), st, ap: __fokus1.info().ap};
-  }, rect(60, 70, 300, 900));
+    return {hit, kNew, h, hRef: __T.hash(), hPre, st, ap: __fokus1.info().ap};
+  }, rect(60, 70, 2000, 2600));   // Bereich außerhalb der ersten Ebene (200–1200 Hz) → Bild ändert sich wirklich
   console.log(tag, 'P2', JSON.stringify(R.P2));
   R.errs = pg.errs.slice(0, 6); console.log(tag, 'errs', JSON.stringify(R.errs), 'Last', load());
   await pg.ctx.close();
@@ -104,6 +104,7 @@ ok('P1 Endbild byte-gleich v6', [N1.P1.h, B1.P1.h], N1.P1.h === B1.P1.h);
 ok('P1 Ende: keine Näherung, idle, Status Endergebnis', {ap: N1.P1b.info.ap, idle: N1.P1b.idle, stat: N1.P1b.stat}, !N1.P1b.info.ap && N1.P1b.idle && /^Fokus: Rest/.test(N1.P1b.stat));
 ok('P1 kein veraltetes Stück gezeichnet, sichtbare genau', {bad: N1.P1.bad, vis: N1.P1.vis}, !N1.P1.bad && N1.P1.vis === 'ok');
 ok('P2 abgebrochener Satz (Alles → Nur Rest) gilt nicht als aktuell: Endbild = frischer Satz', {neu: [N1.P2.h, N1.P2.hRef], basis: [B1.P2.h, B1.P2.hRef], hit: N1.P2.hit}, N1.P2.hit && N1.P2.h === N1.P2.hRef && !N1.P2.ap);
+console.log('INFO P2 basis (v6) nach Alles → Nur Rest: ' + (B1.P2.h === B1.P2.hRef ? 'gleich frischem Satz' : 'VERALTET (Bild ≠ frischer Satz)') + ', Bild vorher ' + B1.P2.hPre + ' / neu vorher ' + N1.P2.hPre);
 ok('P2 frischer Satz byte-gleich v6', [N1.P2.hRef, B1.P2.hRef], N1.P2.hRef === B1.P2.hRef);
 ok('Konsole 0 Fehler (neu, basis)', [N1.errs, B1.errs], !N1.errs.length && !B1.errs.length);
 console.log(`\nERGEBNIS fok3p: ${nOk} OK / ${nF} FEHLER`);
