@@ -183,6 +183,7 @@ test('Befund 5: Museumsnacht Halle/Leipzig hat keine feste Regel – nur belegte
   assert.equal(e.muster, undefined, '„2. Samstag im Mai“ traf 2024 (04.05.) nicht');
   assert.deepEqual(e.termine.map(t => t.ab), ['2024-05-04', '2025-05-10', '2026-05-09']);
   assert.match(e.wann, /2027 noch nicht veröffentlicht/);
+  for (const x of LISTE.eintraege) assert.ok(!x.wann || x.wann.length <= 140, `${x.id}: „wann“ länger als die Seite zeigt (140)`);
   const { termine, regelmaessig } = ausListe(LISTE, '2026-11-16');
   assert.ok(!termine.some(t => t.id === 'museumsnacht-halle-leipzig'), 'kein Termin in der Liste, solange 2027 nicht bekannt ist');
   const r = regelmaessig.find(x => x.id === 'museumsnacht-halle-leipzig');
