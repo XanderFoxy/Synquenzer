@@ -157,3 +157,17 @@ Last während der ganzen Prüfung 14–29 (fremde Agenten) → Long-Task-Zahlen 
 | basis | 2 | – | 4, 12 | 495 ms, Long Tasks 2× max 324 ms |
 Erstes Rechnen (4096 → 1024): Stücke kommen langsamer als die Bilder → in keinem Modus etwas zurückgestellt, je Bild 1 Kachel (wie basis).
 Endbilder in allen Modi byte-gleich basis (7eb53ee5 / 1420d956), keine GL-Fehler.
+
+### Regression (Endfassung 47b4ffc8; Kopien in `reg/`, Abläufe `reg/reg3.log`, `reg/reg4.log`, `reg/reg5.log`; Last 11–29)
+Wegen der hohen Last (fremde Agenten) jeder Test mit Long-Task-Prüfung **A/B gleichzeitig** (index und basis parallel, gleiche Last):
+| Test | index | basis (gleiche Last) | Bemerkung |
+|---|---|---|---|
+| lt2p-test (neu, G + R) | **ALLES OK 12** | – (A/B im Test) | Gegenprobe auf der Sicherung: 3 FEHLER (Befund 1) |
+| spk12-test3 | 44 / 3 (`r-spk12c-index.log`; 1. Lauf Last 28: 44 / 3) | 44 / 3 | alle 3 = hauptfaden-ohne-long-task (Bedienung Ähnliche/Abtasten/Merken) in beiden |
+| fokus1-test (LONG=0) | 44 / 6 (2 Läufe gleich) | 44 / 6 | alle 6 = umschalten-* longtasks<=50 in beiden; alle Byte-/Bild-Prüfungen OK |
+| fok2-test (gegen rel-4750) | 19 / 2 (1. Lauf Last 22: 18 / 3) | 18 / 3 | nur zeit-*-Long-Tasks und abbruch-Zeit (Worker) – in basis ebenso; Byte-Prüfungen OK |
+| fokus1-kern-test | **26 / 0** | | |
+| spk6-test | **ALLES OK** | | |
+| spk5-test | **ALLES OK · 24** | | |
+| spkfix-test | **ALLES OK 11** | | |
+| lt2-test a2/b/d (REPS 1, beide Größen) | Ergebnis/Bild gleich **6 / 6** | | Long Tasks bei Last 11–17 in A und B (Einzelläufe) |

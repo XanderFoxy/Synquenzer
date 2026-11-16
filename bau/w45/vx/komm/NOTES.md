@@ -63,7 +63,7 @@ kürzere Auswertung beim ersten Öffnen.
   alle 24 ausführbaren Skripte + CSS sind bytegleich zur bisherigen Auslieferung (nur die 9 text/plain ändern sich) → unverändert.
 - Pflicht auf der Auslieferung: topdefs „Skripte 26, Namen 7988, doppelt 0, Syntaxfehler 0“; dupkeys „0 doppelte Schlüssel“;
   smoke „title SYNQUENZER errors []“; MS 2000 1×; '^  live: true,' 1×; VERSION '4.76.1'.
-- freigabe.sh (Kopie) ganzer Lauf: siehe frei/freigabe.log.
+- freigabe.sh (Kopie) ganzer Lauf auf rel-4761/index.html: **GRÜN** in 2 min 55 s unter Last (2 Läufe bytegleich, Pflicht Quelle + Auslieferung, Rauchtest); frei/index.html md5 dd5abfd2… = aus/index.html.
 
 ## Offen
 1. Worklet-/Worker-Texte in Vorlagen-Zeichenketten bleiben wörtlich (ST_WK 3,6 K Kommentar-Zeichen, JAM2_PROC_SRC 1,0 K,
@@ -74,3 +74,12 @@ kürzere Auswertung beim ersten Öffnen.
 4. Neue Text-Zugriffe auf diese Blöcke (auch Fehlermeldungs-Strings in Anführungszeichen genau gleich dem Namen) lassen den Wächter
    anschlagen – gewollt; dann Zugriff prüfen und `stellen` anpassen.
 5. Fehler-Stapel aus diesen Blöcken: Zeilen bleiben gleich (Zeilenzahl erhalten), Spalten verschieben sich (Einrückung weg).
+
+## Anleitung: so nutzt freigabe.sh das Werkzeug
+- Sofort: `vx/komm/freigabe.sh rel-XXXX/index.html rel-XXXX/aus` (Kopie von perf2/freigabe.sh; nimmt `vx/komm/ausliefern.mjs` aus
+  dem eigenen Ordner, Werkzeug-Module aus perf2/werkzeug, Spektral-Prüfwerkzeuge aus perf2/e). Muss mit „GRÜN“ enden.
+- Oder dauerhaft übernehmen: `cp vx/komm/ausliefern.mjs vx/perf2/ausliefern.mjs` – perf2/freigabe.sh ruft `$H/ausliefern.mjs` auf und
+  braucht sonst nichts Neues (perf2/werkzeug liegt daneben). Vorher Sicherung `perf2/ausliefern.mjs.perf2` anlegen.
+- Zurück zum alten Verhalten ohne Dateitausch: `node ausliefern.mjs --ohne-komm <quelle> <ziel> [bericht]`.
+- Nach dem ersten Release mit KOMM einmal `node vx/komm/test/golden.mjs <quelle> <auslieferung>` (→ „ERGEBNIS bitgleich“) und
+  `node vx/komm/test/lader.mjs <auslieferung>` (alle Werte true/ready, Konsole []) in die Release-Prüfung aufnehmen.
