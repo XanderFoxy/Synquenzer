@@ -1,0 +1,120 @@
+{
+ "version": 1,
+ "aktualisiert": "2026-11-16T02:39:35.756Z",
+ "ort": "Döbeln",
+ "namen": {
+  "deals": "Deals",
+  "erleben": "Erleben",
+  "reisen": "Reisen",
+  "musik": "Musik",
+  "nebenverdienst": "Nebenverdienst",
+  "tests": "Tests & Gewinnspiele",
+  "praemien": "Prämien & Freunde werben",
+  "filme": "Filme & Serien",
+  "remix": "Remix-Contests",
+  "auftritte": "Auftritte",
+  "unterricht": "Deutschunterricht"
+ },
+ "sofort": [],
+ "kategorien": {
+  "deals": [],
+  "erleben": [],
+  "reisen": [],
+  "musik": [],
+  "nebenverdienst": [],
+  "tests": [],
+  "praemien": [],
+  "filme": [],
+  "remix": [],
+  "auftritte": [],
+  "unterricht": [],
+  "knaller": []
+ },
+ "status": {
+  "deals": {
+   "ok": true,
+   "aus": true
+  },
+  "erleben": {
+   "ok": true,
+   "aus": true
+  },
+  "reisen": {
+   "ok": true,
+   "aus": true
+  },
+  "musik": {
+   "ok": true,
+   "aus": true
+  },
+  "nebenverdienst": {
+   "ok": true,
+   "aus": true
+  },
+  "tests": {
+   "ok": true,
+   "aus": true
+  },
+  "praemien": {
+   "ok": true,
+   "aus": true
+  },
+  "filme": {
+   "ok": true,
+   "aus": true
+  },
+  "remix": {
+   "ok": true,
+   "aus": true
+  },
+  "auftritte": {
+   "ok": true,
+   "aus": true
+  },
+  "unterricht": {
+   "ok": true,
+   "aus": true
+  },
+  "knaller": {
+   "ok": true,
+   "anzahl": 0,
+   "fehler": [],
+   "ms": 46422,
+   "stand": "2026-11-16T02:39:35.756Z",
+   "hinweise": [
+    "Marktkauf: Seite ohne Angebote (kein Prospekt am Standort?)"
+   ],
+   "kurz": {
+    "anzahl": 19,
+    "ab": {
+     "30": 19,
+     "40": 13,
+     "50": 6
+    },
+    "top": [
+     {
+      "titel": "MILKA Schokolade",
+      "markt": "Kaufland",
+      "pct": 55,
+      "preis": 0.88,
+      "vorherArt": "streich"
+     },
+     {
+      "titel": "Weihenstephan Mascarpone-/Rahmjoghurt",
+      "markt": "Aldi Nord",
+      "pct": 54,
+      "preis": 0.45,
+      "vorherArt": "uvp"
+     },
+     {
+      "titel": "Kerrygold Original Irische Butter oder Extra",
+      "markt": "Penny",
+      "pct": 51,
+      "preis": 1.59,
+      "vorherArt": "uvp"
+     }
+    ]
+   }
+  }
+ }
+}
