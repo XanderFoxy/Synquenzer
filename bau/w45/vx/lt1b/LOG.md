@@ -11,3 +11,5 @@
 - 23:34 Last 3.27, 4.07, 3.22 · mem.mjs fertig; s10 Lauf 1 (parallel zu mem) index 47/32 basis 31/30 → Wiederholung allein REPS=3 beide Größen
 - 23:36 Last 1.61, 3.03, 2.95 · s10 allein: gleich, index Median 28,5 ms (n 6) / basis 29 ms – Normalweg unverändert
 - 23:37 Last 1.29, 2.73, 2.85 · NOTES.md fertig; Endfassung md5 b5dd6b364cf60f3f4077c8e8bd6714ac
+- 00:15 Last 3.47, 4.66, 5.59 · Nachbesserung nach Prüfer (3 kleine Befunde). Sicherung index.vor-lt1b2.html, t/ab.mjs.vor-lt1b2, NOTES.md.vor-lt1b2; md5 vorher b5dd6b364cf60f3f4077c8e8bd6714ac
+- 00:16 Last 4.60, 4.80, 5.61 · Kommentar Grenze im Block LT1 korrigiert (364 s, immer 48 kHz); t/ab.mjs: b7-Text korrigiert (Dehnen-Regel), b5-Text (48 kHz), neuer Fall b8 (Take-Regel ohne Tempo). Start ab.mjs CASES=b7,b8,b1 + Pflicht

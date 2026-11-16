@@ -10,3 +10,5 @@
 00:07 Ende: teil1-test 59 OK / 2 (T1 Zeitziel unter Last), Regression grün außer fokus1-test Long-Task-Schwellen (wie im FOKUS1-Release-Lauf), Rauchtest ok, md5 7fcf0543. Last 5.37 8.53 6.74
 00:11 A/B spk2-loop-test gestartet, Probe wird geschrieben, Last 3.81 6.26 6.25
 00:13 Probe 428 fertig (Kopf abgeschnitten, Still-Meldung, bg ok), spk2-loop A/B je 18 OK, Last 3.74 5.67 6.04
+00:14 Probe 926x428/428x926: keine Überdeckung im Streifen; 3. Tipp auf denselben Teil zoomt nicht mehr hinein (alle 3 Größen). Last 2.84 4.73 5.65
+00:16 Auftakt-Probe: Loop-Zeile 'Takt 0–4', Blatt 'Takt 1–4', Szene ohne Vorlauf-Takt; spk11 A/B läuft. Last 4.87 4.86 5.62

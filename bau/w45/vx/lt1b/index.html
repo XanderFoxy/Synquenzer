@@ -109308,7 +109308,7 @@ function lt1GridOk() {   // Haken in imp1Place: true = Raster wurde in diesem Ab
 function lt1PreDrop() { const p = LT1.pre; LT1.pre = null; if (p && p.tm) clearTimeout(p.tm); }
 /* LT1B (Paket LT1B, 4.76 – Rest der Zweitprüfung): Speicher begrenzen und Neustart.
    (1) Die Vorbereitung hält 6 Byte je Probe (Int16-Kopie + Float32-AudioBuffer, ≈ 17 MB je Minute bei 48 kHz), solange das Blatt offen
-       ist. Obergrenze LT1_MAXB = 100 MiB (≈ 6 min bei 48 kHz, 6,6 min bei 44,1 kHz, 3 min bei 96 kHz) – darüber der alte Weg.
+       ist. Obergrenze LT1_MAXB = 100 MiB ≈ 364 s (6,07 min) Take-Länge für jede Datei (der Import rechnet immer auf 48 kHz um: ggbDecode/GGB_SR) – darüber der alte Weg.
        Keine Vorbereitung, wenn im Blatt „Als Gesang importiert“ steht (eigener Take-Weg) oder das Blatt schon einen Take hat
        (imp1Place nimmt dann c.take wieder, imp1Take läuft nicht) – eine liegende Vorbereitung wird dann sofort freigegeben.
    (2) Neustart: lt1PreCheck (Haken in imp1Paint, imp1Sheet, pshUndock) vergleicht Versatz/Länge/Dehnen mit dem Blatt. Passt die
