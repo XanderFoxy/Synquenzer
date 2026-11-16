@@ -1,0 +1,84 @@
+{
+  "head" : {
+    "vars" : [ "item", "name", "itunes", "jahr" ]
+  },
+  "results" : {
+    "bindings" : [ {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q468697"
+      },
+      "name" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Run Lola Run"
+      },
+      "itunes" : {
+        "type" : "literal",
+        "value" : "995070180"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1998"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q468697"
+      },
+      "name" : {
+        "xml:lang" : "de",
+        "type" : "literal",
+        "value" : "Lola rennt"
+      },
+      "itunes" : {
+        "type" : "literal",
+        "value" : "995070180"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1998"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q607910"
+      },
+      "name" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Con Air"
+      },
+      "itunes" : {
+        "type" : "literal",
+        "value" : "252789518"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1997"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q607910"
+      },
+      "name" : {
+        "xml:lang" : "de",
+        "type" : "literal",
+        "value" : "Con Air"
+      },
+      "itunes" : {
+        "type" : "literal",
+        "value" : "252789518"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1997"
+      }
+    } ]
+  }
+}
