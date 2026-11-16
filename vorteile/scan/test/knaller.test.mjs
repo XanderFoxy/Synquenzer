@@ -266,19 +266,25 @@ test('knaller Prüfer: Doppel aus parallelen Prospekten (gleiches Foto oder Mark
   assert.equal(r.datei.status.kaufda.roh.rewe, 6);
 });
 
-test('knaller Prüfer: Seite ohne ein einziges Angebot = Störung (nicht still „0“), alte Angebote bleiben; alle leer = Fehler', async () => {
+test('knaller Prüfer: Seite ohne ein einziges Angebot = Hinweis, alte Angebote bleiben; mehrere/alle leer = Störung (nicht still „0“)', async () => {
   const leer = seiteMit([]);
   const vorherDatei = { angebote: [{ id: 'kd:alt', markt: 'penny', titel: 'Kaffee', preis: 3.99, vorher: 7.99, vorherArt: 'streich', pct: 50, gueltigBis: '2026-11-14T22:59:00.000Z' }] };
   const penny = await readFile(join(FX, 'knaller', 'penny.html'), 'utf8');
   const c = { ...cfg, module: { knaller: { ...cfg.module.knaller, maerkte: MAERKTE.filter(m => m.id === 'penny' || m.id === 'netto') } } };
   const r = await knaller({ holeText: async u => (u.includes('Netto') ? penny : leer), cfg: c, jetzt: JETZT, zustand: {}, vorherDatei });
-  assert.ok(r.fehler.some(f => /^Penny: Seite ohne Angebote/.test(f)), r.fehler.join('\n'));
-  assert.equal(r.datei.status.kaufda.ok, false);
+  // einzeln (echter Lauf 16.11.: Marktkauf ohne Prospekt am Standort) -> Hinweis, keine Störung
+  assert.ok(r.hinweise.some(h => /^Penny: Seite ohne Angebote/.test(h)), r.hinweise.join('\n'));
+  assert.ok(!r.fehler.some(f => /Penny/.test(f)), r.fehler.join('\n'));
   assert.deepEqual(r.datei.angebote.filter(a => a.markt === 'penny').map(a => a.titel), ['Kaffee']);
   assert.deepEqual(r.datei.status.kaufda.alt, ['penny']);
   // Netto-Seite gelesen, aber die Angebote darauf sind von Penny/Scottie -> Hinweis, roh.netto zählt nur Netto
   assert.ok(r.hinweise.some(h => /^Netto: keine Angebote dieses Markts/.test(h)) || r.datei.status.kaufda.roh.netto > 0);
-  await assert.rejects(() => knaller({ holeText: async () => leer, cfg: c, jetzt: JETZT, zustand: {} }), /keine Händlerseite gelesen.*Seite ohne Angebote/);
+  await assert.rejects(() => knaller({ holeText: async () => leer, cfg: c, jetzt: JETZT, zustand: {} }), /keine Händlerseite gelesen.*Seiten ohne Angebote \(Netto, Penny\)/);
+  // 3 von 4 Seiten leer -> Störung im Status (Aufbau geändert?), die eine volle Seite zählt trotzdem
+  const c4 = { ...cfg, module: { knaller: { ...cfg.module.knaller, maerkte: MAERKTE.filter(m => ['penny', 'netto', 'rewe', 'lidl'].includes(m.id)) } } };
+  const r4 = await knaller({ holeText: async u => (u.includes('Netto') ? penny : leer), cfg: c4, jetzt: JETZT, zustand: {} });
+  assert.equal(r4.datei.status.kaufda.ok, false);
+  assert.ok(r4.fehler.some(f => /Seiten ohne Angebote \(Lidl, Penny, REWE\)/.test(f)), r4.fehler.join('\n'));
 });
 
 test('knaller Prüfer: Start-Kachel-Übersicht – was jetzt gilt zuerst, Späteres mit „ab“', async () => {

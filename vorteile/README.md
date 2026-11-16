@@ -196,7 +196,8 @@ Nachbesserung nach der Datenprüfung (16.11.2026): `pct` ist **abgerundet** (29,
 `secondaryPriceIsUVP` (true = `uvp`, false = `streich`, fehlt = `unbekannt` – kein Goldrahmen); Doppel aus parallelen
 (regionalen) Prospekten desselben Markts werden über dieselbe Bilddatei oder Marke + erstes Titelwort + Preis + Vergleichspreis +
 Ende erkannt (echter REWE-Mitschnitt Berlin: 8 -> 2), `prospekt` = Prospekt-id bei kaufDA; eine Händlerseite **ohne ein einziges
-Angebot** gilt als Störung (Fehler, alte Angebote bleiben) statt still „0“, `roh` = gelesene Angebote des Markts; `standort` nennt
+Angebot** ist ein Hinweis (alte Angebote bleiben; echter Lauf 16.11.: Marktkauf ohne Prospekt am Standort), mehrere/alle leer
+= Störung (Aufbau geändert?) statt still „0“, `roh` = gelesene Angebote des Markts (echter Lauf: je Seite 16); `standort` nennt
 die Stadt nur, wenn ihre Seite die Angebote wirklich geliefert hat; App-/Kartenpreise erkennen auch DeutschlandCard, REWE Bonus,
 Mitgliederpreis; `kurz.top` zeigt erst, was jetzt gilt, Späteres mit `ab`.
 

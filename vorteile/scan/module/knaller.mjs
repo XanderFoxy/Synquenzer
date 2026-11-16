@@ -9,8 +9,9 @@
 // App-/Karten-Preise (Penny App, Lidl Plus, Kaufland Card, PAYBACK …) -> app = true (die Seite kennzeichnet sie).
 // Kein Eintrag in aktuell.json (keine Pushes); eigene Datei <data>/knaller.json (Rückgabefeld „datei“) und eine Übersicht in
 // status.knaller.kurz für die Start-Kachel. Bilder nur als Link (https, Prospekt-Ausschnitt von content-media.bonial.biz).
-// Fällt eine Händlerseite aus (oder kommt sie ohne ein einziges Angebot – Aufbau geändert?), bleiben deren noch gültige
-// Angebote aus der letzten Datei stehen (mit „alt“ im Status); status.kaufda.roh = gelesene Angebote des Markts je Seite.
+// Fällt eine Händlerseite aus (oder kommt sie ohne ein einziges Angebot), bleiben deren noch gültige Angebote aus der
+// letzten Datei stehen (mit „alt“ im Status); mehrere leere Seiten = Störung (Aufbau geändert?); status.kaufda.roh =
+// gelesene Angebote des Markts je Seite.
 // Prüfer 16.11.2026: Rabatt abgerundet (29,5 % ist nicht „ab 30 %“); ohne UVP-Kennzeichen vorherArt 'unbekannt' (kein
 // Goldrahmen); Doppel aus parallelen Prospekten desselben Markts über Bilddatei und Marke/Preis/Vergleichspreis/Ende erkannt.
 import { leseKaufdaSeite, kaufdaZeit, kaufdaSlug } from '../lib/kaufda.mjs';
@@ -120,6 +121,7 @@ export default async function knaller({ holeText, cfg, jetzt = new Date(), zusta
   const st = { ok: true, anzahl: 0, fehler: [], abrufe: 0, seiten: {}, roh: {}, alt: [] };
   const jeMarkt = {};
   const info = {};
+  const leer = [];
   let okSeiten = 0;
   for (const mk of maerkte) {
     const slug = kaufdaSlug(mk.kaufda);
@@ -145,16 +147,19 @@ export default async function knaller({ holeText, cfg, jetzt = new Date(), zusta
         break;
       }
     }
-    // Seite gelesen, aber kein einziges Angebot darauf (Datenblock da, Aufbau anders?) -> wie ein Ausfall behandeln, nicht als „0“
+    // Seite gelesen, aber kein einziges Angebot darauf: einzeln = Hinweis (z. B. Marktkauf ohne Prospekt am Standort, echter
+    // Lauf 16.11.2026), alte Angebote bleiben; sind es mehrere/alle Seiten -> Fehler unten (Aufbau geändert?), nicht still „0“
     const roh = seite ? seite.items.filter(o => marktVon(o.publisherName, maerkte) === mk.id).length : 0;
-    if (seite && !seite.items.length) { letzterFehler = new Error(`Seite ohne Angebote (${seite.v.url.replace(basis, '')}) – Aufbau geändert?`); seite = null; }
+    let leerSeite = false;
+    if (seite && !seite.items.length) { leer.push(mk.name); leerSeite = true; seite = null; }
     if (!seite) {
       // Ausfall: noch gültige Angebote dieses Markts aus der letzten Datei behalten
       const alt = (Array.isArray(vorherDatei?.angebote) ? vorherDatei.angebote : []).filter(a => a && a.markt === mk.id && !(a.gueltigBis && Date.parse(a.gueltigBis) < jetztMs));
       jeMarkt[mk.id] = alt;
       if (alt.length) st.alt.push(mk.id);
       const msg = `${mk.name}: ${letzterFehler ? letzterFehler.message : 'keine Seite'}`;
-      if (letzterFehler && ist404(letzterFehler)) hinweise.push(`${mk.name}: keine kaufDA-Händlerseite (${pfad})`);
+      if (leerSeite) hinweise.push(`${mk.name}: Seite ohne Angebote (kein Prospekt am Standort?)`);
+      else if (letzterFehler && ist404(letzterFehler)) hinweise.push(`${mk.name}: keine kaufDA-Händlerseite (${pfad})`);
       else fehler.push(msg);
       st.seiten[mk.id] = 0;
       info[mk.id] = { link: null, ort: null };
@@ -186,6 +191,7 @@ export default async function knaller({ holeText, cfg, jetzt = new Date(), zusta
     st.seiten[mk.id] = liste.length;
     jeMarkt[mk.id] = liste;
   }
+  if (leer.length >= 2 && leer.length > okSeiten) fehler.push(`Seiten ohne Angebote (${leer.join(', ')}) – Aufbau bei kaufDA geändert?`);
   if (maerkte.length && !okSeiten && fehler.length) throw new Error(`kaufDA: keine Händlerseite gelesen – ${fehler[0]}`);
 
   // nur ab minProzent, je Markt höchstens maxJeMarkt (die größten zuerst)
