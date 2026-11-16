@@ -299,41 +299,47 @@
   // werden übergangen; Unbekanntes (Monate, Wochen, sunrise …) -> null (dann nur der Text, kein „offen“).
   const OSM_TAG = { Mo: 1, Tu: 2, We: 3, Th: 4, Fr: 5, Sa: 6, Su: 7 };
   function oeffnungPlan(oh) {
-    const s = String(oh || '').trim();
+    const s = String(oh || '').replace(/"[^"]*"/g, ' ').replace(/\s+/g, ' ').trim(); // Kommentare („kitchen closes …“) weg
     if (!s) return null;
     const plan = {};
     if (s === '24/7') { for (let t = 1; t <= 7; t++) plan[t] = [[0, 1440]]; return plan; }
+    const TAG = '(?:PH|Mo|Tu|We|Th|Fr|Sa|Su)';
+    const TAGE = new RegExp(`^(${TAG}(?:\\s*-\\s*${TAG})?(?:\\s*,\\s*${TAG}(?:\\s*-\\s*${TAG})?)*)\\s+(.+)$`);
     let ok = false;
-    for (const teil0 of s.split(';')) {
-      const teil = teil0.trim();
-      if (!teil) continue;
-      if (/^PH\b/.test(teil)) continue;
-      const m = /^((?:Mo|Tu|We|Th|Fr|Sa|Su)(?:\s*-\s*(?:Mo|Tu|We|Th|Fr|Sa|Su))?(?:\s*,\s*(?:Mo|Tu|We|Th|Fr|Sa|Su|PH)(?:\s*-\s*(?:Mo|Tu|We|Th|Fr|Sa|Su))?)*)\s+(.+)$/.exec(teil);
-      let tage = [], zeiten;
-      if (m) {
-        for (const st of m[1].split(',').map(x => x.trim()).filter(x => x !== 'PH')) {
-          const [a, b] = st.split('-').map(x => OSM_TAG[x.trim()]);
-          if (!a) return null;
-          if (!b) tage.push(a); else for (let t = a, i = 0; i < 7; i++, t = t % 7 + 1) { tage.push(t); if (t === b) break; }
+    for (const regel of s.split(';')) {
+      // „, “ nach einer Uhrzeit = zusätzliche Regel (ergänzt die Tage), „;“ = neue Regel (ersetzt sie)
+      const teile = regel.trim().split(/(?<=[\d+])\s*,\s*(?=(?:PH|Mo|Tu|We|Th|Fr|Sa|Su)\b)/).map(x => x.trim()).filter(Boolean);
+      teile.forEach((teil, nr) => {
+        if (plan === null) return;
+        const m = TAGE.exec(teil);
+        let tage = [], zeiten;
+        if (m) {
+          for (const st of m[1].split(',').map(x => x.trim()).filter(x => x !== 'PH')) {
+            const [a, b] = st.split('-').map(x => OSM_TAG[x.trim()]);
+            if (!a) { tage = null; break; }
+            if (!b) tage.push(a); else for (let t = a, i = 0; i < 7; i++, t = t % 7 + 1) { tage.push(t); if (t === b) break; }
+          }
+          zeiten = m[2].trim();
+        } else if (/^\d\d:\d\d/.test(teil)) { tage = [1, 2, 3, 4, 5, 6, 7]; zeiten = teil; } else if (/^PH\b/.test(teil)) return; else { tage = null; }
+        if (!tage) { ok = false; plan.kaputt = true; return; }
+        if (!tage.length) return; // nur Feiertage
+        if (/^(off|closed)$/i.test(zeiten)) { for (const t of tage) plan[t] = []; ok = true; return; }
+        const fenster = [];
+        for (const z of zeiten.split(',')) {
+          const f = /^\s*(\d\d):(\d\d)\s*(?:-\s*(\d\d):(\d\d)\+?|\+)\s*$/.exec(z);
+          if (!f) { plan.kaputt = true; return; }
+          const von = +f[1] * 60 + +f[2];
+          let bis = f[3] != null ? +f[3] * 60 + +f[4] : 1440; // „17:00+“ = offenes Ende: bis Mitternacht gerechnet
+          if (bis <= von) bis += 1440;
+          fenster.push([von, bis]);
         }
-        zeiten = m[2].trim();
-      } else if (/^\d\d:\d\d/.test(teil)) { tage = [1, 2, 3, 4, 5, 6, 7]; zeiten = teil; } else return null;
-      if (/^(off|closed)$/i.test(zeiten)) { for (const t of tage) plan[t] = []; ok = true; continue; }
-      const fenster = [];
-      for (const z of zeiten.split(',')) {
-        const f = /^\s*(\d\d):(\d\d)\s*-\s*(\d\d):(\d\d)\+?\s*$/.exec(z);
-        if (!f) return null;
-        const von = +f[1] * 60 + +f[2];
-        let bis = +f[3] * 60 + +f[4];
-        if (bis <= von) bis += 1440;
-        fenster.push([von, bis]);
-      }
-      for (const t of tage) plan[t] = fenster;
-      ok = true;
+        for (const t of tage) plan[t] = nr > 0 && Array.isArray(plan[t]) ? [...plan[t], ...fenster].sort((x, y) => x[0] - y[0]) : fenster;
+        ok = true;
+      });
     }
-    return ok ? plan : null;
+    return ok && !plan.kaputt ? plan : null;
   }
-  const uhrText = m => { const h = Math.floor(m / 60) % 24, mi = m % 60; return mi ? `${h}:${String(mi).padStart(2, '0')}` : `${h}`; };
+  const uhrText = m => { const h = m === 1440 ? 24 : Math.floor(m / 60) % 24, mi = m % 60; return mi ? `${h}:${String(mi).padStart(2, '0')}` : `${h}`; };
   /** jetzt: { s: 'offen'|'spaeter'|'vorbei'|'zu', text } | null (Öffnungszeiten unbekannt) */
   function oeffnungJetzt(plan, j) {
     if (!plan) return null;

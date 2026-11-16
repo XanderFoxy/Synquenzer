@@ -124,6 +124,22 @@ export function naechsteFilialen(ketten, osm) {
   });
 }
 
+/** OSM-Stand aus der alten Datei: gepflegte Lokale mit OSM-Feldern, weitere, nächste Filialen (die Datei hält kein Rohformat mehr) */
+export function ausVorher(v) {
+  if (!v || typeof v !== 'object') return [];
+  if (Array.isArray(v.osmRoh) && v.osmRoh.length) return v.osmRoh; // ältere Datei (16.11.2026, Roh-Lauf 43831213811)
+  const el = [], ids = new Set();
+  const dazu = (x, amenity, marke = null) => {
+    if (!x || !x.osm || ids.has(x.osm) || !Number.isFinite(x.lat) || !Number.isFinite(x.km)) return;
+    ids.add(x.osm);
+    el.push({ osm: x.osm, name: x.name, amenity, kueche: Array.isArray(x.kueche) ? x.kueche : [], lat: x.lat, lon: x.lon, km: x.km, ort: x.ort || '', adresse: x.adresse || '', oeffnung: x.oeffnung || '', website: x.website || null, marke });
+  };
+  for (const l of v.lokale || []) dazu(l, 'restaurant');
+  for (const w of v.weitere || []) dazu(w, w.art || 'restaurant');
+  for (const k of v.ketten || []) dazu(k.naechste && { ...k.naechste, kueche: [] }, 'fast_food', k.brand || k.kette);
+  return el.sort((a, b) => a.km - b.km);
+}
+
 const WT = ['', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 const wochentagVon = tag => new Date(tag + 'T12:00:00Z').getUTCDay() || 7;
 const karteLink = l => (Number.isFinite(l.lat) ? `https://www.openstreetmap.org/?mlat=${l.lat}&mlon=${l.lon}#map=18/${l.lat}/${l.lon}` : `https://www.openstreetmap.org/search?query=${encodeURIComponent([l.name || l.titel, l.ort].filter(Boolean).join(' '))}`);
@@ -158,7 +174,9 @@ export default async function essen({ holeText, cfg, jetzt = new Date(), zustand
 
   // 1) OSM: höchstens alle osmStunden; sonst (oder bei Ausfall) der letzte Stand aus der alten Datei
   let osm = null, alt = false;
-  const altOsm = Array.isArray(vorherDatei?.osmRoh) && vorherDatei.osmRoh.length ? vorherDatei.osmRoh : null; // leer = kein Stand
+  const altOsm = (a => (a.length ? a : null))(ausVorher(vorherDatei)); // leer = kein Stand
+  // für neu/weg: alle Lokale im Umkreis (kompakt), nicht nur die gezeigten
+  const altIds = Array.isArray(vorherDatei?.osmIds) && vorherDatei.osmIds.length ? vorherDatei.osmIds : altOsm;
   const faellig = !altOsm || !zk.osmZeit || jetztMs - Date.parse(zk.osmZeit) >= m.osmStunden * 3600e3;
   if (faellig) {
     try {
@@ -179,12 +197,12 @@ export default async function essen({ holeText, cfg, jetzt = new Date(), zustand
   const { lokale, weitere, nichtGefunden } = fuehreZusammen(liste, osm, { radiusKm, maxWeitere: m.maxWeitere });
   const ketten = naechsteFilialen(liste.ketten, osm);
   let neu = vorherDatei?.neu || [], weg = vorherDatei?.weg || [];
-  if (osm.length && !alt && faellig && altOsm) {
-    const vorIds = new Set(altOsm.filter(x => x.km <= radiusKm).map(x => x.osm));
+  if (osm.length && !alt && faellig && altIds) {
+    const vorIds = new Set(altIds.filter(x => x.km <= radiusKm).map(x => x.osm));
     const jetztIds = new Set(osm.filter(x => x.km <= radiusKm).map(x => x.osm));
     const tage = t => (Date.parse(tag) - Date.parse(t)) / 864e5;
     const frischNeu = osm.filter(x => x.km <= radiusKm && !vorIds.has(x.osm)).map(x => ({ osm: x.osm, name: x.name, ort: x.ort, km: x.km, seit: tag }));
-    const frischWeg = altOsm.filter(x => x.km <= radiusKm && !jetztIds.has(x.osm)).map(x => ({ osm: x.osm, name: x.name, ort: x.ort, km: x.km, seit: tag }));
+    const frischWeg = altIds.filter(x => x.km <= radiusKm && !jetztIds.has(x.osm)).map(x => ({ osm: x.osm, name: x.name, ort: x.ort, km: x.km, seit: tag }));
     // „neu“ bleibt 14 Tage stehen (solange das Lokal da ist), „nicht mehr da“ 30 Tage (solange es nicht wiederkommt)
     neu = [...frischNeu, ...neu.filter(x => x.seit && tage(x.seit) <= 14 && jetztIds.has(x.osm) && !frischNeu.some(y => y.osm === x.osm))];
     weg = [...frischWeg, ...weg.filter(x => x.seit && tage(x.seit) <= 30 && !jetztIds.has(x.osm) && !frischWeg.some(y => y.osm === x.osm))];
@@ -212,7 +230,8 @@ export default async function essen({ holeText, cfg, jetzt = new Date(), zustand
     version: 1, aktualisiert: new Date(jetztMs).toISOString(), stand: liste.stand || null, osmStand: zk.osmZeit || vorherDatei?.osmStand || null,
     quelle: { name: 'OpenStreetMap-Mitwirkende', lizenz: 'ODbL', url: 'https://www.openstreetmap.org/copyright' },
     zentrum: z, radiusKm, kettenRadiusKm, lokale, weitere, ketten, neu, weg, nichtGefunden,
-    osmRoh: osm.map(({ osm: o, name, amenity, kueche, lat, lon, km: k, ort, adresse, oeffnung, website, marke }) => ({ osm: o, name, amenity, kueche, lat, lon, km: k, ort, adresse, oeffnung, website, marke })),
+    // alle Lokale im Umkreis, kompakt – nur für den Vergleich neu/nicht mehr da beim nächsten Abruf (die Seite braucht sie nicht)
+    osmIds: (alt || !faellig) && Array.isArray(vorherDatei?.osmIds) ? vorherDatei.osmIds : osm.filter(x => x.km <= radiusKm).map(x => ({ osm: x.osm, name: x.name, ort: x.ort, km: x.km })),
   };
   const kurz = `${lokale.length + weitere.length} Lokale bis ${radiusKm} km · ${mitZeiten} mit Öffnungszeiten${neu.length ? ` · ${neu.length} neu` : ''}`;
   if (alt) hinweise.push('OpenStreetMap gerade nicht erreichbar – letzter Stand');

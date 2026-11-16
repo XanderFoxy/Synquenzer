@@ -119,11 +119,14 @@ test('Modul: eigene Datei, einmal am Tag OSM, Ausfall mit altem Stand = Hinweis 
   assert.deepEqual(r3.fehler, []);
   assert.ok(r3.hinweise.some(h => /letzter Stand/.test(h)));
   assert.equal(r3.datei.weitere.length, r.datei.weitere.length);
+  assert.equal(r3.datei.ketten.find(k => k.id === 'kette-kfc').naechste.ort, 'Chemnitz', 'Ausfall: nächste Filiale aus der alten Datei');
+  assert.equal(r3.datei.lokale.find(l => l.id === 'doe-al-dente').oeffnung, r.datei.lokale.find(l => l.id === 'doe-al-dente').oeffnung);
   // ohne alten Stand: echter Fehler
   const r4 = await essen({ holeText: kaputt, cfg, jetzt, zustand: {}, essenListen: { liste, seite } });
   assert.ok(r4.fehler.some(f => /OpenStreetMap/.test(f)));
   // neu/verschwunden: alter Stand ohne „Testhof Neu“, mit einem verschwundenen Lokal
-  const vor = { ...r.datei, osmRoh: [...r.datei.osmRoh.filter(x => x.name !== 'Testhof Neu'), { osm: 'node/9', name: 'Alt-Lokal', amenity: 'restaurant', kueche: [], lat: 51.12, lon: 13.12, km: 0.5, ort: 'Döbeln', adresse: '', oeffnung: '' }] };
+  assert.ok(!('osmRoh' in r.datei) && r.datei.osmIds.length >= 5, 'kompakter Vergleichsstand statt Rohdaten');
+  const vor = { ...r.datei, osmIds: [...r.datei.osmIds.filter(x => x.name !== 'Testhof Neu'), { osm: 'node/9', name: 'Alt-Lokal', ort: 'Döbeln', km: 0.5 }] };
   const r5 = await essen({ holeText: hole, cfg, jetzt: new Date('2026-11-18T10:00:00Z'), zustand, vorherDatei: vor, essenListen: { liste, seite } });
   assert.deepEqual(r5.datei.neu.map(x => x.name), ['Testhof Neu']);
   assert.deepEqual(r5.datei.weg.map(x => x.name), ['Alt-Lokal']);
@@ -131,7 +134,7 @@ test('Modul: eigene Datei, einmal am Tag OSM, Ausfall mit altem Stand = Hinweis 
   const r7 = await essen({ holeText: hole, cfg, jetzt: new Date('2026-11-19T10:00:00Z'), zustand, vorherDatei: r5.datei, essenListen: { liste, seite } });
   assert.deepEqual(r7.datei.neu.map(x => x.name), ['Testhof Neu']);
   assert.deepEqual(r7.datei.weg.map(x => x.name), ['Alt-Lokal']);
-  const r8 = await essen({ holeText: kaputt, cfg, jetzt, zustand: {}, vorherDatei: { ...r.datei, osmRoh: [] }, essenListen: { liste, seite } });
+  const r8 = await essen({ holeText: kaputt, cfg, jetzt, zustand: {}, vorherDatei: { version: 1, lokale: [], weitere: [], ketten: [], osmIds: [] }, essenListen: { liste, seite } });
   assert.ok(r8.fehler.some(f => /OpenStreetMap/.test(f)), 'leerer alter Stand = echter Fehler');
 });
 
