@@ -2,15 +2,27 @@
 // eigener User-Agent, Zeitlimit, Mindestabstand pro Host, ein kleiner Wiederholversuch bei 429/5xx.
 // abruf.pauseMsJeHost: längerer Abstand für einzelne Hosts (z. B. Apple: höchstens ~20 Abrufe pro Minute).
 // pauseMs 0 (Tests) = ganz ohne Pausen.
+// Retry-After (429/503, Prüfung MV7 Befund 2): Wartezeit des Dienstes gilt für die Wiederholung; verlangt er mehr als
+// abruf.retryAfterMaxMs (Standard 60 s), keine Wiederholung in diesem Lauf. darfWiederholen() (Regel-Wache, Schnittstellen):
+// false = keine Wiederholung (Obergrenze je Lauf erreicht).
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 const warte = ms => new Promise(r => setTimeout(r, ms));
 
+/** Retry-After-Kopf -> Millisekunden (Sekunden oder HTTP-Datum), null wenn keiner/unlesbar */
+export function retryAfterMs(wert, jetztMs = Date.now()) {
+  const w = String(wert ?? '').trim();
+  if (!w) return null;
+  if (/^\d+$/.test(w)) return Number(w) * 1000;
+  const t = Date.parse(w);
+  return Number.isFinite(t) ? Math.max(0, t - jetztMs) : null;
+}
+
 export function macheAbruf(abruf, fetchImpl = globalThis.fetch) {
   const letzter = new Map();
   // timeoutMs je Abruf: für langsame, aber erlaubte Abfragen (Overpass rechnet bis zu 90 s), sonst abruf.timeoutMs
-  return async function holeText(url, { headers = {}, method = 'GET', body, timeoutMs } = {}) {
+  return async function holeText(url, { headers = {}, method = 'GET', body, timeoutMs, darfWiederholen } = {}) {
     const host = new URL(url).host;
     const pause = abruf.pauseMs > 0 ? Math.max(abruf.pauseMs, abruf.pauseMsJeHost?.[host] ?? 0) : 0;
     for (let versuch = 0; ; versuch++) {
@@ -25,7 +37,15 @@ export function macheAbruf(abruf, fetchImpl = globalThis.fetch) {
           headers: { 'user-agent': abruf.userAgent, 'accept-language': 'de-DE,de;q=0.9', ...headers },
         });
         // Wiederholung frühestens nach dem Host-Abstand (Overpass „at capacity“ 502: 10 s statt 3 s, Roh-Lauf 43887290010)
-        if ((r.status === 429 || r.status >= 500) && versuch < 1) { await warte(Math.max(abruf.wiederholMs ?? 3000, pause)); continue; }
+        // und nicht vor dem Retry-After des Dienstes
+        if ((r.status === 429 || r.status >= 500) && versuch < 1) {
+          const ra = retryAfterMs(r.headers?.get?.('retry-after'));
+          if ((ra == null || ra <= (abruf.retryAfterMaxMs ?? 60000)) && (darfWiederholen ? darfWiederholen() : true)) {
+            await r.body?.cancel?.().catch(() => {});
+            await warte(Math.max(abruf.wiederholMs ?? 3000, pause, ra ?? 0));
+            continue;
+          }
+        }
         const text = await r.text();
         if (!r.ok) throw new Error(`HTTP ${r.status} bei ${host}`);
         return text;

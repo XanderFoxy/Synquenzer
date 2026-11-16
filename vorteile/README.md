@@ -308,11 +308,16 @@ So funktioniert es (`macheRegelWache`): Nutzungsbedingungen zuerst (Reddit, Free
 Ausnahme – `NIE` in `schnittstellen.mjs`, die Liste darf diese Hosts nicht enthalten). Dann wird die robots.txt trotzdem
 gelesen (für die Anzeige und die Regel im Status), sperrt aber nur alles **außer** dem genauen Pfad: z. B.
 `news.google.com/rss/topics/…`, `itunes.apple.com/de/lookup?…`, `overpass-api.de/api/status` oder `remotive.com/jobs/…`
-bleiben gesperrt; Unterdomains (`z.overpass-api.de`) und `http:` zählen nicht. Für die Ausnahme gilt: Abstand je Host
+bleiben gesperrt; Unterdomains (`z.overpass-api.de`), `http:`, ein anderer Port (`:8443`) und ein Punkt am Host-Ende
+(`overpass-api.de.`) zählen nicht. Für die Ausnahme gilt: Abstand je Host
 (`macheAbruf`, der größere von `abruf.pauseMsJeHost` und Schnittstelle), harte Obergrenze je Lauf (darüber: Fehler „Rest im
 nächsten Lauf“, kein weiterer Abruf), dieselbe Adresse nie zweimal im Lauf und – nur in echten Läufen, nicht im Roh-Lauf und
 nicht in Tests – die gemerkte Antwort aus `zustand.schnittstellen.cache` (gzip, höchstens 600 KB, Abgelaufenes fliegt jeden
 Lauf). `zustand.schnittstellen.lauf` zeigt je Host Abrufe, gemerkte Antworten und die robots-Regel des letzten Laufs.
+Nachbesserung nach der Prüfung MV7: die eine Wiederholung nach 429/5xx zählt mit gegen die Obergrenze (Overpass also
+höchstens 3 Anfragen je Lauf, nicht 6); bei 429/503 wartet sie mindestens so lange, wie der Dienst per `Retry-After`
+verlangt – verlangt er mehr als 60 s (`abruf.retryAfterMaxMs`), gibt es in diesem Lauf keine Wiederholung. Ein Punkt am
+Ende des Hostnamens (`www.reddit.com.`) umgeht die Nutzungsbedingungs-Sperre nicht.
 
 **User-Agent** (`abruf.userAgent`): „MeinVorteil-Radar/1.0 (privates Spar- und Freizeit-Radar; wenige Abrufe mit Pausen
 und Cache)“ – ehrlich, ohne Personennamen, ohne E-Mail und ohne persönliche Adresse. Wikidata bittet um Kontaktangaben im

@@ -102,7 +102,8 @@ export async function robotsErlaubt(url, { holeRoh, zustand = null, agent = 'vor
 export function agbGrund(url, liste = [], q = {}) {
   if (q?.erlaubnis === true) return null;
   let host;
-  try { host = new URL(url).hostname.toLowerCase(); } catch { return null; }
+  // Punkt am Ende („www.reddit.com.“ = derselbe Host) vor dem Vergleich weg (Prüfung MV7, Befund 4)
+  try { host = new URL(url).hostname.toLowerCase().replace(/\.+$/, ''); } catch { return null; }
   const v = (Array.isArray(liste) ? liste : []).find(x => x?.host && (host === x.host || host.endsWith(`.${x.host}`)));
   return v ? (v.grund || 'Nutzungsbedingungen verbieten automatisches Lesen') : null;
 }
@@ -188,7 +189,9 @@ export function macheRegelWache(holeText, { zustand = null, agent = 'vorteils-ra
     }
     if (st.n >= api.maxJeLauf) throw new Error(`${api.name}: höchstens ${api.maxJeLauf} Abrufe je Lauf – Rest im nächsten Lauf`);
     st.n++;
-    const text = await holeText(url, opts);
+    // eine Wiederholung (429/5xx in macheAbruf) zählt mit und nur, solange die Obergrenze nicht erreicht ist (Prüfung MV7, Befund 1)
+    const darfWiederholen = () => { if (st.n >= api.maxJeLauf) return false; st.n++; return true; };
+    const text = await holeText(url, { ...(opts || {}), darfWiederholen });
     if (merkbar) {
       memo.set(url, text);
       if (cache && api.cacheStunden) cacheSchreibe(ablage, url, text, jetztMs);

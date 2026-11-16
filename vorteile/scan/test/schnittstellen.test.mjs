@@ -7,8 +7,8 @@ import { readFile, mkdtemp } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { macheAbruf, macheFixtureAbruf } from '../lib/http.mjs';
-import { macheRegelWache, istRegelSperre, regelQuellen } from '../lib/robots.mjs';
+import { macheAbruf, macheFixtureAbruf, retryAfterMs } from '../lib/http.mjs';
+import { macheRegelWache, istRegelSperre, regelQuellen, agbGrund } from '../lib/robots.mjs';
 import { SCHNITTSTELLEN, NIE, schnittstelleFuer, schnittstellenPausen, cacheAufraeumen, cacheSchreibe } from '../lib/schnittstellen.mjs';
 import { FIXTURE_KARTE } from './fixtures/karte.mjs';
 import { lauf } from '../main.mjs';
@@ -77,6 +77,8 @@ test('Ausnahme greift nur für genau diese Pfade (Host genau, kein http, keine U
     'https://itunes.apple.com/WebObjects/MZFinance.woa/wa/x', 'https://apps.itunes.apple.com/search?term=a',
     'https://query.wikidata.org/bigdata/namespace/wdq/sparql?query=x', 'https://query.wikidata.org/sparql/x', 'https://www.wikidata.org/sparql?query=x',
     'https://remotive.com/api/other', 'https://remotive.com/remote-jobs?search=x', 'https://remotive.com/jobs/1', 'https://remotive.com/api/remote-jobs/1',
+    // Prüfung MV7: anderer Port bzw. Punkt am Host-Ende nie über die Ausnahme
+    'https://overpass-api.de:8443/api/interpreter?data=x', 'https://news.google.com:444/rss/search?q=a', 'https://overpass-api.de./api/interpreter?data=x',
   ];
   for (const u of ja) assert.ok(schnittstelleFuer(u), `Ausnahme fehlt: ${u}`);
   for (const u of nein) assert.equal(schnittstelleFuer(u), null, `Ausnahme zu weit: ${u}`);
@@ -230,4 +232,46 @@ test('main(): echter Lauf merkt Google News/Wikidata im Zustand, zweiter Lauf 1 
     assert.equal(gefragt.filter(u => /news\.google\.com\/rss/.test(u)).length, 0, 'Google News aus dem Cache');
     assert.ok(gefragt.some(u => /itunes\.apple\.com\/de\/rss/.test(u)), 'Apple wird nicht gemerkt');
   } finally { console.log = log; }
+});
+
+test('Prüfung MV7: Punkt am Host-Ende umgeht die Nutzungsbedingungs-Sperre nicht', async () => {
+  for (const u of ['https://www.reddit.com./r/German/new/.rss', 'https://reddit.com../x', 'https://WWW.Freelancer.com./api/x']) assert.ok(agbGrund(u, cfg.abruf.agbVerbot), u);
+  assert.equal(schnittstelleFuer('https://reddit.com./x', [{ host: 'reddit.com.', pfad: /.*/ }]), null);
+  const { hole, gefragt } = attrappe();
+  const w = macheRegelWache(hole, { agbVerbot: cfg.abruf.agbVerbot, jetzt: JETZT });
+  await assert.rejects(w('https://www.reddit.com./r/German/new/.rss'), e => istRegelSperre(e) && e.regel === 'agb');
+  assert.equal(gefragt.length, 0);
+});
+
+test('Prüfung MV7: Retry-After wird beachtet (zu lang = keine Wiederholung), Wiederholungen zählen gegen maxJeLauf', async () => {
+  assert.equal(retryAfterMs('7'), 7000);
+  assert.equal(retryAfterMs(new Date(Date.now() + 5000).toUTCString()) > 3000, true);
+  assert.equal(retryAfterMs(''), null);
+  assert.equal(retryAfterMs('bald'), null);
+  // 429 mit Retry-After 0,2 s: Wiederholung frühestens danach
+  const z = [];
+  const hole = macheAbruf({ pauseMs: 1, wiederholMs: 10, timeoutMs: 2000, userAgent: 'x', retryAfterMaxMs: 1000 },
+    async () => { z.push(Date.now()); return z.length === 1 ? new Response('langsam', { status: 429, headers: { 'retry-after': 'Thu, 01 Jan 1970 00:00:00 GMT' } }) : new Response('ok'); });
+  assert.equal(await hole('https://a.example/x'), 'ok');
+  const z2 = [];
+  const hole2 = macheAbruf({ pauseMs: 1, wiederholMs: 10, timeoutMs: 2000, userAgent: 'x', retryAfterMaxMs: 5000 },
+    async () => { z2.push(Date.now()); return z2.length === 1 ? new Response('langsam', { status: 429, headers: { 'retry-after': '1' } }) : new Response('ok'); });
+  assert.equal(await hole2('https://b.example/x'), 'ok');
+  assert.ok(z2[1] - z2[0] >= 950, `Wiederholung nach ${z2[1] - z2[0]} ms trotz Retry-After 1 s`);
+  // verlangt mehr als retryAfterMaxMs -> keine Wiederholung in diesem Lauf
+  let n3 = 0;
+  const hole3 = macheAbruf({ pauseMs: 1, wiederholMs: 10, timeoutMs: 2000, userAgent: 'x', retryAfterMaxMs: 1000 },
+    async () => { n3++; return new Response('später', { status: 429, headers: { 'retry-after': '3600' } }); });
+  await assert.rejects(hole3('https://c.example/x'), /HTTP 429 bei c\.example/);
+  assert.equal(n3, 1);
+  // Overpass: jede Wiederholung (502) zählt gegen maxJeLauf = 3 -> höchstens 3 echte Anfragen je Lauf
+  let n4 = 0;
+  const ov = macheAbruf({ pauseMs: 1, wiederholMs: 1, timeoutMs: 2000, userAgent: 'x' }, async url => {
+    if (new URL(url).pathname === '/robots.txt') return new Response(ECHT_ROBOTS['overpass-api.de']);
+    n4++; return new Response('at capacity', { status: 502 });
+  });
+  const w = macheRegelWache(ov, { jetzt: JETZT });
+  for (let i = 0; i < 4; i++) await assert.rejects(w(`https://overpass-api.de/api/interpreter?data=${i}`));
+  assert.ok(n4 <= 3, `Overpass-Anfragen: ${n4}`);
+  assert.equal(w.wache.schnittstelle.get('overpass-api.de').n, 3);
 });

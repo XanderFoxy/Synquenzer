@@ -43,9 +43,11 @@ for (const s of SCHNITTSTELLEN) if (NIE.some(h => s.host === h || s.host.endsWit
 export function schnittstelleFuer(url, liste = SCHNITTSTELLEN) {
   let u;
   try { u = new URL(url); } catch { return null; }
-  if (u.protocol !== 'https:') return null;
+  // nur Standard-Port (Prüfung MV7, Befund 3: „:8443“ ging durch); Punkt am Host-Ende nie als Ausnahme (Befund 4)
+  if (u.protocol !== 'https:' || u.port !== '') return null;
   const host = u.hostname.toLowerCase();
-  if (NIE.some(h => host === h || host.endsWith(`.${h}`))) return null;
+  const ohnePunkt = host.replace(/\.+$/, '');
+  if (NIE.some(h => ohnePunkt === h || ohnePunkt.endsWith(`.${h}`))) return null;
   return liste.find(s => s.host === host && s.pfad.test(u.pathname)) || null;
 }
 
