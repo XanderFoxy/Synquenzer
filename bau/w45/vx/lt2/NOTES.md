@@ -129,7 +129,7 @@ spk1GlDraw (Kennung „LT2“ im Kommentar). Diff: `lt2.diff`. Keine Oberfläche
 - a2 nach Sprung in noch nie gesehene Bereiche lädt wie bisher alle neuen Kacheln im selben Bild (bewusst, sonst Lücken beim Bewegen);
   Vorab-Hochladen unsichtbarer Kacheln im Leerlauf hieße mehr Grafik-Speicher → erst Funk.
 
-## Prüfung (06:21–, Befunde des Prüfers nachgeprüft und behoben; Sicherung `index.vor-pruef.html` = febbfca4…)
+## Prüfung (06:21–06:48, Befunde des Prüfers nachgeprüft und behoben; Sicherung `index.vor-pruef.html` = febbfca4…)
 Endfassung `index.html` md5 **47b4ffc8800ac6b042908f3353d58dfb** (VERSION '4.76.1' unverändert). Änderungen nur im Block LT2-BEGIN…END
 (`lt2-pruef.diff`: +9/−7 gegen die Sicherung; gegen basis jetzt +54/−2 = Block 52 Zeilen + die 2 Haken wie bisher, `lt2.diff`).
 Last während der ganzen Prüfung 14–29 (fremde Agenten) → Long-Task-Zahlen nur als A/B im selben Lauf lesbar.
@@ -158,6 +158,12 @@ Last während der ganzen Prüfung 14–29 (fremde Agenten) → Long-Task-Zahlen 
 Erstes Rechnen (4096 → 1024): Stücke kommen langsamer als die Bilder → in keinem Modus etwas zurückgestellt, je Bild 1 Kachel (wie basis).
 Endbilder in allen Modi byte-gleich basis (7eb53ee5 / 1420d956), keine GL-Fehler.
 
+### Gegenprobe mit dem Prüfskript des Prüfers (`pruef2/p1.mjs` = Kopie von pruef/p1.mjs, REPS 1, 926×428 DPR 2; `pruef2/p1.out`)
+Endfassung gegen basis: **UNTERSCHIEDE: keine** (5 Ansichten, 5 dB-Bereiche, 5 Farbstufen, Tönung an/aus/an, Endbild nach FFT-Aufbau
+1024/8192/2048/4096), **kein glErr** mehr an den Build-Hashes (vorher je „!glErr1282“). Die 4 Konsolen-Meldungen im index-Lauf sind nur der
+Treiber-Hinweis „GPU stall due to ReadPixels … (this message will no longer repeat)“ vom readPixels des Prüfskripts selbst (die App ruft
+readPixels nirgends auf; im Code steht das Wort nur im LT2-Kommentar) – keine INVALID_OPERATION mehr (vorher 68–72 je Lauf).
+
 ### Regression (Endfassung 47b4ffc8; Kopien in `reg/`, Abläufe `reg/reg3.log`, `reg/reg4.log`, `reg/reg5.log`; Last 11–29)
 Wegen der hohen Last (fremde Agenten) jeder Test mit Long-Task-Prüfung **A/B gleichzeitig** (index und basis parallel, gleiche Last):
 | Test | index | basis (gleiche Last) | Bemerkung |
@@ -165,7 +171,7 @@ Wegen der hohen Last (fremde Agenten) jeder Test mit Long-Task-Prüfung **A/B gl
 | lt2p-test (neu, G + R) | **ALLES OK 12** | – (A/B im Test) | Gegenprobe auf der Sicherung: 3 FEHLER (Befund 1) |
 | spk12-test3 | 44 / 3 (`r-spk12c-index.log`; 1. Lauf Last 28: 44 / 3) | 44 / 3 | alle 3 = hauptfaden-ohne-long-task (Bedienung Ähnliche/Abtasten/Merken) in beiden |
 | fokus1-test (LONG=0) | 44 / 6 (2 Läufe gleich) | 44 / 6 | alle 6 = umschalten-* longtasks<=50 in beiden; alle Byte-/Bild-Prüfungen OK |
-| fok2-test (gegen rel-4750) | 19 / 2 (1. Lauf Last 22: 18 / 3) | 18 / 3 | nur zeit-*-Long-Tasks und abbruch-Zeit (Worker) – in basis ebenso; Byte-Prüfungen OK |
+| fok2-test (gegen rel-4750) | **21 / 0** (2. A/B-Lauf, Last 5–8); bei Last 20–22: 19 / 2 bzw. 18 / 3 | **21 / 0** (Last 5–8); bei Last 20: 18 / 3 | Fehlschläge nur bei hoher Last, nur zeit-*-Long-Tasks und abbruch-Zeit (Worker), in basis ebenso |
 | fokus1-kern-test | **26 / 0** | | |
 | spk6-test | **ALLES OK** | | |
 | spk5-test | **ALLES OK · 24** | | |
@@ -190,4 +196,4 @@ LT2 + die 2 Haken (Kennung „LT2“) · keine Oberflächen-Texte, keine sichtba
 - k bleibt über Spektren hinweg erhalten (Geräte-Eigenschaft): wird ein schnelles Gerät plötzlich langsam (Wärme), kann das erste Aufbau-Bild
   bis zu k Kacheln laden (höchstens wie basis), danach halbiert sich k.
 - Long-Task-Prüfungen in spk12c/fokus1/fok2 scheitern bei Last ≥ 11 in index **und** basis gleich (A/B parallel); bei niedriger Last nicht
-  erneut gelaufen außer lt2-test a2/b (Last 5–10) und fok2 (2. Lauf, s. reg5.log).
+  erneut gelaufen außer lt2-test a2/b (Last 5–10: b index 0/0) und fok2 (Last 5–8: 21/0 in beiden).

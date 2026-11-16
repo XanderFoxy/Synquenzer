@@ -10,3 +10,5 @@
 06:26 Kommentar „WebGL-Leinwand“ → „Grafik-Leinwand“ (webgl ohne Groß/klein 6 → 5 = basis); Endfassung md5 47b4ffc8…; Tests neu gestartet; Last 26.83 14.36 10.13
 06:34 lt2p-test (G+R) ALLES OK 12 Prüfungen (Last 14–16); Gegenprobe Fall G auf index.vor-pruef: 3 FEHLER (24 WebGL-Warnungen, getError 1282) → Test greift; Last 14.05 16.73 13.46
 06:45 NOTES Prüfung geschrieben; Regression A/B: spk12c 44/3 = basis 44/3, fokus1 44/6 = basis 44/6, fok2 19/2 vs basis 18/3, fokus1k 26/0, spk6/spk5/spkfix OK, lt2-test Bilder 8/8 gleich, a2/b bei Last 5–10 index b 0/0 vs basis 89/89; Last 4.90 11.96 13.62
+06:46 Prüfer-Skript p1 (Kopie pruef2/) auf Endfassung: UNTERSCHIEDE keine, kein glErr, nur 4× Treiber-Hinweis ReadPixels (vom Skript); Last 5.36 10.37 12.92
+06:48 fok2 A/B bei Last 5–8: index 21/0, basis 21/0. Prüfung fertig. Empfehlung: Auslieferung ja (Endfassung 47b4ffc8800ac6b042908f3353d58dfb); Last 7.22 9.92 12.58
