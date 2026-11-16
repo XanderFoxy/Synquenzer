@@ -1,6 +1,6 @@
 # FOK3 – „Nur Rest“: erst die Näherung sofort, dann genau nachreichen
 
-Endfassung v4 md5 edfc49a6f7eb2900337e2b9e2408ba3f. Stand: index.html = basis.html (rel-4760, 4.76.0 = FOK2 v6) + Änderungen NUR im Block `/* FOKUS1-BEGIN */ … /* FOKUS1-END */`, Kennung `FOK3`.
+Endfassung v6 (nach Prüfung, FOK3-P) md5 a6b259187c1036bd0bc780dd78397bca – siehe Abschnitt „Nachbesserung nach Prüfung“ unten. Vorher v4 md5 edfc49a6f7eb2900337e2b9e2408ba3f (Sicherung index.vor-pruef.html). Stand: index.html = basis.html (rel-4760, 4.76.0 = FOK2 v6) + Änderungen NUR im Block `/* FOKUS1-BEGIN */ … /* FOKUS1-END */`, Kennung `FOK3`.
 Keine neuen Haken außerhalb, keine Zeile außerhalb des Blocks geändert. VERSION bleibt '4.76.0'. Zwischenstand v1: index.v1.html.
 Anlass: Xander 16.11. „Wenn es hilfreich ist, entscheide selber.“ – Entscheidung Lead: „Nur Rest“ soll sofort ein Bild zeigen.
 
@@ -103,3 +103,51 @@ genau s20 1036 / 664 / (4.75 Näherung fertig 312), m1 5683 / 5829 / (3016). Das
 | Zauberstab während Näherung | – | – | – | – | 16 | gleich; Prüfung genau (46,6 dB, 188 ms) |
 Long Tasks > 50 ms neu/v6 (alle außerhalb JS): s20 5/1, st 12/0, m1 22/10, m2 5/2, m3 2/1, m4 8/2, m5 4/1, m6 2/2. Worker-Antwort m1 Median 15,8 /
 P95 141 ms (v6 16,8 / 136), stereo 20,3 / 155 (v6 20,4 / 149).
+
+## Nachbesserung nach Prüfung (FOK3-P) – Endfassung v6 md5 a6b259187c1036bd0bc780dd78397bca
+Sicherung vorher: index.vor-pruef.html (= v4 edfc49a6…). Zwischenstand v5 (nur Befund 1 + eigener Befund): index.v5.html. Alle Änderungen im FOKUS1-Block,
+Kennung „FOK3-P“; keine neuen Haken, vor/nach dem Block byte-gleich mit basis.html. VERSION '4.76.0'. Skripte: fix-p.py (v5), fix-p2.py (v6).
+
+### Befunde nachgeprüft und behoben
+1. (mittel) Grenze `guard < 40` beim Neu-Planen – BESTÄTIGT (Code + Prüfer-Logs: p2-kipp16384 37 Neu-Planungen in 30 s ohne ein genaues Stück; p2-g3 mit
+   erschöpfter Grenze: Näherung bleibt, idle() true, Status „fertig“, Hash falsch). Ursache: jede Ablösung verwirft das Stück in Arbeit; beim Hin-und-Her
+   trifft es immer das gerade begonnene. Behoben:
+   - jedes Stück wird je Satz höchstens EINMAL abgelöst (`F.rpX`) → Fortschritt garantiert, spätestens nach nC + 1 Durchgängen fertig;
+   - Sicherung: ab Durchgang nC + 2 kein Ablösen mehr (`F.noRp`); Schleifengrenze 2·nC + 8 (wird nie erreicht);
+   - nie „fertig“ melden, solange eine Näherung oder ein übersprungenes Stück steht: stattdessen neu laden (höchstens 2× hintereinander, `F.rl`).
+   Test fok3p-test P1 (3 min, N 16384, 12 s lang alle 270 ms Anfang ↔ Ende, Ansicht 10 s): v6 Lauf 3 (Last 9–14) 3 Listen-Aufträge, 2 Ablösungen,
+   alle 4 Stücke genau nach 9,6 s – noch während des Rollens; Lauf 1 (v5, Last 12) 4 / 3 / 9,9 s; Lauf 2 (Last 21) 4 / 3, nach dem Rollen fertig.
+   v4 (Prüfer, Last 17): 37 Aufträge in 30 s ohne Fortschritt. Endhash bd0a615d = v6, kein veraltetes Stück gezeichnet, Status Endergebnis.
+2. (klein) „genau fertig“ später als v6, erstes Bild 20 s 1,4–1,5× des alten Wegs – TEILS umgesetzt (Vorschlag des Prüfers): nur der SICHTBARE Teil wird
+   genähert; unsichtbare teure Stücke überspringt der Kern im ersten Durchgang (`vorab: 2` → `skip`) und die Anzeige holt sie im zweiten Durchgang direkt
+   genau (nach Abstand zum Bild, sichtbare zuerst). Unsichtbare Stücke zeigen bis dahin, was sie vorher zeigten (wie v6), nie ein Leerbild.
+   Wirkt nur bei hineingezoomter Ansicht – in der Standardansicht ist das ganze Lied sichtbar, dann werden wie in v4 alle teuren Stücke genähert.
+   A/B fok3-zeit RUNS=2 abwechselnd (Last 9–12, ms): siehe Messung unten – erstes Bild 20 s jetzt 0,9× von 4.75 (die 1,4–1,5× des Prüfers liegen in der
+   Streuung ±100 ms durch Textur-Hochladen und die 90-ms-Neuzeichnen-Drossel); „genau fertig“ in der Standardansicht weiter ≈ v6 + Näherungs-Durchgang.
+3. (klein) Wort „genauer“ in der Statuszeile nicht abgenickt – BESTÄTIGT, Code unverändert: bitte im Funk vorschlagen („Nur Rest zeigt sofort ein
+   ungefähres Bild, das sich dann schärft; solange steht ‚Fokus · genauer · xx %‘“). Lehnt Xander ab: eine Zeile in fokus1Load/onChunk (Text ohne „genauer“).
+4. (klein) Pflichtbefehl dupkeys bricht ohne NODE_PATH ab – BESTÄTIGT (Umgebung, nicht Code). Pflicht hier mit NODE_PATH=/opt/node-tools/node_modules;
+   bitte Pflichtliste ergänzen.
+5. EIGENER Befund beim Nachprüfen von 1 (schon in v6/4.76.0): Wird ein Satz abgebrochen (Ebene ändern → während des Neu-Rechnens „Alles“ → wieder „Nur Rest“),
+   galt der halbe Satz als „noch aktuell“ (F.sig wird schon beim Start gesetzt, alte Stücke desselben Modus liegen noch am Satz) → das ALTE Bild blieb als
+   „fertig“ stehen. Nachweis fok3p P2 (3 min mono, örtliche Ebene 60–70 s / 2000–2600 Hz): v6 45d36813 (= Bild vor der Ebene) statt 59ae0369 (frischer
+   Satz), in Lauf 2 und 3. Behoben: `S.ok` = Kennung eines ABGESCHLOSSENEN Satzes; nur dann gilt der Satz als „noch aktuell“. Neu: 59ae0369 = frischer Satz.
+
+### Messung vorher/nachher (fok3-zeit A/B, RUNS=2 abwechselnd, Last 9–12, Kette A lief parallel; ms je Lauf)
+| Fall | v6-FOK3-P (neu) | v4 (vor Prüfung) | 4.76.0 = FOK2 v6 | 4.75 (alte Näherung) |
+|---|---|---|---|---|
+| 3 min mono, erstes Bild | 383 / 332 | 325 / 416 | 1069 / 812 | 535 / 426 |
+| 20 s, erstes Bild | 372 / 406 | 354 / 868 | 770 / 922 | 404 / 466 |
+| 3 min mono, genau fertig | 12161 / 7917 | 10283 / 8029 | 7932 / 8161 | (Näherung 2943 / 1625) |
+| 20 s, genau fertig | 1631 / 1355 | 1574 / 1980 | 1068 / 1188 | – |
+| Worker-Antwort P95 (3 min) | 117 / 164 | 115 / 160 | 121 / 173 | – |
+Hashes in allen Läufen gleich v6 (s20 bcbde967, m1 45d36813). „Genau fertig“ streut unter Last stark (neu Lauf 1 12,2 s, Lauf 2 7,9 s); kein
+systematischer Unterschied zwischen v4 und v6-FOK3-P.
+
+### Prüfung (Tests als Kopien im Paketordner; Logs fok3-lauf6.log, fok3p-lauf1–3.log, fok3-zeit-p.log, reg5/*.log, smoke5.log)
+- fok3p-test.mjs (NEU, Befund 1 + eigener Befund): v6 Lauf 3 8 OK / 0 FEHLER (Lauf 2 unter Last 21: 7/1 – die damalige Prüfung „alle genau noch während
+  des Rollens“ war lastabhängig, jetzt „mindestens ein Stück genau während des Rollens“; v4 hätte 0).
+- fok3-test.mjs (m6 prüft jetzt die Näherung beim Tippen `ap0`, sonst unverändert): siehe Endlauf unten.
+- Regression (reg5/, Kopien): fok2-test LANG=0 16/0; spk5 24/0; spk12 98/0; spk12-3 47/0; spkfix ALLES OK 11; smoke errors []; spk12-2 69/3 (nur Long
+  Tasks der SPK12-Werkzeuge unter Last 12, wie v4 71/1); spk6 1 FEHLER „kern-messwerte-teil1“ (Eingabedatei eines anderen Pakets fehlt, wie v4);
+  fokus1-kern siehe unten.
