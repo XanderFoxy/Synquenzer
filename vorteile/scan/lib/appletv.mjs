@@ -10,7 +10,8 @@ import { parsePrice } from './text.mjs';
 import { entities } from './rss.mjs';
 
 const roh = html => String(html || '').replace(/\\u002F/gi, '/').replace(/\\\//g, '/');
-export const ANGEBOT_WORT = /3[-,.]99|4[-,.]99|5[-,.]99|angebot|deal|sale|reduziert|aktion|spar|guenstig|günstig|preis|kracher|wochenende|filme-der-woche|film-der-woche/i;
+// countdown/advent: Apples Dezember-Aktion („Countdown“, früher „Adventskalender“ / „31 Tage, 31 Angebote“) – ein Film je Tag
+export const ANGEBOT_WORT = /3[-,.]99|4[-,.]99|5[-,.]99|angebot|deal|sale|reduziert|aktion|spar|guenstig|günstig|preis|kracher|wochenende|filme-der-woche|film-der-woche|countdown|advent/i;
 
 /** Text -> Apple-Slug-Form („Zurück in die Zukunft“ -> „zuruck-in-die-zukunft“) */
 export function slugVon(s) {

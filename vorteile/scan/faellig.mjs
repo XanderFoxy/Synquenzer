@@ -7,7 +7,7 @@
 import { readFile, appendFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { berlin } from './benachrichtigen.mjs';
+import { berlin, adventFenster } from './benachrichtigen.mjs';
 
 export const TOLERANZ_MS = 5 * 60e3; // ein Lauf darf bis zu 5 Min. früher kommen (Zeitpläne schwanken)
 // Scheitert das Senden der Zusammenfassung (ntfy weg), bleibt digestTag offen. Damit nicht jeder der vielen Starts einen
@@ -41,7 +41,9 @@ export function faelligkeit(cfg, zustand, jetzt = new Date()) {
   const versuch = Date.parse(zustand?.digestVersuch || '');
   const digest = !erstlauf && stunde >= (cfg.ntfy?.digestStunde ?? 18) && zustand?.digestTag !== tag
     && !(Number.isFinite(versuch) && jetztMs - versuch < DIGEST_PAUSE_MS);
-  return { module, digest, erstlauf, faellig: erstlauf || digest || module.length > 0, naechstes };
+  // Dezember: Film des Tages (ab 8 Uhr, einmal am Tag) – auch ohne fälliges Modul (nimmt dann die filme.json des letzten Laufs)
+  const advent = !erstlauf && adventFenster(cfg, zustand, new Date(jetztMs)).faellig;
+  return { module, digest, advent, erstlauf, faellig: erstlauf || digest || advent || module.length > 0, naechstes };
 }
 
 async function leseJson(pfad, fallback) { try { return JSON.parse(await readFile(pfad, 'utf8')); } catch { return fallback; } }

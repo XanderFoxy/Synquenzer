@@ -85,7 +85,9 @@ test('breite Suche: Adressen (Top 200 je Genre, Filme und Staffeln), bisherige A
 
 test('breite Suche: alle bisherigen Treffer bleiben (0 verloren), neue Filme ≤ 3,99 € (Kauf) zusätzlich, Leihen zählt nicht, Horror nie, ≤ 40 Apple-Abrufe', async () => {
   for (const filmCfg of [{}, { maxGruppe: 2, maxAngebot: 3 }]) { // auch mit knappen Kappen: kein neuer Treffer verdrängt einen alten
-    const cfg = mitCfg(filmCfg);
+    // der Abgleich mydealz-Tipp -> Apple (16.11.2026, eigener Lookup nach allem anderen) gehört weder zum bisherigen Weg noch zur
+    // breiten Suche – hier aus, damit der Abruf-Vergleich nur diese beiden Wege sieht (eigener Test in filme-apple.test.mjs)
+    const cfg = mitCfg({ ...filmCfg, mdAppleWikidata: false });
     const a = abruf(), b = abruf();
     const ra = await filme(ctx(a.holeText, {}, JETZT, ohneBreit, cfg));
     const rb = await filme(ctx(b.holeText, {}, JETZT, listen, cfg));

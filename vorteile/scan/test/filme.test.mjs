@@ -758,8 +758,16 @@ test('Prüfer MV8: Kachel-Zahl zählt nur echte Angebote (kein Normalpreis bis 7
   const g = r.datei.gruppen;
   const normal = [...g.action, ...g.comedy].filter(t => !t.angebot && t.preis > 3.99 && !g.wunsch.some(w => w.id === t.id && w.unterZiel));
   const echt = new Set([...g.fuer399, ...[...g.action, ...g.comedy, ...g.achtziger, ...g.disney, ...g.serien].filter(t => t.angebot || (t.typ === 'film' && t.preis != null && t.preis <= 3.99)), ...g.wunsch.filter(t => t.angebot || t.unterZiel)].map(t => t.id));
-  assert.equal(r.kurz.angebote, echt.size);
+  // alte Zahl (bis 15.11.2026) bleibt als angeboteAlle
+  assert.equal(r.kurz.angeboteAlle, echt.size);
   for (const t of normal) if (!g.fuer399.some(x => x.id === t.id)) assert.ok(!echt.has(t.id), t.titel);
+  // Xander 16.11.2026 („nur die 3,99-€-Sachen, teurere müssen nicht rein“): die Kachel zählt einzelne Apple-Filme bis 3,99 €
+  // aus allen Film-Bereichen + deine Wunschfilme unter Ziel – keine Staffeln, Boxen, mydealz-Tipps und nichts über 3,99 €
+  const bis = t => t.typ === 'film' && t.preis != null && t.preis <= 3.994 && t.quelle !== 'mydealz';
+  const neu = new Set([...[...g.fuer399, ...g.action, ...g.comedy, ...g.achtziger, ...g.disney, ...g.wunsch].filter(bis), ...g.wunsch.filter(t => t.preis != null && t.unterZiel)].map(t => t.id));
+  assert.equal(r.kurz.angebote, neu.size);
+  assert.ok(r.kurz.fuer399 <= r.kurz.angebote && r.kurz.fuer399 > 0);
+  for (const t of r.kurz.top) assert.ok(t.preis <= 3.99 || g.wunsch.some(w => w.titel === t.titel && w.unterZiel), `Kachel: ${t.titel} ${t.preis}`);
 });
 
 // ---------------------------------------------------------------- Prüfer-Befund MV8 11 (15.11.2026): keine Kinderfilme unter „Neu“
