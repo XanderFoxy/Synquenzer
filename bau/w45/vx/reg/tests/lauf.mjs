@@ -23,7 +23,7 @@ function werte(txt, r) {
   return {ok, fehl: F.length, K, Z, X}; }
 const logf = path.join(out, name + '.log'); let r = await lauf(logf), w = werte(fs.readFileSync(logf, 'utf8'), r), r1 = null, w1 = null;
 if (!w.X.length && w.Z.length) { fs.renameSync(logf, path.join(out, name + '.lauf1.log')); r1 = r; w1 = w; r = await lauf(logf); w = werte(fs.readFileSync(logf, 'utf8'), r); }
-const urteil = w.X.length ? 'ROT' : w.Z.length ? (r.last.mittel > CPU ? 'LAST' : 'ROT') : w1 ? 'GRÜN (Wdh.)' : w.K.length ? 'BEKANNT' : R.info ? 'INFO' : 'GRÜN';
+const urteil = w.X.length ? (R.echtzeit && r.last.mittel > 2 * CPU ? 'UNGÜLTIG (Last)' : 'ROT') : w.Z.length ? (r.last.mittel > CPU ? 'LAST' : 'ROT') : w1 ? 'GRÜN (Wdh.)' : w.K.length ? 'BEKANNT' : R.info ? 'INFO' : 'GRÜN';
 const res = {name, urteil, ok: w.ok, fehl: w.fehl, bekannt: w.K, zeit: w.Z, rot: w.X, exit: r.code, sek: r.sek + (r1 ? r1.sek : 0), last: r.last, wdh: r1 ? {sek: r1.sek, last: r1.last, zeit: w1.Z} : null, cpu: CPU, info: R.info || null};
 fs.writeFileSync(path.join(out, name + '.json'), JSON.stringify(res, null, 1));
 console.log(urteil.padEnd(12) + name.padEnd(10) + ' ' + res.sek + ' s · Last ' + r.last.mittel + (r1 ? ' · Wdh. (Lauf 1: ' + w1.Z.length + ' Zeit-Fehler, Last ' + r1.last.mittel + ')' : ''));
