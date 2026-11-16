@@ -2217,9 +2217,10 @@ function essenKachel() { // -> { z, w } wie kachelInhalt; höchstens 2 Zeilen
 addEventListener('mein-vorteil-essen', () => zeichne()); // der Reiter hat frische Essen-Daten gemerkt -> Kachel neu
 
 // --- Woche-Kachel (Wochen-Knaller, 16.11.2026): aus status.knaller.kurz in aktuell.json (lädt die Startseite ohnehin) – kein
-// eigener Abruf. Stufe (30/40/50 %) wie zuletzt im Reiter gewählt (mein-vorteil-woche-stufe).
+// eigener Abruf. Stufe (20/30/40/50 %) wie zuletzt im Reiter gewählt (mein-vorteil-woche-stufe). Zahl = was HEUTE gilt
+// (Radar ab 16.11.2026: kurz.ab nur gültige, kurz.kommt = kommt diese Woche noch).
 const WOCHE_STUFE = 'mein-vorteil-woche-stufe';
-function wocheStufe() { const v = Number(lies(WOCHE_STUFE, 30)); return [30, 40, 50].includes(v) ? v : 30; }
+function wocheStufe() { const v = Number(lies(WOCHE_STUFE, 30)); return [20, 30, 40, 50].includes(v) ? v : 30; }
 function wocheKurz() {
   const k = S.vorteile?.d?.status?.knaller?.kurz;
   return k && typeof k === 'object' && k.ab && typeof k.ab === 'object' ? k : null;
@@ -2231,8 +2232,9 @@ function wocheKachel() { // -> { z, w } wie kachelInhalt; höchstens 2 Zeilen
   const top = (Array.isArray(k?.top) ? k.top : []).filter(x => x && typeof x.titel === 'string' && zahl(x.pct) >= st && zahl(x.preis) > 0);
   if (!top.length) return { z: [[`Wochen-Angebote ab ${st} %`, 'je Markt, mit Bild – tippen zum Öffnen']], w: k ? `gerade nichts ab ${st} %` : '' };
   // „ab“ = gilt erst ab Montag/Donnerstag (Radar status.knaller.kurz.top[].ab) – dann steht es dabei
-  const z = top.slice(0, 2).map(x => [kurzTitel(x.titel, 44), `${x.abPreis ? 'bis ' : ''}−${Math.floor(zahl(x.pct))} % · ${euro(zahl(x.preis))} · ${String(x.markt || '').slice(0, 20)}${x.app ? ' · App' : ''}${zeit(x.ab) > Date.now() ? ' · ' + abText(x.ab) : ''}`, x.vorherArt === 'streich']);
-  return { z, w: '' };
+  const z = top.slice(0, 2).map(x => [kurzTitel(x.titel, 44), `${x.abPreis ? 'bis ' : ''}${x.vorherArt === 'geschaetzt' ? '≈ ' : ''}−${Math.floor(zahl(x.pct))} % · ${euro(zahl(x.preis))} · ${String(x.markt || '').slice(0, 20)}${x.app ? ' · App' : ''}${zeit(x.ab) > Date.now() ? ' · ' + abText(x.ab) : ''}`, x.vorherArt === 'streich']);
+  const kommt = Number(k?.kommt?.[st]);
+  return { z, w: Number.isInteger(kommt) && kommt > 0 ? `+ ${kommt} ${kommt === 1 ? 'kommt' : 'kommen'} diese Woche noch` : '' };
 }
 addEventListener('mein-vorteil-woche', () => zeichne()); // Stufe im Reiter geändert -> Kachel/Zahl neu
 

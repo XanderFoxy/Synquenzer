@@ -5,6 +5,10 @@
 //   knaller/stichwort-crunchips-1611.html /Angebote/Crunchips (bundesweit) – Aldi Nord 0,99 statt 1,99 UVP, Prospekt 6c21c979
 //   knaller/stichwort-cola-1611.html    /Doebeln/Angebote/Cola – 16 von 25
 //   knaller/marktguru-chips-1611.json   marktguru q=chips, PLZ 04720 – 6 von 12 Treffern (Lidl/Kaufland/Netto)
+// aus dem Roh-Lauf 43821908194 (16.11.2026, 07:10 UTC, Code dieses Zweigs):
+//   knaller/stichwort-pepsi-1611.html   /Angebote/Pepsi (bundesweit = Berliner Prospekte) – Lidl 0,99 statt 1,79 UVP,
+//                                       Prospekt 8cbd3aba (nicht der Döbelner edef33c8)
+//   knaller/marktguru-pepsi-1611.json   marktguru q=Pepsi, PLZ 04720 – Lidl Pepsi Zero 0,99 ab 19.11. (Do), Kaufland
 // Ausgedachte Angebote sind als solche gekennzeichnet (angebotRoh/synthetisch).
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -264,4 +268,40 @@ test('main.lauf: Merkliste vom ntfy-Thema, fällige Erinnerung als eigene Nachri
   assert.ok(r.erinnerung, 'Crunchips gemerkt und gilt heute');
   assert.match(r.erinnerung.msg.message.replace(/\u00a0/g, ' '), /Lorenz Crunchips – Aldi Nord 0,99 € statt 1,99 € \(−50 %\)/);
   assert.deepEqual(r.aktuell.status.knaller.merken, { neu: true, anzahl: 1 });
+});
+
+test('Anderer Prospekt (Berlin) zählt nur mit marktguru-Bestätigung für 04720 – mit Starttag Do (Kommt diese Woche)', async () => {
+  const mg = { aktiv: true, start: 'https://www.marktguru.de/', api: 'https://api.marktguru.de/api/v1/offers/search', plz: '04720', limit: 48 };
+  const karte = {
+    '/Doebeln/Lidl/p-r74': 'lidl-doebeln-1611.html', '/Angebote/Pepsi': 'stichwort-pepsi-1611.html',
+    'www.marktguru.de/': '<html><script>{"apiKey":"TESTWERT","clientKey":"TESTWERT"}</script></html>',
+    'api.marktguru.de/': 'marktguru-pepsi-1611.json',
+  };
+  // Befund echt: die Stichwortseite zeigt den Berliner Lidl-Prospekt, nicht den Döbelner
+  const p = leseKaufdaSeite(await lies('stichwort-pepsi-1611.html'));
+  const lidl = p.items.find(o => o.publisherName === 'Lidl');
+  assert.equal(lidl.parentContent.id.slice(0, 8), '8cbd3aba');
+  assert.notEqual(lidl.parentContent.id, LIDL_PROSPEKT);
+  // mit marktguru: bestätigt, Starttag Do 19.11. (00:00 Berlin), zählt heute (Mo) noch nicht, sondern unter „kommt“
+  const hole = abruf(karte);
+  const r = await knaller({ holeText: hole, cfg: nur(['lidl'], { stichworte: ['Pepsi'], marktguru: mg }), jetzt: JETZT, zustand: {} });
+  const a = r.datei.angebote.find(x => /pepsi/i.test(x.titel));
+  assert.ok(a, r.datei.angebote.map(x => x.titel).join(' | '));
+  assert.deepEqual([a.markt, a.preis, a.vorher, a.vorherArt, a.pct, a.bestaetigt, a.abQuelle, a.gueltigAb, a.regional],
+    ['lidl', 0.99, 1.79, 'uvp', 44, 'marktguru', 'marktguru', '2026-11-18T23:00:00.000Z', false]);
+  assert.deepEqual(r.datei.status.kaufda.stichworte.fremd, { gesehen: 1, bestaetigt: 1 });
+  assert.equal(r.kurz.kommt['40'], 1);
+  assert.equal(r.kurz.ab['40'], r.datei.angebote.filter(x => x.pct >= 40 && !x.bestaetigt).length, 'gilt heute noch nicht');
+  // nicht in „gelesen“ (das zählt die Döbelner Prospekte)
+  assert.equal(r.datei.maerkte.lidl.gelesen, 2);
+  // ohne marktguru (oder ohne Treffer dort): bleibt draußen
+  const r2 = await knaller({ holeText: abruf(karte), cfg: nur(['lidl'], { stichworte: ['Pepsi'] }), jetzt: JETZT, zustand: {} });
+  assert.ok(!r2.datei.angebote.some(x => /pepsi/i.test(x.titel)));
+  const leer = { ...karte, 'api.marktguru.de/': '{"totalResults":0,"results":[]}' };
+  const r3 = await knaller({ holeText: abruf(leer), cfg: nur(['lidl'], { stichworte: ['Pepsi'], marktguru: mg }), jetzt: JETZT, zustand: {} });
+  assert.ok(!r3.datei.angebote.some(x => /pepsi/i.test(x.titel)));
+  assert.deepEqual(r3.datei.status.kaufda.stichworte.fremd, { gesehen: 1, bestaetigt: 0 });
+  // Pool: das bestätigte Angebot bleibt im nächsten Lauf, auch wenn sein (Berliner) Prospekt nicht genannt ist
+  const r4 = await knaller({ holeText: abruf({ '/Doebeln/Lidl/p-r74': 'lidl-doebeln-1611.html' }), cfg: nur(['lidl'], { stichworte: [] }), jetzt: JETZT, zustand: {}, vorherDatei: r.datei });
+  assert.ok(r4.datei.angebote.some(x => /pepsi/i.test(x.titel) && x.bestaetigt === 'marktguru'));
 });

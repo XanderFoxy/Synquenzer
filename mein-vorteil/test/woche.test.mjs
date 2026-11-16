@@ -273,11 +273,12 @@ test('Lazy: woche.js und knaller.json erst beim Öffnen; Start-Kachel und Zahl a
   await ctx.close();
 });
 
-test('Stufen 30/40/50 % und Märkte: Zähler, Gruppen, gemerkte Wahl, leere Wahl mit Knopf, Kachel-Zahl folgt der Stufe', { skip: ohnePw }, async () => {
+test('Stufen 20/30/40/50 % und Märkte: Zähler, Gruppen, gemerkte Wahl, leere Wahl mit Knopf, Kachel-Zahl folgt der Stufe', { skip: ohnePw }, async () => {
   const { ctx, page, fehler } = await oeffne();
-  // Standard 30 %: alle 13, nach Rabatt gruppiert, „Ab Montag“ unten
+  // Standard 30 %: alle 13, nach Rabatt gruppiert, „Ab Montag“ unten; Staffel ab 20 % (Xander 16.11., 2. Runde)
   assert.equal(await kacheln(page).count(), 13);
-  assert.deepEqual((await page.locator('.wo-stufe').allInnerTexts()).map(t => t.replace(/\s+/g, ' ')), ['ab 30 % 13', 'ab 40 % 7', 'ab 50 % 2']);
+  assert.deepEqual((await page.locator('.wo-stufe').allInnerTexts()).map(t => t.replace(/\s+/g, ' ')), ['ab 20 % 13', 'ab 30 % 13', 'ab 40 % 7', 'ab 50 % 2']);
+  assert.equal(await page.locator('.wo-stufe[aria-checked="true"]').getAttribute('data-wo-stufe'), '30', 'Start bleibt 30 %');
   assert.deepEqual((await page.locator('.wo-gruppe').allInnerTexts()).map(t => t.replace(/\s+/g, ' ')), ['ab 50 % 2', '40 bis 49 % 5', '30 bis 39 % 5', 'Ab Montag 1']);
   const chips = (await page.locator('.wo-chip').allInnerTexts()).map(t => t.replace(/\s+/g, ' '));
   assert.deepEqual(chips, ['Alle 13', 'Aldi Nord 1', 'Lidl 1', 'Kaufland 2', 'Netto 1', 'Penny 6', 'REWE 1', 'Marktkauf 1']);
@@ -289,7 +290,7 @@ test('Stufen 30/40/50 % und Märkte: Zähler, Gruppen, gemerkte Wahl, leere Wahl
   assert.deepEqual((await page.locator('.wo-gruppe').allInnerTexts()).map(t => t.replace(/\s+/g, ' ')), ['ab 50 % 2', '40 bis 49 % 5']);
   await markt(page, 'kaufland');
   assert.deepEqual(await kacheln(page).locator('.wo-titel').allInnerTexts(), ['Milka Schokolade 100 g (TESTWERT)', 'Pringles 185 g (TESTWERT)']);
-  assert.deepEqual((await page.locator('.wo-stufe').allInnerTexts()).map(t => t.replace(/\s+/g, ' ')), ['ab 30 % 2', 'ab 40 % 2', 'ab 50 % 1'], 'Stufen zählen im gewählten Markt');
+  assert.deepEqual((await page.locator('.wo-stufe').allInnerTexts()).map(t => t.replace(/\s+/g, ' ')), ['ab 20 % 2', 'ab 30 % 2', 'ab 40 % 2', 'ab 50 % 1'], 'Stufen zählen im gewählten Markt');
   assert.match(await page.locator('.wo-link').innerText(), /Alle Angebote von Kaufland bei kaufDA/);
   assert.deepEqual(fehler, []);
   await ctx.close();
@@ -427,5 +428,138 @@ for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
     await d.page.screenshot({ path: join(FOTOS, `${lage}-deals-snacks.png`) });
     assert.deepEqual(d.fehler, []);
     await d.ctx.close();
+  });
+}
+
+// Xander 16.11. (2. Runde): was heute gilt normal, was erst ab Do/Fr/Sa kommt als eigene Gruppe (gestrichelt, „ab Do …“) mit
+// Sprung-Leiste; 20 %; „geschätzt“; Merken (Haken oder lange drücken) -> gemerkt, an den Radar (ntfy-Thema) gemeldet.
+// Lidl Pepsi = echtes Angebot aus dem Roh-Lauf 43821908194 (Daten auf die Fixture-Woche verschoben), Rest TESTWERT.
+const KNALLER2 = { ...plain(KNALLER), stufen: [20, 30, 40, 50], minProzent: 20, angebote: [...plain(KNALLER).angebote,
+  { id: 'kd:9b2b7a64-pepsi', markt: 'lidl', titel: 'PEPSI', info: 'Versch. Sorten, je 1,25 l', preis: 0.99, vorher: 1.79, vorherArt: 'uvp', pct: 44, app: false, bedingung: '', bild: 'https://content-media.bonial.biz/test-lidl/pepsi.jpg', link: 'https://www.kaufda.de/Doebeln/Lidl/p-r74', gueltigAb: '2026-11-11T23:00:00.000Z', gueltigBis: '2026-11-14T22:59:00.000Z', abQuelle: 'marktguru', bestaetigt: 'marktguru', regional: false, region: 'Döbeln' },
+  { id: 'kd:test-penny-we', markt: 'penny', titel: 'Wochenend-Knüller Rinderhack 500 g (TESTWERT)', info: 'TESTWERT', preis: 2.99, vorher: 4.69, vorherArt: 'streich', pct: 36, app: false, bedingung: '', bild: 'https://content-media.bonial.biz/test-penny/hack.jpg', link: 'https://www.kaufda.de/Doebeln/Penny-Markt/p-r75', gueltigAb: '2026-11-12T23:00:00.000Z', gueltigBis: '2026-11-14T22:59:00.000Z', abQuelle: 'text', wochenende: true, regional: false, region: 'Döbeln' },
+  { id: 'kd:test-aldi-geschaetzt', markt: 'aldi-nord', titel: 'Lorenz Erdnusslocken 175 g (TESTWERT)', info: 'TESTWERT', preis: 0.89, vorher: 1.49, vorherArt: 'geschaetzt', vorherQuelle: 'UVP im Prospekt vom 02.11.', pct: 40, app: false, bedingung: '', bild: 'https://content-media.bonial.biz/test-aldi/locken.jpg', link: 'https://www.kaufda.de/Doebeln/ALDI-Nord/p-r43', gueltigAb: '2026-11-08T23:00:00.000Z', gueltigBis: '2026-11-14T22:59:00.000Z', regional: false, region: 'Döbeln' },
+  { id: 'kd:test-netto-25', markt: 'netto', titel: 'Kaffeesahne 10 x 7,5 g (TESTWERT)', info: 'TESTWERT', preis: 0.59, vorher: 0.79, vorherArt: 'streich', pct: 25, app: false, bedingung: '', bild: null, link: 'https://www.kaufda.de/Doebeln/Netto-Marken-Discount/p-r9', gueltigAb: '2026-11-08T23:00:00.000Z', gueltigBis: '2026-11-14T22:59:00.000Z', regional: false, region: 'Döbeln' },
+  { id: 'kd:test-alt', markt: 'penny', titel: 'Abgelaufen (TESTWERT)', preis: 0.5, vorher: 1, vorherArt: 'streich', pct: 50, gueltigAb: '2026-11-01T23:00:00.000Z', gueltigBis: '2026-11-07T22:59:00.000Z' },
+] };
+const gruppen = async page => (await page.locator('.wo-gruppe').allInnerTexts()).map(t => t.replace(/\s+/g, ' '));
+async function ntfyMitschnitt(ctx) {
+  const posts = [];
+  await ctx.route('https://ntfy.sh/**', async route => {
+    const r = route.request();
+    posts.push({ url: r.url(), methode: r.method(), kopf: r.headers()['content-type'] || '', body: r.postData() });
+    return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: '{"id":"TESTWERT","event":"message"}' });
+  });
+  return posts;
+}
+const warteAuf = (fn, ms = 4000) => new Promise((ok, nein) => { const t0 = Date.now(); const i = setInterval(() => { if (fn()) { clearInterval(i); ok(); } else if (Date.now() - t0 > ms) { clearInterval(i); nein(new Error('Zeit um')); } }, 50); });
+
+test('Kommt diese Woche: eigene Gruppe gestrichelt mit „ab Do/Fr“, Sprung-Leiste mit Zählern, 20 %, geschätzt grau, Abgelaufenes raus', { skip: ohnePw }, async () => {
+  const { ctx, page, fehler } = await oeffne({ knaller: KNALLER2 });
+  // 30 %: heute 13 (12 aus der Fixture + geschätzt), diese Woche 2 (Pepsi ab Do, Hack ab Fr), nächste Woche 1 (Crunchips ab Mo)
+  assert.deepEqual(await gruppen(page), ['ab 50 % 2', '40 bis 49 % 6', '30 bis 39 % 5', 'Kommt diese Woche 2', 'Ab Montag 1']);
+  assert.deepEqual((await page.locator('.wo-sprung').allInnerTexts()).map(t => t.replace(/\s+/g, ' ')), ['Gilt jetzt 13', 'Kommt diese Woche 2', 'Ab Montag 1']);
+  assert.ok(!(await page.locator('#wo-liste').innerText()).includes('Abgelaufen'));
+  const kommt = await page.locator('#wo-g-kommt + .wo-gruppe-text + .wo-raster .wo-kachel').evaluateAll(ks => ks.map(k => ({
+    t: k.querySelector('.wo-titel').textContent, kommt: k.classList.contains('wo-kommt'), stil: getComputedStyle(k).borderTopStyle,
+    marken: [...k.querySelectorAll('.wo-marke')].map(m => m.textContent) })));
+  assert.deepEqual(kommt.map(k => [k.t.replace(/ \(TESTWERT\)/, ''), k.kommt, k.stil]), [['PEPSI', true, 'dashed'], ['Wochenend-Knüller Rinderhack 500 g', true, 'dashed']]);
+  assert.deepEqual(kommt.map(k => k.marken.join(' ')), ['ab Do 12.11.', 'ab Fr 13.11. Wochenende']);
+  // was heute gilt: durchgezogener Rahmen
+  assert.equal(await page.locator('#wo-g-jetzt + .wo-raster .wo-kachel').first().evaluate(k => getComputedStyle(k).borderTopStyle), 'solid');
+  // geschätzt: graue Plakette „≈ −40 %“, „statt ~1,49 € geschätzt“, kein Goldrahmen
+  const g = page.locator('.wo-kachel', { hasText: 'Erdnusslocken' });
+  assert.equal(nbsp(await g.locator('.wo-pct').innerText()), '≈ −40 %');
+  assert.ok(await g.locator('.wo-pct').evaluate(e => e.classList.contains('wo-geschaetzt')));
+  assert.equal(nbsp(await g.locator('.wo-statt').innerText()), 'statt ~1,49 € geschätzt');
+  assert.ok(!(await g.evaluate(k => k.classList.contains('wo-streich'))));
+  assert.match(nbsp(await page.locator('.wo-fuss-text').first().innerText()), /„≈ … geschätzt“ = im Prospekt steht kein Vergleichspreis/);
+  // Sprung: „Kommt diese Woche“ antippen -> Gruppe oben im Bild
+  await page.locator('.wo-sprung[data-wo-sprung="wo-g-kommt"]').click();
+  // landet direkt unter der festen Reiter-Leiste (nicht dahinter)
+  await page.waitForFunction(() => { const h = document.getElementById('wo-g-kommt').getBoundingClientRect().top, n = document.querySelector('.sprung').getBoundingClientRect().bottom; return h >= n - 1 && h - n < 30; });
+  // 20 %: Kaffeesahne (25 %) kommt dazu, eigene Gruppe
+  await stufe(page, 20);
+  assert.deepEqual(await gruppen(page), ['ab 50 % 2', '40 bis 49 % 6', '30 bis 39 % 5', '20 bis 29 % 1', 'Kommt diese Woche 2', 'Ab Montag 1']);
+  assert.deepEqual((await page.locator('.wo-stufe').allInnerTexts()).map(t => t.replace(/\s+/g, ' ')), ['ab 20 % 17', 'ab 30 % 16', 'ab 40 % 9', 'ab 50 % 2']);
+  await stufe(page, 30);
+  assert.deepEqual(fehler, []);
+  await ctx.close();
+});
+
+test('Merken: Haken -> „Gemerkt“ oben, lokal gespeichert, Liste an den Radar (ntfy, einfache Anfrage); lange drücken = merken ohne Öffnen', { skip: ohnePw }, async () => {
+  const { ctx, page, fehler } = await oeffne({ knaller: KNALLER2 });
+  const posts = await ntfyMitschnitt(ctx);
+  const neueSeiten = [];
+  ctx.on('page', p => neueSeiten.push(p));
+  const pepsi = page.locator('#wo-g-kommt ~ .wo-raster li', { hasText: 'PEPSI' }).first();
+  const knopf = pepsi.locator('.wo-merk');
+  assert.equal(await knopf.getAttribute('aria-pressed'), 'false');
+  const b = await knopf.boundingBox();
+  assert.ok(b.width >= 44 && b.height >= 44, `Haken ${b.width}×${b.height}`);
+  await knopf.click();
+  await page.waitForFunction(() => document.getElementById('wo-g-gemerkt'));
+  assert.equal(await page.locator('#wo-g-kommt ~ .wo-raster li', { hasText: 'PEPSI' }).first().locator('.wo-merk').getAttribute('aria-pressed'), 'true');
+  assert.equal((await gruppen(page))[0], 'Gemerkt 1');
+  assert.deepEqual(await page.locator('#wo-g-gemerkt ~ .wo-raster').first().locator('.wo-titel').allInnerTexts(), ['PEPSI']);
+  assert.equal(neueSeiten.length, 0, 'Haken öffnet kein kaufDA');
+  // an den Radar: eine Nachricht mit der ganzen Liste (ohne eigene Kopfzeilen -> kein Preflight)
+  await warteAuf(() => posts.length >= 1);
+  assert.equal(posts[0].methode, 'POST');
+  assert.equal(posts[0].url, 'https://ntfy.sh/xander-schnaeppchen-b5cbf4442aaa9734f3-merken');
+  assert.match(posts[0].kopf, /^text\/plain/);
+  const d = JSON.parse(posts[0].body);
+  assert.deepEqual([d.v, d.merken.length, d.merken[0].id, d.merken[0].markt, d.merken[0].ab], [1, 1, 'kd:9b2b7a64-pepsi', 'lidl', '2026-11-11T23:00:00.000Z']);
+  await page.waitForFunction(() => /Erinnerung per Push am ersten Gültigkeitstag/.test(document.querySelector('.wo-merkhinweis')?.textContent || ''));
+  // lange drücken (Maus wie Finger): Hack wird gemerkt, kein neuer Tab
+  const hack = page.locator('#wo-g-kommt ~ .wo-raster .wo-kachel', { hasText: 'Rinderhack' }).first();
+  const hb = await hack.boundingBox();
+  await page.mouse.move(hb.x + hb.width / 2, hb.y + 40);
+  await page.mouse.down();
+  await page.waitForTimeout(750);
+  await page.mouse.up();
+  await page.waitForFunction(() => /Gemerkt 2/.test(document.getElementById('wo-g-gemerkt')?.textContent.replace(/\s+/g, ' ') || ''));
+  await page.waitForTimeout(300);
+  assert.equal(neueSeiten.length, 0, 'lange gedrückt öffnet nicht');
+  await warteAuf(() => posts.length >= 2);
+  assert.equal(JSON.parse(posts.at(-1).body).merken.length, 2);
+  // neu laden: gemerkt bleibt (localStorage), Sprung-Leiste zählt „Gemerkt 2“
+  await page.reload();
+  await wocheDa(page);
+  assert.equal((await gruppen(page))[0], 'Gemerkt 2');
+  assert.match((await page.locator('.wo-sprung').allInnerTexts()).map(t => t.replace(/\s+/g, ' ')).join('|'), /Gemerkt 2/);
+  const lsl = await page.evaluate(() => JSON.parse(localStorage.getItem('mein-vorteil-woche-gemerkt')).liste.map(x => x.id));
+  assert.deepEqual(lsl.sort(), ['kd:9b2b7a64-pepsi', 'kd:test-penny-we']);
+  // Haken in „Gemerkt“ nimmt es wieder heraus
+  await page.locator('#wo-g-gemerkt ~ .wo-raster').first().locator('li', { hasText: 'PEPSI' }).locator('.wo-merk').click();
+  await page.waitForFunction(() => /Gemerkt 1/.test(document.getElementById('wo-g-gemerkt')?.textContent.replace(/\s+/g, ' ') || ''));
+  await warteAuf(() => posts.some(p => JSON.parse(p.body).merken.length === 1 && JSON.parse(p.body).merken[0].id === 'kd:test-penny-we'));
+  assert.deepEqual(fehler, []);
+  await ctx.close();
+});
+
+for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
+  test(`Woche ${breite}×${hoehe} (${lage}): Kommt diese Woche + Gemerkt – Tippflächen ≥ 44 px, kein seitliches Scrollen, Fotos`, { skip: ohnePw }, async () => {
+    const { ctx, page, fehler } = await oeffne({ breite, hoehe, foto: true, knaller: KNALLER2 });
+    await ntfyMitschnitt(ctx);
+    await pruefeLayout(page, `${lage} Kommt`);
+    await page.screenshot({ path: join(FOTOS, `${lage}-woche2-oben.png`) });
+    await page.locator('.wo-sprung[data-wo-sprung="wo-g-kommt"]').click();
+    await page.waitForTimeout(900);
+    await page.screenshot({ path: join(FOTOS, `${lage}-woche2-kommt.png`) });
+    await page.locator('#wo-g-kommt ~ .wo-raster li', { hasText: 'PEPSI' }).first().locator('.wo-merk').click();
+    await page.waitForFunction(() => /Erinnerung per Push/.test(document.querySelector('.wo-merkhinweis')?.textContent || ''));
+    await page.evaluate(() => scrollTo(0, 0));
+    await page.waitForTimeout(400);
+    await pruefeLayout(page, `${lage} Gemerkt`);
+    await page.screenshot({ path: join(FOTOS, `${lage}-woche2-gemerkt.png`) });
+    await stufe(page, 20);
+    await page.locator('.wo-gruppe', { hasText: '20 bis 29 %' }).scrollIntoViewIfNeeded();
+    await page.screenshot({ path: join(FOTOS, `${lage}-woche2-20.png`) });
+    await page.locator('.sprung a[data-ziel="start"]').click();
+    await page.waitForFunction(() => !document.getElementById('start').hidden);
+    await page.locator('#kacheln a[data-sprung="woche"]').scrollIntoViewIfNeeded();
+    await page.screenshot({ path: join(FOTOS, `${lage}-woche2-start.png`) });
+    assert.deepEqual(fehler, []);
+    await ctx.close();
   });
 }

@@ -30,7 +30,11 @@
 //    und – wo vorhanden – der Starttag aus marktguru (PLZ 04720, je Angebot, z. B. Lidl Doritos ab 19.11.) setzen gueltigAb;
 //  - ohne Vergleichspreis in der Quelle: „statt …“ im Text oder der Vergleichspreis desselben Produkts im selben Markt aus
 //    früheren Läufen (zustand.knaller.preise) -> vorherArt 'geschaetzt' (Seite: grau, „geschätzt“). Nie erfundene Prozente;
-//  - Staffel ab 20 % (minProzent 20, Seite startet bei 30).
+//  - Staffel ab 20 % (minProzent 20, Seite startet bei 30);
+//  - Roh-Lauf 43821908194 (16.11.2026): die Stichwortseiten zeigen bei Lidl, Penny, Kaufland und Netto die Berliner Prospekte
+//    (andere Prospekt-ids als Döbeln), nur Aldi Nord hat einen Prospekt für alle. Ein solches Angebot zählt darum nur, wenn
+//    marktguru es für PLZ 04720 bestätigt (gleicher Markt, gleicher Preis, Marke/Produkt) -> bestaetigt 'marktguru', mit dem
+//    Starttag von dort (z. B. Lidl Pepsi Zero 0,99 statt 1,79 UVP ab Do 19.11.). Ohne Bestätigung bleibt es draußen.
 import { leseKaufdaSeite, kaufdaZeit, kaufdaSlug } from '../lib/kaufda.mjs';
 import { norm, schluessel, round, parsePrice } from '../lib/text.mjs';
 import { berlinTag } from '../lib/ende.mjs';
@@ -238,6 +242,9 @@ export function passtMarktguru(a, g) {
   return (!!g.marke && t.includes(g.marke)) || (!!wort && t.includes(wort));
 }
 
+/** marktguru-Zeitraum überlappt den des Angebots (Lidl hat z. B. Chips 1,79 € diese Woche und andere ab nächster Woche) */
+export const zeitlichPassend = (a, g) => !(a.gueltigBis && Date.parse(g.ab) >= Date.parse(a.gueltigBis)) && !(a.gueltigAb && g.bis && Date.parse(g.bis) <= Date.parse(a.gueltigAb));
+
 export default async function knaller({ holeText, cfg, jetzt = new Date(), zustand = {}, vorherDatei = null }) {
   const m = { ...STANDARD, ...(cfg.module?.knaller || {}) };
   const maerkte = (Array.isArray(m.maerkte) ? m.maerkte : []).filter(x => x && x.id && x.kaufda);
@@ -373,6 +380,7 @@ export default async function knaller({ holeText, cfg, jetzt = new Date(), zusta
     const alle = [...new Set([...merkworte, ...(m.stichworte || [])].map(w => String(w).trim()).filter(Boolean))];
     const offen = alle.filter(w => !leerBis[w]);
     // Merkworte immer, sonst die am längsten nicht gelesenen zuerst
+    const fremd = []; // Angebote aus anderen (Berliner) Prospekten desselben Markts – zählen nur mit marktguru-Bestätigung
     const reihe = [...offen.filter(w => merkworte.includes(w)),
       ...offen.filter(w => !merkworte.includes(w)).sort((a, b) => (Date.parse(zeit[a] || 0) || 0) - (Date.parse(zeit[b] || 0) || 0)).slice(0, m.maxStichwortSeiten)];
     let mgKeys = null, mgAus = !m.marktguru?.aktiv;
@@ -389,7 +397,8 @@ export default async function knaller({ holeText, cfg, jetzt = new Date(), zusta
         for (const o of s.items) {
           const mkId = marktVon(o.publisherName, maerkte);
           const pid = o.parentContent?.id;
-          if (!mkId || !pid || !prospekte[mkId]?.has(pid)) continue; // nur derselbe Prospekt wie für Döbeln
+          if (!mkId || !pid || !prospekte[mkId]) continue;
+          if (!prospekte[mkId].has(pid)) { if (info[mkId]?.lokal && fremd.length < 400) fremd.push({ mkId, o, w }); continue; } // anderer Prospekt -> unten
           if (o.id) gesehenIds[mkId].add(o.id);
           const i = info[mkId];
           const r = knallerAngebot(o, { markt: mkId, seite: i.link, region: i.region, jetztMs, opt: optOhne });
@@ -416,6 +425,18 @@ export default async function knaller({ holeText, cfg, jetzt = new Date(), zusta
       }
     }
     sw.begriffe = sw.begriffe.slice(0, 40);
+    // anderer Prospekt desselben Markts: nur mit Bestätigung durch marktguru (PLZ, gleicher Preis, Marke/Produkt, Zeitraum)
+    let bestaetigt = 0;
+    for (const { mkId, o, w } of fremd) {
+      const i = info[mkId];
+      const r = knallerAngebot(o, { markt: mkId, seite: i.link, region: i.region, jetztMs, opt: m });
+      if (!r.angebot) continue;
+      const a = r.angebot;
+      if (!mgListe.some(x => passtMarktguru(a, x) && zeitlichPassend(a, x))) continue;
+      a.regional = i.regional; a.fund = w.slice(0, 30); a.bestaetigt = 'marktguru';
+      if (nimm(mkId, r)) bestaetigt++;
+    }
+    if (fremd.length) sw.fremd = { gesehen: fremd.length, bestaetigt };
   }
 
   // --- Sammeln über die Woche: noch gültige Angebote aus Döbelner Prospekten der letzten Datei bleiben ------------------
@@ -423,7 +444,8 @@ export default async function knaller({ holeText, cfg, jetzt = new Date(), zusta
   for (const a of Array.isArray(vorherDatei?.angebote) ? vorherDatei.angebote : []) {
     if (!a || !a.markt || !prospekte[a.markt] || st.alt.includes(a.markt)) continue;
     if (a.gueltigBis && Date.parse(a.gueltigBis) < jetztMs) continue;
-    if (!a.prospekt || !prospekte[a.markt].has(a.prospekt)) continue; // Prospekt nicht mehr genannt -> weg
+    // Prospekt nicht mehr genannt -> weg (von marktguru für Döbeln bestätigte bleiben bis zu ihrem Ende)
+    if (a.bestaetigt !== 'marktguru' && (!a.prospekt || !prospekte[a.markt].has(a.prospekt))) continue;
     if ((jeMarkt[a.markt] || []).some(b => b.id === a.id)) continue;
     const { _marke, _bildDatei, ...rest } = a;
     const g = (doppel[a.markt] ||= new Set());
@@ -437,7 +459,7 @@ export default async function knaller({ holeText, cfg, jetzt = new Date(), zusta
   let mgTreffer = 0;
   for (const liste of Object.values(jeMarkt)) for (const a of liste) {
     // passend und zeitlich überlappend (Lidl hat z. B. Chips 1,79 € diese Woche und andere 1,79-€-Chips ab nächster Woche)
-    const g = mgListe.find(x => passtMarktguru(a, x) && !(a.gueltigBis && Date.parse(x.ab) >= Date.parse(a.gueltigBis)) && !(a.gueltigAb && x.bis && Date.parse(x.bis) <= Date.parse(a.gueltigAb)));
+    const g = mgListe.find(x => passtMarktguru(a, x) && zeitlichPassend(a, x));
     if (!g) continue;
     mgTreffer++;
     if (!a.gueltigAb || Date.parse(g.ab) > Date.parse(a.gueltigAb) + 3600e3) { a.gueltigAb = g.ab; a.abQuelle = 'marktguru'; }
@@ -476,7 +498,7 @@ export default async function knaller({ holeText, cfg, jetzt = new Date(), zusta
       ...(i.ort ? { ort: i.ort } : {}), ...(i.keinMarkt ? { keinMarkt: true } : {}), ...(i.filiale ? { filiale: i.filiale } : {}),
       // Vollständigkeit: kaufDA zählt gesamt Angebote in den Prospekten, gelesen = davon hier gesehen (Seite + Stichworte + Pool)
       ...(i.gesamt != null ? { gesamt: i.gesamt } : {}),
-      ...(prospekte[mk.id] ? { gelesen: new Set([...(gesehenIds[mk.id] || []), ...(jeMarkt[mk.id] || []).map(a => String(a.id).replace(/^kd:/, ''))]).size, mitVergleich: alleM.length } : {}),
+      ...(prospekte[mk.id] ? { gelesen: new Set([...(gesehenIds[mk.id] || []), ...(jeMarkt[mk.id] || []).filter(a => !a.bestaetigt).map(a => String(a.id).replace(/^kd:/, ''))]).size, mitVergleich: alleM.length } : {}),
       ...(pr.length ? { prospekte: pr.slice(0, 6).map(p => ({ titel: p.titel, ab: p.ab, bis: p.bis, ...(p.seiten ? { seiten: p.seiten } : {}), ...(p.bald ? { bald: true } : {}) })) } : {}),
     };
   }
@@ -522,7 +544,7 @@ export default async function knaller({ holeText, cfg, jetzt = new Date(), zusta
     maerkte: maerkteOut,
     angebote,
     status: { kaufda: st },
-    hinweis: 'Prospekt-Ort je Markt in maerkte.<id>.ort (regional = nicht der Prospekt für Döbeln, dort prüfen). Rabatt mit Vergleichspreis, abgerundet: vorherArt streich = Streichpreis im Prospekt, uvp = unverbindliche Preisempfehlung des Herstellers, unbekannt = Art nicht angegeben, geschaetzt = kein Vergleichspreis im Prospekt, sondern derselbe Artikel im selben Markt aus einem früheren Prospekt (vorherQuelle). abPreis = „ab“-Preis (bis zu). app = nur mit App/Karte. prospekt = Prospekt-id bei kaufDA. gueltigAb später als heute = kommt noch (abQuelle text/marktguru, wochenende = Fr/Sa-Angebot). maerkte.<id>.gesamt = Angebote in den Prospekten laut kaufDA, gelesen = davon gesehen.',
+    hinweis: 'Prospekt-Ort je Markt in maerkte.<id>.ort (regional = nicht der Prospekt für Döbeln, dort prüfen). Rabatt mit Vergleichspreis, abgerundet: vorherArt streich = Streichpreis im Prospekt, uvp = unverbindliche Preisempfehlung des Herstellers, unbekannt = Art nicht angegeben, geschaetzt = kein Vergleichspreis im Prospekt, sondern derselbe Artikel im selben Markt aus einem früheren Prospekt (vorherQuelle). abPreis = „ab“-Preis (bis zu). app = nur mit App/Karte. prospekt = Prospekt-id bei kaufDA. gueltigAb später als heute = kommt noch (abQuelle text/marktguru, wochenende = Fr/Sa-Angebot). maerkte.<id>.gesamt = Angebote in den Prospekten laut kaufDA, gelesen = davon gesehen. bestaetigt marktguru = aus einem anderen Prospekt desselben Markts, von marktguru für PLZ 04720 mit gleichem Preis bestätigt.',
   };
   return { eintraege: [], fehler, hinweise, datei, kurz };
 }

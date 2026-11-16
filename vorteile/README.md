@@ -201,6 +201,22 @@ Angebot** ist ein Hinweis (alte Angebote bleiben; echter Lauf 16.11.: Marktkauf 
 die Stadt nur, wenn ihre Seite die Angebote wirklich geliefert hat; App-/Kartenpreise erkennen auch DeutschlandCard, REWE Bonus,
 Mitgliederpreis; `kurz.top` zeigt erst, was jetzt gilt, Späteres mit `ab`.
 
+**2. Runde (16.11.2026, Xander: „Bei Aldi Nord sind diese Woche die Crunchips mit 50 % – die finde ich nicht“).** Befund
+(Roh-Läufe 43797380195, 43818792502): die Döbelner Händlerseite zeigt je Markt nur 16 Angebote (`totalItems` Aldi Nord 359,
+Lidl 1000, Kaufland 491, Netto 483, Penny 297, Marktkauf 424; `?page=2` wirkt nicht); die Crunchips standen auf Seite 20 des
+Döbelner Aldi-Prospekts und nie auf der Händlerseite. Neu: Stichwortseiten `/Angebote/<Begriff>` (`stichworte`, je Lauf
+`maxStichwortSeiten`, die am längsten nicht gelesenen zuerst, 404 = 7 Tage Pause), Angebote zählen nur aus den Prospekten der
+Döbelner Seite (`prospekt` = `parentContent.id`) – oder, bei Lidl/Penny/Kaufland/Netto (dort zeigen die Stichwortseiten die
+Berliner Prospekte), wenn marktguru für PLZ 04720 dasselbe Angebot (Markt, Preis, Marke) nennt (`bestaetigt: 'marktguru'`,
+Roh-Lauf 43821908194: Lidl Pepsi Zero 0,99 statt 1,79 UVP ab Do 19.11.). Gültigkeit je Angebot: kaufDA kennt nur die
+Prospektwoche; „ab Donnerstag“/„Fr. + Sa.“/„Wochenende“ im Text (`abQuelle: 'text'`, `wochenende`) und der Starttag aus
+marktguru (`abQuelle: 'marktguru'`) setzen `gueltigAb`. Sammeln über die Läufe der Woche (Pool), `vorherArt: 'geschaetzt'` aus
+`zustand.knaller.preise`, Staffel `minProzent` 20 / `stufen` [20, 30, 40, 50], `maxJeMarkt` 60, `maerkte.<id>.gesamt/gelesen/
+mitVergleich/prospekte`, `kurz.ab` zählt nur, was heute gilt, `kurz.kommt` das, was diese Woche noch beginnt. Merkliste:
+`lib/merken.mjs` (ntfy-Thema `merkThema`, `merkworte` in der config), Erinnerung am ersten Gültigkeitstag ab
+`erinnerungStunde` (7), einmal je Angebot; Pushes allgemein nur für Einträge, die schon gelten (`plane`: `ab` in der Zukunft
+bleibt ungemeldet).
+
 Einträge in `aktuell.json` haben seit 16.11.2026 optional `bild` (https-Link: mydealz-RSS, marktguru aus den Schnäppchen-Daten).
 mydealz-Box-Tipps in `filme.json` bekommen `vorher`/`ersparnis`, wenn der Deal-Text („statt …“, UVP) oder die Deal-Seite
 (`nextBestPrice`, gemeinsames Budget der Deal-Seiten) einen Vergleichspreis nennt.
