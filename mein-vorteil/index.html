@@ -42,6 +42,7 @@
   .f-krypto { --f: #ff9f45; --f-hell: #48311e; --f-hell2: #604023; }
   .f-spartricks { --f: #5fd8e8; --f-hell: #233a3e; --f-hell2: #2b4d53; }
   .f-essen { --f: #ff9b7a; --f-hell: #48302a; --f-hell2: #603c33; }
+  .f-woche { --f: #ffd84a; --f-hell: #47401d; --f-hell2: #5e5424; } /* Wochen-Knaller (16.11.2026): Gold = echter Streichpreis */
   .f-mehr { --f: #c2b2a1; --f-hell: #3d352e; --f-hell2: #4f453d; }
   [class*="f-"] { --akzent: var(--f); --akzent-hell: var(--f-hell); }
   * { box-sizing: border-box; }
@@ -184,6 +185,7 @@
   .kachel li span.gut { color: var(--f); font-weight: 650; }
   @media (max-width: 699px) { .kachel li:nth-child(3) { display: none; } }
   @media (max-width: 699px) { .kacheln a.kachel:last-child:nth-child(odd) { grid-column: 1 / -1; } } /* ungerade Zahl Kacheln: die letzte füllt die Reihe (seit Essen 12, dann greift es nicht) */
+  @media (min-width: 700px) { .kacheln a.kachel:last-child:nth-child(3n+1) { grid-column: 1 / -1; } } /* 3 Spalten: eine allein in der letzten Reihe füllt sie (13 Kacheln seit „Woche“) */
   .kachel .kw { margin-top: auto; padding-top: 6px; font-size: 12px; color: var(--f); font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   /* Karten */
@@ -203,6 +205,15 @@
   .marke.grau { background: var(--flaeche); color: var(--leise); }
   .prozent { flex: none; font-weight: 800; font-size: 15px; padding: 3px 10px; border-radius: 999px; background: var(--f); color: var(--dunkel); }
   .prozent.leise { background: var(--flaeche); color: var(--leise); }
+  /* Produktbild (16.11.2026): Prospekt-Ausschnitt/Produktfoto auf hellem Grund wie in Prospekt-Apps; nur Link, lazy, feste Maße.
+     In der Angebotskarte links neben Kopf, Angebotstitel und Preis (float) – die Karte wird dadurch nicht höher. */
+  .pbild { display: block; flex: none; width: 64px; height: 64px; border-radius: 12px; background: #fbf7f1; object-fit: contain; }
+  .pbild.klein { width: 40px; height: 40px; border-radius: 9px; }
+  .karte > .pbild { float: left; margin: 2px 12px 4px 0; }
+  .pbild-ersatz { display: flex; align-items: center; justify-content: center; color: #7a6a58; font-size: 15px; font-weight: 750; }
+  .weitere li a > span:first-child > .pbild { float: left; margin: 0 10px 0 0; }
+  .zu-woche { margin: 2px 0 14px; }
+  .zu-woche a { display: inline-flex; align-items: center; min-height: 44px; color: var(--f); font-weight: 700; text-decoration: none; }
 
   .angebot-titel { margin: 4px 0 0; font-size: 15px; color: var(--leise); }
   .angebot-titel b { color: var(--text); font-weight: 650; white-space: nowrap; }
@@ -610,6 +621,7 @@ const NTFY_IMPORT = (() => {
   <symbol id="ic-gewinnspiele" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v8a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-8"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></symbol>
   <symbol id="ic-krypto" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 7.5h3.8a2 2 0 0 1 0 4H9.5zM9.5 11.5h4.3a2 2 0 0 1 0 4H9.5zM9.5 7.5v8M11 6v1.5M11 15.5V17"/></symbol>
   <symbol id="ic-spartricks" viewBox="0 0 24 24"><path d="M18.5 9.2c1 .5 1.8 1.4 2.1 2.4H22v3h-1.5c-.4.9-1.1 1.7-2 2.3V20h-3v-1.5a9.6 9.6 0 0 1-4 0V20h-3v-2.3C6.6 16.6 5 14.6 5 12.2 5 8.6 8.4 5.7 12.6 5.7c1 0 2 .2 2.9.5L18.5 5z"/><circle cx="15.6" cy="10.6" r=".8"/><path d="M9.6 8.8h3.2M2.5 10.5c0 1.4.9 2.2 2.5 2.2"/></symbol>
+  <symbol id="ic-woche" viewBox="0 0 24 24"><path d="M3 4h2.4l2.3 10.3a1.5 1.5 0 0 0 1.5 1.2h8.2a1.5 1.5 0 0 0 1.5-1.1L21 8H6.3"/><circle cx="9.6" cy="19.6" r="1.4"/><circle cx="17.4" cy="19.6" r="1.4"/></symbol>
   <symbol id="ic-essen" viewBox="0 0 24 24"><path d="M7 3v8M4.5 3v5.2a2.5 2.5 0 0 0 5 0V3M7 11v10"/><path d="M17 21V3c-2.3 1.3-3.6 3.8-3.6 7.2V14H17"/></symbol>
   <symbol id="ic-mehr" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></symbol>
   <symbol id="ic-weg" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
@@ -633,6 +645,7 @@ const NTFY_IMPORT = (() => {
   <div class="breite sprung-zeile" id="leiste">
     <a href="#start" data-ziel="start" class="f-start"><svg class="ic" aria-hidden="true"><use href="#ic-start"/></svg><span class="t">Start</span><span class="n"></span></a>
     <a href="#deals" data-ziel="deals" class="f-deals"><svg class="ic" aria-hidden="true"><use href="#ic-deals"/></svg><span class="t">Deals</span><span class="n"></span></a>
+    <a href="#woche" data-reiter="woche" class="f-woche"><svg class="ic" aria-hidden="true"><use href="#ic-woche"/></svg><span class="t">Woche</span><span class="n"></span></a>
     <a href="#essen" data-reiter="essen" class="f-essen"><svg class="ic" aria-hidden="true"><use href="#ic-essen"/></svg><span class="t">Essen</span><span class="n"></span></a>
     <a href="#preisfehler" data-ziel="preisfehler" class="f-preisfehler"><svg class="ic" aria-hidden="true"><use href="#ic-preisfehler"/></svg><span class="t">Preisfehler</span><span class="n"></span></a>
     <a href="#filme" data-reiter="filme" class="f-filme"><svg class="ic" aria-hidden="true"><use href="#ic-filme"/></svg><span class="t">Filme</span><span class="n"></span></a>
@@ -662,6 +675,7 @@ const NTFY_IMPORT = (() => {
       <div class="unter-kopf"><h3 id="h-produkte">Meine Produkte <span class="zahl"></span></h3><button id="liste-bearbeiten" class="zweit klein-knopf" type="button" aria-expanded="false" aria-controls="editor">Liste bearbeiten</button></div>
       <div id="editor" class="editor" hidden></div>
       <div id="i-produkte"><p class="leer">Lade Angebote …</p></div>
+      <p class="zu-woche f-woche"><a href="#woche" data-sprung="woche">Wochen-Knaller je Markt ab 30 % ›</a></p>
     </div>
     <div id="technik" class="abschnitt" hidden>
       <div class="unter-kopf"><h3 id="h-technik">Musik-Technik <span class="zahl"></span></h3></div>
@@ -747,6 +761,12 @@ const NTFY_IMPORT = (() => {
   <div class="bereich-kopf"><span class="gross" aria-hidden="true"><svg class="ic"><use href="#ic-filme"/></svg></span><h2 id="h-filme">Filme &amp; Serien</h2></div>
   <p class="warum" id="w-filme">Apple TV, abgeglichen mit deinen Listen: Wunschliste, Für 3,99 €, Action &amp; Thriller, Comedy, 80er &amp; Kult, Neu, Serien, Disney – gute Filme, kein Horror.</p>
   <div id="i-filme"><p class="leer">Lade Filme …</p></div>
+</section>
+<!-- Woche: Wochen-Knaller je Markt, Inhalt aus woche.js, Daten knaller.json vom Vorteils-Radar (beides erst beim ersten Öffnen) -->
+<section id="p-woche" class="reiter-seite breite f-woche" aria-labelledby="h-woche" hidden>
+  <div class="bereich-kopf"><span class="gross" aria-hidden="true"><svg class="ic"><use href="#ic-woche"/></svg></span><h2 id="h-woche">Wochen-Knaller</h2></div>
+  <p class="warum" id="w-woche">Die krassesten Prospekt-Angebote der Woche je Markt – Rabatt nur mit Vergleichspreis aus dem Prospekt.</p>
+  <div id="i-woche"><p class="leer">Lade Wochen-Knaller …</p></div>
 </section>
 <!-- Spartricks: Inhalt kommt aus spartricks.js, Daten aus spartricks.json (beides erst beim ersten Öffnen) -->
 <section id="p-spartricks" class="reiter-seite breite f-spartricks" aria-labelledby="h-spartricks" hidden>
@@ -1324,6 +1344,34 @@ function kontextBlock(k, o) {
   return `<dl class="kx">${zellen.join('')}</dl>${fuer}${urteil}${quellen}`;
 }
 
+// Produktbild (16.11.2026, Xander: „auch bei meinen Snacks das Bild zeigen“): nur https, nur als Link (marktguru, mydealz,
+// kaufDA – direkt verlinkt wie die Filmbilder), lazy, feste Maße; ohne Bild bleibt alles wie vorher. Kaputtes Bild -> gleich
+// großer Platzhalter mit Anfangsbuchstaben (kein Sprung).
+function produktBild(url, name, klein = false) {
+  const u = typeof url === 'string' && /^https:\/\/[^\s"'<>]+$/i.test(url.trim()) ? url.trim() : null;
+  if (!u) return '';
+  const g = klein ? 40 : 64;
+  return `<img class="pbild${klein ? ' klein' : ''}" src="${esc(u)}" alt="" width="${g}" height="${g}" loading="lazy" decoding="async" referrerpolicy="no-referrer" data-name="${esc(String(name || '').slice(0, 40))}">`;
+}
+// Bild zur Karte nur, wenn das Angebot auch dieses Produkt ist: Die Karte heißt „Haribo Colorado“, das gezeigte Angebot ist aber
+// „Haribo Harry Potter“ (gleiche Gruppe) – dessen Foto wäre irreführend (Prüfer 16.11.2026). Jedes Wort des Produktnamens
+// nach dem ersten (Marke) muss im Angebotstitel stehen; sonst kein Bild (wie vor dem 16.11.).
+function bildPasst(name, titel) {
+  const w = normText(name).trim().split(' ').filter(x => x.length > 2 && !/^\d/.test(x));
+  if (w.length < 2) return true;
+  const t = normText(titel);
+  return w.slice(1).every(x => t.includes(' ' + x));
+}
+document.addEventListener('error', ev => {
+  const i = ev.target;
+  if (!i || i.tagName !== 'IMG' || !i.classList.contains('pbild')) return;
+  const ph = document.createElement('span');
+  ph.className = i.className + ' pbild-ersatz';
+  ph.setAttribute('aria-hidden', 'true');
+  ph.textContent = String(i.dataset.name || '').replace(/[^\p{L}\d]/gu, '').slice(0, 1).toUpperCase();
+  i.replaceWith(ph);
+}, true);
+
 function produktKarte(p, o, rest) {
   const basis = BASIS_KURZ[p.basis] || p.basisLabel || '';
   const sicherMenge = mengeSicher(o);
@@ -1354,7 +1402,7 @@ function produktKarte(p, o, rest) {
     const pk = w.packung || (mengeSicher(w) ? '' : 'Packungsgröße unklar');
     const ep = mengeSicher(w) && zahl(w.einheitspreis) != null ? `${euro(w.einheitspreis, true)} ${basis}` : 'Menge unklar';
     const bedingung = [gueltigText(w), w.hinweis || ''].filter(Boolean).join(' · ');
-    return `<li><a href="${esc(sicher(w.link))}" target="_blank" rel="noopener"><span><b>${esc(w.shop)}</b> · ${esc(w.titel)}${pk ? ' · ' + esc(pk) : ''}<br><span class="klein">${esc(bedingung)}</span></span><span><b>${esc(euro(w.preis))}</b><br><span class="klein">${esc(ep)}</span></span></a></li>`;
+    return `<li><a href="${esc(sicher(w.link))}" target="_blank" rel="noopener"><span>${produktBild(w.bild, w.shop, true)}<b>${esc(w.shop)}</b> · ${esc(w.titel)}${pk ? ' · ' + esc(pk) : ''}<br><span class="klein">${esc(bedingung)}</span></span><span><b>${esc(euro(w.preis))}</b><br><span class="klein">${esc(ep)}</span></span></a></li>`;
   }).join('')}</ul></details>` : '';
   // Markt-Angebot -> „Auf Amazon ansehen“; Preisvergleich nur mit einem laufenden Amazon-Angebot derselben Karte
   const amazon = istAmazon(o.shop) ? '' : amazonZeile(p.name, { markt: o, amazon: rest.find(w => istAmazon(w.shop)) || null, basis });
@@ -1364,7 +1412,7 @@ function produktKarte(p, o, rest) {
   else { const b = zeit(o.bis ?? o.gueltigBis); if (b != null && tag(b) === 'heute') oben.push(`<span class="marke warm">endet ${esc(bisText(o.bis ?? o.gueltigBis).replace(/^bis /, ''))}</span>`); }
   return `<article class="karte angebot${deal ? ' deal' : ''}" data-produkt="${esc(p.id)}">
     ${oben.length ? `<div class="oben">${oben.join('')}</div>` : ''}
-    <div class="karte-kopf"><h3>${esc(produktName(p, o))}</h3>${prozent != null ? `<span class="prozent${deal ? '' : ' leise'}" title="gegen den regulären Preis">−${prozent} %</span>` : ''}</div>
+    ${bildPasst(produktName(p, o), o.titel) ? produktBild(o.bild, produktName(p, o)) : ''}<div class="karte-kopf"><h3>${esc(produktName(p, o))}</h3>${prozent != null ? `<span class="prozent${deal ? '' : ' leise'}" title="gegen den regulären Preis">−${prozent} %</span>` : ''}</div>
     <p class="angebot-titel">${esc(o.titel)}${packung ? ` · <b>${esc(packung)}</b>` : ''}</p>
     <div class="preiszeile"><span class="preis">${esc(euro(o.preis))}</span><span class="shop">bei ${esc(o.shop)}</span>${prozent != null && k?.regulaer ? `<span class="statt">statt regulär <s>${esc(euro(k.regulaer.pack))}</s></span>` : ''}${zahl(o.versand) > 0 ? `<span class="klein">+ ${esc(euro(o.versand))} Versand</span>` : ''}${o.hinweis ? `<span class="klein">${esc(o.hinweis)}</span>` : ''}</div>
     ${sicherMenge && zahl(o.einheitspreis) != null ? `<p class="einheit">${esc(euro(o.einheitspreis, true))} ${esc(basis)}${varianten}</p>`
@@ -1809,7 +1857,7 @@ function snackZeile(e) {
   const b = zeit(e.bis);
   const rechts = startetSpaeter(e) ? abText(e.ab) : b != null ? bisText(e.bis) : '';
   const amazon = amazonName(e);
-  return `<li><a class="reihe" href="${esc(sicher(e.link))}" target="_blank" rel="noopener"><div class="haupt"><b>${esc(e.titel)}</b>${e.zeile ? `<span class="zeile">${esc(e.zeile)}</span>` : ''}<span>${esc(e.quelle || '')}</span></div>${rechts ? `<div class="rechts${b != null && tag(b) === 'heute' ? ' warm' : ''}">${esc(rechts)}</div>` : ''}</a>${amazon ? amazonZeile(amazon) : ''}</li>`;
+  return `<li><a class="reihe" href="${esc(sicher(e.link))}" target="_blank" rel="noopener">${produktBild(e.bild, e.titel, true)}<div class="haupt"><b>${esc(e.titel)}</b>${e.zeile ? `<span class="zeile">${esc(e.zeile)}</span>` : ''}<span>${esc(e.quelle || '')}</span></div>${rechts ? `<div class="rechts${b != null && tag(b) === 'heute' ? ' warm' : ''}">${esc(rechts)}</div>` : ''}</a>${amazon ? amazonZeile(amazon) : ''}</li>`;
 }
 function zeichneSnacks(t) {
   if (!t.da) return { html: vorteileFehlen(), n: 0 };
@@ -2168,9 +2216,29 @@ function essenKachel() { // -> { z, w } wie kachelInhalt; höchstens 2 Zeilen
 }
 addEventListener('mein-vorteil-essen', () => zeichne()); // der Reiter hat frische Essen-Daten gemerkt -> Kachel neu
 
+// --- Woche-Kachel (Wochen-Knaller, 16.11.2026): aus status.knaller.kurz in aktuell.json (lädt die Startseite ohnehin) – kein
+// eigener Abruf. Stufe (30/40/50 %) wie zuletzt im Reiter gewählt (mein-vorteil-woche-stufe).
+const WOCHE_STUFE = 'mein-vorteil-woche-stufe';
+function wocheStufe() { const v = Number(lies(WOCHE_STUFE, 30)); return [30, 40, 50].includes(v) ? v : 30; }
+function wocheKurz() {
+  const k = S.vorteile?.d?.status?.knaller?.kurz;
+  return k && typeof k === 'object' && k.ab && typeof k.ab === 'object' ? k : null;
+}
+function wocheZahl() { const k = wocheKurz(); const n = Number(k?.ab?.[wocheStufe()]); return Number.isInteger(n) && n > 0 ? n : 0; }
+function wocheKachel() { // -> { z, w } wie kachelInhalt; höchstens 2 Zeilen
+  const k = wocheKurz();
+  const st = wocheStufe();
+  const top = (Array.isArray(k?.top) ? k.top : []).filter(x => x && typeof x.titel === 'string' && zahl(x.pct) >= st && zahl(x.preis) > 0);
+  if (!top.length) return { z: [[`Wochen-Angebote ab ${st} %`, 'je Markt, mit Bild – tippen zum Öffnen']], w: k ? `gerade nichts ab ${st} %` : '' };
+  // „ab“ = gilt erst ab Montag/Donnerstag (Radar status.knaller.kurz.top[].ab) – dann steht es dabei
+  const z = top.slice(0, 2).map(x => [kurzTitel(x.titel, 44), `${x.abPreis ? 'bis ' : ''}−${Math.floor(zahl(x.pct))} % · ${euro(zahl(x.preis))} · ${String(x.markt || '').slice(0, 20)}${x.app ? ' · App' : ''}${zeit(x.ab) > Date.now() ? ' · ' + abText(x.ab) : ''}`, x.vorherArt === 'streich']);
+  return { z, w: '' };
+}
+addEventListener('mein-vorteil-woche', () => zeichne()); // Stufe im Reiter geändert -> Kachel/Zahl neu
+
 // --- Start: „Heute für dich“ – je Bereich 1–3 beste Treffer als Kachel, Tippen führt in den Bereich ------------------------
-const KACHEL_REIHE = ['deals', 'essen', 'preisfehler', 'filme', 'auftritte', 'remix', 'unterricht', 'konzerte', 'gewinnspiele', 'krypto', 'spartricks', 'mehr'];
-const KACHEL_NAME = { deals: 'Deals', essen: 'Essen', preisfehler: 'Preisfehler', filme: 'Filme', auftritte: 'Auftritte', remix: 'Remix', unterricht: 'Unterricht', konzerte: 'Konzerte', gewinnspiele: 'Gewinnspiele', krypto: 'Krypto', spartricks: 'Spartricks', mehr: 'Mehr' };
+const KACHEL_REIHE = ['deals', 'woche', 'essen', 'preisfehler', 'filme', 'auftritte', 'remix', 'unterricht', 'konzerte', 'gewinnspiele', 'krypto', 'spartricks', 'mehr'];
+const KACHEL_NAME = { deals: 'Deals', woche: 'Woche', essen: 'Essen', preisfehler: 'Preisfehler', filme: 'Filme', auftritte: 'Auftritte', remix: 'Remix', unterricht: 'Unterricht', konzerte: 'Konzerte', gewinnspiele: 'Gewinnspiele', krypto: 'Krypto', spartricks: 'Spartricks', mehr: 'Mehr' };
 const ohnePrefix = s => String(s || '').replace(/^[\[(]?\s*(möglicher\s+)?preisfehler\s*[\])]?\s*[:!–-]?\s*/i, '');
 function fristKurz(e) { const b = bisZeit(zeit(e.bis)); return b == null ? '' : `bis ${tag(b)}`; }
 function kachelInhalt(b, t) { // -> { z: [[Titel, Zeile, gut?]], w: Satz }
@@ -2239,6 +2307,7 @@ function kachelInhalt(b, t) { // -> { z: [[Titel, Zeile, gut?]], w: Satz }
     const z = t.gewinnspiele.filter(laeuftSchon).map(e => [kurzTitel(e.titel, 48), fristKurz(e) || 'Ende unbekannt']);
     return z.length ? { z, w: '' } : { z: [['Gerade keins ohne Kauf', 'neue kommen abends']], w: t.da ? 'feste Adressen im Bereich' : '' };
   }
+  if (b === 'woche') return wocheKachel();
   if (b === 'spartricks') return sparKachel();
   if (b === 'essen') return essenKachel();
   if (b === 'krypto') {
@@ -2786,13 +2855,13 @@ function zeichne() {
   // Zahl: Angebote der Film-Übersicht (Radar status.filme.kurz), mindestens die Film-Einträge (Push-Ereignisse)
   const filmeKurz = Number(S.vorteile?.d?.status?.filme?.kurz?.angebote);
   const filme = Math.max(letzteEinteilung.filme.filter(laeuftSchon).length, Number.isInteger(filmeKurz) && filmeKurz > 0 ? filmeKurz : 0);
-  const zahlen = { deals: r.produkte.n, preisfehler: r.preisfehler.n, filme, auftritte: r.auftritte.n, remix: r.remix.n, unterricht: r.unterricht.n, konzerte: r.konzerte.n, gewinnspiele: r.gewinnspiele.n, krypto: kryptoStand().filter(x => x.e && x.e.gv > 0.004).length, mehr: r.mehr.n };
+  const zahlen = { deals: r.produkte.n, woche: wocheZahl(), preisfehler: r.preisfehler.n, filme, auftritte: r.auftritte.n, remix: r.remix.n, unterricht: r.unterricht.n, konzerte: r.konzerte.n, gewinnspiele: r.gewinnspiele.n, krypto: kryptoStand().filter(x => x.e && x.e.gv > 0.004).length, mehr: r.mehr.n };
   const t = letzteEinteilung;
   Object.assign(ZUSATZ, {
     start: '', deals: `${(S.angebote?.d?.produkte || []).filter(p => !ausgeblendet(p.id)).length || ''} Produkte im Blick`.replace(/^ Produkte im Blick$/, ''),
     preisfehler: 'nur krasse', auftritte: `${t.auftritte.length} frisch · ${t.auftritteFund.length} feste Adressen`, remix: `${t.remix.length} laufend · ${t.remixFund.length} Fundorte`,
     unterricht: t.gesuche.length ? `${t.gesuche.length} ${t.gesuche.length === 1 ? 'Gesuch' : 'Gesuche'}${t.unterricht.length ? ` · ${t.unterricht.length} ${t.unterricht.length === 1 ? 'Stelle' : 'Stellen'}` : ` · ${t.unterrichtFund.length} feste Adressen`}` : `${t.unterricht.length} neu · ${t.unterrichtFund.length} feste Adressen`, konzerte: nurNah ? `bis ${konzertTeile().radius} km` : 'alle Termine',
-    gewinnspiele: 'ohne Kauf', krypto: 'nur auf diesem iPhone', mehr: '', filme: 'Apple TV', spartricks: 'jeder Tipp mit Quelle', essen: 'mit Quelle · Döbeln & Umgebung',
+    gewinnspiele: 'ohne Kauf', krypto: 'nur auf diesem iPhone', mehr: '', filme: 'Apple TV', woche: `ab ${wocheStufe()} % · Prospekte`, spartricks: 'jeder Tipp mit Quelle', essen: 'mit Quelle · Döbeln & Umgebung',
   });
   if (window.MeinVorteilEssen?.gestartet) try { MeinVorteilEssen.auffrischen(); } catch (e) { console.warn(e); } // „Aktuell“ (Radar) neu
   for (const [ab, n] of Object.entries(zahlen)) if (ab !== 'krypto') setzeZahl(ab, n);
@@ -2808,9 +2877,9 @@ function zeichne() {
 const zeichneAlles = () => zeichne();
 
 // --- Bereiche: immer nur einer zu sehen; Leiste markiert ihn, „Du bist in: …“ sagt es ----------------------------------------
-const BEREICHE = ['start', 'deals', 'essen', 'preisfehler', 'filme', 'auftritte', 'remix', 'unterricht', 'konzerte', 'gewinnspiele', 'krypto', 'spartricks', 'mehr'];
-const IN_MAIN = BEREICHE.filter(b => b !== 'filme' && b !== 'spartricks' && b !== 'essen');
-const BEREICH_NAME = { start: 'Heute für dich', deals: 'Deals', essen: 'Essen', preisfehler: 'Preisfehler', filme: 'Filme & Serien', auftritte: 'Auftritte', remix: 'Remix-Contests', unterricht: 'Deutschunterricht', konzerte: 'Konzerte', gewinnspiele: 'Gewinnspiele', krypto: 'Krypto', spartricks: 'Spartricks', mehr: 'Mehr' };
+const BEREICHE = ['start', 'deals', 'woche', 'essen', 'preisfehler', 'filme', 'auftritte', 'remix', 'unterricht', 'konzerte', 'gewinnspiele', 'krypto', 'spartricks', 'mehr'];
+const IN_MAIN = BEREICHE.filter(b => b !== 'filme' && b !== 'spartricks' && b !== 'essen' && b !== 'woche');
+const BEREICH_NAME = { start: 'Heute für dich', deals: 'Deals', woche: 'Wochen-Knaller', essen: 'Essen', preisfehler: 'Preisfehler', filme: 'Filme & Serien', auftritte: 'Auftritte', remix: 'Remix-Contests', unterricht: 'Deutschunterricht', konzerte: 'Konzerte', gewinnspiele: 'Gewinnspiele', krypto: 'Krypto', spartricks: 'Spartricks', mehr: 'Mehr' };
 // Ziele innerhalb eines Bereichs (Deals) und alte Sprungmarken (Push-Links, alte Seiten)
 const UNTERZIEL = { produkte: 'deals', cashback: 'deals', snacks: 'deals', technik: 'deals' };
 const ALTE_MARKEN = { angebote: 'produkte', schnaeppchen: 'produkte', vorteile: 'start' };
@@ -2880,6 +2949,22 @@ function starteFilme() {
 }
 REITER_START.filme = starteFilme;
 REITER_NEU.filme = () => { if (window.MeinVorteilFilme?.gestartet) MeinVorteilFilme.lade(); else if (reiterOffen === 'filme') starteFilme(); };
+
+// --- Woche: alles in woche.js (Logik + CSS), Daten knaller.json vom Radar – beides erst beim ersten Öffnen ----------------
+let wocheSkript = null;
+function starteWoche() {
+  if (wocheSkript) return;
+  wocheSkript = document.createElement('script');
+  wocheSkript.src = 'woche.js';
+  wocheSkript.onload = () => window.MeinVorteilWoche?.start($('i-woche'));
+  wocheSkript.onerror = () => {
+    wocheSkript.remove(); wocheSkript = null; // ↻ versucht es noch einmal
+    $('i-woche').innerHTML = '<p class="leer">Wochen-Knaller gerade nicht erreichbar. Später noch einmal auf ↻ tippen.</p>';
+  };
+  document.head.appendChild(wocheSkript);
+}
+REITER_START.woche = starteWoche;
+REITER_NEU.woche = () => { if (window.MeinVorteilWoche?.gestartet) MeinVorteilWoche.lade(); else if (reiterOffen === 'woche') starteWoche(); };
 
 // --- Spartricks: alles in spartricks.js (Logik + CSS), Daten in spartricks.json – beides erst beim ersten Öffnen ---------
 let sparSkript = null;

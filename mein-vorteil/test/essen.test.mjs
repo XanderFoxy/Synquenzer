@@ -224,7 +224,8 @@ test('Unterreiter: jeder laufende Eintrag ist erreichbar; Pizza-Muster nur unter
 test('Haken: index.html (Leiste nach Deals, eigene Seite, Skript erst beim Öffnen, Kachel), sw.js (essen.js, neue Cache-Fassung)', () => {
   const html = readFileSync(join(MV, 'index.html'), 'utf8');
   const leiste = html.match(/<div class="breite sprung-zeile"[^>]*>([\s\S]*?)<\/div>/)[1];
-  assert.match(leiste, /<span class="t">Deals<\/span><span class="n"><\/span><\/a>\s*<a href="#essen" data-reiter="essen" class="f-essen"><svg class="ic" aria-hidden="true"><use href="#ic-essen"\/><\/svg><span class="t">Essen<\/span><span class="n"><\/span><\/a>/);
+  // seit 16.11.2026 steht „Woche“ zwischen Deals und Essen
+  assert.match(leiste, /<span class="t">Deals<\/span><span class="n"><\/span><\/a>\s*<a href="#woche" data-reiter="woche" class="f-woche">[\s\S]*?<\/a>\s*<a href="#essen" data-reiter="essen" class="f-essen"><svg class="ic" aria-hidden="true"><use href="#ic-essen"\/><\/svg><span class="t">Essen<\/span><span class="n"><\/span><\/a>/);
   assert.match(html, /<symbol id="ic-essen" viewBox="0 0 24 24">/);
   assert.match(html, /\.f-essen \{ --f: #[0-9a-f]{6}; --f-hell: #[0-9a-f]{6}; --f-hell2: #[0-9a-f]{6}; \}/);
   assert.match(html, /<section id="p-essen" class="reiter-seite breite f-essen" aria-labelledby="h-essen" hidden>/);
@@ -233,7 +234,7 @@ test('Haken: index.html (Leiste nach Deals, eigene Seite, Skript erst beim Öffn
   assert.match(html, /essSkript\.src = 'essen\.js'/);
   assert.match(html, /REITER_START\.essen = starteEssen;/);
   assert.match(html, /REITER_NEU\.essen = /);
-  assert.match(html, /const KACHEL_REIHE = \['deals', 'essen',/);
+  assert.match(html, /const KACHEL_REIHE = \['deals', 'woche', 'essen',/);
   assert.match(html, /if \(b === 'essen'\) return essenKachel\(\);/);
   assert.match(html, /const EIGENE_SEITE = new Set\(\['filme', 'essen'\]\)/);
   assert.doesNotMatch(html, /\.ess-/, 'kein Essen-CSS in der Seite');
@@ -243,7 +244,7 @@ test('Haken: index.html (Leiste nach Deals, eigene Seite, Skript erst beim Öffn
   const sw = readFileSync(join(MV, 'sw.js'), 'utf8');
   assert.match(sw, /addAll\(\[SEITE, 'filme\.js', 'spartricks\.js', 'essen\.js',/);
   assert.match(sw, /rest === 'essen\.js'/);
-  assert.match(sw, /const CACHE = 'mein-vorteil-3'/);
+  assert.match(sw, /const CACHE = 'mein-vorteil-4'/); // 16.11.2026: woche.js
   assert.doesNotMatch(sw, /essen\.json'/, 'Daten nicht im Worker');
   assert.match(readFileSync(join(MV, 'README.md'), 'utf8'), /Reiter „Essen“/);
 });

@@ -134,6 +134,7 @@ export async function sammleFeeds(holeText, feeds, { jetzt = new Date(), maxAlte
  * Ende: bis/bisQuelle (Feld der Quelle oder Text), ab, art (Anzeigefenster ohne bekanntes Ende), jetzt;
  * fensterAb/fensterStunden: Anzeigefenster ab einem anderen Zeitpunkt / mit anderer Länge (lib/ende.mjs bestimmeEnde).
  * Preise (optional): preise = { preis, preisVorher, vorherQuelle, ersparnisEuro, ersparnisProzent } (lib/mydealz.mjs preisAngaben).
+ * Bild (optional): bild = https-Link (Produktfoto/Prospekt-Ausschnitt), ab 16.11.2026.
  */
 export function eintrag(e) {
   if (!e.link) throw new Error('Eintrag ohne Link');
@@ -161,9 +162,14 @@ export function eintrag(e) {
       preis: e.preise.preis ?? null, preisVorher: e.preise.preisVorher ?? null, vorherQuelle: e.preise.vorherQuelle ?? null,
       ersparnisEuro: e.preise.ersparnisEuro ?? null, ersparnisProzent: e.preise.ersparnisProzent ?? null,
     } : {}),
+    // Produktbild (nur https, nur der Link – Bild-Server wie bei den Filmen direkt verlinkt): mydealz-RSS, marktguru, kaufDA
+    ...(bildLink(e.bild) ? { bild: bildLink(e.bild) } : {}),
     ...(e.extra ? { extra: e.extra } : {}),
   };
 }
+
+/** Bild-Link für Einträge: nur https, höchstens 500 Zeichen, sonst null */
+export const bildLink = u => (typeof u === 'string' && /^https:\/\/[^\s"'<>]+$/i.test(u.trim()) && u.trim().length <= 500 ? u.trim() : null);
 
 export const istRegional = (text, cfg) => cfg.region.some(o => new RegExp(`(^|[^\\p{L}])${o}(?![\\p{L}])`, 'iu').test(text));
 
@@ -206,7 +212,7 @@ export async function preisfehlerEintrag(it, { kategorie, pruefer, jetzt, wert =
   const versand = inkl ? ' inkl. Versand' : info?.versand > 0 ? ` + ${euro(info.versand)} Versand` : '';
   const endeSeite = info?.ende || null;
   const eintragDaten = eintrag({
-    kategorie, titel: it.titel, link: it.link, quelle: it.feed, datum: it.datum, jetzt,
+    kategorie, titel: it.titel, link: it.link, quelle: it.feed, datum: it.datum, jetzt, bild: it.bild || null,
     zeile: [p.preis != null ? preisZeile(p) + versand : '', shop ? `bei ${shop}` : '', p.vorherQuelle || '', 'als Preisfehler gemeldet'].filter(Boolean).join(' · '),
     soGehts: soGehts || 'Schnell bestellen, nur mit Käuferschutz (z. B. PayPal) – Preisfehler werden manchmal storniert, dann bekommst du das Geld zurück.',
     art: 'preisfehler', bis: endeSeite || it.bis || null, bisQuelle: endeSeite ? 'deal-seite' : it.bis ? 'text' : null, ab: it.ab,

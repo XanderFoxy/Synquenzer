@@ -484,7 +484,7 @@ test('Für 3,99 € / Action & Thriller / Comedy im Browser: Reihenfolge, Infoze
   let o = await oeffne();
   const { page } = o;
   await waehle(page, 'fuer399');
-  assert.equal(nbsp(await page.locator('.fi-unter').innerText()), 'Gute Filme zum Kaufen für 3,99 € – deine Listen zuerst, dann die bekanntesten und bestbewerteten.');
+  assert.equal(nbsp(await page.locator('.fi-unter').innerText()), 'Einzelne Filme zum Kaufen für 3,99 € (oder weniger) – deine Listen zuerst, dann die bekanntesten und bestbewerteten. Sets stehen unter „Boxen im Angebot“.');
   const titel = await page.locator('#fi-liste .fi-titel').allInnerTexts();
   assert.equal(titel[3], 'Charade (1963)', 'Jahr nicht doppelt');
   assert.ok(titel.indexOf('Ocean’s Eleven (2001)') < titel.indexOf('Shrek – Der tollkühne Held (2001)'), 'Top-Film vor Kinderfilm');
@@ -738,7 +738,13 @@ test('Boxen-Chip nur mit neuen Daten; alte Datei ohne „boxen“ bleibt wie vor
   const n = F._intern.normalisiere(mitBoxen(plain(FILME)));
   const chips = F._intern.sichtbar(n).map(([k]) => k);
   assert.deepEqual(plain(chips.slice(chips.indexOf('serien'), chips.indexOf('serien') + 3)), ['serien', 'boxen', 'disney']);
-  assert.deepEqual(plain(n.gruppen.boxen.map(t => t.titel.slice(0, 12))), ['Toy Story – ', 'Lethal Weapo', 'Rocky Heavyw', 'Star Trek (2'], 'Knüller zuerst');
+  // „Boxen im Angebot“ (Xander 16.11.2026): oben nur deutlich reduziert (≥ 20 % gegen den üblichen/Vergleichspreis), Knüller zuerst;
+  // Rocky (−14 %), das mydealz-Set ohne „statt“ und das Indiana-Jones-Set aus „Für 3,99 €“ stehen eingeklappt darunter
+  assert.deepEqual(plain(n.gruppen.boxen.map(t => t.titel.slice(0, 12))), ['Toy Story – ', 'Lethal Weapo'], 'Knüller zuerst');
+  assert.deepEqual(plain(n.gruppen.boxenTipps.map(t => t.titel.slice(0, 12))), ['Rocky Heavyw', 'Star Trek (2', 'Indiana Jone']);
+  assert.ok(!n.gruppen.fuer399.some(t => /Set|Filme/.test(t.titel) && /mydealz/.test(t.quelle) && t.preis > 3.99), '„Für 3,99 €“ nur einzelne Filme');
+  assert.ok(n.gruppen.fuer399.every(t => t.typ === 'film' && t.preis <= 3.99));
+  assert.ok(!F._intern.karte(n.gruppen.boxenTipps[1], false, 'boxtipp').includes('fi-deal'), 'Tipp ohne Vergleichspreis: kein Rahmen');
   assert.equal(n.gruppen.boxen[0].typ, 'box');
   assert.deepEqual(plain(n.gruppen.boxen[0].knueller), { grund: '50 % unter dem üblichen Preis' });
   // Box-Sets von mydealz stehen unter „Boxen“, nicht noch einmal unter „Angebote“ (weitere)
@@ -778,14 +784,20 @@ for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
     const { ctx, page, fehler } = await oeffne({ kontext, patch: mitBoxen });
     await mkdir(FOTOS_BOXEN, { recursive: true });
     await waehle(page, 'boxen');
-    const boxen = await page.locator('#fi-liste .fi-karte').evaluateAll(k => k.map(x => x.innerText));
-    assert.equal(boxen.length, 4);
+    const boxen = await page.locator('#fi-liste > .fi-karten .fi-karte').evaluateAll(k => k.map(x => x.innerText));
+    assert.equal(boxen.length, 2, 'oben nur deutlich reduzierte Boxen');
+    assert.equal(nbsp(await page.locator('[data-fi-chip="boxen"]').innerText()).replace(/\s+/g, ' ').trim(), 'Boxen im Angebot 2');
+    assert.equal(nbsp(await page.locator('.fi-tipps > summary').innerText()), '3 Boxen ohne deutlichen Vergleichspreis');
+    assert.equal(await page.locator('.fi-tipps').evaluate(d => d.open), false, 'Tipps eingeklappt');
     assert.match(nbsp(boxen[0]), /Toy Story[\s\S]*19,99 €[\s\S]*Knüller[\s\S]*statt 39,99 € \(−50 %\)[\s\S]*so günstig wie nie \(seit 24\. Okt\.\)[\s\S]*5 Filme, je 4,00 €/);
     assert.match(nbsp(boxen[1]), /Tiefst seit Okt\. 2026: 12,99 € am 28\. Okt\. · 2,00 € über Tiefst/);
     assert.doesNotMatch(boxen.join(' '), /historisch|Allzeit/i);
     assert.match(nbsp(await page.locator('.fi-fuss').last().innerText()), /Tiefst = niedrigster Preis, den der Radar selbst gesehen hat \(seit 24\. Okt\. 2026\) – frühere Preise kennt er nicht\./);
     await pruefeLayout(page, `${lage} boxen`);
     await page.screenshot({ path: join(FOTOS_BOXEN, `${lage}-boxen.png`), fullPage: true });
+    await page.locator('.fi-tipps > summary').click();
+    await pruefeLayout(page, `${lage} boxen-tipps`);
+    await page.screenshot({ path: join(FOTOS_BOXEN, `${lage}-boxen-tipps.png`), fullPage: true });
     await waehle(page, 'serien');
     const text = nbsp(await page.locator('#fi-liste').innerText());
     assert.ok(text.indexOf('Rick and Morty') < text.indexOf('Weitere Serien'), 'deine Serien oben');

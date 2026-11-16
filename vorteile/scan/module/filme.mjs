@@ -14,7 +14,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parsePrice, euro, round, schluessel } from '../lib/text.mjs';
 import { berlinTag } from '../lib/ende.mjs';
-import { preisAngaben, threadId } from '../lib/mydealz.mjs';
+import { preisAngaben, threadId, altpreisAusText, dealPruefer } from '../lib/mydealz.mjs';
 import { sammleFeeds, eintrag, mydealzFeeds } from './gemeinsam.mjs';
 import { raumLinks, raumFilme, raumName, raumPreis, passtZuListe } from '../lib/appletv.mjs';
 
@@ -1590,6 +1590,7 @@ export default async function filme(ctx) {
     id: `mydealz:${threadId(it.link) || schluessel(it.link)}`, typ: /staffel|season|serie/i.test(it.titel) ? 'staffel' : 'film',
     titel: it.titel.replace(/^\s*\[[^\]]{1,30}\]\s*/, '') || it.titel, jahr: null, // „[iTunes / Apple TV] …“ -> kurz
     ...NULL_TITEL, preis: preisWert(it.preisText), seit: tag, tage: 1, angebot: true, bild: it.bild || null, link: it.link, quelle: 'mydealz',
+    _text: `${it.titel} ${it.beschreibung || ''}`,
   });
   for (const it of deals) gruppen.angebot.push(mdEintrag(it));
 
@@ -1604,6 +1605,23 @@ export default async function filme(ctx) {
   for (const t of gruppen.angebot.filter(x => x.quelle === 'mydealz')) {
     if (t.typ === 'staffel' || STAFFEL_WORT.test(t.titel)) gruppen.serien.push(mdStaffel(t));
     else if (BOX_WORT.test(t.titel)) gruppen.boxen.push(t);
+  }
+  // mydealz-Box-Tipps mit echtem Vergleichspreis (Xander 16.11.2026: „Boxen, die gerade deutlich reduziert sind – echter
+  // Unterschied zum Originalpreis“): „statt“ aus dem Deal-Text (UVP, Vergleichspreis, statt …), sonst der Vergleichspreis der
+  // Deal-Seite (nextBestPrice; gemeinsames Budget der Deal-Seiten je Lauf). Ohne Vergleichspreis bleibt der Tipp ohne „statt“
+  // (die Seite stellt ihn unter „Tipps ohne Vergleichspreis“).
+  const boxPruefer = dealPruefer({ holeText, zustand, jetzt });
+  for (const t of gruppen.boxen.filter(x => x.quelle === 'mydealz' && x.preis != null)) {
+    let v = altpreisAusText(t._text || t.titel, t.preis);
+    if (!(v?.preis > t.preis)) {
+      const s = await boxPruefer.pruefe(t.link, { neuNachStunden: 12 });
+      v = s.info?.vergleichspreis > t.preis ? { preis: s.info.vergleichspreis, quelle: 'Vergleichspreis laut mydealz' } : null;
+    }
+    if (v?.preis > t.preis) {
+      t.vorher = v.preis;
+      t.vorherQuelle = v.quelle;
+      t.ersparnis = { eur: Math.round((v.preis - t.preis) * 100) / 100, pct: Math.round((1 - t.preis / v.preis) * 100) };
+    }
   }
   for (const it of serienDeals) gruppen.serien.push(mdStaffel(mdEintrag(it)));
   // deine Serien oben (auch die mydealz-Tipps dazu, Angebote zuerst), dann alle anderen in Radar-Reihenfolge

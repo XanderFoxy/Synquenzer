@@ -99,7 +99,7 @@ export default async function deals({ holeText, cfg, jetzt, zustand }) {
       eintraege.push(eintrag({
         kategorie: 'deals', titel: `${p.name} bei ${o.shop}${region ? ` (Prospekt ${region})` : ''}`, soGehts: best.soGehts,
         zeile: zeileAus(best, p.basis, { geschaetzt: p.normalQuelle === 'schaetzung', packung: o.packung || null, ab }) + (region ? ' · in Döbeln prüfen' : ''),
-        link: o.link || cfg.seite, quelle: 'Schnäppchen-Wecker', datum: jetzt, jetzt,
+        link: o.link || cfg.seite, quelle: 'Schnäppchen-Wecker', datum: jetzt, jetzt, bild: o.bild || null,
         bis: o.gueltigBis || null, bisQuelle: 'feld', ab, art: 'schnaeppchen',
         wert: Math.min(100, 40 + best.ersparnis * 70),
         // Der Schnäppchen-Wecker pusht selbst; hier nur sofort, wenn die Deal-Mathe einen deutlich besseren Preis findet.
@@ -170,7 +170,7 @@ export default async function deals({ holeText, cfg, jetzt, zustand }) {
     if (!r || !r.lohnt || !(r.ersparnis >= m.minErsparnis)) continue;
     const ab = it.ab || (s.info?.start && Date.parse(s.info.start) > jetztMs ? s.info.start : null);
     eintraege.push(eintrag({
-      kategorie: 'deals', titel: it.titel, zeile: zeileAus(r, '100g', { ab: ab && Date.parse(ab) > jetztMs ? ab : null }), soGehts: r.soGehts, link: it.link, quelle: it.feed, datum: it.datum, jetzt,
+      kategorie: 'deals', titel: it.titel, zeile: zeileAus(r, '100g', { ab: ab && Date.parse(ab) > jetztMs ? ab : null }), soGehts: r.soGehts, link: it.link, quelle: it.feed, datum: it.datum, jetzt, bild: it.bild || null,
       bis: it.bis || endeSeite, bisQuelle: it.bis ? 'text' : endeSeite ? 'deal-seite' : null, ab, art: 'deal',
       wert: Math.min(100, 35 + r.ersparnis * 70), sofort: r.ersparnis >= m.sofortAbErsparnis && (s.info?.temperatur ?? it.temperatur ?? 0) >= 300,
       grund: mitAktion ? 'Aktion durchgerechnet' : 'Deal durchgerechnet', preise: preisAngaben({ preis: preis != null ? round(preis + (v.versand || 0)) : null, preisVorher: vergleich?.preis, vorherQuelle: vergleich?.quelle }),

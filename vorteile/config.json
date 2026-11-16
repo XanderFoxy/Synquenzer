@@ -23,8 +23,8 @@
     "userAgent": "Vorteils-Radar/1.0 (privat, wenige Abrufe pro Stunde; +https://github.com/XanderFoxy/Synquenzer/tree/vorteile/vorteile)",
     "timeoutMs": 20000,
     "pauseMs": 2000,
-    "pauseMsJeHost": { "itunes.apple.com": 3200, "www.reddit.com": 6000 },
-    "_pauseMsJeHost": "Apple erlaubt etwa 20 Abrufe pro Minute -> 3,2 s Abstand. Reddit ohne Login: höchstens ~10 Abrufe pro Minute -> 6 s."
+    "pauseMsJeHost": { "itunes.apple.com": 3200, "www.reddit.com": 6000, "www.kaufda.de": 2100 },
+    "_pauseMsJeHost": "Apple erlaubt etwa 20 Abrufe pro Minute -> 3,2 s Abstand. Reddit ohne Login: höchstens ~10 Abrufe pro Minute -> 6 s. kaufDA: robots.txt crawl-delay 2 -> 2,1 s."
   },
   "module": {
     "deals": {
@@ -325,6 +325,28 @@
       "aktiv": true,
       "intervallStunden": 3,
       "_hinweis": "Filme & Serien bei Apple TV: Wunschfilme, Angebote (3,99 €), neue Filme, 80er/Kult, Rick and Morty/Star Trek, Disney – mit Tiefstpreis. Die Listen stehen in filme.json. Seite: <data>/filme.json."
+    },
+    "knaller": {
+      "aktiv": true,
+      "intervallStunden": 6,
+      "_hinweis": "Wochen-Knaller (Xander 16.11.2026): je Markt die krassesten Prospekt-Angebote ab minProzent Rabatt, mit Bild. Quelle: kaufDA-Händlerseite /[<stadt>/]Geschaefte/<kaufda> (eine Seite je Markt, Pause 2,1 s). Prozent nur mit Vergleichspreis aus dem Prospekt (Streichpreis oder UVP, die Art steht dabei). ab-Preise als „bis zu“ (abPreise false = weglassen). Seite: <data>/knaller.json, Start-Kachel aus status.knaller.kurz. Döbeln = Aldi Nord; „Netto mit dem Scottie“ und ALDI SÜD stehen nicht in der Liste.",
+      "basis": "https://www.kaufda.de",
+      "geschaefte": "/Geschaefte/{slug}",
+      "stadt": "Chemnitz",
+      "ort": "Döbeln",
+      "minProzent": 30,
+      "stufen": [30, 40, 50],
+      "maxJeMarkt": 40,
+      "abPreise": true,
+      "maerkte": [
+        { "id": "aldi-nord", "name": "Aldi Nord", "kaufda": "Aldi-Nord", "haendler": ["Aldi Nord"] },
+        { "id": "lidl", "name": "Lidl", "kaufda": "Lidl", "haendler": ["Lidl"] },
+        { "id": "kaufland", "name": "Kaufland", "kaufda": "Kaufland", "haendler": ["Kaufland"] },
+        { "id": "netto", "name": "Netto", "kaufda": "Netto-Marken-Discount", "haendler": ["Netto Marken-Discount", "Netto"] },
+        { "id": "penny", "name": "Penny", "kaufda": "Penny-Markt", "haendler": ["Penny", "Penny-Markt"] },
+        { "id": "rewe", "name": "REWE", "kaufda": "REWE", "haendler": ["REWE", "REWE Center", "REWE City"] },
+        { "id": "marktkauf", "name": "Marktkauf", "kaufda": "Marktkauf", "haendler": ["Marktkauf"] }
+      ]
     }
   }
 }

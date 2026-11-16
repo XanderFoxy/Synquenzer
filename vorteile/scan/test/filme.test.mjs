@@ -1226,3 +1226,27 @@ test('Prüfer 15.11.: Box ohne Senkung (je Film günstig) nicht „im Angebot“
   const boxen = r.datei.gruppen.boxen.filter(t => t.quelle === 'Apple');
   assert.deepEqual(boxen.map(t => [t.id, t.preis]), [[`itunes:${BOX}`, 14.99]]);
 });
+
+test('mydealz-Box-Tipps: „statt“ aus dem Text oder Vergleichspreis der Deal-Seite, sonst ohne (Xander 16.11.2026: echte Reduktion)', async () => {
+  const z = abruf([
+    ['rss/gruppe/apple-tv', 'mydealz-boxen.xml'],
+    ['rss/gruppe/filme-serien', 'mydealz-boxen.xml'],
+    ['itunes-mission-impossible-collection-2879002', 'mydealz-deal-box.html'],
+    ['itunes-rambo-collection-2879003', '!fehler'],
+  ]);
+  const r = await filme(ctx(z.holeText, {}));
+  const boxen = r.datei.gruppen.boxen.filter(t => t.quelle === 'mydealz');
+  const b = n => boxen.find(t => t.titel.includes(n));
+  // Text: „14,99 € statt 39,99 €“ -> −63 %, ohne Abruf der Deal-Seite
+  assert.equal(b('Indiana').vorher, 39.99);
+  assert.deepEqual(b('Indiana').ersparnis, { eur: 25, pct: 63 });
+  assert.ok(!z.urls.some(u => u.includes('2879001')));
+  // Deal-Seite: nextBestPrice 49,99 € -> −60 %
+  assert.equal(b('Mission').vorher, 49.99);
+  assert.equal(b('Mission').ersparnis.pct, 60);
+  // Deal-Seite gestört -> kein „statt“ (die Seite zeigt den Tipp unter „ohne Vergleichspreis“)
+  assert.equal(b('Rambo').vorher, null);
+  assert.equal(b('Rambo').ersparnis, undefined);
+  // interne Hilfsfelder nicht in der Datei
+  assert.ok(!boxen.some(t => '_text' in t));
+});

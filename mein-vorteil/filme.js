@@ -21,14 +21,16 @@
   const HINWEIS_STUNDEN = 6; // Stand älter -> kleiner Hinweis (kein Alarm)
   const CHIPS = [
     ['wunsch', 'Wunschliste', 'Deine Filme – sobald einer günstig ist, kommt eine Nachricht.'],
-    ['fuer399', 'Für 3,99 €', 'Gute Filme zum Kaufen für 3,99 € – deine Listen zuerst, dann die bekanntesten und bestbewerteten.'],
+    // Xander 16.11.2026: „nur die 3,99-€-Filme als eigene Auswahl“ – einzelne Filme bis 3,99 €; Sets/Collections stehen unter Boxen
+    ['fuer399', 'Für 3,99 €', 'Einzelne Filme zum Kaufen für 3,99 € (oder weniger) – deine Listen zuerst, dann die bekanntesten und bestbewerteten. Sets stehen unter „Boxen im Angebot“.'],
     ['action', 'Action & Thriller', 'Action, Thriller und Sci-Fi zum Kaufen bis 7,99 € oder stark gesenkt – die besten zuerst.'],
     ['comedy', 'Comedy', 'Komödien zum Kaufen bis 7,99 € oder stark gesenkt – die besten zuerst.'],
     ['achtziger', '80er & Kult', 'Klassiker und Kultfilme für die Sammlung – Angebote zuerst.'],
     ['neu', 'Neu', 'Neue Filme aus Komödie, Action und Thriller – nach Platz in den Apple-Charts.'],
     ['serien', 'Serien', 'Rick and Morty und Star Trek oben, darunter alle anderen Staffeln im Angebot – Preisknüller zuerst.'],
-    // Film-Boxen (Vorteils-Radar ab 15.11.2026); Chip nur, wenn die Daten „boxen“ kennen
-    ['boxen', 'Boxen', 'Film-Boxen und Sammlungen im Angebot – Preisknüller zuerst.'],
+    // Film-Boxen (Vorteils-Radar ab 15.11.2026); Chip nur, wenn die Daten „boxen“ kennen. Xander 16.11.2026: nur Boxen, die gerade
+    // deutlich reduziert sind (echter Unterschied zum Originalpreis) – Tipps ohne Vergleichspreis eingeklappt darunter
+    ['boxen', 'Boxen im Angebot', 'Film- und Serien-Boxen, die gerade deutlich reduziert sind: mindestens 20 % unter dem üblichen Preis oder dem Vergleichspreis.'],
     ['disney', 'Disney', 'Disney und Pixar – Angebote zuerst.'],
     ['weitere', 'Angebote', 'Weitere Angebote, die in keinem anderen Bereich stehen.'], // Chip nur, wenn hier etwas steht
   ];
@@ -43,7 +45,7 @@
     weitere: 'Gerade keine weiteren Angebote.',
     achtziger: 'Gerade keine 80er-Klassiker gefunden – beim nächsten Lauf noch einmal.',
     serien: 'Gerade keine Staffeln von Rick and Morty oder Star Trek gefunden.',
-    boxen: 'Gerade keine Film-Boxen im Angebot – der Radar prüft alle paar Stunden neu.',
+    boxen: 'Gerade keine Box deutlich reduziert – der Radar prüft alle paar Stunden neu.',
     disney: 'Gerade keine Disney-Filme gefunden.',
   };
   const QUELLE = { 'apple-suche': 'Apple-Store', apple: 'Apple-Store', itunes: 'Apple-Store', 'apple-charts': 'Apple-Charts', charts: 'Apple-Charts', mydealz: 'mydealz', 'apple-preise': 'Apple-Preise', 'apple-tv-raeume': 'Apple-TV-Angebote (Räume der TV-App)', qualitaet: 'Wikidata (Bekanntheit, Kritik, Horror)', 'apple-boxen': 'Apple-Boxen', 'apple-serien': 'Apple-Serien-Charts' };
@@ -139,6 +141,13 @@
   // „6 Filme in 4K …“ von mydealz: Preis je Film (wie preisJeFilm im Scanner) – erklärt, warum ein Set unter „Für 3,99 €“ steht
   const SET = /\b(\d{1,2})[\s-]*(?:filme|film-kollektion|film collection|filme-kollektion|movie collection|movies)\b/i;
   const zuerst = (arr, f) => [...arr.filter(f), ...arr.filter(x => !f(x))]; // stabil
+  const FUER399 = 3.99, BOX_DEUTLICH = 20;
+  // echter Vergleichspreis einer Box: der übliche Preis (Apple, vom Radar beobachtet) – sonst der Vergleichspreis/„statt“ (mydealz)
+  // bzw. der zuletzt andere Preis; gleiche Regel wie „statt“ in karte()
+  const boxStatt = t => (t.fehlt || t.preis == null ? null : t.ueblich != null ? (t.ueblich > t.preis + 0.004 ? t.ueblich : null)
+    : t.vorher != null && t.vorher > t.preis + 0.004 ? t.vorher : null);
+  const boxPct = t => { const s = boxStatt(t); return s ? Math.round((1 - t.preis / s) * 100) : 0; };
+  const boxDeutlich = t => boxPct(t) >= BOX_DEUTLICH;
   // Reihenfolge in „Für 3,99 €“, „Action & Thriller“, „Comedy“ (Xander 15.11.2026: Kinderfilme ja, aber nicht vor den
   // Top-Filmen): deine Listen zuerst (wie der Scanner), dann Top-Filme, dann Kinderfilme, dann der Rest – je nach Bekanntheit
   // und Kritik (gleicher Wert wie qualiWert im Scanner); Tipps von mydealz und Angebots-Räume bleiben in Scanner-Reihenfolge hinten.
@@ -185,12 +194,25 @@
     }
     gruppen.neu = gruppen.neu.map((t, i) => [t, i]).sort((a, b) => (a[0].chart ?? 1e6) - (b[0].chart ?? 1e6) || a[1] - b[1]).map(x => x[0]);
     for (const k of ['achtziger', 'disney']) gruppen[k] = zuerst(gruppen[k], t => t.angebot);
-    gruppen.boxen = zuerst(gruppen.boxen, t => t.knueller); // Reihenfolge sonst vom Radar (Ersparnis, Nähe zum Tiefst, je Film)
+    // „Für 3,99 €“ = einzelne Filme bis 3,99 € (ein Film aus einem Angebotsraum ohne Preis bleibt); mydealz-Sets („Indiana Jones
+    // 4 Filme für 14,99 €“) wandern zu den Boxen (Xander 16.11.2026)
+    // (nur mit neuen Daten, die „boxen“ kennen – eine alte Datei bleibt wie vorher)
+    const neu = 'boxen' in g;
+    const set = t => /mydealz/i.test(t.quelle) && Number(SET.exec(t.titel)?.[1]) >= 2;
+    const sets = neu ? gruppen.fuer399.filter(set) : [];
+    if (neu) gruppen.fuer399 = gruppen.fuer399.filter(t => !set(t) && t.typ === 'film' && (t.preis != null ? t.preis <= FUER399 + 0.004 : !!t.raum));
+    // Boxen im Angebot: Film-Boxen, mydealz-Sets und Komplett-Boxen von Serien – oben nur deutlich reduzierte (echter
+    // Vergleichspreis, ≥ BOX_DEUTLICH %), darunter eingeklappt die Tipps ohne (oder mit kleinem) Vergleichspreis
+    const boxGesehen = new Set();
+    const boxAlle = [...gruppen.boxen, ...sets, ...(neu ? gruppen.serien.filter(t => t.komplett) : [])].filter(t => !boxGesehen.has(t.id) && boxGesehen.add(t.id));
+    gruppen.boxen = zuerst(boxAlle.filter(boxDeutlich).sort((a, b) => boxPct(b) - boxPct(a)), t => t.knueller);
+    gruppen.boxenTipps = boxAlle.filter(t => !boxDeutlich(t));
     // „Angebote“ nur mit dem, was sonst fehlt
-    const sonst = new Set(GRUPPEN.filter(k => k !== 'angebot').flatMap(k => gruppen[k].map(t => t.id)));
+    const sonst = new Set([...GRUPPEN.filter(k => k !== 'angebot').flatMap(k => gruppen[k].map(t => t.id)), ...gruppen.boxenTipps.map(t => t.id)]);
     gruppen.weitere = gruppen.angebot.filter(t => !sonst.has(t.id) && !doppelt.has(t.id));
     const status = d && typeof d.status === 'object' && d.status ? d.status : {};
-    return { aktualisiert: typeof d?.aktualisiert === 'string' ? d.aktualisiert : null, gruppen, status, mitBoxen: 'boxen' in g };
+    const boxenOhneUeblich = 'boxen' in g && !liste(g.boxen).some(t => t && t.quelle !== 'mydealz' && zahl(t.ueblich) > 0);
+    return { aktualisiert: typeof d?.aktualisiert === 'string' ? d.aktualisiert : null, gruppen, status, mitBoxen: 'boxen' in g, boxenOhneUeblich };
   }
   // Stand eines Scanners vor dem 14.11.2026, 23:39 (Prüfer-Befund MV8 9): ohne „Für 3,99 €“/Action/Comedy, „Angebote“ noch ohne
   // Horror- und Qualitätsfilter (Midsommar, Longlegs …). Der wird nicht aus dem Gerätespeicher gezeigt – lieber kurz „Lade Filme …“.
@@ -199,7 +221,7 @@
     if (!('fuer399' in g)) return true;
     return !liste(g.fuer399).length && !liste(g.action).length && !liste(g.comedy).length && liste(g.angebot).length > 0;
   }
-  const sichtbar = n => CHIPS.filter(([k]) => (k !== 'weitere' || n.gruppen.weitere.length) && (k !== 'boxen' || n.mitBoxen || n.gruppen.boxen.length));
+  const sichtbar = n => CHIPS.filter(([k]) => (k !== 'weitere' || n.gruppen.weitere.length) && (k !== 'boxen' || n.mitBoxen || n.gruppen.boxen.length || n.gruppen.boxenTipps.length));
   // Start: Wunschliste, wenn dort ein (neues) Angebot ist – sonst der zuletzt gewählte Bereich, sonst „Für 3,99 €“
   function startChip(n) {
     const sig = n.gruppen.wunsch.filter(t => t.angebot || t.unterZiel).map(t => `${t.id}@${t.preis}`).sort().join('|');
@@ -249,7 +271,9 @@
     if (t.knueller && !t.fehlt && t.preis != null) marken.push(`<span class="fi-marke fi-knueller">${KNUELLER_SVG}Knüller</span>`);
     // „Tiefstpreis“ nur, wenn es etwas heißt: gesenkt, Angebot oder ≤ 3,99 € – nicht bei einem Preis, der sich nie bewegt hat
     if (zeigeTiefst(t)) marken.push('<span class="fi-marke fi-stark">Tiefstpreis</span>');
-    if (t.angebot && !t.fehlt) marken.push('<span class="fi-marke">Angebot</span>');
+    // Box-Tipp ohne deutlichen Vergleichspreis: kein „Angebot“ und kein Rahmen (der Rahmen heißt: echt reduziert)
+    const tipp = chip === 'boxtipp';
+    if (t.angebot && !t.fehlt && !tipp) marken.push('<span class="fi-marke">Angebot</span>');
     if (t.unterZiel && !t.fehlt) marken.push('<span class="fi-marke fi-warm">unter deinem Ziel</span>');
     if (t.raum && !t.fehlt) marken.push(`<span class="fi-marke">Apple TV: ${esc(t.raum)}</span>`);
     const preis = t.fehlt ? ''
@@ -290,7 +314,7 @@
     const bild = t.bild
       ? `<img class="fi-bild" src="${esc(t.bild)}" alt="" width="${gross}" height="84" loading="lazy" decoding="async">`
       : `<span class="fi-bild fi-ohnebild" aria-hidden="true">${esc(initialen(t.titel))}</span>`;
-    const klasse = `fi-karte${t.angebot || t.unterZiel || t.knueller ? ' fi-deal' : ''}${staffel ? ' fi-quadrat' : ''}`;
+    const klasse = `fi-karte${(t.angebot && !tipp) || t.unterZiel || t.knueller ? ' fi-deal' : ''}${staffel ? ' fi-quadrat' : ''}`;
     const innen = `${bild}<span class="fi-text"><span class="fi-titel">${esc(name)}${t.jahr && !jahrDoppelt ? ` <span class="fi-jahr">(${t.jahr})</span>` : ''}</span>`
       + `${info ? `<span class="fi-info${info.startsWith('<span') ? ' fi-eng' : ''}">${info}</span>` : ''}`
       + `<span class="fi-preiszeile">${preis}${marken.join('')}</span>`
@@ -324,8 +348,20 @@
         + `<ul class="fi-karten">${titel.map(t => karte(t, t.typ === 'staffel')).join('')}</ul>`;
     }).join('') + unten;
   }
+  function boxenHtml(arr) {
+    const tipps = S.n.gruppen.boxenTipps || [];
+    const oben = arr.length ? `<ul class="fi-karten">${arr.map(t => karte(t, t.typ === 'staffel', 'boxen')).join('')}</ul>` : `<p class="fi-leer">${esc(LEER.boxen)}</p>`;
+    const unten = tipps.length
+      ? `<details class="fi-tipps"><summary>${tipps.length} ${tipps.length === 1 ? 'Box' : 'Boxen'} ohne deutlichen Vergleichspreis</summary>`
+        + `<p class="fi-fuss">Tipps ohne „statt“-Preis oder mit weniger als ${BOX_DEUTLICH} % Rabatt – ob das günstig ist, lässt sich nicht sagen.</p>`
+        + `<ul class="fi-karten">${tipps.map(t => karte(t, t.typ === 'staffel', 'boxtipp')).join('')}</ul></details>`
+      : '';
+    const hinweis = S.n.boxenOhneUeblich ? '<p class="fi-fuss">Apple-Boxen: den üblichen Preis kennt der Radar erst nach einer Woche Beobachtung – bis dahin zählen nur Vergleichspreise von mydealz und eine frisch gesehene Senkung bei Apple.</p>' : '';
+    return oben + unten + hinweis;
+  }
   function listeHtml(k) {
     const arr = S.n.gruppen[k] || [];
+    if (k === 'boxen') return boxenHtml(arr);
     if (!arr.length) {
       const st = Object.values(S.n.status).some(q => q && q.ok === false) ? ' Eine Quelle ist gerade gestört.' : '';
       return `<p class="fi-leer">${esc(LEER[k] + st)}</p>`;
@@ -555,6 +591,9 @@ a.fi-karte:active { background: var(--flaeche); }
 .fi-erst { margin-top: 16px; }
 .fi-fuss { margin: 14px 4px 4px; font-size: 13px; color: var(--leise); }
 .fi-raum { display: inline-flex; align-items: center; min-height: 44px; color: var(--akzent); font-weight: 650; }
+.fi-tipps { margin: 12px 0 4px; }
+.fi-tipps > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; color: var(--leise); font-size: 15px; font-weight: 650; padding: 0 4px; }
+.fi-tipps .fi-fuss { margin-top: 0; }
 .fi-quellen { margin: 0 4px 8px; }
 .fi-quellen > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; color: var(--leise); font-size: 14px; }
 .fi-quellen ul { margin: 0 0 8px; padding-left: 18px; font-size: 14px; color: var(--leise); }

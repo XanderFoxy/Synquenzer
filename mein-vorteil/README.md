@@ -194,3 +194,28 @@ Die Daten kommen nur stündlich (Konzerte alle 3 h). Deshalb blendet die Seite s
   `v2` = dieselben Rohdaten durch die neuen Scanner), Sonderfälle in `test/fixtures/vertrag/`
   und `test/fixtures/vertrag-b/` (neu bauen: `npm run fixtures` = `werkzeug/baue-vertrag.mjs`; liegt absichtlich
   nicht unter `test/`, sonst führt `node --test` es aus). Bildschirmfotos: `MV_SHOTS=<ordner> npm test`.
+
+**Reiter „Woche“ (seit 16.11.2026, `woche.js` + `knaller.json` vom Vorteils-Radar):** Xanders Wunsch vom 16.11. („je Markt die
+krassesten Angebote der Woche – Aldi, Netto, Marktkauf, Kaufland, Penny, Lidl, Rewe – ab 30 / 40 / 50 %, als Kacheln mit
+Produktbild“). Stufen-Wahl `ab 30 % · ab 40 % · ab 50 %` (gemerkt in `mein-vorteil-woche-stufe`) und Markt-Chips (gemerkt in
+`mein-vorteil-woche-markt`), Gruppen „ab 50 %“, „40 bis 49 %“, „30 bis 39 %“ und „Ab Montag“. Kachel: Prospekt-Ausschnitt auf
+hellem Grund (lazy, feste Maße, ohne Referrer, Fehler -> Platzhalter mit Marktname), Rabatt-Plakette, Preis, „statt“, Titel,
+Marken „nur mit App/Karte“, „ab-Preis“, „ab Mo …“, Markt · gültig bis. **Goldring nur bei echtem Streichpreis**; gegen UVP
+graue Plakette und „UVP“ hinter dem Vorher-Preis. Rabatt nur mit Vergleichspreis aus dem Prospekt – die Seite rechnet die %
+selbst nach. Skript und Daten erst beim ersten Öffnen; letzter Stand im Cache Storage `mv-woche` (offline sofort da).
+Start-Kachel „Woche“ und die Zahl in der Leiste kommen aus `status.knaller.kurz` in `aktuell.json` (kein eigener Abruf).
+Service Worker: Cache `mein-vorteil-4` hält `woche.js` wie die Seite, `knaller.json` und Bilder nicht.
+Nachbesserung nach der Prüfung (16.11.2026): Bildfeld fest quadratisch, das Bild liegt absolut darin (ein Hochformat-Foto wie
+eine Flasche sprengt die Kachel nicht mehr, kein Sprung beim Nachladen); Rabatt abgerundet wie beim Radar; Ende um 00:00 des
+Folgetags (Penny) zählt zum Vortag („bis Sa“); Vergleichspreis ohne Art-Angabe grau und ohne „UVP“; Start-Kachel nennt „ab …“,
+wenn das Top-Angebot erst später gilt. Deals: das Produktbild steht an der Karte nur, wenn das gezeigte Angebot auch dieses
+Produkt ist (Karte „Haribo Colorado“ mit Angebot „Haribo Harry Potter“ -> kein fremdes Foto).
+
+**Produktbilder (seit 16.11.2026):** Angebotskarten der eigenen Produkte zeigen `bild` (marktguru/mydealz, aus `current.json`)
+als 64-px-Bild links neben Kopf, Titel und Preis (die Karte wird dadurch nicht höher); „weitere Angebote“ und „Andere Snacks“
+ein 40-px-Bild, sobald der Radar `bild` mitliefert. Nur https, nur als Link (wie die Filmbilder), lazy, ohne Referrer.
+
+**Filme (16.11.2026):** „Für 3,99 €“ zeigt nur einzelne Filme bis 3,99 € (mydealz-Sets wandern zu den Boxen).
+„Boxen im Angebot“: oben nur Film-/Serien-Boxen, die deutlich reduziert sind (≥ 20 % unter dem üblichen Preis bzw. dem
+Vergleichspreis von mydealz); Tipps ohne (oder mit kleinem) Vergleichspreis eingeklappt darunter, ohne Rahmen.
+Beides nur mit Daten, die „boxen“ kennen – eine alte Datei bleibt wie vorher.

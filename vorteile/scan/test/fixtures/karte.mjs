@@ -2,6 +2,14 @@
 // mydealz: Gruppen-Feeds statt der abgeschalteten Suche (/rss/search?q=… gibt seit 31.10.2026 HTTP 404) – die früheren
 // Such-Fixtures (Therme, MicroFreak, Prämien, iTunes) stehen jetzt bei der Gruppe, die diese Deals liefert.
 export const FIXTURE_KARTE = [
+  // Modul knaller (16.11.2026): gekürzte kaufDA-Händlerseiten (echte Angebote aus roh-daten 31.10./08.11.2026, nur
+  // __NEXT_DATA__ mit gekürzten Feldern); Chemnitz nur für Netto, sonst eine Stadtseite ohne Angebote des Markts -> bundesweit
+  ['kaufda.de/Chemnitz/Geschaefte/Netto-Marken-Discount', 'knaller/netto-chemnitz.html'],
+  ['kaufda.de/Chemnitz/Geschaefte/', 'knaller/rewe.html'],
+  ['kaufda.de/Geschaefte/Penny-Markt', 'knaller/penny.html'],
+  ['kaufda.de/Geschaefte/Lidl', 'knaller/lidl-anders.html'],
+  ['kaufda.de/Geschaefte/REWE', 'knaller/rewe.html'],
+  ['kaufda.de/Geschaefte/', 'kaputt.txt'],
   ['schnaeppchen-daten', 'schnaeppchen-current.json'],
   ['rss/gruppe/lebensmittel', 'mydealz-lebensmittel.xml'],
   ['rss/gruppe/drogerie', '!fehler'],

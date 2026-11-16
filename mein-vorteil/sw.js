@@ -1,20 +1,22 @@
 /* „Mein Vorteil“: eigener Service Worker nur für /mein-vorteil/ (hat hier Vorrang vor dem SYNQUENZER-Worker im Wurzelordner).
-   Seite, filme.js (Reiter „Filme“), spartricks.js (Reiter „Spartricks“) und essen.js (Reiter „Essen“): erst Netz; antwortet es nicht binnen 3 s oder
+   Seite, filme.js (Reiter „Filme“), spartricks.js (Reiter „Spartricks“), essen.js (Reiter „Essen“) und woche.js (Reiter „Woche“): erst Netz; antwortet es nicht binnen 3 s oder
    gar nicht, die letzte gute Kopie (Start ohne Netz). So passen Seite und Reiter-Skripte nach einer neuen Fassung immer
-   zusammen. spartricks.json und essen.json gehen nicht durch den Worker (die Seite merkt sich den letzten Stand selbst).
+   zusammen. spartricks.json, essen.json und knaller.json gehen nicht durch den Worker (die Seite merkt sich den letzten Stand selbst;
+   woche.js im eigenen Cache „mv-woche“, den dieser Worker beim Aktivieren nicht löscht). Produktbilder (fremde Server) auch nicht.
    Symbole/Manifest: aus dem Zwischenspeicher. Daten (raw.githubusercontent.com) gehen nie durch diesen Worker –
    die Seite merkt sich den letzten Stand selbst. */
-const CACHE = 'mein-vorteil-3'; // 15.11.2026: Reiter „Essen“ (essen.js) – alte Kopie wird beim Aktivieren gelöscht (Fassung 5, 08.11.: mein-vorteil-2)
+const CACHE = 'mein-vorteil-4'; // 16.11.2026: Reiter „Woche“ (woche.js) – alte Kopie wird beim Aktivieren gelöscht (15.11.: mein-vorteil-3 mit essen.js)
 const SEITE = new URL('./', self.registration.scope).href;
 const FILME = new URL('filme.js', self.registration.scope).href;
 const SPAR = new URL('spartricks.js', self.registration.scope).href;
 const ESSEN = new URL('essen.js', self.registration.scope).href;
-const SKRIPTE = { 'filme.js': FILME, 'spartricks.js': SPAR, 'essen.js': ESSEN };
+const WOCHE = new URL('woche.js', self.registration.scope).href;
+const SKRIPTE = { 'filme.js': FILME, 'spartricks.js': SPAR, 'essen.js': ESSEN, 'woche.js': WOCHE };
 const LANGSAM = 3000;
 const STATISCH = /\/(icon-\d+\.png|icon\.svg|manifest\.webmanifest)$/;
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll([SEITE, 'filme.js', 'spartricks.js', 'essen.js', 'icon-192.png', 'icon.svg', 'manifest.webmanifest'])).catch(() => {}));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll([SEITE, 'filme.js', 'spartricks.js', 'essen.js', 'woche.js', 'icon-192.png', 'icon.svg', 'manifest.webmanifest'])).catch(() => {}));
   self.skipWaiting();
 });
 self.addEventListener('activate', e => {
@@ -29,7 +31,7 @@ self.addEventListener('fetch', e => {
   if (u.origin !== scope.origin || !u.pathname.startsWith(scope.pathname)) return;
   const rest = u.pathname.slice(scope.pathname.length);
   const seite = rq.mode === 'navigate' || rest === '' || rest === 'index.html';
-  if (seite || rest === 'filme.js' || rest === 'spartricks.js' || rest === 'essen.js') {
+  if (seite || rest === 'filme.js' || rest === 'spartricks.js' || rest === 'essen.js' || rest === 'woche.js') {
     const schluessel = seite ? SEITE : SKRIPTE[rest];
     let ablegen = Promise.resolve();
     const netz = fetch(rq).then(r => {
