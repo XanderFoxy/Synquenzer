@@ -103861,6 +103861,7 @@ function spk2DspMake(I) {
     const S = C.length, E = new Float32Array(F * S), best = new Float32Array(F), f0 = new Float32Array(F);
     for (let c0 = 0; c0 < F; c0 += 512) {
       const c1 = Math.min(F, c0 + 512), Y = magsX(x, N, hop, K, c0, c1);
+      if (typeof spkkPk === 'function') spkkPk(best, Y, c0, c1, K, df, fa, fb, F);   /* SPKK: allein tragende Spitze je Rahmen (für den Notennamen bei „Überall finden“) */
       for (let i = 0; i < c1 - c0; i++) {
         const o = i * K; let bt = 0; for (let k = Math.max(1, Math.floor(fa * 0.8 / df)); k < K; k++) bt += Y[o + k];
         let bs = 0;
@@ -103872,7 +103873,7 @@ function spk2DspMake(I) {
     const st = viterbi(E, F, S, 1.2); for (let i = 0; i < F; i++) f0[i] = C[st[i]];
     const thr = 0.35, ok = new Uint8Array(F), sc = new Float32Array(F); for (let i = 0; i < F; i++) { sc[i] = Math.min(1, best[i]); ok[i] = best[i] >= thr ? 1 : 0; }
     const O = onsetsOf(x, sr, 0, d.meta.n / sr, fa, fb);
-    if (typeof spkkF0 === 'function') spkkF0(f0, ok, x, N, hop, K, df, F, magsX, fa, fb);   /* SPKK: Tonhöhe je Rahmen aus der Spitze, wenn ein reiner Ton den Klang trägt (Notenname bei „Überall finden“) */
+    if (typeof spkkF0 === 'function') spkkF0(f0, ok, best, df, fa, fb);   /* SPKK: Tonhöhe je Rahmen aus der Spitze, wenn ein reiner Ton den Klang trägt (Notenname bei „Überall finden“) */
     const found = (typeof opt.seg9 === 'function' ? opt.seg9 : segNotes)({f0, sc, ok, i0: 0, F, hopS: hop / sr, O, G: gridOf(d), Y: null, K, df, fb, art});   /* SPK9: Legato-Noten auch in „Überall finden“ */
     I.uBegin(d, 'Überall finden');
     const all = Object.entries(t2.notes), hit = (q, p) => Math.min(p.b, q.b) - Math.max(p.a, q.a) > 0.5 * Math.min(q.b - q.a, p.b - p.a);
@@ -105438,7 +105439,7 @@ function spk8DspMake(Z2) {
 }
 // Worker-Text: spk8DspMake wird an den Kern-Text angehängt (Funktions-Deklaration → im Worker schon beim Aufbau des Kerns da)
 function spk8WUrl(src, u) {
-  if (typeof spkkF0 === 'function') src = src + ';' + spkkF0.toString() + ';';   /* SPKK: Kern-Ergänzung in den Spektral-Worker */
+  if (typeof spkkF0 === 'function') src = src + ';' + [spkkPk, spkkF0].map(f => f.toString()).join(';') + ';';   /* SPKK: Kern-Ergänzung in den Spektral-Worker */
   if (typeof spkfixDspMake === 'function') src = src + ';' + [spkfixS6, spkfixImpClean, spkfixName, spkfixMaskRange, spkfixPatch, spkfixUid, spkfixDspMake].map(f => f.toString()).join(';') + ';';   /* SPKFIX: Kern-Ergänzung in den Spektral-Worker */
   if (typeof spk12DspMake === 'function') src = src + ';' + [spk12SelFn, spk12Ras, spk12Fft, spk12Win, spk12Mag, spk12K2, spk12DspMake].map(f => f.toString()).join(';') + ';';   /* SPK12: Auswahl-Kern in den Spektral-Worker */
   if (typeof fokus1KMake === 'function') src = src + ';' + fokus1KMake.toString() + ';';   /* FOKUS1: Fokus-Kern in den Spektral-Worker */
@@ -112535,34 +112536,34 @@ function spkfixWarm() {   // (5) Klangkorn-Quellen (Take → Spektren) gleich na
 }
 /* SPKFIX-END */
 /* SPKK-BEGIN ===== Spektral-Kleinfehler Rest (OFFEN A8, unsichtbar): „Überall finden“ gab der Segmentierung nur das Viertelton-Raster
-   der Klang-Suche (Spitze ±1 Bin → bei einem fast reinen Ton ist die Suche über fast einen Halbton flach): Name einen Halbton daneben
-   (196 Hz → 54/53, 146,83 Hz → 48/49) und eine Note in 2–3 Stücke zerhackt. Jetzt: trägt in einem Rahmen EINE Spitze den Klang (jede
-   andere Spitze bis 7,5·f < ¼, bei f/2 und f/3 < 1/10), kommt die Tonhöhe dieses Rahmens aus ihr (Parabel im Log-Betrag), höchstens
-   1,6 Halbtöne vom Raster weg. Obertonreiche Klänge bleiben unverändert. Nur Rahmen, die die Suche als Treffer markiert hat. */
-function spkkF0(f0, ok, x, N, hop, K, df, F, mags, fa, fb) {
-  if (!f0 || !ok || !x || typeof mags !== 'function' || !(df > 0) || !(K > 8)) return 0;
-  const md = f => 69 + 12 * Math.log2(f / 440); let n = 0;
-  for (let i = 0; i < F; ) {
-    if (!ok[i]) { i++; continue; }
-    let j = i; while (j < F && ok[j] && j - i < 512) j++;
-    const Y = mags(x, N, hop, K, i, j);
-    for (let r = 0; r < j - i; r++) {
-      const o = r * K, fc = f0[i + r]; if (!(fc > 0)) continue;
-      const A = k => Y[o + k], pk = k => k > 0 && k < K - 1 && A(k) > 0 && A(k) >= A(k - 1) && A(k) >= A(k + 1);
-      const kL = Math.max(2, Math.floor(fc * Math.pow(2, -1.6 / 12) / df)), kH = Math.min(K - 2, Math.ceil(fc * Math.pow(2, 1.6 / 12) / df));
-      let kb = -1; for (let k = kL; k <= kH; k++) if (pk(k) && (kb < 0 || A(k) > A(kb))) kb = k;
-      if (kb < 0) continue;
-      const kTop = Math.min(K - 2, Math.ceil(7.5 * kb)); let dom = true;
-      for (let k = 2; k <= kTop; k++) if (Math.abs(k - kb) > 2 && pk(k) && A(k) * 4 > A(kb)) { dom = false; break; }
-      if (!dom) continue;
-      const la = Math.log(A(kb - 1) + 1e-12), lb = Math.log(A(kb) + 1e-12), lc = Math.log(A(kb + 1) + 1e-12), den = la - 2 * lb + lc;
-      const fr = (kb + (den < 0 ? Math.max(-0.5, Math.min(0.5, 0.5 * (la - lc) / den)) : 0)) * df;
-      if (!(fr > 0) || fr < fa * 0.94 || fr > fb * 1.06 || Math.abs(md(fr) - md(fc)) > 1.6) continue;
-      f0[i + r] = fr; n++;
-    }
-    i = j;
+   der Klang-Suche (Spitze ±1 Bin → bei einem fast reinen Ton ist die Suche über bis zu 2 Halbtöne flach): Name einen Halbton daneben
+   (196 Hz → 54/53, 146,83 Hz → 48/49) und Noten in 2–3 Stücke zerhackt. Jetzt: trägt in einem Rahmen EINE Spitze den Klang (jede andere
+   Spitze bis 7,5·f < ¼), kommt die Tonhöhe dieses Rahmens aus ihr (Parabel im Log-Betrag), höchstens 1,6 Halbtöne bzw. 2 Bins vom Raster
+   weg (so weit ist die Suche flach). Die Spitzen kommen aus den Spektren, die die Suche ohnehin rechnet (keine FFT dazu).
+   Obertonreiche Klänge bleiben unverändert (keine Spitze trägt allein). Nur Rahmen, die die Suche als Treffer markiert hat. */
+function spkkPk(best, Y, c0, c1, K, df, fa, fb, F) {   // je Rahmen der Suche: Frequenz der allein tragenden Spitze (0 = keine)
+  if (!best || !Y || !(df > 0) || !(K > 8)) return;
+  const P = best.spkk || (best.spkk = new Float32Array(F)), kL = Math.max(2, Math.floor(fa * 0.94 / df) - 2), kH = Math.min(K - 2, Math.ceil(fb * 1.06 / df) + 2);
+  for (let r = 0; r < c1 - c0; r++) {
+    const o = r * K, A = k => Y[o + k], pk = k => A(k) > 0 && A(k) >= A(k - 1) && A(k) >= A(k + 1); let kb = -1;
+    for (let k = kL; k <= kH; k++) if (pk(k) && (kb < 0 || A(k) > A(kb))) kb = k;
+    if (kb < 0) continue;
+    const kTop = Math.min(K - 2, Math.ceil(7.5 * kb)), lim = A(kb) / 4; let dom = true;
+    for (let k = 2; k <= kTop; k++) if (A(k) > lim && (k < kb - 2 || k > kb + 2) && pk(k)) { dom = false; break; }
+    if (!dom) continue;
+    const la = Math.log(A(kb - 1) + 1e-12), lb = Math.log(A(kb) + 1e-12), lc = Math.log(A(kb + 1) + 1e-12), den = la - 2 * lb + lc;
+    P[c0 + r] = (kb + (den < 0 ? Math.max(-0.5, Math.min(0.5, 0.5 * (la - lc) / den)) : 0)) * df;
   }
-  return n;
+}
+function spkkF0(f0, ok, best, df, fa, fb) {   // nach der Viterbi-Suche: Tonhöhe je Treffer-Rahmen aus der tragenden Spitze
+  const P = best && best.spkk; if (!f0 || !ok || !P || !(df > 0)) return 0;
+  const md = f => 69 + 12 * Math.log2(f / 440); let n = 0;
+  for (let i = 0; i < f0.length && i < P.length; i++) {
+    const fr = P[i], fc = f0[i]; if (!ok[i] || !(fr > 0) || !(fc > 0)) continue;
+    if (fr < fa * 0.94 || fr > fb * 1.06 || (Math.abs(md(fr) - md(fc)) > 1.6 && Math.abs(fr - fc) > 2 * df)) continue;
+    f0[i] = fr; n++;
+  }
+  best.spkk = null; return n;
 }
 /* SPKK-END */
 /* XD1-BEGIN ===== Paket XD1 (Xander 08.11.: „Du sollst eigenmächtig entscheiden, was logischer ist … logisch entscheiden, was praktikabel
