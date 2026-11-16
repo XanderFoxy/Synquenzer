@@ -17,7 +17,7 @@ export const STANDARD = {
   // (Liste im OSM-Wiki „Overpass API“), nach einer Pause; eine Abfrage pro Woche.
   overpassWeitere: ['https://overpass.private.coffee/api/interpreter'],
   pauseMs: 3000,
-  timeoutMs: 130000, // Overpass rechnet bis [timeout:120]
+  timeoutMs: 100000, // je Server; zwei Server + 3 s Pause bleiben unter dem Modullimit von 240 s (Prüfer 16.11.)
   zentrum: { name: 'Döbeln', lat: 51.1211, lon: 13.1229 }, // kaufDA-Stadtmitte Döbeln (Roh-Lauf 43793492110)
   laender: ['DE-SN', 'DE-TH', 'DE-ST', 'DE-BB'],
   bbox: [50.15, 11.6, 51.75, 15.1], // Süd, West, Nord, Ost: Sachsen mit gut 30 km Rand

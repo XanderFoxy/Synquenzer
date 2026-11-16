@@ -646,6 +646,14 @@ test('Märkte vor Ort (statisch): Lage je Markt – Radar nah/filiale, ältere D
   assert.deepEqual(plain(inDoebeln), ['aldi-nord', 'lidl', 'kaufland', 'netto', 'penny', 'marktkauf']);
   const rewe2 = I.lageVon(rewe, n, DOEBELN_TEST, echt);
   assert.ok(rewe2.km > 10 && /Leisnig/.test(rewe2.adresse), JSON.stringify(rewe2));
+  // Prüfer 16.11.: Standort außerhalb der Filial-Liste (Berlin, Hamburg) -> Döbeln-Regel statt „keine Filiale in der Nähe“
+  assert.equal(I.imGebiet(DOEBELN_TEST, echt), true);
+  for (const pos of [{ lat: 52.52, lon: 13.4 }, { lat: 53.55, lon: 9.99 }]) {
+    assert.equal(I.imGebiet(pos, echt), false, JSON.stringify(pos));
+    const dort = n.maerkte.filter(m => I.lageVon(m, n, pos, echt).nah).map(m => m.id);
+    assert.deepEqual(plain(dort), ['aldi-nord', 'lidl', 'kaufland', 'netto', 'penny', 'marktkauf'], 'wie Döbeln');
+  }
+  assert.equal(I.imGebiet({ lat: 51.34, lon: 12.37 }, I.filialenNorm({ maerkte: { lidl: [[51.1, 13.1, 'x']] } })), false, 'ohne Filiale bis 25 km');
 });
 
 test('Märkte vor Ort: ohne Standort nur Märkte bis 10 km um Döbeln, „weitere Märkte“ zeigt REWE gestrichelt (gemerkt)', { skip: ohnePw }, async () => {

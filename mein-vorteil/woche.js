@@ -48,7 +48,8 @@
   const NAH_KM = 10, UMKREIS_KM = 10, WEIT_KM = 25;
   const FIL_URL = 'https://raw.githubusercontent.com/XanderFoxy/Synquenzer/vorteile-daten/vorteile/data/filialen.json';
   const FIL_LOKAL = 'filialen.json';
-  const FIL_FRISCH_TAGE = 3;
+  // Radar erneuert die Filial-Liste wöchentlich (Prüfer 16.11.: mit 3 Tagen lud jedes Öffnen an Tag 4–7 neu)
+  const FIL_FRISCH_TAGE = 7;
   const ORT_SPEICHER = 'mein-vorteil-woche-standort';
   const WEITERE_SPEICHER = 'mein-vorteil-woche-weitere';
   const MAERKTE = [['aldi-nord', 'Aldi Nord'], ['lidl', 'Lidl'], ['kaufland', 'Kaufland'], ['netto', 'Netto'], ['penny', 'Penny'], ['rewe', 'REWE'], ['marktkauf', 'Marktkauf']];
@@ -141,13 +142,24 @@
       n += maerkte[id].length;
     }
     if (!n) return null;
-    return { maerkte, stand: typeof d.osmStand === 'string' ? d.osmStand : typeof d.aktualisiert === 'string' ? d.aktualisiert : null };
+    const bbox = Array.isArray(d.bbox) && d.bbox.length === 4 && d.bbox.every(Number.isFinite) ? d.bbox.slice() : null;
+    return { maerkte, bbox, stand: typeof d.osmStand === 'string' ? d.osmStand : typeof d.aktualisiert === 'string' ? d.aktualisiert : null };
+  }
+  // Liegt der Standort im Gebiet der Filial-Liste? (Prüfer 16.11.: Berlin/Hamburg ergaben „keine Filiale in der Nähe“ für
+  // alle Märkte – die Liste deckt nur Sachsen und Nachbarländer ab.) Außerhalb des Rahmens bbox [Süd, West, Nord, Ost] oder
+  // ohne irgendeine Filiale bis WEIT_KM gilt Döbeln.
+  function imGebiet(pos, fil) {
+    if (!pos || !fil) return false;
+    const b = fil.bbox;
+    if (b && (pos.lat < b[0] || pos.lat > b[2] || pos.lon < b[1] || pos.lon > b[3])) return false;
+    for (const l of Object.values(fil.maerkte)) for (const f of l) if (kmZwischen(pos, { lat: f[0], lon: f[1] }) <= WEIT_KM) return true;
+    return false;
   }
   // Lage eines Markts: { nah, km, adresse } – mit Standort aus der Filial-Liste (bis UMKREIS_KM), sonst Döbeln laut Radar.
   // Ohne jeden Beleg wird nichts ausgeblendet; „weder Filiale noch Prospekt für Döbeln“ (ältere Dateien, z. B. REWE nur mit
   // Chemnitzer Prospekt) zählt als nicht in der Nähe.
   function lageVon(m, n, pos, fil) {
-    if (pos && fil) {
+    if (pos && fil && imGebiet(pos, fil)) {
       const l = fil.maerkte[m.id];
       if (!Array.isArray(l)) return { nah: true, km: null, adresse: '', unbekannt: true };
       let best = null;
@@ -268,12 +280,12 @@
 
   // --- Zeichnen -----------------------------------------------------------------------------------------------------------
   const S = { el: null, url: URL_STANDARD, n: null, roh: '', laedt: false, gestoert: false, nichtDa: false, stufe: 30, markt: 'alle',
-    weitere: false, pos: null, fil: null, ortSucht: false, ortFehler: '', lagen: new Map() };
+    weitere: false, pos: null, fil: null, gebiet: false, ortSucht: false, ortFehler: '', lagen: new Map() };
   const nachMarkt = (arr, m) => (m === 'alle' ? arr : arr.filter(a => a.markt === m));
   const istNah = id => S.lagen.get(id)?.nah !== false;
   // was gezeigt wird: ohne „weitere Märkte“ nur Angebote der Märkte in der Nähe
   const basis = () => (S.weitere ? S.n.angebote : S.n.angebote.filter(a => istNah(a.markt)));
-  const mitStandort = () => !!(S.pos && S.fil);
+  const mitStandort = () => !!(S.pos && S.fil && S.gebiet);
   const abStufe = (arr, st) => arr.filter(a => a.pct >= st);
   const marktName = id => S.n?.maerkte.find(x => x.id === id)?.name || id;
   function initialen(s) { return String(s || '').split(/[\s-]+/).filter(w => /^[\p{L}\d]/u.test(w)).slice(0, 2).map(w => w[0].toUpperCase()).join(''); }
@@ -359,7 +371,10 @@
     const andere = S.markt !== 'alle' && abStufe(basis(), S.stufe).length;
     if (andere) return `<div class="wo-leer"><p>Gerade nichts ab ${S.stufe} %${esc(wo)}.</p><button type="button" class="wo-knopf" data-wo-markt="alle">Alle Märkte zeigen (${andere})</button></div>`;
     const st = Object.values(S.n.status).some(q => q && q.ok === false) ? ' Eine Quelle ist gerade gestört.' : '';
-    return `<div class="wo-leer"><p>Gerade keine Angebote ab ${S.stufe} %${esc(wo)} in den Prospekten.${esc(st)}</p></div>`;
+    // ausgeblendete Märkte (keine Filiale in der Nähe) nennen, damit „keine Angebote“ nicht nach leeren Prospekten klingt
+    const weg = S.weitere ? [] : S.n.maerkte.filter(m => !istNah(m.id)).map(m => [m.name, abStufe(nachMarkt(S.n.angebote, m.id), S.stufe).length]).filter(([, n]) => n > 0);
+    const wegText = weg.length ? ` Ausgeblendet, weil keine Filiale in der Nähe: ${weg.map(([name, n]) => `${name} (${n})`).join(', ')} – „weitere Märkte“ zeigt sie.` : '';
+    return `<div class="wo-leer"><p>Gerade keine Angebote ab ${S.stufe} %${esc(wo)} in den Prospekten.${esc(st)}${esc(wegText)}</p></div>`;
   }
   function listeHtml() {
     const arr = abStufe(nachMarkt(basis(), S.markt), S.stufe);
@@ -406,6 +421,7 @@
       const t = fern.map(m => { const l = S.lagen.get(m.id); return `${m.name}${l && l.km != null ? ` (nächste ${kmText(l.km)} km${l.adresse && l.km <= 30 ? `, ${l.adresse}` : ''})` : ''}`; }).join(', ');
       hinweise.push(`<p class="wo-ort-hinweis">Keine Filiale in der Nähe: ${esc(t)}${S.weitere ? ' – gestrichelt dabei.' : ' – ausgeblendet.'}</p>`);
     }
+    if (S.pos && S.fil && !S.gebiet) hinweise.push('<p class="wo-ort-hinweis wo-warn" role="status">Dein Standort liegt außerhalb der Filial-Liste (Sachsen und Nachbarländer) – es gilt Döbeln.</p>');
     if (S.ortFehler) hinweise.push(`<p class="wo-ort-hinweis wo-warn" role="status">${esc(S.ortFehler)}</p>`);
     if (mit && weg > WEIT_KM) hinweise.push(`<p class="wo-ort-hinweis wo-warn">Die Prospekte gelten für Döbeln – an deinem Standort können Angebote und Preise abweichen.</p>`);
     if (S.pos) hinweise.push(`<p class="wo-ort-hinweis">Der Standort bleibt auf diesem Gerät${S.fil?.stand ? ` · Filialen laut OpenStreetMap, Stand ${esc(standText(S.fil.stand) || '')}` : ''}.</p>`);
@@ -442,6 +458,7 @@
         : 'Wochen-Knaller gerade nicht erreichbar. Später noch einmal auf ↻ tippen.'}</p>`;
       return;
     }
+    S.gebiet = imGebiet(S.pos, S.fil);
     S.lagen = new Map(S.n.maerkte.map(m => [m.id, lageVon(m, S.n, S.pos, S.fil)]));
     if (S.markt !== 'alle' && (!S.n.maerkte.some(m => m.id === S.markt) || (!S.weitere && !istNah(S.markt)))) S.markt = 'alle';
     const alt = el.querySelector('.wo-chips');
@@ -528,7 +545,8 @@
           try {
             const text = await hol(u);
             const n = filialenNorm(JSON.parse(text));
-            if (n) { d = n; if (u !== FIL_LOKAL) { try { const c = await caches.open(CACHE); await c.put(FIL_URL, new Response(text, { headers: { 'content-type': 'application/json' } })); } catch {} } break; }
+            // auch die Ersatzkopie cachen (Prüfer 16.11.: sonst bei jedem Öffnen neu geladen); ihr Stand entscheidet über das Auffrischen
+            if (n) { d = n; try { const c = await caches.open(CACHE); await c.put(FIL_URL, new Response(text, { headers: { 'content-type': 'application/json' } })); } catch {} break; }
           } catch {}
         }
       }
@@ -795,6 +813,6 @@ a.wo-kachel:active { background: var(--flaeche); }
     start, lade,
     get gestartet() { return !!S.el; },
     // für Tests (ohne Browser): reine Funktionen
-    _intern: { normalisiere, angebotNorm, lageVon, filialenNorm, kmZwischen, NAH_KM, UMKREIS_KM, wochenEnde, merkTeile, MERK_BYTES, kachel: a => kachel(a), fuss: n => { const vor = S.n; S.n = n; try { return fussHtml(); } finally { S.n = vor; } }, STUFEN, CSS: () => CSS },
+    _intern: { normalisiere, angebotNorm, lageVon, imGebiet, filialenNorm, kmZwischen, NAH_KM, UMKREIS_KM, wochenEnde, merkTeile, MERK_BYTES, kachel: a => kachel(a), fuss: n => { const vor = S.n; S.n = n; try { return fussHtml(); } finally { S.n = vor; } }, STUFEN, CSS: () => CSS },
   };
 })();
