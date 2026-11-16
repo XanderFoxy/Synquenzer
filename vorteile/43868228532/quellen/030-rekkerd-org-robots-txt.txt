@@ -1,0 +1,111 @@
+User-agent: *
+Disallow: */page/
+Disallow: /sandbox/
+Disallow: /wp-admin/
+Disallow: /wp-login.php
+Disallow: /search
+Disallow: /*?dl=
+
+User-agent: Amzn-SearchBot
+Crawl-delay: 10
+
+User-agent: bingbot
+Crawl-delay: 10
+
+User-agent: ChatGPT-User
+Crawl-delay: 10
+
+User-agent: GPTBot
+Crawl-delay: 10
+
+User-agent: YandexBot
+Crawl-delay: 10
+
+User-agent: meta-externalagent
+Disallow: /
+
+User-agent: Meta-ExternalAgent
+Disallow: /
+
+User-agent: AdsrvrBot
+Disallow: /
+
+User-agent: AhrefsBot
+Disallow: /
+
+User-Agent: AliyunSecBot/Aliyun (AliyunSecBot@service.alibaba.com)
+Disallow: /
+
+User-agent: Amazonbot
+Disallow: /
+
+User-agent: AndersPinkBot
+Disallow: /
+
+User-agent: BLEXBot
+Disallow: /
+
+User-agent: Baidu
+Disallow: /
+
+User-agent: Baiduspider
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: DataForSeoBot
+Disallow: /
+
+User-agent: dotbot
+Disallow: /
+
+User-agent: GrapeshotCrawler
+Disallow: /
+
+User-agent: LinkupBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: PetalBot 
+Disallow: /
+
+User-agent: PingdomBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: SerendeputyBot
+Disallow: /
+
+User-agent: serpstatbot
+Disallow: /
+
+User-agent: Sogou
+Disallow: /
+
+User-agent: Thinkbot
+Disallow: /
+
+User-agent: Twiceler
+Disallow: /
+
+User-agent: yaanibot
+Disallow: /
+
+User-agent: YandexMarket
+Disallow: /
+
+User-agent: YisouSpider
+Disallow: /
+
+User-agent: ZoominfoBot
+Disallow: /
+
+Sitemap: https://rekkerd.org/sitemap_index.xml
