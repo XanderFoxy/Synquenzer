@@ -113744,7 +113744,7 @@ function erstWkUrl(src) {
   W.url = null; W.src = null; W.parts = null; return u;
 }
 // Haken in buildBuffers (erster echter Start): Rauschen wie bisher, Metall aus der Vorarbeit (gleiche Rate, ganz fertig).
-// Startet außerdem die WT-Wellen in Scheiben für diese Umgebung.
+// Gibt außerdem nach 15 s eine nie genommene Blob-Adresse frei (z. B. „nur nativ“).
 function erstBufs(c) {
   if (!c) return false;
   const AC = window.AudioContext || window.webkitAudioContext, live = !!AC && c instanceof AC;

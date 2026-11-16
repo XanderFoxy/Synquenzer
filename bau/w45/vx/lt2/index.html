@@ -109969,7 +109969,7 @@ function lt1StoreJobs(pcm, chunks) {   // Haken in tkStore: nur für die vorbere
   return chunks.map((k, i) => () => kv.aput(k, pcm.slice(i * TK_CHUNK, Math.min(pcm.length, (i + 1) * TK_CHUNK)).buffer));
 }
 /* LT1-END */
-/* LT2-BEGIN ===== Long Tasks im Hauptfaden, Rest (Paket LT2, Puls 16.11., CLAUDE.md Vorrang 1 „schnelle Performance“)
+/* LT2-BEGIN ===== Long Tasks im Hauptfaden, Rest (Paket LT2, Puls 16.11., Projektregeln Vorrang 1 „schnelle Performance“)
    Befund (Spur + Grafik-Probe lt2-gpu-probe.mjs): die restlichen Long Tasks beim Ansicht-Sprung, FFT-Wechsel und Fokus-Umschalten sind kein
    Skript, sondern das Warten des Hauptfadens auf die Grafik (Commit → ReadPixels der WebGL-Leinwand). Den größten Teil davon kostet das
    Zeichnen des Spektrums: ohne Tönung (nl = 0) rechnet die Grafik den Tönungs-Zweig des Shaders trotzdem mit – gemessen 1244×584:
@@ -109979,20 +109979,22 @@ function lt1StoreJobs(pcm, chunks) {   // Haken in tkStore: nur für die vorbere
    Grafik-Kontext (WeakMap; Kontextverlust/CPU-Rückfall → nichts zu tun). LT2.on = false → alter Weg.
    Teil 2 (FFT-Wechsel, Öffnen): beim Aufbau eines Spektrums (spk1SpecLoad → Stücke kommen nach und nach) lud spk1GlDraw jede sichtbare
    neue Kachel im selben Bild hoch (je 1024×984 R8 + Mipmaps ≈ 8,5 ms Grafik) → mehrere je Bild = 60–140 ms am Stück. Jetzt in dieser
-   Aufbau-Phase höchstens eine neue Kachel je Bild; die übrigen bleiben ein Bild länger Hintergrund – wie Stücke, die noch nicht gerechnet
+   Aufbau-Phase höchstens LT2.k neue Kacheln je Bild (Prüfung: k richtet sich nach der Bildfolge – kam das nächste Bild schnell (< 22 ms, die
+   Grafik hält mit), verdoppelt sich k bis 16; sonst halbiert es sich bis 1; langsame Grafik → eine je Bild); die übrigen bleiben ein Bild länger Hintergrund – wie Stücke, die noch nicht gerechnet
    sind – und kommen in den nächsten Bildern. Die Phase endet mit dem ersten vollständigen Bild nach dem Rechnen (WeakSet je Spektrum);
    danach (Ansicht-Sprung, Zoom) wie bisher alle im selben Bild – keine Lücken beim Bewegen. Während Fokus Stücke eintauscht: alter Weg
    (FOKUS1 hat eigene Taktung). Endbild unverändert. */
-const LT2 = {on: true, n0: 0, nT: 0, mk: 0, err: '', sp: null, sw: false, q: false, up: 0, skip: 0, nUp: 0, nSkip: 0};
+const LT2 = {on: true, n0: 0, nT: 0, mk: 0, err: '', sp: null, sw: false, q: false, up: 0, skip: 0, nUp: 0, nSkip: 0, k: 1, t: 0, g: 0, now: () => performance.now()};
 const LT2_DONE = new WeakSet();
 function lt2Frame(U) {   // je Zeichnen (aus lt2G): Aufbau-Phase verfolgen
   const F = U.f1; LT2.sw = !!(F && F.sw); if (LT2.sw) return;   // Fokus hat gerade eigene Stücke eingesetzt → nicht mitzählen
+  const t = LT2.now(); if (LT2.skip && LT2.t) { LT2.g = t - LT2.t; LT2.k = LT2.g < 22 ? Math.min(16, LT2.k * 2) : Math.max(1, LT2.k >> 1); }   // Prüfung: Rate an die Bildfolge (dieses Bild wurde sofort angefordert)
   const sp = U.spec; if (sp && LT2.sp === sp && !LT2.skip && LT2.q === false && sp.hop) LT2_DONE.add(sp);   // letztes Bild vollständig, Rechnen fertig → Aufbau vorbei
-  LT2.sp = sp; LT2.skip = 0; LT2.up = 0; LT2.q = !!U.specQ;
+  LT2.sp = sp; LT2.skip = 0; LT2.up = 0; LT2.q = !!U.specQ; LT2.t = t;
 }
 function lt2Up(U) {   // Haken in spk1GlDraw: sichtbare Kachel ohne Textur. true = in diesem Bild auslassen
   if (!LT2.on || LT2.sw || !U.spec || LT2.sp !== U.spec || LT2_DONE.has(U.spec)) return false;
-  if (LT2.up < 1) { LT2.up++; LT2.nUp++; return false; }
+  if (LT2.up < LT2.k) { LT2.up++; LT2.nUp++; return false; }
   if (!LT2.skip++) queueMicrotask(() => spk1Dirty(U, 'g'));   // nächstes Bild holt die nächste
   LT2.nSkip++; return true;
 }
@@ -110015,7 +110017,7 @@ function lt2Make(G, V) {   // Programm ohne Tönungs-Zweig: gleicher Vertex-Shad
     gl.bindAttribLocation(p, gl.getAttribLocation(G.p, 'a'), 'a'); gl.linkProgram(p);
     if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p) || 'link');
     const u = {}; for (const n of ['r', 'sz', 'sp', 'lut', 'ta', 'tb', 'db', 'tv', 'lc', 'nl']) u[n] = gl.getUniformLocation(p, n);   // ungenutzte → null (gl.uniform*(null, …) tut nichts)
-    V.G = Object.assign({}, G, {p, u}); V.st = 1; LT2.mk++;
+    V.G = Object.assign(Object.create(G), {p, u}); V.st = 1; LT2.mk++;   // Prüfung: erbt von G → ta/tb (spk1TintLoad tauscht sie aus) immer aktuell, kein gelöschtes Objekt
   } catch (e) { V.st = 2; LT2.err = String((e && e.message) || e).slice(0, 200); }
 }
 /* LT2-END */
