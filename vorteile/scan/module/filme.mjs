@@ -16,7 +16,7 @@ import { parsePrice, euro, round, schluessel } from '../lib/text.mjs';
 import { berlinTag } from '../lib/ende.mjs';
 import { preisAngaben, threadId, altpreisAusText, dealPruefer } from '../lib/mydealz.mjs';
 import { sammleFeeds, eintrag, mydealzFeeds } from './gemeinsam.mjs';
-import { raumLinks, raumFilme, raumName, raumPreis, passtZuListe } from '../lib/appletv.mjs';
+import { raumLinks, raumFilme, raumName, raumPreis, passtZuListe, slugVon } from '../lib/appletv.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
 export const LISTEN_PFAD = join(HIER, '..', '..', 'filme.json');
@@ -1348,6 +1348,7 @@ export default async function filme(ctx) {
   const at = listen.appleTv || {};
   status['apple-tv-raeume'] = { ok: true, anzahl: 0, fehler: [], raeume: [] };
   const raumTreffer = [];
+  const raumAlle = []; // alle Filme aus Angebotsräumen mit Preis im Namen („Filme für 3,99 €“) -> Chip „Für 3,99 €“
   if (at.aktiv !== false && (liste(at.start).length || liste(at.raeume).length)) {
     const max = at.maxAbrufe ?? 4;
     let abrufe = 0;
@@ -1357,7 +1358,11 @@ export default async function filme(ctx) {
       if (abrufe >= max) break;
       try {
         abrufe++;
-        for (const l of raumLinks(await holeText(start, { headers: { accept: 'text/html' } }))) if (l.angebot && !raeume.has(l.url)) raeume.set(l.url, l.name);
+        // Start = Apple-TV-Startseite: dort stehen alle Räume/Sammlungen der Woche; Angebote werden am Namen erkannt
+        // (3,99 / Angebot / Deal …), damit eine neue Aktions-Sammlung ohne feste Adresse gefunden wird
+        const links = raumLinks(await holeText(start, { headers: { accept: 'text/html' } }));
+        status['apple-tv-raeume'].gesehen = (status['apple-tv-raeume'].gesehen ?? 0) + links.length;
+        for (const l of links) if (l.angebot && !raeume.has(l.url)) raeume.set(l.url, l.name);
       } catch (e) { melde('apple-tv-raeume', `Apple TV Filmseite: ${e.message}`); }
     }
     const filmPosten = posten.filter(p => !p.serie);
@@ -1372,6 +1377,7 @@ export default async function filme(ctx) {
         status['apple-tv-raeume'].raeume.push({ name, url, filme: filmeImRaum.length, preis });
         status['apple-tv-raeume'].anzahl += filmeImRaum.length;
         for (const f of filmeImRaum) {
+          if (preis != null && !raumAlle.some(x => x.f.umc === f.umc)) raumAlle.push({ f, raum: name, raumUrl: url, preis });
           const p = filmPosten.find(x => passtZuListe(f, x.item));
           if (p && !raumTreffer.some(t => t.p.key === p.key)) raumTreffer.push({ f, p, raum: name, raumUrl: url, preis });
         }
@@ -1638,9 +1644,23 @@ export default async function filme(ctx) {
   const mdDeals = gruppen.angebot.filter(t => t.quelle === 'mydealz');
   const raumTitel = gruppen.angebot.filter(t => String(t.id).startsWith('appletv:'));
   const mdJeFilm = t => preisJeFilm(t.titel, t.preis);
+  // Apples eigene Aktions-Sammlung („Filme für 3,99 €“) zuerst: Film schon aus den Charts bekannt -> dieser Eintrag (Bild, Preis)
+  // mit Raum-Marke, sonst ein Eintrag aus dem Raum (Titel wie bei Apple, Preis aus dem Raum-Namen). Horror bleibt draußen.
+  const ausRaum = [];
+  for (const r of raumAlle.filter(x => x.preis <= m.angebotPreis)) {
+    const titel = r.f.name || r.f.titel;
+    const bekannt = [...kandidaten.values()].find(t => t.typ === 'film' && t.preis != null && t.preis <= m.angebotPreis && slugVon(t.titel) === r.f.slug);
+    if (bekannt?._horror || (!bekannt && horrorText(titel) >= 2)) continue;
+    if (raumTitel.some(t => t.id === `appletv:${r.f.umc}`)) continue; // steht schon als Treffer deiner Liste drin
+    ausRaum.push(bekannt ? { ...bekannt, angebot: true, raum: r.raum, raumUrl: r.raumUrl }
+      : { id: `appletv:${r.f.umc}`, typ: 'film', titel, jahr: null, ...NULL_TITEL, preis: r.preis, seit: tag, tage: 1, angebot: true, link: r.f.link, quelle: 'Apple', raum: r.raum, raumUrl: r.raumUrl });
+  }
+  const ausRaumIds = new Set(ausRaum.map(t => t.id));
   gruppen.fuer399 = [
-    ...pool.filter(t => t.preis <= m.angebotPreis).sort(nachWert),
-    ...raumTitel.filter(t => t.preis == null || t.preis <= m.angebotPreis),
+    ...raumTitel.filter(t => t.preis != null && t.preis <= m.angebotPreis),
+    ...ausRaum,
+    ...pool.filter(t => t.preis <= m.angebotPreis && !ausRaumIds.has(t.id)).sort(nachWert),
+    ...raumTitel.filter(t => t.preis == null),
     ...mdDeals.filter(t => mdJeFilm(t) != null && mdJeFilm(t) <= m.angebotPreis && !doppelTipp(t.titel, pool.filter(x => x.preis <= m.angebotPreis).map(x => x.titel))),
   ].slice(0, m.maxGruppe);
   const mdRest = mdDeals.filter(t => !(mdJeFilm(t) != null && mdJeFilm(t) <= m.angebotPreis));

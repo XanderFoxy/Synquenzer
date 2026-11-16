@@ -1250,3 +1250,33 @@ test('mydealz-Box-Tipps: „statt“ aus dem Text oder Vergleichspreis der Deal-
   // interne Hilfsfelder nicht in der Datei
   assert.ok(!boxen.some(t => '_text' in t));
 });
+
+// ---------------------------------------------------------------- Apple-Sammlung „Filme für 3,99 €“ (Xander 16.11.2026)
+test('Apple TV: Räume selbst finden – echte Startseite (Roh-Lauf 43793546633), Sammlungs-Links, Groß/klein der Nummer', async () => {
+  const { raumLinks } = await import('../lib/appletv.mjs');
+  const l = raumLinks(await fix('appletv-start-echt.html'));
+  assert.equal(l.length, 16, l.map(x => x.slug).join(' '));
+  assert.ok(l.every(x => !x.angebot), 'Stand 16.11.: auf tv.apple.com nur Apple-TV+-Räume, kein Angebotsraum');
+  assert.ok(l.some(x => x.url === 'https://tv.apple.com/de/collection/top10-filme/uts.col.ChartsMovies.tvs.sbd.4000'), 'Sammlung, Nummer in Apples Schreibweise');
+  assert.ok(l.some(x => x.url === 'https://tv.apple.com/de/room/filme/uts.room.movies-on-apple-tv'));
+  // eine neue Aktions-Sammlung wird am Namen erkannt, egal unter welcher Adresse
+  const neu = raumLinks('{"title":"Filme für 3,99 €","url":"https:\\/\\/tv.apple.com\\/de\\/collection\\/aktion\\/edt.col.12345678-aaaa-bbbb-cccc-1234567890ab"}');
+  assert.deepEqual(neu.map(x => [x.angebot, x.url]), [[true, 'https://tv.apple.com/de/collection/aktion/edt.col.12345678-aaaa-bbbb-cccc-1234567890ab']]);
+});
+
+test('Chip „Für 3,99 €“: Apples Sammlung zuerst – alle Filme aus dem Raum mit Preis im Namen, Titel wie bei Apple, keine Doppelten', async () => {
+  const r = await filme(ctx(abruf().holeText));
+  const st = r.datei.status['apple-tv-raeume'];
+  assert.ok(st.gesehen >= 1, JSON.stringify(st));
+  const f = r.datei.gruppen.fuer399;
+  const amelie = f.find(t => t.titel === 'Die fabelhafte Welt der Amélie');
+  assert.ok(amelie, f.map(t => t.titel).join(' | '));
+  assert.equal(amelie.preis, 3.99);
+  assert.equal(amelie.raum, 'Filme für 3,99 €');
+  assert.equal(amelie.quelle, 'Apple');
+  const ausRaum = f.filter(t => t.raum);
+  assert.ok(ausRaum.length >= 5, ausRaum.map(t => t.titel).join(' | '));
+  assert.ok(f.findIndex(t => !t.raum) === -1 || f.findIndex(t => !t.raum) >= ausRaum.length, 'Sammlung steht vorn');
+  assert.equal(new Set(f.map(t => t.id)).size, f.length, 'keine Doppelten');
+  assert.equal(f.filter(t => /trabi/i.test(t.titel)).length, 1, 'Go Trabi Go nur einmal');
+});

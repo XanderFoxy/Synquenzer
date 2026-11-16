@@ -23,14 +23,14 @@ const ausSlug = s => { let t = s; try { t = decodeURIComponent(s); } catch { /* 
 export function raumLinks(html, land = 'de') {
   const t = roh(html);
   const out = new Map();
-  const re = new RegExp(`(?:https://tv\\.apple\\.com)?/${land}/room/([^/"'\\s<>?#]+)/(edt\\.item\\.[0-9a-f-]{36})`, 'gi');
+  const re = new RegExp(`(?:https://tv\\.apple\\.com)?/${land}/(?:room|collection|shelf)/([^/"'\\s<>?#]+)/(edt\\.(?:item|col)\\.[0-9a-f-]{36}|uts\\.(?:room|col)\\.[A-Za-z0-9._-]+)`, 'gi');
   for (const m of t.matchAll(re)) {
-    const id = m[2].toLowerCase();
+    const id = m[2].toLowerCase(), idApple = m[2]; // UTS-Nummern unterscheiden Groß/klein (uts.col.ChartsMovies)
     if (out.has(id)) continue;
     // Name: nächstes „title“/„name“ in der Nähe oder Link-Text, sonst der Slug
     const umgebung = t.slice(Math.max(0, m.index - 400), m.index + 400);
     const name = entities((umgebung.match(/"(?:title|name)"\s*:\s*"([^"]{2,80})"/) || umgebung.match(/>([^<>]{2,80})<\/a>/) || [])[1] || '') || ausSlug(m[1]);
-    out.set(id, { id, slug: m[1], name: name.trim(), url: `https://tv.apple.com/${land}/room/${m[1]}/${id}`, angebot: ANGEBOT_WORT.test(`${m[1]} ${name}`) });
+    out.set(id, { id, slug: m[1], name: name.trim(), url: `https://tv.apple.com/${land}/${/^(?:edt|uts)\.col\./.test(id) ? 'collection' : 'room'}/${m[1]}/${idApple}`, angebot: ANGEBOT_WORT.test(`${m[1]} ${name}`) });
   }
   return [...out.values()];
 }
@@ -45,15 +45,17 @@ export function raumFilme(html, land = 'de') {
     // Apple verlinkt manche Filme ohne Slug („/de/movie//umc.cmc.…“): dann den Titel desselben Links/Objekts nehmen
     // (Link-Text „…>Titel</a>“ oder „title“ im selben JSON-Objekt) – nie den eines Nachbarn; sonst weglassen
     let slug = m[1];
+    const linkText = t.slice(m.index, m.index + 400).match(/^[^<>]*>\s*([^<>]{2,120}?)\s*<\/a>/);
+    const vor = t.slice(Math.max(0, m.index - 400), m.index), nach = t.slice(m.index, m.index + 400);
+    const objekt = vor.slice(vor.lastIndexOf('{') + 1) + nach.slice(0, (nach.indexOf('}') + 1 || nach.length + 1) - 1);
+    const json = vor.lastIndexOf('{') >= 0 && objekt.match(/"title"\s*:\s*"([^"]{2,120})"/);
+    const name = entities((linkText || json || [])[1] || '').trim();
     if (!slug) {
-      const linkText = t.slice(m.index, m.index + 400).match(/^[^<>]*>\s*([^<>]{2,120}?)\s*<\/a>/);
-      const vor = t.slice(Math.max(0, m.index - 400), m.index), nach = t.slice(m.index, m.index + 400);
-      const objekt = vor.slice(vor.lastIndexOf('{') + 1) + nach.slice(0, (nach.indexOf('}') + 1 || nach.length + 1) - 1);
-      const json = vor.lastIndexOf('{') >= 0 && objekt.match(/"title"\s*:\s*"([^"]{2,120})"/);
-      slug = slugVon(entities((linkText || json || [])[1] || '').trim());
+      slug = slugVon(name);
       if (!slug) continue;
     }
-    out.set(umc, { titel: ausSlug(slug), slug: slug.toLowerCase(), umc, link: `https://tv.apple.com/${land}/movie/${m[1]}/${umc}` });
+    // „name“ = Titel, wie Apple ihn zeigt – nur wenn er zum Slug passt (sonst gehört er einem Nachbarn)
+    out.set(umc, { titel: ausSlug(slug), name: name && slugVon(name) === slugVon(ausSlug(slug)) ? name : null, slug: slug.toLowerCase(), umc, link: `https://tv.apple.com/${land}/movie/${m[1]}/${umc}` });
   }
   return [...out.values()];
 }

@@ -246,9 +246,9 @@
     "gruppen": [{"gruppe": "apple-tv", "name": "Apple TV"}, {"gruppe": "filme-serien", "name": "Filme & Serien"}]
   },
   "appleTv": {
-    "_hinweis": "Apple-TV-Angebotsräume (Xander 08.11.2026): Die Filmseite des Stores (start) verlinkt Räume wie „Filme für 3,99 €“; Räume, deren Name nach Angebot klingt (3,99/4,99/Angebot/Deal/Sale/reduziert …), werden geöffnet und ihre Filme mit Wunsch-, 80er- und Disney-Liste abgeglichen. Feste Räume (Link aus der TV-App: Teilen → Link kopieren) unter „raeume“ eintragen. Höchstens maxAbrufe Seiten pro Lauf. Format der Seiten ist ungeprüft (Container ohne Netz) – im Roh-Lauf ansehen.",
+    "_hinweis": "Apple-TV-Angebotsräume (Xander 08.11./16.11.2026): Start ist die Apple-TV-Startseite (start). Dort stehen alle Räume und Sammlungen der Woche; jeder Raum, dessen Name nach Angebot klingt (3,99/4,99/Angebot/Deal/Sale/reduziert …), wird geöffnet – auch eine neue Aktions-Sammlung, ohne feste Adresse. Steht im Namen ein Preis („Filme für 3,99 €“), kommen alle Filme daraus in den Chip „Für 3,99 €“ (Apples Sammlung zuerst), dazu der Abgleich mit Wunsch-, 80er- und Disney-Liste. Stand 16.11.2026 (Roh-Lauf 43793546633): Die Web-Seite tv.apple.com zeigt nur Apple-TV+-Räume; den Store-Reiter mit „Filme für 3,99 €“ gibt Apple nur in der TV-App aus. Status „gesehen“ = Zahl der gefundenen Räume. Feste Räume (Link aus der TV-App: Teilen → Link kopieren) unter „raeume“. Höchstens maxAbrufe Seiten pro Lauf.",
     "aktiv": true,
-    "start": ["https://tv.apple.com/de/room/movies/edt.item.6454f7d8-98d5-4c09-95a6-b4606de32cc2"],
+    "start": ["https://tv.apple.com/de"],
     "raeume": [],
     "maxAbrufe": 4
   }

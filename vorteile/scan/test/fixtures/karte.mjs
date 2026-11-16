@@ -85,4 +85,6 @@ export const FIXTURE_KARTE = [
   // Apple-TV-Angebotsräume (tv.apple.com): Filmseite des Stores mit Raum-Links, Raum „Filme für 3,99 €“
   ['tv.apple.com/de/room/movies/', 'appletv-filme.html'],
   ['tv.apple.com/de/room/', 'appletv-raum-399.html'],
+  ['tv.apple.com/de/collection/', 'appletv-raum-399.html'],
+  ['tv.apple.com/de', 'appletv-filme.html'], // Startseite (Fixture mit Angebotsraum; echte Startseite: appletv-start-echt.html)
 ];
