@@ -223,6 +223,10 @@
     const boxAlle = [...gruppen.boxen, ...sets, ...(neu ? gruppen.serien.filter(t => t.komplett) : [])].filter(t => !boxGesehen.has(t.id) && boxGesehen.add(t.id));
     gruppen.boxen = zuerst(boxAlle.filter(boxDeutlich).sort((a, b) => boxPct(b) - boxPct(a)), t => t.knueller);
     gruppen.boxenTipps = boxAlle.filter(t => !boxDeutlich(t));
+    // mydealz-Tipp, den der Radar einem Apple-Film zugeordnet hat (gleicher Deal-Link): nur die Apple-Karte, nicht zusätzlich der
+    // Tipp unter „Angebote“ (echter Lauf 43826385997: „Der Grinch ~ 3,99€“ neben „Dr. Seuss' Der Grinch“)
+    const tippLinks = new Set(GRUPPEN.flatMap(k => gruppen[k]).map(t => t.tipp && t.tipp.link).filter(Boolean));
+    for (const t of gruppen.angebot) if (/mydealz/i.test(t.quelle) && t.link && tippLinks.has(t.link)) doppelt.add(t.id);
     // „Angebote“ nur mit dem, was sonst fehlt
     const sonst = new Set([...GRUPPEN.filter(k => k !== 'angebot').flatMap(k => gruppen[k].map(t => t.id)), ...gruppen.boxenTipps.map(t => t.id)]);
     gruppen.weitere = gruppen.angebot.filter(t => !sonst.has(t.id) && !doppelt.has(t.id) && bis399(t) && !set(t));

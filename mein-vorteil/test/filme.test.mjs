@@ -222,6 +222,23 @@ test('Prüfer MV8: doppelter mydealz-Tipp (Flow), zwei Jahre im Titel, alter Ger
   assert.equal(plain(I.CHIPS).find(c => c[0] === 'disney')[2], 'Disney und Pixar für 3,99 € – der Rest deiner Liste eingeklappt darunter.');
 });
 
+test('Apple statt mydealz (echter Lauf 43826385997): zugeordneter Tipp nur als Apple-Karte mit TV-App-Link, nicht noch einmal unter „Angebote“', () => {
+  const { F } = modul();
+  const I = F._intern;
+  const md = 'https://www.mydealz.de/deals/der-grinch-399eur-uhd-digital-apple-tv-amazon-video-2872205';
+  const apple = { id: 'itunes:633344391', typ: 'film', titel: "Dr. Seuss' Der Grinch", preis: 3.99, genre: 'Komödien', quelle: 'Apple', link: 'https://itunes.apple.com/de/movie/dr-seuss-der-grinch/id633344391', tipp: { quelle: 'mydealz', link: md } };
+  const tipp = { id: 'mydealz:2872205', typ: 'film', titel: 'Der Grinch ~ 3,99€ | UHD digital | Apple TV / Amazon Video', preis: 3.99, quelle: 'mydealz', link: md };
+  const lebowski = { id: 'mydealz:2872242', typ: 'film', titel: 'The Big Lebowski (1998) - 4K HDR digital', preis: 4.99, quelle: 'mydealz', link: 'https://www.mydealz.de/deals/the-big-lebowski-2872242' };
+  const n = plain(I.normalisiere({ ...FILME, gruppen: { ...FILME.gruppen, fuer399: [apple], angebot: [apple, tipp, lebowski], action: [lebowski] } }));
+  assert.deepEqual(n.gruppen.fuer399.map(t => t.id), ['itunes:633344391']);
+  assert.deepEqual(n.gruppen.weitere, [], 'kein Grinch-Tipp unter „Angebote“, Lebowski (4,99 €) gar nicht');
+  assert.deepEqual(n.gruppen.action, [], 'nur 3,99 €: Lebowski für 4,99 € steht nirgends');
+  const k = I.karte(n.gruppen.fuer399[0], false, 'fuer399');
+  assert.match(k, /href="https:\/\/itunes\.apple\.com\/de\/movie\/dr-seuss-der-grinch\/id633344391"/, 'Link in die TV-App');
+  assert.match(k, /Tipp von mydealz/);
+  assert.doesNotMatch(k, /mydealz\.de/);
+});
+
 test('Haken: index.html (Link in der Sprung-Leiste, eigene Seite, Skript erst beim Öffnen), sw.js (filme.js im Zwischenspeicher)', () => {
   const html = readFileSync(join(MV, 'index.html'), 'utf8');
   const leiste = html.match(/<div class="breite sprung-zeile"[^>]*>([\s\S]*?)<\/div>/)[1];

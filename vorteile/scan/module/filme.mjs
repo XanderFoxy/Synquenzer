@@ -2070,6 +2070,13 @@ export default async function filme(ctx) {
     return a;
   };
   const tipps399 = mdDeals.filter(t => einzeln(t) && t.preis <= m.angebotPreis && !doppelTipp(t.titel, pool.filter(x => x.preis <= m.angebotPreis).map(x => x.titel))).map(ausTipp);
+  // zugeordnete Tipps: unter „angebot“ steht dann der Apple-Eintrag statt des mydealz-Tipps (Lauf 43826385997: „Der Grinch ~ 3,99€“
+  // stand sonst als Tipp unter „Angebote“ und als „Dr. Seuss' Der Grinch“ unter „Für 3,99 €“)
+  const zugeordnet = new Map(tipps399.filter(t => t.tipp?.link).map(t => [t.tipp.link, t]));
+  if (zugeordnet.size) {
+    const ids = new Set();
+    gruppen.angebot = gruppen.angebot.map(t => (t.quelle === 'mydealz' && zugeordnet.has(t.link) ? zugeordnet.get(t.link) : t)).filter(t => !ids.has(t.id) && ids.add(t.id));
+  }
   const fuer399Ids = new Set();
   gruppen.fuer399 = kappe([
     ...raumTitel.filter(t => t.preis != null && t.preis <= m.angebotPreis),
