@@ -151,3 +151,22 @@ systematischer Unterschied zwischen v4 und v6-FOK3-P.
 - Regression (reg5/, Kopien): fok2-test LANG=0 16/0; spk5 24/0; spk12 98/0; spk12-3 47/0; spkfix ALLES OK 11; smoke errors []; spk12-2 69/3 (nur Long
   Tasks der SPK12-Werkzeuge unter Last 12, wie v4 71/1); spk6 1 FEHLER „kern-messwerte-teil1“ (Eingabedatei eines anderen Pakets fehlt, wie v4);
   fokus1-kern siehe unten.
+- fokus1-kern (kern-kopie): 26/0 (Kette B, Last 14; in Kette A unter Last 22 25/1 – ein Long Task 189 ms im Hauptfaden während des Kern-Tests).
+- fokus1-test (LONG=0 CPU=0): A/B GLEICHZEITIG gegen basis (Last 7–10): basis 45 OK / 3 FEHLER, neu 46 OK / 2 FEHLER – in beiden Fassungen nur Long Tasks
+  beim Umschalten (auch „Alles“/„Gefundenes“, wo FOK3 nicht wirkt; JS-Bilder ≤ 10 ms) → Test-Grafik, nicht FOK3. Unter Last 14–32 (Ketten) 42/6.
+- fok3-test.mjs Endlauf 7 auf v6 (Last 8–12): 28 OK / 0 FEHLER. Alle 10 Endbild-Hashes = v6 (s20 bcbde967, kamm16 d4062e73, kamm4 d2aa386e, st 624c8e8e,
+  m1 45d36813, m2 59ae0369, m3 45d36813 = m1, m4 9ceb388f, m5 9ceb388f = m4, m6 7d408e3d). Kamm ohne Zwischenbild, örtlich nur 3 Stücke genähert,
+  Rollen → sichtbares Stück 12 zuerst, Zauberstab beim Tippen auf der Näherung genau (46,6 dB). Worker-Antwort P95 m1 130 / v6 150, st 150 / v6 159.
+  Konsole 0 Fehler (neu und basis). Lauf 6 (Last 12–23, mit Ketten parallel) 27/1: nur Worker-P95 unter Last (A und B bei verschiedener Last).
+- Pflicht (v6 a6b25918): topdefs doppelt 0 / Syntaxfehler 0; dupkeys 0 (mit NODE_PATH); smoke errors []; „MS 2000“ 1×; „  live: true,“ 1×;
+  VERSION '4.76.0'; vor und nach dem FOKUS1-Block byte-gleich mit basis.html. fok3.diff (gegen basis) 24 Abschnitte, fok3p.diff (gegen v4) 16 Abschnitte,
+  alle im Block.
+
+### Offen (aktualisiert)
+- „Genau fertig“ in der Standardansicht (ganzes Lied sichtbar → alle teuren Stücke werden erst genähert) bleibt später als v6: Näherungs-Durchgang
+  (≈ 15 × 50 ms) + zweimaliges Hochladen sichtbarer Texturen (in der Software-Grafik des Test-Chromiums teuer, nimmt dem Kern unter Last CPU). Gemessen
+  stark lastabhängig (siehe Tabellen). Profi-Wege, nicht gebaut: Näherungs-Textur ohne Mipmaps / texSubImage2D in die vorhandene Textur; zweiter Worker
+  für die Näherung.
+- Wort „genauer“ in der Statuszeile: abnicken lassen (Befund 3).
+- Pflichtliste: dupkeys braucht NODE_PATH=/opt/node-tools/node_modules (Befund 4).
+- Eigener Befund 5 betrifft auch 4.76.0 (veraltetes Bild nach Alles → Nur Rest während des Neu-Rechnens) – mit dieser Fassung behoben.
