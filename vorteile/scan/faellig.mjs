@@ -7,7 +7,7 @@
 import { readFile, appendFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { berlin } from './benachrichtigen.mjs';
+import { berlin, adventFenster } from './benachrichtigen.mjs';
 import { erinnerungFaellig } from './lib/merken.mjs';
 
 export const TOLERANZ_MS = 5 * 60e3; // ein Lauf darf bis zu 5 Min. früher kommen (Zeitpläne schwanken)
@@ -45,7 +45,9 @@ export function faelligkeit(cfg, zustand, jetzt = new Date()) {
   // gemerkter Wochen-Knaller gilt ab heute und ist noch nicht erinnert -> laufen (sonst käme die Erinnerung erst mit dem
   // nächsten fälligen Modul)
   const erinnerung = !erstlauf && erinnerungFaellig(cfg, zustand || {}, new Date(jetztMs));
-  return { module, digest, erstlauf, erinnerung, faellig: erstlauf || digest || erinnerung || module.length > 0, naechstes };
+  // Dezember: Film des Tages (ab 8 Uhr, einmal am Tag) – auch ohne fälliges Modul (nimmt dann die filme.json des letzten Laufs)
+  const advent = !erstlauf && adventFenster(cfg, zustand, new Date(jetztMs)).faellig;
+  return { module, digest, erinnerung, advent, erstlauf, faellig: erstlauf || digest || erinnerung || advent || module.length > 0, naechstes };
 }
 
 async function leseJson(pfad, fallback) { try { return JSON.parse(await readFile(pfad, 'utf8')); } catch { return fallback; } }

@@ -90,6 +90,14 @@ export const STANDARD = {
   breitMaxGruppe: 60, // Action/Comedy gesamt
   breitMaxAngebot: 120, // „angebot“ gesamt
   breitMaxSerien: 30, // Staffeln mit echter Senkung aus den Genre-Charts
+  // Große Produktion/Kinohit und Besetzung (Xander 16.11.2026: Filter „nur bekannte“, „nach Schauspieler“) – Wikidata, siehe grossGrund
+  details: true,
+  detailMaxAbrufe: 4, // Abfragen pro Lauf (4 × 25 = 100 Filme; Rest im nächsten Lauf, Ergebnis bleibt detailTage im Zustand)
+  detailJeAbfrage: 25,
+  detailTage: 30,
+  detailBisPreis: 4.99, // nur Filme bis zu diesem Preis (die Seite zeigt nur noch 3,99-€-Filme)
+  detailBisSek: 205,
+  mdAppleWikidata: true, // mydealz-Tipp ohne gleichnamigen Apple-Film in diesem Lauf: 1 Wikidata-Abfrage + 1 Lookup (aus = false)
 };
 
 export const sucheUrl = (term, staffel = false, limit = STANDARD.sucheLimit, land = 'de') =>
@@ -334,6 +342,93 @@ export function qualiOk(q, { chart = null, neu = false } = {}, m = STANDARD) {
 }
 /** Sortierwert (höher = besser): Kritik und Bekanntheit. */
 export const qualiWert = q => (q && q.l >= 0 ? (q.rt ?? 55) + Math.min(q.l, 120) / 2 : 0);
+
+// ---------------------------------------------------------------- Große Produktion? Besetzung (Xander 16.11.2026: „Filter, um
+// Indie-Produktionen auszublenden – nur bekannte große Produktionen/Kinohits; nach Schauspieler filtern“)
+// Eine Abfrage je bis zu detailJeAbfrage Filme über die Wikidata-Nummer (Q…), die der Qualitäts-Schritt schon gefunden hat:
+// Einspielergebnis (P2142), Auszeichnungen (P166), Produktionsfirma (P272), Verleih (P750), Besetzung (P161, mit Bekanntheit der
+// Schauspieler = Wikipedia-Sprachen). Je Eigenschaft eigene Zeilen (UNION) – kein Kreuzprodukt wie bei vielen OPTIONAL.
+// Große Studios und Verleiher (englische Wikidata-Namen): Hollywood-Majors mit Töchtern und die großen deutschen/europäischen Häuser
+// Nur PRODUKTIONSfirmen (P272) zählen – Verleih/Streaming (P750) nicht: US-Verleiher wie Paramount, Miramax oder „Disney+“
+// machten im echten Lauf 43820663637 Arthouse-Filme (Die Nächte der Cabiria, Drei Farben: Rot) zu „großen Produktionen“.
+// Arthouse-Labels der Majors (Sony Pictures Classics, Paramount Vantage, Focus Features, Searchlight) zählen nicht.
+export const GROSSE_STUDIOS = /\b(?:warner bros|warner brothers|new line cinema|castle rock|universal pictures|universal studios|illumination|dreamworks|paramount pictures|20th century fox|20th century studios|twentieth century|columbia pictures|tristar|sony pictures (?:animation|entertainment|releasing|imageworks)|screen gems|walt disney (?:pictures|animation|productions|feature)|pixar|marvel studios|lucasfilm|touchstone pictures|hollywood pictures|metro-goldwyn-mayer|united artists|lionsgate|lions gate|summit entertainment|legendary (?:pictures|entertainment)|amblin|orion pictures|new regency|regency enterprises|village roadshow|skydance|eon productions|working title|imagine entertainment|carolco|constantin film|neue constantin|ufa|bavaria film|studio babelsberg|x filme|wiedemann & berg|rat pack filmproduktion)\b/i;
+export const KEIN_GROSSES_STUDIO = /classics|vantage|focus features|searchlight|disney\+|television|\btv\b|home (?:video|entertainment)/i;
+export const detailUrlMax = 7000;
+export function detailAbfrage(qids) {
+  const werte = [...new Set(qids.filter(q => /^Q\d{1,12}$/.test(String(q))))].map(q => `wd:${q}`).join(' ');
+  const label = '?x rdfs:label ?wert . FILTER(LANG(?wert) = "en")';
+  return 'SELECT ?item ?art ?wert ?n WHERE { '
+    + `VALUES ?item { ${werte} } `
+    // Einspielergebnis nur in US-Dollar (Q4917) oder Euro (Q4916): Rupien, Yen oder Rubel wären sonst „Milliarden“-Kinohits
+    + '{ ?item p:P2142/psv:P2142 ?bv . ?bv wikibase:quantityAmount ?wert ; wikibase:quantityUnit ?bu . FILTER(?bu IN (wd:Q4917, wd:Q4916)) BIND("b" AS ?art) } '
+    + `UNION { ?item wdt:P166 ?x . ${label} BIND("a" AS ?art) } `
+    + `UNION { ?item wdt:P272 ?x . ${label} BIND("s" AS ?art) } `
+    + `UNION { ?item wdt:P750 ?x . ${label} BIND("v" AS ?art) } `
+    // Besetzung: Darsteller (P161) und Sprecher (P725 – Animationsfilme wie Shrek haben keine P161-Darsteller)
+    + `UNION { ?item wdt:P161|wdt:P725 ?x . ?x wikibase:sitelinks ?n . ${label} BIND("c" AS ?art) } `
+    + '} LIMIT 8000';
+}
+/** Antwort -> Map(Q… -> { b: höchstes Einspielergebnis, a: [Auszeichnungen], s: [Studios], v: [Verleih], c: [{ name, n }] }). */
+export function leseDetails(text) {
+  let j;
+  try { j = JSON.parse(String(text ?? '').trim()); } catch { throw new Error('keine gültige Wikidata-Antwort'); }
+  const b = j?.results?.bindings;
+  if (!Array.isArray(b)) throw new Error('Wikidata-Antwort ohne results.bindings');
+  const out = new Map();
+  for (const r of b) {
+    const q = String(r?.item?.value ?? '').replace(/^.*\//, '');
+    const art = r?.art?.value, w = String(r?.wert?.value ?? '').trim();
+    if (!/^Q\d+$/.test(q) || !w) continue;
+    const d = out.get(q) || { b: null, a: [], s: [], v: [], c: [] };
+    out.set(q, d);
+    if (art === 'b') { const z = Number(w); if (Number.isFinite(z) && z > 0) d.b = Math.max(d.b ?? 0, z); }
+    else if (art === 'a' || art === 's' || art === 'v') { if (!d[art].includes(w)) d[art].push(w); }
+    else if (art === 'c' && !d.c.some(x => x.name === w)) d.c.push({ name: w, n: Number(r?.n?.value) || 0 });
+  }
+  return out;
+}
+/** Rohdaten einer Abfrage -> kurzer Eintrag für den Zustand (zf.detail[Q]): b = Einspielergebnis in Mio. (gerundet), o = Oscars,
+ *  g = Golden Globes, a = Auszeichnungen gesamt, st = Studio (das große zuerst), gs = 1 bei großem Studio/Verleih,
+ *  c = die bekanntesten Schauspieler (höchstens 8, nach Wikipedia-Sprachen). */
+export function detailKurz(d, tag) {
+  const gross = d.s.find(x => GROSSE_STUDIOS.test(x) && !KEIN_GROSSES_STUDIO.test(x));
+  return {
+    b: d.b != null ? Math.round(d.b / 1e6) : null,
+    // Oscars ohne „bester fremdsprachiger/internationaler Film“ (Arthouse-Preis, sagt nichts über eine große Produktion)
+    o: d.a.filter(x => /^Academy Award for /i.test(x) && !/foreign language|international feature/i.test(x)).length,
+    g: d.a.filter(x => /^Golden Globe Award for /i.test(x)).length,
+    a: d.a.length,
+    st: (gross || d.s[0] || null)?.slice(0, 40) ?? null, // nur Produktionsfirma – ein Verleih wie „Netflix“ ist kein Studio
+    gs: gross ? 1 : 0,
+    c: [...d.c].sort((x, y) => y.n - x.n).slice(0, 8).map(x => x.name.slice(0, 40)),
+    tag, v: DETAIL_V,
+  };
+}
+/** Fassung der gemerkten Details (zf.detail): ältere Einträge (Einspielergebnis jeder Währung) werden neu geholt. */
+export const DETAIL_V = 2;
+/** Grobe Teuerung (US-Verbraucherpreise, ~3,7 % im Jahr, höchstens × 15): 13 Mio. $ von 1963 (Charade) sind heute ~120 Mio. */
+export const teuerung = jahr => (Number.isFinite(jahr) && jahr > 1900 && jahr < 2025 ? Math.min(15, 1.037 ** (2025 - jahr)) : 1);
+/**
+ * „Große Produktion oder Kinohit?“ – Grund oder null. l = Wikipedia-Sprachen (Bekanntheit), d = detailKurz (oder null).
+ * Schwellen (an echten Daten 16.11.2026 geprüft, Lauf 43820663637, siehe test/filme-bekannt.test.mjs):
+ *  kinohit     Einspielergebnis (US-$/€) in heutigem Geld ≥ 50 Mio. – ein Kinoerfolg, egal welches Studio. 50 Mio. trennt im
+ *              echten Lauf sauber: Hundstage (1976, 50 Mio. × Teuerung), Charade (1963, 13 Mio. ≈ 120 Mio. heute), Shrek,
+ *              Deepwater Horizon gegen Arthouse wie Drei Farben: Rot (4 Mio.), Down by Law (2 Mio.), Lars und die Frauen (11 Mio.)
+ *  studio      großes PRODUKTIONS-Studio (P272, kein Verleih) UND ≥ 20 Wikipedia-Sprachen – eine große Produktion, kein
+ *              Video-Ableger (Die 42. Straße, Soylent Green); 20 Sprachen = auch außerhalb der USA bekannt
+ *  weltbekannt ≥ 60 Wikipedia-Sprachen – auch ohne Zahlen bekannt (Klassiker, Kultfilme; Arthouse liegt bei 40–55)
+ *  oscar       mindestens ein Oscar (ohne „fremdsprachiger Film“) UND ≥ 45 Sprachen – preisgekrönt und bekannt
+ * Ohne Wikidata-Treffer (l < 0 / null): nicht „bekannt“ (lieber einen Film zu wenig als Indie-Ramsch).
+ */
+export function grossGrund(l, d, jahr) {
+  if (!(l >= 0)) return null;
+  if (d?.b != null && d.b * teuerung(jahr) >= 50) return 'kinohit';
+  if (d?.gs && l >= 20) return 'studio';
+  if (l >= 60) return 'weltbekannt';
+  if (d?.o >= 1 && l >= 45) return 'oscar';
+  return null;
+}
 
 /** Apple-Genre -> Gruppe der Seite: 'action' (Action, Abenteuer, Thriller, Krimi, Sci-Fi, Western, Krieg) | 'comedy' | null */
 export function genreGruppe(genre) {
@@ -819,8 +914,60 @@ export function istAppleFilmDeal(it) {
 /** Preis je Film eines Deals („Rambo Collection | 5 Filme als Set“ 13,40 € -> 2,68 €); ohne Angabe = Preis. */
 export function preisJeFilm(titel, preis) {
   if (preis == null) return null;
+  // „… u.a. Filme je 5,99€ (alle 10 Filme im Sale)“ (echter Feed 16.11.2026): „je“ vor dem Preis = Preis je Film, kein Set
+  if (/\bje\s*\d{1,3}(?:[.,]\d{1,2})?\s*(?:€|eur)/i.test(String(titel || ''))) return preis;
   const n = Number(String(titel || '').match(/\b(\d{1,2})[\s-]*(?:filme|film-kollektion|film collection|filme-kollektion|movie collection|movies)\b/i)?.[1]);
   return n >= 2 ? preis / n : preis;
+}
+
+/** Filmname aus einem mydealz-Titel: „Der Grinch ~ 3,99€ | UHD digital | Apple TV / Amazon Video“ -> „Der Grinch“. */
+export function mdFilmTitel(titel) {
+  const x = String(titel ?? '').replace(/^\s*\[[^\]]{0,40}\]\s*/, '')
+    // „Apple TV Countdown Tag 5: Wicked …“, „iTunes Adventskalender – Wicked …“ -> „Wicked …“
+    // (nur ganze Wörter: „Adventure Time: Staffel 1“ bleibt so – Prüfer 16.11.)
+    .replace(/^[^:–—]{0,60}?(?:\bcountdown\b|\badventskalender|\badvent\b|\btag\s*\d{1,2}\b)[^:–—]{0,30}[:–—]\s*/i, '')
+    .replace(/^[^:–—]{0,20}?\btag\s*\d{1,2}\b[^:–—]{0,10}[:–—]\s*/i, '')
+    .split(/\s*(?:[~|@]|\s(?:für|for|ab|nur|bei|im|in)\s|\d{1,3}[.,]\d{2}\s*(?:€|eur)|\(\s*(?:u?hd|4k|kauf|leih|digital))/i)[0];
+  return x.replace(/[\s:,;–—-]+$/, '').trim();
+}
+/** Countdown/Adventskalender von Apple (Dezember: „Apple TV Countdown Tag 5“, „iTunes Adventskalender“, „31 Tage, 31 Angebote“).
+ *  Nur ganze Wörter (Prüfer 16.11.: „Bill & Ted's Excellent Adventure“ und „Adventszeit“ sind kein Countdown), „2. Advent“ auch nicht. */
+export const COUNTDOWN_WORT = /\bcountdown\b|\badventskalender|(?<!\d\.\s{0,2})\badvent\b|\b31\s*tage\b|\bfilm des tages\b|\btagesangebot|\btages-?deal\b/i;
+/** Countdown in der Beschreibung zählt nur mit „heute“/„Tag N“ davor („Heute im Apple TV Countdown: Wicked …“) – ein normaler
+ *  Deal, der den Countdown nur erwähnt, wird kein Tagesangebot. */
+const COUNTDOWN_HEUTE = /\b(?:heute|tag\s*\d{1,2})\b[^.!?\n]{0,40}\b(?:countdown|adventskalender)/i;
+/** mydealz-Tipp = Apples Tagesangebot im Dezember? Titel mit Countdown-Wort, oder Beschreibung „heute im Countdown“. */
+export const istCountdownTipp = (titel, beschreibung = '') => COUNTDOWN_WORT.test(String(titel || '')) || COUNTDOWN_HEUTE.test(String(beschreibung || ''));
+/**
+ * Apple-Eintrag zu einem mydealz-Tipp (Xander 16.11.2026: „Apple statt mydealz“) – nur eindeutig: gleicher Filmname (normTitel)
+ * und genau EIN Apple-Film zu höchstens dem Tipp-Preis (+1 ct). Kandidaten = alle Apple-Filme dieses Laufs ({ id, titel, jahr, preis }).
+ * -> { treffer, gleicheNamen } (treffer = der Kandidat oder null; gleicheNamen = Apple-Filme mit diesem Namen, egal welcher Preis)
+ */
+export function appleZuTipp(mdTitel, mdPreis, kandidaten) {
+  const name = normTitel(mdFilmTitel(mdTitel));
+  if (name.length < 2) return { treffer: null, gleicheNamen: [] };
+  const gesehen = new Set();
+  // gleicher Name: Apple-Titel, oder der Name, unter dem Wikidata den Film kennt (Apple: „Dr. Seuss' Der Grinch“, mydealz und
+  // Wikidata: „Der Grinch“ – echter Lauf 43820663637)
+  const gleiche = kandidaten.filter(k => k && k.id && !gesehen.has(k.id) && gesehen.add(k.id) && (normTitel(k.titel) === name || (k.namen || []).some(n => normTitel(n) === name)));
+  const passend = mdPreis == null ? [] : gleiche.filter(k => k.preis != null && k.preis <= mdPreis + 0.011);
+  return { treffer: passend.length === 1 ? passend[0] : null, gleicheNamen: gleiche };
+}
+
+/**
+ * Wer bekommt im Qualitäts-Schritt Wikidata-Daten? Chart-Titel (außer deinen Listen-Filmen über maxPreis – die bleiben ohnehin
+ * stehen), deine Listen-Filme bis maxPreis (auch wenn sie zugleich in den Charts stehen) und zugeordnete mydealz-Tipps.
+ * -> Ids in dieser Reihenfolge, ohne Doppelte.
+ */
+export function qualiKandidatIds({ chartIds = [], listenIds = new Set(), tippIds = new Set(), preisVon = () => null, maxPreis = 4.99 }) {
+  const billig = id => { const p = preisVon(id); return p != null && p <= maxPreis; };
+  const raus = new Set();
+  const aus = [];
+  const dazu = id => { if (!raus.has(id)) { raus.add(id); aus.push(id); } };
+  for (const id of chartIds) if (!listenIds.has(id) || billig(id)) dazu(id);
+  for (const id of listenIds) if (billig(id)) dazu(id);
+  for (const id of tippIds) if (!listenIds.has(id)) dazu(id);
+  return aus;
 }
 
 // ---------------------------------------------------------------- Ausgabe
@@ -1369,6 +1516,7 @@ export default async function filme(ctx) {
   status['apple-tv-raeume'] = { ok: true, anzahl: 0, fehler: [], raeume: [] };
   const raumTreffer = [];
   const raumAlle = []; // alle Filme aus Angebotsräumen mit Preis im Namen („Filme für 3,99 €“) -> Chip „Für 3,99 €“
+  const raumCountdown = []; // Filme aus einem Countdown-/Adventskalender-Raum der TV-App (Dezember)
   if (at.aktiv !== false && (liste(at.start).length || liste(at.raeume).length)) {
     const max = at.maxAbrufe ?? 4;
     let abrufe = 0;
@@ -1398,6 +1546,8 @@ export default async function filme(ctx) {
         status['apple-tv-raeume'].anzahl += filmeImRaum.length;
         for (const f of filmeImRaum) {
           if (preis != null && !raumAlle.some(x => x.f.umc === f.umc)) raumAlle.push({ f, raum: name, raumUrl: url, preis });
+          // Countdown/Adventskalender-Raum (Dezember) auch ohne Preis im Namen – nur für den Tages-Push
+          if (COUNTDOWN_WORT.test(`${name} ${name0}`) && !raumCountdown.some(x => x.f.umc === f.umc)) raumCountdown.push({ f, raum: name, raumUrl: url, preis });
           const p = filmPosten.find(x => passtZuListe(f, x.item));
           if (p && !raumTreffer.some(t => t.p.key === p.key)) raumTreffer.push({ f, p, raum: name, raumUrl: url, preis });
         }
@@ -1411,13 +1561,24 @@ export default async function filme(ctx) {
   const qs = { ok: true, anzahl: 0, fehler: [], abfragen: 0, offen: 0, raus: 0, gefunden: 0 };
   status.qualitaet = qs;
   const listenIds = new Set(posten.filter(p => !p.serie).map(p => zf.ids[p.key]?.id).filter(Boolean));
+  // Apple-Filme, denen ein mydealz-Tipp zugeordnet wurde (zf.tippIds, 14 Tage): bekommen im nächsten Lauf Bekanntheit, Studio und
+  // Besetzung wie Chart-Titel (der Abgleich kommt erst nach diesen Schritten – echter Lauf 43826385997: „Dr. Seuss' Der Grinch“)
+  zf.tippIds ||= {};
+  for (const [k, v] of Object.entries(zf.tippIds)) if (!v?.tag || tageZwischen(v.tag, tag) > 14) delete zf.tippIds[k];
+  const tippIds = new Set(Object.keys(zf.tippIds));
   // gefundene Einträge ohne Wikidata-Jahr (vor dem 15.11.2026 gemerkt) einmal neu fragen: das Jahr ersetzt ein Apple-Datum,
   // das nur die Wiederveröffentlichung ist („Dirty Harry (2014)“, Prüfer-Befund MV8 10); Billiges zuerst, höchstens qualiMaxAbrufe
-  const qualiFrisch = q => q && q.tag && (q.l < 0 || 'j' in q) && tageZwischen(q.tag, tag) < (q.l >= 0 ? m.qualiTage : m.qualiFehltTage);
+  // … ebenso gefundene ohne Wikidata-Nummer „q“ (vor dem 16.11.2026 gemerkt): die braucht der Schritt „Große Produktion/Besetzung“
+  const qualiFrisch = q => q && q.tag && (q.l < 0 || ('j' in q && 'q' in q)) && tageZwischen(q.tag, tag) < (q.l >= 0 ? m.qualiTage : m.qualiFehltTage);
   const nr = id => String(id).replace(/^itunes:/, '');
   if (m.qualitaet !== false) {
-    const kandidat = [...chartTreffer.entries()]
-      .filter(([id]) => !listenIds.has(id) && !qualiFrisch(zf.quali[nr(id)]))
+    // deine Listen-Titel bis angebotPreisAktion auch (nur Bekanntheit/Besetzung für die Filter der Seite – sie bleiben immer stehen)
+    // (auch wenn der Listen-Film zugleich in den Charts steht – Prüfer 16.11.: „Kindergarten Cop“ Platz 57 + 80er-Liste und
+    // „Manta Manta“ Platz 47 + Wunschliste blieben sonst für immer ohne Wikidata, „Nur bekannte“/Schauspieler fanden sie nicht)
+    const preisVon = id => { const d = daten.get(id) || chartTreffer.get(id)?.d; return d ? d.preisHd ?? d.preisSd ?? d.preis ?? null : null; };
+    const ids = qualiKandidatIds({ chartIds: [...chartTreffer.keys()], listenIds, tippIds, preisVon, maxPreis: m.angebotPreisAktion });
+    const kandidat = ids.map(id => [id, chartTreffer.get(id) || { pos: 999, ...(tippIds.has(id) && !listenIds.has(id) ? { altTitel: zf.tippIds[id] } : {}) }])
+      .filter(([id]) => !qualiFrisch(zf.quali[nr(id)]))
       .map(([id, c]) => {
         const d = daten.get(id) || c.d || c.altTitel || {};
         const preis = d.preisHd ?? d.preisSd ?? d.preis ?? null;
@@ -1434,7 +1595,7 @@ export default async function filme(ctx) {
         const zeilen = leseQuali(await holeText(wikidataUrl(qualiAbfrage(teil)), { headers: { accept: 'application/sparql-results+json' } }));
         for (const t of teil) {
           const q = qualiWahl(zeilen, t);
-          zf.quali[t.nr] = q ? { l: q.l, h: q.horror ? 1 : 0, k: q.kinder ? 1 : 0, rt: q.rt, j: q.jahr ?? null, tag } : { l: -1, tag };
+          zf.quali[t.nr] = q ? { l: q.l, h: q.horror ? 1 : 0, k: q.kinder ? 1 : 0, rt: q.rt, j: q.jahr ?? null, q: q.item ?? null, tag } : { l: -1, tag };
           if (q) qs.gefunden++;
         }
         qs.anzahl += teil.length;
@@ -1459,6 +1620,7 @@ export default async function filme(ctx) {
   const bst = { ok: true, anzahl: 0, fehler: [], charts: 0, ruhen: 0, offen: 0, abrufe: 0, kandidaten: 0, lookups: 0, filme: 0, staffeln: 0, quali: 0, genres: [] };
   status['apple-breit'] = bst;
   const breitIds = new Set(); // Filme, die nur die breite Suche gefunden hat (Kappen, Push-Reihenfolge)
+  const breitCharts = []; // alle Film-Einträge der Genre-Charts dieses Laufs (nur für den Abgleich mydealz -> Apple)
   const breitVergleich = new Map(); // id -> { vorher, hoch } aus der eigenen Chart-Preis-Historie
   const breitStaffeln = []; // { id, vorher }
   if (breitCfg) {
@@ -1514,6 +1676,7 @@ export default async function filme(ctx) {
       bst.charts++;
       try {
         const e = leseCharts(await apple(g.art === 'film' ? chartUrl(g.id, breitLimit) : serienChartUrl(g.id, breitLimit)));
+        if (g.art === 'film') breitCharts.push(...e); // für den Abgleich mydealz-Tipp -> Apple-Eintrag
         bst.anzahl += e.length;
         const k = e.filter(x => pruefe(x, g, g.art));
         zb.g[g.key] = { t: new Date(jetzt).toISOString(), n: e.length, k: k.slice(0, 200).map(x => [x.id, x.pos]), ...(e.length ? {} : { leer: tag }) };
@@ -1574,7 +1737,7 @@ export default async function filme(ctx) {
           const zeilen = leseQuali(await holeText(wikidataUrl(qualiAbfrage(teil)), { headers: { accept: 'application/sparql-results+json' } }));
           for (const t of teil) {
             const q = qualiWahl(zeilen, t);
-            zf.quali[t.nr] = q ? { l: q.l, h: q.horror ? 1 : 0, k: q.kinder ? 1 : 0, rt: q.rt, j: q.jahr ?? null, tag } : { l: -1, tag };
+            zf.quali[t.nr] = q ? { l: q.l, h: q.horror ? 1 : 0, k: q.kinder ? 1 : 0, rt: q.rt, j: q.jahr ?? null, q: q.item ?? null, tag } : { l: -1, tag };
           }
         } catch (e) { bst.fehler.push(`Wikidata (Qualität): ${e.message}`); break; }
       }
@@ -1583,6 +1746,37 @@ export default async function filme(ctx) {
     for (const k of Object.keys(zb.g)) if (!genres.some(g => g.key === k)) delete zb.g[k];
     bst.abrufe = appleAbrufe - vorAbrufe;
   }
+
+  // 4e) Große Produktion? Besetzung? (Xander 16.11.2026) – Wikidata über die Q-Nummer aus 4c/4d, im Zustand gemerkt (zf.detail,
+  //     detailTage); nur Filme bis detailBisPreis (die Seite filtert nur unter den günstigen), Billiges zuerst, eigenes Budget
+  zf.detail ||= {};
+  const ds = { ok: true, anzahl: 0, fehler: [], abfragen: 0, offen: 0 };
+  status['wikidata-details'] = ds;
+  if (m.details !== false && m.qualitaet !== false) {
+    const preisVonId = id => { const d = daten.get(id) || chartTreffer.get(id)?.d || zf.tippIds[id]; return d ? d.preisHd ?? d.preisSd ?? d.preis ?? null : null; };
+    const frisch = x => x && x.tag && x.v === DETAIL_V && tageZwischen(x.tag, tag) < m.detailTage;
+    const offen = [], gesehenQ = new Set();
+    for (const id of new Set([...chartTreffer.keys(), ...breitIds, ...listenIds, ...tippIds])) {
+      const q = zf.quali[nr(id)]?.q;
+      if (!q || gesehenQ.has(q) || frisch(zf.detail[q])) continue;
+      const p = preisVonId(id);
+      if (p == null || p > m.detailBisPreis) continue;
+      gesehenQ.add(q); offen.push({ q, p });
+    }
+    offen.sort((a, b) => a.p - b.p);
+    ds.offen = offen.length;
+    for (let i = 0; i < offen.length && ds.abfragen < m.detailMaxAbrufe && Date.now() - start < m.detailBisSek * 1000; i += m.detailJeAbfrage) {
+      const teil = offen.slice(i, i + m.detailJeAbfrage);
+      ds.abfragen++;
+      try {
+        const roh = leseDetails(await holeText(wikidataUrl(detailAbfrage(teil.map(x => x.q))), { headers: { accept: 'application/sparql-results+json' } }));
+        for (const x of teil) zf.detail[x.q] = detailKurz(roh.get(x.q) || { b: null, a: [], s: [], v: [], c: [] }, tag);
+        ds.anzahl += teil.length; ds.offen -= teil.length;
+      } catch (e) { ds.ok = false; ds.fehler.push(`Wikidata (Details): ${e.message}`); break; } // kein Modul-Fehler: Filter nutzt dann die Bekanntheit
+    }
+    for (const [k, x] of Object.entries(zf.detail)) if (!x?.tag || tageZwischen(x.tag, tag) > m.detailTage * 2) delete zf.detail[k];
+  }
+  const detailVon = id => { const q = zf.quali[nr(id)]?.q; return q ? zf.detail[q] ?? null : null; };
 
   // 5) Titel bauen + Preis-Historie
   const titel = new Map(); // id -> Titel-Objekt
@@ -1737,6 +1931,18 @@ export default async function filme(ctx) {
     .map(([id]) => baue(id)).filter(t => t && !t._horror && t.typ === 'film');
   const kindIn = new Map(neuRoh.map(t => [t.id, kindGrund(t)]));
   gruppen.neu = neuRoh.filter(t => !kindIn.get(t.id)).slice(0, m.maxNeu);
+  // Zusatzfelder aus Wikidata: Rotten Tomatoes (%), Wikipedia-Sprachen (Bekanntheit), große Produktion/Kinohit (gross = Grund,
+  // null = eher klein/Indie; fehlt = noch keine Daten), Studio, Einspielergebnis, Oscars, Besetzung – für die Filter der Seite
+  const anreichern = t => {
+    const q = qualiVon(t.id);
+    if (q && q.l >= 0) { t.rt = q.rt; t.bekannt = q.l; }
+    const dt = detailVon(t.id);
+    if (dt) { if (dt.c?.length) t.cast = dt.c; if (dt.st) t.studio = dt.st; if (dt.b != null) t.einspiel = dt.b; if (dt.o) t.oscars = dt.o; }
+    if (q && q.l >= 0 && (dt || q.l >= 60)) t.gross = grossGrund(q.l, dt, q.jahr ?? t.jahr);
+    // Filmjahr von Wikidata, wenn Apple nur die Wiederveröffentlichung kennt (≥ 2 Jahre älter; Festival-Premieren ein Jahr vorher zählen nicht)
+    if (q && q.l >= 0 && q.jahr && t.typ === 'film' && t.jahr && q.jahr <= t.jahr - 2 && jahrImTitel(t.titel) == null) t.jahr = q.jahr;
+    return t;
+  };
   // Angebote: Filme ≤ 3,99 € (≤ 4,99 € bei Tiefstpreis oder laufender Apple-Aktion) – nur Kuratiertes oder Chart-Titel
   const kandidaten = new Map();
   for (const t of [...gruppen.wunsch, ...gruppen.achtziger, ...gruppen.disney]) if (t.id?.startsWith('itunes:')) kandidaten.set(t.id, t);
@@ -1755,10 +1961,7 @@ export default async function filme(ctx) {
   };
   let qualiRaus = 0;
   for (const t of [...kandidaten.values()]) {
-    const q = qualiVon(t.id);
-    if (q && q.l >= 0) { t.rt = q.rt; t.bekannt = q.l; } // Zusatzfelder: Rotten Tomatoes (%) und Wikipedia-Sprachen
-    // Filmjahr von Wikidata, wenn Apple nur die Wiederveröffentlichung kennt (≥ 2 Jahre älter; Festival-Premieren ein Jahr vorher zählen nicht)
-    if (q && q.l >= 0 && q.jahr && t.typ === 'film' && t.jahr && q.jahr <= t.jahr - 2 && jahrImTitel(t.titel) == null) t.jahr = q.jahr;
+    anreichern(t);
     if (!gut(t)) { kandidaten.delete(t.id); qualiRaus++; }
   }
   qs.raus = qualiRaus;
@@ -1779,11 +1982,12 @@ export default async function filme(ctx) {
       ...NULL_TITEL, preis: t.preis, seit: tag, tage: 1, angebot: true, link: t.f.link, quelle: 'Apple', raum: t.raum, raumUrl: t.raumUrl, liste: t.p.gruppe,
     });
   }
+  const mdId = it => `mydealz:${threadId(it.link) || schluessel(it.link)}`;
   const mdEintrag = it => ({
-    id: `mydealz:${threadId(it.link) || schluessel(it.link)}`, typ: /staffel|season|serie/i.test(it.titel) ? 'staffel' : 'film',
+    id: mdId(it), typ: /staffel|season|serie/i.test(it.titel) ? 'staffel' : 'film',
     titel: it.titel.replace(/^\s*\[[^\]]{1,30}\]\s*/, '') || it.titel, jahr: null, // „[iTunes / Apple TV] …“ -> kurz
     ...NULL_TITEL, preis: preisWert(it.preisText), seit: tag, tage: 1, angebot: true, bild: it.bild || null, link: it.link, quelle: 'mydealz',
-    _text: `${it.titel} ${it.beschreibung || ''}`,
+    _text: `${it.titel} ${it.beschreibung || ''}`, _beschreibung: it.beschreibung || '', _datum: it.datum || null,
   });
   for (const it of deals) gruppen.angebot.push(mdEintrag(it));
 
@@ -1843,13 +2047,85 @@ export default async function filme(ctx) {
       : { id: `appletv:${r.f.umc}`, typ: 'film', titel, jahr: null, ...NULL_TITEL, preis: r.preis, seit: tag, tage: 1, angebot: true, link: r.f.link, quelle: 'Apple', raum: r.raum, raumUrl: r.raumUrl });
   }
   const ausRaumIds = new Set(ausRaum.map(t => t.id));
+  // mydealz-Tipps -> Apple-Eintrag (Xander 16.11.2026: „sahen aus, als ruhten sie noch auf der mydealz-Seite statt in der
+  // Apple-App“): ein einzelner Film (kein Set) mit genau einem gleichnamigen Apple-Film zum Tipp-Preis wird der Apple-Eintrag
+  // (Link in die TV-App, Vermerk „Tipp von mydealz“). Sonst bleibt der Tipp mit Hinweis. Kandidaten: alle Apple-Filme dieses
+  // Laufs (Lookups, Charts, Genre-Charts); ohne Treffer ein Versuch über Wikidata (P6398 = iTunes-Nummer) + ein Lookup.
+  const appleKand = new Map();
+  const kand = (id, titel, jahr, preis, namen = []) => { if (id && titel && preis != null) appleKand.set(id, { id, titel, jahr: jahr ?? null, preis, namen: [...(appleKand.get(id)?.namen || []), ...namen] }); };
+  for (const e of [...alleCharts, ...breitCharts]) kand(e.id, e.titel, e.jahr, e.preis);
+  for (const d of daten.values()) if (d?.typ === 'film') kand(d.id, d.titel, d.jahr, d.preisHd ?? d.preisSd ?? null); // Lookup = frischer Preis
+  const einzeln = t => t.preis != null && mdJeFilm(t) != null && Math.abs(mdJeFilm(t) - t.preis) < 0.005; // kein Set
+  const mdApple = new Map(); // mydealz-id -> Apple-Nummer
+  const abgleich = (status.mydealz.apple = { geprueft: 0, gefunden: 0, wikidata: 0 });
+  const cdTipp = t => istCountdownTipp(t.titel, t._beschreibung);
+  const tippZiele = mdDeals.filter(t => einzeln(t) && (t.preis <= m.angebotPreis || cdTipp(t)));
+  const ordne = t => { const r = appleZuTipp(t.titel, t.preis, [...appleKand.values()]); if (r.treffer) mdApple.set(t.id, r.treffer.id); return r; };
+  const offenTipps = tippZiele.filter(t => { abgleich.geprueft++; return !ordne(t).treffer; });
+  // Budget: der eine Lookup zählt zu allen Apple-Abrufen des Laufs (breitGesamtMax) – ist es aufgebraucht, bleibt der Tipp ein Tipp
+  if (offenTipps.length && m.mdAppleWikidata !== false && m.wikidata !== false && !appleGestoert() && appleAbrufe < Math.min(m.maxAppleAbrufe, m.breitGesamtMax)) {
+    try {
+      const namen = [...new Set(offenTipps.map(t => mdFilmTitel(t.titel)).filter(x => x.length >= 2))].slice(0, 6);
+      abgleich.wikidata++;
+      const zeilen = leseWikidata(await holeText(wikidataUrl(wikidataAbfrage(namen)), { headers: { accept: 'application/sparql-results+json' } }));
+      const ids = [...new Set(zeilen.map(z => z.id))].slice(0, 40);
+      const wdNamen = id => zeilen.filter(z => z.id === id).map(z => z.name);
+      if (ids.length) {
+        for (const r of leseErgebnisse(await apple(lookupUrl(ids)))) {
+          const d = ausItunes(r);
+          if (d?.typ !== 'film' || fremdStore(r)) continue;
+          daten.set(d.id, { ...daten.get(d.id), ...d });
+          kand(d.id, d.titel, d.jahr, d.preisHd ?? d.preisSd ?? null, wdNamen(d.id));
+        }
+      }
+    } catch (e) { status.mydealz.fehler.push(`Abgleich mit Apple: ${e.message}`); } // kein Modul-Fehler: der Tipp bleibt Tipp
+    for (const t of offenTipps) ordne(t);
+  }
+  const ausTipp = t => {
+    const id = mdApple.get(t.id);
+    const a = id ? baue(id) : null;
+    if (!a || a._horror || a._alt || a.preis == null || a.typ !== 'film') {
+      if (!id) t.hinweis = 'bei Apple nicht eindeutig gefunden';
+      return t;
+    }
+    abgleich.gefunden++;
+    anreichern(a); // Bekanntheit/Besetzung, sobald ein früherer Lauf sie geholt hat
+    zf.tippIds[a.id] = { tag, titel: a.titel, jahr: a.jahr ?? null, preis: a.preis }; // nächster Lauf: Wikidata wie ein Chart-Titel
+    a.tipp = { quelle: 'mydealz', link: t.link }; // Vermerk: kam als Tipp von mydealz, der Link führt in die TV-App
+    if (!a.angebot) a.angebot = true;
+    return a;
+  };
+  // ein zugeordneter Tipp bleibt, auch wenn der gleichnamige Apple-Film schon dasteht: er bekommt den Vermerk „Tipp von mydealz“
+  const tipps399 = mdDeals.filter(t => einzeln(t) && t.preis <= m.angebotPreis && (mdApple.has(t.id) || !doppelTipp(t.titel, pool.filter(x => x.preis <= m.angebotPreis).map(x => x.titel)))).map(ausTipp);
+  // zugeordnete Tipps: unter „angebot“ steht dann der Apple-Eintrag statt des mydealz-Tipps (Lauf 43826385997: „Der Grinch ~ 3,99€“
+  // stand sonst als Tipp unter „Angebote“ und als „Dr. Seuss' Der Grinch“ unter „Für 3,99 €“)
+  const zugeordnet = new Map(tipps399.filter(t => t.tipp?.link).map(t => [t.tipp.link, t]));
+  if (zugeordnet.size) {
+    const ids = new Set();
+    gruppen.angebot = gruppen.angebot.map(t => (t.quelle === 'mydealz' && zugeordnet.has(t.link) ? zugeordnet.get(t.link) : t)).filter(t => !ids.has(t.id) && ids.add(t.id));
+  }
+  const fuer399Ids = new Set();
   gruppen.fuer399 = kappe([
     ...raumTitel.filter(t => t.preis != null && t.preis <= m.angebotPreis),
     ...ausRaum,
     ...pool.filter(t => t.preis <= m.angebotPreis && !ausRaumIds.has(t.id)).sort(nachWert),
     ...raumTitel.filter(t => t.preis == null),
-    ...mdDeals.filter(t => mdJeFilm(t) != null && mdJeFilm(t) <= m.angebotPreis && !doppelTipp(t.titel, pool.filter(x => x.preis <= m.angebotPreis).map(x => x.titel))),
-  ], m.maxGruppe, m.breitMaxFuer399);
+    // Sets („4 Filme für 14,99 €“) stehen unter „Boxen“, nicht unter „Für 3,99 €“ (Xander 16.11.2026)
+    ...tipps399.filter(t => t.quelle === 'mydealz' || t.preis <= m.angebotPreis),
+  ].filter(t => !fuer399Ids.has(t.id) && fuer399Ids.add(t.id)), m.maxGruppe, m.breitMaxFuer399);
+  // Countdown/Adventskalender (Dezember): Apples Tagesangebot aus mydealz-Tipps und Angebotsräumen – für den Tages-Push
+  // tag = Tag des mydealz-Beitrags (Berliner Zeit), nicht der Tag des Laufs: mydealz-Beiträge bis 7 Tage alt werden gelesen, und
+  // „Countdown Tag 4“ vom 04.12. ist am 05.12. nicht mehr das Tagesangebot (Prüfer 16.11.). Ohne Datum kein Countdown.
+  const countdown = [
+    ...mdDeals.filter(t => einzeln(t) && cdTipp(t) && berlinTag(t._datum)).map(t => {
+      const a = mdApple.has(t.id) ? baue(mdApple.get(t.id)) : null;
+      const beitragTag = berlinTag(t._datum);
+      return a && a.preis != null && !a._horror
+        ? { id: a.id, titel: a.titel, jahr: a.jahr ?? null, preis: a.preis, link: a.link, bild: a.bild ?? null, quelle: 'mydealz', tag: beitragTag }
+        : { id: t.id, titel: mdFilmTitel(t.titel) || t.titel, jahr: null, preis: t.preis, link: t.link, bild: t.bild ?? null, quelle: 'mydealz', tag: beitragTag };
+    }),
+    ...raumCountdown.map(r => ({ id: `appletv:${r.f.umc}`, titel: r.f.name || r.f.titel, jahr: null, preis: r.preis, link: r.f.link, bild: null, quelle: 'apple-tv', raum: r.raum, tag })),
+  ].filter(x => x.titel && x.link).slice(0, 5);
   const mdRest = mdDeals.filter(t => !(mdJeFilm(t) != null && mdJeFilm(t) <= m.angebotPreis));
   const mdComedy = t => /kom(?:ö|oe)die|comedy/i.test(t.titel);
   gruppen.action = kappe([...pool.filter(t => genreGruppe(t.genre) === 'action' && istAngebotGenre(t)).sort(nachWert), ...mdRest.filter(t => !mdComedy(t))], m.maxGruppe, m.breitMaxGruppe);
@@ -1862,9 +2138,15 @@ export default async function filme(ctx) {
   // aus Action/Comedy (Dune 7,99 €, Iron Man 4,99 €; Prüfer-Befund MV8 8 / MV7 11)
   const echt = t => t.angebot || (t.preis != null && t.preis <= m.angebotPreis);
   const angebotsZahl = new Set([...gruppen.fuer399, ...[...gruppen.action, ...gruppen.comedy, ...gruppen.achtziger, ...gruppen.disney, ...gruppen.serien].filter(t => t.angebot || (t.typ === 'film' && echt(t))), ...gruppen.boxen.filter(t => t.angebot || t.knueller), ...gruppen.wunsch.filter(t => t.angebot || t.unterZiel)].map(t => t.id)).size;
+  // Xander 16.11.2026: „Bei den Filmen geht es mir nur um die 3,99-€-Sachen, teurere müssen nicht rein“ – die Kachel zählt nur
+  // noch einzelne Filme bis 3,99 € (dazu deine Wunschfilme unter Ziel); die alte Zahl bleibt als angeboteAlle für ältere Seiten
+  const bis399 = t => t && t.typ === 'film' && t.preis != null && t.preis <= m.angebotPreis + 0.004 && t.quelle !== 'mydealz';
+  const fuer399Zahl = new Set([...gruppen.fuer399, ...gruppen.action, ...gruppen.comedy, ...gruppen.achtziger, ...gruppen.disney, ...gruppen.wunsch].filter(bis399).map(t => t.id)).size;
   const kurz = {
-    angebote: angebotsZahl,
-    top: [...gruppen.wunsch.filter(t => t.preis != null && (t.angebot || t.unterZiel)), ...gruppen.fuer399, ...gruppen.action, ...gruppen.comedy]
+    angebote: new Set([...[...gruppen.fuer399, ...gruppen.action, ...gruppen.comedy, ...gruppen.achtziger, ...gruppen.disney, ...gruppen.wunsch].filter(bis399), ...gruppen.wunsch.filter(t => t.preis != null && t.unterZiel)].map(t => t.id)).size,
+    fuer399: fuer399Zahl,
+    angeboteAlle: angebotsZahl,
+    top: [...gruppen.wunsch.filter(t => t.preis != null && (t.angebot || t.unterZiel)), ...gruppen.fuer399.filter(bis399)] // deine Wunschfilme unter Ziel bleiben vorn
       .filter((t, i, a) => a.findIndex(x => x.id === t.id) === i).slice(0, 3).map(t => ({ titel: t.titel, preis: t.preis ?? null })),
   };
 
@@ -1907,12 +2189,12 @@ export default async function filme(ctx) {
     for (const t of gruppen[g]) {
       if (!mitPreis(t) || gemeldet.has(t.id) || !t._gesenkt || !kuratiert.has(t.id)) continue; // Chart-Klassiker: unten als Angebot
       gemeldet.add(t.id);
+      // teurer als 3,99 €: keine Meldung mehr (Xander 16.11.2026: „teurere müssen nicht rein; ich will sparen“)
       if (t.preis <= m.angebotPreis) neuerEintrag(t, { grund: g === 'disney' ? 'Disney-Film für 3,99 €' : 'Kultfilm für 3,99 €', wert: 80, sofort: true, gruppe: g });
-      else if (t.preis <= t.vorher * 0.7 || neueTiefst.has(t.id)) neuerEintrag(t, { grund: 'Preis gesenkt', wert: 60, sofort: false, gruppe: g, zusatz: neueTiefst.has(t.id) ? ['neuer Tiefstpreis'] : [] });
     }
   }
   for (const t of gruppen.angebot) {
-    if (t.quelle !== 'Apple' || !mitPreis(t) || gemeldet.has(t.id) || !t._gesenkt) continue;
+    if (t.quelle !== 'Apple' || !mitPreis(t) || gemeldet.has(t.id) || !t._gesenkt || t.preis > m.angebotPreis + 0.004) continue; // nur bis 3,99 €
     gemeldet.add(t.id);
     neuerEintrag(t, { grund: 'Film im Angebot', wert: breitIds.has(t.id) ? 49 : 50, sofort: false, gruppe: 'angebot', zusatz: t.chart ? [`Platz ${t.chart} der Charts`] : [] });
   }
@@ -1928,21 +2210,44 @@ export default async function filme(ctx) {
     const it = t.p.item, g = t.p.gruppe;
     if (schonTitel.has(normTitel(it.titel))) continue;
     const wunsch = g === 'wunsch';
-    const billig = t.preis != null && t.preis <= m.angebotPreis;
+    const billig = t.preis != null && t.preis <= m.angebotPreis + 0.004;
+    if (!wunsch && !billig) continue; // 80er/Disney über 3,99 € oder ohne Preis: keine Meldung (Xander 16.11.2026: „ich will sparen“)
     const p = preisAngaben({ preis: t.preis });
     eintraege.push(eintrag({
       id: `film-raum-${schluessel(t.f.umc, String(t.preis))}`, kategorie: 'filme',
       titel: `${it.titel}${it.jahr ? ` (${it.jahr})` : ''}${t.preis != null ? ` für ${euro(t.preis)}` : ' im Angebot'}`,
       link: t.f.link, quelle: 'Apple TV', datum: jetzt, jetzt, art: 'deal', preise: p,
       zeile: [`im Apple-TV-Raum „${t.raum}“`, wunsch ? 'auf deiner Wunschliste' : g === 'disney' ? 'Disney' : '80er/Kult'].join(' · '),
-      soGehts: SO_FILM, wert: wunsch ? 92 : billig ? 80 : 65, sofort: wunsch || billig, grund: wunsch ? 'Wunschfilm im Apple-TV-Angebot' : 'Film von deiner Liste im Apple-TV-Angebot',
+      soGehts: SO_FILM, wert: wunsch ? 92 : 80, sofort: true, grund: wunsch ? 'Wunschfilm im Apple-TV-Angebot' : 'Film von deiner Liste im Apple-TV-Angebot',
       extra: { filmId: `appletv:${t.f.umc}`, typ: 'film', jahr: it.jahr ?? null, gruppe: 'angebot', liste: g, raum: t.raum, raumUrl: t.raumUrl, filmTitel: it.titel },
     }));
   }
+  const appleLink = u => /^https:\/\/(?:itunes|tv)\.apple\.com\//.test(String(u || ''));
+  const appleFuerTipp = it => {
+    if (zugeordnet.has(it.link)) return zugeordnet.get(it.link);
+    const id = mdApple.get(mdId(it)), a = id ? baue(id) : null;
+    if (a && !a._horror && !a._alt && a.typ === 'film' && a.preis != null && appleLink(a.link)) return a;
+    const preis = preisWert(it.preisText), titel = String(it.titel).replace(/^\s*\[[^\]]{1,30}\]\s*/, '');
+    if (preis == null) return null;
+    return gruppen.fuer399.find(t => t.quelle !== 'mydealz' && t.typ === 'film' && t.preis != null && t.preis <= preis + 0.011 && appleLink(t.link) && doppelTipp(titel, [t.titel])) || null;
+  };
   const wunschNamen = posten.filter(x => x.gruppe === 'wunsch').flatMap(p => namen(p.item).filter(x => x.faktor === 1).map(x => normTitel(x.n)));
   for (const it of deals) {
     const n = ` ${normTitel(`${it.titel} ${it.beschreibung || ''}`)} `;
     const wunsch = wunschNamen.some(w => n.includes(` ${w} `));
+    const jeFilm = preisJeFilm(it.titel, preisWert(it.preisText));
+    if (jeFilm != null && jeFilm > m.angebotPreis + 0.004 && !wunsch) continue; // nur bis 3,99 € je Film (Xander 16.11.2026)
+    // dem Tipp ist ein Apple-Film zugeordnet: die Meldung führt in die TV-App wie auf der Seite (Prüfer 16.11.: „Der Grinch ~ 3,99€“
+    // stand in aktuell.json noch als mydealz-Aktion mit mydealz-Link). Ebenso, wenn die Seite den Tipp nur ausblendet, weil der
+    // gleichnamige Apple-Film schon unter „Für 3,99 €“ steht (doppelTipp)
+    const a = appleFuerTipp(it);
+    if (a) {
+      if (mitPreis(a) && !gemeldet.has(a.id)) {
+        gemeldet.add(a.id);
+        neuerEintrag(a, { grund: wunsch ? 'Wunschfilm in einer Aktion' : 'Film für 3,99 € (Tipp von mydealz)', wert: wunsch ? 85 : 60, sofort: wunsch, gruppe: 'angebot', zusatz: ['Tipp von mydealz'] });
+      }
+      continue;
+    }
     const p = preisAngaben({ preis: preisWert(it.preisText) });
     eintraege.push(eintrag({
       kategorie: 'filme', titel: it.titel, link: it.link, quelle: 'mydealz', datum: it.datum, jetzt, bis: it.bis, ab: it.ab, art: 'deal',
@@ -1973,6 +2278,7 @@ export default async function filme(ctx) {
     aktualisiert: new Date(jetzt).toISOString(),
     gruppen: Object.fromEntries(GRUPPEN_REIHE.filter(k => gruppen[k]).map(k => [k, gruppen[k].map(sauber)])),
     kurz,
+    ...(countdown.length ? { countdown } : {}), // Dezember: Apples Tagesangebot (Countdown/Adventskalender), für den Tages-Push
     status,
     hinweis: "Tiefstpreis = niedrigster Preis seit Beobachtungsbeginn (Datum in 'seit'), kein Allzeit-Tiefst (tiefstQuelle 'eigen'; extern nur mit Quelle).",
   };

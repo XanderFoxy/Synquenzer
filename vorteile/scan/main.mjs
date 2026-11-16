@@ -10,7 +10,7 @@ import { macheAbruf, macheFixtureAbruf } from './lib/http.mjs';
 import { rohOrdner, macheMitschnitt } from './lib/roh.mjs';
 import { tageBis } from './lib/text.mjs';
 import { modulFaellig } from './faellig.mjs';
-import { plane, verbuche, sende, KATEGORIEN, alsGemeldet } from './benachrichtigen.mjs';
+import { plane, verbuche, sende, KATEGORIEN, alsGemeldet, planeAdvent, verbucheAdvent } from './benachrichtigen.mjs';
 import deals from './module/deals.mjs';
 import erleben from './module/erleben.mjs';
 import reisen from './module/reisen.mjs';
@@ -165,6 +165,10 @@ export async function main(args = process.argv.slice(2), env = process.env, test
     await sende({ topic: cfg.ntfy.topic, title: 'Vorteils-Radar ist aktiv', message: `${r.alleEintraege.length} Vorteile gefunden. Ab jetzt: Seltenes sofort, der Rest einmal am Tag.`, click: cfg.seite, tags: ['sparkles'], priority: 3 }, cfg, { dryRun, token });
   }
   verbuche(r.zustand, plan, ok, jetzt);
+  // Dezember: Film des Tages (einmal am Tag ab 8 Uhr; neueste filme.json – dieser Lauf oder der letzte, höchstens 12 h alt)
+  const advent = planeAdvent({ datei: r.dateien?.filme || dateienVorher.filme, zustand: r.zustand, cfg, jetzt, modus: erstlauf ? 'still' : modus });
+  const adventOk = advent?.msg ? await sende(advent.msg, cfg, { dryRun, token }) : false;
+  verbucheAdvent(r.zustand, advent, adventOk, jetzt);
 
   await mkdir(daten, { recursive: true });
   await writeFile(join(daten, 'aktuell.json'), JSON.stringify(r.aktuell, null, 1) + '\n');
@@ -175,12 +179,12 @@ export async function main(args = process.argv.slice(2), env = process.env, test
     roh.ausgabe('aktuell.json', JSON.stringify(r.aktuell, null, 1) + '\n');
     roh.ausgabe('zustand.json', JSON.stringify(r.zustand) + '\n');
     for (const [name, inhalt] of Object.entries(r.dateien || {})) roh.ausgabe(`${name}.json`, JSON.stringify(inhalt) + '\n');
-    roh.ausgabe('pushes.json', { sofort: plan.sofort.map(s => s.msg), digest: plan.digest?.msg || null, erinnerung: r.erinnerung?.msg || null, modus: erstlauf ? 'still' : modus });
+    roh.ausgabe('pushes.json', { sofort: plan.sofort.map(s => s.msg), digest: plan.digest?.msg || null, erinnerung: r.erinnerung?.msg || null, advent: advent?.msg || null, modus: erstlauf ? 'still' : modus });
     roh.abschluss({ dryRun: true, eintraege: r.alleEintraege.length, sofort: plan.sofort.length, digest: !!plan.digest });
     console.log(`Roh-Mitschnitt: ${roh.abrufe.length} Abrufe → ${roh.dir}`);
   }
   console.log(`${r.alleEintraege.length} Einträge, ${plan.sofort.length} Sofort-Pushes, Zusammenfassung: ${plan.digest ? plan.digest.liste.length + ' Einträge' : 'nein'}${dryRun ? ' (dry-run)' : ''} → ${daten}`);
-  return { ...r, plan, ok };
+  return { ...r, plan, ok, advent, adventOk };
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

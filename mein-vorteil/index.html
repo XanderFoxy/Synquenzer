@@ -759,7 +759,7 @@ const NTFY_IMPORT = (() => {
 <!-- Filme: Inhalt kommt aus filme.js (Skript, CSS und Daten erst beim ersten Öffnen) -->
 <section id="p-filme" class="reiter-seite breite f-filme" aria-labelledby="h-filme" hidden>
   <div class="bereich-kopf"><span class="gross" aria-hidden="true"><svg class="ic"><use href="#ic-filme"/></svg></span><h2 id="h-filme">Filme &amp; Serien</h2></div>
-  <p class="warum" id="w-filme">Apple TV, abgeglichen mit deinen Listen: Wunschliste, Für 3,99 €, Action &amp; Thriller, Comedy, 80er &amp; Kult, Neu, Serien, Disney – gute Filme, kein Horror.</p>
+  <p class="warum" id="w-filme">Apple TV, abgeglichen mit deinen Listen: nur Filme für 3,99 € – filtern nach bekannten Filmen, Genre, Jahrzehnt und Schauspieler; dazu Wunschliste, Serien und Boxen. Kein Horror.</p>
   <div id="i-filme"><p class="leer">Lade Filme …</p></div>
 </section>
 <!-- Woche: Wochen-Knaller je Markt, Inhalt aus woche.js, Daten knaller.json vom Vorteils-Radar (beides erst beim ersten Öffnen) -->
@@ -2284,16 +2284,18 @@ function kachelInhalt(b, t) { // -> { z: [[Titel, Zeile, gut?]], w: Satz }
     const gleich = (a, c) => { const x = kern(a), y = kern(c); return !!x && !!y && (x.startsWith(y) || y.startsWith(x)); };
     const z = [], roh = [];
     const dazu = (titel, zeile, gut) => { if (z.length >= 2 || !titel || roh.some(r => gleich(r, titel))) return; roh.push(titel); z.push([kurzTitel(jahrEinmal(titel), 44), zeile, gut]); };
-    for (const e of [...t.filme].sort((a, c) => (c.wert ?? 0) - (a.wert ?? 0))) dazu(e.titel, e.zeile || e.quelle || '', /wunsch/i.test(`${e.zeile} ${e.grund}`));
+    // nur 3,99 € (Xander 16.11.2026): Filme über 3,99 € stehen nicht mehr auf der Kachel – außer deine Wunschfilme (dein Zielpreis)
+    const bis399 = e => e.extra?.typ !== 'film' || !(zahl(e.preis) > 3.994) || /wunsch/i.test(`${e.zeile} ${e.grund}`);
+    for (const e of [...t.filme].filter(bis399).sort((a, c) => (c.wert ?? 0) - (a.wert ?? 0))) dazu(e.titel, e.zeile || e.quelle || '', /wunsch/i.test(`${e.zeile} ${e.grund}`));
     // Übersicht des Radars (status.filme.kurz, ab 14.11.2026): die besten Angebote, auch ohne Push-Ereignis
     const kurz = S.vorteile?.d?.status?.filme?.kurz;
     for (const x of Array.isArray(kurz?.top) ? kurz.top : []) if (x?.titel) dazu(String(x.titel), zahl(x.preis) > 0 ? `${euro(x.preis)} · Apple TV` : 'Apple TV');
     if (!z.length) {
       const f0 = lies('mein-vorteil-daten-filme', null)?.d?.gruppen;
       const f = f0?.fuer399; // nicht „angebot“ eines alten Stands: der war noch ohne Horror-Filter (Prüfer-Befund MV8 9)
-      for (const x of Array.isArray(f) ? f : []) if (x?.titel) dazu(String(x.titel), zahl(x.preis) > 0 ? `${euro(x.preis)} · Apple TV` : 'Apple TV');
+      for (const x of Array.isArray(f) ? f : []) if (x?.titel && !(zahl(x.preis) > 3.994)) dazu(String(x.titel), zahl(x.preis) > 0 ? `${euro(x.preis)} · Apple TV` : 'Apple TV');
     }
-    return z.length ? { z, w: '' } : { z: [['Wunschliste & Angebote', 'Apple TV, mit deinen Listen abgeglichen']], w: 'tippen zum Öffnen' };
+    return z.length ? { z, w: '' } : { z: [['Filme für 3,99 €', 'Apple TV, mit deinen Listen abgeglichen']], w: 'tippen zum Öffnen' };
   }
   if (ASSISTENT.includes(b)) {
     const frisch = b === 'unterricht' ? [...t.gesuche, ...t[b]] : t[b], fund = t[b + 'Fund'];
@@ -2870,7 +2872,7 @@ function zeichne() {
     start: '', deals: `${(S.angebote?.d?.produkte || []).filter(p => !ausgeblendet(p.id)).length || ''} Produkte im Blick`.replace(/^ Produkte im Blick$/, ''),
     preisfehler: 'nur krasse', auftritte: `${t.auftritte.length} frisch · ${t.auftritteFund.length} feste Adressen`, remix: `${t.remix.length} laufend · ${t.remixFund.length} Fundorte`,
     unterricht: t.gesuche.length ? `${t.gesuche.length} ${t.gesuche.length === 1 ? 'Gesuch' : 'Gesuche'}${t.unterricht.length ? ` · ${t.unterricht.length} ${t.unterricht.length === 1 ? 'Stelle' : 'Stellen'}` : ` · ${t.unterrichtFund.length} feste Adressen`}` : `${t.unterricht.length} neu · ${t.unterrichtFund.length} feste Adressen`, konzerte: nurNah ? `bis ${konzertTeile().radius} km` : 'alle Termine',
-    gewinnspiele: 'ohne Kauf', krypto: 'nur auf diesem iPhone', mehr: '', filme: 'Apple TV', woche: `ab ${wocheStufe()} % · Prospekte`, spartricks: 'jeder Tipp mit Quelle', essen: 'mit Quelle · Döbeln & Umgebung',
+    gewinnspiele: 'ohne Kauf', krypto: 'nur auf diesem iPhone', mehr: '', filme: 'Apple TV · 3,99 €', woche: `ab ${wocheStufe()} % · Prospekte`, spartricks: 'jeder Tipp mit Quelle', essen: 'mit Quelle · Döbeln & Umgebung',
   });
   if (window.MeinVorteilEssen?.gestartet) try { MeinVorteilEssen.auffrischen(); } catch (e) { console.warn(e); } // „Aktuell“ (Radar) neu
   for (const [ab, n] of Object.entries(zahlen)) if (ab !== 'krypto') setzeZahl(ab, n);
