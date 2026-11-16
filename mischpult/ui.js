@@ -1,5 +1,6 @@
-// Mischpult 0.1 – Oberfläche. Eigene Umsetzung, kein Build. Kern lazy (Schnittstelle: Kopf von kern-mock.js). Nichts verlässt das Gerät.
-export const V = '0.1.1';
+// Mischpult 0.2 – Oberfläche. Eigene Umsetzung, kein Build. Kern lazy (Schnittstelle: Kopf von kern-mock.js). Kein Ton verlässt das Gerät;
+// nur „Messwerte an Claude senden“ (senden.js, erst beim Tippen geladen) schickt Messwerte – nach ausdrücklichem Tipp.
+export const V = '0.2.0';
 const KERN = './kern.js';   // Fassade zum Rechen-Worker (Schnittstelle wie im Kopf von test/kern-mock.js)
 export const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app'), live = $('#live'), START = app.innerHTML;
@@ -104,6 +105,7 @@ export function start() {
   zeigeZuletzt(); scrollTo(0, 0); $('h1', app).focus({ preventScroll: true });
 }
 async function zeigeZuletzt() {
+  wegSenden();
   const l = await idb('einstellungen', 'get', 'letzter'), p = $('#zuletzt');
   if (l && p && !S.erg) { p.textContent = `Zuletzt: „${l.name}“. Wählst du dieselben Spuren noch einmal, sind deine Einstellungen wieder da.`; p.hidden = false; }
 }
@@ -121,6 +123,7 @@ export async function waehle(files) {
   try {
     const K = await kern();
     const s = await K.oeffne(files, { fortschritt: setzeBalken });
+    try { localStorage.setItem('mischpult-spuren', '1'); } catch { /* privat */ }   // Startseite: „Messwerte senden“ nach Neuladen anbieten
     Object.assign(S, { sitzung: s, erg: null, anfang: null, verlauf: [], stellung: 'nachher', solo: null, stumm: new Set(), pos: 0, gespeichert: null, wieder: false });
     S.songId = 'song-' + hash(s.spuren.map((sp) => sp.datei + '/' + sp.groesse).sort().join('|'));
     S.a = neueAuswahl(s);
@@ -133,6 +136,17 @@ export async function waehle(files) {
     }
     rollen();
   } catch (f) { fehler(f); }
+}
+
+// ---------- Messwerte an Claude senden (0.2): senden.js erst beim Tippen laden ----------
+const SENDEN_KNOPF = `<button type="button" class="knopf2 breit" data-a="senden">${ico('senden')}Messwerte an Claude senden</button>`;
+A.senden = async () => { try { (await import('./senden.js')).oeffne(); } catch (f) { fehler(f); } };
+async function wegSenden() {   // Startseite: nur wenn schon einmal Spuren geladen waren (nach Neuladen: Hinweis im Blatt)
+  const nav = $('nav.wege', app); if (!nav || $('[data-a=senden]', nav)) return;
+  let war = false; try { war = !!localStorage.getItem('mischpult-spuren'); } catch { /* privat */ }
+  const l = S.sitzung || war ? null : await idb('einstellungen', 'get', 'letzter');
+  if ((!S.sitzung && !war && !l) || S.zeige !== start || $('[data-a=senden]', nav)) return;
+  nav.insertAdjacentHTML('beforeend', `<button type="button" class="weg" data-a="senden">${ico('senden')}<span>Messwerte an Claude senden<small>${S.sitzung?._files?.length ? 'Nur Messwerte, kein Ton' : 'Dafür die Spuren einmal neu laden'}</small></span></button>`);
 }
 
 // ---------- Schritt 2: Rollen ----------
@@ -150,7 +164,7 @@ export function rollen() {
 ${S.wieder ? '<p class="hinweis gr">Deine letzten Einstellungen für diesen Song sind wieder da.</p>' : ''}${hinweise(s.hinweise)}
 <p class="ruhig">Die Rollen sind vorausgefüllt. Tippe eine Rolle an, um sie zu ändern.</p>
 <ul class="liste" id="spuren">${s.spuren.map(rolleZeile).join('')}</ul>
-<p class="klein2">${ico('stern')} Hauptsache: die anderen machen dieser Spur Platz. ${ico('schloss')} So lassen: diese Spur wird nicht verändert, nur mitgemessen.</p>`,
+<p class="klein2">${ico('stern')} Hauptsache: die anderen machen dieser Spur Platz. ${ico('schloss')} So lassen: diese Spur wird nicht verändert, nur mitgemessen.</p>${SENDEN_KNOPF}`,
   fuss: `<button type="button" class="knopf1" data-a="mischen"${stop ? ' disabled' : ''}>${ico('regler')}Mischen &amp; Mastern</button><p class="klein2">Etwa eine Minute. Deine Dateien werden nur gelesen.</p>` });
   requestAnimationFrame(zeichneMini);
 }
@@ -235,7 +249,7 @@ ${seg('stellung', stellungen(), S.stellung, 'Vergleich')}
 <h2>Ziel</h2>${seg('ziel', ZIELE, a.ziel, 'Ziel')}<p class="hinweis" id="lautsatz"${a.ziel === 'laut' ? '' : ' hidden'}>${LAUT_SATZ}</p>
 <h2>Eingriff</h2>${seg('eingriff', EINGRIFF, a.eingriff, 'Eingriff')}
 <div class="zeile"><button type="button" class="knopf2" data-a="undo"${S.verlauf.length ? '' : ' disabled'}>${ico('undo')}Rückgängig</button><button type="button" class="knopf2" data-a="anfang">Alles zurück auf Anfang</button></div>
-</section><section><h2>Spuren</h2><ul class="liste" id="spuren">${s.spuren.map(hoerZeile).join('')}</ul><p class="klein2">Stumm gilt nur zum Anhören. Tippe auf einen Namen, um Rolle, Hauptsache oder So lassen zu ändern.</p></section></div>`,
+</section><section><h2>Spuren</h2><ul class="liste" id="spuren">${s.spuren.map(hoerZeile).join('')}</ul><p class="klein2">Stumm gilt nur zum Anhören. Tippe auf einen Namen, um Rolle, Hauptsache oder So lassen zu ändern.</p>${SENDEN_KNOPF}</section></div>`,
   fuss: `<button type="button" class="knopf1" data-a="speichern">${ico('teilen')}Speichern</button><p class="klein2">Nichts wird überschrieben – jede Fassung bekommt einen neuen Namen.</p>` });
   songWerte(); zeichneWelle(); setzePlay();
 }
@@ -437,7 +451,7 @@ addEventListener('unhandledrejection', (e) => melde(e.reason?.message || e.reaso
 
 // ---------- Start, offline, Kern im Leerlauf vorladen ----------
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-  navigator.serviceWorker.register('sw.js').then(() => navigator.serviceWorker.ready).then(() => { const v = $('#version'); if (v) v.textContent = 'Version 0.1 · offline bereit'; }).catch(() => { const v = $('#version'); if (v) v.textContent = 'Version 0.1'; });
+  navigator.serviceWorker.register('sw.js').then(() => navigator.serviceWorker.ready).then(() => { const v = $('#version'); if (v) v.textContent = 'Version 0.2 · offline bereit'; }).catch(() => { const v = $('#version'); if (v) v.textContent = 'Version 0.2'; });
 }
 (window.requestIdleCallback || setTimeout)(() => { const l = document.createElement('link'); l.rel = 'modulepreload'; l.href = KERN; document.head.append(l); }, { timeout: 4000 });
 S.zeige = start; zeigeZuletzt();
