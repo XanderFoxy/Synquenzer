@@ -9,5 +9,7 @@ old = "      ['blob', () => URL.createObjectURL(new Blob([src], {type: 'applicat
 b = rep(b, old, "      ['blob', () => (typeof erstWkUrl === 'function' && erstWkUrl(src)) || URL.createObjectURL(new Blob([src], {type: 'application/javascript'}))],   /* ERST */\n")
 old = "cv.out, {t0, noise: AU.noise, waves: AU.waves});\n"
 b = rep(b, old, "cv.out, {t0, noise: AU.noise, get waves() { return AU.waves; }});   /* ERST: die WT-Wellen erst, wenn eine WT-Stimme sie liest */\n")
+old = "  setTimeout(() => idle(() => { try { void AU.waves; } catch (e) {} }), 1500);   // the WT tables in an idle moment\n"
+b = rep(b, old, "  setTimeout(() => idle(() => { try { if (!(typeof erstWv === 'function' && erstWv(AU.ctx))) void AU.waves; } catch (e) {} }), 1500);   // the WT tables in an idle moment   /* ERST: in Scheiben */\n")
 open('index.html', 'w', encoding='utf-8').write(b)
 print('ok')
