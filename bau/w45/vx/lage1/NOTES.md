@@ -1,0 +1,135 @@
+# LAGE1 – Lage teilen · Oktave falten ohne Doppelnoten · Filter je Note · Basis 4.78.0 (md5 68e92c03…)
+
+## Für Xander
+- Im Noten-Editor einer Synth-Spur gibt es in der unteren Leiste den Knopf **Lage ▾**. Er steht gleich hinter **Auslagern ▾**. Er öffnet unten das Blatt **LAGE**. Die Rolle darüber bleibt bedienbar: Du kannst dort Noten wählen, scrollen und Tasten antippen.
+- Alle drei Reiter nutzen einen gemeinsamen **Trennton**.
+  - Der Vorschlag ist das obere Drittel der Tonhöhen, also deiner Auswahl oder sonst des ganzen Clips.
+  - Ändern kannst du ihn mit − und +, durch Ziehen in der kleinen Vorschau (je 6 px ein Halbton) oder durch Antippen einer Taste links in der Rolle.
+  - Die Noten, die es trifft, sind in der Rolle und in der Vorschau gelb. Die gestrichelte Linie ist der Trennton.
+- **Lage teilen**:
+  - **Obere** (oder **Untere**) Noten wandern auf eine neue Spur direkt darunter, „Synth 1 · oben“. Das Timing bleibt gleich.
+  - Klang: **Gleich │ Heller │ Weicher │ Anderer …**. Heller und Weicher sind derselbe Klang mit Cutoff eine Oktave höher oder tiefer. Anderer … öffnet den Klang-Browser der neuen Spur.
+  - Mit **Ziel ▾** wählst du stattdessen eine vorhandene Spur. Deren Klang bleibt.
+  - Ein ↶ nimmt alles zurück.
+- **Oktave falten**:
+  - **Obere ↓ −12** (oder **Untere ↑ +12**).
+  - Entsteht dabei zweimal derselbe Ton hintereinander (z. B. zweimal C), gibt es drei Wege:
+    - **Kontur halten**: Die Note wird der nächste Ton der Tonart in die alte Richtung. Der Lauf bleibt also ein Lauf.
+    - **Zusammenziehen**: Beide werden ein langer Ton.
+    - **Weglassen**: Die Doppelnote fällt weg.
+  - Gleiche Töne genau übereinander werden ein Ton.
+  - **▶ Vorher / ▶ Nachher** spielt es dir vor. Ein ↶ nimmt es zurück.
+- **Filter je Note**:
+  - Der Schalter **Filter-Zeile unter den Noten** macht aus der Zeile VEL eine Zeile **FILT**.
+  - Dort ziehst du je Note: hoch = heller, runter = dunkler. Wischen malt mehrere Noten auf einmal. Nahe der Mitte rastet die Zeile auf 0 ein.
+  - Ein Tipp auf das Schild FILT/VEL wechselt hin und her. Mit dem Werkzeug ⇕ siehst du immer VEL.
+  - **Oben heller** wirkt wie Key-Tracking, aber nur über dem Trennton: Unten bleibt es, wie es ist. **Alle auf 0** setzt alles zurück.
+  - Es wirkt beim Abspielen je Stimme ab Notenbeginn, bei VA, FM, WT und der Platte.
+  - Der MIDI-Export schreibt es als **CC74**-Kurve mit (Wert vor jeder Note), damit es in der DAW als Automation ankommt.
+- Im Guide („Wo finde ich …?“) stehen drei neue Einträge. Bei „Filter je Note“ steht der Hinweis zu Key-Tracking.
+
+## Technik
+- Alles steht im Block `/* LAGE1-BEGIN … LAGE1-END */` direkt hinter `MTX3-END`. Er wird gebaut aus `lage1-block.js` mit `bau.py` (Basis + Block + Haken, jede Stelle muss genau einmal passen).
+- Außerhalb des Blocks gibt es 13 einzeilige Haken, alle mit „LAGE1“ markiert:
+  - Daten:
+    - `NOTE_X` (+ 'fc') und SQStore `NOTE_EXTRA` (+ 'fc'). Das Speicherformat packt die Noten mit eigener Feldliste; ohne diesen Haken ging fc beim Speichern verloren.
+    - `normNoteExtras` → `lage1NoteNorm` (ganzzahlig −64 … 63; 0 und ungültige Werte fallen weg).
+  - Wiedergabe:
+    - `lkNoteX` → `lage1LkAdd`: der Filter-Wert wird ein Cutoff-Paar je Stimme auf dem vorhandenen I2b-Weg der Noten-Locks.
+      - VA/FM: Platz `cutoff` (wi 35, Hz).
+      - WT: nativ über `lkP.cutoff`.
+      - Platte (MK_LABEL): `mk.t.0/1.f.cut`, Schritte = Halbtöne · 127 / (12 · log2 1000).
+      - Ein Cutoff-Lock der Note ist die Basis. Die Mod-Routen (KF1 „Anschl. ±“ = vel→cutoff) bleiben unberührt und wirken obendrauf.
+    - `scheduleTrack`: Bedingung `(e.nt.lk || e.nt.fc)`.
+  - Rolle: `buildRoll` mit `onRender`-Option (PianoRoll ruft sie am Ende jedes Bilds) und `lage1RollHook` nach MTX3B.
+  - MIDI: Notenschleifen in `buildMidi` (Szene/alle), `buildMidiSong`, `int54MidiClips`, `va1MidiSong`, `va1MidiClip` → `lage1MidiNote`; `assembleMidi` → `lage1MidiCc`.
+- Wiederverwendet:
+  - Lage teilen = `mtx3Out` (MTX3 „Noten auslagern“, ein ↶ als Gruppe). Danach im selben Schritt: Name „· oben/unten“, Klang über `applySound`.
+  - Das ↶ der Gruppe entfernt die Spur; ↷ holt den Schnappschuss mit Klang und Namen.
+  - Blatt-Stil wie das Harmonie-Blatt (unten angedockt, Durchgriff zur Rolle wie bei [♪ greifen]).
+  - Vorhören wie im Harmonie-Blatt (`spawnVoice`, `src: 'audition'`).
+  - Undo über `pushUndo`/`afterClipEdit`.
+- Neue Daten: nur `note.fc` (fehlt = 0) und `uiPrefs.lage1` (Reiter, Obere/Untere, Modus, Klang, Zeile an). Ältere Fassungen laden die Noten ohne fc.
+- Ladezeit: Beim Start läuft nur das Eintragen der drei Guide-Zeilen. CSS, Blatt, Zeile und Rechnung kommen erst mit dem ersten Öffnen eines Noten-Editors bzw. des Blatts.
+- Gefunden und im eigenen Block umgangen: Der Größen-Wächter `gl1PopWatch` → `popFit` schiebt angedockte Blätter 8 px nach rechts und 8 px nach oben (rechts ragen sie dann 8 px aus dem Bild). Das trifft auch das Harmonie-Blatt. LAGE hält sich per CSS fest; das Harmonie-Blatt ist unverändert (siehe Offen).
+
+## Tests (alle grün)
+- `node lage1-test.mjs <index.html> <basis.html>` → **OK LAGE1: 94/94 bestanden** (47 je Ansicht, iPhone 12 Pro Max 428×926 hochkant und 926×428 quer, Touch über CDP). Protokoll: `lage1-test-lauf.log`, Ergebnis: `lage1-test-ergebnis.json`.
+  - L0 Aus:
+    - Die Rolle ohne Blatt ist pixelgleich zur Basis.
+    - Der MIDI-Export ohne Filter-Werte (Szene und Export-Spur) ist bitgleich zur Basis.
+  - L1 Blatt:
+    - [Lage ▾] steht gleich hinter [Auslagern ▾]; die Trefferfläche ist so hoch wie die Leiste, wie bei Auslagern.
+    - Das Blatt ist unten angedockt, im Bild, und die Rolle dahinter bleibt bedienbar.
+    - Alle Knöpfe sind ≥ 44×44 px; kein Text ist abgeschnitten.
+  - L2 Trennton:
+    - Vorschlag A4 (oberes Drittel von C2–C6).
+    - +/− ändern um je einen Halbton.
+    - Ziehen in der Vorschau: 60 px ergeben +10, Linie greifen und 24 px ziehen ergibt −4.
+    - Tipp auf eine Taste links setzt den Trennton.
+    - Die betroffenen Noten sind in der Rolle gelb getönt, die anderen nicht.
+  - L3 Teilen (Touch):
+    - 5 obere Noten gehen auf die neue Spur „Synth 1 · oben“ direkt darunter. Timing, Länge, Tonart und Anschlag bleiben gleich.
+    - „Heller“ ergibt Cutoff × 2.
+    - Ein Undo-Eintrag. ↶ stellt den Stand JSON-gleich wieder her, ↷ holt Klang und Namen zurück.
+    - Umgekehrt: Untere Noten in die vorhandene Spur Synth 3; deren Klang bleibt.
+  - L4 Falten (Testfolge mit Wiederholung, Akkord-Doppel und alter Wiederholung):
+    - Kontur, Zusammenziehen und Weglassen liefern genau die erwarteten Folgen.
+    - Das Blatt zeigt „5 Noten … · 3 Doppelnoten gelöst“.
+    - ▶ Vorher und ▶ Nachher spielen auf der Spur; Nachher enthält keine Note ≥ C4.
+    - Nach Stopp hängt keine Stimme.
+    - [Falten] per Touch ergibt ein ↶ / ↷. „Untere ↑“ funktioniert.
+  - L5 Filter-Zeile:
+    - Der Schalter zeigt FILT.
+    - Wischen malt ≈ +40 auf 4 Noten; ein Tipp unten ergibt −48.
+    - ↶↶ / ↷↷ wirken.
+    - Das Schild wechselt FILT ↔ VEL; mit dem Werkzeug ⇕ steht dort VEL.
+    - [Oben heller] gibt (n − Trennton) · 4/3; [Alle auf 0] wirkt, ein ↶ holt es zurück.
+  - L6 Wiedergabe (Worklet-Messung je Stimme, `lkProbe`):
+    - VA 380 → 1520 / 95 / 24 Hz (fc +32 / −32 / −64).
+    - FM 20000 → 20000 / 5000 / 1250.
+    - Platte Timbre-Cutoff 127 → 127 / 102 / 76.
+    - KF1-Route vel→cutoff: Klang und Mod-Matrix im Worklet sind vorher und nachher gleich.
+    - Nach ■ sind 0 Stimmen übrig (Haupt-Thread und Worklet).
+  - L7 MIDI:
+    - CC74 = 64 / 96 / 32 / 0 an jedem Notenbeginn, jeweils vor dem Note-an.
+    - Die FM-Spur ebenso, ebenso das Export-Blatt „Spur“.
+    - Eine Spur ohne Werte bekommt keine CC.
+  - L8 Speichern/Laden:
+    - fc, die Zeilen-Einstellung und die geteilte Spur (Name, Klang „weicher“, Note mit fc) sind nach dem Neuladen gleich.
+    - Laden normt fc (99,4 → 63; Text und 0 → weg; −12,6 → −13).
+  - L9 Guide: drei Einträge. „Zeig es mir“ öffnet Rolle und Blatt mit dem richtigen Reiter; der Key-Tracking-Hinweis steht da.
+  - L10: keine Konsolenfehler.
+- Pflicht:
+  - `topdefs.cjs`: Skripte 26, doppelt 0, Syntaxfehler 0.
+  - `dupkeys.cjs`: 0 doppelte Schlüssel.
+  - `smoke.mjs`: errors [] (`smoke.png`).
+  - „MS 2000“ 1×; `^  live: true,` 1×.
+  - Markenwörter wie in der Basis (Cubasis 2, Roland 8, Yamaha 1, Moog 6, Ableton 2; Korg/DWGS/Kodamo/Mask1/Nord/Kompakt/Clavia/Steinberg 0).
+  - Keine Emojis als Grafik. basis.html unverändert (md5 68e92c03…).
+- Fotos in `fotos/` (je hochkant und quer): Blatt Teilen, nach dem Teilen, Blatt Falten, Blatt Filter, FILT-Zeile, Guide → Filter.
+
+## Messung
+- Startzeit (`startzeit.mjs`, 3 Läufe je Datei, abwechselnd, Rechner mit Last 5–6, Median): Basis DCL 629 / load 688 / bereit 748 ms; neu 633 / 701 / 742 ms. Das ist im Rauschen, ohne messbare Verschlechterung.
+  - Einzelwerte Basis: 629/688/748, 866/918/986, 604/653/710.
+  - Einzelwerte neu: 765/824/877, 630/683/741, 633/701/742.
+- Datei: 9 543 731 → 9 601 680 Byte (+58 KB, davon ~44 KB Block).
+- In der Rolle kostet der onRender-Haken bei geschlossenem Blatt und VEL-Zeile nur eine Abfrage der (zwischengespeicherten) Einstellungen je Bild. Gelbe Vorschau und Falt-Rechnung laufen nur bei offenem Blatt. Das Falt-Ergebnis wird gemerkt (Fingerabdruck aus Noten, Auswahl, Trennton und Modus).
+
+## Offen
+- Bit Mask (45 Werksklänge), North-Perkussion und Drums: Filter je Note wirkt dort nicht. Die Noten-Locks (I2b) kennen diese Engines nicht; das Blatt sagt es.
+  - Für Bit Mask bräuchte es einen Cutoff-Platz je Stimme im Bit-Mask-Kern.
+- Wirkung „ab Notenbeginn je Stimme“: Der Wert ersetzt für diese Stimme die Cutoff-Basis.
+  - Dreht man während einer klingenden Note mit Filter-Wert am Cutoff, folgt sie erst ab der nächsten Note.
+  - Basis ist der gespeicherte Klang, nicht ein Super-Regler- oder ◆-Zwischenstand.
+- Worklet-Messung: Eine neu belegte Stimme meldet im ersten Bericht kurz einen alten Cutoff (z. B. 475 → 95 Hz). Das ist in der Basis mit vorhandenen Noten-Locks genauso, also nicht durch LAGE1. Ob es hörbar ist (ein Kontrollblock), ist offen → Sache des I2b-Kerns.
+- Gefunden, nicht geändert (anderes Teil): `gl1PopWatch` → `popFit` schiebt unten angedockte Blätter (Harmonie, Konux …) 8 px nach rechts und 8 px hoch; rechts ragen sie 8 px aus dem Bild, das ✕ des Harmonie-Blatts ist angeschnitten. Vorschlag: `popFit` für `.dock` überspringen. LAGE hält sich per CSS selbst fest.
+- MIDI:
+  - Der Mitschnitt-Export (Log) hat kein CC74.
+  - Song-Melodie-Noten (`song.mel`) bekommen keinen eigenen CC74-Wert.
+  - Gleichzeitige Noten mit verschiedenen Werten: Es zählt der Mittelwert, weil CC für den ganzen Kanal gilt.
+  - Der MIDI-Import liest CC74 noch nicht zurück in fc.
+- Lage teilen: Den neuen Klang kann man vor dem Teilen nicht vorhören (danach anhören, ↶).
+- Quer deckt das Blatt den Großteil der Rolle ab, wie das Harmonie-Blatt. Der Tasten-Tipp geht dann nur für die oben sichtbaren Tasten; sonst Regler oder −/+.
+- Das Schild FILT/VEL ist 40 × 56 px groß: das vorhandene Feld, schmaler als 44. Der Weg über den Schalter im Blatt hat 44 px.
+- Echt-iPhone (Safari) nicht geprüft, nur Chromium (Playwright).

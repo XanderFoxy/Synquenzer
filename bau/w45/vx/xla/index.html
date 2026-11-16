@@ -115145,7 +115145,7 @@ function xlaWorker() {
   }
   return null;
 }
-// nach 20 s Ruhe beenden (Speicher am iPhone) – nicht, solange das Blatt mit einer gelesenen Datei offen ist (die Datei liegt im Worker)
+// nach 20 s Ruhe beenden (Speicher am Handy) – nicht, solange das Blatt mit einer gelesenen Datei offen ist (die Datei liegt im Worker)
 function xlaIdle() { clearTimeout(XLA.idle); XLA.idle = setTimeout(() => { if (XLA.cur && XLA.cur.st === 'fertig' && xlaPop()) { xlaIdle(); return; } if (!XLA.wait.size && XLA.w) { try { XLA.w.terminate(); } catch (e) {} XLA.w = null; } }, 20000); }
 // Rückfall ohne Worker: der Kern im Hauptfaden (einmal übersetzt)
 function xlaCoreMain() { if (!XLA.core) { const o = {}; new Function('self', xlaSrc())(o); XLA.core = o.XLACore; } return XLA.core; }

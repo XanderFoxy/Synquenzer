@@ -17223,6 +17223,7 @@ class AnalogCore extends AudioWorkletProcessor {
       const cutN = D.cutN0 + VP.kt * (v.pitch - 60) + v.dC
         + clamp(VP.fenv + dst[D_FENV], -1, 1) * 72 * v.fOut * velF + dst[D_CUT] * 120;
       const g = lut(GTAN, cutN < 0 ? 0 : cutN);
+      if (v === fv) { const q = this.ksV || (this.ksV = new Float64Array(4)); q[0] = 440 * Math.pow(2, ((cutN > 0 ? cutN : 0) - 69) / 12); q[1] = v.aOut * Math.max(0, 1 + dst[D_AMP]); q[2] = v.pitch + dst[D_PITCH] * 24; q[3] = v.pitch; }   // KS E1: echter Cutoff (Hz), Amp-Pegel, Tonhoehe fuer das Scope
       const k = clamp(VP.res + dst[D_RES], 0, 1.15) * 4, fresh = v.gB < 0;
       v.gA = fresh ? g : v.gB; v.gB = g; v.kA = fresh ? k : v.kB; v.kB = k;
       if (dst[D_DRIVE] !== 0) { const drive = clamp(VP.drive + dst[D_DRIVE], 0, 1); v.drv = .6 * lut(FREQ, 69 + drive * 48) / 440; v.outG = 1 / (1 + drive * 1.3); }
@@ -18121,8 +18122,8 @@ class AnalogCore extends AudioWorkletProcessor {
       if (!this.scHas) { sc.fill(0); sc[S_LFO1] = (this.P.l1shape | 0) === 5 ? this.lf5(1, this.g51 || 0, this.P.l1sync) : this.lfoVal(this.P.l1shape | 0, this.gl1, this.gsh1); sc[S_LFO2] = (this.P.l2shape | 0) === 5 ? this.lf5(2, this.g52 || 0, this.P.l2sync) : this.lfoVal(this.P.l2shape | 0, this.gl2, this.gsh2); }
       let nv = 0; for (const v of this.V) if (v.on) nv++;
       // plain array (NSRC numbers): structured clone cost is negligible at 30 Hz; t = audio time of this snapshot
-      if (this.scopeDst) { if (!nv) this.scD.fill(0); this.port.postMessage({scope: Array.from(sc), t: f0 * ISR, nv, dst: Array.from(this.scD)}); }
-      else this.port.postMessage({scope: Array.from(sc), t: f0 * ISR, nv});
+      if (this.scopeDst) { if (!nv) this.scD.fill(0); this.port.postMessage({scope: Array.from(sc), t: f0 * ISR, nv, dst: Array.from(this.scD), ks: this.scHas && this.ksV ? Array.from(this.ksV) : null}); }   // KS E1
+      else this.port.postMessage({scope: Array.from(sc), t: f0 * ISR, nv, ks: this.scHas && this.ksV ? Array.from(this.ksV) : null});   // KS E1
       this.scHas = false;
     }
     if (this.mk.scopeOn && f0 >= this.mk.scopeNext) { this.mk.scopeNext = f0 + ((SR / 30) | 0); this.port.postMessage({mkScope: {voices: this.mk.scope(), t: f0 * ISR, g1: this.mk.g1, g2: this.mk.g2, seq: this.mk.sqScope(), vocBands: this.mk.mode === 3 ? this.mk.vc.bands() : undefined}}); }   // MK1 (B.7 mkScope)
@@ -19121,6 +19122,1138 @@ Object.assign(AnalogCore.prototype, {
   },
 });
 /* KF12-WK-END */
+</script>
+<script type="text/plain" id="sq-ks-src">
+/* ===== KS-BEGIN: Klangschule (Paket KS1) – stiller Block, ausgewertet erst beim ersten Öffnen (ksLoad, Muster mkLoad) =====
+   Inhalt: Blatt (Kapitel, Lektionen, ✓), Lektionskarte (einklappbar), bis zu 3 nummerierte Rahmen an Reglern (E3: Regler über den
+   Parameter finden, sonst leuchtet der Reiter der Seite), Vorhör-Zeile mit pegelgleichem Hör-Vergleich über die echte Engine
+   (Vorhören wie im Klang-Browser, Pegel vorher offline mit demselben Worklet gemessen), Rechnen mit den Formeln der Engine
+   (envCoefs, Amp je Probe, Filter-Hüllkurve je Steuerblock, Cutoff = Grundwert + Keytrack + Menge × 72 HT × Hk × Anschlag),
+   Mitlaufen (Scope-Meldung der gespielten Stimme), Tipps nach 2/4 Fehlversuchen, „Zeig es mir“, Übernehmen (ein ↶), Lektionen L1–L4.
+   KS2: Lektionen L5–L10 (Kapitel 3–5: Filtertypen, Eigenschwingung, Bewegung), Rechnen auch für die Tonhöhe (Hüllk. 2 → Tonhöhe),
+   Messen für L6–L8 (2 s am Spur-Ausgang mit dem vorhandenen Mitschnitt-Prozessor: Pegel unter 150 Hz, Anteil über 3 kHz, Cent je Note,
+   Einschwingzeit), E1 (das Scope meldet den echten Cutoff, Amp-Pegel und die Tonhöhe der Fokus-Stimme: der Punkt läuft auf der Kurve),
+   Rahmen auch an Mod-Routen (MOD) und an Reglern mit zwei Gesichtern (LFO Rate/Takt).
+   E2 (Lern-Vorhör-Zustand) siehe KS-BEGIN im Hauptskript: KS_L ist die offene Lektion. */
+const KSX = (() => {
+  const CSS = `
+.kscard{position:fixed;z-index:45;left:8px;right:8px;max-width:520px;margin:0 auto;box-sizing:border-box;background:linear-gradient(#24272e,#17191e);border:1px solid var(--amber);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.6);padding:2px 8px 8px 10px;color:var(--text);display:flex;flex-direction:column;overflow:hidden}
+.kscard.ld{width:min(400px,47vw);max-width:none;margin:0}
+.kscard.ld.r{left:auto;right:8px}
+.kscard.ld.l{left:8px;right:auto}
+.kscard .ksh{display:flex;align-items:center;gap:4px;min-height:44px;flex:none}
+.kscard .kst{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;justify-content:center;line-height:1.15}
+.kscard .kst small{font:700 10.5px/1.2 var(--font-ui);letter-spacing:.1em;color:var(--amber);text-transform:uppercase;white-space:nowrap}
+.kscard .kst b{font:700 12.5px/1.15 var(--font-ui);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.kscard .kss{flex:none;padding:2px 6px;border-radius:9px;border:1px solid var(--line);font:700 10px/1.2 var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim)}
+.kscard .kss.ok{color:#35d07f;border-color:#35d07f;font-size:13px;letter-spacing:0}
+.kscard button{min-height:44px;min-width:44px;padding:0 8px;font:700 12.5px/1.1 var(--font-ui)}
+.kscard .ksh button{flex:none;width:44px;padding:0}
+.kscard .ksbody{flex:1 1 auto;overflow-y:auto;min-height:0;display:flex;flex-direction:column;gap:5px}
+.kscard.fold .ksbody{display:none}
+.kscard .kl{flex:none;font:700 10.5px/1 var(--font-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)}
+.kscard .ksab,.kscard .ksact{display:flex;align-items:center;gap:6px}
+.kscard .ksact{flex:none;padding-top:5px}
+.kscard.fold .ksact{display:none}
+.kscard .ksab button,.kscard .ksact button{flex:1 1 0;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kscard .ksab button.on{border-color:var(--amber);color:var(--amber)}
+.kscard .ksab button{white-space:normal;line-height:1.1;padding:0 4px}
+.kscard .kshear{font:500 11.5px/1.3 var(--font-ui);color:var(--text-dim);min-height:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kscard .kshear.on{color:var(--amber)}
+.kscard .kstask{font:600 13.5px/1.35 var(--font-ui)}
+.kscard .ksgw{position:relative}
+.kscard canvas.ksg{width:100%;height:64px;display:block;border-radius:6px;background:rgba(0,0,0,.3)}
+.kscard .ksleg{font:500 10.5px/1.2 var(--font-ui);color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kscard .ksleg i{font-style:normal;color:var(--amber)}
+.kscard .ksfb{display:flex;align-items:center;gap:8px;font:600 13px/1.35 var(--font-ui)}
+.kscard .ksfb span{flex:1 1 auto;min-width:0}
+.kscard .ksfb.ok{color:#35d07f}
+.kscard .ksfb button{flex:none}
+.kscard .kstip{font:500 12.5px/1.35 var(--font-ui);background:rgba(255,178,46,.1);border-radius:6px;padding:4px 8px}
+.kscard .kstip[hidden]{display:none}
+.kscard .ksab+.ksab{margin-top:-1px}
+.kscard .ksfb button[data-a="meas"]{border-color:var(--amber);color:var(--amber)}
+.kscard .ksfb button[data-a="meas"]:disabled{opacity:.6}
+.ksring{position:fixed;z-index:46;pointer-events:none;border:2px solid var(--amber);border-radius:10px;box-shadow:0 0 0 3px rgba(255,178,46,.22),0 0 16px 3px var(--amber-glow);animation:kspulse 1.1s ease-in-out infinite}
+.ksring .ksrl{position:absolute;left:-2px;bottom:100%;margin-bottom:3px;max-width:62vw;padding:2px 6px;border-radius:6px;background:var(--amber);color:#111;font:700 11px/1.2 var(--font-ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ksring.lb .ksrl{bottom:auto;top:100%;margin:3px 0 0}
+@keyframes kspulse{0%,100%{opacity:1}50%{opacity:.5}}
+.pop.ksb{width:min(560px,calc(100vw - 16px))}
+.ksb .ksbd{padding:4px 10px 12px}
+.ksb .ksin{font:500 13px/1.4 var(--font-ui);color:var(--text-dim);margin:0 0 8px}
+.ksb .ksgo{display:block;width:100%;min-height:48px;margin:0 0 6px;font:700 14px/1.2 var(--font-ui);border-color:var(--amber);color:var(--amber)}
+.ksb h4{margin:10px 0 6px;font:700 12px/1.2 var(--font-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--amber)}
+.ksb h4 small{margin-left:6px;font:600 11px/1.2 var(--font-ui);letter-spacing:0;text-transform:none;color:var(--text)}
+.ksb .ksl{display:flex;align-items:center;gap:8px;width:100%;min-height:52px;padding:6px 12px;margin:0 0 6px;text-align:left;border-radius:var(--r-s);background:var(--chassis-2);border:1px solid var(--line)}
+.ksb .ksl span{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px}
+.ksb .ksl b{font:700 14px/1.15 var(--font-ui)}
+.ksb .ksl small{font:500 12px/1.3 var(--font-ui);color:var(--text-dim)}
+.ksb .ksl i{flex:none;width:22px;text-align:center;font:700 16px/1 var(--font-ui);font-style:normal;color:#35d07f}
+.ksb .ksl.foc{border-color:var(--amber)}
+.ksb .ksl.cur{box-shadow:inset 0 0 0 1px var(--amber)}
+`;
+  let cssOn = false;
+  const css = () => { if (cssOn) return; cssOn = true; try { const s = document.createElement('style'); s.id = 'ks-css'; s.textContent = CSS; document.head.appendChild(s); } catch (e) { logErr(e); } };
+  const dec = (v, d) => (v < 0 ? MINUS : '') + fmtDec(Math.abs(v), d == null ? 1 : d).replace(/,0$/, '');
+  const dB = v => (v <= -90 ? 'stumm' : dec(v, 1) + ' dB');
+  const hz = f => fmtVal('hz', f);
+  const oct = (a, b) => Math.log2(Math.max(1e-6, a) / Math.max(1e-6, b));
+  const SRATE = () => (AU.ctx && AU.ctx.sampleRate) || 48000;
+
+  /* ---------- Rechnen: dieselben Zahlen wie die Engine (envCoefs, envBlock, Amp je Probe, Cutoff im Steuerblock) ---------- */
+  const CRB = 16;
+  function coefs(a, d, s, r, curve, sr) {
+    const rA = 0.02 + 2 * (1 - curve) * (1 - curve), rDR = Math.pow(10, -4 + 3.5 * (1 - curve));
+    const k = (t, ratio) => Math.exp(-Math.log((1 + ratio) / ratio) / Math.max(1, t * sr));
+    const E = {aC: k(a, rA), aT: 1 + rA, dC: k(d, rDR), dT: s - rDR, rC: k(r, rDR), rT: -rDR, s};
+    E.aCB = Math.pow(E.aC, CRB); E.dCB = Math.pow(E.dC, CRB); E.rCB = Math.pow(E.rC, CRB);
+    return E;
+  }
+  // Testnote (C3, Anschlag 100) für gate s, dann loslassen; Verläufe je Steuerblock (16 Proben) über dur s.
+  // KS2: dazu Hüllk. 2 (Block-Rate wie die Filter-Hk) und die Tonhöhe = Σ Routen Hüllk. 2 → Tonhöhe × 24 HT × Hk2(t) (wie control())
+  function calc(P, o, mods) {
+    o = o || {}; const sr = SRATE(), note = o.note == null ? 48 : o.note, vel = o.vel == null ? 100 / 127 : o.vel, gate = o.gate || 1, dur = o.dur || 2;
+    const A = coefs(+P.aA, +P.aD, +P.aS, +P.aR, P.aCurve == null ? .5 : +P.aCurve, sr), F = coefs(+P.fA, +P.fD, +P.fS, +P.fR, P.fCurve == null ? .5 : +P.fCurve, sr);
+    const ma = (mods || []).filter(m => m.src === 'menv' && m.dst === 'pitch').reduce((s, m) => s + (+m.amt || 0), 0);
+    const M = ma ? coefs(P.mA == null ? .001 : +P.mA, P.mD == null ? .5 : +P.mD, +P.mS || 0, P.mR == null ? .5 : +P.mR, P.mCurve == null ? .5 : +P.mCurve, sr) : null;
+    const nb = Math.ceil(dur * sr / CRB), gB = Math.round(gate * sr / CRB), fo = new Float32Array(nb), ao = new Float32Array(nb), so = new Float32Array(nb);
+    const eb = (E, st, x) => { if (st === 1) { x = E.aT + (x - E.aT) * E.aCB; if (x >= 1) return [1, 2]; } else if (st === 2) { x = E.dT + (x - E.dT) * E.dCB; if (x <= E.s) return [E.s, 3]; }
+      else if (st === 3) x += (E.s - x) * .2; else if (st === 4) { x = E.rT + (x - E.rT) * E.rCB; if (x <= 0) return [0, 0]; } return [x, st]; };
+    let fs = 1, f = 0, as = 1, a = 0, ms = 1, m = 0;
+    for (let b = 0; b < nb; b++) {
+      if (b === gB) { if (fs) fs = 4; if (as) as = 4; if (ms) ms = 4; }
+      if (fs === 1) { f = F.aT + (f - F.aT) * F.aCB; if (f >= 1) { f = 1; fs = 2; } }
+      else if (fs === 2) { f = F.dT + (f - F.dT) * F.dCB; if (f <= F.s) { f = F.s; fs = 3; } }
+      else if (fs === 3) f += (F.s - f) * .2;
+      else if (fs === 4) { f = F.rT + (f - F.rT) * F.rCB; if (f <= 0) { f = 0; fs = 0; } }
+      fo[b] = f;
+      if (M) { [m, ms] = eb(M, ms, m); so[b] = ma * 24 * m; }
+      for (let n = 0; n < CRB; n++) {
+        if (as === 1) { a = A.aT + (a - A.aT) * A.aC; if (a >= 1) { a = 1; as = 2; } }
+        else if (as === 2) { a = A.dT + (a - A.dT) * A.dC; if (a <= A.s) { a = A.s; as = 3; } }
+        else if (as === 3) a += (A.s - a) * .002;
+        else if (as === 4) { a = A.rT + (a - A.rT) * A.rC; if (a <= 0) { a = 0; as = 0; } }
+      }
+      if (as === 0 || (as === 3 && A.s <= 0 && a < 1e-4)) { a = 0; as = 0; }   // die Stimme endet (wie endVoice)
+      ao[b] = a;
+    }
+    const velF = 1 - (+P.fvel || 0) + (+P.fvel || 0) * vel, cut0 = 69 + 12 * Math.log2(Math.max(20, +P.cutoff) / 440) + (+P.kt || 0) * (note - 60), fe = +P.fenv || 0;
+    const ib = t => Math.min(nb - 1, Math.max(0, Math.round(t * sr / CRB)));
+    const hzB = b => 440 * Math.pow(2, (Math.max(0, cut0 + fe * 72 * fo[b] * velF) - 69) / 12);
+    const dbB = b => (ao[b] > 1e-6 ? 20 * Math.log10(ao[b]) : -120);
+    return {nb, gate, dur, dt: CRB / sr, fo, ao, so, ma, cut0, velF, fe, ib, hzB, dbB, hz: t => hzB(ib(t)), db: t => dbB(ib(t)), st: t => so[ib(t)],
+      minHz(t0, t1) { let m = 1e9; for (let b = ib(t0); b <= ib(t1); b++) m = Math.min(m, hzB(b)); return m; },
+      // erste Zeit nach t0, ab der die Tonhöhe höchstens lim HT über dem Ende liegt (Laser „unten“)
+      downAt(lim, t0) { for (let b = ib(t0 || 0); b < nb; b++) if (Math.abs(so[b]) <= lim) return b * CRB / sr; return null; }};
+  }
+
+  /* ---------- Klänge der Lektionen: eigene Werte auf INIT VA (ohne Herkunft, ohne Making-of) ---------- */
+  const NAME = n => ('Schule: ' + n).slice(0, 32);
+  // KS2: Werte über einen Schlüssel – Klang-Parameter (p), Spur-Effekte ('fx.…') und Mod-Routen ('quelle:ziel', Wert = Engine-Menge)
+  const isRt = k => k.indexOf(':') > 0;
+  const rtOf = (snd, k) => { const [s, d] = k.split(':'); return (snd.mods || []).find(m => m.src === s && m.dst === d) || null; };
+  function getV(snd, k) { if (isRt(k)) { const m = rtOf(snd, k); return m ? +m.amt || 0 : 0; } return sndGet(snd, k); }
+  function patch(snd, o) {
+    for (const k in o) {
+      const v = o[k];
+      if (isRt(k)) { const [s, d] = k.split(':'); snd.mods = (snd.mods || []).filter(m => !(m.src === s && m.dst === d)); if (v) snd.mods.push({src: s, dst: d, amt: v}); }
+      else if (k.startsWith('fx.')) { const ps = k.slice(3).split('.'); let o2 = snd.fx = snd.fx || {}; while (ps.length > 1) { const q = ps.shift(); o2 = o2[q] = Object.assign({}, o2[q] || {}); } o2[ps[0]] = v; }
+      else snd.p[k] = v;
+    }
+    return snd;
+  }
+  // auf die Lektionsspur (Engine, MOD-Liste); ohne ↶ – der Aufrufer bündelt die Schritte (commitSound)
+  function setV(t, k, v) {
+    if (!isRt(k)) {
+      const sy = /^l[12]sync$/.test(k), was = sy ? +S.tracks[t].sound.p[k] > 0 : false, r = setP(t, k, v);
+      if (sy && was !== (+S.tracks[t].sound.p[k] > 0) && R.editor === 'synth' && R.selT === t) safeRebuild(openEditor);   // Rate ↔ Takt: der Regler wechselt
+      return r;
+    }
+    const snd = S.tracks[t].sound, m = rtOf(snd, k), had = !!m;
+    if (m && v) m.amt = v; else patch(snd, {[k]: v});
+    rebuildNativeLfos(t); UI.sndVer++; UI.dirty.strip = true; markDirty();
+    try { if (ED.mxList && ED.mxList.isConnected) { if (had !== !!v) { if (ED.mxBuild) safeRebuild(ED.mxBuild); } else for (const r of ED.mxList.querySelectorAll('.modrow')) if (r._draw) r._draw(); } } catch (e) {}
+    return v;
+  }
+  function va(p, n, fx, mods) {
+    const b = factorySound(INIT_IDS.analog);
+    const P = Object.assign({}, b.p, {analog: 0, o2fine: 0, o2lvl: 0, o3lvl: 0, noise: 0, subLvl: 0, drive: .1, fvel: .2, ampVel: .6, mw: 0}, p);
+    const s = SQStore.normalizeSound({engine: 'analog', name: NAME(n), cat: 'eigene', p: P, mods: mods || [], fx: Object.assign({}, b.fx, {rev: .08, dly: 0, drive: 0}, fx)});
+    s.origin = null; s.id = null; return s;
+  }
+  // Seite je Parameter (E3: liegt ein Regler nicht im Bild, leuchtet zuerst der Reiter seiner Seite)
+  const PAGE = {}; for (const k of ['aA', 'aD', 'aS', 'aR', 'aCurve']) PAGE[k] = ['env', 'amp']; for (const k of ['fA', 'fD', 'fS', 'fR', 'fCurve']) PAGE[k] = ['env', 'flt'];
+  for (const k of ['mA', 'mD', 'mS', 'mR', 'mCurve']) PAGE[k] = ['env', 'mod']; for (const k of ['ftype', 'cutoff', 'res', 'drive', 'fenv', 'kt', 'fvel', 'bass', 'lq']) PAGE[k] = ['filter', 'ctl'];
+  for (const n of [1, 2, 3]) for (const k of ['w', 'oct', 'semi', 'fine', 'lvl', 'pw', 'uni']) PAGE['o' + n + k] = ['osc', 'o' + n];
+  for (const k of ['noise', 'subLvl', 'level']) PAGE[k] = ['osc', 'mix'];
+  for (const n of [1, 2]) for (const k of ['shape', 'rate', 'sync', 'fade', 'retrig']) PAGE['l' + n + k] = ['lfo', 'l' + n];
+  PAGE.kfSh1 = ['lfo', 'l1']; PAGE.kfSh2 = ['lfo', 'l2']; for (const k of ['fx.rev', 'fx.dly', 'fx.drive', 'fx.vol']) PAGE[k] = ['fx', 'spur'];
+  const TABN = {osc: 'OSZ', filter: 'FILTER', env: 'HÜLLK.', lfo: 'LFO', mod: 'MOD', fx: 'FX'}, SUBN = {amp: 'LAUTST.-HÜLLK.', flt: 'FILTER', mod: 'MOD', ctl: 'REGLER', mix: 'MIX', l1: 'LFO 1', l2: 'LFO 2', spur: 'SPUR'};
+  const LBL = {aA: 'Amp-ATTACK', aD: 'Amp-DECAY', aS: 'Amp-SUSTAIN', aR: 'Amp-RELEASE', aCurve: 'Amp-KURVE', fA: 'Filter-ATTACK', fD: 'Filter-DECAY', fS: 'Filter-SUSTAIN',
+    fR: 'Filter-RELEASE', fenv: 'Hüllk.-Menge', cutoff: 'Cutoff', ftype: 'Typ', res: 'Resonanz', kt: 'Keytrack', mA: 'Hüllk. 2 ATTACK', mD: 'Hüllk. 2 DECAY', mS: 'Hüllk. 2 SUSTAIN',
+    mCurve: 'Hüllk. 2 KURVE', noise: 'Rauschen', 'fx.dly': 'Echo', 'fx.rev': 'Hall', l1sync: 'LFO 1 TAKT', l1rate: 'LFO 1 TAKT', kfSh1: 'S&H in der Tonart',
+    'menv:pitch': 'Menge Tonhöhe', 'lfo1:pitch': 'Menge Tonhöhe', 'lfo1:cutoff': 'Menge Cutoff', o1lvl: 'Osz 1 Anteil'};
+  const lbl = k => LBL[k] || LBL[k.split('|')[0]] || (PD[k] ? PD[k].l : k);
+  const val = (k, v) => (k === 'ftype' ? FTYPE_LBL[v | 0] : isRt(k) ? fmtVal('bip', toKnobAmt(k.split(':')[1], v)) : PD[k] ? fmtVal(PD[k].fmt, v) : String(v));
+
+  /* ---------- die Lektionen (Kapitel 1–5). Prüfwerte am echten Synquenzer nachgerechnet bzw. nachgemessen (NOTES KS1, KS2) ---------- */
+  // KS2: Phrasen der Hör-Vergleiche und Messungen ([Zeit s, Dauer s, Note, Anschlag]) und das Riser-Ziel (4 Takte, bei langsamem Tempo 2)
+  const NN = n => { try { return noteLabel(n); } catch (e) { return String(n); } };
+  const KS2PH = {
+    riff: () => [57, 60, 64, 69, 64, 60, 57, 60].map((n, k) => [k * .25, .2, n, .8]),
+    stab: () => [0, .75, 1.5].flatMap(t => [57, 60, 64].map(n => [t, .3, n, .8])),
+    arp: () => [48, 55, 60, 63, 60, 55, 51, 55, 48, 55, 60, 63, 60, 55, 51, 55].map((n, k) => [k * .125, .1, n, .8]),
+    three: n => [[0, .6, n, .8], [.7, .6, n === 60 ? 67 : 72, .8], [1.4, .55, n === 60 ? 72 : 74, .8]],
+    eighths: n => [0, 1, 2, 3, 4, 5, 6, 7].map(k => [k * .25, .2, n + (k % 4 === 3 ? 12 : 0), .8]),
+    riserB: () => (16 * 60 / Math.max(20, S.bpm || 120) <= 10 ? 4 : 2),
+    riserT: () => KS2PH.riserB() * 4 * 60 / Math.max(20, S.bpm || 120),
+  };
+  const fnv = x => (typeof x === 'function' ? x() : x);
+  const CH = [{k: 1, n: 'Zwei Hüllkurven, zwei Aufgaben', pg: ['env']}, {k: 2, n: 'Plus und Minus', pg: ['filter']},
+    {k: 3, n: 'Filtertypen', pg: ['filter', 'fx']}, {k: 4, n: 'Resonanz und Eigenschwingung', pg: ['filter', 'osc']}, {k: 5, n: 'Bewegung: Tonhöhe, LFO, S&H', pg: ['lfo', 'mod']}];
+  const LES = [
+    {id: 'L1', ch: 1, n: 'Hell ist nicht laut', sub: 'Amp gegen Filter: warum man die Filteröffnung nicht hört', short: 'Hell ist nicht laut', tasks: [{
+      start: () => va({o1w: 0, o2w: 0, o2lvl: .85, o2fine: 7, ftype: 0, cutoff: 200, res: .2, kt: .3, fenv: .5, fA: .6, fD: 1, fS: .3, fR: .4, fCurve: .5, aA: .002, aD: .3, aS: 0, aR: .2, aCurve: .5}, 'Hell ist nicht laut'),
+      page: ['env', 'amp'], rings: ['aD', 'aS', 'fA'],
+      ab: [['Amp kurz', {}], ['Amp hält', {aA: .005, aD: .3, aS: 1, aR: .4}]],
+      ph: [[0, 1.5, 48, .8], [1.8, 1.1, 43, .8]],
+      task: 'Sorg dafür, dass man die Filteröffnung hört.',
+      calc: {gate: 1, dur: 2},
+      check(C) {
+        let mx = 0; const h0 = C.hz(0);
+        for (let b = 0; b <= C.ib(C.gate); b++) mx = Math.max(mx, Math.abs(oct(C.hzB(b), h0)));
+        if (mx < .3) return {ok: false, v: null, msg: 'Das Filter bewegt sich kaum – Hüllk.-Menge wieder ins Plus.'};
+        let b23 = 0; for (let b = 0; b <= C.ib(C.gate); b++) if (Math.abs(oct(C.hzB(b), h0)) >= mx * 2 / 3) { b23 = b; break; }
+        const t = b23 * C.dt, d = C.dbB(b23);
+        return d >= -12 ? {ok: true, v: d, t23: t, msg: '✓ Geschafft – bei zwei Dritteln der Filteröffnung (' + dec(t, 2) + ' s) klingt der Ton noch mit ' + dB(d) + ' (Ziel ≥ −12 dB).'}
+          : {ok: false, v: d, t23: t, msg: '✗ Bei zwei Dritteln der Filteröffnung (' + dec(t, 2) + ' s): ' + dB(d) + ' (Ziel ≥ −12 dB) – der Ton ist zu früh weg.'};
+      },
+      zones(C, r) { return r && r.t23 != null ? [{ax: 'db', t0: Math.max(0, r.t23 - .05), t1: r.t23 + .05, y0: -12, y1: 0}] : []; },
+      tips: ['Der Ton ist weg, bevor das Filter aufgeht. Wer hält den Ton?', 'Amp-SUSTAIN ab etwa 30 % – oder Amp-DECAY ab etwa 1,5 s – oder Filter-ATTACK kürzer.'],
+      sol: {aS: .7},
+      merk: 'Filter = hell/dunkel. Amp = laut/leise. Du hörst nur, was die Amp-Hüllkurve hält.'}]},
+    {id: 'L2', ch: 1, n: 'Aus dem Nichts – ohne Klick', sub: 'Fläche langsam einblenden, Bass ohne Knacken', short: 'Aus dem Nichts', tasks: [{
+      start: () => va({o1w: 1, o1pw: .5, subLvl: .35, cutoff: 1300, res: .18, drive: .1, kt: .4, fenv: .15, fA: .5, fD: 1.6, fS: .6, fR: 1.8, aA: .001, aD: 1.4, aS: .85, aR: 1.9, ampVel: .25, spread: .2, poly: 6, level: .19},
+        'Aus dem Nichts', {rev: .2, chorus: {mode: 'I', mix: 1, rate: 1, depth: 1}}),
+      page: ['env', 'amp'], rings: ['aA', 'aCurve', 'aR'],
+      ab: [['Attack 0', {aA: .001}], ['Attack 1,8 s', {aA: 1.8}]],
+      ph: [[0, 2.6, 48, .75], [0, 2.6, 51, .7], [0, 2.6, 55, .7]],
+      task: 'Lass die Fläche in etwa 1,5 s aus dem Nichts kommen.',
+      calc: {gate: 2, dur: 2.5},
+      check(C) {
+        const a = C.db(.1), b = C.db(1.5);
+        if (a > -18) return {ok: false, v: a, a, b, msg: '✗ Bei 0,1 s schon ' + dB(a) + ' – der Anfang ist zu laut (Ziel ≤ −18 dB). Amp-ATTACK länger.'};
+        if (b < -3) return {ok: false, v: b, a, b, msg: '✗ Bei 1,5 s erst ' + dB(b) + ' – die Fläche kommt zu spät (Ziel ≥ −3 dB). Amp-ATTACK etwas kürzer.'};
+        return {ok: true, v: b, a, b, msg: '✓ Geschafft – bei 0,1 s ' + dB(a) + ' (Ziel ≤ −18), bei 1,5 s ' + dB(b) + ' (Ziel ≥ −3).'};
+      },
+      zones() { return [{ax: 'db', t0: 0, t1: .1, y0: -48, y1: -18}, {ax: 'db', t0: 1.45, t1: 1.55, y0: -3, y1: 0}]; },
+      tips: ['Leise → laut kann nur die Amp-Hüllkurve. Das Filter macht nur dunkel → hell.', 'Amp-ATTACK auf etwa 1,5 s. KURVE weiter links = der Anfang bleibt länger leise.'],
+      sol: {aA: 1.6},
+      merk: 'Das Filter kann dunkel → hell. Leise → laut kann nur die Amp-Hüllkurve.'},
+    {bonus: true,
+      start: () => va({o1w: 3, o1oct: -1, o2lvl: 0, ftype: 1, cutoff: 20000, res: 0, kt: 0, fenv: 0, drive: 0, aA: .001, aD: .3, aS: 1, aR: .005, aCurve: .5}, 'Sinus-Sub'),
+      page: ['env', 'amp'], rings: ['aA', 'aR'],
+      ab: [['Klick: 0 ms', {}], ['Sauber: 4/25 ms', {aA: .004, aR: .025}]],
+      ph: [[0, .38, 36, .9], [.5, .38, 36, .9], [1, .38, 43, .9], [1.5, .38, 36, .9]],
+      task: 'Bonus: Mach den Klick am Sinus-Bass weg, ohne dass der Ton weich wird.',
+      calc: {gate: .38, dur: .7, note: 36},
+      check(C, P) {
+        const a = +P.aA, r = +P.aR, okA = a >= .0018 && a <= .0055, okR = r >= .018 && r <= .032;
+        const t = 'Attack ' + val('aA', a) + ' (Ziel 2–5 ms), Release ' + val('aR', r) + ' (Ziel 20–30 ms)';
+        return okA && okR ? {ok: true, v: a, msg: '✓ Geschafft – ' + t + '.'} : {ok: false, v: a, msg: '✗ ' + t + '.'};
+      },
+      zones() { return [{ax: 'db', t0: 0, t1: .005, y0: -48, y1: 0}, {ax: 'db', t0: .4, t1: .41, y0: -48, y1: 0}]; },
+      tips: ['Ein Sinus, der hart anfängt oder hart aufhört, knackt.', 'Amp-ATTACK 2–5 ms, Amp-RELEASE 20–30 ms.'],
+      sol: {aA: .004, aR: .025},
+      merk: 'Ein paar Millisekunden Attack und Release machen den Klick weg – länger wird es weich.'}]},
+    {id: 'L3', ch: 2, n: 'Plus und Minus sind nicht gespiegelt', sub: 'Hüllk.-Menge ins Minus: dunkel beim Anschlag, dann hell', short: 'Plus und Minus', tasks: [{
+      start: () => va({o2lvl: .85, o2fine: 7, o3lvl: .4, ftype: 0, res: .35, kt: .3, fA: .25, fD: .7, fS: .2, fR: .5, fCurve: .6, aA: .003, aD: .3, aS: .9, aR: .5, cutoff: 300, fenv: .5}, 'Plus und Minus'),
+      page: ['filter', 'ctl'], rings: ['fenv', 'cutoff', 'fR'],
+      ab: [['Plus: 300 Hz, +50 %', {}], ['Minus: 2,4 kHz, −50 %', {cutoff: 2400, fenv: -.5}]],
+      ph: [[0, 1.3, 48, .8], [1.6, 1.1, 43, .8]],
+      task: 'Mach den Klang beim Anschlag dunkler, danach wieder hell.',
+      calc: {gate: 1, dur: 2},
+      check(C, P) {
+        const mn = C.minHz(0, .15), c0 = C.hz(0), c1 = C.hz(.99), dip = Math.min(oct(c0, mn), oct(c1, mn)), d1 = oct(c1, mn);
+        if (dip >= 1) return {ok: true, v: dip, mn, c1, msg: '✓ Geschafft – der Cutoff fällt beim Anschlag um ' + dec(d1, 1) + ' Oktaven und kommt wieder (Ziel ≥ 1).'};
+        if ((+P.fenv || 0) >= 0) return {ok: false, v: dip, mn, c1, msg: '✗ Mit Plus fährt der Cutoff nur nach oben – Hüllk.-Menge nach links ins Minus.'};
+        return {ok: false, v: dip, mn, c1, msg: '✗ Noch ' + dec(Math.max(.1, 1 - dip), 1) + ' Oktaven zu wenig – Hüllk.-Menge weiter nach links.'};
+      },
+      zones(C, r) { return r && r.c1 ? [{ax: 'hz', t0: 0, t1: .15, y0: 20, y1: r.c1 / 2}] : []; },
+      tips: ['Der Cutoff-Regler ist der Ruhepunkt. Plus fährt von dort nach oben, Minus nach unten.', 'Hüllk.-Menge auf etwa −50 % und Cutoff auf etwa 2,4 kHz.'],
+      sol: {fenv: -.5, cutoff: 2400},
+      after: 'Achtung Release-Falle: Mit Minus wird der Ausklang heller (gemessen 413 Hz → 1423 Hz). Abhilfe: Filter-RELEASE kurz oder Amp-RELEASE kürzer.',
+      merk: 'Jeder Ton beginnt am Cutoff und kehrt dorthin zurück. Plus fährt nach oben, Minus nach unten.'}]},
+    {id: 'L4', ch: 2, n: 'Hochpass mit Minus: der Bass kommt nach', sub: 'Beim Hochpass heißt öffnen: nach unten fahren', short: 'Hochpass mit Minus', tasks: [{
+      start: () => va({o2lvl: .8, o2fine: 8, subLvl: .5, ftype: 5, res: .25, kt: 0, fA: .3, fD: .5, fS: 1, fR: 1, fCurve: .3, aA: .01, aD: .3, aS: 1, aR: 1.2, cutoff: 1500, fenv: 0}, 'Hochpass mit Minus'),
+      page: ['filter', 'ctl'], rings: ['ftype', 'fenv', 'fA'],
+      ab: [['HP Plus: wird dünner', {cutoff: 50, fenv: .75, fA: 1.2}], ['HP Minus: Bass kommt', {cutoff: 1500, fenv: -.75, fA: 1.2}]],
+      ph: [[0, 2.4, 36, .8], [0, 2.4, 48, .7], [0, 2.4, 55, .7]],
+      task: 'Lass den Bass erst nach etwa 0,3 s dazukommen.',
+      calc: {gate: 1, dur: 2},
+      check(C, P) {
+        const ty = P.ftype | 0;
+        if (ty !== 4 && ty !== 5) return {ok: false, v: null, msg: '✗ Typ ' + FTYPE_LBL[ty] + ' ist kein Hochpass – Typ auf HP12 oder HP24.'};
+        const a = C.hz(.02), b = C.hz(.5);
+        if (b > 150) return {ok: false, v: b, a, b, msg: '✗ Bei 0,5 s steht der Hochpass noch bei ' + hz(b) + ' – der Bass bleibt draußen (Ziel ≤ 150 Hz). Hüllk.-Menge ins Minus.'};
+        if (a < 600) return {ok: false, v: a, a, b, msg: '✗ Bei 20 ms ist der Hochpass schon bei ' + hz(a) + ' – der Bass ist sofort da (Ziel ≥ 600 Hz). Filter-ATTACK länger.'};
+        return {ok: true, v: b, a, b, msg: '✓ Geschafft – Hochpass bei 20 ms ' + hz(a) + ' (Ziel ≥ 600 Hz), bei 0,5 s ' + hz(b) + ' (Ziel ≤ 150 Hz).'};
+      },
+      zones() { return [{ax: 'hz', t0: 0, t1: .04, y0: 600, y1: 20000}, {ax: 'hz', t0: .45, t1: .55, y0: 20, y1: 150}]; },
+      tips: ['Beim Hochpass heißt „öffnen“: nach unten fahren. Darum ist hier Minus der Normalfall.', 'Hüllk.-Menge auf etwa −75 %, Filter-ATTACK etwa 0,3 s.'],
+      sol: {fenv: -.75},
+      merk: 'Beim Hochpass ist Minus der Normalfall: der Cutoff fährt nach unten, der Bass kommt dazu.'}]},
+    /* ---------- KS2: Kapitel 3–5 (L5–L10). Startwerte aus werkzeug/beispiele.py und rezepte.py, Prüfwerte am Synquenzer nachgemessen (NOTES KS2) ---------- */
+    {id: 'L5', ch: 3, n: 'Vom Waah zum Tock', sub: 'Filter-Decay gegen Amp-Decay: der kurze Pluck', short: 'Waah zum Tock', tasks: [{
+      start: () => va({o1uni: 3, uniDet: .22, uniMix: .7, uniWidth: .9, o2w: 1, o2oct: 1, o2lvl: .25, ftype: 0, cutoff: 500, res: .2, drive: .15, kt: .6, fenv: .58, fvel: .4,
+        fA: .001, fD: .5, fS: 0, fR: .35, fCurve: 0, aA: .001, aD: .5, aS: 0, aR: .35, aCurve: .5, ampVel: .6, spread: .3, poly: 6}, 'Waah zum Tock', {rev: .2}),
+      page: ['env', 'flt'], rings: ['fD', 'aD', 'ftype'],
+      ab: [['Waah', {}], ['Tock', {fD: .16, fCurve: .7}]], ab2: [['LP24', {fD: .16, fCurve: .7}], ['LP12', {fD: .16, fCurve: .7, ftype: 1}]],
+      ph: KS2PH.riff(), calc: {gate: .2, dur: 1, note: 57},
+      task: 'Mach aus dem Waah ein Tock.',
+      check(C, P) {
+        const fe = +P.fenv || 0, fs = +P.fS || 0, back = 1 - C.fo[C.ib(.08)], r = (+P.fD) / Math.max(.005, +P.aD), q = 'Filter- zu Amp-DECAY 1 : ' + dec(1 / r, 1);
+        if (fe < .25) return {ok: false, v: fe, msg: '✗ Hüllk.-Menge ' + val('fenv', fe) + ' – für den Klick beim Anschlag mindestens +25 %.'};
+        if (fs > .1) return {ok: false, v: fs, msg: '✗ Filter-SUSTAIN ' + val('fS', fs) + ' – das Filter bleibt offen (Ziel ≤ 10 %).'};
+        if (back < .5) return {ok: false, v: back, msg: '✗ Nach 80 ms ist das Filter erst zu ' + Math.round(back * 100) + ' % zu (Ziel mehr als die Hälfte) – Filter-DECAY kürzer.'};
+        if (r < .25 || r > .5) return {ok: false, v: r, msg: '✗ ' + q + ' (Ziel 1 : 2 bis 1 : 4) – ' + (r > .5 ? 'Filter-DECAY kürzer oder Amp-DECAY länger.' : 'Amp-DECAY kürzer: sonst klingt der dunkle Rest lange nach.')};
+        return {ok: true, v: back, msg: '✓ Geschafft – nach 80 ms ist das Filter zu ' + Math.round(back * 100) + ' % zu, ' + q + ' (Ziel 1 : 2 bis 1 : 4).'};
+      },
+      zones(C) { const mid = 440 * Math.pow(2, (Math.max(0, C.cut0 + C.fe * 72 * .5 * C.velF) - 69) / 12); return [{ax: 'hz', t0: .07, t1: .09, y0: 20, y1: mid}]; },
+      tips: ['„Tock“ heißt: das Filter ist zu, lange bevor der Ton ausklingt. Filter-DECAY viel kürzer als Amp-DECAY.', 'Filter-DECAY etwa 0,16 s (ein Drittel vom Amp-DECAY), Filter-KURVE weiter rechts = schneller zu.'],
+      sol: {fD: .16, fCurve: .7},
+      merk: 'Waah: das Filter schließt so langsam, wie der Ton ausklingt. Tock: das Filter ist nach einem Bruchteil schon zu.'},
+    {bonus: true,
+      start: () => va({o1uni: 3, uniDet: .2, uniMix: .7, o2w: 1, o2oct: -1, o2lvl: .35, o2pw: .4, ftype: 0, cutoff: 650, res: .28, drive: .3, kt: .5, fenv: .52, fA: .001, fD: .22, fS: .6, fR: .2,
+        aA: .002, aD: .45, aS: 1, aR: .25, poly: 6}, 'Stab', {rev: .45}),
+      page: ['env', 'amp'], rings: ['aS', 'fS', 'fx.rev'],
+      ab: [['Billig: hält, Hall 45 %', {}], ['Richtig: kurz, Hall 15 %', {aS: 0, fS: 0, 'fx.rev': .15}]],
+      ph: KS2PH.stab(), calc: {gate: .3, dur: 1.2, note: 57},
+      task: 'Bonus: Mach aus dem Brei einen knackigen Stab.',
+      check(C, P, snd) {
+        const s = +P.aS || 0, rv = +(snd && snd.fx ? snd.fx.rev : 0) || 0, t = 'Amp-SUSTAIN ' + val('aS', s) + ' (Ziel 0), Hall ' + val('fx.rev', rv) + ' (Ziel ≤ 20 %)';
+        return s <= .02 && rv <= .2 ? {ok: true, v: s, msg: '✓ Geschafft – ' + t + '.'} : {ok: false, v: s, msg: '✗ ' + t + '.'};
+      },
+      zones() { return [{ax: 'db', t0: .26, t1: .3, y0: -48, y1: -12}]; },
+      tips: ['Ein Stab ist kurz: der Ton hört von selbst auf, auch wenn du die Taste hältst. Viel Hall verwischt ihn.', 'Amp-SUSTAIN auf 0, Hall (FX › SPUR) höchstens 20 %.'],
+      sol: {aS: 0, 'fx.rev': .15},
+      merk: 'Kurzer Ton und wenig Hall = knackig. Langer Ton und viel Hall = Brei.'}]},
+    {id: 'L6', ch: 3, n: 'Nass ohne Matsch', sub: 'Hochpass oder Bandpass: Echo über dem Bass', short: 'Nass ohne Matsch', tasks: [{
+      start: () => va({o1w: 0, o2w: 0, o2oct: -1, o2lvl: .6, ftype: 0, cutoff: 1000, res: .3, kt: .4, fenv: .3, fA: .001, fD: .15, fS: .15, fR: .1, aA: .002, aD: .18, aS: .5, aR: .08, poly: 6},
+        'Nass ohne Matsch', {dly: .4, rev: .25}),
+      page: ['filter', 'ctl'], rings: ['ftype', 'cutoff', 'fx.dly'],
+      ab: [['LP24: Matsch', {}], ['BP12: klar', {ftype: 3, cutoff: 1200, res: .55}]],
+      ph: KS2PH.arp(), calc: {gate: .1, dur: .6, note: 48},
+      task: 'Mach das Arpeggio nass, ohne dass es den Bass zudeckt.',
+      check(C, P, snd) {
+        const ty = P.ftype | 0, fx = (snd && snd.fx) || {}, wet = Math.max(+fx.dly || 0, +fx.rev || 0);
+        if (ty < 2 || ty > 5) return {ok: false, v: null, msg: '✗ Typ ' + FTYPE_LBL[ty] + ' lässt den Bass durch – Typ auf Bandpass (BP) oder Hochpass (HP).'};
+        if (wet < .3) return {ok: false, v: wet, msg: '✗ Echo ' + val('fx.dly', +fx.dly || 0) + ', Hall ' + val('fx.rev', +fx.rev || 0) + ' – zu trocken (Ziel: Echo oder Hall ≥ 30 %).'};
+        return {ok: true, v: wet, pre: 'Rechnung passt: Typ ' + FTYPE_LBL[ty] + ', ' + ((+fx.dly || 0) >= .3 ? 'Echo ' + val('fx.dly', +fx.dly) : 'Hall ' + val('fx.rev', +fx.rev))};
+      },
+      meas: {kind: 'low', ph: KS2PH.arp(), check(M) {
+        const v = M.low; if (v == null) return {ok: false, v: null, msg: '✗ Kein Ton gemessen – noch einmal ▶ Prüfen.'};
+        const t = 'unter 150 Hz ' + dec(-v, 0) + ' dB leiser als das lauteste Band (Ziel ≥ 18 dB)';
+        return v <= -18 ? {ok: true, v, msg: '✓ Geschafft – ' + t + '.'} : {ok: false, v, msg: '✗ Gemessen: ' + t + ' – Cutoff höher oder Typ HP.'};
+      }},
+      zones() { return []; },
+      tips: ['Ein Tiefpass lässt den Bass durch. Hochpass oder Bandpass nehmen unten weg – dann darf es oben nass sein.', 'Typ BP12, Cutoff etwa 1,2 kHz, Echo 40 %.'],
+      sol: {ftype: 3, cutoff: 1200, res: .55},
+      merk: 'Kurzer Ton und viel Raum klingt nass. Unten weg mit HP oder BP – dann deckt das Echo den Bass nicht zu.'}]},
+    {id: 'L7', ch: 4, n: 'Das Filter pfeift', sub: 'Resonanz über 100 %: das Filter spielt die Melodie', short: 'Das Filter pfeift', tasks: [{
+      start: () => va({o1lvl: 0, o2lvl: 0, noise: .06, ftype: 1, cutoff: 525.4, res: .9, drive: .15, bass: 0, kt: .5, fenv: 0, fvel: 0, aA: .06, aD: .3, aS: .9, aR: .35, ampVel: .3, poly: 4},
+        'Das Filter pfeift', {rev: .25}),
+      page: ['filter', 'ctl'], rings: ['res', 'kt', 'cutoff'],
+      ab: [['Resonanz 90 %', {}], ['102 %, Keytrack 100 %', {res: 1.02, kt: 1}]],
+      ph: KS2PH.three(60), calc: {gate: .6, dur: 1, note: 60}, graph: 'cents',
+      task: 'Spiel C4, G4 und C5: der Pfeifton soll auf jeder Note sitzen.',
+      check(C, P) {
+        const r = +P.res || 0, k = +P.kt || 0;
+        if (r < 1) return {ok: false, v: r, msg: '✗ Resonanz ' + val('res', r) + ' – unter 100 % pfeift das Filter nicht von selbst (ab 100 % leuchtet EIGENSCHW.).'};
+        if (k < .99) return {ok: false, v: k, msg: '✗ Keytrack ' + val('kt', k) + ' – der Pfeifton folgt der Taste nur zum Teil (Ziel 100 %).'};
+        return {ok: true, v: r, pre: 'Rechnung passt: Resonanz ' + val('res', r) + ', Keytrack 100 %'};
+      },
+      meas: {kind: 'cent', ph: KS2PH.three(60), check(M) {
+        const w = M.cents || [], t = w.map(x => NN(x.n) + ' ' + (x.c == null ? '–' : (x.c > 0 ? '+' : x.c < 0 ? MINUS : '±') + Math.abs(Math.round(x.c)) + ' ct')).join(', ');
+        if (!w.length || w.some(x => x.c == null)) return {ok: false, v: null, msg: '✗ Kein klarer Pfeifton gemessen (' + t + ') – Resonanz höher.'};
+        const mx = Math.max(...w.map(x => Math.abs(x.c)));
+        return mx <= 15 ? {ok: true, v: mx, msg: '✓ Geschafft – ' + t + ' (Ziel ±15 ct).'} : {ok: false, v: mx, msg: '✗ Gemessen: ' + t + ' (Ziel ±15 ct) – Cutoff stimmt den Pfeifton.'};
+      }},
+      zones() { return []; },
+      tips: ['Ab 100 % Resonanz schwingt das Filter von selbst (ein Sinus). Damit er jeder Taste folgt: Keytrack 100 %.', 'Resonanz 102 %, Keytrack 100 %. Die Ladder zieht etwas nach unten – liegt der Ton zu tief, den Cutoff ein paar Cent höher.'],
+      sol: {res: 1.02, kt: 1},
+      merk: 'Resonanz über 100 % und Keytrack 100 %: das Filter spielt die Melodie. Der Cutoff stimmt den Pfeifton.'}]},
+    {id: 'L8', ch: 4, n: 'Flöte: Atem ja, Fernseher nein', sub: 'Rauschen bändigen, der Ton steht sofort', short: 'Saubere Flöte', tasks: [{
+      start: () => va({o1w: 2, o1lvl: 0, o2lvl: 0, noise: .5, ftype: 1, cutoff: 263, res: 1.02, drive: .1, bass: 0, kt: 1, fenv: 0, fvel: 0, aA: .001, aD: .2, aS: .9, aR: .05, ampVel: .3, poly: 4},
+        'Flöte', {rev: .2}),
+      page: ['osc', 'mix'], rings: ['noise', 'ftype', 'aA'],
+      ab: [['Rauschen steht über', {}], ['Sauber', {noise: .04, ftype: 0, res: 1.03, aA: .06, aR: .15, o1lvl: .04}]],
+      ph: KS2PH.three(67), calc: {gate: .6, dur: 1, note: 67},
+      task: 'Mach die Flöte sauber: Atem ja, Fernseher nein. Zünder: OSZ 1 Dreieck 4 %.',
+      check(C, P) {
+        const ty = P.ftype | 0, r = +P.res || 0;
+        if (ty > 1) return {ok: false, v: null, msg: '✗ Typ ' + FTYPE_LBL[ty] + ' – eine Flöte braucht einen Tiefpass (LP24 oder LP12).'};
+        if (r < 1) return {ok: false, v: r, msg: '✗ Resonanz ' + val('res', r) + ' – der Flötenton ist das pfeifende Filter (ab 100 %).'};
+        return {ok: true, v: r, pre: 'Rechnung passt: ' + FTYPE_LBL[ty] + ', Resonanz ' + val('res', r)};
+      },
+      meas: {kind: 'hf', ph: KS2PH.three(67), check(M) {
+        const h = M.hf, o = M.onset && M.onset.length ? M.onset[0] : null;
+        if (h == null) return {ok: false, v: null, msg: '✗ Kein Ton gemessen – noch einmal ▶ Prüfen.'};
+        const th = 'über 3 kHz ' + (h <= -90 ? 'unter −90 dB' : dB(h)) + ' (Ziel ≤ −50 dB)', to = o == null ? 'kein fester Ton' : 'der Ton steht nach ' + Math.round(o) + ' ms (Ziel ≤ 60 ms)';
+        if (h > -50) return {ok: false, v: h, msg: '✗ Gemessen: ' + th + ' – das Rauschen steht über. Rauschen weniger, Typ LP24.'};
+        if (o == null || o > 60) return {ok: false, v: o, msg: '✗ Sauber (über 3 kHz ' + (h <= -90 ? 'unter −90 dB' : dB(h)) + '), aber ' + to + ' – Zünder: OSZ 1 Dreieck 4 %.'};
+        return {ok: true, v: h, msg: '✓ Geschafft – ' + th + ', ' + to + '.'};
+      }},
+      zones() { return []; },
+      tips: ['Das Rauschen ist der Atem – ein bisschen reicht. LP24 schneidet oben steiler ab als LP12.', 'Rauschen etwa 4 %, Typ LP24, Amp-ATTACK etwa 60 ms. Zünder: OSZ › MIX › Osz 1 Anteil 4 % (Dreieck) – dann steht der Ton sofort.'],
+      sol: {noise: .04, ftype: 0, aA: .06, o1lvl: .04},
+      merk: 'Der Ton kommt aus dem pfeifenden Filter, das Rauschen ist nur Atem. Ein leiser Zünder auf derselben Note lässt ihn sofort stehen.'}]},
+    {id: 'L9', ch: 5, n: 'Saubere Fahrten: der Laser', sub: 'Hüllk. 2 auf die Tonhöhe: 2 Oktaven in 180 ms', short: 'Laser', tasks: [{
+      start: () => va({o1w: 1, o1pw: .3, o1oct: 1, o2w: 0, o2oct: 1, o2lvl: .5, o2fine: 12, ftype: 1, cutoff: 2400, res: .55, drive: .15, kt: .6, fenv: 0, aA: .001, aD: .35, aS: 0, aR: .1, aCurve: .6,
+        mA: .001, mD: .6, mS: 0, mR: .1, mCurve: 0, poly: 4}, 'Laser', {rev: .1, dly: 0}, [{src: 'menv', dst: 'pitch', amt: 1}]),
+      page: ['env', 'mod'], rings: ['mD', 'mCurve', 'menv:pitch'],
+      ab: [['Billig: 600 ms, Kurve 0', {}], ['Richtig: 180 ms, Echo', {mD: .18, mCurve: .5, 'fx.dly': .35}]],
+      ph: [[0, .3, 72, .9], [.75, .3, 69, .9], [1.5, .3, 74, .9]], calc: {gate: .3, dur: .8, note: 72}, graph: 'pitch',
+      task: 'Bau einen Laser: 2 Oktaven runter in etwa 180 ms.',
+      check(C, P, snd) {
+        const a = snd ? getV(snd, 'menv:pitch') : 0, d = +P.mD, s = +P.mS || 0, dn = C.downAt(.5, .002), t = dn == null ? 'nie' : dec(dn, 2) + ' s';
+        if (a < .9 || a > 1) return {ok: false, v: a, msg: '✗ Menge Tonhöhe ' + val('menv:pitch', a) + ' (= ' + dec(a * 24, 1) + ' HT) – für 2 Oktaven 90–100 % (22–24 HT).'};
+        if (s > .02) return {ok: false, v: s, msg: '✗ Hüllk. 2 SUSTAIN ' + val('mS', s) + ' – die Tonhöhe bleibt oben hängen (Ziel 0).'};
+        if (d < .12 || d > .25) return {ok: false, v: d, msg: '✗ Hüllk. 2 DECAY ' + val('mD', d) + ', unten nach ' + t + ' (Ziel DECAY 120–250 ms) – ' + (d > .25 ? 'kürzer.' : 'etwas länger.')};
+        return {ok: true, v: d, msg: '✓ Geschafft – ' + dec(a * 24, 0) + ' HT runter, unten nach ' + t + ' (DECAY ' + val('mD', d) + ', Ziel 120–250 ms).'};
+      },
+      zones() { return [{ax: 'st', t0: 0, t1: .012, y0: 21.6, y1: 24.5}, {ax: 'st', t0: .1, t1: .25, y0: -1, y1: 1}]; },
+      tips: ['Hüllk. 2 → Tonhöhe: 100 % = 24 HT = 2 Oktaven. Der DECAY sagt, wie schnell es runtergeht.', 'Hüllk. 2 DECAY etwa 180 ms, KURVE 50 %, SUSTAIN 0, Menge Tonhöhe 100 %.'],
+      sol: {mD: .18, mCurve: .5},
+      after: 'Profi-Trick: ein Echo (FX › SPUR) macht aus einem Laser eine ganze Salve.',
+      merk: 'Gleichmäßig in Halbtönen klingt sauber. Kurze Fahrt plus Echo = Laser.'},
+    {bonus: true,
+      start: () => va({o1w: 0, o2w: 0, o2lvl: .7, o2fine: 7, ftype: 0, cutoff: 2000, res: .2, kt: .7, fenv: 0, aA: .01, aD: .1, aS: 1, aR: .03, mA: 2, mD: .5, mS: 1, mR: .05, mCurve: .5, poly: 2},
+        'Riser', {rev: .2}, [{src: 'menv', dst: 'pitch', amt: .5}]),
+      page: ['env', 'mod'], rings: ['mA', 'mS', 'menv:pitch'],
+      ab: [['Kurz: 2 s', {mA: 2}], ['Lang: bis zur Eins', () => ({mA: KS2PH.riserT()})]],
+      ph: () => [[0, Math.min(7.4, KS2PH.riserT() + .2), 48, .8]], calc: () => ({gate: KS2PH.riserT() + .2, dur: KS2PH.riserT() + .6, note: 48}), graph: 'pitch',
+      task: () => 'Bonus: Ein Riser über ' + KS2PH.riserB() + ' Takte – bei ' + Math.round(S.bpm) + ' BPM sind das ' + dec(KS2PH.riserT(), 1) + ' s.',
+      check(C, P, snd) {
+        const a = snd ? getV(snd, 'menv:pitch') : 0, s = +P.mS || 0, at = +P.mA, T = KS2PH.riserT(), b = KS2PH.riserB();
+        if (a < .25) return {ok: false, v: a, msg: '✗ Menge Tonhöhe ' + val('menv:pitch', a) + ' – zu wenig Weg (Ziel ≥ +25 % = 6 HT).'};
+        if (s < .9) return {ok: false, v: s, msg: '✗ Hüllk. 2 SUSTAIN ' + val('mS', s) + ' – oben fällt die Tonhöhe wieder (Ziel ≥ 90 %).'};
+        if (Math.abs(at / T - 1) > .1) return {ok: false, v: at, msg: '✗ Hüllk. 2 ATTACK ' + val('mA', at) + ' – ' + b + ' Takte sind ' + dec(T, 1) + ' s (Ziel ±10 %).'};
+        return {ok: true, v: at, msg: '✓ Geschafft – der Riser steigt in ' + val('mA', at) + ' (' + b + ' Takte bei ' + Math.round(S.bpm) + ' BPM) um ' + dec(a * 24, 0) + ' HT.'};
+      },
+      zones(C) { const T = KS2PH.riserT(); return [{ax: 'st', t0: T * .9, t1: T * 1.1, y0: C.ma * 24 * .9, y1: C.ma * 24 + .5}]; },
+      tips: ['Hüllk. 2 ATTACK = wie lange der Riser steigt. 4 Takte = 16 Schläge.', () => 'Hüllk. 2 ATTACK auf ' + dec(KS2PH.riserT(), 1) + ' s, SUSTAIN 100 %, Menge Tonhöhe etwa +50 %.'],
+      sol: () => ({mA: KS2PH.riserT()}),
+      merk: 'Länger als 10 s geht eine Hüllkurve nicht. Für 8 Takte: LFO Säge im TAKT 8/1, Start NOTE, auf Tonhöhe und Cutoff.'}]},
+    {id: 'L10', ch: 5, n: 'Treppen: Zufall mit Absicht', sub: 'S&H im Takt und in der Tonart', short: 'Treppen', tasks: [{
+      start: () => va({o1w: 1, o1pw: .5, o2w: 3, o2oct: 1, o2lvl: .45, ftype: 1, cutoff: 1500, res: .3, kt: .6, fenv: 0, aA: .005, aD: .1, aS: 1, aR: .1,
+        l1shape: 4, l1rate: 7, l1sync: 0, l1retrig: 0, l1fade: 0, kfSh1: 0, poly: 2}, 'Treppen', {rev: .15, dly: .3}, [{src: 'lfo1', dst: 'pitch', amt: 1}]),
+      page: ['lfo', 'l1'], rings: ['l1sync|l1rate', 'kfSh1', 'lfo1:pitch'],
+      ab: [['Frei, ±24 HT', {}], ['Im Takt, in der Tonart', {l1sync: .25, kfSh1: 1, 'lfo1:pitch': .5}]],
+      ph: [[0, 2.4, 60, .8]], calc: {gate: 2.4, dur: 2.5, note: 60}, graph: 'stair',
+      task: 'Mach aus Zufall Absicht: die Treppe im Takt und in der Tonart.',
+      check(C, P, snd) {
+        const sh = P.l1shape | 0, sy = +P.l1sync || 0, k = +P.kfSh1 || 0, a = Math.abs(snd ? getV(snd, 'lfo1:pitch') : 0);
+        if (sh !== 4) return {ok: false, v: null, msg: '✗ LFO 1 Form ' + LFO_SHAPE_NAME[sh] + ' – die Treppe macht nur S&H.'};
+        if (!(sy >= .25 && sy <= .5)) return {ok: false, v: sy, msg: sy ? '✗ LFO 1 TAKT ' + val('l1sync', sy) + ' – Ziel 1/16 oder 1/8.' : '✗ LFO 1 läuft FREI (' + val('l1rate', +P.l1rate) + ') – auf TAKT stellen: 1/16 oder 1/8.'};
+        if (!k) return {ok: false, v: 0, msg: '✗ „S&H in der Tonart“ ist aus – dann landen die Stufen zwischen den Tönen.'};
+        if (a > .5) return {ok: false, v: a, msg: '✗ Menge Tonhöhe ±' + dec(a * 24, 0) + ' HT – zu weite Sprünge (Ziel höchstens ±12 HT = 50 %).'};
+        if (a < .1) return {ok: false, v: a, msg: '✗ Menge Tonhöhe ±' + dec(a * 24, 1) + ' HT – da ist keine Treppe mehr (Ziel 10–50 %).'};
+        return {ok: true, v: a, msg: '✓ Geschafft – S&H im TAKT ' + val('l1sync', sy) + ', in der Tonart, ±' + dec(a * 24, 0) + ' HT (Ziel ≤ ±12).'};
+      },
+      zones() { return []; },
+      tips: ['FREI: die Stufen kommen, wann sie wollen. TAKT: jede Stufe auf einer 16tel. In der Tonart: jede Stufe auf einem Ton der Tonart.', 'LFO 1: TAKT 1/16 und „S&H in der Tonart“ an; MOD: Menge Tonhöhe 50 % (±12 HT).'],
+      sol: {l1sync: .25, kfSh1: 1, 'lfo1:pitch': .5},
+      merk: 'Zufall im Takt und in der Tonart klingt nach Absicht. Weniger Weg = mehr Melodie.'},
+    {bonus: true,
+      start: () => va({o1w: 0, o2w: 1, o2lvl: .5, o2pw: .4, ftype: 0, cutoff: 700, res: .5, kt: .5, fenv: .25, fA: .001, fD: .09, fS: 0, fR: .1, aA: .002, aD: .4, aS: .85, aR: .2,
+        l1shape: 4, l1sync: .25, l1retrig: 0, kfSh1: 0, poly: 2}, 'Blubbern', {dly: .35, rev: .15}, [{src: 'lfo1', dst: 'cutoff', amt: .05}]),
+      page: ['filter', 'ctl'], rings: ['res', 'lfo1:cutoff'],
+      ab: [['Ohne S&H', {'lfo1:cutoff': 0}], ['Blubbern', {'lfo1:cutoff': .25, res: .9}]],
+      ph: KS2PH.eighths(48), calc: {gate: .2, dur: .6, note: 48},
+      task: 'Bonus: Lass es blubbern – S&H auf den Cutoff.',
+      check(C, P, snd) {
+        const r = +P.res || 0, a = snd ? Math.abs(toKnobAmt('cutoff', getV(snd, 'lfo1:cutoff'))) : 0, t = 'Menge Cutoff ' + Math.round(a * 100) + ' % (Ziel ≥ 15 %), Resonanz ' + val('res', r) + ' (Ziel 85–95 %)';
+        return a >= .15 && r >= .85 && r <= .95 ? {ok: true, v: r, msg: '✓ Geschafft – ' + t + '.'} : {ok: false, v: r, msg: '✗ ' + t + '.'};
+      },
+      zones() { return []; },
+      tips: ['S&H auf den Cutoff statt auf die Tonhöhe: jeder Schritt eine andere Farbe.', 'Resonanz 85–95 %, Menge Cutoff etwa +25 %.'],
+      sol: {'lfo1:cutoff': .25, res: .9},
+      merk: 'S&H auf den Cutoff plus viel Resonanz = Blubbern. Über 100 % pfeift es.'}]},
+  ];
+  const lesBy = id => LES.find(x => x.id === id) || null;
+  const lesNo = l => LES.indexOf(l) + 1;
+
+  /* ---------- Fortschritt (Geräte-Einstellung 'ks', nicht im Projekt) ---------- */
+  const prog = () => { let p = null; try { p = uiPrefs().ks; } catch (e) {} return p && typeof p === 'object' && p.d && typeof p.d === 'object' ? p : {d: {}}; };
+  function progSet(id, f) { try { const p = prog(), q = {d: Object.assign({}, p.d), last: p.last || null}; f(q); setUiPref('ks', q); } catch (e) { logErr(e); } }
+  const nextLes = () => { const p = prog(); return LES.find(l => !p.d[l.id]) || LES[0]; };
+
+  /* ---------- Pegel: Lautheit (K-Filter, 400-ms-Blöcke, Gates −70 / −10 LU; BS.1770) und Offline-Render mit demselben Worklet ---------- */
+  function kf(sr) {
+    let K = Math.tan(Math.PI * 1681.974450955533 / sr); const Q = .7071752369554196, Vh = Math.pow(10, 3.999843853973347 / 20), Vb = Math.pow(Vh, .4996667741545416);
+    let a0 = 1 + K / Q + K * K; const s1 = [(Vh + Vb * K / Q + K * K) / a0, 2 * (K * K - Vh) / a0, (Vh - Vb * K / Q + K * K) / a0, 2 * (K * K - 1) / a0, (1 - K / Q + K * K) / a0];
+    K = Math.tan(Math.PI * 38.13547087602444 / sr); const Q2 = .5003270373238773; a0 = 1 + K / Q2 + K * K;
+    return [s1, [1, -2, 1, 2 * (K * K - 1) / a0, (1 - K / Q2 + K * K) / a0]];
+  }
+  function loud(x, sr) {
+    const [s1, s2] = kf(sr), y = new Float32Array(x.length);
+    let a1 = 0, a2 = 0, b1 = 0, b2 = 0, c1 = 0, c2 = 0, d1 = 0, d2 = 0;
+    for (let i = 0; i < x.length; i++) {
+      const v = x[i], u = s1[0] * v + s1[1] * a1 + s1[2] * a2 - s1[3] * b1 - s1[4] * b2; a2 = a1; a1 = v; b2 = b1; b1 = u;
+      const w = u - 2 * c1 + c2 - s2[3] * d1 - s2[4] * d2; c2 = c1; c1 = u; d2 = d1; d1 = w; y[i] = w;
+    }
+    const B = Math.round(.4 * sr), H = Math.round(.1 * sr), z = [];
+    for (let s = 0; s + B <= y.length; s += H) { let q = 0; for (let i = s; i < s + B; i++) q += y[i] * y[i]; z.push(q / B); }
+    const L = q => -.691 + 10 * Math.log10(Math.max(1e-12, q)), g1 = z.filter(q => L(q) > -70); if (!g1.length) return -120;
+    const m1 = g1.reduce((a, b) => a + b, 0) / g1.length, g2 = g1.filter(q => L(q) > L(m1) - 10);
+    return L(g2.reduce((a, b) => a + b, 0) / Math.max(1, g2.length));
+  }
+  async function render(snds, notes, len) {
+    const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext; if (!OAC || typeof SynthHost === 'undefined') throw new Error('kein Offline-Render');
+    const sr = 48000, n = snds.length, oc = new OAC(n, Math.round(len * sr), sr);
+    await oc.audioWorklet.addModule(spk2KlSrc());
+    const mg = oc.createChannelMerger(n); mg.connect(oc.destination);
+    const Es = snds.map((snd, i) => {
+      const g = oc.createGain(); g.connect(mg, 0, i);
+      const E = SynthHost.track(oc, g, wkFlat(snd), wkMods(snd), null, null);
+      E.node.port.postMessage({mkSeed: 1}); E.tempo(120, null);
+      notes.forEach(([t, d, nt, v], k) => { E.on(k + 1, nt, v, t + .05, null, 0); E.off(k + 1, t + .05 + d); }); E.flush();
+      return E;
+    });
+    // die Noten müssen vor dem ersten Block beim Prozessor sein (unter Last kommen Port-Nachrichten sonst zu spät): Halt bei 20 ms, Quittung, weiter
+    oc.suspend(128 * 8 / sr).then(async () => { try { await Promise.all(Es.map(E => (E.i53ping ? E.i53ping() : null))); } catch (e) {} oc.resume(); }).catch(() => {});
+    const b = await oc.startRendering(), out = []; for (let i = 0; i < n; i++) out.push(b.getChannelData(i));
+    for (const E of Es) { try { E.dispose ? E.dispose() : E.node.disconnect(); } catch (e) {} }
+    return out;
+  }
+
+  /* ---------- Zustand ---------- */
+  const KS = {card: null, rings: [], iv: 0, tick: 0, hear: null, hearT: 0, seq: null, sheetP: null, lvBusy: null, mBusy: null, amber: '#ffb22e'};
+  const task = () => (KS_L ? KS_L.les.tasks[KS_L.k] : null);
+  const P_ = () => (KS_L && S.tracks[KS_L.t] ? S.tracks[KS_L.t].sound.p : null);
+  const vd3m = d => { try { if (typeof VD3 !== 'undefined' && VD3) VD3.mute = Math.max(0, (VD3.mute | 0) + d); } catch (e) {} };
+  function pickT() {
+    const ok = i => { const tr = S.tracks[i]; return !!(tr && tr.kind === 'synth' && !tr.stimme && !percIs(tr) && tr.sound && !tr.sound._nv); };
+    let t = ui1SynthT(false); if (t < 0 || !ok(t)) t = ui1SynthT(true);
+    return t >= 0 && ok(t) ? t : -1;
+  }
+  // ein Klang der Lektion auf die Lektionsspur – ohne Making-of, ohne ↶ (die Lektion hält das Original)
+  function put(snd) { applySound(KS_L.t, snd); UI.sndVer++; }
+
+  /* ---------- Lektion öffnen (E2: Spur leihen) ---------- */
+  function begin(les, k) {
+    const t = KS_L ? KS_L.t : pickT();
+    if (KS_L) end('next');
+    if (t < 0) { toast('Die Klangschule braucht eine Synth-Spur – erst eine Synth-Spur wählen'); return false; }
+    css();
+    try { ui1Home(); } catch (e) { logErr(e); }
+    try { if (V6A.ed) { if (V6A.ed.ak1) ak1End(); else v6aEdEnd(); } } catch (e) { logErr(e); }
+    if (UI.ab && UI.ab.t === t && UI.ab.side === 'B') { try { toggleAB(t); } catch (e) { logErr(e); } }
+    previewStop();
+    const tr = S.tracks[t];
+    const L = {les, k: k | 0, t, tr, orig: tr.sound, snap0: soundSnapshot(t), u0: UNDO.slice(), r0: REDO.slice(), sel0: R.selT, fails: 0, tipN: 0,
+      lastLen: UNDO.length, lastTop: UNDO[UNDO.length - 1] || null, sig: '', res: null, solved: false, lv: {}, anim: 0, dot: {nv: 0, t0: 0}, fold: false, t0: performance.now(), meas: null, hist: []};
+    L.u0set = new Set(L.u0); L.r0set = new Set(L.r0);
+    KS_L = L; vd3m(1);
+    put(task().start());
+    progSet(les.id, q => { q.last = les.id; });
+    showPage();
+    cardMake(); paintCard(); evalNow(true);
+    clearInterval(KS.iv); KS.iv = setInterval(tick, 100);
+    setTimeout(prefetch, 900);
+    return true;
+  }
+  function showPage() {
+    const L = KS_L, pg = task().page; if (!L || !pg) return;
+    selectTrack(L.t); ED.tab = pg[0]; if (pg[1]) ED.sub[pg[0]] = pg[1]; FXF.big = null; openEditor();
+  }
+  // ✕ / Weiter / Projektwechsel: das Original bitgleich zurück (dasselbe Objekt), ↶ ↷ wie vor der Lektion
+  function end(how) {
+    const L = KS_L; if (!L) return false;
+    stopHear(); uiOff();
+    KS_L = null;
+    if (S.tracks[L.t] === L.tr) applySound(L.t, L.orig);
+    UNDO.length = 0; UNDO.push(...L.u0); REDO.length = 0; REDO.push(...L.r0);
+    try { edUndoBtns(); } catch (e) {} UI.dirty.strip = true;
+    vd3m(-1);
+    if (how !== 'abort') {
+      if (R.selT === L.t && L.sel0 !== L.t && S.tracks[L.sel0]) selectTrack(L.sel0);
+      if (R.editor === 'synth') safeRebuild(openEditor);
+    }
+    return true;
+  }
+  function uiOff() {
+    const L = KS_L; clearInterval(KS.iv); KS.iv = 0;
+    if (L && L.anim) { cancelAnimationFrame(L.anim); L.anim = 0; }
+    ringsOff(); if (KS.card) { try { KS.card.remove(); } catch (e) {} KS.card = null; }
+  }
+  // Als Klang übernehmen: die Lektionsschritte werden EIN ↶ (vom Original zum neuen Klang), auf Wunsch auf einer anderen Spur
+  function take(dst) {
+    const L = KS_L; if (!L) return false;
+    if (dst == null) dst = L.t;
+    const tr = S.tracks[dst]; if (!tr || tr.kind !== 'synth' || percIs(tr)) return false;
+    const snd = deep(S.tracks[L.t].sound); snd.name = NAME(L.les.short); snd.origin = null; snd.id = null;
+    stopHear(); uiOff(); KS_L = null;
+    if (S.tracks[L.t] === L.tr) applySound(L.t, L.orig);
+    UNDO.length = 0; UNDO.push(...L.u0); REDO.length = 0; REDO.push(...L.r0);
+    vd3m(-1);
+    const before = soundSnapshot(dst);
+    applySound(dst, snd); undoPush({kind: 'sound', track: dst, before, label: 'Klangschule: ' + L.les.short}); markDirty();
+    if (R.editor === 'synth') safeRebuild(openEditor);
+    toast('Übernommen: „' + snd.name + '“ auf ' + tr.name, {label: 'Rückgängig', fn: () => undo()});
+    return true;
+  }
+  function undoGate(redo) {
+    const L = KS_L; if (!L) return false;
+    if (!redo) { const top = UNDO[UNDO.length - 1]; if (!top || L.u0set.has(top)) { toast('Anfang der Lektion – ✕ in der Karte holt deinen Klang zurück'); return true; } return false; }
+    const top = REDO[REDO.length - 1]; if (top && L.r0set.has(top)) { toast('In der Lektion geht ↷ nur für Lektionsschritte'); return true; }
+    return false;
+  }
+
+  /* ---------- Prüfen (Rechnen) ---------- */
+  // KS2: Aufgaben mit Messen (L6–L8): erst muss die Rechnung passen, dann zählt die Messung (2 s am Spur-Ausgang), solange der Klang gleich bleibt
+  function evalNow(force) {
+    const L = KS_L, T = task(), P = P_(); if (!L || !T || !P) return null;
+    const sig = UI.sndVer + '|' + L.k;
+    if (!force && sig === L.sig) return L.res;
+    const snd = S.tracks[L.t].sound;
+    L.sig = sig; L.C = calc(P, fnv(T.calc), snd.mods); let r = T.check(L.C, P, snd);
+    if (T.meas && r.ok) {
+      const M = L.meas && L.meas.sig === sig && L.meas.r ? L.meas : null;
+      if (M) r = Object.assign(T.meas.check(M.r, P, snd), {m: true});
+      else r = {ok: false, pend: true, v: r.v, msg: (r.pre || 'Rechnung passt') + ' – jetzt ▶ Prüfen: 2 s hören und messen.'};
+    }
+    L.res = r;
+    if (L.res.ok && !T.bonus && !L.solved) { L.solved = true; progSet(L.les.id, q => { q.d[L.les.id] = Date.now(); }); }
+    paintFb(); draw();
+    return L.res;
+  }
+  const failTip = () => { const L = KS_L; L.fails++; const want = L.fails >= 4 ? 2 : L.fails >= 2 ? 1 : 0; if (want > L.tipN) { L.tipN = want; paintTip(); } };
+  // ein neuer ↶-Schritt der Lektion = ein Versuch; Tipp 1 nach 2, Tipp 2 nach 4 Fehlversuchen (eine misslungene Messung zählt auch)
+  function watchSteps() {
+    const L = KS_L; const n = UNDO.length, top = UNDO[n - 1] || null;
+    if (n === L.lastLen && top === L.lastTop) return;
+    const pushed = n > L.lastLen || (n === L.lastLen && top !== L.lastTop && !L.u0set.has(top));
+    L.lastLen = n; L.lastTop = top;
+    if (!pushed || !top || top.kind !== 'sound' || top.track !== L.t || /Zeig es mir/.test(top.label || '')) return;
+    const r = evalNow(true); if (r && !r.ok && !r.pend) failTip();
+  }
+
+  /* ---------- Rahmen (E3: Regler über den Parameter finden, bis zu 3 gleichzeitig) ---------- */
+  function find(key) {
+    const L = KS_L, sh = EL.synthSheet;
+    if (!sh || !sh.classList.contains('open') || R.editor !== 'synth' || !L || R.selT !== L.t) return null;
+    if (key.indexOf('|') > 0) { const ks = key.split('|'); for (const k of ks) { const e = sh.querySelector('.sh-body [data-key="' + k + '"]'); if (e && ui1Shown(e)) return {el: e, via: null}; } key = ks[0]; }   // KS2: Regler mit zwei Gesichtern (LFO Rate/Takt)
+    const k = sh.querySelector('[data-key="' + key + '"]'); if (k && ui1Shown(k)) return {el: k, via: null};
+    const pg = PAGE[key] || (isRt(key) ? ['mod'] : null); if (!pg) return null;   // KS2: Mod-Route = Zeile auf der Seite MOD
+    if (ED.tab !== pg[0]) { const b = sh.querySelector('.sh-tabs .tab[data-tab="' + pg[0] + '"]'); return b && ui1Shown(b) ? {el: b, via: TABN[pg[0]]} : null; }
+    const s = pg[1] ? sh.querySelector('.sh-subs .stab[data-sub="' + pg[1] + '"]') : null; return s && ui1Shown(s) ? {el: s, via: SUBN[pg[1]] || pg[1]} : null;
+  }
+  function ringsOff() { for (const r of KS.rings) { try { r.remove(); } catch (e) {} } KS.rings = []; }
+  function rings() {
+    const T = task(); if (!T) { ringsOff(); return []; }
+    const groups = [];
+    T.rings.forEach((key, i) => { const f = find(key); if (!f) return; const g = groups.find(x => x.el === f.el); const lb = (i + 1) + ' ' + lbl(key);
+      if (g) { g.lb += ' · ' + lb; g.keys.push(key); } else groups.push({el: f.el, lb: lb + (f.via ? ' › ' + f.via : ''), keys: [key], via: f.via}); });
+    while (KS.rings.length > groups.length) { const r = KS.rings.pop(); try { r.remove(); } catch (e) {} }
+    groups.forEach((g, j) => {
+      let r = KS.rings[j]; if (!r) { r = el('div', 'ksring'); r.setAttribute('aria-hidden', 'true'); r.appendChild(el('span', 'ksrl')); document.body.appendChild(r); KS.rings[j] = r; }
+      const b = g.el.getBoundingClientRect(); r._g = g;
+      r.style.left = Math.round(b.left - 3) + 'px'; r.style.top = Math.round(b.top - 3) + 'px'; r.style.width = Math.round(b.width + 6) + 'px'; r.style.height = Math.round(b.height + 6) + 'px';
+      r.classList.toggle('lb', b.top < 30); if (r.firstChild.textContent !== g.lb) r.firstChild.textContent = g.lb;
+    });
+    const lr = []; for (const r of KS.rings) { const a = r.firstChild.getBoundingClientRect(); if (lr.some(q => a.left < q.right && a.right > q.left && a.top < q.bottom && a.bottom > q.top)) { r.classList.toggle('lb', !r.classList.contains('lb')); } lr.push(r.firstChild.getBoundingClientRect()); }
+    return groups;
+  }
+
+  /* ---------- Karte ---------- */
+  function cardMake() {
+    if (KS.card && KS.card.isConnected) return KS.card;
+    const c = KS.card = el('div', 'kscard'); c.setAttribute('role', 'dialog'); c.setAttribute('aria-label', 'Klangschule');
+    for (const ev of ['pointerdown', 'pointerup', 'click', 'touchstart']) c.addEventListener(ev, e => e.stopPropagation(), ev === 'touchstart' ? {passive: true} : false);
+    onTap(c, b => act(b.dataset.a, b), 'button[data-a]');
+    document.body.appendChild(c);
+    return c;
+  }
+  function paintCard() {
+    const L = KS_L, T = task(), c = KS.card; if (!L || !T || !c) return;
+    const n = lesNo(L.les), ab = T.ab;
+    c.classList.toggle('fold', !!L.fold);
+    c.innerHTML = `<div class="ksh"><button class="rb" data-a="prev" aria-label="Vorige Lektion"${n > 1 ? '' : ' disabled'}>◀</button>` +
+      `<span class="kst"><small>Klangschule · ${n}/${LES.length}${T.bonus ? ' · Bonus' : ''}</small><b>${esc(L.les.n)}</b></span><span class="kss" aria-live="polite"></span>` +
+      `<button class="rb" data-a="next" aria-label="Nächste Lektion"${n < LES.length ? '' : ' disabled'}>▶</button>` +
+      `<button class="rb" data-a="fold" aria-label="${L.fold ? 'Karte aufklappen' : 'Karte einklappen'}">${L.fold ? '▴' : '▾'}</button>` +
+      `<button class="rb" data-a="x" aria-label="Lektion schließen – dein Klang kommt zurück">✕</button></div>` +
+      `<div class="ksbody"><div class="ksab"><span class="kl">Hör mal</span><button class="rb" data-a="a">▶ ${esc(ab[0][0])}</button><button class="rb" data-a="b">▶ ${esc(ab[1][0])}</button><button class="rb" data-a="alt" aria-label="Beide im Wechsel hören">im Wechsel</button></div>` +
+      (T.ab2 ? `<div class="ksab"><span class="kl">Typ</span><button class="rb" data-a="c">▶ ${esc(T.ab2[0][0])}</button><button class="rb" data-a="d">▶ ${esc(T.ab2[1][0])}</button><button class="rb" data-a="alt2" aria-label="Beide im Wechsel hören">im Wechsel</button></div>` : '') +
+      `<div class="kshear" role="status"></div>` +
+      `<div class="kstask"><span class="kl">Aufgabe</span> ${esc(fnv(T.task))}</div>` +
+      `<div class="ksfb"><span></span></div><div class="kstip" hidden></div>` +
+      `<div class="ksgw"><canvas class="ksg" aria-label="${GLEG[gmode()][1]}"></canvas></div>` +
+      `<div class="ksleg">${GLEG[gmode()][0]}</div></div>` +
+      `<div class="ksact"><button class="rb" data-a="tip">Tipp</button><button class="rb" data-a="show">Zeig es mir</button><button class="rb" data-a="me">▶ Dein Stand</button>` +
+      `<button class="rb" data-a="take" aria-label="Als Klang übernehmen">Übernehmen</button></div>`;
+    L.cv = c.querySelector('canvas.ksg');
+    paintHear(); paintFb(); paintTip(); place(); draw();
+  }
+  function paintFb() {
+    const L = KS_L, c = KS.card, T = task(); if (!L || !c || !L.res) return;
+    const fb = c.querySelector('.ksfb'), s = c.querySelector('.kss'); if (!fb) return;
+    const bonus = L.res.ok && L.les.tasks[L.k + 1] && L.les.tasks[L.k + 1].bonus;
+    const mb = T.meas && !L.res.ok ? `<button class="rb" data-a="meas" aria-label="2 Sekunden spielen und am Spur-Ausgang messen"${KS.mBusy ? ' disabled' : ''}>${KS.mBusy ? 'misst …' : '▶ Prüfen'}</button>` : '';
+    const html = `<span>${esc(L.res.msg)}</span>` + (bonus ? '<button class="rb" data-a="bonus">Bonus ▶</button>' : mb);
+    if (fb._h !== html) { fb._h = html; fb.innerHTML = html; }
+    const lg = c.querySelector('.ksleg'), cv = c.querySelector('canvas.ksg'), gm = GLEG[gmode()];   // KS2: nach dem Messen zeigt der Graph die Messung
+    if (lg && lg._m !== gm) { lg._m = gm; lg.innerHTML = gm[0]; if (cv) cv.setAttribute('aria-label', gm[1]); }
+    fb.classList.toggle('ok', !!L.res.ok);
+    if (s) { s.textContent = L.res.ok ? '✓' : 'offen'; s.classList.toggle('ok', !!L.res.ok); s.setAttribute('aria-label', L.res.ok ? 'geschafft' : 'noch nicht geschafft'); }
+    paintTip();
+    void T;
+  }
+  function paintTip() {
+    const L = KS_L, c = KS.card, T = task(); if (!L || !c || !T) return;
+    const tp = c.querySelector('.kstip'); if (!tp) return;
+    let h = '';
+    if (L.tipN > 0) h = '<b>Tipp ' + L.tipN + ':</b> ' + esc(fnv(T.tips[Math.min(L.tipN, T.tips.length) - 1]));
+    if (L.res && L.res.ok) h = (T.after ? esc(T.after) + '<br>' : '') + '<b>Merksatz:</b> ' + esc(T.merk);
+    tp.hidden = !h; if (tp._h !== h) { tp._h = h; tp.innerHTML = h; }
+    const tb = c.querySelector('button[data-a="tip"]'); if (tb) tb.disabled = !!(L.res && L.res.ok) || L.tipN >= T.tips.length;
+  }
+  // die Karte liegt nie über einem leuchtenden Regler: das größte freie Band zwischen den Rahmen (hochkant über die ganze Breite,
+  // quer in der linken oder rechten Spalte); passt sie nicht ganz hinein, rollt ihr Inhalt (Kopf und Knöpfe bleiben stehen)
+  function place() {
+    const c = KS.card; if (!c || !c.isConnected) return;
+    const vw = window.innerWidth, vh = window.innerHeight, land = vw > vh, sa = 8, cw = Math.min(400, vw * .47);
+    const rs = []; for (const r of KS.rings) { const b = r.getBoundingClientRect(); if (!b.width) continue; const l = r.firstChild.getBoundingClientRect();
+      rs.push({l: Math.min(b.left, l.left), r: Math.max(b.right, l.right), t: Math.min(b.top, l.top), b: Math.max(b.bottom, l.bottom)}); }
+    const free = (x0, x1) => { const L = rs.filter(q => q.r > x0 && q.l < x1).sort((a, b) => a.t - b.t), out = []; let y = sa;
+      for (const q of L) { if (q.t - sa > y) out.push({t: y, b: q.t - sa}); y = Math.max(y, q.b + sa); } if (vh - sa > y) out.push({t: y, b: vh - sa}); return out; };
+    const cols = land ? [['l', sa, sa + cw], ['r', vw - sa - cw, vw - sa]] : [['', sa, vw - sa]];
+    const kx = rs.length ? rs.reduce((a, q) => a + (q.l + q.r) / 2, 0) / rs.length : 0;
+    let best = null;
+    for (const [side, x0, x1] of cols) for (const B of free(x0, x1)) {
+      const h = B.b - B.t, sc = h + (B.b >= vh - sa ? 20 : 0) + (land && ((side === 'r') === (kx < vw / 2)) ? 30 : 0);
+      if (!best || sc > best.sc) best = {side, t: B.t, b: B.b, h, sc};
+    }
+    if (!best) best = {side: land ? 'r' : '', t: sa, b: vh - sa, h: vh - 2 * sa};
+    c.classList.toggle('ld', land); c.classList.toggle('r', best.side === 'r'); c.classList.toggle('l', best.side === 'l');
+    c.style.maxHeight = Math.max(100, best.h) + 'px';
+    if (best.b >= vh - sa) { c.style.top = ''; c.style.bottom = sa + 'px'; } else { c.style.bottom = ''; c.style.top = Math.round(best.t) + 'px'; }
+  }
+  /* ---------- Graph: Cutoff (amber, 20 Hz–20 kHz) und Lautstärke (weiß, −48…0 dB), grau = Ziel, Punkt = gerade gespielt ----------
+     KS2: weitere Arten – 'pitch' Tonhöhe in HT (Hüllk. 2 → Tonhöhe), 'stair' die gespielte Tonhöhe (E1) mit den Tönen der Tonart,
+     nach dem Messen 'spec' (Oktavbänder, L6/L8) und 'cents' (Pfeifton je Note: ○ Rechnung, ● gemessen, L7) */
+  const GLEG = {
+    cut: ['<i>━ Cutoff</i> · ━ Lautstärke · grau = Ziel · ┆ Taste los', 'Verlauf: Cutoff und Lautstärke über die Zeit'],
+    pitch: ['<i>━ Tonhöhe (HT)</i> · ━ Lautstärke · grau = Ziel · ┆ Taste los', 'Verlauf: Tonhöhe und Lautstärke über die Zeit'],
+    stair: ['<i>━ Tonhöhe beim Spielen</i> · Linien = Töne der Tonart', 'Treppe: die gespielte Tonhöhe der letzten 2,5 Sekunden'],
+    spec: ['<i>▮ gemessen</i> · Bänder in dB · grau = Ziel', 'Messung: Pegel je Oktavband am Spur-Ausgang'],
+    cents: ['Pfeifton je Note in Cent: ○ Rechnung · <i>● gemessen</i> · grau = ±15 ct', 'Pfeifton je Note in Cent, Rechnung und Messung'],
+  };
+  function gmode() {
+    const L = KS_L, T = task(); if (!L || !T) return 'cut';
+    if (T.graph === 'cents') return 'cents';
+    if (T.meas && L.meas && L.meas.r && L.meas.sig === L.sig) return 'spec';
+    return T.graph || 'cut';
+  }
+  function draw() {
+    const L = KS_L, T = task(), cv = L && L.cv; if (!cv || !cv.isConnected || !L.C || L.fold) return;
+    const w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1), W = Math.round(w * dpr), H = Math.round(h * dpr);
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+    const g = cv.getContext('2d'), C = L.C, mode = gmode(); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+    if (mode === 'spec') { drawSpec(g, w, h); return; }
+    if (mode === 'cents') { drawCents(g, w, h); return; }
+    if (mode === 'stair') { drawStair(g, w, h); return; }
+    const X = t => 3 + (w - 6) * t / C.dur, yH = f => h - 3 - (h - 6) * Math.log2(Math.max(20, Math.min(20000, f)) / 20) / Math.log2(1000), yD = d => h - 3 - (h - 6) * (Math.max(-48, Math.min(0, d)) + 48) / 48;
+    let s0 = -2, s1 = 26; if (mode === 'pitch') { for (let b = 0; b < C.nb; b += 8) { s0 = Math.min(s0, C.so[b] - 1); s1 = Math.max(s1, C.so[b] + 1); } }
+    const yS = s => h - 3 - (h - 6) * (Math.max(s0, Math.min(s1, s)) - s0) / (s1 - s0);
+    g.fillStyle = 'rgba(255,255,255,.14)';
+    for (const z of T.zones(C, L.res) || []) { const Y = z.ax === 'hz' ? yH : z.ax === 'st' ? yS : yD, a = Y(z.y1), b = Y(z.y0); g.fillRect(X(z.t0), Math.min(a, b), Math.max(2, X(z.t1) - X(z.t0)), Math.max(2, Math.abs(b - a))); }
+    g.strokeStyle = 'rgba(255,255,255,.08)'; g.lineWidth = 1; g.beginPath();
+    if (mode === 'pitch') { for (let s = Math.ceil(s0 / 12) * 12; s <= s1; s += 12) { g.moveTo(0, yS(s)); g.lineTo(w, yS(s)); } } else for (const f of [100, 1000, 10000]) { g.moveTo(0, yH(f)); g.lineTo(w, yH(f)); }
+    g.stroke();
+    g.setLineDash([3, 3]); g.strokeStyle = 'rgba(255,255,255,.35)'; g.beginPath(); g.moveTo(X(C.gate), 0); g.lineTo(X(C.gate), h); g.stroke(); g.setLineDash([]);
+    const N = 200, line = (col, f) => { g.strokeStyle = col; g.lineWidth = 2; g.beginPath(); for (let i = 0; i < N; i++) { const t = C.dur * i / (N - 1), y = f(t); if (i) g.lineTo(X(t), y); else g.moveTo(X(t), y); } g.stroke(); };
+    line('rgba(244,241,234,.9)', t => yD(C.db(t)));
+    if (mode === 'pitch') line(KS.amber, t => yS(C.st(t))); else line(KS.amber, t => yH(C.hz(t)));
+    const d = L.dot; if (d.on) { g.fillStyle = KS.amber; g.beginPath(); g.arc(X(d.x), mode === 'pitch' ? yS(d.st) : yH(d.hz), 4, 0, 7); g.fill(); g.fillStyle = '#fff'; g.beginPath(); g.arc(X(d.x), yD(d.db), 4, 0, 7); g.fill(); }
+  }
+  const OCT = [31.5, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+  function drawSpec(g, w, h) {
+    const L = KS_L, T = task(), M = L.meas.r; if (!M || !M.bands) return;
+    const n = OCT.length, bw = (w - 6) / n, top = Math.max(...M.bands), yD = d => h - 3 - (h - 6) * (Math.max(-60, Math.min(0, d)) + 60) / 60;
+    g.fillStyle = 'rgba(255,255,255,.14)';
+    if (T.meas.kind === 'low') g.fillRect(3, yD(-18), bw * 2.27, h - 3 - yD(-18));                          // unter 150 Hz: höchstens −18 dB
+    if (T.meas.kind === 'hf') { const x0 = 3 + bw * 7.58; g.fillRect(x0, yD(-50), w - 3 - x0, h - 3 - yD(-50)); }   // über 3 kHz: höchstens −50 dB
+    M.bands.forEach((b, i) => { const lo = T.meas.kind === 'low' ? i <= 2 : T.meas.kind === 'hf' ? i >= 7 : false; g.fillStyle = lo ? KS.amber : 'rgba(244,241,234,.75)'; const y = yD(b - top); g.fillRect(3 + i * bw + 2, y, bw - 4, Math.max(1, h - 3 - y)); });
+    g.fillStyle = 'rgba(244,241,234,.55)'; g.font = '600 9px ' + getComputedStyle(document.body).fontFamily;
+    for (const [i, s] of [[1, '63'], [3, '250'], [5, '1k'], [7, '4k'], [9, '16k']]) g.fillText(s, 3 + i * bw + 2, 10);
+  }
+  function drawCents(g, w, h) {
+    const L = KS_L, T = task(), P = P_(); if (!P) return;
+    const ph = fnv(T.meas.ph), notes = ph.map(x => x[2]), M = L.meas && L.meas.sig === L.sig ? L.meas.r : null, R0 = 100;
+    const yC = c => h / 2 - (h / 2 - 5) * Math.max(-R0, Math.min(R0, c)) / R0, cw = (w - 6) / notes.length;
+    g.fillStyle = 'rgba(255,255,255,.14)'; g.fillRect(3, yC(15), w - 6, yC(-15) - yC(15));
+    g.strokeStyle = 'rgba(255,255,255,.2)'; g.lineWidth = 1; g.beginPath(); g.moveTo(0, h / 2); g.lineTo(w, h / 2); g.stroke();
+    g.font = '600 10px ' + getComputedStyle(document.body).fontFamily;
+    notes.forEach((n, i) => {
+      const x = 3 + cw * (i + .5), c0 = 69 + 12 * Math.log2(Math.max(20, +P.cutoff) / 440) + (+P.kt || 0) * (n - 60) - n, rc = (((c0 % 12) + 18) % 12 - 6) * 100;
+      g.strokeStyle = KS.amber; g.lineWidth = 2; g.beginPath(); g.arc(x - 8, yC(rc), 4, 0, 7); g.stroke();
+      if (Math.abs(rc) > R0) { g.fillStyle = KS.amber; g.fillText(rc > 0 ? '▲' : '▼', x - 12, rc > 0 ? 11 : h - 3); }
+      const m = M && M.cents ? M.cents.find(q => q.n === n) : null;
+      if (m && m.c != null) { g.fillStyle = KS.amber; g.beginPath(); g.arc(x + 8, yC(m.c), 4, 0, 7); g.fill(); }
+      g.fillStyle = 'rgba(244,241,234,.6)'; g.fillText(NN(n), x - 24, h - 3);
+    });
+  }
+  // die gespielte Tonhöhe (E1: Scope meldet die echte Tonhöhe der Fokus-Stimme) als Treppe; dünne Linien = Töne der Tonart des Songs
+  function drawStair(g, w, h) {
+    const L = KS_L, now = performance.now(), span = 2500, hs = (L.hist || []).filter(q => now - q.t < span);
+    let lo = 48, hi = 72; for (const q of hs) { lo = Math.min(lo, Math.floor(q.p) - 2); hi = Math.max(hi, Math.ceil(q.p) + 2); }
+    const yP = p => h - 3 - (h - 6) * (p - lo) / Math.max(1, hi - lo), X = t => 3 + (w - 6) * (1 - (now - t) / span);
+    const K = S.key || {root: 0, scale: 'ionian'}, SC = Harmony.SCALES[K.scale] || Harmony.SCALES.ionian;
+    g.lineWidth = 1;
+    for (let p = Math.ceil(lo); p <= hi; p++) { const iv = Harmony.PC(p - K.root); if (!SC.includes(iv)) continue; g.strokeStyle = iv === 0 ? 'rgba(255,255,255,.28)' : 'rgba(255,255,255,.1)'; g.beginPath(); g.moveTo(0, Math.round(yP(p)) + .5); g.lineTo(w, Math.round(yP(p)) + .5); g.stroke(); }
+    if (hs.length < 2) { g.fillStyle = 'rgba(244,241,234,.55)'; g.font = '600 11px ' + getComputedStyle(document.body).fontFamily; g.fillText('Spiel eine Taste – die Treppe erscheint hier.', 8, h / 2 + 4); return; }
+    g.strokeStyle = KS.amber; g.lineWidth = 2; g.beginPath();
+    hs.forEach((q, i) => { const x = X(q.t), y = yP(q.p); if (!i || q.t - hs[i - 1].t > 200) g.moveTo(x, y); else { g.lineTo(x, yP(hs[i - 1].p)); g.lineTo(x, y); } });
+    g.stroke();
+  }
+  // Mitlaufen: die Scope-Meldung der gespielten Stimme (Worklet, 30/s, läuft ohnehin, solange der Klang-Editor offen ist).
+  // E1: mit MLIVE.ks = [Cutoff Hz, Amp-Pegel, Tonhöhe, Note] der Fokus-Stimme läuft der Punkt auf dem echten Wert (auch mit Modulation)
+  function live() {
+    const L = KS_L, d = L.dot, now = performance.now();
+    const fresh = typeof MLIVE !== 'undefined' && MLIVE.scope && MLIVE.track === L.t && now - MLIVE.at < 250;
+    const nv = fresh ? MLIVE.nv | 0 : 0;
+    if (nv > 0 && !(d.nv > 0)) d.t0 = now;
+    d.nv = nv;
+    const was = d.on; d.on = nv > 0 && !!L.C;
+    if (d.on) {
+      const C = L.C, ks = MLIVE.ks && MLIVE.ks.length >= 4 ? MLIVE.ks : null; d.e1 = !!ks;
+      d.x = Math.min(C.dur, (now - d.t0) / 1000);
+      if (ks) { d.hz = Math.min(20000, +ks[0] || 20); d.db = ks[1] > 1e-6 ? 20 * Math.log10(ks[1]) : -120; d.st = ks[2] - ks[3]; (L.hist = L.hist || []).push({t: now, p: +ks[2]}); if (L.hist.length > 200) L.hist.splice(0, L.hist.length - 200); }
+      else {
+        const fe = +MLIVE.scope[SRC_IDX.fenv] || 0, ae = +MLIVE.scope[SRC_IDX.aenv] || 0, me = +MLIVE.scope[SRC_IDX.menv] || 0;
+        d.hz = 440 * Math.pow(2, (Math.max(0, C.cut0 + C.fe * 72 * fe * C.velF) - 69) / 12); d.db = ae > 1e-6 ? 20 * Math.log10(ae) : -120; d.st = C.ma * 24 * me;
+      }
+    }
+    if (d.on || was || (L.hist && L.hist.length && gmode() === 'stair')) draw();
+  }
+
+  /* ---------- Hör mal: pegelgleich über die echte Engine ---------- */
+  // KS2: bis zu vier Beispiele (zweite Reihe ab2, z. B. LP24 gegen LP12), Patches mit Effekten und Mod-Routen; alle auf denselben Pegel
+  const VW = ['a', 'b', 'c', 'd'];
+  const abOf = (T, i) => (i < 2 ? T.ab[i] : T.ab2 ? T.ab2[i - 2] : null);
+  const variant = (T, i) => patch(T.start(), fnv(abOf(T, i)[1]));
+  const phLen = (T, s) => fnv(T.ph).reduce((m, [t, d]) => Math.max(m, t + d), 0) + Math.min(2.5, (+s.p.aR || .3) + .3);
+  async function lvOf(snds, T) {
+    const len = Math.min(8, Math.max(...snds.map(s => phLen(T, s)))) + .05;
+    const ch = await render(snds, fnv(T.ph), len); return ch.map(x => loud(x, 48000));
+  }
+  async function prefetch() { try { await gains(); } catch (e) {} }
+  // Pegel der Beispiele dieser Aufgabe (einmal je Aufgabe, offline): Ziel = das leiseste – nichts wird lauter gemacht
+  function gains() {
+    const L = KS_L, T = task(); if (!L || !T) return Promise.resolve(null);
+    if (L.lv[L.k]) return Promise.resolve(L.lv[L.k]);
+    if (KS.lvBusy && KS.lvBusy.L === L && KS.lvBusy.k === L.k) return KS.lvBusy.p;
+    const n = T.ab2 ? 4 : 2, k = L.k, p = lvOf([...Array(n).keys()].map(i => variant(T, i)), T).then(v => {
+      const tg = Math.min(...v), o = {tg, lu: v, g: v.map(x => Math.pow(10, (tg - x) / 20))}; o.a = v[0]; o.b = v[1]; o.ga = o.g[0]; o.gb = o.g[1]; return (L.lv[k] = o); },
+      e => { logErr(e); return (L.lv[k] = {a: null, b: null, tg: null, ga: 1, gb: 1, g: [1, 1, 1, 1], err: true}); });
+    KS.lvBusy = {L, k, p}; return p;
+  }
+  const scaled = (s, g) => { const c = deep(s); c.p.level = clamp((+c.p.level || .3) * g, .001, 4); return c; };
+  function stopHear() { if (KS.seq) { clearTimeout(KS.seq.to); KS.seq = null; } clearTimeout(KS.hearT); if (KS.hear) { KS.hear = null; previewStop(); } paintHear(); }
+  async function hear(w, quiet) {
+    const L = KS_L, T = task(); if (!L || !T || KS.mBusy) return null;
+    if (!quiet) { if (KS.seq) { clearTimeout(KS.seq.to); KS.seq = null; } }
+    ensureAudio();
+    KS.hear = {w, busy: true}; paintHear();
+    const G = await gains(); if (KS_L !== L || task() !== T) return null;
+    let snd, lab;
+    if (w === 'me') {
+      const cur = S.tracks[L.t].sound, key = JSON.stringify(cur.p) + JSON.stringify(cur.mods) + JSON.stringify(cur.fx);
+      if (!L.me || L.me.key !== key) { let v = null; try { v = (await lvOf([cur], T))[0]; } catch (e) { logErr(e); } if (KS_L !== L) return null; L.me = {key, v}; }
+      const g = G && G.tg != null && L.me.v != null ? Math.pow(10, (G.tg - L.me.v) / 20) : 1; snd = scaled(cur, g); lab = 'deinen Stand';
+    } else { const i = Math.max(0, VW.indexOf(w)); snd = scaled(variant(T, i), (G.g && G.g[i]) || 1); lab = abOf(T, i)[0]; }
+    const spb = 60 / S.bpm, root = S.key.root, sh = root <= 6 ? root : root - 12;
+    SQF.PREVIEW.ks = fnv(T.ph).map(([t, d, n, v]) => [t / spb, d / spb, n - sh, v]);
+    previewStart(L.t, snd, 'ks', 'ks');
+    const len = phLen(T, snd);
+    KS.hear = {w, lab, len, t0: performance.now(), g: G && !G.err}; paintHear();
+    clearTimeout(KS.hearT); KS.hearT = setTimeout(() => { if (KS.hear && KS.hear.w === w && !KS.seq) { KS.hear = null; paintHear(); } }, len * 1000);
+    return {w, len, lab};
+  }
+  function alt(two) {
+    stopHear(); const order = two ? ['c', 'd', 'c', 'd'] : ['a', 'b', 'a', 'b']; let i = 0;
+    const go = async () => { if (!KS_L || !KS.seq) return; const r = await hear(order[i], true); if (!r || !KS.seq) return; i++; if (i < order.length) KS.seq.to = setTimeout(go, r.len * 1000 + 250); else KS.seq.to = setTimeout(() => { KS.seq = null; KS.hear = null; paintHear(); }, r.len * 1000); };
+    KS.seq = {to: 0, two: !!two}; go();
+  }
+  function paintHear() {
+    const c = KS.card, hz_ = c && c.querySelector('.kshear'); if (!hz_) return;
+    const H = KS.hear, T = task();
+    let t = 'Klangschule · du hörst: deinen Stand (Tasten)';
+    if (KS.mBusy) t = 'Klangschule · misst ' + (KS.mBusy === 'off' ? 'ohne Ton (Song läuft)' : '2 s am Spur-Ausgang') + ' …';
+    else if (H && H.busy) t = 'Klangschule · misst den Pegel …';
+    else if (H) t = 'Klangschule · du hörst: ' + (H.w === 'me' ? 'deinen Stand' : H.lab) + (H.g ? ' (pegelgleich)' : '') + (R.playing ? ' · über dem Song' : '');
+    if (hz_.textContent !== t) hz_.textContent = t;
+    hz_.classList.toggle('on', !!H || !!KS.mBusy);
+    for (const b of c.querySelectorAll('.ksab button[data-a], .ksact button[data-a="me"]')) b.classList.toggle('on', !!(H && (H.w === b.dataset.a || (KS.seq && b.dataset.a === (KS.seq.two ? 'alt2' : 'alt')))));
+    void T;
+  }
+
+  /* ---------- Messen (KS2, nur L6–L8): die Lektion spielt ihre Phrase (2 s) auf der Lektionsspur, der vorhandene Mitschnitt-Prozessor
+     des Mix-Assistenten (synq-mx3-cap, samplegenau) hört am Spur-Ausgang mit (derselbe Abgriff wie das Oszilloskop: AU.tracks[t].post,
+     vor Hall- und Echo-Bus). Danach wird alles abgeklemmt. Läuft der Song, ist Aufnahme oder ist der Ton aus: dieselbe Phrase offline
+     mit demselben Worklet (ohne Ton). Gemessen: Pegel unter 150 Hz gegen das lauteste Oktavband (L6), Anteil über 3 kHz (L8),
+     Pfeifton je Note in Cent (L7), Einschwingzeit des ersten Tons (L8). ---------- */
+  function fft(re, im) {
+    const n = re.length;
+    for (let i = 1, j = 0; i < n; i++) { let b = n >> 1; for (; j & b; b >>= 1) j ^= b; j ^= b; if (i < j) { let q = re[i]; re[i] = re[j]; re[j] = q; q = im[i]; im[i] = im[j]; im[j] = q; } }
+    for (let len = 2; len <= n; len <<= 1) {
+      const a = -2 * Math.PI / len, wr = Math.cos(a), wi = Math.sin(a), hl = len >> 1;
+      for (let i = 0; i < n; i += len) { let cr = 1, ci = 0; for (let k = 0; k < hl; k++) { const u = i + k, v = u + hl, tr = re[v] * cr - im[v] * ci, ti = re[v] * ci + im[v] * cr; re[v] = re[u] - tr; im[v] = im[u] - ti; re[u] += tr; im[u] += ti; const nr = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = nr; } }
+    }
+  }
+  const HANN = {}; const hann = n => HANN[n] || (HANN[n] = Float64Array.from({length: n}, (_, i) => .5 - .5 * Math.cos(2 * Math.PI * i / (n - 1))));
+  // mittleres Leistungsspektrum der Abschnitte segs = [[i0, i1], …] (Rahmen N, halb überlappend; leise Rahmen < −30 dB unter dem lautesten zählen nicht)
+  function pspec(x, segs, N) {
+    const w = hann(N), re = new Float64Array(N), im = new Float64Array(N), P = new Float64Array(N / 2 + 1), fr = [];
+    for (const [a, b] of segs) for (let s = Math.max(0, a); s + N <= Math.min(x.length, b); s += N / 2) { let e = 0; for (let i = 0; i < N; i++) e += x[s + i] * x[s + i]; fr.push([s, e]); }
+    const em = fr.reduce((m, f) => Math.max(m, f[1]), 0); let used = 0;
+    for (const [s, e] of fr) { if (!(e > em * 1e-3) || !(e > 1e-9)) continue; re.fill(0); im.fill(0); for (let i = 0; i < N; i++) re[i] = x[s + i] * w[i]; fft(re, im); for (let k = 0; k <= N / 2; k++) P[k] += re[k] * re[k] + im[k] * im[k]; used++; }
+    if (used) for (let k = 0; k <= N / 2; k++) P[k] /= used;
+    return {P, used, N};
+  }
+  const sumP = (Sp, sr, f0, f1) => { let s = 0; const df = sr / Sp.N; for (let k = Math.max(1, Math.ceil(f0 / df)); k <= Sp.N / 2 && k * df < f1; k++) s += Sp.P[k]; return s; };
+  const dB10 = p => 10 * Math.log10(Math.max(1e-20, p));
+  // Grundton im Bereich [f0, f1]: Fenster N (Hann) in der Mitte des Abschnitts, auf 4·N aufgefüllt, Spitze parabolisch verfeinert; mit Abstand zum Umfeld (dB)
+  function peakIn(x, a, b, sr, f0, f1) {
+    const N = 16384, Z = 65536; if (b - a < 4096) return null;
+    const n = Math.min(N, b - a), s = a + ((b - a - n) >> 1), w = hann(n), re = new Float64Array(Z), im = new Float64Array(Z);
+    for (let i = 0; i < n; i++) re[i] = x[s + i] * w[i];
+    fft(re, im); const df = sr / Z, m = k => Math.log(Math.max(1e-30, re[k] * re[k] + im[k] * im[k]));
+    const k0 = Math.max(2, Math.floor(f0 / df)), k1 = Math.min(Z / 2 - 2, Math.ceil(f1 / df)); let kb = k0;
+    for (let k = k0; k <= k1; k++) if (m(k) > m(kb)) kb = k;
+    const y0 = m(kb - 1), y1 = m(kb), y2 = m(kb + 1), dn = y0 - 2 * y1 + y2, dk = dn < 0 ? .5 * (y0 - y2) / dn : 0;
+    const ring = []; for (let k = Math.max(2, Math.floor(f0 / 2 / df)); k <= Math.min(Z / 2 - 2, Math.ceil(f1 * 2 / df)); k += 3) ring.push(m(k)); ring.sort((p, q) => p - q);
+    return {hz: (kb + Math.max(-.5, Math.min(.5, dk))) * df, prom: 10 / Math.LN10 * (y1 - ring[ring.length >> 1])};
+  }
+  // Einschwingen: Pegel bei f (Goertzel, 20 ms, alle 5 ms) – erste Zeit, ab der er höchstens 6 dB unter dem gehaltenen Pegel liegt
+  function onsetMs(x, a, b, sr, f) {
+    const L = Math.round(.02 * sr), H = Math.round(.005 * sr), w = hann(L), cw = 2 * Math.cos(2 * Math.PI * f / sr), lv = [];
+    for (let s = a; s + L <= b; s += H) { let s1 = 0, s2 = 0; for (let i = 0; i < L; i++) { const v = x[s + i] * w[i] + cw * s1 - s2; s2 = s1; s1 = v; } lv.push([(s - a + L / 2) / sr, dB10(s1 * s1 + s2 * s2 - cw * s1 * s2)]); }
+    const st = lv.filter(q => q[0] >= .2 && q[0] <= (b - a) / sr - .05).map(q => q[1]).sort((p, q) => p - q); if (!st.length) return null;
+    const ref = st[st.length >> 1]; for (const [t, d] of lv) if (d >= ref - 6) return t * 1000;
+    return null;
+  }
+  function analyze(x, sr, off, ph, kind, P) {
+    const at = t => off + Math.round(t * sr), M = {kind, sr, n: x.length};
+    let e = 0; for (let i = 0; i < x.length; i++) e += x[i] * x[i]; M.rms = dB10(e / Math.max(1, x.length));   // mittlere Leistung in dBFS
+    if (M.rms < -90) return Object.assign(M, {silent: true, low: null, hf: null, cents: [], onset: [], bands: null});
+    const end = ph.reduce((m, [t, d]) => Math.max(m, t + d), 0), Sp = pspec(x, kind === 'hf' ? ph.map(([t, d]) => [at(t + .1), at(t + d)]) : [[at(0), at(end + .05)]], 8192);
+    M.bands = OCT.map(fc => dB10(sumP(Sp, sr, fc / Math.SQRT2, fc * Math.SQRT2)));
+    M.low = dB10(sumP(Sp, sr, 1, 150)) - Math.max(...M.bands);
+    M.hf = dB10(sumP(Sp, sr, 3000, sr / 2)) - dB10(sumP(Sp, sr, 40, sr / 2));
+    const cut = +P.cutoff || 1000, kt = +P.kt || 0;
+    M.cents = []; M.onset = [];
+    if (kind === 'cent' || kind === 'hf') ph.forEach(([t, d, n], j) => {
+      const fw = cut * Math.pow(2, kt * (n - 60) / 12), pk = peakIn(x, at(t + .15), at(t + d), sr, fw / Math.pow(2, 3 / 12), fw * Math.pow(2, 3 / 12));
+      const ok = pk && pk.prom >= 20, fn = 440 * Math.pow(2, (n - 69) / 12), c = ok ? 1200 * Math.log2(pk.hz / fn) : null;
+      M.cents.push({n, hz: pk ? +pk.hz.toFixed(2) : null, prom: pk ? +pk.prom.toFixed(1) : null, c: c == null ? null : +(((c % 1200) + 1800) % 1200 - 600).toFixed(1)});
+      if (kind === 'hf' && j === 0) M.onset.push(onsetMs(x, at(t), at(t + d), sr, ok ? pk.hz : fw));
+    });
+    return M;
+  }
+  async function capLive(L, ph, len) {
+    const c = AU.ctx, A = AU.tracks[L.t];
+    if (MIXA.mods.get(c) !== true && !(await mixaAddModule(c))) return null;
+    if (KS_L !== L) return null;
+    const sr = c.sampleRate, lead = .25, n = Math.round((len + lead + .05) * sr);
+    const cap = new AudioWorkletNode(c, 'synq-mx3-cap', {numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1], channelCount: 2, channelCountMode: 'explicit', channelInterpretation: 'speakers', processorOptions: {n}});
+    const sink = c.createGain(); sink.gain.value = 0; cap.connect(sink); sink.connect(c.destination);
+    const got = new Promise((ok, no) => { const to = setTimeout(() => no(new Error('Messung: keine Antwort')), (len + lead) * 1000 + 8000); cap.port.onmessage = e => { clearTimeout(to); ok(e.data); }; });
+    A.post.connect(cap);
+    const T0 = c.currentTime + lead;
+    try {
+      for (const [t, d, nt, v] of ph) { const vo = spawnVoice(L.t, nt, v, T0 + t, {src: 'audition'}); if (vo) vo.release(T0 + t + d); }
+      const r = await got, x = new Float32Array(r.L.length); for (let i = 0; i < x.length; i++) x[i] = (r.L[i] + r.R[i]) / 2;
+      const off = Math.round(T0 * sr) - (r.f0 | 0); return off >= 0 ? {x, sr, off} : null;   // zu spät angefangen: dann offline
+    } finally { try { A.post.disconnect(cap); } catch (e) {} try { cap.disconnect(); sink.disconnect(); } catch (e) {} }
+  }
+  async function measure(how) {
+    const L = KS_L, T = task(); if (!L || !T || !T.meas) return null;
+    const ph = fnv(T.meas.ph || T.ph), len = ph.reduce((m, [t, d]) => Math.max(m, t + d), 0) + .25, snd = S.tracks[L.t].sound, P = deep(snd.p);
+    const c = AU.ctx, A = AU.tracks[L.t], E = AU.synth[L.t];
+    const busy = typeof mx3RecBusy === 'function' && mx3RecBusy();
+    let r = null, w = 'off';
+    if (how !== 'off' && c && c.state === 'running' && A && A.post && E && !E.dead && !R.playing && !busy && typeof AudioWorkletNode === 'function') {
+      try { r = await capLive(L, ph, len); w = 'live'; } catch (e) { logErr(e); r = null; }
+    }
+    if (KS_L !== L) return null;
+    if (!r) { const ch = await render([deep(snd)], ph, len + .1); r = {x: ch[0], sr: 48000, off: Math.round(.05 * 48000)}; w = 'off'; }
+    return Object.assign(analyze(r.x, r.sr, r.off, ph, T.meas.kind, P), {how: w});
+  }
+  // ▶ Prüfen: messen (die Messung gilt, solange der Klang gleich bleibt); eine misslungene Messung zählt als Versuch
+  async function runMeas(how) {
+    const L = KS_L, T = task(); if (!L || !T || !T.meas || KS.mBusy) return null;
+    stopHear(); ensureAudio();
+    const sig = UI.sndVer + '|' + L.k, live = how !== 'off' && !R.playing;
+    KS.mBusy = live ? 'live' : 'off'; paintHear(); paintFb();
+    let M = null; try { M = await measure(how); } catch (e) { logErr(e); }
+    KS.mBusy = null;
+    if (KS_L !== L || task() !== T) { paintHear(); return null; }
+    if (M && UI.sndVer + '|' + L.k === sig) L.meas = {sig, r: M, at: performance.now()};
+    paintHear(); const res = evalNow(true);
+    if (res && !res.ok && !res.pend) failTip();
+    return M;
+  }
+
+  /* ---------- Zeig es mir: dreht die Regler in 0,6 s hörbar auf die Lösung (ein ↶) ---------- */
+  function showMe() {
+    const L = KS_L, T = task(); if (!L || !T || L.anim || KS.mBusy) return Promise.resolve(false);
+    const sol = fnv(T.sol), t = L.t, before = soundSnapshot(t), snd = S.tracks[t].sound, from = {}; for (const k in sol) from[k] = getV(snd, k);
+    stopHear(); ensureAudio();
+    let v = null; try { v = auditionStart(t, (fnv(T.calc) && fnv(T.calc).note) || 48, .8); } catch (e) {}
+    const t0 = performance.now(), D = 600;
+    return new Promise(res => {
+      const step = () => {
+        if (KS_L !== L) { res(false); return; }
+        const x = Math.min(1, (performance.now() - t0) / D), e = x * x * (3 - 2 * x);
+        for (const k in sol) {
+          if (isRt(k)) { if (x < 1) setV(t, k, from[k] + (sol[k] - from[k]) * e); continue; }   // KS2: Mod-Route (Menge)
+          const d = PD[k]; if (!d) continue; setV(t, k, d.vals ? (x < 1 ? from[k] : sol[k]) : fromNorm(d, toNorm(d, from[k]) + (toNorm(d, sol[k]) - toNorm(d, from[k])) * e));
+        }
+        if (x < 1) { L.anim = requestAnimationFrame(step); return; }
+        L.anim = 0; for (const k in sol) setV(t, k, sol[k]);
+        commitSound(t, before, 'Klangschule: Zeig es mir');
+        setTimeout(() => { try { if (v) v.release(nowT()); } catch (e) {} }, 900);
+        evalNow(true);
+        if (T.meas) setTimeout(() => { if (KS_L === L && task() === T) runMeas(); }, 1000);   // KS2: danach gleich messen
+        res(true);
+      };
+      L.anim = requestAnimationFrame(step);
+    });
+  }
+  function bonus() {
+    const L = KS_L; if (!L || !L.les.tasks[L.k + 1]) return false;
+    stopHear();
+    const t = L.t, before = soundSnapshot(t); L.k++; L.fails = 0; L.tipN = 0; L.res = null; L.meas = null; L.hist = [];
+    put(task().start()); undoPush({kind: 'sound', track: t, before, label: 'Klangschule: Bonus'});
+    L.lastLen = UNDO.length; L.lastTop = UNDO[UNDO.length - 1];
+    showPage(); paintCard(); evalNow(true); setTimeout(prefetch, 600);
+    return true;
+  }
+  function takePop(anchor) {
+    const L = KS_L; if (!L) return;
+    const ts = trackOrder().filter(i => { const tr = S.tracks[i]; return tr && tr.kind === 'synth' && !tr.stimme && !percIs(tr) && tr.sound && !tr.sound._nv; });
+    ts.sort((a, b) => (a === L.t ? -1 : b === L.t ? 1 : 0));
+    openPop(anchor, p => {
+      p.innerHTML = '<h4>Als Klang übernehmen</h4><div class="plist">' + ts.map(i => `<button class="rb" data-t="${i}"><b>${esc(S.tracks[i].name)}${i === L.t ? ' · diese Spur' : ''}</b><small>${i === L.t ? 'der Lektionsklang bleibt hier · ein ↶' : 'die Lektionsspur bleibt wie vorher · ein ↶'}</small></button>`).join('') + '</div>';
+      guardTouch(p); onTap(p, b => { closePop(); take(+b.dataset.t); }, 'button[data-t]');
+    }, {name: 'kstake', above: true});
+  }
+  function act(a, b) {
+    const L = KS_L; if (!L) return;
+    if (a === 'x') { end('x'); return; }
+    if (a === 'fold') { L.fold = !L.fold; paintCard(); return; }
+    if (a === 'prev' || a === 'next') { const i = LES.indexOf(L.les) + (a === 'next' ? 1 : -1); if (LES[i]) begin(LES[i], 0); return; }
+    if (a === 'a' || a === 'b' || a === 'c' || a === 'd' || a === 'me') { if (KS.hear && KS.hear.w === a && !KS.seq) { stopHear(); return; } hear(a); return; }
+    if (a === 'alt' || a === 'alt2') { if (KS.seq) { stopHear(); return; } alt(a === 'alt2'); return; }
+    if (a === 'meas') { runMeas(); return; }
+    if (a === 'tip') { const T = task(); if (L.tipN < T.tips.length) { L.tipN++; paintTip(); } return; }
+    if (a === 'show') { showMe(); return; }
+    if (a === 'take') { takePop(b); return; }
+    if (a === 'bonus') { bonus(); return; }
+  }
+
+  /* ---------- Takt der offenen Lektion (100 ms): Spur noch da, Versuche, Prüfen, Rahmen, Platz, Mitlaufen ---------- */
+  function tick() {
+    const L = KS_L; if (!L) { clearInterval(KS.iv); KS.iv = 0; return; }
+    try {
+      if (S.tracks[L.t] !== L.tr || !L.tr.sound || L.tr.kind !== 'synth') { abort(); toast('Klangschule beendet – die Spur gibt es so nicht mehr'); return; }
+      watchSteps();
+      evalNow(false);
+      if (++KS.tick % 2 === 0) { rings(); place(); }
+      live();
+    } catch (e) { logErr(e); }
+  }
+  function abort() { if (!KS_L) return; end('abort'); }
+
+  /* ---------- Klangschule-Blatt ---------- */
+  function sheet(o) {
+    o = o || {}; css();
+    const focus = o.page ? CH.filter(c => c.pg.includes(o.page)).map(c => c.k) : [];   // KS2: HÜLLK. → 1, FILTER → 2–4, OSZ → 4, FX → 3, LFO/MOD → 5
+    openPop(EL.top, p => {
+      p.classList.add('ksb', 'pan-y'); guardTouch(p);
+      const bd = el('div', 'ksbd'); p.appendChild(bd); p._ks = bd; p._f = focus; paintSheet(p);
+      onTap(p, b => { const l = lesBy(b.dataset.k); if (!l) return; closePop(); begin(l, 0); }, 'button[data-k]');
+    }, {name: 'ks', sheet: {title: () => 'Klangschule', repaint: p => paintSheet(p)}});
+    const P = UI.pop && UI.pop.name === 'ks' ? UI.pop.el : null; KS.sheetP = P;
+    if (P && focus.length) { const h = P.querySelector('h4[data-ch="' + focus[0] + '"]'); if (h) try { h.scrollIntoView({block: 'start'}); } catch (e) {} }
+    return !!P;
+  }
+  function paintSheet(p) {
+    const bd = p && p._ks; if (!bd) return;
+    const pr = prog(), nx = nextLes(), cur = KS_L ? KS_L.les.id : null, all = LES.every(l => pr.d[l.id]);
+    let h = '<p class="ksin">Lektionen mit echtem Klang: hören, an den leuchtenden Reglern drehen – die App rechnet nach und sagt dir die Zahl. Die Lektion leiht sich die gewählte Synth-Spur; ✕ holt deinen Klang zurück.</p>';
+    h += `<button class="rb ksgo" data-k="${nx.id}">${all ? 'Noch einmal: ' : pr.d[LES[0].id] ? 'Weiter mit ' : 'Los geht’s: '}${lesNo(nx)} ${esc(nx.n)} ▶</button>`;
+    for (const c of CH) {
+      const f = (p._f || []).includes(c.k);
+      h += `<h4 data-ch="${c.k}">Kapitel ${c.k} · ${esc(c.n)}${f ? '<small>zu dieser Seite</small>' : ''}</h4>`;
+      for (const l of LES.filter(x => x.ch === c.k)) h += `<button class="rb ksl${f ? ' foc' : ''}${cur === l.id ? ' cur' : ''}" data-k="${l.id}"><span><b>${lesNo(l)} ${esc(l.n)}</b><small>${esc(l.sub)} · 3–5 min</small></span><i aria-label="${pr.d[l.id] ? 'erledigt' : 'offen'}">${pr.d[l.id] ? '✓' : ''}</i></button>`;
+    }
+    bd.innerHTML = h;
+    try { pshHeadSync(p); } catch (e) {}
+  }
+  function open(o) {
+    o = o || {};
+    if (o.lesson) { const l = lesBy(o.lesson); if (!l) return false; return begin(l, o.k | 0); }
+    try { closeMenu(); } catch (e) {}
+    return sheet(o);
+  }
+
+  /* ---------- Test-API ---------- */
+  const rect = e => { if (!e || !e.isConnected) return null; const b = e.getBoundingClientRect(); return {x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height)}; };
+  function capture(sec) {
+    return new Promise(res => {
+      const c = AU.ctx, M = AU.M; if (!c || !M || !M.ceil) { res(null); return; }
+      const sp = c.createScriptProcessor(4096, 2, 1), L = [];
+      sp.onaudioprocess = e => { const a = e.inputBuffer.getChannelData(0), b = e.inputBuffer.getChannelData(1), m = new Float32Array(a.length); for (let i = 0; i < a.length; i++) m[i] = (a[i] + b[i]) / 2; L.push(m); };
+      M.ceil.connect(sp); sp.connect(c.destination);
+      setTimeout(() => { try { M.ceil.disconnect(sp); sp.disconnect(); } catch (e) {} let n = 0; for (const x of L) n += x.length; const y = new Float32Array(n); let o = 0; for (const x of L) { y.set(x, o); o += x.length; } res({lu: loud(y, c.sampleRate), n, sr: c.sampleRate}); }, sec * 1000);
+    });
+  }
+  const api = {
+    lessons: () => LES.map(l => ({id: l.id, ch: l.ch, n: l.n, tasks: l.tasks.length})),
+    start: (id, k) => { const l = lesBy(id); return l ? begin(l, k | 0) : false; },
+    sheet: o => sheet(o), sheetInfo: () => { const P = UI.pop && UI.pop.name === 'ks' ? UI.pop.el : null; return P ? {rect: rect(P), rows: [...P.querySelectorAll('button[data-k]')].map(b => ({k: b.dataset.k, txt: b.textContent.trim(), foc: b.classList.contains('foc')}))} : null; },
+    state: () => {
+      const L = KS_L; if (!L) return null; const T = task(), r = L.res || {};
+      return {id: L.les.id, k: L.k, bonus: !!T.bonus, t: L.t, ok: !!r.ok, v: r.v == null ? null : +(+r.v).toFixed(2), msg: r.msg || '', fails: L.fails, tipN: L.tipN, tip: KS.card && KS.card.querySelector('.kstip') ? KS.card.querySelector('.kstip').textContent : '',
+        fold: !!L.fold, card: rect(KS.card), rings: KS.rings.map(r => ({lb: r.firstChild.textContent, keys: r._g ? r._g.keys : [], via: r._g ? r._g.via : null, rect: rect(r), tgt: r._g ? rect(r._g.el) : null})),
+        u0: L.u0.length, undo: UNDO.length, top: UNDO.length ? UNDO[UNDO.length - 1].label : null, hear: KS.hear ? {w: KS.hear.w, lab: KS.hear.lab || null} : null, hearTxt: KS.card && KS.card.querySelector('.kshear') ? KS.card.querySelector('.kshear').textContent : '',
+        tab: ED.tab, sub: ED.sub[ED.tab], sound: S.tracks[L.t].sound.name, lv: L.lv[L.k] || null, dot: L.dot.on ? {x: +L.dot.x.toFixed(2), hz: Math.round(L.dot.hz), db: +L.dot.db.toFixed(1), st: L.dot.st == null ? null : +(+L.dot.st).toFixed(2), e1: !!L.dot.e1} : null,
+        pend: !!r.pend, mode: gmode(), leg: KS.card && KS.card.querySelector('.ksleg') ? KS.card.querySelector('.ksleg').textContent : '', mBusy: KS.mBusy, hist: (L.hist || []).length,
+        meas: L.meas ? {valid: L.meas.sig === L.sig, how: L.meas.r.how, low: L.meas.r.low, hf: L.meas.r.hf, cents: L.meas.r.cents, onset: L.meas.r.onset, rms: L.meas.r.rms} : null};
+    },
+    set: (key, v) => { const L = KS_L; if (!L) return null; const before = soundSnapshot(L.t); setV(L.t, key, v); commitSound(L.t, before, PD[key] ? PD[key].l : lbl(key)); watchSteps(); evalNow(true); return api.state(); },
+    sol: () => { const T = task(); if (!T) return null; const L = KS_L, before = soundSnapshot(L.t), sol = fnv(T.sol); for (const k in sol) setV(L.t, k, sol[k]); commitSound(L.t, before, 'Lösung'); watchSteps(); evalNow(true); return api.state(); },
+    meas: how => runMeas(how), get: key => (KS_L ? getV(S.tracks[KS_L.t].sound, key) : null),
+    // KS2-Sonde: ein Klang der Lektion (Startklang, Lösung oder Hör-Beispiel i) offline mit der Mess-Phrase – ohne die Lektion zu öffnen
+    measSnd: async (id, k, which) => { const l = lesBy(id), T = l && l.tasks[k | 0]; if (!T || !T.meas) return null; const s = T.start(); if (which === 'sol') patch(s, fnv(T.sol)); else if (typeof which === 'number') patch(s, fnv(abOf(T, which)[1])); else if (which && typeof which === 'object') patch(s, which);
+      const ph = fnv(T.meas.ph), len = ph.reduce((m, [t, d]) => Math.max(m, t + d), 0) + .35, ch = await render([s], ph, len); return analyze(ch[0], 48000, Math.round(.05 * 48000), ph, T.meas.kind, s.p); },
+    show: () => showMe(), close: () => end('x'), take: dst => take(dst), act: a => act(a, KS.card ? KS.card.querySelector('button[data-a="' + a + '"]') : null), bonus: () => bonus(),
+    find: key => { const f = find(key); return f ? {via: f.via, rect: rect(f.el)} : null; },
+    gains: () => gains(), hear: w => hear(w), stop: () => stopHear(), capture: sec => capture(sec), loud: (x, sr) => loud(x, sr),
+    calc: (P, o, mods) => { const C = calc(P, o, mods); return {hz: [0, .02, .15, .5, 1, 1.5].map(t => Math.round(C.hz(t))), db: [0, .1, .3, 1, 1.5].map(t => +C.db(t).toFixed(1)), st: [0, .05, .1, .15, .2, .3].map(t => +C.st(t).toFixed(2))}; },
+    check: id => { const l = lesBy(id || (KS_L && KS_L.les.id)); if (!l) return null; return l.tasks.map(T => { const s = T.start(), r0 = T.check(calc(s.p, fnv(T.calc), s.mods), s.p, s), q = patch(deep(s), fnv(T.sol)), r1 = T.check(calc(q.p, fnv(T.calc), q.mods), q.p, q);
+      return {start: r0.ok, startMsg: r0.msg, sol: r1.ok, solMsg: r1.msg || r1.pre || '', meas: !!T.meas}; }); },
+    prog: () => prog(), css: () => cssOn,
+  };
+  return {open, abort, undoGate, api};
+})();
+/* KS-END */
 </script>
 <script type="text/plain" id="sq-md-src">
 /* SYNQUENZER drum model engine worklet 'synq-md' (Nachtrag 6, ND1). The commented source with the message protocol is md-worklet.js in the repo. */
@@ -24551,7 +25684,7 @@ function formNorm(f) { return FORM.norm(f); }
   }
   const mapClips = (p, fn) => { for (const t of (p && p.tracks) || []) if (t && Array.isArray(t.clips)) t.clips = t.clips.map(c => (c ? fn(c) : c)); return p; };
   const RUNTIME_KEYS = new Set(['born', 'bornRun', 'playing', '_dirty', '_audio']);     // §12.3.8 (`o` is not runtime)
-  const stripRuntime = (k, v) => (RUNTIME_KEYS.has(k) ? undefined : v);
+  const stripRuntime = (k, v) => (RUNTIME_KEYS.has(k) ? undefined : self.KS_L && (k === 'sound' || k === '') ? self.ksSub('sound', v) : v);   // KS: Speicher-Schutz (Lektion leiht die Spur)
 
   // library: the user library (array) or null for a file without it (parked projects, §12.2)
   function buildProjectFile(project, library, appVersion) {
@@ -29512,7 +30645,7 @@ function bmcSchedMel(i, mel, sa, sb, off, first) {
   }
   bmcSend(i, pts, false);
 }
-const stripReplacer = (k, v) => (k === 'born' || k === 'bornRun' ? undefined : v);
+const stripReplacer = (k, v) => (k === 'born' || k === 'bornRun' ? undefined : KS_L && (k === 'sound' || k === '') ? ksSub('sound', v) : v);   // KS: Speicher-Schutz (Lektion leiht die Spur)
 /* ===== I2a (Nachtrag 8 §B.2 I2a, Teil A.1 / A.4 / A.5): eine Adress-Tabelle LKT für alle Engines, die eingefrorene Platz-Liste
    pv-layout.json (PV_LAYOUT, Räume A und M), Baustein N (S.need / KNOWN_NEED), die Daten der Noten-Locks (note.lk.v / lk.k),
    freien Reihen (clip.ln) und Klang-Locks (clip.kl / klq), die Endwert-Rechnung im Haupt-Faden (lkResolve, lkValueAt, laneAt,
@@ -31043,7 +32176,7 @@ function v6aStOk(i, st) { const tr = S.tracks[i]; return !!(st && tr && st.p && 
 function v6aClip(i, slot, own) { if (slot == null || slot < 0) return null; if (own && S.song && S.song.own && S.song.own[own]) return S.song.own[own]; const tr = S.tracks[i]; return tr ? tr.clips[slot] || null : null; }
 function v6aSt(i, slot, own) { const c = v6aClip(i, slot, own), st = c && c.st; return v6aStOk(i, st) ? st : null; }
 // the state the engine of track i plays now (null = Grundklang; the ◆ editor has its values in track.sound)
-function v6aCurSt(i) { if (V6A.ed && V6A.ed.i === i) return null; const c = R.v6aCur && R.v6aCur[i]; return c ? c.st : null; }
+function v6aCurSt(i) { if (V6A.ed && V6A.ed.i === i) return null; if (KS_L && ksHold(i)) return null;   /* KS: ◆ ruht in der Lektion */ const c = R.v6aCur && R.v6aCur[i]; return c ? c.st : null; }
 // a value at a path of a sound: flat key → p[key]; 'fx.k'; 'wt.k'; nested 'fm6.ops.2.ol', 'fmx.…', 'mk.t.0.f.cut' → in p
 function v6aGet(snd, path) {
   if (path.startsWith('fx.')) return snd.fx ? snd.fx[path.slice(3)] : undefined;
@@ -31503,7 +32636,7 @@ function ak1Lb(key) { const d = PD[key]; return d && d.l ? d.l : key.startsWith(
 // the clip a knob of track i writes to now (null = Grundklang): the open synth editor of the track, not in the Grundklang mode;
 // playing = the clip that sounds or comes (nothing on the track = Grundklang), stopped = the chosen / last started clip (v6aEdRef)
 function ak1Ref(i) {
-  if (V6A.gk || UI.vvOff || R.editor !== 'synth' || R.selT !== i || (R.sr && R.sr.cap && (R.sr.cap.sc !== 'track' || R.sr.cap.t === i))) return null;   // GP-AK1: beim Vormachen (Super-Regler) gehen die Regler in die Vormach-Kopie
+  if (V6A.gk || (KS_L && ksHold(i)) || UI.vvOff || R.editor !== 'synth' || R.selT !== i || (R.sr && R.sr.cap && (R.sr.cap.sc !== 'track' || R.sr.cap.t === i))) return null;   // GP-AK1: beim Vormachen (Super-Regler) gehen die Regler in die Vormach-Kopie
   const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth' || !tr.sound || tr.sound._nv || tr.sound.engine === 'bm' || tr.sound.engine === PERC_ENG) return null;
   if (tr.sound.engine === 'mk' && typeof MKUI !== 'undefined' && MKUI.P && MKUI.P.rec) return null;   // AM: ● Bewegung aufnehmen bleibt beim Grundklang
   let ref = null;
@@ -34931,6 +36064,7 @@ function undoApply(e, val) {
   }
 }
 function undo() {
+  if (KS_L && ksUndoGate(false)) return false;   // KS: ↶ endet am Anfang der Lektion
   sx11HoldFor(UNDO[UNDO.length - 1]);   // SX11
   if (typeof mtx4HoldFor === 'function') mtx4HoldFor(UNDO[UNDO.length - 1]);   /* MTX4: ↶ eines MTX4-Schritts im Lauf am nächsten Taktstrich */
   if (rec.state === 'recording' || rec.state === 'overdub' || (R.songRec && R.songRec.over) || (songTakeOpen() && UNDO.length && UNDO[UNDO.length - 1].kind === 'song')) { toast('Erst Aufnahme beenden'); return false; }
@@ -34948,6 +36082,7 @@ function undo() {
   return true;
 }
 function redo() {
+  if (KS_L && ksUndoGate(true)) return false;    // KS: ↷ nur für Lektionsschritte
   sx11HoldFor(REDO[REDO.length - 1]);   // SX11
   if (typeof mtx4HoldFor === 'function') mtx4HoldFor(REDO[REDO.length - 1]);   /* MTX4: ↷ eines MTX4-Schritts im Lauf am nächsten Taktstrich */
   if (rec.state === 'recording' || rec.state === 'overdub' || (R.songRec && R.songRec.over) || (songTakeOpen() && REDO.length && REDO[REDO.length - 1].kind === 'song')) { toast('Erst Aufnahme beenden'); return false; }
@@ -43689,7 +44824,7 @@ function modScopeSync() {
     const on_ = k === want;
     if (!!E.scopeOn !== on_) {
       E.scopeOn = on_; E.scope(on_);
-      E.onScope = on_ ? (m => { MLIVE.scope = m.scope; MLIVE.at = performance.now(); MLIVE.track = k; MLIVE.nv = m.nv; MLIVE.t = m.t; MLIVE.dst = m.dst || null; }) : null;
+      E.onScope = on_ ? (m => { MLIVE.scope = m.scope; MLIVE.at = performance.now(); MLIVE.track = k; MLIVE.nv = m.nv; MLIVE.t = m.t; MLIVE.dst = m.dst || null; MLIVE.ks = m.ks || null; }) : null;   // KS E1: Cutoff/Pegel/Tonhöhe der Fokus-Stimme
     }
   }
 }
@@ -44897,9 +46032,10 @@ function openEdMore(anchor, t) {
       (!drum && !percIs(tr) ? `<button class="rb" data-a="north"><b>${esc(MD_NAME)} – Perkussionsspur</b><small>Tasten spielen die 12 Kanäle · folgt nicht der Transponierung</small></button>` : '') +   // PERC
       (!drum ? `<button class="rb" data-a="k1m"><b>Modulationen (${k1Mods(t).length})</b><small>jede aktive Modulation · Tipp = zum Regler, ✕ = löschen</small></button>` : '') +   // K1
       (!drum ? kf2MoreBtn() : '') +   // KF2: Oszilloskop an/aus
+      (!drum && !percIs(tr) ? ksMoreBtn() : '') +   // KS: Klangschule zu dieser Seite
       (!drum && kbFest() ? `<button class="rb" data-a="kbpos"><b>Anschlag POSITION</b><small>Tastatur spielt fest 0,8 – Anschlag-Regler wirken nur bei Noten mit eigener VEL</small></button>` : '') +
       (!drum && tr.sound.engine === 'mk' && mkLoaded() ? '<button class="rb" data-a="tcopy"><b>Timbre kopieren ▸</b><small>UTILITY · aus einem gesicherten Sound</small></button><button class="rb" data-a="tswap"><b>Timbre tauschen</b><small>UTILITY · T1 ⇄ T2</small></button><button class="rb" data-a="tinit"><b>Timbre neu</b><small>UTILITY · das gewählte Timbre auf INIT</small></button><button class="rb" data-a="sqtools"><b>Sequenz-Werkzeuge ▸</b><small>UTILITY · neu, kopieren, tauschen</small></button>' : '') + '</div>';   // MK3
-    guardTouch(p);
+    guardTouch(p); ksMoreTap(p);   // KS
     onTap(p, b => { closePop(); const a = b.dataset.a; if (a === 'ndi') { ndiGoNorth(); return; } if (a === 'kf2sc') { kf2ScToggle(); return; } if (a === 'north') { const bf = soundSnapshot(t); setEngine(t, 'north'); commitSound(t, bf, 'Klangerzeugung'); lcdShow('Klangerzeugung', MD_NAME + ' · folgt nicht'); return; } if (a === 'init') initSound(t); else if (a === 'wia') wiaToggle(); else if (a === 'kbpos') kbVelPos(); else if (a === 'k1m') openK1Mods(anchor, t);   // NDI: ndi; PERC: north
       else if (a === 'tcopy') MKUI.timCopyPop(anchor, t); else if (a === 'tswap') MKUI.timSwap(t); else if (a === 'tinit') MKUI.timInit(t); else if (a === 'sqtools') MKUI.seqToolsPop(anchor, t); }, 'button[data-a]');
   }, {name: 'edmore'});
@@ -52832,6 +53968,7 @@ function uiPrefs() {
 function setUiPref(k, v) { const p = uiPrefs(); p[k] = v; safeSet(UI_KEY, JSON.stringify(p)); }
 
 function applyProject(p, opts) {
+  if (KS_L) ksProj();   // KS: Projektwechsel beendet die Lektion (Original zurück)
   opts = opts || {};
   histClose();  // VC2a
   if (G9.loaded && typeof g9ProjReset === 'function') g9ProjReset(); else G9.auto.clear();   // G9
@@ -55915,6 +57052,7 @@ function ui1Entries() {
   kf2Guide(UI1.ents);    // KF2: Saite, Vokal-Filter, Oszilloskop
   chbGuide(UI1.ents);    /* CHORB: Chor als Einzelstücke, Gesang aus der DAW holen */
   spk1Guide(UI1.ents);   // SPK1: Spektral-Seite
+  ksGuide(UI1.ents);     // KS: Klangschule
   if (typeof ki1Guide === 'function') ki1Guide(UI1.ents);   // KI1: Profi-Trennung
   return UI1.ents;
 }
@@ -56031,6 +57169,7 @@ function ui1MenuHook(sec, colL, s6, row, btn, goto) {
     const tl = el('div', 'mrow ui1tours'); tl.appendChild(el('span', 'lbl', 'Kurz-Anleitungen – „Zeig es mir“'));
     for (const T of UI1_TOURS) { const b = btn(T.n); b.dataset.tour = T.id; tl.appendChild(b); }
     g.appendChild(tl);
+    ksMenuRow(g, btn);   // KS: Klangschule (≡ › Wo finde ich …?)
     const res = el('div', 'ui1res'); g.appendChild(res);
     const paint = () => {
       const v = q.value.trim(), L = v ? ui1Search(v) : UI1.all ? ui1Entries() : [];
@@ -56342,6 +57481,73 @@ const UI1_API = {
   ueIds: () => ui1UeLib().map(x => x.id),
 };
 /* UI1-END */
+/* ===== KS-BEGIN (Pakete KS1 + KS2, Xander (7): „Das alles als Tutorial in meinen Sequencer einbauen.“) =====
+   Klangschule: Lektionen mit der echten Klang-Engine – der Klang-Editor geht auf der richtigen Seite auf, 1–3 Regler leuchten mit
+   nummerierten Rahmen, „Hör mal“ vergleicht pegelgleich, die Karte rechnet bei jedem Dreh mit den Formeln der Engine nach (✓/✗ mit Zahl).
+   Der große Teil (Blatt, Karte, Rahmen, Lektionen, Rechnen, Vorhören) liegt im stillen Block sq-ks-src und wird erst beim ersten Öffnen
+   ausgewertet (Muster mkLoad) – beim App-Start kostet die Klangschule nichts. Hier nur: Lader, Zugänge (≡ › Wo finde ich …? ›
+   Klangschule; Klang-Editor › ⋯ › „Klangschule zu dieser Seite“; Suche), die Haken und die Test-API.
+   E2 Lern-Vorhör-Zustand: die Lektion LEIHT die gewählte Synth-Spur. KS_L = {t, tr, orig, …}: solange sie offen ist, schreibt jedes
+   Speichern (Autosave, Datei, Abgleich, Verlauf) das Original dieser Spur (ksSub in stripReplacer und SQStore.stripRuntime); ✕ holt
+   das Original bitgleich zurück (dasselbe Objekt, ↶-Stapel wie vorher); „Als Klang übernehmen“ = genau ein ↶. Die ◆-Zustände der Clips
+   ruhen auf der Lektionsspur (v6aCurSt, ak1Ref), ↶ endet am Anfang der Lektion (undo/redo), ein Projektwechsel beendet sie (applyProject).
+   Fortschritt in den Geräte-Einstellungen (uiPrefs 'ks'), kein neues Projektfeld. Keine Audiodateien, kein Netz.
+   KS2: Lektionen L5–L10 (Kapitel 3–5) mit Messen am Spur-Ausgang (L6–L8); E1 = das Scope meldet Cutoff, Amp-Pegel und Tonhöhe der
+   Fokus-Stimme (Worklet, nur bei offenem Scope; Haken in modScopeSync legt sie in MLIVE.ks). */
+var KS_L = null;                                                   // die offene Lektion; var: die Speicher-Haken dürfen sie vor dieser Zeile lesen
+const KSM = {ok: false, err: null, ms: 0};
+function ksLoad() {
+  if (KSM.ok && typeof KSX !== 'undefined') return true;
+  const t0 = performance.now(), src = document.getElementById('sq-ks-src');
+  try {
+    if (!src) throw new Error('sq-ks-src fehlt');
+    const sc = document.createElement('script'); sc.textContent = src.textContent; document.head.appendChild(sc); sc.remove();
+    if (typeof KSX === 'undefined') throw new Error('KSX nicht geladen');
+    KSM.ok = true;
+  } catch (e) { KSM.err = String(e && e.message || e); logErr(e); }
+  KSM.ms = performance.now() - t0;
+  return KSM.ok;
+}
+function ksOpen(o) { if (!ksLoad()) { toast('Klangschule lädt nicht'); return false; } return KSX.open(o || {}); }
+// Speicher-Schutz: der Klang der Lektionsspur wird beim Serialisieren durch das Original ersetzt (nur der Wert unter 'sound' dieser Spur)
+function ksSub(k, v) { const L = KS_L; return L && k === 'sound' && L.tr && v === L.tr.sound ? L.orig : v; }
+const ksHold = i => !!(KS_L && KS_L.t === i);                     // ◆ ruht: die Lektionsspur spielt und ändert nur ihren Grundklang
+function ksUndoGate(redo) { return !!(KS_L && typeof KSX !== 'undefined' && KSX.undoGate(!!redo)); }
+function ksProj() { if (KS_L && typeof KSX !== 'undefined') { try { KSX.abort(); } catch (e) { logErr(e); KS_L = null; } } }
+// Klang-Editor › ⋯: eine Zeile „Klangschule zu dieser Seite“ (HÜLLK. → Kapitel 1, FILTER → Kapitel 2–4, OSZ → 4, FX → 3, LFO/MOD → 5)
+const KS_PAGE = {env: 'HÜLLK.', filter: 'FILTER', osc: 'OSZ', lfo: 'LFO', mod: 'MOD', fx: 'FX'};
+function ksMoreBtn() { return `<button class="rb" data-a="ks"><b>Klangschule zu dieser Seite</b><small>Sounddesign mit echtem Klang · ${esc(KS_PAGE[ED.tab] || 'Klang')}</small></button>`; }
+function ksMoreTap(p) { onTap(p, () => { const pg = ED.tab; setTimeout(() => ksOpen({page: pg}), 0); }, 'button[data-a="ks"]'); }
+// ≡ › Wo finde ich …?: unter den Kurz-Anleitungen eine Zeile mit einem Knopf (kein neuer Knopf im Kopf des Klang-Editors)
+function ksMenuRow(g, btn) {
+  try {
+    const r = el('div', 'mrow ui1tours ksrow'); r.appendChild(el('span', 'lbl', 'Klangschule – Sounddesign mit echtem Klang'));
+    const b = btn('Klangschule'); b.setAttribute('aria-label', 'Klangschule öffnen: Lektionen mit echtem Klang');
+    onTap(b, () => { try { closeMenu(); } catch (e) {} ksOpen({}); }); r.appendChild(b); g.appendChild(r);
+  } catch (e) { logErr(e); }
+}
+// Suche „Wo finde ich …?“: ein Eintrag fürs Blatt, einer je Lektion
+function ksGuide(L) {
+  const E = (id, n, d, s, ls) => L.push({id, n, w: '≡ › Wo finde ich …? › Klangschule', d, s, go: () => { ksOpen(ls ? {lesson: ls} : {}); return true; }, q: ls ? '.kscard .ksh' : '.ksb'});
+  E('ks', 'Klangschule – Sounddesign lernen', 'Lektionen mit echtem Klang: hören, drehen, die App prüft mit Zahlen.', 'klangschule sounddesign lernen tutorial lektion kurs schule ueben hoeren', null);
+  E('ks-l1', 'Klangschule: Hell ist nicht laut', 'Amp gegen Filter – warum man die Filteröffnung oft nicht hört.', 'huellkurve amp filter sustain decay attack lautstaerke hell dunkel oeffnet', 'L1');
+  E('ks-l2', 'Klangschule: Aus dem Nichts – ohne Klick', 'Fläche langsam einblenden, Bass ohne Knacken.', 'swell einblenden attack klick knacken flaeche pad release langsam', 'L2');
+  E('ks-l3', 'Klangschule: Plus und Minus', 'Hüllk.-Menge positiv oder negativ – nicht nur gespiegelt.', 'polaritaet plus minus negativ huellkurve menge gespiegelt invertiert', 'L3');
+  E('ks-l4', 'Klangschule: Hochpass mit Minus', 'Der Bass kommt nach: Hochpass mit negativer Hüllkurve.', 'hochpass highpass hp minus bass kommt nach filter', 'L4');
+  E('ks-l5', 'Klangschule: Vom Waah zum Tock', 'Pluck: Filter-Decay gegen Amp-Decay, LP24 gegen LP12.', 'pluck tock waah filtertyp lp24 lp12 decay stab knackig', 'L5');
+  E('ks-l6', 'Klangschule: Nass ohne Matsch', 'Hochpass oder Bandpass über dem Bass, Echo ohne Brei.', 'nass matsch echo hall bandpass bp hochpass arpeggio bass zudecken', 'L6');
+  E('ks-l7', 'Klangschule: Das Filter pfeift', 'Eigenschwingung: Resonanz über 100 %, Keytrack 100 %.', 'eigenschwingung resonanz pfeifen pfeifton selbstschwingung keytrack sinus', 'L7');
+  E('ks-l8', 'Klangschule: Saubere Flöte', 'Rauschen bändigen, Zünder, der Ton steht sofort.', 'floete rauschen atem zuender eigenschwingung lp24 sauber', 'L8');
+  E('ks-l9', 'Klangschule: Laser und Riser', 'Hüllk. 2 auf die Tonhöhe: Laser, Riser, Downlifter.', 'laser riser downlifter tonhoehe huellkurve 2 pitch fahrt sweep', 'L9');
+  E('ks-l10', 'Klangschule: Treppen mit S&H', 'Sample & Hold im Takt und in der Tonart, Blubbern.', 's&h sample hold zufall treppe lfo takt tonart blubbern computer', 'L10');
+}
+// Test-API (lädt den Block bei Bedarf)
+const KS_API = {
+  loaded: () => ({ok: KSM.ok, ms: +KSM.ms.toFixed(1), err: KSM.err, ksx: typeof KSX !== 'undefined', open: !!KS_L}),
+  open: o => ksOpen(o || {}),
+  x: () => (ksLoad() ? KSX.api : null),
+};
+/* KS-END */
 
 /* ---------- computer keyboard ---------- */
 function onKeyDown(e) {
@@ -89459,6 +90665,7 @@ const GEN3_API = {
 Object.assign(SYNQUENZER, {gen3: GEN3_API});                /* GEN3: Test-API (Objekt, wird nicht umhüllt) */
 /* GEN3-END */
 Object.assign(SYNQUENZER, {ui1: UI1_API});                  /* UI1: Test-API (Objekt, wird nicht umhüllt) */
+Object.assign(SYNQUENZER, {ks: KS_API});                    /* KS: Test-API (Objekt, wird nicht umhüllt) */
 ueLibAdd(ui1UeLib()); ui1BmTrim(); ui1GlowInit();           // UI1: ◆ ÜBERGÄNGE-Vorlagen, 2 Bit-Mask-Pegel, Leucht-Look (Gerät)
 Object.assign(SYNQUENZER, {vd3: VD3_API});                  /* VD3: Test-API (Objekt, wird nicht umhüllt) */
 /* ===== PL1-BEGIN (Paket PL1, Xander 07.11. (11): „Hast du auch schon an Parameter-Locks gedacht und an die Lauflichter, die man an-

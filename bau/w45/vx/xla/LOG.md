@@ -4,3 +4,8 @@
 - 22:00 Block xla-block.js + 7 Haken eingebaut (apply.py), topdefs/dupkeys/Rauchtest ok, Probelauf ok; xla-test.mjs geschrieben, Last: 3.08 2.51 4.30
 - 22:02 xla-test 1. Lauf 43/44 (Rückfall-Test hielt den alten Worker), Wiedergabe-Prüfung ab Takt 5 verschärft, Meldung bei kaputter Datei einfacher; Last: 5.90 3.64 4.54
 - 22:10 Long Tasks: Verlauf-Rekorder kennt 'xla' (kein Diff des ganzen Projekts), Passt in Schritten (vvYield) + Song-Ansicht im selben Schritt wie der Wechsel → 0 Long Tasks in 6 Läufen; Last: 5.50 5.41 5.19
+- 22:17 xla-test 46/46 (2 Läufe), Worker bleibt bei offenem Blatt; Startzeit-Messung läuft, Last: 2.19 4.08 4.64
+- 22:22 Long Task beim Lesen: kam vom ersten Tippen (Klang-Maschine der App startet) – Test startet sie vorher; Worker bleibt bei offenem Blatt (Änderung nach 21 s rechnet weiter). xla-test 46/46 (3 Läufe), Kern 31/31.
+- 22:22 Startzeit 2× je 3 Läufe: kein messbarer Unterschied (Median bereit 650/630 bzw. 682/684 ms). Pflicht: topdefs 0/0, dupkeys 0, Rauchtest [], MS 2000 1×, live 1×, VERSION 4.78.0, Markenwörter ≤ Basis (1 Kommentar „iPhone“ entfernt), keine Emojis.
+- 22:22 Endfassung md5 3c83a1d2…, NOTES.md fertig. Paketordner 21M, Platte frei 3.8G, Last: 5.15 4.84 4.82. Nichts veröffentlicht, Repo nicht angefasst.
+- 23:09 UTC Schritt 2 Start (HALBTON + P5), Basis md5 68e92c03, Ausgang index.html md5 3c83a1d2, Last: 3.57 1.35 0.50, Platte frei 3.9G

@@ -28524,19 +28524,19 @@ function trackOrder() { const o = S.ui && Array.isArray(S.ui.order) ? S.ui.order
    Scheiben (≤ 6 ms je Aufgabe) nach dem Laden, vor ihrem ersten Ton sofort. Normale Projekte (≤ 8 Spuren) bauen wie bisher alles sofort.
    Abfrage für andere Pakete (XLA-Import): maxTracks() = 24, maxScenes() = 32, xlRoom() = {maxT, maxS, std, nt, ns, freeT, freeS, xl}. */
 const XL_S = 32, XL_STD = 8;
-const XLB = {nn: 0, q: [], qT: 0, sleep: new Set(), woke: 0, built: 0, buildMs: 0, gh: new Map()};
+const XLB = {nn: 0, sOk: false, q: [], qT: 0, pend: new Set(), sleep: new Set(), woke: 0, built: 0, buildMs: 0, engQ: 0, gh: new Map()};
 // ---- Abfrage (XLA-Import und andere Pakete) ----
 function maxTracks() { return MAX_T; }
 function maxScenes() { return XL_S; }
 function xlRoom() {
-  let nt = BASE_T, ns = XL_STD; try { nt = S.tracks.length; ns = S.scenes.length; } catch (e) {}
+  let nt = BASE_T, ns = XL_STD; if (XLB.sOk && S) { nt = S.tracks.length; ns = S.scenes.length; }
   return {maxT: MAX_T, maxS: XL_S, std: XL_STD, nt, ns, freeT: MAX_T - nt, freeS: XL_S - ns, xl: nt > XL_STD || ns > XL_STD};
 }
 // ---- Datenkern ----
 // Szenenzahl des Projekts, das gerade gebaut/normalisiert wird (Kontext), sonst die des offenen Projekts, vor dem Start 8
-function xlNsN() { if (XLB.nn) return XLB.nn; try { return S && S.scenes ? S.scenes.length : XL_STD; } catch (e) { return XL_STD; } }
+function xlNsN() { return XLB.nn || (XLB.sOk && S && S.scenes ? S.scenes.length : XL_STD); }   // sOk: S ist angelegt (keine TDZ-Ausnahme beim Start)
 const xlIsP = p => !!(p && ((Array.isArray(p.tracks) && p.tracks.length > XL_STD) || (Array.isArray(p.scenes) && p.scenes.length > XL_STD)));
-function xlIs() { try { return xlIsP(S); } catch (e) { return false; } }
+function xlIs() { return XLB.sOk && xlIsP(S); }
 function xlNsOf(obj) { const n = obj && Array.isArray(obj.scenes) ? obj.scenes.length : 0; return n > XL_STD ? Math.min(XL_S, n) : XL_STD; }
 function xlFit(tr, ns) { if (!tr || !Array.isArray(tr.clips)) return; if (tr.clips.length > ns) tr.clips.length = ns; while (tr.clips.length < ns) tr.clips.push(null); }
 // normalizeProject: die Szenen der Datei (8…32), die Standard-Spuren auf dieselbe Länge; der Kontext gilt bis xlNormEnd
@@ -28741,9 +28741,14 @@ function xlDormant(i) {
 function xlDefer(i) {
   if (i < XL_STD || i >= NT() || !xlLive() || AU.tracks[i]) return false;
   if (xlDormant(i)) { XLB.sleep.add(i); return true; }
-  if (!XLB.q.includes(i)) XLB.q.push(i);
-  if (!XLB.qT) XLB.qT = setTimeout(xlQRun, 0);
-  return true;
+  xlQueue(i); return true;
+}
+function xlQueue(i) { if (!XLB.q.includes(i)) XLB.q.push(i); XLB.pend.add(i); if (!XLB.qT) XLB.qT = setTimeout(xlQRun, 0); }
+// syncEngines (Worklet bereit, Projekt geladen): die Engines der Zusatzspuren einzeln in eigenen Aufgaben (ein AudioWorkletNode kostet
+// beim Anlegen ≈ 5–15 ms im Hauptfaden) – vor ihrem ersten Ton sofort (xlWake)
+function xlDeferE(i) {
+  if (i < XL_STD || !xlLive() || !AU.tracks[i] || (AU.synth && AU.synth[i]) || !wkWanted(i)) return false;
+  XLB.engQ++; xlQueue(i); return true;
 }
 function xlQRun() {
   XLB.qT = 0; const t0 = performance.now();
@@ -28751,15 +28756,17 @@ function xlQRun() {
   if (XLB.q.length) XLB.qT = setTimeout(xlQRun, 16);
 }
 function xlBuild(i, why) {
+  XLB.pend.delete(i);
   if (!AU.ctx || i == null || i >= NT() || !S.tracks[i]) return false;
-  if (AU.tracks[i] && AU.tracks[i].kindOf === S.tracks[i].kind) return false;
+  const chain = !(AU.tracks[i] && AU.tracks[i].kindOf === S.tracks[i].kind), eng = S.tracks[i].kind === 'synth' && !(AU.synth && AU.synth[i]) && (chain || wkWanted(i));
+  if (!chain && !eng) return false;
   const t = performance.now();
-  try { buildTrack(i); if (S.tracks[i].kind === 'synth') syncEngine(i, true); } catch (e) { logErr(e); return false; }
+  try { if (chain) buildTrack(i); if (S.tracks[i].kind === 'synth') syncEngine(i, true); } catch (e) { logErr(e); return false; }
   XLB.sleep.delete(i); XLB.built++; XLB.buildMs += performance.now() - t; if (why === 'wake') XLB.woke++;
   return true;
 }
 function xlWake(i) {
-  if (i < XL_STD || i >= NT() || AU.tracks[i] || !AU.ctx) return;
+  if (i < XL_STD || i >= NT() || !AU.ctx || (AU.tracks[i] && !XLB.pend.has(i))) return;
   const k = XLB.q.indexOf(i); if (k >= 0) XLB.q.splice(k, 1);
   xlBuild(i, 'wake');
 }
@@ -28785,7 +28792,7 @@ function xlApi() {
       lab: UI.szb ? UI.szb.children[1].textContent : null, pages: MX.pages ? MX.pages.length : 1, tb: trackBankOf()}),
     next: () => { xlSceneNext(); return xlSG(); }, sheet: () => xlBankSheet(UI.szb),
     lazy: () => ({q: XLB.q.slice(), sleep: [...XLB.sleep], woke: XLB.woke, built: XLB.built, ms: +XLB.buildMs.toFixed(2), chains: S.tracks.map((_, i) => !!AU.tracks[i]), engines: S.tracks.map((_, i) => !!(AU.synth && AU.synth[i]))}),
-    wake: i => { xlWake(i); return !!AU.tracks[i]; }, tLim: () => xlTLim(), canAdd: () => xlCanAddT(), dormant: i => xlDormant(i)
+    wake: i => { xlWake(i); return !!AU.tracks[i]; }, engQ: () => XLB.engQ, pend: () => [...XLB.pend], tLim: () => xlTLim(), canAdd: () => xlCanAddT(), dormant: i => xlDormant(i)
   };
 }
 /* XLB-END */
@@ -29110,7 +29117,7 @@ function normTrack(t, def, pk, warns) {
 }
 function normalizeProject(obj) {
   try {
-    if (!obj || typeof obj !== 'object') return newProjectRaw();
+    if (!obj || typeof obj !== 'object') return xlNormFail();   /* XLB: 8 Szenen, auch wenn das offene Projekt mehr hat */
     // a format-2 project (DIRIGENT files, the WP1/WP2 autosave) is migrated first (§12.6)
     if (!(obj.format >= 3) || (Array.isArray(obj.tracks) && obj.tracks.some(t => t && t.kind !== 'drum' && t.patch && !t.sound))) obj = SQStore.migrateProject2to3(obj, []);
     const nv0 = obj._newer || {}, nvF = Math.max(isNum(obj.format) ? obj.format : 0, nv0.f || 0);   // MK0
@@ -30762,7 +30769,7 @@ function syncEngine(i, full) {
   mkInRoute();
   percEngineSync(i);                                              // PERC: North-Knoten der Perkussionsspur
 }
-function syncEngines() { for (const i of synthTracks()) syncEngine(i, true); }
+function syncEngines() { for (const i of synthTracks()) if (!xlDeferE(i)) syncEngine(i, true); }   /* XLB: Engines der Zusatzspuren einzeln nachbauen */
 /* ---------- BM6 (Nachtrag 7 §2.1, §5.2): Bit Mask on the main thread ----------
    One AudioWorkletNode 'synq-bm' per Bit Mask track (output -> the track's input, like the synth worklet). The track's E in
    AU.synth[i] offers the calls of the synth host (on / off / fastOff / retune / kill / allOff / panic / set / tempo / scope /
@@ -32303,7 +32310,7 @@ function nativeTrim(snd, eng) {
    envelopes with the cancel-safe envStart / VoiceProto.release. o.sound: play another sound than the track's (browser
    preview of a row that is not loaded); o.gs: the glide state (preview phrases glide among themselves, not from the clip) */
 function spawnVoice(i, out, vel, t0, o) {
-  if (!AU.tracks[i] && AU.ctx && i < NT()) xlWake(i);              /* XLB: schlafende Zusatzspur bekommt ihre Kette vor dem ersten Ton */
+  if ((!AU.tracks[i] || XLB.pend.has(i)) && AU.ctx && i < NT()) xlWake(i);   /* XLB: Zusatzspur bekommt Kette + Engine vor dem ersten Ton */
   const c = AU.ctx, tr = S.tracks[i], A = AU.tracks[i];
   if (!c || !A || !tr || tr.kind !== 'synth') return null;
   if (tr.dvx && typeof mtx3Voice === 'function') { const v3 = mtx3Voice(i, out, vel, t0, o); if (v3 !== undefined) return v3; }   /* MTX3: Einzelspur spielt live ihren Drum-Ton */
@@ -33239,6 +33246,7 @@ function meter() {
 const TICK_MS = 25, LOOKAHEAD = 0.100;
 const LIVE_LEAD = 0.01;   // live/audition notes start slightly ahead, so their envelope events reach the audio thread in time
 let S = demoProject();                       // replaced in init()
+XLB.sOk = true;                              /* XLB: ab hier gibt es S (Szenenzahl ohne TDZ-Ausnahme) */
 const R = {
   playing: false, countIn: false, ciRun: false, lastClick: -Infinity, startTime: 0, schedBeat: 0, runId: 0,
   // V2a: per-track arrays have MAX_T places (tracks 6–8 exist only when added; their places stay -1 / null)
@@ -33589,7 +33597,7 @@ function scheduleTrack(i, from, to, late) {
   if (R.beg1) { const w = beg1Sched(i, from, to, late); if (!w) return; from = w[0]; to = w[1]; if (to <= from) return; }   // BEG1: Ziel-Spuren spielen die Band, ihre Clips nur außerhalb
   OS.tick++;                                                     // V2c′: clip content may have changed since the last look
   const s = R.slot[i]; if (s < 0) { if (BMC.act[i]) bmcSched(i, null, from, to, late); return; }
-  if (!AU.tracks[i] && AU.ctx) xlWake(i);                         /* XLB: Kette der Zusatzspur vor dem ersten geplanten Ton */
+  if ((!AU.tracks[i] || XLB.pend.has(i)) && AU.ctx) xlWake(i);   /* XLB: Kette + Engine der Zusatzspur vor dem ersten geplanten Ton */
   const tr = S.tracks[i], oc = ownPlaying(i), clip = oc || tr.clips[s];
   if (BMC.act[i] || (clip && clip.cv && bmcIs(i))) bmcSched(i, tr.mute || !bmcIs(i) ? null : clip, from, to, late);   // BM8: Bend · Rad · Druck des Clips
   if (tr.orig) { if (clip && !tr.mute) tkSched(i, clip, from, to, late, oc ? R.own[i] : null); return; }   // IMP1: Spur „Original“ = Audio wie STIMME
@@ -43406,7 +43414,7 @@ function showBanner(onB) { if (EL.banner) EL.banner.classList.toggle('show', !!o
 /* ---------- selection ---------- */
 function selectTrack(i) {
   i = clamp(i | 0, 0, NT() - 1);
-  if (!AU.tracks[i] && AU.ctx) xlWake(i);                         /* XLB: gewählte Zusatzspur spielt sofort */
+  if ((!AU.tracks[i] || XLB.pend.has(i)) && AU.ctx) xlWake(i);   /* XLB: gewählte Zusatzspur spielt sofort */
   if (i !== R.selT) { releaseInputs(r => r === 'play' || r === 'pad'); R.selT = i; UI.kbRelayout = true; }
   if (MX.bankT && MX.pages && !isDrum(i)) { const pg = MX.pages.findIndex(p => p.includes(i)); if (pg >= 0 && pg !== trackBankOf()) setTrackBank(pg); }   // V2a: a selected track is visible
   UI.dirty.all = true;

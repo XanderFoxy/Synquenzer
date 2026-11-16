@@ -95,8 +95,8 @@ ok(e1.open && /\.cbp/.test(e1.sub) && /DAW-Projekt \(\.cbp\)/.test(e1.st), 'Eins
 const gd = await p.evaluate(() => { const e = ui1Entries().find(x => x.id === 'xla'); if (!e) return null; closePop(); const r = e.go(); return {n: e.n, w: e.w, open: !!(UI.pop && UI.pop.name === 'imp1'), find: !!ui1Find(e.q), r}; });
 ok(gd && gd.open && gd.find && /DAW-Projekt \(\.cbp\) öffnen/.test(gd.n), 'Guide-Eintrag „DAW-Projekt (.cbp) öffnen“: öffnet das Import-Blatt und zeigt auf „Datei wählen“', gd);
 
-/* ===== 2. Datei wählen per Touch → eigenes Blatt (Worker, keine Long Task) ===== */
-await p.evaluate(async () => { if (autosave) await autosave.flush(); window.__lt = []; try { new PerformanceObserver(l => { for (const e of l.getEntries()) window.__lt.push(Math.round(e.duration)); }).observe({type: 'longtask', buffered: false}); } catch (e) {} });
+/* ===== 2. Datei wählen per Touch → eigenes Blatt (Worker, keine Long Task; die Klang-Maschine der App startet beim ersten Tippen – sie ist vorher fertig) ===== */
+await p.evaluate(async () => { ensureAudio(); await new Promise(r => setTimeout(r, 2500)); if (autosave) await autosave.flush(); window.__lt = []; try { new PerformanceObserver(l => { for (const e of l.getEntries()) window.__lt.push(Math.round(e.duration)); }).observe({type: 'longtask', buffered: false}); } catch (e) {} });
 let c = await pick(p, 'synth-song.cbp');
 const last = await p.evaluate(() => ({last: window.__xla.last(), worker: window.__xla.worker(), name: UI.pop && UI.pop.name, lt: window.__lt.slice()}));
 ok(c && c.st === 'fertig' && last.name === 'xla' && last.worker && last.last.worker, 'Datei per Touch gewählt → Blatt „DAW-Projekt öffnen“, gerechnet im Worker', {st: c && c.st, last: last.last});
@@ -236,6 +236,7 @@ for (const [f, mode] of [['synth-song.cbp', 'song'], ['synth-song.cbp', 'szenen'
   const o = await p.evaluate(() => JSON.parse(JSON.stringify(xlaOpts(window.__xla.cur()))));
   await p.evaluate(() => window.__xla.apply()); await p.waitForTimeout(1200);
   const X = await p.evaluate(() => ({clips: S.tracks.reduce((a, t) => a + t.clips.filter(Boolean).length, 0), sc: S.scenes.map(s => s.name), song: !!(S.song && S.song.bars), own: S.song ? Object.keys(S.song.own).length : 0, marks: S.song ? S.song.marks.map(m => m.name + ':' + m.part) : [], sv: !!UI.songView}));
+  if (mode === 'song') await p.screenshot({path: path.join(fotos, 'xla-p-alssong.png')});
   if (mode === 'song') { const a = await renderApp(p), k = renderCore(coreFor(f, o)); ok(X.clips === 0 && X.song && X.own > 0 && X.marks.length === 8 && X.marks.every(x => /:null$/.test(x)) && X.sv && sameArr(a, k) && a.length === 894, 'App „Als Song“: Szenen frei, Song aus eigenen Clips mit 8 Teil-Marken, exakt (894)', {own: X.own, marks: X.marks.slice(0, 2)}); }
   if (mode === 'szenen') ok(!X.song && X.clips > 0 && sameArr(X.sc.slice(0, 4), ['Intro', 'Strophe', 'Refrain', 'Bridge']) && !X.sv, 'App „In Szenen“: Song leer, 4 Szenen mit Clips, Matrix offen', X.sc.slice(0, 4));
   if (f === 'synth-loop4.cbp') ok(X.sc[0] === 'Loop' && X.sc.slice(1).every(n => /^Szene/.test(n)) && (await p.evaluate(() => S.tracks.every(t => t.clips.slice(1).every(x => !x)))), 'kleiner Loop → genau eine Szene „Loop“', X.sc.slice(0, 2));
