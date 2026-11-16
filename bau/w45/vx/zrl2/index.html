@@ -102374,7 +102374,7 @@ function spk1DspMake(V) {
       uEnd(d);
       return {lids, ms: Date.now() - t0, weiter: s0};
     } catch (e) { uAbort(d); delete d.meta.jobs.zerlegen; throw e; }
-    finally { d.busy = null; d.zStop = false; }
+    finally { d.busy = null; d.zStop = false; zrl2W.delete(d); }   /* ZRL2: Rand-Rahmen-Zwischenspeicher (≈ 1,2 MB) nach dem Lauf freigeben */
   }
   // Verfeinern: in der Auswahl mit passender FFT neu schätzen, welcher Anteil zum Ziel gehört → Ziel-Ebene (andere Ebenen geben anteilig ab)
   const ZN = {bass: 8192, pads: 8192, gesang: 4096, lead: 4096, drums: 1024, rest: 4096};

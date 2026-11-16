@@ -20,3 +20,4 @@
 - 08:05 beg1 A/B Runde 1 (gleichzeitig, gleiche Last): Basis 54/59, IMPK 51/59 – Unterschiede nur zeitkritische Prüfungen + Block-Zählung; echt-ons #1: getroffen 40/59 + 49/64 = Basis, falsch 91→84 / 82→75; tempo-raten nach 900 s abgebrochen (Fremdlast). Versehen: ein LOG.md-Eintrag landete im Arbeitsordner des Repos (relativer Pfad nach Hintergrund-cd), sofort gelöscht, git status sauber. Last: 7.68 13.31 13.36
 - 08:05 NOTES „Tests (Prüfung)“ + „Offen (Stand Prüfung)“ geschrieben; beg1 Runde 2 läuft, Last: 9.35 12.79 13.18
 - 08:10 beg1 Runde 2 (gleichzeitig): Basis 54/59, IMPK 56/59 (IMPK nur Prüfung 5, Block-Zählung, CPU unter Last); tempo-raten bei Last ~5 neu gestartet, Last: 4.75 8.58 11.33
+- 08:18 tempo-raten vollständig: IMPK 14/14 bei allen 4 Raten (Basis 13/13/12/13), Spanne 0,33 → 0,06; Ende. md5 index d89d27f427f5d13d358903e3ed553585 (unverändert seit 06:55), Last: 2.15 4.26 8.07

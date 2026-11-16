@@ -142,8 +142,9 @@ laufende Pakete: Last 16–29 auf 4 Kernen während fast aller Browser-Läufe.
 - **lead-ons**: Basis 10 von 17 Einsätzen > 40 ms daneben, 120,54 → IMPK 5 (nur Vibrato-Spitzen im Schlusston), alle 12 Töne −4…−7 ms, **120,24 → Projekt 120**.
 - **echt-ons** (Prüfer-Sonde, echte Aufnahme #1 gegen Annotation, an der Endfassung): getroffen A1 40/59, A2 49/64 = **Basis (kein Einsatz verloren)**,
   falsche Einsätze 91 → 84 bzw. 82 → 75, Tempo 118,62 → 118,61 (`f2/echt-ons-f2.log`).
-- **tempo-raten**: nach 900 s wegen Fremdlast abgebrochen (11 von 14 Fällen): Projekt-Tempo richtig Basis 39/44 → IMPK **44/44**, Spanne über die
-  Raten max 0,33 → 0,06 BPM (`f2/tempo-raten-f2-summe.txt`). Alle 14 Fälle bei 44,1 kHz deckt impk-test A1 ab (13/14 → 14/14).
+- **tempo-raten** (14 Vokal-Melodien × 22/44/48/96 kHz, Endfassung, `f2/tempo-raten-f2b.log`): Projekt-Tempo richtig Basis 13/13/12/13 von 14 →
+  **IMPK 14/14 bei allen vier Raten**, |Fehler| 0,16–0,20 → 0,12–0,13 BPM, |t1| 25–28 → 10 ms, Spanne über die Raten max 0,33 → 0,06 BPM.
+  (Fassung vor Prüfung: |Fehler| 0,02, |t1| 7 ms – die Nachbesserung gibt etwas Genauigkeit an den Prüfer-Fällen zurück, das Projekt-Tempo bleibt richtig.)
 - **impk-test.mjs**: Lauf f2 (Last 23–28) 8/10 – A, B, C1, D grün; C2 „clip“ 8 → 0 grün im Kern, aber der **Summen-Vergleich zweier getrennter
   Echtzeit-Läufe war nicht lastfest** (Finger kam bis 0,24 Schlag zu spät: Wechsel bei 6,04 statt 5,8; dann schlägt applyCarrierChange je nach
   Zeitpunkt andere Töne neu an – Basis selbst 179/184/189/193 Töne in vier Läufen). **Test ergänzt** (Sicherung `f2/impk-test.vor-f2.mjs`):
@@ -174,4 +175,3 @@ laufende Pakete: Last 16–29 auf 4 Kernen während fast aller Browser-Läufe.
    Entscheidung beim Zusammenführen: rv1k als Abnahme nehmen oder #14-Tempowechsel 121 → 120 nicht übernehmen.
 3. Zeitkritische Browser-Prüfungen (beg1, impk-test C) streuen unter Fremdlast in Basis und IMPK (A/B: 54/51 und 54/56); ein beg1-Lauf ganz
    ohne Fremdlast steht für die Endfassung noch aus (vor der Prüfung ohne Last: 57/59 = Basis-Stand).
-4. tempo-raten vollständig (alle 14 Fälle × 4 Raten) an der Endfassung bei niedriger Last wiederholen (Teil: 44/44).
