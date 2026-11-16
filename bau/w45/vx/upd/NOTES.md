@@ -31,15 +31,16 @@ Ja: bei veraltetem Rand-Zwischenspeicher lädt ein Update die Seite zweimal (und
    nächster Start (Home-Bildschirm) zeigt 4.76.1 und lädt ein drittes Mal (`naechsterStart.startVersion 4.76.1, +1`).
 
 ## Änderung (Block `/* UPD-BEGIN */ … /* UPD-END */` direkt nach PERF1A-END, 1 Haken)
-- Haken in vwReload vor perf1aPre: `if (typeof updPre === 'function' && await updPre(v, o)) return;   /* UPD */`
+- Haken in vwReload (seit Prüfung: VOR dem Löschen der synq-app-Kopie, nach Speichern/Cloud): `if (typeof updPre === 'function' && await updPre(v, o)) return;   /* UPD */`
 - `updPre`: nur 1. Versuch je Fassung (wie PERF1A). Fragt **nur Kopfzeilen** ab: `HEAD` normale Adresse und `HEAD ?v=<Fassung>`
   (`cache: 'no-store'`, 8-s-Grenze; HEAD geht am Service-Worker vorbei, kein Inhalt). Vergleich ETag (W/ und „-gzip“ gleich
-  behandelt) und Last-Modified; „alt“ nur, wenn **alle** vorhandenen Merkmale abweichen.
+  behandelt) und Last-Modified; „alt“ nur, wenn **alle** vorhandenen Merkmale abweichen **und** (seit Prüfung) die normale Adresse
+  genau die Kopfzeilen der Seiten-Kopie des Service-Workers (= laufende Fassung) liefert; ohne Kopie → unklar → bisheriger Weg.
   - gleich/unklar → wie bisher PERF1A (1 Download unter der normalen Adresse).
-  - verschieden → alle 15 s erneut fragen, höchstens 60 s (PERF1A.busy gesetzt: zweite VW-Prüfung tut nichts). Wird die normale
+  - alt → alle 15 s (seit Prüfung 10 s) erneut fragen, höchstens 60 s (PERF1A.busy gesetzt: zweite VW-Prüfung tut nichts). Wird die normale
     Adresse neu → PERF1A (1 Download, HTTP-Zwischenspeicher neu). Bleibt sie alt → direkt `?v=` (1 Download, die alte Seite wird
     gar nicht geladen), mit denselben vwIdle-Prüfungen vor/nach dem Speichern wie PERF1A.
-- Neue Namen: UPD, updHead, updProbe, updPre (topdefs 7988 → 7992, 0 doppelt).
+- Neue Namen: UPD, updHead, updProbe, updPre (topdefs 7988 → 7992, 0 doppelt); seit Prüfung dazu updKey, updMk, updCmp, updRef (→ 7996).
 - Werkstatt: `node bau.cjs basis.html index.html` (Block in block-upd.js). Diff: +61 Zeilen, 0 geändert/entfernt.
 
 ## Messung NACHHER (A/B im Wechsel mit basis, Last 17–24 auf dem Rechner; Bytes sind lastunabhängig)
@@ -61,8 +62,11 @@ Einzelzeilen + Last je Lauf: LOG.md.
 
 ## Grenzen / Offen
 - Pages selbst nicht messbar (Proxy 403): ETag/Last-Modified-Verhalten des echten Rands ist angenommen (gleiche Datei unter `/` und
-  `?v=` → gleiche Kopfzeilen). Fehlen beide Merkmale → „unklar“ → alter Weg (kein Schaden). Weichen sie am echten Rand trotz
-  gleicher Datei ab, kostet das nur Zeit (60 s, dann `?v=` wie 4.68), keinen Doppel-Download.
+  `?v=` → gleiche Kopfzeilen). ~~Weichen sie am echten Rand trotz gleicher Datei ab, kostet das nur Zeit (60 s, dann `?v=` wie 4.68),
+  keinen Doppel-Download.~~ **Richtiggestellt (Prüfung, Befund 1):** in der ersten Fassung kostete das 60 s beim Update, beim nächsten
+  Start noch einmal bis zu 60 s Warten auf der alten Fassung und nach 10 min einen weiteren Download. Seit der Nachbesserung gilt
+  „alt“ nur noch, wenn die normale Adresse nachweislich die laufende Fassung liefert (Kopie des Service-Workers) – liefert Pages unter
+  `?v=` eigene Kopfzeilen, läuft das Update wie basis (gemessen, siehe Prüfung). Vor dem Release trotzdem Roh-Lauf/iPhone-Check.
 - Szenario „alt“ (Rand bleibt > 60 s alt): Update 1 Download, aber der nächste Start unter der normalen Adresse lädt einmal neu
   (HTTP-Zwischenspeicher der normalen Adresse ist noch alt) – nur mit sw.js-Änderung vermeidbar (Seite mit If-None-Match =
   ETag der eigenen Kopie holen und bei 304 die Kopie liefern). Vorschlag, nicht gebaut (Repo-Datei, eigenes Paket).
