@@ -1,5 +1,5 @@
 // SPKK Abnahme: A8 Spektral-Kleinfehler (1)–(4) auf <index>, Gegenprobe auf <basis>. Aufruf: node spkk-test.mjs <index> <basis>
-// → spkk-test.json neben diesem Skript; Ausgang 1 bei Fehler. Sonden in sonde/ (p2-name, p16, pseite aus SPKFIX; p-finden, p-korn, p-finden-zeit neu).
+// → spkk-test.json neben diesem Skript; Ausgang 1 bei Fehler. Sonden in sonde/ (p2-name, p16, pseite aus SPKFIX; p-finden, p-worker-finden, p-korn, p-finden-zeit neu).
 import {execFileSync} from 'node:child_process'; import fs from 'node:fs'; import path from 'node:path'; import {fileURLToPath} from 'node:url';
 const D = path.dirname(fileURLToPath(import.meta.url)), file = path.resolve(process.argv[2] || path.join(D, 'index.html')), basis = process.argv[3] ? path.resolve(process.argv[3]) : null, res = []; let fails = 0;
 const EXTRA = 'spk8DspMake,spk10Okt,spk9DspMake,spk12SelFn,spk12Ras,spk12Fft,spk12Win,spk12Mag,spk12K2,spk12DspMake,spkfixS6,spkfixImpClean,spkfixName,spkfixMaskRange,spkfixPatch,spkfixUid,spkfixDspMake,spkkPk,spkkF0';
@@ -15,6 +15,8 @@ const t0 = Date.now(), last = s => JSON.parse(s.trim().split('\n').filter(l => /
   ok('1-notenname-ueberall-finden', rein.map(x => x.f + '→' + x.neu.map(q => q.m).join('/')), rein.every(x => x.neu.length === 1 && x.neu[0].m === x.soll));
   ok('1-ueberall-finden-obertonreich-unveraendert', harm.map(x => x.neu), harm.every(x => x.neu.length === 1 && x.neu[0].m === x.soll && x.neu[0].f === 220));
   if (basis) { const G = last(run('p-finden.mjs', basis)).filter(x => x.art === 'sinus'); ok('1-gegenprobe-basis-rot', G.map(x => x.f + '→' + x.neu.map(q => q.m).join('/')), G.some(x => x.neu.length !== 1 || x.neu[0].m !== x.soll)); } }
+// (1) dasselbe im echten Spektral-Worker der Seite (Worker-Text enthält spkkPk/spkkF0)
+{ const w = last(run('p-worker-finden.mjs')); ok('1-ueberall-finden-im-worker', w, w.how === 'worker' && w.neu && w.neu.length === 1 && w.neu[0].m === 55 && !w.fehler && w.errs.length === 0); }
 // (2) Neu rechnen nach Masken-Änderung, Container-Import (SPKFIX, Kern)
 { const J = run('p16.mjs').trim().split('\n').filter(l => l.startsWith('{')).map(l => JSON.parse(l)), a = J.find(x => x.fall === 'neu-rechnen'), b = J.find(x => x.fall === 'container-import');
   ok('2-audio-ebene-neu-gerechnet', {id: a.idVor + '→' + a.idNach, rms: a.rmsNote3, ms: a.ms}, a.idNach !== a.idVor && a.neu6 === 1 && Math.abs(a.rmsNote3.nach - a.rmsNote3.quelle) < 0.1 * a.rmsNote3.quelle);
