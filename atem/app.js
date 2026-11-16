@@ -6,7 +6,7 @@ import { baue, baueProgramm, wortFuer, grenzen } from './plan.js';
 import * as TRN from './training.js';
 import { ton } from './ton.js';   // statisch: der Ton entsteht im Tipp auf Start, vor jedem await (iOS)
 
-export const VERSION = '0.1.5';
+export const VERSION = '0.1.6';   // 016
 const TEST = /[?&]test=1/.test(location.search);
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -26,6 +26,13 @@ let tipp = { t: -1e9, x: 0, y: 0 }, sperre = null;
 const tippSperre = () => { if (performance.now() - tipp.t < SPERR_MS) sperre = { ...tipp }; };
 const sitzungModul = () => SZ || (SZ = import('./sitzung.js').then((m) => { SZda = true; return m; }, (e) => { SZ = null; throw e; }));   // Fehlschlag nicht merken (Funkloch)
 const wissenModul = () => WISSEN || (WISSEN = import('./wissen.js').catch((e) => { WISSEN = null; throw e; }));
+// 016 Anfang: Meditation (meditation-seite.js, erst beim Öffnen geladen) + „Stimme sagt den Takt“ (stimme.js). alt=true beim Start: die frühere
+// iPhone-Ansage (ansage true) wird zur echten Stimme; ohne Sprite/Netz spricht stimme.js weiter mit der Systemstimme (Rückfall).
+const stimmeVor = (alt) => { let e = speicher.einst(); if (alt && e.ansage === true) e = speicher.setzeEinst({ ansage: 'stimme' }); if (e.ansage === 'stimme' && alt !== 'nur_umstellen') import('./stimme.js').then((S) => S.bereiteVor(ton, e)).catch(() => {}); };   // 016-nb B4: Startseite stellt nur um, Sprite erst auf der Übungsseite
+function zeigeMeditation(id) { seite('Meditation', '<p class="leise">Lädt …</p>', 'start', id ? 2 : 1); import('./meditation-seite.js').then((m) => m.zeige({ seite: (t, h, r, tf) => seite(t, h, 'start', tf), blatt, tippSperre, host: document.body, taktGeaendert: () => stimmeVor(), neuLaden: () => neuLaden }, id), keinNetz); }
+const M016 = { karte: '<a class="karte" href="#meditation"><b>Meditation</b><span>Geführte Übungen mit Stimme – Deutsch, English, <span lang="ar" dir="rtl">العربية</span></span></a>',
+  schalter: (e) => `<label class="schalter"><span>Stimme sagt den Takt</span><input type="checkbox" id="stimmetakt" ${e.ansage ? 'checked' : ''}></label><p class="leise">Stimme künstlich erzeugt (neuronale Sprachsynthese).</p><a class="link" href="#meditation">Sprache der Stimme wählen</a>` };
+// 016 Ende
 function keinNetz() { const i = $('#inhalt'); i.querySelectorAll('p.leise').forEach((p) => { if (p.textContent === 'Lädt …') p.remove(); }); i.insertAdjacentHTML('afterbegin', '<div class="karte hinweis">Keine Verbindung. <button class="knopf klein zweit" id="nochmal">Nochmal versuchen</button></div>'); $('#nochmal').onclick = () => location.reload(); scrollTo(0, 0); }   // Neu laden: Browser merken sich fehlgeschlagene Module
 const hauptBeleg = (T) => { const e = Object.entries(T.beleg || {}); return e.length ? e[0] : null; };
 
@@ -37,7 +44,7 @@ function rahmen() {
   $('#zurueck').onclick = () => { if (history.length > 1) history.back(); else location.hash = '#start'; };
 }
 function seite(titel, html, reiter, tiefe = 1) {
-  $('#titel').textContent = titel;
+  const ti = $('#titel'); ti.textContent = titel; ti.removeAttribute('dir'); ti.removeAttribute('lang');   // 016-nb N5: Meditation setzt dir/lang selbst
   $('#zurueck').style.visibility = tiefe > 1 ? 'visible' : 'hidden';
   document.querySelectorAll('#leiste a').forEach((a) => a.classList.toggle('an', a.dataset.r === reiter));
   const i = $('#inhalt'); i.innerHTML = html; i.scrollTop = 0;
@@ -75,7 +82,7 @@ function zeigeStart() {
   if (tr && tr.start && !tr.fertig) { const h = heuteTraining(); if (h) trK = `<a class="karte trk" href="#training"><b>Heute im Training</b><span>Woche ${h.woche} · ${h.einheiten.filter((x) => x.erledigt).length} von ${h.einheiten.length} erledigt</span></a>`; }
   seite('Atem', `<div class="start-links"><h2 class="gross">Wie geht's dir?</h2>
     <button class="knopf schnell" id="schnell">${sym('play')} 1 Minute runterkommen</button>
-    ${letzte && letzte.id !== 'seufzer' ? `<a class="knopf zweit" href="#uebung/${letzte.id}">Weiter mit: ${esc(letzte.name)}</a>` : ''}${trK}</div>
+    ${M016.karte}${letzte && letzte.id !== 'seufzer' ? `<a class="knopf zweit" href="#uebung/${letzte.id}">Weiter mit: ${esc(letzte.name)}</a>` : ''}${trK}</div>
     <div class="kacheln">${kachel('nicht_gut', "Mir geht's nicht gut", 'Notfall-Hinweise und sanfte Hilfe', '#lage/nicht_gut')}
     ${REIHENFOLGE.map((id) => kachel(id, SITUATIONEN[id].name, SITUATIONEN[id].ziel_ui, '#lage/' + id)).join('')}</div>${KEIN_ERSATZ}`, 'start', 1);
   $('#schnell').onclick = () => starte(TECHNIKEN.seufzer, { variante: 'kurz' }, 'frei');
@@ -128,6 +135,7 @@ function ablaufLeiste(plan) {
 function optAusHash(q) { const o = {}; for (const [k, v] of new URLSearchParams(q)) o[k] = v; return o; }
 function zeigeUebung(id, q) {
   const T = TECHNIKEN[id]; if (!T) return zeigeUebungen();
+  if (speicher.einst().ansage === 'stimme') setTimeout(stimmeVor, 600);   // 016-nb B4: Takt-Stimme erst hier vorbereiten (nach dem ersten Bild der Übungsseite)
   const o = optAusHash(q), e = speicher.einst(), tr = speicher.training(), si = speicher.sicherheit();
   const gz = grenzen(T, o);   // 0.1.4: d/z/r aus dem Link nur innerhalb der Grenzen („Nicht verlängerbar“ gilt auch für #uebung/kraft?r=6)
   const st = { variante: o.v || null, dauer_min: gz.dauer_min ?? (T.dauer ? T.dauer.standard : null), zyklen: gz.zyklen, runden: gz.runden, laengen: e.laengen || {} };
@@ -204,7 +212,7 @@ const WISSEN_FIGUR = { 'T-VAGUS': 'lang_aus', 'T-NASE': 'bauch', 'T-LANGSAM': 'r
 async function starte(T, st, quelle, plan, extra = {}) {
   if (startet) return; startet = true;
   const e = speicher.einst(), k = $('#los'), kt = k && k.textContent;
-  ton.entsperren(e.musik);
+  ton.entsperren(e.musik); stimmeVor();   // 016
   try {
     if (T.warnung === 'voll' || T.warnung === 'kurz') { if (!(await sicherheitsBlatt(T))) { ton.schliessen(); return; } ton.entsperren(e.musik); }
     if (!plan) plan = T.id === 'programm' ? st.plan : baue(T, st);
@@ -369,7 +377,7 @@ function zeigeEinstellungen() {
   const sch = (k, n) => `<label class="schalter"><span>${n}</span><input type="checkbox" data-k="${k}" ${e[k] ? 'checked' : ''}></label>`;
   seite('Einstellungen', `<div class="zweispaltig"><div><div class="karte"><b>Ton</b><div class="chips">${['klang', 'wind', 'aus'].map((t) => `<button class="chip ${e.ton === t ? 'an' : ''}" data-ton="${t}" aria-pressed="${e.ton === t}">${{ klang: 'Klang', wind: 'Wind', aus: 'Aus' }[t]}</button>`).join('')}</div>
       <p class="leise probe" id="probetext"><span class="pkreis" aria-hidden="true"></span><span id="probewort">Tippen = Probehören</span></p>
-      <label class="schieber">Lautstärke <input type="range" min="0" max="1" step="0.05" value="${e.laut}" data-k="laut"></label>${sch('sekunden', 'Leises Ticken beim Halten')}${sch('musik', 'Zur eigenen Musik')}${sch('ansage', 'Ansage (Ein / Halten / Aus)')}
+      <label class="schieber">Lautstärke <input type="range" min="0" max="1" step="0.05" value="${e.laut}" data-k="laut"></label>${sch('sekunden', 'Leises Ticken beim Halten')}${sch('musik', 'Zur eigenen Musik')}${M016.schalter(e)}
       <a class="zeile" href="#musik" id="musikzeile"><span><b>Eigene Musik</b><small>${e.eigeneMusik && e.musikName ? 'An: ' + esc(e.musikName) : e.musikName ? 'Aus: ' + esc(e.musikName) : 'Ein ruhiges Stück von deinem Gerät unter die Übung legen'}</small></span><span class="rechts">${sym('weiter')}</span></a>
       <button class="knopf zweit voll" id="tonpruef">Ton prüfen</button><div id="tonerg"></div></div>
     <div class="karte"><b>Anzeige</b>${sch('ruhig', 'Ruhige Anzeige')}${sch('figur', 'Figur zeigen')}${sch('blumen', 'Blüte statt Kreis')}<div class="chips">${['seite', 'vorn'].map((t) => `<button class="chip ${e.ansicht === t ? 'an' : ''}" data-ans="${t}">${t === 'seite' ? 'Seite' : 'Vorne'}</button>`).join('')}</div></div>
@@ -399,6 +407,7 @@ function zeigeEinstellungen() {
     else if (b.id === 'export') exportiere();
     else if (b.id === 'loeschen') allesLoeschen();
   };
+  $('#stimmetakt').onchange = (ev) => { speicher.setzeEinst({ ansage: ev.target.checked ? 'stimme' : false }); stimmeVor(); };   // 016
   if ($('#ausschl')) $('#ausschl').onchange = (ev) => speicher.setzeTraining({ ...speicher.training(), ausschluss: ev.target.checked });
   $('#import').onchange = async (ev) => { const f = ev.target.files[0]; if (!f) return; try { const obj = JSON.parse(await f.text()); const w = await blatt('<h2>Wiederherstellen?</h2><p>Deine jetzigen Atem-Daten werden ersetzt.</p><div class="zwei"><button class="knopf" data-w="n">Abbrechen</button><button class="knopf haupt" data-w="j">Ersetzen</button></div>'); if (w === 'j') { speicher.import(obj); location.reload(); } } catch { blatt('<h2>Keine gültige Sicherung</h2><button class="knopf voll" data-w="ok">OK</button>'); } };
 }
@@ -423,8 +432,9 @@ async function allesLoeschen() {
 }
 
 // ---------- Router ----------
+const frei = () => $('#sitzung').hidden && !document.querySelector('.md-spieler');   // 016-nb B1: auch eine laufende Meditation nie durch Neuladen abbrechen
 function route() {
-  if (neuLaden && $('#sitzung').hidden) return location.reload();
+  if (neuLaden && frei()) return location.reload();
   tippSperre();   // neue Seite: ein zweiter Tipp an derselben Stelle trifft nicht gleich den Knopf darunter   // neue Fassung aktiv: sauber neu laden, nie alt+neu mischen
   if (vergleichStop) { vergleichStop(); vergleichStop = null; }
   if (vorschauStop) { vorschauStop(); vorschauStop = null; }
@@ -441,6 +451,7 @@ function route() {
     case 'wissen': return zeigeWissen(b);
     case 'einstellungen': return zeigeEinstellungen();
     case 'musik': return zeigeMusik();
+    case 'meditation': return zeigeMeditation(b);   // 016
     case 'sicherheit': erststart(); return zeigeStart();
     default: return zeigeStart();
   }
@@ -451,7 +462,7 @@ if (!TEST || /[?&]sw=1/.test(location.search)) {
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
     navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(() => {});
     // Versions-Prüfung: meldet der Service Worker eine andere Fassung, laden wir neu – sofort, oder nach der laufenden Übung (route)
-    navigator.serviceWorker.addEventListener('message', (m) => { if (m.data && m.data.atem && m.data.atem !== VERSION) { neuLaden = true; if ($('#sitzung').hidden) location.reload(); } });
+    navigator.serviceWorker.addEventListener('message', (m) => { if (m.data && m.data.atem && m.data.atem !== VERSION) { neuLaden = true; if (frei()) location.reload(); } });
   }
 }
 document.addEventListener('click', (e) => {
@@ -460,9 +471,9 @@ document.addEventListener('click', (e) => {
   if (echt) tipp = { t, x: e.clientX, y: e.clientY };
   ton.wecken();   // jeder Tipp holt gestörten Ton zurück (iOS)
 }, true);
-addEventListener('pageshow', (e) => { if (e.persisted && neuLaden && $('#sitzung').hidden) location.reload(); });
+addEventListener('pageshow', (e) => { if (e.persisted && neuLaden && frei()) location.reload(); });
 // Module für die Übung nach dem ersten Bild vorab holen (nicht auf ruhenden Seiten animieren)
-(window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => { if (!TEST) sitzungModul(); });
+(window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => { if (!TEST) { sitzungModul(); stimmeVor('nur_umstellen'); } });   // 016: frühere Ansage → Takt-Stimme (Sprite erst auf der Übungsseite, B4)
 window.atem = { VERSION, test: TEST ? {
   plan: () => letzteSitzung && letzteSitzung.uhr && letzteSitzung.uhr.plan, zustand: () => letzteSitzung && letzteSitzung.uhr && letzteSitzung.uhr.plan ? letzteSitzung.uhr.zustand() : null,
   sitzung: () => letzteSitzung, tonProtokoll: async () => (await import('./ton.js')).ton.protokoll(), speicher: () => ({ einst: speicher.einst(), sicherheit: speicher.sicherheit(), protokoll: speicher.protokoll(), messwerte: speicher.messwerte(), training: speicher.training() }),

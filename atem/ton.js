@@ -90,6 +90,7 @@ function takt() {
     const at = ctx ? ctx.currentTime + (st - jetzt) / 1000 - ausgleich : 0;
     knoten = st > jetzt ? [] : null; planeSchritt(i, Math.max(ctx ? ctx.currentTime : 0, at)); if (knoten && knoten.length) glocken.set(i, knoten); knoten = null;
     const w = sagWort(plan, i);
+    if (einst.ansage === 'stimme' && ton.stimme) { ton.stimme.schritt(i, plan, st, jetzt, at, ctx, w); continue; }   // 016: echte Stimme (stimme.js); w = Wort-Regel sagWort 0.1.5
     if (!einst.ansage || plan.modus === 'messen' || !w || gesagt.has(i) || gesagt.get(i - 1) === w) continue;   // gleiches Wort direkt davor: schweigen
     gesagt.set(i, w); clearTimeout(ansageT.get(i));
     const soll = Math.max(jetzt, st - 250), meinLauf = lauf;
@@ -139,7 +140,7 @@ function musikAus(blende = 0.6) {
   try { s.stop(t + blende + 0.02); } catch {} mQuelle = null;
 }
 export const ton = {
-  beiStoerung: null,
+  beiStoerung: null, stimme: null, kontext: () => ctx,   // 016: Ansager aus stimme.js
   entsperren(musik) {
     if (TEST) return true;
     musikZ = !!musik;
@@ -160,8 +161,8 @@ export const ton = {
     wachSeit = performance.now(); ton.entsperren(musikZ);
   },
   zustand: () => (TEST ? 'test' : ctx ? ctx.state : 'kein'),
-  einstellen(e) { einst = { ...einst, ...e }; if (haupt && ctx) haupt.gain.setTargetAtTime(einst.laut * 0.4, ctx.currentTime, 0.05); if (mQuelle && mGain && ctx && 'musikLaut' in e) mGain.gain.setTargetAtTime(musikZiel(), ctx.currentTime, 0.1); },
-  starte(uhr, plan) { uhrRef = uhr; planRef = plan; lauf++; ansageWeg(); geplant = new Map(); gesagt = new Map(); glocken = new Map(); if (einst.art === 'wind') windStart(); clearInterval(planer); planer = setInterval(takt, 100); takt(); if (einst.musikAn && (mPuffer || TEST)) musikAn(false); },
+  einstellen(e) { einst = { ...einst, ...e }; if (ton.stimme) ton.stimme.einstellen(einst); /* 016 */ if (haupt && ctx) haupt.gain.setTargetAtTime(einst.laut * 0.4, ctx.currentTime, 0.05); if (mQuelle && mGain && ctx && 'musikLaut' in e) mGain.gain.setTargetAtTime(musikZiel(), ctx.currentTime, 0.1); },
+  starte(uhr, plan) { uhrRef = uhr; planRef = plan; lauf++; ansageWeg(); geplant = new Map(); gesagt = new Map(); glocken = new Map(); if (ton.stimme) ton.stimme.starte(uhr); /* 016 */ if (einst.art === 'wind') windStart(); clearInterval(planer); planer = setInterval(takt, 100); takt(); if (einst.musikAn && (mPuffer || TEST)) musikAn(false); },
   neuPlanen() {   // nur Schritte, deren Startzeit sich geändert hat (Atmen-/Stopp-Knopf), neu planen – nie den gerade laufenden noch einmal
     const p = uhrRef && uhrRef.plan; if (!p) return;
     for (const [i, st] of geplant) if (p.start[i] !== st) {
@@ -169,12 +170,13 @@ export const ton = {
       for (const g of glocken.get(i) || []) try { g.disconnect(); } catch {}   // Glocke zur alten Startzeit abschalten (sonst zwei Glocken)
       glocken.delete(i);
     }
+    if (ton.stimme) ton.stimme.neuPlanen(p);   // 016
     if (planer) takt();   // Schritt, der durch den Knopf jetzt beginnt, sofort planen (nicht erst beim nächsten Takt, sonst > 50 ms und still)
   },
   halt() {
     clearInterval(planer); planer = null;
     if (ctx && haupt) { const t = ctx.currentTime; haupt.gain.cancelScheduledValues(t); haupt.gain.setValueAtTime(haupt.gain.value, t); haupt.gain.linearRampToValueAtTime(0, t + 0.05); const h = haupt; setTimeout(() => { try { h.disconnect(); } catch {} }, 120); haupt = ctx.createGain(); haupt.gain.value = einst.laut * 0.4; haupt.connect(ctx.destination); }
-    wind = null; geplant = new Map(); gesagt = new Map(); glocken = new Map(); lauf++; ansageWeg(); musikAus();
+    wind = null; geplant = new Map(); gesagt = new Map(); glocken = new Map(); lauf++; ansageWeg(); musikAus(); if (ton.stimme) ton.stimme.halt();   // 016
     try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch {}
   },
   ende() { if (TEST) { proto.push({ art: 'ende', t_ms: uhrRef ? uhrRef.zeit() : 0 }); return; } if (!ctx || einst.art === 'aus') return; const t = ctx.currentTime + 0.05; glocke(t, 294); glocke(t + 0.3, 392); glocke(t + 0.6, 494); },

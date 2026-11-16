@@ -76,7 +76,7 @@ export function oeffne(plan, opt) {
   }
   const zeileNeu = () => { if (kk && uhr.plan) zeile(uhr.zustand().schritt); };
   if (einst.figur !== false) import('./anatomie.js').then((m) => { if (!aktiv || aktiv.uhr !== uhr) return; an = m.erzeugeAnatomie(el.anat, { ansicht: einst.ansicht || 'seite', modus: gross ? 'gross' : 'klein', daten: { MUSKELN } }); figurRuhe(); }).catch(() => { el.anat.classList.add('aus'); });
-  ton.einstellen({ art: einst.ton || 'klang', laut: einst.laut ?? 0.6, sekunden: !!einst.sekunden, ansage: !!einst.ansage, musikAn: !!(einst.eigeneMusik && einst.musikName), musikLaut: einst.musikLaut ?? 0.5 });
+  ton.einstellen({ art: einst.ton || 'klang', laut: einst.laut ?? 0.6, sekunden: !!einst.sekunden, ansage: einst.ansage === 'stimme' ? 'stimme' : !!einst.ansage, musikAn: !!(einst.eigeneMusik && einst.musikName), musikLaut: einst.musikLaut ?? 0.5 });   // 016: 'stimme' = echte Stimme (stimme.js)
   ton.entsperren(einst.musik);
   holeWake();
   async function holeWake() { try { if (navigator.wakeLock && document.visibilityState === 'visible') { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); } } catch { wake = null; } }
@@ -170,7 +170,7 @@ export function oeffne(plan, opt) {
     else if (a === 'atmen') kuerze();
     else if (a === 'stopp') { if (T.id === 'ruhe_zuege') { tippZahl++; el.stopp.textContent = 'Einatmen (' + tippZahl + ')'; } else kuerze(); }
     else if (a === 'ton') { einst.ton = einst.ton === 'aus' ? 'klang' : 'aus'; ton.einstellen({ art: einst.ton }); b.innerHTML = sym(einst.ton === 'aus' ? 'tonAus' : 'ton'); if (opt.merke) opt.merke({ ton: einst.ton }); }
-    else if (a === 'ansage') { einst.ansage = !einst.ansage; ton.einstellen({ ansage: einst.ansage }); b.innerHTML = sym(einst.ansage ? 'ton' : 'tonAus'); if (opt.merke) opt.merke({ ansage: einst.ansage }); }
+    else if (a === 'ansage') { einst.ansage = einst.ansage ? false : 'stimme'; /* 016 */ ton.einstellen({ ansage: einst.ansage }); b.innerHTML = sym(einst.ansage ? 'ton' : 'tonAus'); if (opt.merke) opt.merke({ ansage: einst.ansage }); }
     else if (a === 'seitevorn') { einst.ansicht = einst.ansicht === 'vorn' ? 'seite' : 'vorn'; b.textContent = einst.ansicht === 'vorn' ? 'Seite' : 'Vorne'; if (an) an.ansicht(einst.ansicht); if (opt.merke) opt.merke({ ansicht: einst.ansicht }); }
     else if (a === 'ansicht' && an) { gross = !gross; host.classList.toggle('figur-gross', gross); f.groesse(kreisPx()); if (an.modus) an.modus(gross ? 'gross' : 'klein'); zeileNeu(); }
   }
