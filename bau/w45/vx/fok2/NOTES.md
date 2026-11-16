@@ -1,5 +1,7 @@
 # FOK2 – Spektral-Fokus „Nur Rest“ genau (Gefundenes tief ausblenden)
 
+**Stand nach Prüfung (16.11., 00:20–00:45 UTC): Endfassung v6 md5 74cc722a2d6e8d63f0700f17e81046a4 – siehe Abschnitt „Prüfung“ unten.**
+
 Stand: index.html = basis.html (rel-4750, 4.75.0) + Änderungen NUR im vorhandenen Block `/* FOKUS1-BEGIN */ … /* FOKUS1-END */`
 (Thema Fokus), Kennung `FOK2` in den Kommentaren. Keine neuen Haken außerhalb, keine Zeile außerhalb des Blocks geändert.
 VERSION bleibt '4.75.0'. Diff: 83 Zeilen neu, 10 Zeilen im Block geändert (alle zwischen FOKUS1-BEGIN und FOKUS1-END).
@@ -121,3 +123,90 @@ Die drei Kern-Haken aus FOKUS1 (spk1DspMake, spk1Call, spk8WUrl) und die fünf A
 - Zauberstab-Prüfung nutzt den genauen Rest nur, wenn das Stück gerade angezeigt (im Zwischenspeicher) ist – sonst Näherung wie 4.72.
 - Die Regressionstests spk12/spk6/spk5/spkfix/fokus1-kern schreiben ihre Ergebnis-Dateien (json/fotos) in ihre eigenen Ordner
   (so vom Auftrag aufgerufen); fokus1-test und zrl1-test liefen als Kopie in reg2/.
+
+## Prüfung (Prüfer FOK2, Nachbesserung FOK2-P, 16.11. 00:20–00:45 UTC, Last 3,4–11)
+Ausgang: v4 md5 313593d6172c5401280bc9152c4c41bd (Freigabe empfohlen, zwei mittlere Punkte, ein kleiner). Endfassung **v6 md5
+74cc722a2d6e8d63f0700f17e81046a4**. Alle Änderungen weiter nur im FOKUS1-Block (Kennung FOK2-P), keine neuen Haken außerhalb; Diff (fok2.diff,
+alt: fok2-v4.diff) hat nur Abschnitte zwischen FOKUS1-BEGIN und FOKUS1-END. Sicherungen: index.vor-pruef.html (= v4), index.vor-pruef2.html (= v5).
+Messskripte: nach/p4.mjs, nach/p2.mjs (Kopien der Prüfer-Skripte), nach/p5.mjs (neu), Logs in nach/ und nach/reg/.
+
+### Befund 1 (mittel) – Zauberstab-Prüfung passte bei langen Liedern nicht zur Anzeige → behoben
+`trueRest(…, one)` rechnet bei Bedarf nur EINE Spalte (Rahmen-Prüfung nur für ihr Fenster, Rest-Audio-Blöcke um die Spalte, eine FFT) –
+gleicher Rechenweg wie die Anzeige. `ops.spk12zauber`: liegt das Fokus-Stück nicht im 6er-Speicher, wird das Stück wie 4.72 genähert, aber die
+angetippte Spalte genau (nicht gespeichert, Abbruch bei geändertem Ebenen-/Noten-Stand → dann Näherung wie bisher).
+| p4 (3 min, Kamm-Ebene über 2 Töne, Stück 5 verdrängt) | 43 s @220 | 43 s @440 | 67 s @220 | 67 s @440 |
+|---|---|---|---|---|
+| v4: Anzeige / Zauberstab | 32 / 32 (0 Zellen) | 24,9 / 24,9 | 32 / **12,2 (11987 Zellen)** | 24,9 / **17,4 (5728 Zellen)** |
+| v6: Anzeige / Zauberstab | 32 / 32 (0 Zellen) | 24,9 / 24,9 | 32 / 32 (0 Zellen) | 24,9 / 24,9 (0 Zellen) |
+| basis: Anzeige / Zauberstab | 12,2 / 12,2 (11982) | 17,4 / 17,4 (5724) | 12,2 / 12,2 (11987) | 17,4 / 17,4 (5728) |
+Zeit Zauberstab (p5, Stück verdrängt, Rest-Audio im Speicher): v6 79 / 70 ms, basis 41 / 41 ms.
+
+### Befund 2 (mittel) – Zeitpreis → für das schrittweise Arbeiten behoben, erster ganzer Satz bleibt (begründet)
+- **Rest-Audio bleibt über Ebenen-Änderungen:** `rsSync` bildet je Masken-Streifen (128 Basis-Rahmen) einen Fingerabdruck über alle Ebenen
+  (Inhalt der Kacheln, Reihenfolge, Kopie-Kennung k6; `fpOf`). Bei neuem Ebenen-Stand werden nur Blöcke verworfen (genullt, done = 0), deren
+  Streifen sich geändert haben – der Mix 'rest' hängt nur an den Masken (gainFn), gleiche Streifen ⇒ byte-gleicher Block. Vorher: ganzes Feld neu.
+  Fingerabdruck in Scheiben (12 ms, dann tick): am Stück kostet er bei 4 voll teilbelegten Ebenen 55–213 ms (3 min) bzw. 152–225 ms (10 min,
+  Node-Messung nach/fpbench.mjs) – zu lang für die Worker-Antwortzeit, darum v6. Ein Lauf je Stand (`RS.pend`), Notweg bei Dauer-Änderung: ganz neu.
+- **Rest-Bild je Stück** (`RS.tr`, höchstens 16 Stücke ≈ 16 MB, frei mit dem Rest-Audio nach 90 s): gleich, solange die Streifen seiner Rahmen
+  und Rest-Blöcke gleich sind → nach einer örtlichen Änderung keine FFT für unberührte Stücke (die Fokus-Stücke selbst werden wie bisher neu
+  gemischt, Schlüssel H mit Ebenen-Versionen).
+- **„Noten finden“ auf dem Rest** hält das Feld (`RS.hold`): ändert sich währenddessen der Ebenen-Stand, wird kopiert statt überschrieben.
+- Byte-Gleichheit: p5 „gleichFrisch“ – Satz nach zwei örtlichen Änderungen = frisch geöffnetes Dokument mit denselben Ebenen (Hash af7fb9b2);
+  p2: ↶ der zweiten Ebene = erster Satz (45d36813, wie Prüfer); fok2-test 16/0 mit denselben Zahlen wie v4.
+
+| Zeit 3 min mono, N 4096, Fokus-Satz (A/B abwechselnd) | v4 (Prüfer) | v6 | basis |
+|---|---|---|---|
+| erster Satz, Ebene über das ganze Lied (p5, Last 5–8) | 8949 / 8762 (Last 12–14) | 6549 / 4901 (erstes Stück 552 / 517) | 765 / 841 (91 / 117) |
+| nach örtlicher Ebene 60–70 s (p5) | ≈ voller Satz (Feld neu) | **1096 / 936** (erstes 49 / 56) | 792 / 846 (78 / 101) |
+| nach zweiter örtlicher Ebene 120–125 s (p5) | ≈ voller Satz | **812 / 797** | 686 / 753 |
+| nach zweiter Ebene über das ganze Lied (p2) | 8353 / 8160 | 4776 (Last 3,6–4) | 526 |
+| UI 3 min auf „Nur Rest“ (fokus1-test) | 5179 (basis 1555) | 5190 | 1962 |
+| Abbruch in der Rest-Audio-Phase (p2) | 26 ms | 52 ms (Last 4) | 3 ms |
+| Worker-Ping während des Satzes (p2) Median / P95 / max | 7,3 / 75–111 / 160–185 | 20,5 / 150 / 188 | 29,8 / 80 / 80 (nur 16 Werte) |
+| Long Tasks Hauptfaden (p2, p5) | 0 | 0 | 0 |
+
+Begründung für den verbleibenden Preis: Der genaue Rest braucht das Rest-Audio (je Basis-Rahmen FFT → Masken-Gewinn → inverse FFT, genau wie
+beim Abspielen). Ändert sich eine Ebene über das ganze Lied (Zerlegen, Ebene über alles verschieben), ist das ganze Rest-Audio wirklich neu –
+das ist kein Zwischenspeicher-Problem, sondern die Rechnung selbst. Der Hauptfaden bleibt frei, das sichtbare Stück kommt zuerst (0,4–0,6 s),
+Abbruch wirkt. **Zur Entscheidung (Lead/Xander):** so lassen (genau, nach dem ersten Satz schnell) – oder bei Ebenen über > 60 s zuerst die
+Näherung zeigen und den genauen Satz im Leerlauf nachreichen (sichtbar anders: Bild wird kurz nach dem Umschalten tiefer – darum nicht gebaut).
+
+### Befund 3 (klein) – Speicher Rest-Audio schon beim Anzeigen → nicht geändert (Risiko), dokumentiert
+Float32 je Lied-Länge (3 min ≈ 32 MB, 10 min ≈ 106 MB) + jetzt `RS.tr` ≤ 16 MB, beides frei 90 s nach letztem Gebrauch. Block-LRU / Rückfall auf die
+Näherung bei sehr langen Liedern bleibt offen (siehe Offenes).
+
+### Kleinigkeit – „Abstand ≤ 0,4 dB“ vs „≤ 0,1 dB“
+Gemessen ≤ 0,1 dB (fok2-test, v4 und v6 gleich). „0,4“ im Bericht war falsch.
+
+### Haken-Liste (Nachbesserung, alles im FOKUS1-Block, Kennung FOK2-P)
+- neu: `fpOf(d)` (async, Scheiben), `rsKey(d)`, `rsSync(d)` (async), `RS` um base/fp/tr/hold/pend erweitert
+- `trueRest(…, ok, one)`: Parameter `one` (eine Spalte), Merker `RS.tr` mit Fingerabdruck-Signatur (`keep`)
+- `restMid`: `await rsSync(d)` statt eigener Schlüssel-Prüfung (sonst unverändert, Stereo-Mitte wie v4)
+- `ops.noten` (Rest): `RS.hold` mit try/finally
+- `ops.spk12zauber` (Fokus-Prüfung): Stück aus dem Zwischenspeicher, sonst Näherung + genaue Spalte
+Keine Zeile außerhalb des Blocks, keine neuen Haken.
+
+### Endstand v6 (Last 3,4–11, andere Agenten aktiv)
+| Test | Ergebnis |
+|---|---|
+| fok2-test LANG=0 (Kopie nach/) | 16 OK / 0 (alle Tiefen wie v4: Kamm −34,8/−32,4, Schatten −25,6/−25,8, Rechteck −98,2/−80,4, 65 Hz −72,7/−67,4, außen byte-gleich, „nur Noten“ = basis-Hash) |
+| p4 Zauberstab (Prüfer-Skript) | Anzeige = Zauberstab an allen 4 Stellen, 0 Konsolenfehler |
+| p5 (neu) | gleichFrisch true, Zeiten s. Tabelle, LT 0, 0 Fehler |
+| p2 (Prüfer-Skript, RUNS=1) | Hashes wie v4, ↶ = erster Satz, Abbruch 'abgeloest' 52 ms, LT 0, 0 Fehler |
+| fok2-stereo-noten | gleiche 2 Noten wie basis, 729 vs 780 ms |
+| fokus1-kern-test (Kopie) | 26 / 0 |
+| fokus1-test (Kopie, A/B gleiche Zeit) | neu 47 / 4, basis 44 / 7 – alle Fehler Long Tasks, auch in „Alles“/„Gefundenes“ |
+| spk12-test / -test2 / -test3 (Kopien) | 98/0 · 72/0 · 47/0 |
+| spk6-test | ALLES OK |
+| spk5-test | ALLES OK, 24 Prüfungen |
+| spkfix-test (Kopie mit sonde/ + spk7/lib.mjs) | ALLES OK, 11 Prüfungen |
+| zrl1-test (RUNDEN=3) | Zerlegen 20 s A 1356 / B 1260 ms (Einzel A 1356/1179/1547, B 1260/1788/1224 – Streuung), 3 min A 10559 / B 10928 (1,03); SDR + Energie je Ebene gleich, Speicher OK; „schneller“-Prüfung ist das ZRL1-Ziel gegen 4.74 (hier gleicher Zerlegen-Code, unberührt) |
+| Pflicht | topdefs doppelt 0 / Syntaxfehler 0; dupkeys 0; smoke errors []; MS 2000 = 1; live = 1; VERSION 4.75.0 |
+Die Regression lief diesmal vollständig als Kopie in nach/ bzw. nach/reg/ (keine Ergebnis-Dateien in fremden Paketordnern).
+
+### Offenes nach der Prüfung
+- Erster ganzer Satz nach einer Ebene über das ganze Lied bleibt 5–7× basis (s. Begründung) – Entscheidung Lead/Xander.
+- Worker-Ping während der Rest-Audio-Phase bis ≈ 190 ms (ein Block-Render am Stück unter Last; wie v4).
+- Rest-Audio-Speicher (Float32 voll) + Rest-Bild-Merker ≤ 16 MB; Block-LRU für > 10 min offen.
+- Fingerabdruck setzt voraus, dass jede Masken-Änderung die Ebenen-Version erhöht (verUp) – so ist es im Kern (gleiche Annahme wie der
+  bisherige Schlüssel von restMid); Masken, die ohne Versionswechsel geändert würden, wären auch vorher veraltet gewesen.
