@@ -135,6 +135,7 @@ async function dazu(files) {
     const e = { file: f, key, kopf: null, stumm: null, zustand: 'neu', sha: stand.sha[key] || null, flac: null, auftrag: null };
     if (stand.dateien[key]?.angekommen) e.zustand = 'da';
     liste.push(e); neu.push(e); zeileBauen(e);
+    if (e.zustand === 'da') zeileFortschritt(e, 1);
   }
   if ($('fertig').hidden === false) { $('fertig').hidden = true; }
   ansicht();
@@ -185,10 +186,22 @@ function meldung(text, art = '') {
   if (!text) { m.hidden = true; fussHoehe(); return; }
   m.className = 'hinweis' + (art ? ' ' + art : ''); m.textContent = text; m.hidden = false; sag(text); fussHoehe();
 }
-let netzZeigt = false;
+let netzZeigt = false, langsamZeigt = false;
 function netzMeldung(an) {
-  if (an && !netzZeigt) { netzZeigt = true; meldung('Keine Verbindung. Es geht von selbst weiter, sobald das Netz wieder da ist.'); }
+  if (an) { $('gZeit').textContent = ''; lauf.proben = []; }
+  if (an && !netzZeigt) { netzZeigt = true; langsamZeigt = false; meldung('Keine Verbindung. Es geht von selbst weiter, sobald das Netz wieder da ist.'); }
   else if (!an && netzZeigt) { netzZeigt = false; meldung(''); }
+}
+// Hänger (Verbindung offen, aber nichts geht durch): nach 15 s ohne Fortschritt ehrlich sagen, dass es von selbst weitergeht
+const fluss = { zuletzt: 0, uhr: 0 };
+function langsam(an) {
+  if (an && !langsamZeigt && !netzZeigt) { langsamZeigt = true; $('gZeit').textContent = ''; lauf.proben = []; meldung('Verbindung ist gerade langsam – es geht von selbst weiter.'); }
+  else if (!an && langsamZeigt) { langsamZeigt = false; meldung(''); }
+}
+// Die Wache zählt nur, solange wirklich ein Teil hochgeht (fluss.zuletzt > 0) – nicht beim Vorbereiten oder Warten.
+function flussWache(an) {
+  clearInterval(fluss.uhr); fluss.uhr = 0; fluss.zuletzt = 0; langsamZeigt = false;
+  if (an) fluss.uhr = setInterval(() => { if (fluss.zuletzt && Date.now() - fluss.zuletzt > 15000) langsam(true); }, 1000);
 }
 
 // ---------- Code ----------
@@ -206,6 +219,7 @@ $('name').addEventListener('input', () => { stand.name = $('name').value; merke(
 class CodeFalsch extends Error {}
 class Gedrosselt extends Error {}
 class Abgelaufen extends Error {}
+class Unbekannt extends Error {}
 
 async function rufe(fn, daten) {
   let versuch = 0;
@@ -225,6 +239,7 @@ async function rufe(fn, daten) {
     const was = String((j && (j.fehler || j.error || j.code_fehler)) || '').toLowerCase();
     if (was === 'code' || (!was && (r.status === 401 || r.status === 403))) throw new CodeFalsch();
     if (r.status === 429 || /drossel|zu ?viele|rate/.test(was)) throw new Gedrosselt();
+    if (r.status === 404 && was === 'unbekannt') throw new Unbekannt();
     if (r.status === 413 || r.status === 507 || /platz|speicher|quota|voll|gross|groß/.test(was)) return { platzFehlt: true, frei: zahl(j && (j.frei ?? j.frei_bytes ?? j.freiBytes)) }; // eigener Name: Erfolgsantworten tragen „platz“ als Info
     if (r.status >= 500 && versuch < 5) { versuch++; await pause(2000 * versuch); continue; }
     const f = new Error('server-' + r.status); f.antwort = j; throw f;
@@ -235,11 +250,16 @@ const zahl = (x) => (typeof x === 'number' && isFinite(x)) ? x : (typeof x === '
 function put(url, body, fort) {
   return new Promise((fertig) => {
     const x = new XMLHttpRequest(); let letzte = Date.now(), aus = false;
-    const ende = (r) => { if (aus) return; aus = true; clearInterval(wache); fertig(r); };
+    const ende = (r) => { if (aus) return; aus = true; clearInterval(wache); fluss.zuletzt = 0; fertig(r); };
     const wache = setInterval(() => { if (Date.now() - letzte > 60000) { try { x.abort(); } catch { /* egal */ } ende({ netz: true, status: 0 }); } }, 5000);
-    x.open('PUT', url);
+    x.open('PUT', url); fluss.zuletzt = Date.now();
     x.setRequestHeader('content-type', 'application/octet-stream');
-    x.upload.onprogress = (ev) => { letzte = Date.now(); fort(ev.loaded); };
+    x.upload.onprogress = (ev) => {
+      if (aus) return; // spätes Ereignis nach Abbruch ignorieren
+      letzte = Date.now(); fluss.zuletzt = letzte;
+      if (ev.loaded >= 65536) { netzMeldung(false); langsam(false); } // es fließt wieder: Hinweise weg, nicht erst nach dem ganzen Teil
+      fort(ev.loaded);
+    };
     x.onload = () => ende({ ok: x.status >= 200 && x.status < 300, status: x.status, text: String(x.responseText || '').slice(0, 400) });
     x.onerror = x.onabort = x.ontimeout = () => ende({ netz: true, status: 0 });
     try { x.send(body); } catch { ende({ netz: true, status: 0 }); }
@@ -250,10 +270,10 @@ async function putSicher(url, body, fort) {
   for (;;) {
     await online();
     const r = await put(url, body, fort);
-    if (r.ok) { netzMeldung(false); return; }
+    if (r.ok) { netzMeldung(false); langsam(false); return; }
     if (r.status === 409 || /already exists|duplicate/i.test(r.text || '')) { netzMeldung(false); return; } // Teil liegt schon da
     if ((r.status === 400 || r.status === 401 || r.status === 403) && /exp|jwt|token|signature|unauthori/i.test(r.text || '')) throw new Abgelaufen();
-    if (r.netz) netzMeldung(true);
+    if (r.netz) { langsam(false); netzMeldung(true); }
     else if (r.status >= 400 && r.status < 500 && r.status !== 408 && r.status !== 429 && ++hart > 3) throw new Error('hochladen-' + r.status);
     fort(0);
     versuch++; await pause(Math.min(30000, 1500 * 2 ** Math.min(versuch, 4)));
@@ -270,7 +290,7 @@ function gesamtZeigen(schritt) {
   const t = performance.now(); lauf.proben.push([t, fertigB]);
   while (lauf.proben.length > 2 && t - lauf.proben[0][0] > 20000) lauf.proben.shift();
   const [t0, b0] = lauf.proben[0], rate = (fertigB - b0) / Math.max(1, (t - t0) / 1000);
-  $('gZeit').textContent = schritt === 'senden' && t - t0 > 3000 && rate > 0 ? restzeit((lauf.gesamt - fertigB) / rate) : '';
+  $('gZeit').textContent = schritt === 'senden' && !netzZeigt && !langsamZeigt && t - t0 > 3000 && rate > 0 ? restzeit((lauf.gesamt - fertigB) / rate) : '';
 }
 function laufStart(gesamt) { lauf.gesamt = gesamt; lauf.basis = 0; lauf.jetzt = 0; lauf.proben = []; }
 
@@ -369,9 +389,11 @@ async function hochladen(code, e) {
     fertigB += teilGr(i); lauf.basis += teilGr(i); lauf.jetzt = 0; gesamtZeigen('senden');
   }
   for (let runde = 0; runde < 3; runde++) {
-    const r = await rufe('ton-fertig', { code, satzId: a.satzId, nr: a.nr, teileDa: a.teile });
+    let r;
+    try { r = await rufe('ton-fertig', { code, satzId: a.satzId, nr: a.nr, teileDa: a.teile }); }
+    catch (err) { if (err instanceof Unbekannt) { delete stand.dateien[e.key]; e.auftrag = null; e.zustand = 'neu'; merke(); } throw err; }
     const fehlt = (Array.isArray(r.fehlen) ? r.fehlen : []).map((k) => k - 1).filter((x) => Number.isInteger(x) && x >= 0 && x < a.teile); // Server zählt Teile ab 1
-    if (r.angekommen !== false && !fehlt.length) { a.angekommen = true; merke(); e.zustand = 'da'; zeileInfo(e); zeileFortschritt(e, 1); return; }
+    if (r.angekommen !== false && !fehlt.length) { a.angekommen = true; a.uploads = []; merke(); e.zustand = 'da'; zeileInfo(e); zeileFortschritt(e, 1); return; }
     // Teile fehlen im Speicher: nur diese nochmal
     for (const i of fehlt.length ? fehlt : [...Array(a.teile).keys()]) {
       const body = await teilDaten(e, i);
@@ -386,7 +408,7 @@ async function senden() {
   const code = codeWert();
   if (!code) { $('codeTeil').hidden = false; $('codeDa').hidden = true; $('code').classList.add('falsch'); $('code').focus(); meldung('Bitte zuerst den Code eintippen.', 'rot'); return; }
   clearTimeout(platzTimer);
-  laeuft = true; meldung(''); ansicht(); wach(true);
+  laeuft = true; meldung(''); ansicht(); wach(true); flussWache(true);
   const offen = () => liste.filter((e) => e.zustand !== 'da' && e.file.size > 0);
   try {
     await Promise.all(liste.map((e) => e.kopfP)); // Dateiköpfe sind gelesen
@@ -427,6 +449,7 @@ async function senden() {
         }
         break;
       } catch (err) {
+        if (err instanceof Unbekannt) continue; // Datei neu anmelden (nächste Runde holt ein frisches Ticket)
         if (!(err instanceof Abgelaufen)) throw err;
         await erneuern(code, offen().filter((e) => e.auftrag && !e.auftrag.angekommen));
       }
@@ -447,6 +470,7 @@ async function senden() {
     }
     $('gesamt').hidden = true;
   } finally {
+    flussWache(false);
     laeuft = false; wach(false); ansicht();
   }
 }
@@ -486,7 +510,7 @@ $('neu').addEventListener('click', () => {
 addEventListener('beforeunload', (ev) => { if (laeuft) { ev.preventDefault(); ev.returnValue = ''; } });
 
 codeAnsicht(); ansicht();
-if (Object.values(stand.dateien).some((d) => !d.angekommen && d.bis > Date.now() && d.da && d.da.includes('1')))
+if (Object.values(stand.dateien).some((d) => d && !d.angekommen && d.satzId && d.bis > Date.now() - 86400000))
   meldung('Ein Senden wurde unterbrochen. Wähle dieselben Dateien nochmal und tippe auf Senden – es geht dort weiter, wo es aufgehört hat.');
 // Testzugang (nur lesend): Zustand für die automatischen Prüfungen
 globalThis.__tonPost = { liste, stand: () => stand, TEIL };
