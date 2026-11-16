@@ -81,5 +81,33 @@ Stellen von LT2/SPKK/IMPK nicht berührt (keine Long-Task-/Import-Stellen; spk12
    zPrep-Quantisierung ohne log10 (Schwellen-Tabelle + genaue Rechnung nahe der Schwellen, ≈ 200 ms, nur beim ersten Zerlegen eines Stücks).
 2. Mit kleiner Ergebnis-Änderung (wie ZRL1 Offen): Real-FFT / Radix-4, schnellerer Median (z. B. Sortiernetz-Paare) – nur nach Freigabe.
 3. „Alle Ebenen abtasten“ aus: Fortschritt war schon da; das Ebenen-Signal selbst kostet bei 3 min ≈ 6,9 s (Last 8) – eigenes Paket (Block-Render).
-4. Statuszeile „Suche Schläge … NN %“ nur über den Rückruf geprüft (30 Meldungen), nicht per Geste im Spektral-Blatt fotografiert.
-5. Übrige Spektral-Regression (spk1/spk4/spk11/spk11b/fokus1/spkfix) in diesem Paket nicht gelaufen (Zeit, Last 10–29); spk5/spk6 grün, Ergebnis bitgleich.
+4. Statuszeile „Suche Schläge … NN %“: über den Rückruf (30 Meldungen) und in der Prüfung mit der echten `spk12Trans` (20 Meldungen) geprüft, nicht per Geste im Spektral-Blatt fotografiert.
+5. Übrige Spektral-Regression (spk1/spk4/spk11/spk11b/fokus1/spkfix) nicht gelaufen; gelaufen: spk5, spk6, spk12-test2, spk12-test4 (Prüfung), Masken bitgleich in 8 Fällen.
+6. **Sichtbar (CLAUDE.md Regel 3):** die Prozentzahl hinter „Suche Schläge …“ bei Auswahlen über ≈ 24 s. A4 verlangt den Fortschritt, das Muster gibt es schon („Ebene „…“ abtasten … NN %“) – trotzdem vor dem Release einen Funk-Satz in die B1-Liste (nachträglich bestätigen); will Xander es nicht → der eine Haken in `spk12Trans` (4. Argument) fällt weg, sonst ändert sich nichts.
+
+## Prüfung (Befunde des Prüfers nachgeprüft, 16.11. 08:16–08:35, Last 2–13)
+Sicherung vorher: `index.vor-pruef.html` (= `50e0a88c…`), `NOTES.vor-pruef.md`. Prüfer-Urteil: keine Fehler, drei kleine Punkte, Freigabe ja.
+
+| # | Befund (Prüfer) | nachgeprüft | was getan |
+|---|---|---|---|
+| 1 | Sichtbare Prozentzahl „Suche Schläge … NN %“ ohne vorheriges OK | echt (Basis 0, Paket 20 Prozent-Texte bei 120 s; kurze Auswahl / Regler-`keep` 0) | bleibt (A4 verlangt Fortschritt, vorhandenes Muster); **Funk-Satz in B1 vor dem Release** – Offen 6 |
+| 2 | Gewinn zu hoch angegeben („≈ 15 %“) | echt: Prüfer CPU ×1,14 (−12,5 %), Bauer Chromium ×1,14, Node ×1,17 | NOTES berichtigt: **„etwa 12–15 % weniger Rechenzeit (3 min)“**; Nachmessung unten liegt eher darüber (also vorsichtige Angabe) |
+| 3 | Zwischenspeicher (letzter Streifen, 146×2049×4 B ≈ 1,2 MB) bleibt je Dokument bis zum nächsten Zerlegen | echt: `pruef2/speicher-test.mjs` auf `index.vor-pruef.html` → nach Lauf und nach Abbruch belegt (2 FEHL) | **Haken (eine Zeile, ZRL2)** im `finally` von zerlegen: `zrl2W.delete(d)` – auch nach Abbruch/Fehler. Ergebnis unverändert, weil jeder Lauf mit dem ersten Streifen ohnehin neu rechnet (`neu`). Doppel-Aufruf („Rechnung läuft“) wirft vor dem `try` → gibt den Speicher des laufenden Laufs nicht frei (geprüft) |
+
+Eigene Durchsicht dazu (ohne neuen Befund): `zrl2Sm`-Grenzen gelten auch bei NaN im Signal (mh/fg können nicht NaN werden, nur ED – und ED wird voll geglättet);
+`zrl2Row` mit k0 > k1 (keine Gesang-Bins) schreibt 0 wie die volle Summe; Fortschritts-Meldungen kommen im selben Kanal vor der Antwort (keine veraltete Statuszeile danach),
+`spk12CallSrc`/`fokus1CallSrc` reichen den Rückruf weiter bzw. ersetzen ihn (dann nur ohne Prozentzahl, kein Fehler).
+
+**Tests nach der Prüfung (Endfassung):**
+- `pruef2/speicher-test.mjs index.html` **5/5 OK** (während des Laufs belegt 7/7 Streifen, danach frei, nach Abbruch frei, Doppel-Aufruf behält ihn, Wiederholung bitgleich f95a0201); Gegenprobe `index.vor-pruef.html`: 2 FEHL (Test greift). Ausgabe `pruef2/speicher-test.out`.
+- `pruef/bitgleich.mjs basis.html index.html` **8/8 OK** (alle Masken-Kacheln Byte für Byte, darunter eigene Ebene, SPK5-Auswahl, zweimal zerlegen, Auswahl dann ganz). `pruef2/bitgleich.out`.
+- `pruef2/zrl2-test.mjs` (Chromium, index ↔ basis, RUNDEN=3 RUNDEN3=2) **ALLE OK (12)**: 3 min 8662/10693 ms gegen 11331/14246 ms (Paar gleicher Last 5,6/5,1: ×1,31), 20 s Median 1386 gegen 1642 ms,
+  SDR und Energie je Ebene bitgleich (20 s + 3 min), RSS 405 MB (≤ 500), Transient 346 = 346 + 30 Meldungen, Konsole []. `pruef2/zrl2-test.out/.json`.
+- Node-A/B 3 min, selber Prozess, CPU (`pruef/ab.mjs`, Last 11–13): 8352 → 6617 ms **×1,26** (Paare 1,54 Aufwärmen · 1,24 · 1,21 · 1,25). `pruef2/ab-180.out`.
+- `pruef/trans-status.mjs basis.html index.html`: Basis 0, Endfassung 20 Prozent-Texte (5 % … 99 %), kurze Auswahl 0, `keep` 0. (Der Harness-Text „Cannot set properties of undefined“ kommt aus dem minimalen U des Prüfers und tritt in Basis und Paket gleich auf.)
+- Regression (Kopien `pruef2/reg/`): **spk12-test4 28 OK / 0 FEHLER** (u. a. Transient-Maske in der Ebene, Abtasten-Fortschritt) · **spk12-test2 71 OK / 1 FEHLER** im Volllauf
+  (hochkant „keine-long-task-50ms“ 78 ms bei Last ≈ 10) → A/B nur hochkant, abwechselnd basis/index/index/basis (Last 4–5,5): **je 24/24 OK, 0 Long Tasks** = Last-Rauschen, kein Rückschritt (`pruef2/reg/lt/`).
+- Pflicht: topdefs „Skripte 26, Namen 7989, doppelt 0, Syntaxfehler 0“ · dupkeys „0 doppelte Schlüssel“ · Rauchtest `errors []`, `pruef2/smoke-index.png` md5-gleich mit `smoke-basis.png` · „MS 2000“ 1× · „  live: true,“ 1× · VERSION '4.76.1' · basis.html = rel-4761.
+
+**Endfassung:** `index.html` md5 **`72125ad9e87e440980b8edffabc59009`** (Unterschied zu `index.vor-pruef.html`: genau die eine `finally`-Zeile). Empfehlung: **ausliefern ja**, mit dem Funk-Satz zu Offen 6 (B1).
+
