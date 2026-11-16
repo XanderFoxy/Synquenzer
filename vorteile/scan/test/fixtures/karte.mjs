@@ -2,6 +2,8 @@
 // mydealz: Gruppen-Feeds statt der abgeschalteten Suche (/rss/search?q=… gibt seit 31.10.2026 HTTP 404) – die früheren
 // Such-Fixtures (Therme, MicroFreak, Prämien, iTunes) stehen jetzt bei der Gruppe, die diese Deals liefert.
 export const FIXTURE_KARTE = [
+  // Modul essen (16.11.2026): eine gekürzte, ausgedachte Overpass-Antwort (Lokale um Döbeln + Ketten)
+  ['overpass-api.de/api/interpreter', 'overpass-essen.json'],
   // Modul knaller (16.11.2026): gekürzte kaufDA-Händlerseiten (echte Angebote aus roh-daten 31.10./08.11.2026, nur
   // __NEXT_DATA__ mit gekürzten Feldern); Chemnitz nur für Netto, sonst eine Stadtseite ohne Angebote des Markts -> bundesweit
   ['kaufda.de/Chemnitz/Geschaefte/Netto-Marken-Discount', 'knaller/netto-chemnitz.html'],
