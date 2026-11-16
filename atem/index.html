@@ -120,6 +120,9 @@ body.in-sitzung #leiste,body.in-sitzung #kopf{visibility:hidden}
  .sz-knoepfe{flex-direction:column}.sz-atmen,.sz-stopp{min-width:200px}
  .sz-kk-block{display:block;position:relative;flex:none}.sz-kk{position:absolute;left:0;right:0;bottom:calc(100% + 6px);width:auto;min-height:38px}
  .figur-gross .sz-kk-block{display:contents}.figur-gross .sz-kk{display:none}
+ /* eng (kleine Handys quer, Notch): Maße aus querKreis() in fuehrung.js – nur wenn die Standard-Lage nicht passt */
+ .eng .sz-haupt{flex-wrap:nowrap;padding:var(--q-pt) var(--q-pr) 48px 16px}.eng .sz-anat{width:var(--q-fw);height:var(--q-fh)}.eng .sz-kk{right:auto;min-width:100%;width:max-content}.eng.mit-kk .sz-kk-block{align-self:flex-start}.eng .sz-atmen,.eng .sz-stopp{max-width:200px}
+ .eng.figur-gross .sz-haupt{padding:8px var(--q-pr) 8px 148px}.eng.figur-gross .sz-zeile{width:132px}
  .vergleich{flex-direction:row}.vg-fig{flex:1}.nur-quer{display:block}
  .kurven{grid-template-columns:1fr 1fr}
 }

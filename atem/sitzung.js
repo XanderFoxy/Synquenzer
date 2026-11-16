@@ -1,7 +1,7 @@
-// Atem – „Übung läuft“ (KONZEPT §2.7, §4.4): verbindet Uhr, Ton, Kreis, Anatomie, Wake Lock, Sichtbarkeit.
+// Atem – „Übung läuft“ (KONZEPT §2.7, §4.4)
 import { erzeugeUhr } from './uhr.js';
 import { ton } from './ton.js';
-import { erzeugeFuehrung, phasenFarbe } from './fuehrung.js';
+import { erzeugeFuehrung, phasenFarbe, querKreis } from './fuehrung.js';
 import { sym } from './symbole.js';
 import { MUSKELN } from './daten.js';
 
@@ -13,8 +13,8 @@ export const laeuft = () => aktiv;
 export function oeffne(plan, opt) {
   if (aktiv) aktiv.beenden('gestoppt', true);
   const { T, einst = {}, quelle = 'frei', beiEnde, riskant = false, test = false } = opt;
-  const host = $('#sitzung'); host.classList.remove('figur-gross'); host.classList.toggle('riskant', riskant);
-  const kk = plan.runden > 0;   // Kopfkarte „Runde 3/8 · Phase“ nur bei Übungen mit Runden (Tabellen, Kraft, Wach, Gerät)
+  const host = $('#sitzung'); host.classList.remove('figur-gross', 'eng'); host.classList.toggle('riskant', riskant);
+  const kk = plan.runden > 0;
   host.classList.toggle('mit-kk', kk);
   const ruhigMedia = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const ruhig = !!einst.ruhig || ruhigMedia;
@@ -40,7 +40,7 @@ export function oeffne(plan, opt) {
     <div class="sz-blatt" hidden></div>`;
   host.hidden = false; document.body.classList.add('in-sitzung');
   const cv = $('canvas', host), quer = () => innerWidth > innerHeight;
-  // hochkant + Karte: bei knappem Platz wird der Kreis bis Kartenhöhe kleiner, Figur/Streifen wie ohne Karte
+  // hochkant + Karte: Kreis bei knappem Platz bis Kartenhöhe kleiner
   const knopfPlan = kk && plan.schritte.some((x) => x.kuerzbar && /^halten/.test(x.art));
   const kreisHoch = () => {
     const K = Math.min(320, innerWidth - 60), q = (s) => $(s, host), h = kk ? q('.sz-kk').offsetHeight : 0, tab = q('.sz-tab');
@@ -48,27 +48,30 @@ export function oeffne(plan, opt) {
     const frei = q('.sz-haupt').clientHeight - (knopfPlan && q('.sz-atmen').hidden && q('.sz-stopp').hidden ? 104 : 0) - 28 - K - q('.sz-zeile').offsetHeight - (tab ? tab.offsetHeight + 8 : 0) - (q('.sz-anat.aus') ? 0 : 170);
     const r = K - h + Math.min(h, Math.max(0, Math.floor(frei))); host.style.setProperty('--kk-b', r + 'px'); return r;
   };
-  const kreisPx = () => (gross ? 120 : quer() ? Math.min(riskant ? 240 : 300, innerHeight - 110, kk ? $('.sz-haupt', host).clientHeight - 88 : 1e9) : kreisHoch());   // quer: riskant mit Bedienspalte; Karte: 44 px über dem Kreis frei
+  const spalte = plan.offen || T.id === 'ruhe_zuege' || plan.schritte.some((x) => x.kuerzbar && /^halten/.test(x.art));
+  const sT = T.id === 'kontrollpause' ? 'Erster Atemreiz – Stopp' : T.id === 'sss_messen' ? 'Luft aus – Stopp' : 'Atmen';
+  const zx = plan.schritte.reduce((a, x) => (/^halten|^ruhe$/.test(x.art) || (WEG[x.weg] || '').length <= a.length ? a : WEG[x.weg]), ''), zn = Math.max(0, ...plan.schritte.map((x) => x.zuege || 0));
+  const kreisPx = () => (quer() ? querKreis(host, { gross, riskant, kk, spalte, zt: [zx && sym('nase') + '<span>' + zx + '</span>', zugText({ runden: plan.runden, runde: plan.runden, zuege: zn, zug: zn }), 'noch ' + mmss(plan.gesamt_ms), plan.offen && sT] }) : (host.classList.remove('eng'), gross ? 120 : kreisHoch()));
   let gross = false;
   const f = erzeugeFuehrung(cv, { ruhig, blumen: einst.blumen !== false, px: kreisPx() });
   const uhr = erzeugeUhr();
   let an = null, raf = 0, letzteSek = -1, letzterI = -1, zustand = 'zaehlen', zaehlStart = performance.now(), wake = null, offenWand = null, tippZahl = 0, gekuerzt = [];
   const el = { wort: $('.sz-wort', host), zahl: $('.sz-zahl', host), hinweis: $('.sz-hinweis', host), weg: $('.sz-weg', host), zug: $('.sz-zug', host), rest: $('.sz-rest', host), atmen: $('.sz-atmen', host), stopp: $('.sz-stopp', host), blatt: $('.sz-blatt', host), anat: $('.sz-anat', host), kkRunde: $('.sz-kk-runde', host), kkPhase: $('.sz-kk-phase', host) };
-  // Kopfkarte: Abschnitt der Runde (nicht Ein/Aus – das steht im Kreis). Nach dem letzten Halten einer Tabelle: „Erholung“.
+  // Kopfkarte: Abschnitt; nach dem letzten Halten einer Tabelle „Erholung“
   let kkText = '';
   const letztesHalten = kk ? plan.schritte.reduce((a, x, k) => (x.abschnitt === 'halten' ? k : a), -1) : -1;
   function kopfkarte(s, i) {
     if (!kk) return;
-    const [wort, art] = s.abschnitt === 'ruhe' ? ['Ruhe', 'ruhe'] : plan.modus === 'tabelle' ? (s.abschnitt === 'halten' ? ['Halten', 'halten'] : i > letztesHalten ? ['Erholung', 'ruhe'] : ['Pause', 'pause']) : s.zug > 0 ? ['Atemzüge', 'zuege'] : s.abschnitt === 'halten' ? ['Anhalten', 'halten'] : [s.wort, 'zuege'];   // Ein/Aus im Anhalte-Block: Wort wie im Kreis
+    const [wort, art] = s.abschnitt === 'ruhe' ? ['Ruhe', 'ruhe'] : plan.modus === 'tabelle' ? (s.abschnitt === 'halten' ? ['Halten', 'halten'] : i > letztesHalten ? ['Erholung', 'ruhe'] : ['Pause', 'pause']) : s.zug > 0 ? ['Atemzüge', 'zuege'] : s.abschnitt === 'halten' ? ['Anhalten', 'halten'] : [s.wort, 'zuege'];
     const t = 'Runde ' + (s.runde || 1) + '/' + (s.runden || plan.runden) + '|' + wort;
     if (t === kkText) return; kkText = t;
     el.kkRunde.textContent = 'Runde ' + (s.runde || 1) + '/' + (s.runden || plan.runden); el.kkPhase.textContent = wort; el.kkPhase.dataset.art = art;
   }
   kopfkarte(plan.schritte[0], 0);
-  // Zeile unter dem Kreis: Runde steht in der Kopfkarte – außer quer bei „Figur groß“ (dort ist links kein Platz für die Karte)
-  function zeile(s) {
-    const karte = kk && !(gross && quer());
-    el.zug.textContent = karte ? (s.zuege && s.zug ? 'Zug ' + s.zug + '/' + s.zuege : '')
+  // Zeile: Runde steht in der Kopfkarte – außer quer bei „Figur groß“
+  function zeile(s) { el.zug.textContent = zugText(s); }
+  function zugText(s) {
+    return kk && !(gross && quer()) ? (s.zuege && s.zug ? 'Zug ' + s.zug + '/' + s.zuege : '')
       : s.runden ? 'Runde ' + s.runde + '/' + s.runden + (s.zuege && s.zug ? ' · Zug ' + s.zug + '/' + s.zuege : '') : s.zuege ? 'Zug ' + s.zug + '/' + s.zuege : '';
   }
   const zeileNeu = () => { if (kk && uhr.plan) zeile(uhr.zustand().schritt); };
@@ -79,7 +82,7 @@ export function oeffne(plan, opt) {
   async function holeWake() { try { if (navigator.wakeLock && document.visibilityState === 'visible') { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); } } catch { wake = null; } }
   const lasseWake = () => { try { if (wake) wake.release(); } catch {} wake = null; };
 
-  // Figur in Ruhelage (Einzählen): gleiche Art/Weg wie der erste Schritt, v = 0 wie der Kreis
+  // Figur in Ruhelage (Einzählen), v = 0 wie der Kreis
   let zeitFigur = 0;
   function figurRuhe() {
     if (!an) return; const P = uhr.plan || plan, s0 = P.schritte[Math.max(0, letzterI)] || P.schritte[0];
@@ -111,14 +114,14 @@ export function oeffne(plan, opt) {
   function neuerSchritt(z) {
     letzterI = z.i; const s = z.schritt;
     el.wort.textContent = s.wort; el.hinweis.textContent = s.hinweis || (s.abschnitt === 'erholung' && s.wort === 'Erholung' ? WORT_KURZ[s.art] || '' : '');
-    el.wort.style.color = s.art === 'halten_leer' ? '#8d9cc0' : phasenFarbe(s.art);   // Kontrast ≥ 4,5:1 auch klein
+    el.wort.style.color = s.art === 'halten_leer' ? '#8d9cc0' : phasenFarbe(s.art);
     el.weg.innerHTML = s.art.startsWith('halten') || s.art === 'ruhe' ? '' : sym(s.weg === 'summen' ? 'summen' : s.weg === 'mund' || s.weg === 'ha' || s.weg === 'vokal' ? 'mund' : s.weg === 'links' ? 'links' : s.weg === 'rechts' ? 'rechts' : 'nase') + '<span>' + WEG[s.weg] + '</span>';
     zeile(s);
     kopfkarte(s, z.i);
     const offen = s.ms == null;
     el.atmen.hidden = !(s.kuerzbar && !offen && (s.art.startsWith('halten')));
     el.stopp.hidden = !offen;
-    if (offen) { offenWand = Date.now(); tippZahl = 0; el.stopp.textContent = T.id === 'kontrollpause' ? 'Erster Atemreiz – Stopp' : T.id === 'sss_messen' ? 'Luft aus – Stopp' : 'Atmen'; }
+    if (offen) { offenWand = Date.now(); tippZahl = 0; el.stopp.textContent = sT; }
     if (T.id === 'ruhe_zuege') { el.stopp.hidden = false; el.stopp.textContent = 'Einatmen (' + tippZahl + ')'; }
     const tab = host.querySelectorAll('.sz-tab-sp'); tab.forEach((x) => x.classList.toggle('jetzt', +x.dataset.r === s.runde));
     if (ton.neuPlanen) ton.neuPlanen();
@@ -132,7 +135,7 @@ export function oeffne(plan, opt) {
   }
   function weiter() {
     el.blatt.hidden = true; ton.entsperren(einst.musik); holeWake();
-    zaehleEin(uhr.plan ? () => { uhr.weiter(); zustand = 'laeuft'; letzterI = -1; letzteSek = -1; ton.starte(uhr, uhr.plan); } : los);   // Pause im ersten 3-2-1: Uhr lief noch nicht
+    zaehleEin(uhr.plan ? () => { uhr.weiter(); zustand = 'laeuft'; letzterI = -1; letzteSek = -1; ton.starte(uhr, uhr.plan); } : los);
   }
   function zeigeBlatt(html) { el.blatt.innerHTML = '<div class="blatt-innen">' + html + '</div>'; el.blatt.hidden = false; }
   function kuerze() {
@@ -153,9 +156,9 @@ export function oeffne(plan, opt) {
     if (still) { schliessen(); return; }
     beiEnde(erg, { zeigeBlatt, schliessen, nochmal: () => oeffne(plan, opt) });
   }
-  function schliessen() { host.hidden = true; host.innerHTML = ''; host.classList.remove('figur-gross', 'mit-kk'); document.body.classList.remove('in-sitzung'); if (an && an.zerstoere) an.zerstoere(); }
+  function schliessen() { host.hidden = true; host.innerHTML = ''; host.classList.remove('figur-gross', 'mit-kk', 'eng'); document.body.classList.remove('in-sitzung'); if (an && an.zerstoere) an.zerstoere(); }
   function klick(e) {
-    if (!wake && zustand === 'laeuft') holeWake();   // vom System freigegeben → beim nächsten Tipp neu
+    if (!wake && zustand === 'laeuft') holeWake();
     const b = e.target.closest('[data-a]'); if (!b) { if (e.target.closest('.sz-anat') && an) { gross = !gross; host.classList.toggle('figur-gross', gross); f.groesse(kreisPx()); if (an.modus) an.modus(gross ? 'gross' : 'klein'); zeileNeu(); } return; }
     const a = b.dataset.a;
     if (a === 'pause') pause('knopf');
@@ -174,7 +177,7 @@ export function oeffne(plan, opt) {
   const sicht = () => { if (document.visibilityState === 'hidden') pause('hidden'); };
   const lage = () => { f.groesse(kreisPx()); letzteSek = -1; zeileNeu(); };
   document.addEventListener('visibilitychange', sicht); addEventListener('resize', lage);
-  ton.beiStoerung = () => {};   // 0.1.2.1: eine Ton-Störung (iOS „interrupted“) hält die Übung nicht mehr an – das Bild führt weiter, der Ton kommt beim nächsten Tipp zurück
+  ton.beiStoerung = () => {};   // 0.1.2.1: Ton-Störung (iOS „interrupted“) hält die Übung nicht an
   aktiv = { uhr, plan, pause, weiter, kuerze, beenden, f, get zustand() { return zustand; }, get an() { return an; }, _nachZaehlen: null };
   function los() { uhr.starte(plan); zustand = 'laeuft'; ton.starte(uhr, uhr.plan); }
   zaehleEin(los);

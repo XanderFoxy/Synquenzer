@@ -72,3 +72,37 @@ export function erzeugeFuehrung(canvas, opt = {}) {
   }
   return { zeichne, groesse, einstellen(o) { if ('ruhig' in o) ruhig = !!o.ruhig; if ('blumen' in o) blumen = !!o.blumen; }, get radius() { return letzterR; }, get px() { return px; } };
 }
+// Quer (Paket ATEM-Q): Standard-Lage (Kreis 240/300, Figur 300) bleibt, solange alles im Bild ist und nichts überdeckt wird.
+// Sonst (kleine Handys quer, Notch-Ränder) Klasse „eng“: oben Platz für die Karte, unten für die Zeile, rechts für die Bedienspalte;
+// Kreis und Figur werden passend kleiner (Kreis ≥ 180 px, Figur möglichst ≥ 240 px). Gibt die Kreisgröße zurück.
+export function querKreis(host, { gross, riskant, kk, spalte, zt = [] }) {
+  const q = (s) => host.querySelector(s), R = (e) => e && e.getBoundingClientRect(), hp = q('.sz-haupt'), cv = q('.sz-kreis canvas');
+  host.classList.remove('eng');
+  const K = gross ? 120 : Math.min(riskant ? 240 : 300, innerHeight - 110, kk ? hp.clientHeight - 88 : 1e9);
+  cv.style.width = cv.style.height = K + 'px';
+  const cs = getComputedStyle(host), W = innerWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), H = hp.clientHeight;
+  const tab = q('.sz-tab'), fig = q('.sz-anat:not(.aus)'), h = R(hp), k = R(cv);
+  const rand = innerWidth - parseFloat(cs.paddingRight) - (riskant ? 220 : spalte ? 224 : R(q('.sz-unten')).width);
+  const deckt = (a, b) => a.left < b.right - .5 && b.left < a.right - .5 && a.top < b.bottom - .5 && b.top < a.bottom - .5;
+  // Zeile: ihr längster Text (zt = Weg, Zug, Rest; ± 6 px), nicht die 320-px-Box
+  const zs = [...q('.sz-zeile').children], alt = zs.map((e) => e.innerHTML); zs.forEach((e, i) => { e.innerHTML = zt[i] || ''; });
+  const zz = zs.map(R).filter((r) => r.width).reduce((a, r) => ({ left: Math.min(a.left, r.left - 6), right: Math.max(a.right, r.right + 6), top: Math.min(a.top, r.top), bottom: Math.max(a.bottom, r.bottom) }), { left: 1e9, right: -1e9, top: 1e9, bottom: -1e9 });
+  zs.forEach((e, i) => { e.innerHTML = alt[i]; });
+  // Stopp-Knopf mit Text zt[3]: echte Überdeckung, nur kleine Handys (Höhe < 500)
+  const sp = q('.sz-stopp'), st = [sp.hidden, sp.textContent]; let sr = null;
+  if (zt[3] && innerHeight < 500) { sp.hidden = false; sp.textContent = zt[3]; sr = R(sp); sp.hidden = st[0]; sp.textContent = st[1]; }
+  const passt = [gross ? null : k, R(tab), R(fig)].filter(Boolean).every((r) => r.top >= h.top + (r === k && kk ? 44 : 0) - .5 && r.bottom <= h.bottom + .5
+    && r.left >= h.left - .5 && r.right <= rand + .5 && !deckt(r, zz) && !(sr && deckt(r, sr)) && !(gross && deckt(r, k)));
+  if (passt) return K;
+  host.classList.add('eng');
+  const pr = riskant || spalte ? 236 : 88, tw = tab ? tab.offsetWidth + 12 : 0, v = (n, x) => host.style.setProperty('--q-' + n, Math.max(0, Math.floor(x)) + 'px');
+  let kp = 120, fw, fh;
+  if (gross) { fw = Math.min(420, W - 148 - pr - tw); fh = Math.min(360, H - 16); } else {
+    const pt = kk ? 44 : 8, vB = H - pt - 48, wB = W - 16 - pr - tw - (fig ? 12 : 0);
+    kp = Math.min(riskant ? 240 : 300, vB);
+    if (fig && wB - kp < 240) kp = Math.min(kp, Math.max(180, wB - 240));
+    fw = Math.min(300, wB - kp); fh = Math.min(340, vB); v('pt', pt);
+  }
+  v('pr', pr); v('fw', fw); v('fh', fh);
+  return Math.floor(kp);
+}
