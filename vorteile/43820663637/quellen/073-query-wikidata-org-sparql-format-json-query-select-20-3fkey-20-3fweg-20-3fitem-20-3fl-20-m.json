@@ -1,0 +1,778 @@
+{
+  "head" : {
+    "vars" : [ "key", "weg", "item", "l", "jahr", "h", "k", "rt", "lab" ]
+  },
+  "results" : {
+    "bindings" : [ {
+      "key" : {
+        "type" : "literal",
+        "value" : "1661716668"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "id"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q113614072"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "The Return of Tanya Tucker: Featuring Brandi Carlile|The Return of Tanya Tucker: Featuring Brandi Carlile"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "1676469432"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q116192729"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "6"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Measures of Men|Der vermessene Mensch"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2023"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "757290945"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q18405"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "49"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "8.9/10|100%"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Die Nächte der Cabiria|Nights of Cabiria"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1957"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "1559099311"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q472600"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "38"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "94%|8.3/10"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Schmetterling und Taucherglocke|The Diving Bell and the Butterfly"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2007"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "540403649"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "id"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q645931"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "27"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "98%|8.2/10"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Inside Job|Inside Job"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2010"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "540403649"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q645931"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "27"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "98%|8.2/10"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Inside Job|Inside Job"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2010"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "540492056"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q935254"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "8"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "A Lawless Street|Ein Mann wie der Teufel"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1955"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "594377006"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "id"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1198750"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "13"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "5.6/10|50%"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Der goldene Regenbogen|Finian's Rainbow"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1968"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "594377006"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1198750"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "13"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "5.6/10|50%"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Der goldene Regenbogen|Finian's Rainbow"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1968"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "500399393"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2061346"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "12"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "90%|7.6/10"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Waiting for \"Superman\"|Waiting for Superman"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2010"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "597286319"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "id"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2152044"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "7"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "The Fastest Gun Alive|Die erste Kugel trifft"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1956"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "439465406"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2410922"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "6"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Banjo on My Knee|Mississippi-Melodie"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1936"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "318910359"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "id"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2484046"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "12"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "That's Entertainment, Part II|That's Entertainment, Part II"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1976"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "439465406"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2556456"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "16"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Mississippi-Melodie|Show Boat"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1951"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "487889203"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2645680"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "6"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Wiege der Angst|Montana"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1998"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "487889203"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q3322414"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "16"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Montana|Montana"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1950"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "487889203"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q4301973"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Montana"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2008"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "540403649"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q16251867"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "4"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Inside Job"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1946"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "1689228693"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q16570611"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "9"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Schlußakkord|Schlußakkord"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1936"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "487889203"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q25136877"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Montana – Rache hat einen neuen Namen|Montana"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2014"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "1405011133"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q30597782"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "24"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "6.4/10|81%"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Deine Juliet|The Guernsey Literary and Potato Peel Pie Society"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2018"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "1286768356"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "id"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q41207593"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "0"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Schumann's Bar Talks|Schumanns Bargespräche"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2017"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "1286768356"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q41207593"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "0"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Schumann's Bar Talks|Schumanns Bargespräche"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2017"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "487889203"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q48802150"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Montana"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1990"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "487889203"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q63412660"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "3"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Montana"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2017"
+      }
+    } ]
+  }
+}

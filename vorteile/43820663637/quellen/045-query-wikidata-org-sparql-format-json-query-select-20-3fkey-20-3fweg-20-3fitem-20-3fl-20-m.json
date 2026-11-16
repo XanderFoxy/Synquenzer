@@ -1,0 +1,839 @@
+{
+  "head" : {
+    "vars" : [ "key", "weg", "item", "l", "jahr", "h", "k", "rt", "lab" ]
+  },
+  "results" : {
+    "bindings" : [ {
+      "key" : {
+        "type" : "literal",
+        "value" : "810330802"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q308920"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "51"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1972"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "98%|8.5/10"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Der diskrete Charme der Bourgeoisie|The Discreet Charm of the Bourgeoisie"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "390662678"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "id"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q314942"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "32"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2009"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "30%|4.6/10"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Pandorum|Pandorum"
+      },
+      "h" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "390662678"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q314942"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "32"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2009"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "30%|4.6/10"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Pandorum|Pandorum"
+      },
+      "h" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "672992312"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "id"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q637212"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "65"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2013"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "75%|6.7/10"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Ich – Einfach unverbesserlich 2"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "487311339"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q783365"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "34"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1971"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "85%|6.9/10"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "THX 1138|THX 1138"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "6797552837"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q926789"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "31"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2007"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "7.2/10|81%"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Lars und die Frauen|Lars and the Real Girl"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "296735307"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "id"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1430511"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "20"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1979"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "87%|7.2/10"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Flucht in die Zukunft|Time After Time"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "296735307"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1430511"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "20"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1979"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "87%|7.2/10"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Flucht in die Zukunft|Time After Time"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "714905462"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "id"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1529877"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "21"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1979"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "3.7/10|5%"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Meteor|Meteor"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "714905462"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1529877"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "21"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1979"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "3.7/10|5%"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Meteor|Meteor"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "1433956605"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1540379"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "26"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2003"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "4.3/10|24%"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Jeepers Creepers 2|Jeepers Creepers 2"
+      },
+      "h" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "299575336"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "id"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1545950"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "17"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1966"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "60%|5.5/10"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "This Property Is Condemned|Dieses Mädchen ist für alle"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "299575336"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1545950"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "17"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1966"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "60%|5.5/10"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "This Property Is Condemned|Dieses Mädchen ist für alle"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "799717113"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1746736"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1997"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "The Little Bastard|Kleines Arschloch"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "544662549"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "id"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2060077"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "20"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2007"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "74%|6.5/10"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Walk Hard: Die Dewey Cox Story|Walk Hard: The Dewey Cox Story"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "544662549"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2060077"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "20"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2007"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "74%|6.5/10"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Walk Hard: Die Dewey Cox Story|Walk Hard: The Dewey Cox Story"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "1105316350"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2819650"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "6"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1974"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "8.5/10|100%"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "A Bigger Splash|A Bigger Splash"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "718801162"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "id"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q5611721"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "36"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2013"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "3/10|8%"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Kindsköpfe 2|Grown Ups 2"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "718801162"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q5611721"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "36"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2013"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "3/10|8%"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Kindsköpfe 2|Grown Ups 2"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "714905462"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q16307070"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2004"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "The Meteor"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "1105316350"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q18202448"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "28"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2015"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "89%|7.4/10"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "A Bigger Splash|A Bigger Splash"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "1292683952"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q22972803"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "27"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2016"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "8/10|99%"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "The Wailing – Die Besessenen|The Wailing"
+      },
+      "h" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "296735307"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q28847328"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2016"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "My Future Love|Flucht in die Zukunft"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "714905462"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q31187326"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1969"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Meteor"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "714905462"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q105645082"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1949"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : ""
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Meteor"
+      }
+    }, {
+      "key" : {
+        "type" : "literal",
+        "value" : "1757671796"
+      },
+      "weg" : {
+        "type" : "literal",
+        "value" : "name"
+      },
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q116470610"
+      },
+      "l" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "30"
+      },
+      "jahr" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2024"
+      },
+      "rt" : {
+        "type" : "literal",
+        "value" : "86%"
+      },
+      "lab" : {
+        "type" : "literal",
+        "value" : "Longlegs|Longlegs"
+      },
+      "h" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1"
+      }
+    } ]
+  }
+}

@@ -1,0 +1,5219 @@
+{
+  "head" : {
+    "vars" : [ "item", "art", "wert", "n" ]
+  },
+  "results" : {
+    "bindings" : [ {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q4447"
+      },
+      "wert" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#decimal",
+        "type" : "literal",
+        "value" : "251557985"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "b"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q4447"
+      },
+      "wert" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#decimal",
+        "type" : "literal",
+        "value" : "543113985"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "b"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q44447"
+      },
+      "wert" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#decimal",
+        "type" : "literal",
+        "value" : "261200000"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "b"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "wert" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#decimal",
+        "type" : "literal",
+        "value" : "206459076"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "b"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "wert" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#decimal",
+        "type" : "literal",
+        "value" : "475000000"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "b"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q239794"
+      },
+      "wert" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#decimal",
+        "type" : "literal",
+        "value" : "17374595"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "b"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q324262"
+      },
+      "wert" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#decimal",
+        "type" : "literal",
+        "value" : "149260504"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "b"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q324262"
+      },
+      "wert" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#decimal",
+        "type" : "literal",
+        "value" : "554987477"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "b"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q426196"
+      },
+      "wert" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#decimal",
+        "type" : "literal",
+        "value" : "3600000"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "b"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q483815"
+      },
+      "wert" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#decimal",
+        "type" : "literal",
+        "value" : "268163011"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "b"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q483815"
+      },
+      "wert" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#decimal",
+        "type" : "literal",
+        "value" : "488351320"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "b"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q485983"
+      },
+      "wert" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#decimal",
+        "type" : "literal",
+        "value" : "441226247"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "b"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q485983"
+      },
+      "wert" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#decimal",
+        "type" : "literal",
+        "value" : "923075336"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "b"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q637212"
+      },
+      "wert" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#decimal",
+        "type" : "literal",
+        "value" : "368065385"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "b"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q637212"
+      },
+      "wert" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#decimal",
+        "type" : "literal",
+        "value" : "970766005"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "b"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q783365"
+      },
+      "wert" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#decimal",
+        "type" : "literal",
+        "value" : "2437000"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "b"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1529877"
+      },
+      "wert" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#decimal",
+        "type" : "literal",
+        "value" : "8400000"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "b"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q6929072"
+      },
+      "wert" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#decimal",
+        "type" : "literal",
+        "value" : "275698039"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "b"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q22972803"
+      },
+      "wert" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#decimal",
+        "type" : "literal",
+        "value" : "786633"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "b"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q22972803"
+      },
+      "wert" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#decimal",
+        "type" : "literal",
+        "value" : "51539562"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "b"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q115175910"
+      },
+      "wert" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#decimal",
+        "type" : "literal",
+        "value" : "7629085"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "b"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q115175910"
+      },
+      "wert" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#decimal",
+        "type" : "literal",
+        "value" : "14387154"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "b"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Plan B Entertainment"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q16570611"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "UFA"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q483815"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Academy Award for Best Animated Feature"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "a"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q637212"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Annie Award"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "a"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q324262"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Paramount Pictures"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1545950"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Paramount Pictures"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1430511"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "National Board of Review: Top Ten Films"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "a"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q44447"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "TV Krant Filmposter Award"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "a"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q4447"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Kids' Choice Award for Favorite Animated Movie"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "a"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q324262"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Kids' Choice Award for Favorite Animated Movie"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "a"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q483815"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "BAFTA's Children & Young People Award - Feature Film"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "a"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q22972803"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Sitges Film Festival Best cinematography"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "a"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Warner Bros. Entertainment"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1430511"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Warner Bros. Entertainment"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1545950"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Paramount Pictures"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Warner Bros. Entertainment"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q783365"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Warner Bros. Entertainment"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1430511"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Warner Bros. Entertainment"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q27590271"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Warner Bros. Entertainment"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q483815"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Critics' Choice Movie Award for Best Animated Feature"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "a"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q426196"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Saturn Award for Best Science Fiction Film"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "a"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q483815"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Annie Award for Best Animated Feature"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "a"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q4447"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Universal Pictures"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q637212"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Universal Pictures"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q109986454"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Universal Pictures"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q426196"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Metro-Goldwyn-Mayer"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2556456"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Metro-Goldwyn-Mayer"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q4447"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Universal Pictures"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q483815"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "DreamWorks"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q485983"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "DreamWorks"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q426196"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Metro-Goldwyn-Mayer"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2556456"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Metro-Goldwyn-Mayer"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q783365"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Lucasfilm"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q44447"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Columbia Pictures"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q239794"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "146"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Sean Connery"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1529877"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "146"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Sean Connery"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q324262"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "DreamWorks Animation"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q483815"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "DreamWorks Animation"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q485983"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "DreamWorks Animation"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q6929072"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "DreamWorks Animation"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q44447"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "324"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Michael Jackson"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q27590271"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "324"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Michael Jackson"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1529877"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "American International Pictures"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q783365"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "American Zoetrope"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q115175910"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "American Zoetrope"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q483815"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "DreamWorks"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q485983"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "DreamWorks"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q27590271"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "110"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Barbra Streisand"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q483815"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Pacific Data Images"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q6929072"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Pacific Data Images"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q314942"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Constantin Film"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "149"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Johnny Depp"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q27590271"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "171"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Steven Spielberg"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q6929072"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "20th Century Studios"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q22972803"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "20th Century Studios"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1529877"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "American International Pictures"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q44447"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Netflix"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Netflix"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q314942"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Netflix"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q324262"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Netflix"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q485983"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Netflix"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q783365"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Netflix"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1529877"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Netflix"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1545950"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Netflix"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2556456"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Netflix"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q6929072"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Netflix"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q21450478"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Netflix"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q27590271"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "141"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Frank Sinatra"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q109986454"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Red Bull Media House"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q239794"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "The Ladd Company"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q44447"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "AEG Live"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q4447"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Illumination"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q637212"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Illumination"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1545950"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "97"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Charles Bronson"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Village Roadshow Pictures"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Pinewood Studios"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q6929072"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Jay Ward Productions"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q109986454"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Sender Films"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q6929072"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Red Wagon Entertainment"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q21450478"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "STX Entertainment"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "s"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q314942"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "33"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Antje Traue"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1545950"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "98"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Robert Redford"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1529877"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "100"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Henry Fonda"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q314942"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "21"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "André Hennicke"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q314942"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "17"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Wotan Wilke Möhring"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q314942"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Fórum Hungary"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q27590271"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "74"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Sidney Lumet"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q115175910"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "53"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Talia Shire"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q44447"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "InterCom"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "InterCom"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q6929072"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "InterCom"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q324262"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "UIP-Dunafilm"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q483815"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "UIP-Dunafilm"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q485983"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "UIP-Dunafilm"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q21450478"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Hulu"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1529877"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "24"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Richard Dysart"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2556456"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "89"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Ava Gardner"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q17141501"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Sony Pictures Classics"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q27590271"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "136"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Oprah Winfrey"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1529877"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "23"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Bibi Besch"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q426196"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "14"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Celia Lovsky"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "15"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Philip Wiegratz"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q426196"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "93"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Charlton Heston"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q314942"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Overture Films"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q21450478"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Ivi.ru"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q324262"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Fandango"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q485983"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Fandango"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q109986454"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Roadside Attractions"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Warner Bros. Pictures"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q21450478"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "STX Entertainment"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q115175910"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Mozinet"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q21450478"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Xfinity Streampix"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q21450478"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "ADS Service"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q239794"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "MOKÉP"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "v"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q426196"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "49"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Joseph Cotten"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "13"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Franziska Troegner"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q21450478"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "103"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Gary Oldman"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "87"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Helena Bonham Carter"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q314942"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "16"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Friederike Kempter"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1430511"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "82"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Malcolm McDowell"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q314942"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "10"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Yangzom Brauen"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q314942"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "4"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Niels Bruno Schmidt"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "19"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Eileen Essell"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q115175910"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "101"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Jon Voight"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q109986454"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "61"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Reinhold Messner"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q115175910"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "81"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Forest Whitaker"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1529877"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "57"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Karl Malden"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q783365"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "93"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Robert Duvall"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q115175910"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "90"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Shia LaBeouf"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q27590271"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "51"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Sarah Vaughan"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "55"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "AnnaSophia Robb"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1430511"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "58"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Mary Steenburgen"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q426196"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "56"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Edward G. Robinson"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q115175910"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "76"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Laurence Fishburne"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1529877"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "74"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Natalie Wood"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1545950"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "74"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Natalie Wood"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q314942"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "45"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Cam Gigandet"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q314942"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "63"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Dennis Quaid"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1430511"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "19"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Charles Cioffi"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q239794"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "45"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Peter Boyle"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1529877"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "12"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Michael Zaslow"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2556456"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "16"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Robert Sterling"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2556456"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "45"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Agnes Moorehead"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2556456"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "38"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Kathryn Grayson"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q426196"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "11"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Robert Ito"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "13"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Julia Winter"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q21450478"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "36"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "BD Wong"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q115175910"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "54"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Aubrey Plaza"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q783365"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "76"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Donald Pleasence"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q27590271"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "49"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Ice-T"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q21450478"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "43"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Britt Robertson"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "113"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Christopher Lee"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q426196"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "16"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Whit Bissell"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1529877"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "43"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Trevor Howard"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q783365"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "64"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "David Ogden Stiers"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q21450478"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "60"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Carla Gugino"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q239794"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "30"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Frances Sternhagen"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2556456"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "17"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Regis Toomey"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q27590271"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "40"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Richard Brooks"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2556456"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "29"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Linda Christian"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "62"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Danny Elfman"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2556456"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "30"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Anna Q. Nilsson"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q115175910"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "38"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "James Remar"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q21450478"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "52"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Asa Butterfield"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q783365"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "18"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Ian Wolfe"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q44447"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "33"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Orianthi"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "39"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Missi Pyle"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1430511"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "48"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "David Warner"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q426196"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "19"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Leigh Taylor-Young"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "23"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Deep Roy"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "24"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Liz Smith"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2556456"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "13"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Ian MacDonald"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1545950"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "37"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Dabney Coleman"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1545950"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "21"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Mary Badham"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q21450478"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "29"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Janet Montgomery"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1529877"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "88"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Martin Landau"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q21450478"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "22"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Colin Egglesfield"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q21450478"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "28"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Gil Birmingham"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q115175910"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "45"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Jason Schwartzman"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2556456"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "36"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Howard Keel"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "29"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Noah Taylor"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q426196"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "26"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Brock Peters"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q239794"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "33"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "John Ratzenberger"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "50"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Freddie Highmore"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "32"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "James Fox"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q314942"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "46"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Ben Foster"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q109986454"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "33"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Alex Honnold"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2556456"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "23"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Leif Erickson"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "28"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "David Kelly"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q314942"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "56"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Norman Reedus"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q115175910"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "20"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Kathryn Hunter"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q239794"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "27"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Clarke Peters"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "20"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Geoffrey Holder"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1430511"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "15"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Joseph Maher"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1430511"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "36"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Corey Feldman"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "15"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Jordan Fry"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q115175910"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "25"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "D. B. Sweeney"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2556456"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "9"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "William Warfield"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2556456"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "32"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Marge Champion"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1529877"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "4"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Allen Williams"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q21450478"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "20"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Joey Graceffa"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q22972803"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "10"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Jang So-yeon"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2556456"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "5"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "William Tannen"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2556456"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "5"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Lee and Lyn Wilde"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q115175910"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "61"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Adam Driver"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q22972803"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "17"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Hwang Jung-min"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1545950"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "32"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Robert Blake"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q239794"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "29"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Steven Berkoff"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1430511"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "6"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Laurie Main"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q314942"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Neelesha Barthel"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q426196"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "20"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Dick Van Patten"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q783365"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "13"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Don Pedro Colley"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "8"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "David Morris"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q426196"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "16"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Mike Henry"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q426196"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "9"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Stephen Young"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q239794"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "24"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "James Sikking"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q426196"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "11"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Lincoln Kilpatrick"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q783365"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "7"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Maggie McOmie"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2556456"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "17"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Joyce Jameson"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1545950"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "16"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Kate Reid"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q239794"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "16"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Kika Markham"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q314942"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "24"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Cung Le"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q109986454"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Barry Blanchard"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1545950"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "6"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Bruce Watson"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q115175910"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "42"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Nathalie Emmanuel"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "26"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Shelley Conn"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1430511"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "20"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Patti D'Arbanville"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1545950"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "8"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Claire Carleton"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q122074527"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "77"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Carlos Santana"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1529877"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Katherine Jean De Hetre"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1545950"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "12"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Jon Provost"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "8"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Todd Boyce"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q27590271"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "107"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Ray Charles"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "5"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Oscar James"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q426196"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "31"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Chuck Connors"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q426196"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "11"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Roy Jenson"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q109986454"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "3"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Brette Harrington"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q115175910"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "19"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Chloe Fineman"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q109986454"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "8"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Marc-André Leclerc"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2556456"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "16"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Gower Champion"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1529877"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "32"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Brian Keith"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q115175910"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "52"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Giancarlo Esposito"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "22"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Adam Godley"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q17141501"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "0"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Tim Jenison"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2556456"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "4"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Louis Mercier"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1545950"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "17"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Alan Baxter"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q783365"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "29"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Sid Haig"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1430511"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "2"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Albert Augier"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "8"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Blair Dunlop"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2556456"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "25"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Joe E. Brown"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q239794"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "11"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Angus MacInnes"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q783365"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "5"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Bart Patton"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q426196"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "10"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Cyril Delevanti"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "11"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Garrick Hagon"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q783365"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "11"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Matthew Robbins"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "12"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Nitin Ganatra"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1430511"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "6"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Kent Williams"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q426196"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "18"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Paula Kelly"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q22972803"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "22"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Chun Woo-hee"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q22972803"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "13"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Kwak Do-won"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q22972803"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "13"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Jun Kunimura"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "14"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Annette Badland"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q239794"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "7"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Gary Olsen"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q314942"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "3"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Jeff Burrell"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q426196"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "12"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Morgan Farley"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2556456"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "7"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Marjorie Wood"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q27590271"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "8"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Mervyn Warren"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q115175910"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "3"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Juan Carlos Flores"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q21450478"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "23"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Peter Chelsom"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q2556456"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "20"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "John Phillip Law"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1529877"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "19"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Joseph Campanella"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q239794"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "4"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Nicholas Barnes"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q314942"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Asia Luna Mohmand"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q314942"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "12"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Eddie Rouse"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q239794"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "76"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Angelique Rockas"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q21450478"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "51"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Logan Paul"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q115175910"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "34"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Grace VanderWaal"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q314942"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "1"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Delphine Chuillot"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q239794"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "8"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Eugene Lipinski"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q426196"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "5"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Jane Dulo"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q218235"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "0"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Roger Frost"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1430511"
+      },
+      "n" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#integer",
+        "type" : "literal",
+        "value" : "0"
+      },
+      "wert" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "Byron Webster"
+      },
+      "art" : {
+        "type" : "literal",
+        "value" : "c"
+      }
+    } ]
+  }
+}
