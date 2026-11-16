@@ -1,10 +1,13 @@
 // Gemerkte Wochen-Knaller (Xander 16.11.2026): „Ich will Sachen anhaken/merken können, an die ich dann ausdrücklich erinnert
 // werde.“ Zwei Wege, beide ohne Geheimnis im Repo:
 //  1. Seite: Haken an der Kachel -> die Seite schickt die ganze Merkliste (nur Angebots-id, Titel, Markt, Preise, Gültigkeit)
-//     als eine Nachricht an das ntfy-Thema module.knaller.merkThema (öffentlich wie das Push-Thema in config.json; niemand
-//     abonniert es, es klingelt also nirgends). Der Radar liest es bei jedem Lauf (…/json?poll=1) und merkt sich die
-//     letzte Liste im Zustand. ntfy.sh hält Nachrichten 12 Stunden – die Seite schickt die Liste deshalb bei jeder Änderung
-//     und beim Öffnen erneut, wenn die letzte Meldung älter als 6 Stunden ist.
+//     an das ntfy-Thema module.knaller.merkThema (öffentlich wie das Push-Thema in config.json; niemand abonniert es, es
+//     klingelt also nirgends). Der Radar liest es bei jedem Lauf (…/json?poll=1&since=12h) und merkt sich die letzte Liste
+//     im Zustand. ntfy.sh hält Nachrichten 12 Stunden – die Seite schickt die Liste deshalb bei jeder Änderung und beim
+//     Öffnen erneut, wenn die letzte Meldung älter als 6 Stunden ist.
+//     Prüfer 16.11.2026: ntfy.sh nimmt im Text höchstens 4096 Byte (Größeres wird ein Anhang) – ab etwa 22 Angeboten kam die
+//     Liste nie an. Die Seite schickt sie darum in Teilen { v: 1, satz, teil, von, merken } (je ≤ 3500 Byte); der Radar nimmt
+//     den neuesten VOLLSTÄNDIGEN Satz (alle Teile da), ältere Nachrichten ohne satz zählen als Satz aus einem Teil.
 //  2. config: module.knaller.merkworte (wie wunschliste.json, von Claude gepflegt) – Treffer stehen in zustand.knaller.merkRadar.
 // Erinnerung: ein ntfy-Push am ersten Gültigkeitstag ab erinnerungStunde (7 Uhr Berlin), höchstens einmal je Angebot, alle
 // fälligen in einer Nachricht. Wird ein Angebot erst gemerkt, wenn es schon gilt, kommt die Erinnerung beim nächsten Lauf ab
@@ -26,9 +29,9 @@ export function merkEintrag(x) {
   return { id: x.id, titel, markt, preis: zahl(x.preis), vorher: zahl(x.vorher), pct: zahl(x.pct), ab: zeit(x.ab), bis: zeit(x.bis), ...(zeit(x.gemerkt) ? { gemerkt: zeit(x.gemerkt) } : {}) };
 }
 
-/** ntfy-Antwort (eine JSON-Zeile je Nachricht) -> { id, time, liste } der neuesten gültigen Merkliste oder null */
+/** ntfy-Antwort (eine JSON-Zeile je Nachricht) -> { id, time, liste } der neuesten vollständigen Merkliste oder null */
 export function leseMerkNachrichten(text) {
-  let beste = null;
+  const saetze = new Map();
   for (const zeile of String(text || '').split('\n')) {
     let n;
     try { n = JSON.parse(zeile); } catch { continue; }
@@ -36,8 +39,24 @@ export function leseMerkNachrichten(text) {
     let d;
     try { d = JSON.parse(n.message); } catch { continue; }
     if (!d || d.v !== 1 || !Array.isArray(d.merken)) continue;
-    const liste = d.merken.map(merkEintrag).filter(Boolean).slice(0, MERK_MAX);
-    if (!beste || (n.time ?? 0) >= beste.time) beste = { id: String(n.id || ''), time: n.time ?? 0, liste };
+    const time = typeof n.time === 'number' ? n.time : 0;
+    const satz = typeof d.satz === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(d.satz) ? `s:${d.satz}` : `n:${n.id}`;
+    const von = Number.isInteger(d.von) && d.von >= 1 && d.von <= 30 ? d.von : 1;
+    const teil = Number.isInteger(d.teil) && d.teil >= 1 && d.teil <= von ? d.teil : 1;
+    const s = saetze.get(satz) || { id: '', time: -1, von, teile: new Map() };
+    if (s.von !== von) continue; // widersprüchlich -> Teil verwerfen
+    s.teile.set(teil, d.merken);
+    if (time >= s.time) { s.time = time; s.id = String(n.id || ''); }
+    saetze.set(satz, s);
+  }
+  let beste = null;
+  for (const s of saetze.values()) {
+    if (s.teile.size !== s.von) continue; // unvollständig (ein Teil fehlt noch oder ging verloren)
+    if (beste && s.time < beste.time) continue;
+    const gesehen = new Set();
+    const liste = [];
+    for (let i = 1; i <= s.von; i++) for (const x of s.teile.get(i)) { const e = merkEintrag(x); if (e && !gesehen.has(e.id)) { gesehen.add(e.id); liste.push(e); } }
+    beste = { id: s.id, time: s.time, liste: liste.slice(0, MERK_MAX) };
   }
   return beste;
 }
@@ -52,13 +71,16 @@ export async function holeMerkliste({ holeText, cfg, zustand, jetzt = new Date()
   const thema = merkThema(cfg);
   if (!thema || cfg.module?.knaller?.aktiv === false) return null;
   const zk = (zustand.knaller ||= {});
-  const seit = typeof zk.merkSeit === 'string' && /^[A-Za-z0-9]{6,20}$/.test(zk.merkSeit) ? zk.merkSeit : '12h';
+  // immer alles, was ntfy.sh noch hat (12 h): eine Liste kommt in Teilen – „seit der letzten Nachricht“ könnte einen Satz zerreißen
+  delete zk.merkSeit;
   const server = String(cfg.ntfy?.server || 'https://ntfy.sh').replace(/\/$/, '');
-  const text = await holeText(`${server}/${thema}/json?poll=1&since=${seit}`, { headers: { accept: 'application/x-ndjson' } });
-  const neu = leseMerkNachrichten(text);
+  const text = await holeText(`${server}/${thema}/json?poll=1&since=12h`, { headers: { accept: 'application/x-ndjson' } });
+  let neu = leseMerkNachrichten(text);
+  // nichts Älteres über eine neuere Liste schreiben (z. B. wenn der neueste Satz unvollständig ist)
+  const stand = Date.parse(zk.merkStand || '');
+  if (neu && neu.time && Number.isFinite(stand) && neu.time * 1000 < stand) neu = null;
   if (neu) {
     zk.merken = neu.liste;
-    if (/^[A-Za-z0-9]{6,20}$/.test(neu.id)) zk.merkSeit = neu.id;
     zk.merkStand = new Date((neu.time || Date.parse(jetzt) / 1000) * 1000).toISOString();
   }
   return { neu: !!neu, anzahl: (zk.merken || []).length };

@@ -118,14 +118,15 @@
     };
   }
 
-  // Ende dieser Woche: Sonntag 24:00 Berliner Zeit (was danach beginnt, ist „ab nächster Woche“)
+  // Ende dieser Woche: Montag 00:00:00.000 Berliner Zeit (was dann oder später beginnt, ist „ab nächster Woche“).
+  // Prüfer 16.11.2026: früher Stunde und Minute abgezogen, Sekunden/Millisekunden blieben stehen -> Ende Mo 00:00:SS und der
+  // ganze Prospekt ab Montag stand unter „Kommt diese Woche“. Jetzt über das Kalenderdatum: Montag als UTC-Mitternacht, dann
+  // der Versatz, den die Berliner Uhr zu dieser Zeit zeigt (1 oder 2 h) – wie berlinMitternacht im Radar.
   function wochenEnde(jetzt) {
     const p = teile(jetzt);
     const wt = { Mo: 1, Di: 2, Mi: 3, Do: 4, Fr: 5, Sa: 6, So: 7 }[String(p.weekday).replace('.', '')] || 7;
-    let t = jetzt + (7 - wt) * 864e5; // Sonntag, gleiche Uhrzeit
-    const q = teile(t);
-    t -= ((Number(q.hour) * 60 + Number(q.minute)) * 60e3); // 00:00 Sonntag
-    return t + 864e5; // Montag 00:00
+    const roh = Date.UTC(Number(p.year), Number(p.month) - 1, Number(p.day) + 8 - wt); // nächster Montag, 00:00 UTC
+    return roh - Number(teile(roh).hour) * 36e5; // 00:00 Berliner Zeit
   }
 
   // --- Merken ------------------------------------------------------------------------------------------------------------
@@ -139,14 +140,31 @@
   }
   const merkSichern = () => merk(MERK_SPEICHER, { v: 1, liste: M.liste, gesendet: M.gesendet, offen: M.offen });
   const gemerkt = id => M.liste.some(x => x.id === id);
+  // ntfy.sh nimmt im Nachrichtentext höchstens 4096 Byte, Größeres wird ein Anhang, den der Radar nicht liest (Prüfer 16.11.:
+  // ab etwa 22 gemerkten Angeboten kam nichts mehr an). Darum in Teilen zu höchstens MERK_BYTES: { v, satz, teil, von, merken }
+  // – der Radar nimmt den neuesten vollständigen Satz.
+  const MERK_BYTES = 3500;
+  const bytes = s => (typeof TextEncoder === 'function' ? new TextEncoder().encode(s).length : unescape(encodeURIComponent(s)).length);
+  function merkTeile(merken, satz) {
+    const teile = [];
+    let akt = [];
+    for (const m of merken) {
+      if (akt.length && bytes(JSON.stringify({ v: 1, satz, teil: 99, von: 99, merken: [...akt, m] })) > MERK_BYTES) { teile.push(akt); akt = []; }
+      akt.push(m);
+    }
+    teile.push(akt); // leere Liste = eine Nachricht mit [] (alles vergessen)
+    return teile.map((l, i) => JSON.stringify({ v: 1, satz, teil: i + 1, von: teile.length, merken: l }));
+  }
   function merkSenden(sofort) {
     clearTimeout(M.timer);
     M.timer = setTimeout(async () => {
-      const merken = M.liste.map(x => ({ id: x.id, titel: x.titel, markt: x.markt, preis: x.preis, vorher: x.vorher, pct: x.pct, ab: x.ab, bis: x.bis }));
+      const merken = M.liste.map(x => ({ id: x.id, titel: String(x.titel).slice(0, 90), markt: x.markt, preis: x.preis, vorher: x.vorher, pct: x.pct, ab: x.ab, bis: x.bis }));
       try {
-        // einfache Anfrage (Text ohne eigene Kopfzeilen) – kein Preflight
-        const r = await fetch(MERK_URL, { method: 'POST', body: JSON.stringify({ v: 1, merken }) });
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        // einfache Anfrage (Text ohne eigene Kopfzeilen) – kein Preflight; alle Teile nacheinander, sonst gilt es als offen
+        for (const body of merkTeile(merken, Date.now().toString(36))) {
+          const r = await fetch(MERK_URL, { method: 'POST', body });
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        }
         M.gesendet = new Date().toISOString(); M.offen = false;
       } catch { M.offen = true; }
       merkSichern();
@@ -591,6 +609,6 @@ a.wo-kachel:active { background: var(--flaeche); }
     start, lade,
     get gestartet() { return !!S.el; },
     // für Tests (ohne Browser): reine Funktionen
-    _intern: { normalisiere, angebotNorm, kachel: a => kachel(a), fuss: n => { const vor = S.n; S.n = n; try { return fussHtml(); } finally { S.n = vor; } }, STUFEN, CSS: () => CSS },
+    _intern: { normalisiere, angebotNorm, wochenEnde, merkTeile, MERK_BYTES, kachel: a => kachel(a), fuss: n => { const vor = S.n; S.n = n; try { return fussHtml(); } finally { S.n = vor; } }, STUFEN, CSS: () => CSS },
   };
 })();

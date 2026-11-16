@@ -32,6 +32,41 @@ function modul() {
 }
 
 // --- statisch ------------------------------------------------------------------------------------------------------------
+test('Prüfer 16.11.: Wochenende = Mo 00:00:00.000 Berlin, auch mit Sekunden/Millisekunden und bei Zeitumstellung', () => {
+  const I = modul()._intern;
+  const iso = t => new Date(I.wochenEnde(Date.parse(t))).toISOString();
+  // echte Uhr hat Sekunden: vorher lag das Ende bei Mo 00:00:00.500 -> „LIDL LOHNT SICH ab Mo 23.11.“ stand unter „diese Woche“
+  assert.equal(iso('2026-11-16T08:30:00.500Z'), '2026-11-22T23:00:00.000Z');
+  assert.equal(iso('2026-11-19T15:12:34.567Z'), '2026-11-22T23:00:00.000Z');
+  assert.equal(iso('2026-11-22T22:59:59.999Z'), '2026-11-22T23:00:00.000Z', 'So 23:59:59 Berlin');
+  assert.equal(iso('2026-11-22T23:00:00.000Z'), '2026-11-29T23:00:00.000Z', 'Mo 00:00 Berlin = neue Woche');
+  assert.equal(iso('2026-10-25T21:00:00.000Z'), '2026-10-25T23:00:00.000Z', 'So der Umstellung auf Winterzeit');
+  assert.equal(iso('2027-03-28T20:00:00.000Z'), '2027-03-28T22:00:00.000Z', 'So der Umstellung auf Sommerzeit');
+  // Seite: ein Angebot ab Mo 23.11. 00:00 ist „Ab Montag“, nicht „Kommt diese Woche“ (Uhr mit Millisekunden)
+  const jetzt = Date.parse('2026-11-16T08:30:00.500Z');
+  const n = I.normalisiere({ angebote: [
+    { id: 'a', markt: 'lidl', titel: 'FUNNY-FRISCH Chipsfrisch XXL', preis: 1.79, vorher: 2.99, vorherArt: 'uvp', gueltigAb: '2026-11-22T23:00:00.000Z', gueltigBis: '2026-11-28T22:00:00.000Z' },
+    { id: 'b', markt: 'lidl', titel: 'PEPSI', preis: 0.99, vorher: 1.79, vorherArt: 'uvp', gueltigAb: '2026-11-18T23:00:00.000Z', gueltigBis: '2026-11-21T22:00:00.000Z' },
+  ] }, jetzt);
+  const ende = I.wochenEnde(jetzt);
+  assert.deepEqual(plain(n.angebote.filter(a => a.ab < ende).map(a => a.id)), ['b']);
+  assert.deepEqual(plain(n.angebote.filter(a => a.ab >= ende).map(a => a.id)), ['a']);
+});
+
+test('Prüfer 16.11.: Merkliste in Teilen ≤ 3500 Byte (ntfy.sh nimmt 4096), wieder zusammengesetzt vollständig', () => {
+  const I = modul()._intern;
+  const lang = i => ({ id: `kd:${String(i).padStart(4, '0')}-6c21c979-269e-4bc0-b537-5bbb1a51b90e`, titel: `Lorenz Crunchips Paprika XXL Familienpackung Sorte ${i} – äöü – mit langem Namen bis 90 Zeichen`, markt: 'aldi-nord', preis: 0.99, vorher: 1.99, pct: 50, ab: '2026-11-15T23:00:00.000Z', bis: '2026-11-21T21:00:00.000Z' });
+  for (const n of [0, 1, 20, 25, 60]) {
+    const liste = Array.from({ length: n }, (_, i) => lang(i));
+    const teile = plain([...I.merkTeile(liste, 'satz1')].map(t => JSON.parse(t)));
+    for (const t of I.merkTeile(liste, 'satz1')) assert.ok(new TextEncoder().encode(t).length <= I.MERK_BYTES, `Teil ${new TextEncoder().encode(t).length} Byte`);
+    assert.ok(teile.every((t, i) => t.v === 1 && t.satz === 'satz1' && t.teil === i + 1 && t.von === teile.length));
+    assert.deepEqual(teile.flatMap(t => t.merken).map(x => x.id), liste.map(x => x.id), `${n} Einträge`);
+    if (n === 60) assert.ok(teile.length >= 3, `${teile.length} Teile`);
+    if (n === 0) assert.equal(teile.length, 1, 'leere Liste = eine Nachricht (alles vergessen)');
+  }
+});
+
 test('woche.js Fuß: Prospekt für Döbeln, Märkte aus Nachbarstadt/bundesweit sichtbar genannt, kein Markt in der Nähe', () => {
   const I = modul()._intern;
   const jetzt = Date.parse(JETZT);
@@ -190,7 +225,7 @@ async function oeffne({ breite = 428, hoehe = 926, pfad = '/mein-vorteil/#woche'
         const snack = (n, titel, zeile) => ({ id: `test-snack-${n}`, kategorie: 'deals', titel, zeile, soGehts: 'TESTWERT', link: `https://www.mydealz.de/deals/test-snack-${n}`, quelle: 'mydealz Lebensmittel', wert: 60, sofort: false, grund: 'Deal durchgerechnet', frist: '2026-11-07', datum: '2026-10-31T10:00:00.000Z', bis: '2026-11-07T22:59:59.000Z', bisQuelle: 'text', ab: null, sichtbarBis: '2026-11-07T22:59:59.000Z', preisfehler: false, bild: `https://static.mydealz.de/threads/raw/snack${n}/150x150/qt/55/snack${n}.jpg` });
         d.kategorien.deals.push(snack(1, 'Haribo Goldbären 175 g für 0,79 € (TESTWERT)', '1 Packung für 0,79 € statt 1,29 € (−39 %)'), snack(2, 'Lindt Lindor Kugeln 200 g für 3,49 € (TESTWERT)', '1 Packung für 3,49 € statt 5,99 € (−42 %)'));
       }
-      d.status.knaller = { ok: true, anzahl: 0, kurz: { anzahl: 13, ab: { 20: 13, 30: 13, 40: 7, 50: 2 }, kommt: { 20: 2, 30: 2, 40: 1, 50: 0 }, top: [
+      d.status.knaller = { ok: true, anzahl: 0, kurz: { anzahl: 13, ab: { 20: 13, 30: 13, 40: 7, 50: 2 }, kommt: { 20: 2, 30: 2, 40: 1, 50: 0 }, naechste: { 20: 1, 30: 1, 40: 1, 50: 0 }, wocheBis: '2026-11-15T23:00:00.000Z', top: [
         { titel: 'Milka Schokolade 100 g', markt: 'Kaufland', pct: 54, preis: 0.69, vorherArt: 'streich', app: true },
         { titel: 'Kaffee Crema ganze Bohne 1 kg', markt: 'Aldi Nord', pct: 53, preis: 7.99, vorherArt: 'streich' },
         { titel: 'Haribo Fruchtgummi', markt: 'Netto', pct: 45, preis: 0.66, vorherArt: 'uvp' }] } };
@@ -259,7 +294,8 @@ test('Lazy: woche.js und knaller.json erst beim Öffnen; Start-Kachel und Zahl a
   assert.match(nbsp((await k.locator('li span').allInnerTexts())[0]), /^−54 % · 0,69 € · Kaufland · App$/);
   assert.equal(await k.locator('.kn').innerText(), '13');
   // Radar kurz.kommt: was diese Woche noch beginnt, als Hinweis unter den Zeilen (Zahl oben = was heute gilt)
-  assert.equal(nbsp(await k.locator('.kw').innerText()), '+ 2 kommen diese Woche noch');
+  // Prüfer 16.11.: diese Woche und nächste Woche getrennt (kommt / naechste vom Radar)
+  assert.equal(nbsp(await k.locator('.kw').innerText()), '+ 2 diese Woche, 1 ab Mo');
   assert.equal(await page.locator('.sprung a[data-reiter="woche"] .n').innerText(), '13');
   await k.click();
   await wocheDa(page);

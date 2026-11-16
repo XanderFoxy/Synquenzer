@@ -9,13 +9,15 @@
 //   knaller/stichwort-pepsi-1611.html   /Angebote/Pepsi (bundesweit = Berliner Prospekte) – Lidl 0,99 statt 1,79 UVP,
 //                                       Prospekt 8cbd3aba (nicht der Döbelner edef33c8)
 //   knaller/marktguru-pepsi-1611.json   marktguru q=Pepsi, PLZ 04720 – Lidl Pepsi Zero 0,99 ab 19.11. (Do), Kaufland
+// aus dem Roh-Lauf 43827425963 (16.11.2026, 07:59 UTC):
+//   knaller/marktguru-lindt-1611.json   marktguru q=Lindt, PLZ 04720 – nur die 4 Kaufland-Treffer (Mini-Weihnachtsfiguren 3,33)
 // Ausgedachte Angebote sind als solche gekennzeichnet (angebotRoh/synthetisch).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import knaller, { startHinweis, tagAb, berlinMitternacht, marktguruGueltig, passtMarktguru, produktKey } from '../module/knaller.mjs';
+import knaller, { startHinweis, tagAb, berlinMitternacht, marktguruGueltig, passtMarktguru, produktKey, wochenEndeIso, mengeVon, verlaufVergleich, marktguruTreffer, istOnlineProspekt, stichwortPasst } from '../module/knaller.mjs';
 import { leseKaufdaSeite, prospekteAus } from '../lib/kaufda.mjs';
 import { leseMerkNachrichten, merkEintrag, holeMerkliste, faelligeErinnerungen, erinnerungNachricht, verbucheErinnerung, erinnerungFaellig } from '../lib/merken.mjs';
 import { plane } from '../benachrichtigen.mjs';
@@ -186,14 +188,14 @@ test('Starttag-Hilfen: Text, Wochentag im Prospekt, Berliner Mitternacht (Sommer
 
 test('ohne Vergleichspreis: „statt“ im Prospekttext, sonst derselbe Artikel im selben Markt aus einem früheren Lauf = geschätzt', async () => {
   const c = nur(['aldi-nord'], { stichworte: ['Knoppers'] });
-  const seite1 = stichwortSeite([angebotRoh('k1', 'ALDI Nord', ALDI_PROSPEKT, 'Knoppers', [1.99, 2.99, false], { brand: 'Storck' })]);
+  const seite1 = stichwortSeite([angebotRoh('k1', 'ALDI Nord', ALDI_PROSPEKT, 'Knoppers', [1.99, 2.99, false], { brand: 'Storck', description: 'je 150-g-Packung' })]);
   const zustand = {};
   await knaller({ holeText: abruf({ '/Doebeln/ALDI-Nord/p-r43': 'aldi-doebeln-1611.html', '/Angebote/Knoppers': seite1 }), cfg: c, jetzt: JETZT, zustand });
-  assert.deepEqual(zustand.knaller.preise[produktKey('aldi-nord', 'Storck Knoppers')], { v: 2.99, a: 'streich', t: '2026-11-16' });
+  assert.deepEqual(zustand.knaller.preise[produktKey('aldi-nord', 'Storck Knoppers')], { v: 2.99, a: 'streich', t: '2026-11-16', m: '150g', b: 'k1.jpg' });
   // eine Woche später: derselbe Artikel, Prospekt ohne Vergleichspreis -> geschätzt (grau), mit Quelle; anderer Artikel ohne alles -> nicht
   const spaeter = new Date('2026-11-23T08:30:00Z');
   const seite2 = stichwortSeite([
-    angebotRoh('k2', 'ALDI Nord', ALDI_PROSPEKT, 'Knoppers', [1.69], { brand: 'Storck', validFrom: '2026-11-22T23:00:00.000+0000', validUntil: '2026-11-28T22:00:00.000+0000' }),
+    angebotRoh('k2', 'ALDI Nord', ALDI_PROSPEKT, 'Knoppers', [1.69], { brand: 'Storck', description: 'je 150-g-Packung', validFrom: '2026-11-22T23:00:00.000+0000', validUntil: '2026-11-28T22:00:00.000+0000' }),
     angebotRoh('m2', 'ALDI Nord', ALDI_PROSPEKT, 'Milka Schokolade', [0.88], { validFrom: '2026-11-22T23:00:00.000+0000', validUntil: '2026-11-28T22:00:00.000+0000' }),
     angebotRoh('s2', 'ALDI Nord', ALDI_PROSPEKT, 'Kaffee', [3.99], { description: 'je 500-g-Packung, statt 6,99 €', validFrom: '2026-11-22T23:00:00.000+0000', validUntil: '2026-11-28T22:00:00.000+0000' }),
   ]);
@@ -230,7 +232,7 @@ test('Merken: ntfy-Nachrichten lesen (neueste gewinnt), Erinnerung am ersten Gü
   assert.equal(urls[0], 'https://ntfy.sh/xander-schnaeppchen-b5cbf4442aaa9734f3-merken/json?poll=1&since=12h');
   assert.equal(zustand.knaller.merken.length, 2);
   await holeMerkliste({ holeText: async u => { urls.push(u); return ''; }, cfg, zustand, jetzt: JETZT });
-  assert.match(urls[1], /since=neuneu2$/);
+  assert.match(urls[1], /since=12h$/, 'immer alles der letzten 12 h – eine Liste kann aus Teilen bestehen');
   assert.equal(zustand.knaller.merken.length, 2, 'keine neue Nachricht -> Liste bleibt');
   // Mo 06:30 Berlin: noch zu früh; Mo 09:30: Crunchips (gilt seit Mo) ja, Doritos (ab Do) nein
   assert.deepEqual(faelligeErinnerungen({ zustand, cfg, jetzt: new Date('2026-11-16T05:30:00Z') }), []);
@@ -304,4 +306,99 @@ test('Anderer Prospekt (Berlin) zählt nur mit marktguru-Bestätigung für 04720
   // Pool: das bestätigte Angebot bleibt im nächsten Lauf, auch wenn sein (Berliner) Prospekt nicht genannt ist
   const r4 = await knaller({ holeText: abruf({ '/Doebeln/Lidl/p-r74': 'lidl-doebeln-1611.html' }), cfg: nur(['lidl'], { stichworte: [] }), jetzt: JETZT, zustand: {}, vorherDatei: r.datei });
   assert.ok(r4.datei.angebote.some(x => /pepsi/i.test(x.titel) && x.bestaetigt === 'marktguru'));
+});
+
+// --- Prüfer 16.11.2026 (Stand ba865f2d): Befunde 1–6 -----------------------------------------------------------------------
+test('Prüfer 1+2: Wochenende Mo 00:00 Berlin; kurz.kommt nur diese Woche, kurz.naechste ab Montag, wocheBis', async () => {
+  assert.equal(wochenEndeIso(Date.parse('2026-11-16T08:30:00.500Z')), '2026-11-22T23:00:00.000Z');
+  assert.equal(wochenEndeIso(Date.parse('2026-11-22T22:59:59.999Z')), '2026-11-22T23:00:00.000Z');
+  assert.equal(wochenEndeIso(Date.parse('2026-11-22T23:00:00.000Z')), '2026-11-29T23:00:00.000Z');
+  assert.equal(wochenEndeIso(Date.parse('2026-10-25T21:00:00.000Z')), '2026-10-25T23:00:00.000Z', 'Winterzeit');
+  // synthetisch im Döbelner Lidl-Prospekt: Do-Angebot (diese Woche) und eines ab Mo 23.11. (nächste Woche); Uhr mit Millisekunden
+  const sw = stichwortSeite([
+    angebotRoh('do1', 'Lidl', LIDL_PROSPEKT, 'Lebkuchen', [0.99, 1.99, false], { validFrom: '2026-11-18T23:00:00.000+0000' }),
+    angebotRoh('mo1', 'Lidl', LIDL_PROSPEKT, 'Chipsfrisch XXL', [1.79, 2.99, true], { brand: 'Funny-Frisch', validFrom: '2026-11-22T23:00:00.000+0000', validUntil: '2026-11-28T22:00:00.000+0000' }),
+    angebotRoh('mo2', 'Lidl', LIDL_PROSPEKT, 'Choco Crossies', [1.99, 3.49, true], { brand: 'Nestlé', validFrom: '2026-11-25T23:00:00.000+0000', validUntil: '2026-11-28T22:00:00.000+0000' }),
+  ]);
+  const r = await knaller({ holeText: abruf({ '/Doebeln/Lidl/p-r74': 'lidl-doebeln-1611.html', '/Angebote/Chips': sw }), cfg: nur(['lidl'], { stichworte: ['Chips'] }), jetzt: new Date('2026-11-16T08:30:00.500Z'), zustand: {} });
+  assert.equal(r.kurz.wocheBis, '2026-11-22T23:00:00.000Z');
+  assert.deepEqual([r.kurz.kommt['30'], r.kurz.naechste['30'], r.kurz.naechste['40']], [1, 2, 2]);
+  assert.equal(r.kurz.kommt['30'] + r.kurz.naechste['30'], r.datei.angebote.filter(a => a.pct >= 30 && Date.parse(a.gueltigAb) > Date.parse('2026-11-16T08:30:00.500Z')).length);
+});
+
+test('Prüfer 3: „geschätzt“ nur bei gleicher Packung (oder gleichem Bild) – Kiste 16,99 ist kein Vergleich für eine Flasche', async () => {
+  assert.equal(mengeVon('koffeinhaltig 12 x 1 Liter zzgl. 3.30 Pfand'), '12x1000ml');
+  assert.equal(mengeVon('Je 1,75 Liter zzgl. 0.25 Pfand'), '1750ml');
+  assert.equal(mengeVon('versch. Sorten, koffeinhaltig 1,75-l-Fl. zzgl. 0.25 Pfand'), '1750ml');
+  assert.equal(mengeVon('versch. Sorten 165 g – 185 g'), '165-185g');
+  assert.equal(mengeVon('versch. Designs 70-g-Stück · (1 kg = 28.43)'), '70g');
+  assert.equal(mengeVon('(1 kg = 3.98)'), null, 'Grundpreis ist keine Packung');
+  const preise = { [produktKey('netto', 'Coca-Cola')]: { v: 16.99, a: 'streich', t: '2026-11-16', m: '12x1000ml' } };
+  assert.equal(verlaufVergleich(preise, 'netto', 'Coca-Cola', 4.99, { menge: '1500ml' }), null);
+  assert.equal(verlaufVergleich(preise, 'netto', 'Coca-Cola', 4.99, {}), null, 'Packung unbekannt -> nichts');
+  assert.equal(verlaufVergleich(preise, 'netto', 'Coca-Cola', 9.99, { menge: '12x1000ml' }).v, 16.99);
+  assert.equal(verlaufVergleich({ k: { v: 3 } }, 'x', 'y', 1, { menge: '1l' }), null, 'alte Einträge ohne Packung zählen nicht');
+  // ganzer Lauf: Woche 1 Kiste mit Streichpreis, Woche 2 Flasche und Kiste ohne Vergleichspreis -> nur die Kiste geschätzt
+  const c = nur(['aldi-nord'], { stichworte: ['Cola'] });
+  const zustand = {};
+  await knaller({ holeText: abruf({ '/Doebeln/ALDI-Nord/p-r43': 'aldi-doebeln-1611.html', '/Angebote/Cola': stichwortSeite([angebotRoh('c1', 'ALDI Nord', ALDI_PROSPEKT, 'Coca-Cola', [11.99, 16.99, false], { description: 'koffeinhaltig 12 x 1 Liter zzgl. 3.30 Pfand' })]) }), cfg: c, jetzt: JETZT, zustand });
+  const woche2 = { validFrom: '2026-11-22T23:00:00.000+0000', validUntil: '2026-11-28T22:00:00.000+0000' };
+  const aldiNeu = (await lies('aldi-doebeln-1611.html')).replaceAll('2026-11-21T21:00:00.000+0000', '2026-11-28T21:00:00.000+0000');
+  const r = await knaller({ holeText: abruf({ '/Doebeln/ALDI-Nord/p-r43': aldiNeu, '/Angebote/Cola': stichwortSeite([
+    angebotRoh('c2', 'ALDI Nord', ALDI_PROSPEKT, 'Coca-Cola', [4.99], { description: '6 x 1 Liter zzgl. 1.50 Pfand', ...woche2 }),
+    angebotRoh('c3', 'ALDI Nord', ALDI_PROSPEKT, 'Coca-Cola', [9.99], { description: 'koffeinhaltig 12 x 1 Liter zzgl. 3.30 Pfand', ...woche2 }),
+  ]) }), cfg: c, jetzt: new Date('2026-11-23T08:30:00Z'), zustand });
+  const cola = r.datei.angebote.filter(a => /Coca-Cola/.test(a.titel));
+  assert.deepEqual(cola.map(a => [a.preis, a.vorher, a.vorherArt, a.pct, a.menge]), [[9.99, 16.99, 'geschaetzt', 41, '12x1000ml']]);
+});
+
+test('Prüfer 4: marktguru bestätigt nur mit Produktwort; führt marktguru dasselbe Produkt mit anderem Preis -> keine Bestätigung', async () => {
+  const mg = marktguruGueltig(JSON.parse(await lies('marktguru-lindt-1611.json')), MAERKTE);
+  const zeit = { gueltigAb: '2026-11-15T23:00:00.000Z', gueltigBis: '2026-11-21T18:00:00.000Z' };
+  // echter Fehltreffer im Roh-Lauf 43827425963: Berliner Prospekt 2,99 (Kaufland Card XTRA), für 04720 nennt marktguru 3,33
+  assert.equal(marktguruTreffer({ markt: 'kaufland', preis: 2.99, titel: 'LINDT Mini-Weihnachtsfiguren', ...zeit }, mg), null);
+  assert.equal(marktguruTreffer({ markt: 'kaufland', preis: 1.99, titel: 'LINDT Weihnachtsmann Vollmilchschokolade', ...zeit }, mg)?.produkt, 'weihnachtsmann');
+  assert.equal(marktguruTreffer({ markt: 'kaufland', preis: 3.99, titel: 'LINDT Weihnachtsmix', ...zeit }, mg)?.produkt, 'weihnachtsmix');
+  // Untermarke (kaufDA „Kinder Bueno“ = marktguru Ferrero „Kinder Bueno“), Titel nur Marke („PEPSI“) bleiben bestätigt
+  const g = (marke, produkt, preis, markt = 'netto') => ({ markt, preis, marke: marke.toLowerCase(), produkt: produkt.toLowerCase(), ab: zeit.gueltigAb, bis: zeit.gueltigBis });
+  assert.ok(marktguruTreffer({ markt: 'netto', preis: 2.49, titel: 'Kinder Bueno', ...zeit }, [g('Ferrero', 'Kinder Bueno', 2.49)]));
+  assert.ok(marktguruTreffer({ markt: 'lidl', preis: 0.99, titel: 'PEPSI', ...zeit }, [g('Pepsi', 'Zero Zucker', 0.99, 'lidl')]));
+  assert.equal(marktguruTreffer({ markt: 'lidl', preis: 0.99, titel: 'LINDT Weihnachtsmann', ...zeit }, [g('Milka', 'Weihnachtsmann', 0.99, 'lidl')]), null, 'andere Marke');
+  assert.ok(passtMarktguru({ markt: 'penny', preis: 1.79, titel: 'LORENZ Crunchips XXL' }, g('Lorenz', 'Crunchips XXL', 1.79, 'penny')));
+});
+
+test('Prüfer 5: Online-Prospekt (netto-online.de) zählt nicht; Stichwort muss im Angebot stehen („Becks“ ≠ „Becken“)', async () => {
+  assert.equal(istOnlineProspekt({ titel: 'netto-online.de - Exklusive Angebote' }), true);
+  assert.equal(istOnlineProspekt({ titel: 'LIDL LOHNT SICH' }), false);
+  assert.equal(istOnlineProspekt({ titel: 'Der Preisführer macht Deutschland dauerhaft günstiger!' }), false);
+  assert.equal(stichwortPasst({ title: 'GERMANIA Waschtisch inkl. Becken' }, 'Becks'), false);
+  assert.equal(stichwortPasst({ title: "BECK'S" }, 'Becks'), true);
+  assert.equal(stichwortPasst({ brand: "Ben & Jerry's", title: 'Eis' }, 'Ben Jerrys'), true);
+  // synthetische Döbelner Netto-Seite wie im Roh-Lauf 43827425963: Wochenprospekt + netto-online.de (01.–30.11.)
+  const zeitP = { validFrom: '2026-11-15T23:00:00.000+0000', validUntil: '2026-11-21T19:00:00.000+0000' };
+  const roh = (id, prospekt, title, preise, extra = {}) => angebotRoh(id, 'Netto Marken-Discount', prospekt, title, preise, { ...zeitP, ...extra });
+  const seite = `<script id="__NEXT_DATA__" type="application/json">${JSON.stringify({ props: { pageProps: { pageInformation: { location: { cityDisplayName: 'Döbeln' },
+    brochures: { viewer: [{ contentId: 'netto-markt', title: 'Aktuelle Angebote', ...zeitP }], publisher: [{ contentId: 'netto-online', title: 'netto-online.de - Exklusive Angebote', validFrom: '2026-10-31T23:00:00.000+0000', validUntil: '2026-11-30T19:00:00.000+0000' }] },
+    offers: { main: { totalItems: 483, items: [roh('n1', 'netto-markt', 'Pringles', [1.69, 2.79, false]), roh('o1', 'netto-online', 'HOME DELUXE Outdoor Whirlpool', [1999, 3499, true])] } } } } } })}</script>`;
+  const sw = stichwortSeite([roh('o2', 'netto-online', 'GERMANIA Waschtisch inkl. Becken', [249.99, 819, true]), roh('b1', 'netto-markt', "BECK'S Pils", [0.79, 1.14, false])]);
+  const r = await knaller({ holeText: abruf({ '/Doebeln/Netto-Marken-Discount/p-r9': seite, '/Angebote/Becks': sw }), cfg: nur(['netto'], { stichworte: ['Becks'] }), jetzt: JETZT, zustand: {} });
+  assert.deepEqual(r.datei.angebote.map(a => a.titel).sort(), ["BECK'S Pils", 'Pringles']);
+  assert.equal(r.datei.status.kaufda.online, 1);
+  assert.ok(!r.datei.maerkte.netto.prospekte.some(p => /online/.test(p.titel)));
+});
+
+test('Prüfer 6: Merkliste in Teilen (ntfy.sh nimmt 4096 Byte) – neuester VOLLSTÄNDIGER Satz gewinnt, alte Form geht weiter', () => {
+  const e = i => ({ id: `kd:${i}`, titel: `Angebot ${i}`, markt: 'lidl', preis: 1, vorher: 2, pct: 50 });
+  const msg = (id, time, d) => JSON.stringify({ id, time, event: 'message', topic: 't', message: JSON.stringify(d) });
+  const ndjson = [
+    msg('alt0001', 1763270000, { v: 1, merken: [e(0)] }), // alte Form ohne satz
+    msg('s1t1', 1763280000, { v: 1, satz: 'a1', teil: 1, von: 2, merken: [e(1), e(2)] }),
+    msg('s1t2', 1763280001, { v: 1, satz: 'a1', teil: 2, von: 2, merken: [e(3)] }),
+    msg('s2t1', 1763290000, { v: 1, satz: 'b2', teil: 1, von: 3, merken: [e(9)] }), // neuer, aber unvollständig
+    msg('s2t3', 1763290001, { v: 1, satz: 'b2', teil: 3, von: 3, merken: [e(8)] }),
+  ].join('\n');
+  const n = leseMerkNachrichten(ndjson);
+  assert.deepEqual([n.id, n.liste.map(x => x.id)], ['s1t2', ['kd:1', 'kd:2', 'kd:3']]);
+  assert.deepEqual(leseMerkNachrichten(ndjson.split('\n')[0]).liste.map(x => x.id), ['kd:0']);
+  assert.equal(leseMerkNachrichten(ndjson.split('\n').slice(3).join('\n')), null, 'nur unvollständige Sätze -> nichts');
 });

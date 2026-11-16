@@ -83,7 +83,10 @@ test('knaller: nur mit Vergleichspreis, ab 30 %, Art UVP/Streich, ab-Preis, App,
   assert.equal(d.angebote.filter(a => a.pct >= 30).length, 8, 'ab 30 % wie bisher');
   // Übersicht für die Start-Kachel: Zähler nur für das, was HEUTE gilt (Crunchips ab 16.11. steht unter „kommt“)
   assert.deepEqual(r.kurz.ab, { 20: 9, 30: 7, 40: 3, 50: 0 });
-  assert.deepEqual(r.kurz.kommt, { 20: 1, 30: 1, 40: 0, 50: 0 });
+  // Crunchips ab Mo 16.11. = nächste Woche (Di 10.11.): kurz.naechste, nicht „kommt diese Woche“ (Prüfer 16.11.)
+  assert.deepEqual(r.kurz.kommt, { 20: 0, 30: 0, 40: 0, 50: 0 });
+  assert.deepEqual(r.kurz.naechste, { 20: 1, 30: 1, 40: 0, 50: 0 });
+  assert.equal(r.kurz.wocheBis, '2026-11-15T23:00:00.000Z');
   assert.equal(r.kurz.top[0].pct, 44);
   assert.equal(r.kurz.top[0].markt, 'Netto');
   // Bild = Prospekt-Ausschnitt (https, nur Link), Link = Händlerseite, regional mit Ort

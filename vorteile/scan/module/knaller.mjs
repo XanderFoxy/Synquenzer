@@ -101,6 +101,33 @@ export function tagAb(abIso, tag) {
   return null;
 }
 
+/** Ende der Woche von jetztMs: Montag 00:00 Berliner Zeit (ISO) – was dann oder später beginnt, kommt „ab nächster Woche“ */
+export function wochenEndeIso(jetztMs) {
+  const tag = berlinTag(new Date(jetztMs).toISOString());
+  if (!tag) return null;
+  const wt = WT_NR[WT.format(new Date(jetztMs))]; // 0 = So
+  const [y, mo, d] = tag.split('-').map(Number);
+  return berlinMitternacht(new Date(Date.UTC(y, mo - 1, d + (wt === 0 ? 1 : 8 - wt))).toISOString().slice(0, 10));
+}
+
+/**
+ * Packungsgröße aus Titel/Beschreibung („12 x 1 Liter“, „1,75-l-Fl.“, „Je 70 g“, „165 g – 185 g“) -> „12x1000ml“, „1750ml“,
+ * „70g“, „165-185g“ oder null. Grundpreise („1 kg = 3,98“) zählen nicht. Für „geschätzt“: nur dieselbe Packung vergleichen.
+ */
+export function mengeVon(text) {
+  const t = String(text || '').toLowerCase().replace(/\u00a0/g, ' ');
+  const re = /(?:(\d{1,3})\s*[x×]\s*)?(\d{1,4}(?:[.,]\d{1,3})?)\s*-?\s*(kg|g|ml|cl|l|liter)\b(?:\s*[–-]\s*(\d{1,4}(?:[.,]\d{1,3})?)\s*-?\s*(kg|g|ml|cl|l|liter)\b)?(?!\s*=)/g;
+  const basis = (z, e) => { const n = Number(String(z).replace(',', '.')); const f = { kg: 1000, g: 1, ml: 1, cl: 10, l: 1000, liter: 1000 }[e]; return Number.isFinite(n) && n > 0 ? Math.round(n * f * 10) / 10 : null; };
+  for (const m of t.matchAll(re)) {
+    const v = basis(m[2], m[3]);
+    if (v == null) continue;
+    const einheit = /^(kg|g)$/.test(m[3]) ? 'g' : 'ml';
+    const bis = m[4] ? basis(m[4], m[5] || m[3]) : null;
+    return `${m[1] ? `${Number(m[1])}x` : ''}${v}${bis && bis !== v ? `-${bis}` : ''}${einheit}`;
+  }
+  return null;
+}
+
 const APP = /\bapp\b|\bcard\b|lidl\s*plus|payback|kundenkarte|mit karte|nur mit (?:der )?(?:app|karte)|coupon|deutschland\s*card|rewe[\s-]*bonus|bonus[\s-]*guthaben|mitglied/i;
 // dieselben Kennzeichen im Beschreibungstext (dort ohne das allgemeine „app“/„card“, die in Produktnamen vorkommen)
 const APP_TEXT = /nur mit (?:der )?(?:app|karte|card)|lidl\s*plus|mit (?:der )?\S+[ -]app\b|deutschland\s*card|payback|rewe[\s-]*bonus|bonus[\s-]*guthaben|kaufland\s*card|k-card|mitglied(?:er)?preis/i;
@@ -177,6 +204,8 @@ export function knallerAngebot(o, { markt, seite, region, jetztMs, opt }) {
       app, bedingung,
       bild: httpsOder(bilder.normal) || httpsOder(bilder.thumbnail) || httpsOder(bilder.large) || null,
       ...(typeof o.parentContent?.id === 'string' && o.parentContent.id ? { prospekt: o.parentContent.id.slice(0, 40) } : {}),
+      // Packungsgröße (für „geschätzt“ – nur dieselbe Packung desselben Produkts vergleichen)
+      ...(mengeVon(`${name} ${o.description || ''} ${p.description || ''}`) ? { menge: mengeVon(`${name} ${o.description || ''} ${p.description || ''}`) } : {}),
       _marke: norm(marke), _bildDatei: bildDatei(bilder.large || bilder.normal || bilder.thumbnail),
       link: httpsOder(seite),
       gueltigAb: abText && (!ab || Date.parse(abText) > Date.parse(ab)) ? abText : ab, gueltigBis: bis,
@@ -196,17 +225,33 @@ export function standortVon(liste, orte) {
 }
 
 const ist404 = e => /HTTP 404|HTTP 410/.test(String(e?.message || e));
+/**
+ * Online-Prospekt (Prüfer 16.11.2026: „netto-online.de – Exklusive Angebote“ steht in der Döbelner Netto-Liste; darüber kamen
+ * Waschtisch 249,99 statt 819 und Whirlpool als „Markt-Knaller“ auf Platz 1). Kein Angebot im Markt -> zählt nicht.
+ */
+export const istOnlineProspekt = p => /online|\.de\b|versand|webshop|internet/i.test(`${p?.titel || ''}`);
+/** Stichwort steht im Angebot (Titel, Marke, Beschreibung)? „Becks“ fand bei kaufDA auch „Becken“ */
+export function stichwortPasst(o, w) {
+  const text = norm(`${o?.brand || ''} ${o?.title || ''} ${o?.description || ''}`).replace(/\s+/g, '');
+  const teile = norm(w).split(/\s+/).filter(Boolean);
+  return teile.length > 0 && teile.every(x => text.includes(x));
+}
 
 /** Schlüssel desselben Produkts im selben Markt (für den Vergleichspreis aus früheren Läufen) */
 export const produktKey = (markt, titel) => `${markt}|${norm(titel).replace(/[^a-z0-9]+/g, ' ').trim().slice(0, 60)}`;
 
 /**
  * Vergleichspreis aus früheren Läufen (zustand.knaller.preise): derselbe Markt, dasselbe Produkt (Titel), dort einmal mit
- * Vergleichspreis aus dem Prospekt gesehen (Streichpreis oder UVP) -> { vorher, art, tag } oder null. Nur wenn höher als jetzt.
+ * Vergleichspreis aus dem Prospekt gesehen (Streichpreis oder UVP) -> { v, a, t } oder null. Nur wenn höher als jetzt.
+ * Prüfer 16.11.2026: kaufDA-Titel sind oft nur die Marke („Coca-Cola“, „PEPSI“) – Kiste 16,99 gegen Flasche 4,99 ergab
+ * „≈ −70 %“. Darum zusätzlich dieselbe Packungsgröße (menge) oder dasselbe Prospektbild (b); fehlt beides -> nichts.
  */
-export function verlaufVergleich(preise, markt, titel, preis) {
+export function verlaufVergleich(preise, markt, titel, preis, { menge = null, bild = null } = {}) {
   const v = preise?.[produktKey(markt, titel)];
-  return v && typeof v.v === 'number' && v.v > preis ? v : null;
+  if (!v || typeof v.v !== 'number' || !(v.v > preis)) return null;
+  const gleicheMenge = !!menge && !!v.m && v.m === menge;
+  const gleichesBild = !!bild && !!v.b && v.b === bild;
+  return gleicheMenge || gleichesBild ? v : null;
 }
 
 /** Vergleichspreise dieses Laufs merken (nur echte aus dem Prospekt), alte nach verlaufTage weg, höchstens 3000 */
@@ -215,7 +260,8 @@ export function merkeVergleich(zk, angebote, jetztMs, tage) {
   const tag = berlinTag(new Date(jetztMs).toISOString());
   for (const a of angebote) {
     if (!a || a.vorher == null || !['streich', 'uvp', 'unbekannt'].includes(a.vorherArt)) continue;
-    p[produktKey(a.markt, a.titel)] = { v: a.vorher, a: a.vorherArt, t: tag };
+    const b = bildDatei(a.bild);
+    p[produktKey(a.markt, a.titel)] = { v: a.vorher, a: a.vorherArt, t: tag, ...(a.menge ? { m: a.menge } : {}), ...(b ? { b } : {}) };
   }
   const grenze = berlinTag(new Date(jetztMs - tage * 864e5).toISOString());
   for (const [k, v] of Object.entries(p)) if (!v || !v.t || v.t < grenze) delete p[k];
@@ -234,12 +280,43 @@ export function marktguruGueltig(json, maerkte) {
   }
   return out;
 }
-/** passt ein marktguru-Angebot zu einem Knaller-Angebot? gleicher Markt, gleicher Preis, Marke oder erstes Produktwort im Titel */
-export function passtMarktguru(a, g) {
-  if (a.markt !== g.markt || Math.abs(a.preis - g.preis) > 0.005) return false;
+// Wörter (ab 4 Zeichen) ohne die der Marke; gleich = gleich oder eines steckt im anderen (ab 5 Zeichen: „Chips“/„Tortilla-Chips“)
+const worte = (s, ohne = '') => { const weg = new Set(norm(ohne).split(/\s+/)); return norm(s).split(/[\s,.%€+]+/).filter(w => w.length > 3 && !weg.has(w)); };
+const wortGleich = (x, y) => x === y || (Math.min(x.length, y.length) >= 5 && (x.includes(y) || y.includes(x)));
+/** wie gut passt ein marktguru-Angebot zum Titel? -1 = gar nicht (Marke fehlt / kein Produktwort), sonst Zahl der Produktwörter */
+export function marktguruWertung(a, g) {
+  if (a.markt !== g.markt) return -1;
   const t = norm(a.titel);
-  const wort = g.produkt.split(/\s+/).find(w => w.length > 3);
-  return (!!g.marke && t.includes(g.marke)) || (!!wort && t.includes(wort));
+  // Marke: steht im Titel, oder das erste Titelwort steht bei marktguru (kaufDA „Kinder Bueno“ = marktguru Ferrero „Kinder Bueno“)
+  const erstes = t.split(/\s+/)[0] || '';
+  const marke = (!!g.marke && t.includes(g.marke)) || (erstes.length > 2 && `${g.marke} ${g.produkt}`.split(/\s+/).includes(erstes));
+  const titelWorte = worte(a.titel, `${g.marke} ${a._marke || ''}`); // _marke = Marke laut kaufDA (Storck Knoppers)
+  const produktWorte = worte(g.produkt, g.marke);
+  const n = produktWorte.filter(w => titelWorte.some(x => wortGleich(w, x))).length;
+  // Titel nur die Marke („PEPSI“, „Pringles“) oder marktguru nennt kein eigenes Produktwort („Coca-Cola | Cola XXL“): Marke
+  // reicht. Sonst muss ein Produktwort passen (Prüfer 16.11.2026: „LINDT Mini-Weihnachtsfiguren 2,99“ wurde von „Lindt
+  // Weihnachtliche Kugeln 2,99“ bestätigt)
+  if (!titelWorte.length || !produktWorte.length) return marke ? 0 : -1;
+  return n > 0 && (marke || !g.marke) ? n : -1;
+}
+/** passt ein marktguru-Angebot zu einem Knaller-Angebot? gleicher Markt, gleicher Preis, Marke + Produktwort (s. o.) */
+export function passtMarktguru(a, g) {
+  return Math.abs(a.preis - g.preis) <= 0.005 && marktguruWertung(a, g) >= 0;
+}
+/**
+ * bestes passendes marktguru-Angebot (gleicher Preis, Zeitraum überlappt) oder null. Führt marktguru dasselbe Produkt zur
+ * selben Zeit genauer passend mit ANDEREM Preis, gilt keine Bestätigung (Kaufland Lindt Mini-Weihnachtsfiguren 3,33 für
+ * PLZ 04720 – 2,99 nur mit Karte).
+ */
+export function marktguruTreffer(a, liste) {
+  let best = null, bestN = -1, anders = -1;
+  for (const g of liste) {
+    if (!zeitlichPassend(a, g)) continue;
+    const n = marktguruWertung(a, g);
+    if (n < 0) continue;
+    if (Math.abs(a.preis - g.preis) <= 0.005) { if (n > bestN) { best = g; bestN = n; } } else if (n > anders) anders = n;
+  }
+  return best && !(anders > bestN) ? best : null;
 }
 
 /** marktguru-Zeitraum überlappt den des Angebots (Lidl hat z. B. Chips 1,79 € diese Woche und andere ab nächster Woche) */
@@ -352,11 +429,14 @@ export default async function knaller({ holeText, cfg, jetzt = new Date(), zusta
     const regional = !(lokal && gleichOrt(seite.v.ort, m.ort));
     info[mk.id] = { link, ort: region, lokal: lokal ? seite.v.ort : null, filiale, gesamt: seite.gesamt ?? null, region, regional };
     // nur Prospekte, deren Angebote hier gezählt werden dürfen: die der Orts-Seite (bundesweit: die der Berliner Seite)
-    prospekte[mk.id] = new Map((seite.prospekte || []).filter(p => !p.bis || Date.parse(p.bis) >= jetztMs).map(p => [p.id, p]));
+    const online = new Set((seite.prospekte || []).filter(istOnlineProspekt).map(p => p.id));
+    if (online.size) st.online = (st.online || 0) + online.size;
+    prospekte[mk.id] = new Map((seite.prospekte || []).filter(p => !online.has(p.id) && (!p.bis || Date.parse(p.bis) >= jetztMs)).map(p => [p.id, p]));
     gesehenIds[mk.id] = new Set();
     jeMarkt[mk.id] = [];
     for (const o of seite.items) {
       if (marktVon(o.publisherName, maerkte) !== mk.id) continue;
+      if (online.has(o.parentContent?.id)) continue; // Online-Prospekt: nicht im Markt
       if (o.id) gesehenIds[mk.id].add(o.id);
       const r = knallerAngebot(o, { markt: mk.id, seite: link, region, jetztMs, opt: optOhne });
       if (!r.angebot) continue;
@@ -432,7 +512,10 @@ export default async function knaller({ holeText, cfg, jetzt = new Date(), zusta
       const r = knallerAngebot(o, { markt: mkId, seite: i.link, region: i.region, jetztMs, opt: m });
       if (!r.angebot) continue;
       const a = r.angebot;
-      if (!mgListe.some(x => passtMarktguru(a, x) && zeitlichPassend(a, x))) continue;
+      const g = marktguruTreffer(a, mgListe);
+      if (!g) continue;
+      // Stichwort muss im Angebot stehen oder bei marktguru („Becks“ fand bei kaufDA auch „Becken“; Duplo ist Ferrero)
+      if (!stichwortPasst(o, w) && !stichwortPasst({ title: `${g.marke} ${g.produkt}` }, w)) continue;
       a.regional = i.regional; a.fund = w.slice(0, 30); a.bestaetigt = 'marktguru';
       if (nimm(mkId, r)) bestaetigt++;
     }
@@ -459,7 +542,7 @@ export default async function knaller({ holeText, cfg, jetzt = new Date(), zusta
   let mgTreffer = 0;
   for (const liste of Object.values(jeMarkt)) for (const a of liste) {
     // passend und zeitlich überlappend (Lidl hat z. B. Chips 1,79 € diese Woche und andere 1,79-€-Chips ab nächster Woche)
-    const g = mgListe.find(x => passtMarktguru(a, x) && zeitlichPassend(a, x));
+    const g = marktguruTreffer(a, mgListe);
     if (!g) continue;
     mgTreffer++;
     if (!a.gueltigAb || Date.parse(g.ab) > Date.parse(a.gueltigAb) + 3600e3) { a.gueltigAb = g.ab; a.abQuelle = 'marktguru'; }
@@ -470,7 +553,7 @@ export default async function knaller({ holeText, cfg, jetzt = new Date(), zusta
   let geschaetzt = 0;
   for (const liste of Object.values(jeMarkt)) for (const a of liste) {
     if (a.vorher != null) continue;
-    const v = verlaufVergleich(zk.preise, a.markt, a.titel, a.preis);
+    const v = verlaufVergleich(zk.preise, a.markt, a.titel, a.preis, { menge: a.menge || null, bild: bildDatei(a.bild) });
     if (!v) continue;
     const pct = rabattProzent(a.preis, v.v);
     if (pct > m.maxProzent) continue;
@@ -526,10 +609,15 @@ export default async function knaller({ holeText, cfg, jetzt = new Date(), zusta
   const jetztGilt = angebote.filter(a => !spaeter(a));
   // Zähler je Stufe nur für das, was HEUTE gilt; was später kommt, steht extra (kommt)
   const ab = Object.fromEntries(stufen.map(n => [n, jetztGilt.filter(a => a.pct >= n).length]));
-  const kommt = Object.fromEntries(stufen.map(n => [n, angebote.filter(a => spaeter(a) && a.pct >= n).length]));
+  // kommt = beginnt noch DIESE Woche (vor Mo 00:00 Berlin), naechste = ab Montag (Prüfer 16.11.2026: die Start-Kachel sagte
+  // „+ 7 kommen diese Woche noch“, 3 davon erst ab 23./26.11.); wocheBis = dieses Ende, damit die Seite alte Zahlen erkennt
+  const wocheBis = wochenEndeIso(jetztMs), wbMs = Date.parse(wocheBis);
+  const dieseWoche = a => spaeter(a) && Date.parse(a.gueltigAb) < wbMs;
+  const kommt = Object.fromEntries(stufen.map(n => [n, angebote.filter(a => dieseWoche(a) && a.pct >= n).length]));
+  const naechste = Object.fromEntries(stufen.map(n => [n, angebote.filter(a => spaeter(a) && !dieseWoche(a) && a.pct >= n).length]));
   const nameVon = id => maerkte.find(x => x.id === id)?.name || id;
   const kurz = {
-    anzahl: angebote.length, ab, kommt,
+    anzahl: angebote.length, ab, kommt, naechste, wocheBis,
     // erst was jetzt gilt, dann was ab Montag/Donnerstag kommt (mit „ab“, damit die Start-Kachel „ab Mo“ sagen kann)
     top: [...jetztGilt, ...angebote.filter(spaeter)].slice(0, 3).map(a => ({ titel: a.titel, markt: nameVon(a.markt), pct: a.pct, preis: a.preis, vorherArt: a.vorherArt, ...(a.abPreis ? { abPreis: true } : {}), ...(a.app ? { app: true } : {}), ...(spaeter(a) ? { ab: a.gueltigAb } : {}) })),
   };
@@ -544,7 +632,7 @@ export default async function knaller({ holeText, cfg, jetzt = new Date(), zusta
     maerkte: maerkteOut,
     angebote,
     status: { kaufda: st },
-    hinweis: 'Prospekt-Ort je Markt in maerkte.<id>.ort (regional = nicht der Prospekt für Döbeln, dort prüfen). Rabatt mit Vergleichspreis, abgerundet: vorherArt streich = Streichpreis im Prospekt, uvp = unverbindliche Preisempfehlung des Herstellers, unbekannt = Art nicht angegeben, geschaetzt = kein Vergleichspreis im Prospekt, sondern derselbe Artikel im selben Markt aus einem früheren Prospekt (vorherQuelle). abPreis = „ab“-Preis (bis zu). app = nur mit App/Karte. prospekt = Prospekt-id bei kaufDA. gueltigAb später als heute = kommt noch (abQuelle text/marktguru, wochenende = Fr/Sa-Angebot). maerkte.<id>.gesamt = Angebote in den Prospekten laut kaufDA, gelesen = davon gesehen. bestaetigt marktguru = aus einem anderen Prospekt desselben Markts, von marktguru für PLZ 04720 mit gleichem Preis bestätigt.',
+    hinweis: 'Prospekt-Ort je Markt in maerkte.<id>.ort (regional = nicht der Prospekt für Döbeln, dort prüfen). Rabatt mit Vergleichspreis, abgerundet: vorherArt streich = Streichpreis im Prospekt, uvp = unverbindliche Preisempfehlung des Herstellers, unbekannt = Art nicht angegeben, geschaetzt = kein Vergleichspreis im Prospekt, sondern derselbe Artikel im selben Markt aus einem früheren Prospekt (vorherQuelle). abPreis = „ab“-Preis (bis zu). app = nur mit App/Karte. prospekt = Prospekt-id bei kaufDA. gueltigAb später als heute = kommt noch (abQuelle text/marktguru, wochenende = Fr/Sa-Angebot). maerkte.<id>.gesamt = Angebote in den Prospekten laut kaufDA, gelesen = davon gesehen. bestaetigt marktguru = aus einem anderen Prospekt desselben Markts, von marktguru für PLZ 04720 mit gleichem Preis und Produktwort bestätigt. menge = Packungsgröße (geschaetzt nur bei gleicher Packung). Online-Prospekte (netto-online.de …) zählen nicht (status.kaufda.online).',
   };
   return { eintraege: [], fehler, hinweise, datei, kurz };
 }

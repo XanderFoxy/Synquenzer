@@ -2233,8 +2233,15 @@ function wocheKachel() { // -> { z, w } wie kachelInhalt; höchstens 2 Zeilen
   if (!top.length) return { z: [[`Wochen-Angebote ab ${st} %`, 'je Markt, mit Bild – tippen zum Öffnen']], w: k ? `gerade nichts ab ${st} %` : '' };
   // „ab“ = gilt erst ab Montag/Donnerstag (Radar status.knaller.kurz.top[].ab) – dann steht es dabei
   const z = top.slice(0, 2).map(x => [kurzTitel(x.titel, 44), `${x.abPreis ? 'bis ' : ''}${x.vorherArt === 'geschaetzt' ? '≈ ' : ''}−${Math.floor(zahl(x.pct))} % · ${euro(zahl(x.preis))} · ${String(x.markt || '').slice(0, 20)}${x.app ? ' · App' : ''}${zeit(x.ab) > Date.now() ? ' · ' + abText(x.ab) : ''}`, x.vorherArt === 'streich']);
-  const kommt = Number(k?.kommt?.[st]);
-  return { z, w: Number.isInteger(kommt) && kommt > 0 ? `+ ${kommt} ${kommt === 1 ? 'kommt' : 'kommen'} diese Woche noch` : '' };
+  // Radar: kommt = beginnt noch diese Woche (bis So 24:00), naechste = ab Montag (Prüfer 16.11.: vorher stand beides als „diese
+  // Woche“). wocheBis = Ende der Woche beim Lauf – ist es vorbei, stimmen beide Zahlen nicht mehr -> kein Hinweis
+  const wb = zeit(k?.wocheBis), frisch = wb == null || wb > Date.now();
+  const kommt = frisch ? Number(k?.kommt?.[st]) : 0, naechste = frisch ? Number(k?.naechste?.[st]) : 0;
+  const k1 = Number.isInteger(kommt) && kommt > 0, k2 = Number.isInteger(naechste) && naechste > 0;
+  // eine Zeile (die Kachel kürzt mit „…“): beides kurz, sonst wie bisher
+  const w = k1 && k2 ? `+ ${kommt} diese Woche, ${naechste} ab Mo` : k1 ? `+ ${kommt} ${kommt === 1 ? 'kommt' : 'kommen'} diese Woche noch`
+    : k2 ? `+ ${naechste} ${naechste === 1 ? 'kommt' : 'kommen'} ab Montag` : '';
+  return { z, w };
 }
 addEventListener('mein-vorteil-woche', () => zeichne()); // Stufe im Reiter geändert -> Kachel/Zahl neu
 
