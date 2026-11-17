@@ -4,7 +4,8 @@
 `/* LT2-END */` + stiller Block `<script type="text/plain" id="sq-ke1-src">` (vor `sq-md-src`, ebenfalls `/* KE1-BEGIN … KE1-END */`)
 + 5 einzeilige Haken (alle mit „KE1“). Keine vorhandene Zeile geändert (`diff basis.html index.html`: nur `a`-Zeilen). VERSION bleibt
 4.78.0. Bauen: `python3 apply.py` (basis.html + `src/ke1-main.js` + `src/compose.js` + `src/ke1-core.js` + `src/ke1-ui.js` → index.html;
-im stillen Block ohne Kommentare über `src/strip.cjs` – acorn, nur echte Kommentare, Abbruch wenn der Syntaxbaum nicht gleich bleibt –,
+im stillen Block ohne Kommentare und Einrückung über `src/strip.cjs` – acorn, nur echte Kommentare, Einrückung nur außerhalb von
+Vorlagen/Zeichenketten, Abbruch wenn der Syntaxbaum nicht gleich bleibt –,
 weil die Auslieferung text/plain-Blöcke bytegleich übernimmt; `src/` behält die Kommentare).
 Nur Scratchpad, nichts veröffentlicht, keine Datenbank, kein Netzabruf. Markenfrei: die Engine heißt in der Bedienung nur über `MK_LABEL`
 („MS 2000“ steht genau 1× in der Datei), keine Geräte-/App-Namen.
@@ -58,18 +59,30 @@ Index-Hüllkurve) → je Engine Ergebnis + Gewissheit + Render bei 44,1 kHz für
 | `vsResSheet` Tipp | `a === 'ke1'` → `ke1ResTap(VS.res)` (Noten bleiben wie „OK“) |
 | `spk2KlDd` | `ke1KlHook(U, K, dd)` – Weg zur Erkennung derselben Note |
 
-## Messwerte (Chromium, Xeon 4 Kerne, Rechnerlast 2–6, `nice -n 10`)
+## Messwerte (Chromium, Xeon 4 Kerne, Rechnerlast 1,4–8 – geteilt, `nice -n 10`)
 Siehe `test-ergebnis.txt` (Endlauf) – Kurzfassung:
 - Start: Bild hochkant/quer pixelgleich zur Basis; Block nicht ausgewertet, kein Worker; Startzeit (Median aus 3) nicht langsamer.
-- Größe (gzip -9, Bytes): Block 102 766 roh / **33 241 gzip**; Datei +107 526 roh / **+34 809 gzip** (+1,1 %); ausgeliefert
-  (`vx/perf2/ausliefern.mjs`) +106 351 roh / **+34 283 gzip**. Budget ≤ 35 KB gehalten (Test A2). Vorher (mit Kommentaren) 36 177 /
-  +37 436 – knapp drüber; die alte Angabe „34,7 KB“ war veraltet.
+- Größe (gzip -9, Bytes, Endfassung): Block 98 523 roh / **33 069 gzip**; Datei +103 283 roh / **+34 629 gzip** (+1,1 %); ausgeliefert
+  (`vx/perf2/ausliefern.mjs`) siehe `test-ergebnis.txt`. Budget ≤ 35 000 B gehalten (Test A2, Node-gzip: 33 292 / +34 676). Vorher (mit
+  Kommentaren) 36 177 / +37 436 – drüber; die alte Angabe „34,7 KB“ war veraltet.
 - Erster Tipp: Block 3,8 ms, Worker-Bau 8–23 ms; während Laden + Rechnen + Zeichnen **0 Aufgaben ≥ 50 ms** im Hauptfaden
   (Zeichnen ≤ 25 ms). Der erste Tipp der App überhaupt startet die Audio-Engine (bis ~300 ms, gibt es in 4.78 genauso) – im Test vorher.
 - Zeit je Ton 3,9 s (sauber) / 5,9 s (Mikro) für ~445 Versuche, Stufe 1 ~300 ms (Xeon). iPhone: **nicht gemessen** (Faktor 2–3 geschätzt
   → Zeitgrenze 6 s greift, dann weniger Versuche).
 - Stopp: Antwort ≤ 100 ms im Worker (gemessen 22–55 ms). 0 Netzaufrufe.
 - **3 min Wiedergabe + immer wieder erkennen (P3, neu):** siehe unten „Wiedergabe unter Last“.
+
+## Wiedergabe unter Last (P2/P3/P4, neu)
+Der Test-Rechner (4 Kerne) wird von anderen Arbeiten mitbenutzt; die Last schwankte während der Läufe zwischen 1,4 und 51.
+- **Rechner frei (Last 1,5–2,9, Lauf 17):** P2 0 lange Aufgaben, Planer-Vorlauf ≥ 51 ms. P3: 3 min Wiedergabe, 27 Erkennungen, **0 Noten zu
+  spät** (Vorlauf ≥ 18,7 ms), 0 Planer-Fehler – aber 2 Aufgaben à 57 ms in 3 min → die strenge Zeile „keine Aufgabe ≥ 50 ms“ ist **rot**
+  (59/60). Zuordnung mit `src/probe-p3.mjs` (Long Animation Frames + Zeitpunkte jeder Worker-Nachricht, 150 s, 21 Erkennungen):
+  0 lange Aufgaben, 2 lange Frames ohne Skript und ohne KE1-Ereignis in der Nähe (`src/p3-frei.log`) → der Hauptfaden kam nicht dran.
+  Nicht behoben, weil keine KE1-Arbeit dahinter gefunden wurde; bleibt offen bis zur iPhone-Messung.
+- **Rechner belegt (Last 4–8):** Noten bis 60–130 ms zu spät, lange Aufgaben bis 130 ms – mit UND ohne Erkennung (Bezug: dieselbe
+  Wiedergabe ohne KE1 bei Last 6–7: Noten bis 280 ms zu spät, `src/p3-ohne.log`). Planer-Fehler immer 0.
+- **Wächter** (siehe oben) nimmt den Worker zurück, wenn der Hauptfaden hängt (Lauf 17 frei: 3× in 3 min, belegt: 7–21×), und folgt
+  einer Wiedergabe, die erst während des Rechnens startet (P4). Dauer je Erkennung bei Wiedergabe: Median 5,9 s (frei) / 7,5 s (belegt).
 
 ## Trefferquoten
 Endlauf-Tabelle in `test-ergebnis.txt` (Korpus-Saat 20261118, **nicht** zum Eichen benutzt; Render-Saat der Engine 7 – im Lauf-Text
