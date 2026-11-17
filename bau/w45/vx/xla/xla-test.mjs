@@ -103,7 +103,7 @@ ok(c && c.st === 'fertig' && last.name === 'xla' && last.worker && last.last.wor
 ok(!last.lt.some(d => d > 50), 'keine Long Task > 50 ms im Hauptfaden beim Lesen + Rechnen', last.lt);
 const ui1 = await p.evaluate(() => {
   const ch = [...document.querySelectorAll('.xla button[data-x="part"]')].map(b => ({t: b.textContent.trim(), c: getComputedStyle(b).borderLeftColor}));
-  const bar = document.querySelectorAll('.xla .xlabar i').length, on = [...document.querySelectorAll('.xla .imp1g .mbtn.on')].map(b => b.dataset.x);
+  const bar = document.querySelectorAll('.xla .xlabar i').length, on = [...document.querySelectorAll('.xla .imp1g .mbtn.on:is([data-x="song"],[data-x="szenen"],[data-x="beides"])')   /* Schritt 2: zweite Wahl-Gruppe „Transponieren“ */].map(b => b.dataset.x);
   return {ch, bar, on, info: [...document.querySelectorAll('.xla .xlainfo')].map(e => e.textContent)};
 });
 const col = n => ui1.ch.filter(x => x.t.startsWith(n)).map(x => x.c);

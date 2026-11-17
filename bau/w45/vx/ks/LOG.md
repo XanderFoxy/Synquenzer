@@ -5,3 +5,9 @@
 - 22:41 UTC KS1 fertig: index.html md5 a70b7fb9 (VERSION 4.78.0); ks1-test 75/75, Rauchtest ok, Pflicht ok (topdefs 0/0, dupkeys 0, MS 2000 1x, live 1x, Marken 123=123); Startzeit Median bereit 639 → 621 ms (3 Läufe); gzip +21 KB; NOTES.md Abschnitt KS1; Paketordner 31M; Last: 2.05 4.21 4.48. Nichts veröffentlicht.
 - 22:42 UTC KS2 Start, Basis KS1 index.html md5 a70b7fb9; Last: 4.05 4.35 4.51, Platte frei 4.0G
 - 23:08 UTC KS2 fortgesetzt nach Neustart des Rechners (Zwischenstand: ks-block.js/ks-main.js/apply-ks2.py fertig, index.html veraltet, ks2-test fehlt); Last: 3.11 1.19 0.44, Platte frei 3.9G
+- 23:28 UTC KS2 fortgesetzt (3. Lauf): Quellen = index.tmp.html (md5 fc974597), Probe + ks2-test folgen; Last: 2.17 0.86 0.86, Platte frei 3.7G
+- 23:46 UTC Stand geprüft (Proben check/Rahmen/live/E1 ok); ergänzt: L8 Bonus „Bauch“ (Messung Sinus gegen Rauschen), Test-API ana, L9 Hör-Vergleich ohne Echo (Echo senkte den Master-Pegel um 1,2–1,6 dB); Sonde gegen Python-Nachbau (sonde-l6.py, probe-sonde.mjs); Last: 4.41 2.79 2.05
+- 23:54 UTC ks2-test 143/143 (E1 mit Alter der Stimme: Punkt auf der Kurve ±0,06 Okt.); Last: 7.84 5.81 3.75
+- 00:01 UTC Blatt aus ⋯: Kapitel nur nach oben rollen, wenn es unten liegt (KS1-Test quer fand „Los geht’s“ sonst verdeckt); ks1-test 75/75; Rauchtest ok; Pflicht ok; Last: 9.80 7.56 5.38
+- 00:06 UTC KS2 fertig: index.html md5 c6f0b4ea (VERSION 4.78.0); ks2-test 149/149, ks1-test 75/75, Rauchtest ok, topdefs 0/0, dupkeys 0, MS 2000 1x, live 1x, Marken 123=123; Startzeit Median bereit 838 → 748 ms (3 Läufe, Rauschen); gzip +16,7 KB (KS1+KS2 +38 KB); NOTES.md Abschnitt KS2; Paketordner 47M; Last: 6.86 7.37 5.94. Nichts veröffentlicht.
+- 00:07 UTC KS3 Start, Basis KS2 index.html md5 c6f0b4ea (Sicherung index.vor-ks3.html); Last: 5.51 6.96 5.88, Platte frei 3.2G

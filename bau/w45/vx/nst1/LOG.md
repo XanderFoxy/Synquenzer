@@ -21,3 +21,15 @@
 - 22:34 golden.mjs basis gegen index: bitgleich (12 Werksklänge, Worklet). Test um F5 MIDI + F6 Engine mk ergänzt → 70/70.
 - 22:37 Beschriftung „Welche“ (statt „Wer“); Pflicht: topdefs 0/0, dupkeys 0, smoke [], MS 2000 1×, live: true 1×, VERSION 4.78.0. Endlauf nst1-test.
 - 22:39 Endlauf nst1-test 70/70 (test-ergebnis.txt, index 05057d56). NOTES.md fertig (Funk-Entwurf, Grenzen, Phase 2).
+- 23:30 NST1-P (Prüfung): Sicherung index.vor-pruef.html (05057d56), apply.py baut sie bitgleich nach. Befunde nachgeprüft:
+  (1) Akkordfenster 35 ms auch für geplante Noten – bestätigt (Prüfer-Probe: 1/32 bei 240 BPM k = 0,0,1,1 …); (2) Beschriftungen laufen
+  über – bestätigt und schlimmer als gemeldet: auch 414 und 428 px (Hoch-Runter 64 > 61 px), dazu Toast über den Zeilen;
+  (3) Sendersuche – gemessen 2,3 HT Gleiten, Rauschen fast nur Saw-Obertöne; (4) aus probe-ziel: Engine mk Ziel-Wechsel Intervall →
+  Anteil legte 3 Bahnen an (alle Wege des Timbres) – echter Fehler.
+- 23:45 Behoben im Block: nst1Chord/nst1Held (≤ 2 ms immer Akkord, sonst ≤ 35 ms nach dem letzten Akkordton nur solange dieser gehalten
+  wird, Fenster ≤ 100 ms), grpT in Zustand/Rücknahme; nst1Who/nst1Keep (Ziel-Wechsel nach Oszillator); CSS: Umbruch + Sperrung 0, ≤ 400 px
+  Beschriftung über der Zeile; Schnellwahl-Hinweis als Zeile mit ↶ im Blatt (Toast nur bei geschlossenem Blatt); nst1Radio (Osz 2 Sinus
+  wenn stumm, Hüllk. 2 → Osz-2-Tonhöhe 0,4 + → Rauschen 1,0, Hüllk. 2 nur wenn frei). Messung: Gleiten 6,7 HT, Rausch-Stoß sichtbar.
+- 23:50 Tests B8/B9/S/G8 ergänzt (nst1-test.mjs), Lauf 1.
+- 23:52 Lauf 1 93/94 (S2 hinter 2,6-kHz-Filter) → Rauschen rosa, wenn der Klang keins hatte → Lauf 2 94/94. Pflicht grün, golden bitgleich
+  (Kontrolle Basis/Basis unter Last abweichend), Hörbeispiele 1–4 neu + 5 (Filter offen), Fotos, KURZ.md, NOTES „Prüfung“.

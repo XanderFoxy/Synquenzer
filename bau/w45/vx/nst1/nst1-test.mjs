@@ -1,6 +1,7 @@
 // NST1-Test „Je Note weiterschalten“. Aufruf: node nst1-test.mjs <index.html> [ordner]   (Basis = basis.html daneben; Fotos in <ordner>/fotos)
 // Abschnitte: A aus = wie Basis · B Zähler/Muster/Verbund/Akkord/Rückstellen/Rücknahme · C Klang (Render: VA, Engine mk, FM, WT) ·
 // D klickfrei (Spitzen) · E CPU vorher/nachher · F Speichern/Laden, Undo · G Bedienung per Touch hochkant/quer (Fotos) · H Guide · I Startzeit
+// NST1-P (Prüfung): B8 schnelle Folgen / Akkord-Regel · B9 Ziel-Wechsel · S Sendersuche (Gleiten, Rausch-Stoß) · G8 kleine Telefone + Hinweis im Blatt
 import { createRequire } from 'node:module'; import path from 'node:path'; import fs from 'node:fs';
 const { chromium } = createRequire(import.meta.url)('/opt/node-tools/node_modules/playwright/index.js');
 const file = path.resolve(process.argv[2]), out = path.resolve(process.argv[3] || path.dirname(file)), basis = path.join(path.dirname(file), 'basis.html');
@@ -146,6 +147,59 @@ try {
     await p.close();
   }
 
+  /* ================= B8/B9 (NST1-P): schnelle Folgen je Note ein Schritt, Akkord-Regel, Ziel-Wechsel ================= */
+  {
+    const p = await page();
+    const r = await run(p, async () => {
+      await host(); const i = synth(), o = {};
+      const cfg = c => Object.assign({on: 1, n: 8, m: 'up', v: 'gleich', ak: 0, rs: 1, s: 7, z: [lane(i, 'o1semi', 0, 12)]}, c || {});
+      const go = async (notes, bpm, bars, mode) => {
+        applySound(i, factorySound(INIT_IDS.analog)); setBpm(bpm); if (mode != null) setP(i, 'mode', mode);
+        solo(i, notes, bars); N.set(i, cfg()); N.log(true); await render(); const L = (N.log() || []).filter(x => x.i === i).sort((a, b) => a.t - b.t || a.out - b.out); N.log(false);
+        return L.map(x => x.k);
+      };
+      const rep = (n, step, d, key) => Array.from({length: n}, (_, k) => ({t: k * step, d: d == null ? step * .8 : d, n: key || 60, v: .8}));
+      o.r240 = await go(rep(16, .125), 240, 1);                                   // 1/32 bei 240 BPM = 31,3 ms
+      o.r215 = await go(rep(16, .125), 215, 1);                                   // 34,9 ms
+      o.tri160 = await go(rep(24, 1 / 12), 160, 2);                               // 1/32-Triolen bei 160 BPM = 31,3 ms
+      o.leg240 = await go(rep(16, .125, .1375), 240, 1, 2);                       // Legato-Lauf, Noten überlappen (110 %)
+      { const N_ = []; for (let k = 0; k < 4; k++) for (const n of [48, 55, 60, 64]) N_.push({t: k, d: .9, n, v: .8}); o.akk = await go(N_, 120, 1); }
+      { const N_ = []; for (let k = 0; k < 4; k++) [48, 55, 60].forEach((n, q) => N_.push({t: k + q * .04, d: .9, n, v: .8})); o.strum = await go(N_, 120, 1); }   // 20 ms Abstand
+      { const N_ = []; for (let k = 0; k < 4; k++) [48, 52, 55, 60, 64, 67].forEach((n, q) => N_.push({t: k + q * .03, d: .9, n, v: .8})); o.strum6 = await go(N_, 120, 1); }   // 6 Saiten, 15 ms
+      // Live: dieselbe Taste alle 30 ms (dazwischen losgelassen), Triller zweier Tasten, gegriffener Akkord (gehalten)
+      applySound(i, factorySound(INIT_IDS.analog)); N.set(i, cfg());
+      const liveRun = async (fn) => { N.reset(i); N.log(true); const t0 = AU.ctx.currentTime + .1; fn(t0); await wait(900); const L = (N.log() || []).filter(x => x.i === i); N.log(false); return L.map(x => x.k); };
+      o.live30 = await liveRun(t0 => { for (let k = 0; k < 8; k++) { const v = live(i, 60, t0 + k * .03); if (v) v.release(t0 + k * .03 + .024); } });
+      o.triller = await liveRun(t0 => { for (let k = 0; k < 8; k++) { const v = live(i, k % 2 ? 62 : 60, t0 + k * .03); if (v) v.release(t0 + k * .03 + .02); } });
+      o.griff = await liveRun(t0 => { [60, 64, 67].forEach((n, q) => { const v = live(i, n, t0 + q * .015); if (v) v.release(t0 + .3); }); [62, 65].forEach((n, q) => { const v = live(i, n, t0 + .45 + q * .012); if (v) v.release(t0 + .7); }); });
+      // B9 Ziel-Wechsel im Blatt: dieselben Oszillatoren bleiben (Engine mk: nicht alle Wege des Timbres)
+      const tapK = async (t, k) => { N.open(t); await wait(200); const bt = document.querySelector('.pop.nst1pop button[data-k="' + k + '"]'); if (bt) bt.click(); await wait(120); const c = N.get(t); closePop(); await wait(80); return c ? c.z.map(z => z.p) : null; };
+      mkLoad(); for (let k = 0; k < 100 && !mkLoaded(); k++) await wait(100);
+      applySound(i, factorySound(INIT_IDS.mk)); await wait(300); selectTrack(i);
+      N.set(i, {on: 1, n: 4, m: 'up', z: [N.lane(i, 'mk.t.0.o2.semi', 0, 12)]}); o.mkAnteil = await tapK(i, 'mmix');
+      N.set(i, {on: 1, n: 4, m: 'up', z: [N.lane(i, 'mk.t.0.o2.semi', 0, 12)]}); o.mkForm = await tapK(i, 'form');
+      N.set(i, {on: 1, n: 4, m: 'up', z: [N.lane(i, 'mk.t.0.o2.semi', 0, 12)]}); o.mkFein = await tapK(i, 'mfine');
+      applySound(i, factorySound(INIT_IDS.analog)); await wait(200);
+      N.set(i, {on: 1, n: 4, m: 'up', z: [N.lane(i, 'o2semi', 0, 12), N.lane(i, 'o3semi', 0, 12)]}); o.vaWelle = await tapK(i, 'w');
+      N.preset(i, 'radio'); o.radioWelle = await tapK(i, 'w');
+      N.set(i, null);
+      return o;
+    });
+    const all16 = a => a && a.length && new Set(a).size === a.length;
+    ok(all16(r.r240) && r.r240.length === 16, 'B8 1/32 bei 240 BPM (31 ms Abstand): jede Note ein eigener Schritt (vorher paarweise zusammengelegt)', r.r240.join(','));
+    ok(all16(r.r215) && all16(r.tri160) && r.tri160.length === 24, 'B8 1/32 bei 215 BPM und 1/32-Triolen bei 160 BPM: jede Note ein Schritt', {r215: r.r215.length, tri160: r.tri160.join(',')});
+    ok(all16(r.leg240), 'B8 schneller Legato-Lauf (Noten überlappen leicht): jede Note ein Schritt', r.leg240.join(','));
+    ok(JSON.stringify(r.akk) === JSON.stringify([0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3]), 'B8 Akkorde (4 Töne gleichzeitig) bleiben ein Schritt je Akkord', r.akk.join(','));
+    ok(JSON.stringify(r.strum) === JSON.stringify([0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3]), 'B8 gestrummter Akkord (3 Töne, je 20 ms, gehalten): ein Schritt – auch der dritte Ton (Fenster am letzten Akkordton)', r.strum.join(','));
+    ok(r.strum6.length === 24 && [0, 1, 2, 3].every(q => new Set(r.strum6.slice(q * 6, q * 6 + 6)).size === 1) && new Set(r.strum6).size === 4, 'B8 gestrummter 6-Saiten-Akkord (15 ms je Saite): ein Schritt je Akkord', r.strum6.join(','));
+    ok(all16(r.live30) && r.live30.length === 8, 'B8 Live: dieselbe Taste alle 30 ms (losgelassen dazwischen): jeder Anschlag ein Schritt', r.live30.join(','));
+    ok(all16(r.triller) && r.triller.length === 8, 'B8 Live-Triller zweier Tasten (30 ms): jeder Ton ein Schritt', r.triller.join(','));
+    ok(JSON.stringify(r.griff) === JSON.stringify([0, 0, 0, 1, 1]), 'B8 Live gegriffener Akkord (Tasten 15 ms nacheinander, gehalten): ein Schritt; der nächste Griff = nächster Schritt', r.griff.join(','));
+    ok(JSON.stringify(r.mkAnteil) === '["mk.t.0.mix.o2"]' && JSON.stringify(r.mkFein) === '["mk.t.0.o2.tune"]' && r.mkForm && r.mkForm.length === 1, 'B9 Engine mk, Ziel-Wechsel Intervall Osz 2 → Anteil / Verstimmung bleibt bei Osz 2 (vorher: alle 3 Anteile), → Wellen-Form: eine Bahn', {anteil: r.mkAnteil, fein: r.mkFein, form: r.mkForm});
+    ok(JSON.stringify(r.vaWelle) === '["o2w","o3w"]' && JSON.stringify(r.radioWelle) === '["o2w"]', 'B9 Analog: Intervall Osz 2 + 3 → Welle Osz 2 + 3; Sendersuche (Osz 2 Intervall + Verstimmung) → Welle Osz 2', {va: r.vaWelle, radio: r.radioWelle});
+    await p.close();
+  }
+
   /* ================= C: Klang je Engine (App-eigener Render: Song → OfflineAudioContext → Worklet) ================= */
   {
     const p = await page();
@@ -234,6 +288,43 @@ try {
     ok(med(off.ms) < med(base.ms) * 1.15, 'E1 Je Note aus: Render-Zeit wie Basis (± 15 %, 4 Kerne geteilt)');
     ok(med(on.ms) < med(base.ms) * 1.25, 'E2 Je Note an (3 Bahnen, 192 Noten): Render-Zeit höchstens + 25 % (Paare je Note-an, im Audio-Faden keine Zuweisung)');
     ok(on.cpu && on.cpu.n >= 192 && on.cpu.avgMs < .3, 'E3 Haupt-Faden je Note: Schritt + Paare im Mittel < 0,3 ms', on.cpu);
+  }
+
+  /* ================= S (NST1-P): Sendersuche klingt nach Sender-Suchen – Gleiten von Osz 2, Rausch-Stoß je Note ================= */
+  {
+    const p = await page();
+    const r = await run(p, async () => {
+      await host(); const i = synth(), o = {};
+      const rms = (x, a, n) => { let s = 0; for (let k = a; k < a + n; k++) s += x[k] * x[k]; return Math.sqrt(s / n); };
+      const db = v => +(20 * Math.log10(v + 1e-12)).toFixed(1);
+      const zc = (x, a, n, sr) => { let z = 0, f = -1, l = -1; for (let k = a + 1; k < a + n; k++) if (x[k - 1] < 0 && x[k] >= 0) { const fr = k - 1 + x[k - 1] / (x[k - 1] - x[k]); if (f < 0) f = fr; l = fr; z++; } return z > 1 ? (z - 1) * sr / (l - f) : 0; };
+      const on1 = x => { for (let k = 0; k < x.length; k++) if (Math.abs(x[k]) > 1e-3) return k; return 0; };
+      const meas = async pre => {
+        applySound(i, factorySound(INIT_IDS.analog)); setBpm(120); for (const [k, v] of pre) setP(i, k, v);
+        solo(i, Array.from({length: 8}, (_, k) => ({t: k, d: .8, n: 57, v: .85})), 2);
+        N.preset(i, 'radio'); const s0 = S.tracks[i].sound, R0 = {o2w: s0.p.o2w, mD: s0.p.mD, kfNc: s0.p.kfNc || 0, mods: s0.mods.map(m => m.src + '>' + m.dst)};
+        let s = await render(); const x = s.l, sr = s.sr, spb = sr * .5, a0 = on1(x);
+        const mix = []; for (let q = 0; q < 8; q++) mix.push(rms(x, Math.round(a0 + q * spb), Math.round(.1 * sr)));
+        setP(i, 'o1lvl', 0); setP(i, 'o2lvl', 0); s = await render(); const y = s.l;   // nur Rauschen
+        const nA = [], nM = []; for (let q = 0; q < 8; q++) { const a = Math.round(a0 + q * spb); nA.push(rms(y, a, Math.round(.1 * sr))); nM.push(rms(y, a + Math.round(.25 * sr), Math.round(.1 * sr))); }
+        setP(i, 'o2lvl', .7); for (const m of S.tracks[i].sound.mods) if (m.dst === 'noise') m.amt = 0; setP(i, 'noise', 0); modsChanged(i); s = await render(); const z = s.l, b0 = on1(z);   // nur Osz 2
+        const gl = []; for (let q = 0; q < 8; q++) { const a = Math.round(b0 + q * spb); const f1 = zc(z, a + Math.round(.004 * sr), Math.round(.03 * sr), sr), f2 = zc(z, a + Math.round(.3 * sr), Math.round(.08 * sr), sr); gl.push(f1 && f2 ? +(12 * Math.log2(f1 / f2)).toFixed(1) : null); }
+        const med = a => a.slice().sort((p, q) => p - q)[a.length >> 1];
+        return Object.assign(R0, {gleiten: gl, stoss: +(db(med(nA)) - db(med(nM))).toFixed(1), abstand: +(db(med(mix)) - db(med(nA))).toFixed(1)});
+      };
+      o.init = await meas([]); o.f2600 = await meas([['cutoff', 2600], ['res', .25]]);
+      // Osz 2 schon in Gebrauch und Hüllk. 2 steuert schon etwas: Welle + Hüllkurve bleiben
+      applySound(i, factorySound(INIT_IDS.analog)); setP(i, 'o2lvl', .5); setP(i, 'o2w', 1); setP(i, 'mD', .8); setP(i, 'noise', .3); setP(i, 'kfNc', 3); modSetK(i, 'menv', 'cutoff', .3);
+      N.preset(i, 'radio'); const s1 = S.tracks[i].sound; o.keep = {o2w: s1.p.o2w, mD: s1.p.mD, noise: s1.p.noise, kfNc: s1.p.kfNc, mods: s1.mods.map(m => m.src + '>' + m.dst)};
+      N.set(i, null);
+      return o;
+    });
+    const gOk = R => R.gleiten.every(v => v != null && v >= 5);
+    ok(gOk(r.init) && gOk(r.f2600), 'S1 Sendersuche: Osz 2 gleitet je Note ≥ 5 HT in seine Station (Pfeifton beim Drehen; vorher 2,3 HT) – gemessen ' + r.init.gleiten.slice(0, 4).join(' / ') + ' HT', {f2600: r.f2600.gleiten.slice(0, 4)});
+    ok(r.init.stoss >= 10 && r.f2600.stoss >= 10 && r.init.abstand <= 13 && r.f2600.abstand <= 13, 'S2 Rausch-Stoß je Note: Rauschen am Notenanfang ≥ 10 dB über der Notenmitte und höchstens 13 dB unter dem Klang (hörbar, auch bei Filter 2,6 kHz; vorher festes Rauschen ≈ 25 dB darunter)', {init: {stoss: r.init.stoss, abstand: r.init.abstand}, f2600: {stoss: r.f2600.stoss, abstand: r.f2600.abstand}});
+    ok(r.init.o2w === 3 && r.init.kfNc === 1 && r.init.mods.join() === 'menv>o2pitch,menv>noise', 'S3 Osz 2 war stumm → Sinus (Pfeifton); kein Rauschen vorher → rosa; Routen Hüllk. 2 → Osz-2-Tonhöhe + Rauschen', r.init);
+    ok(r.keep.o2w === 1 && r.keep.mD === .8 && r.keep.noise === .3 && r.keep.kfNc === 3 && r.keep.mods.join() === 'menv>cutoff,menv>o2pitch,menv>noise', 'S3 Osz 2 / Rauschen / Hüllk. 2 schon in Gebrauch: Welle, Rauschfarbe und Hüllkurve bleiben, nur Routen kommen dazu', r.keep);
+    await p.close();
   }
 
   /* ================= F: Speichern / Laden, Undo ================= */
@@ -336,6 +427,32 @@ try {
       if (k2) { await tDown(p, k2.x, k2.y); await p.waitForTimeout(750); await tUp(p); await p.waitForTimeout(400); const c2 = await ctr(p, '.pop.pk .pchip[data-act$="nst1"]'); if (c2) await tap(p, c2.x, c2.y); await p.waitForTimeout(300); }
       g = await p.evaluate(() => SYNQUENZER.nst1.get(R.selT));
       ok(g && g.z.map(z => z.p).join() === 'o2semi,o3semi', 'G7 ' + n + ': zweiten Regler (Osz 2 HT) lange drücken › Je Note → Verbund Osz 2 + Osz 3 (on the fly)', g && g.z.map(z => z.p));
+    }
+    await run(p, async () => { closePop(); closeEditor(); });
+    await p.close();
+  }
+
+  /* ================= G8 (NST1-P): kleinere Telefone – keine Beschriftung läuft über; Schnellwahl-Hinweis im Blatt statt Toast ================= */
+  for (const [w, h, n] of [[375, 667, 'SE hochkant'], [390, 844, '390 hochkant'], [428, 926, 'Pro Max hochkant'], [667, 375, 'SE quer']]) {
+    const p = await page(w, h);
+    await run(p, async () => { await host(); const i = S.tracks.findIndex(t => t.kind === 'synth' && t.sound.engine === 'analog'); selectTrack(i); ED.tab = 'osc'; openEditor(); await wait(400); N.open(i); await wait(250); });
+    await tapSel(p, '.pop.nst1pop button[data-pr="radio"]'); await p.waitForTimeout(250);
+    const g = await p.evaluate(() => {
+      const P = document.querySelector('.pop.nst1pop'); if (!P) return null;
+      const bs = [...P.querySelectorAll('button')].filter(b => b.getClientRects().length && !b.classList.contains('ux1-px'));
+      const over = bs.filter(b => { const rg = document.createRange(); rg.selectNodeContents(b); const t = rg.getBoundingClientRect(), q = b.getBoundingClientRect(); return b.scrollWidth > b.clientWidth + 1 || t.width > q.width + .5; }).map(b => (b.textContent || '').trim().slice(0, 16));
+      const small = bs.map(b => b.getBoundingClientRect()).filter(q => q.height < 43.5 || q.width < 30).length;
+      const toast = [...document.querySelectorAll('.toast, #toast')].filter(e => e.getClientRects().length && +getComputedStyle(e).opacity > .05 && /Sendersuche/.test(e.textContent || '')).length;
+      const note = P.querySelector('.n1tw'), r = P.getBoundingClientRect();
+      return {over, small, toast, note: note ? note.textContent.trim().slice(0, 60) : null, undoBtn: !!(note && note.querySelector('button[data-a="undo"]')), hsc: P.scrollWidth > P.clientWidth + 1, in: r.left >= 7.5 && r.right <= innerWidth - 7.5};
+    });
+    ok(g && !g.over.length && !g.small && !g.hsc && g.in, 'G8 ' + n + ' (' + w + '×' + h + '): keine Beschriftung im Blatt läuft über (Hoch-Runter, gegenläufig, Ping-Pong …), alle Tasten ≥ 44 px', g && {over: g.over, small: g.small});
+    ok(g && !g.toast && g.note && g.undoBtn, 'G8 ' + n + ': Schnellwahl-Hinweis steht im Blatt (mit ↶), kein Toast über den Zeilen', g && g.note);
+    if (n === 'SE hochkant') {
+      await p.evaluate(() => { const P = document.querySelector('.pop.nst1pop'); const b = P && P.querySelector('button[data-m="ud"]'); if (b) b.scrollIntoView({block: 'center'}); }); await p.waitForTimeout(150);
+      await p.screenshot({path: path.join(fotos, 'nst1p-se-hochkant.png')});
+      const u = await p.evaluate(async () => { const u0 = UNDO.length; const P = document.querySelector('.pop.nst1pop'); P.scrollTop = 0; P.querySelector('.n1tw button[data-a="undo"]').click(); await new Promise(r => setTimeout(r, 200)); return {nst: SYNQUENZER.nst1.get(R.selT), dU: u0 - UNDO.length, open: !!document.querySelector('.pop.nst1pop'), note: !!document.querySelector('.pop.nst1pop .n1tw')}; });
+      ok(u.dU === 1 && !(u.nst && u.nst.pr) && u.open && !u.note, 'G8 ↶ im Hinweis nimmt die Schnellwahl mit ihren Begleit-Änderungen zurück (ein Schritt), das Blatt bleibt offen', u);
     }
     await run(p, async () => { closePop(); closeEditor(); });
     await p.close();

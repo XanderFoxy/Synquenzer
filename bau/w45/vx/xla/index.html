@@ -20696,7 +20696,7 @@ registerProcessor('synq-md', MdProc);
     opts = opts || {};
     const P = applyEdits(P0, opts);
     const M = model.meta, barT = M.barT, tpq = M.tpq, bb = M.beatsPerBar, maxS = clamp(opts.maxS || 8, 1, 64);
-    const key = keyOf(model.tracks), tmode = opts.transpose === 'halbton' ? 'halbton' : 'rueckung';
+    const key = keyOf(model.tracks), tmode = opts.transpose === 'halbton' ? 'halbton' : 'fest';   // XLA Schritt 2: HALBTON je Spur (xs) statt Projekt-Harmonie
     const mode = opts.mode === 'song' ? 'song' : opts.mode === 'szenen' ? 'szenen' : 'beides';
     const al = allocate(model, opts);
     // Szenen: Gruppen nach Gewicht (Takte im Song), höchstens maxS; der Rest spielt als eigene Song-Clips. „Als Song“: keine Szenen.
@@ -20718,7 +20718,7 @@ registerProcessor('synq-md', MdProc);
       const clips = new Array(Math.max(scenes.length, 8)).fill(null);
       const T = {kind: drum ? 'drum' : 'synth', name, mute: false, sound: sl.snd.sound, clips, role: drum ? 'drums' : sl.role || 'andere', med: drum ? 0 : medPitch(ss)};
       if (sl.mel) T.mel = true;
-      if (!drum) { T.follow = tmode === 'halbton'; T.os = false; }      // A7b: Noten exakt (Eine Skala aus; ⇅ fest außer Modus HALBTON)
+      if (!drum) { T.follow = false; T.os = false; if (tmode === 'halbton') T.xs = 1; }   // A7b: Noten exakt (⇅ fest, Eine Skala aus); HALBTON: xs = die Tastatur verschiebt genau in Halbtönen (ältere Fassungen: fest)
       if (ss.length && ss.every(s => s.mute)) T.mute = true;
       if (ss.length === 1 && ss[0].volume !== 1) T.mix = {vol: r3(Math.sqrt(clamp(ss[0].volume, 0, 1))), pan: r3(clamp(ss[0].pan, -1, 1))};   // A11: Fader linear (K5a) → vol²-Gesetz
       // Szenen-Clips aus dem Vertreter jeder Gruppe (Länge = Periode der Spur dort)
@@ -20760,7 +20760,7 @@ registerProcessor('synq-md', MdProc);
     if (audioRep.length) warn.push('Audio-Spuren brauchen die WAVs (ZIP): ' + audioRep.join(', '));
     return {
       format: 'xla-1', mode, bpm: M.bpm, ts: M.ts, key: {root: key.root, scale: key.scale},
-      settings: tmode === 'halbton' ? {harmony: {mode: 'chromatic', oneScale: false}} : null,
+      transpose: tmode, xs: tmode === 'halbton', settings: null,   // die Projekt-Harmonie bleibt (eigene ⇅-Spuren folgen weiter nach Akkord)
       tracks, src, scenes: scenes.slice(0, Math.max(8, nS)),
       song: mode === 'szenen' ? null : {bars: P.bars, lanes, own, marks, xp: [], carrier: []},
       sceneOf: [...sceneOf].map(([g, s]) => [g, s]),
@@ -29468,6 +29468,7 @@ function normTrack(t, def, pk, warns) {
     o.follow = normBool(t.follow, true);
     o.onChange = normEnum(t.onChange, ['follow', 'hold'], 'follow');
     o.os = normBool(t.os, true);                                  // V2c′: „Eine Skala“ je Spur (Standard an)
+    if (t.xs === 1 && o.follow === false) o.xs = 1;               /* XLA: ⇅½ Halbton (nur mit ⇅ fest; ältere Fassungen: fest und exakt) */
     if (t.percF && typeof t.percF === 'object') o.percF = {f: t.percF.f !== false};   // PERC: follow vor dem Wechsel auf North (additiv)
     // v3: the track owns a full Sound (§15.2); a v2 patch (format 2) is migrated (§5.6)
     let snd = t.sound && typeof t.sound === 'object' ? SQStore.normalizeSound(t.sound) : null;
@@ -29599,6 +29600,7 @@ function normalizeProject(obj) {
     if (obj.vd3mo) { const x = vd3Norm(obj.vd3mo); if (x) p.vd3mo = x; }   // VD3: Making-of-Protokoll (nur wenn „im Projekt“)
     try { g6pFixLanes(p); } catch (e) { logErr(e); }               // G6+a: Stimmen ohne passende Chor-Spur bekommen eine aus ihrer Regel
     if (obj.sr) { const sr = srNorm(obj.sr, p.tracks); if (sr) p.sr = sr; }        // N8 I1c: Super-Regler
+    if (obj.xlaHt === 1) p.xlaHt = 1;                              /* XLA: DAW-Projekt mit Halbton (⇅ an der Spur: ⇅½ → fest → ⇅) */
     const nvN = needNorm(obj, p);                                                    // N8 Baustein N (A.4): S.need, unknown features lock
     const nvE = p.tracks.filter(t => t.sound && t.sound._nv).map(t => t.sound._nv.engine);
     if (nvF > SQStore.PROJECT_FORMAT_READ || nvE.length || nvN.length) Object.defineProperty(p, '_newer', {value: Object.defineProperty({f: nvF, e: nvE, w: nv0.w || 0, n: nvN}, 'fo', {value: nv0.fo || null}), configurable: true});   // MK0-fix: + fo (as delivered)
@@ -33813,6 +33815,7 @@ function osNoteFor(i, clipKey, played, time, e) {
 // degree mapping + one scale (no Teil-Transposition): the pitch a clip note of track i is heard at under entry e
 function mapOut(i, clipKey, note, time, entry) {
   const tr = S.tracks[i];
+  if (tr.xs === 1 && typeof xlaXsOn === 'function' && xlaXsOn(i)) return xlaXsOut(i, clipKey, note, time, entry);   /* XLA: ⇅½ Halbton – genau um den Grundton verschoben */
   const o = T.mapEvent(note, time + 1e-6, {kind: tr.kind, follow: tr.follow}, {key: clipKey || S.key}, entry);
   if (osActive(tr)) { const e = entry || T.targetAt(time + 1e-6); if (e && e.target) return osApply(i, clipKey || S.key, note, o, e, time); }
   return o;
@@ -36898,6 +36901,7 @@ function commitRecNote(o, bOff) {
 // entry: the Träger the note was played under (captured at note-on; the timeline may have been pruned since)
 function clipNoteFor(track, clipKey, played, time, entry) {
   const tr = S.tracks[track], e = entry || T.targetAt(time + 1e-6);
+  if (tr && tr.xs === 1 && typeof xlaXsOn === 'function' && xlaXsOn(track)) return xlaXsNoteFor(track, clipKey, played, time, entry);   /* XLA: ⇅½ Halbton – gehört = gespeichert */
   if (tr && tr.follow === false) { const f = jam3FtNow(track, time); if (f) return clamp(played - f, 0, 127); }   // JAM3: unter einer Rückung die Clip-Note der festen Spur
   if (!tr || tr.kind !== 'synth' || !tr.follow || (!e.target && !xpAt(time + 1e-6))) return played;   // V2c: under a Teil-Transposition too
   if (e.target && osActive(tr)) { const n = osNoteFor(track, clipKey || S.key, played, time, e); if (n != null) return n; }   // G-P2a-fix
@@ -37644,6 +37648,7 @@ function renderGrid(bAud) {
     if (tr.stimme) fb = '🎤';
     else if (tr.kind === 'drum') { if (S.settings.harmony.drums) { fb = '⇅'; if (T.targetAt(nowT()).target) fcls = 'fb act'; } else fb = '🔒'; }   // northfix: Drums mittransponieren = folgt
     else if (percIs(tr) && !tr.follow) { fb = 'folgt nicht'; fcls = 'fb fix percfb'; }   // PERC: Perkussionsspur
+    else if (tr.xs === 1 && typeof xlaXsOn === 'function' && xlaXsOn(i)) { fb = '⇅½'; fcls = xlaHeadCls(); }   /* XLA: ⇅½ Halbton */
     else if (!tr.follow) { fb = 'fest'; fcls = 'fb fix'; }
     else { fb = '⇅'; if (T.targetAt(nowT()).target) fcls = 'fb act'; }
     setTxt(H.fb, H.st, 'fb', fb);
@@ -42772,6 +42777,7 @@ function renderStrip() {
   EL.bFolgt.classList.toggle('on', tr.kind === 'synth' && tr.follow);
   EL.bFolgt.querySelector('.ck').textContent = tr.follow ? '✓' : ' fest';
   EL.bFolgt.setAttribute('aria-label', tr.follow ? 'Folgt dem Träger (an)' : 'Folgt nicht (fest)');
+  if (typeof xlaStrip === 'function') xlaStrip(tr, i);   /* XLA: ⇅½ Halbton an der Spur-Taste */
   EL.bMute.classList.toggle('on', !!tr.mute);
   EL.bUndo.disabled = !UNDO.length && !sx14Any();   // SX714: mit Verlauf/Schnappschüssen bleibt ↶ zum Halten da
   edUndoBtns();
@@ -56074,7 +56080,7 @@ function bindUI() {
     const [w, h] = ED.headFmt.split('x').map(Number), W = window.innerWidth, Hh = window.innerHeight;
     if (R.editor === 'synth' && (w !== W || (h > w) !== (Hh > W))) safeRebuild(buildSynthEd); }); });
   on(window, 'resize', () => { if (R.editor === 'drum' && ED.dTab === 'steps' && window.matchMedia('(orientation: landscape)').matches !== ED.dLand) safeRebuild(buildDrumEd); if (R.editor === 'roll' && ED.rollAt) { const land = window.matchMedia('(orientation: landscape)').matches; if (land !== ED.rollLand) { ED.rollLand = land; safeRebuild(buildRoll); } rollKbApply(); } });
-  on(EL.bFolgt, 'click', () => { const tr = S.tracks[R.selT]; if (tr.kind === 'synth') setTrackFollow(R.selT, !tr.follow); });
+  on(EL.bFolgt, 'click', () => { const tr = S.tracks[R.selT]; if (typeof xlaFolgtTap === 'function' && xlaFolgtTap(R.selT)) return; /* XLA: ⇅½ → fest → ⇅ im DAW-Projekt */ if (tr.kind === 'synth') setTrackFollow(R.selT, !tr.follow); });
   on(EL.bMute, 'click', () => setMute(R.selT, !S.tracks[R.selT].mute));
   bindHoldTap(EL.bUndo, () => undo(), () => sx14Open(EL.bUndo));   // SX714: ↶ halten = Verlauf-Liste
   // carrier
@@ -76165,7 +76171,7 @@ function vvDrawMatrix(g, LW, LH, st) {
     const hx = 4, hy = y + 2, hw = labW - 6, hh = chh - 4;
     if (vk4In(vis, hx, hy, hw, hh)) {
       let sl = ''; try { sl = tr.stimme ? 'Audio' : soundLabel(tr); } catch (e) { sl = ''; }   // STIMME: the app's „🎤 STIMME · Audio“ (name line = STIMME, 🎤 = the drawn mic)
-      const sym = tr.stimme ? 'mic' : tr.kind === 'drum' && !(S.settings && S.settings.harmony && S.settings.harmony.drums) ? 'lock' : tr.kind === 'synth' && !tr.follow ? 'fest' : 'f', nm0 = String(tr.name || '').toUpperCase();
+      const sym = tr.stimme ? 'mic' : tr.kind === 'drum' && !(S.settings && S.settings.harmony && S.settings.harmony.drums) ? 'lock' : tr.kind === 'synth' && !tr.follow && tr.xs !== 1 ? 'fest' : 'f', nm0 = String(tr.name || '').toUpperCase();   /* XLA: eine ⇅½-Spur zeigt im Video ⇅ statt FEST */
       P.heads.push({i, nm: nm0});
       vk4Put(g, vis, 'th|' + nm0 + '|' + sl + '|' + sym + '|' + tc + '|' + !!tr.mute, hx, hy, hw, hh, o => {
         vv4Btn(o, 0, 0, hw, hh, C);
@@ -115121,7 +115127,10 @@ function updPre(v, o) {
    „Passt“ legt ein NEUES Projekt an; das offene wird vorher gesichert (importProjectUI) und bleibt unverändert unter Projekte.
    Ein ↶ (Eintrag 'xla') holt das vorige Projekt zurück, ↷ öffnet den Import wieder. Index 5 = MELODIE: dort liegt die melodieführende
    Spur (oder bleibt die leere MELODIE-Spur). Noten exakt (⇅ fest, Eine Skala aus je Spur); Klang angenähert (Bericht). Privat: keine
-   Noten in Meldungen oder Protokollen. Test-Zugang window.__xla. */
+   Noten in Meldungen oder Protokollen. Test-Zugang window.__xla.
+   Schritt 2 (BAUPLAN P4, Xander: HALBTON ja): Wahl „Transponieren“ im Blatt – Halbton (empfohlen): die importierten Spuren tragen xs:1
+   (gespeichert mit follow:false – ältere Fassungen spielen sie fest und exakt), jede Taste in TRANSPONIEREN verschiebt alle Szenen genau
+   um Halbtöne; Noten fest: wie Schritt 1. Rückung je Teil und „Abschnitt transponieren“ wirken wie bei festen Spuren. */
 const XLA = {w: null, seq: 0, wait: new Map(), idle: 0, doc: 0, cur: null, css: false, core: null, bt: 0, last: null};
 const XLA_MAX_BYTES = 20 * 1048576, XLA_ROLE = {bass: 'Bass', melodie: 'Melodie', akkorde: 'Akkorde', andere: 'Synth'};
 const xlaIsCbp = ab => { try { const u = new Uint8Array(ab, 0, Math.min(8, ab.byteLength)), M = [0x99, 0x63, 0x33, 0x70, 0x0d, 0x0a, 0x1a, 0x0a]; return u.length === 8 && M.every((v, i) => u[i] === v); } catch (e) { return false; } };
@@ -115162,7 +115171,7 @@ function xlaPickFile(file) { ggbReadFile(file).then(ab => xlaFile(ab, file.name 
 async function xlaFile(ab, name) {
   if (rec.state !== 'off' || R.songRec) { toast('Erst Aufnahme beenden'); return null; }
   const c = XLA.cur = {doc: ++XLA.doc, name: String(name || 'Projekt').replace(/\.cbp$/i, '').slice(0, 40) || 'Projekt', st: 'lesen', err: '', sum: null, mode: 'beides',
-    on: new Set(), names: {}, alias: {}, sel: -1, res: null, resKey: '', building: null, bytes: ab ? ab.byteLength : 0};
+    on: new Set(), names: {}, alias: {}, sel: -1, res: null, resKey: '', building: null, bytes: ab ? ab.byteLength : 0, tp: 'halbton'};   // tp: Schritt 2, Transponieren (Halbton | fest)
   if (!xlaPop()) xlaSheet(); else xlaPaint();
   if (!ab || ab.byteLength > XLA_MAX_BYTES) { c.st = 'fehler'; c.err = ab ? 'Datei zu groß (über 20 MB) – bitte das Projekt ohne Audio sichern' : 'Datei nicht lesbar'; xlaPaint(); return null; }
   let s = null;
@@ -115177,7 +115186,7 @@ async function xlaFile(ab, name) {
 }
 // Optionen für den Kern aus dem Blatt
 function xlaOpts(c) {
-  return {mode: c.mode, maxT: MAX_T, maxS: N_SCN, lanes: c.sum.lanes.filter((l, k) => c.on.has(k)).map(l => l.ids), names: c.names, alias: c.alias};
+  return {mode: c.mode, maxT: MAX_T, maxS: N_SCN, lanes: c.sum.lanes.filter((l, k) => c.on.has(k)).map(l => l.ids), names: c.names, alias: c.alias, transpose: c.tp === 'fest' ? 'fest' : 'halbton'};
 }
 // Projekt-Daten im Worker neu rechnen (nach jeder Änderung; „Passt“ wartet darauf)
 function xlaBuild(c) {
@@ -115251,6 +115260,7 @@ function xlaHtml() {
   h += '<h5>Wie öffnen?</h5><div class="imp1g">' + B('song', 'Als Song', 'Song-Editor von links nach rechts', true, c.mode === 'song' ? 'on' : '') +
     B('szenen', 'In Szenen', 'jeder Teil eine Szene · zum Jammen', true, c.mode === 'szenen' ? 'on' : '') +
     B('beides', 'Beides (empfohlen)', 'Szenen + Song, der die Szenen spielt', true, c.mode === 'beides' ? 'on' : '') + '</div>';
+  h += xlaTpHtml(c, B);                                       // Schritt 2: Transponieren (Halbton | Noten fest)
   // Spuren (Fassung A: höchstens MAX_T, davon eine DRUMS)
   const L = S0.lanes, cap = S0.cap, nOn = c.on.size, nMid = S0.tracks.filter(t => t.sounding).length;
   h += '<h5>Spuren</h5>' + `<div class="xlainfo">${esc(nMid + ' Spuren mit Noten · ' + nOn + ' von höchstens ' + cap + ' Synth-Spuren gewählt' + (S0.drums.length ? ' + DRUMS' : '') + (L.length > cap ? ' · ' + (L.length - nOn) + ' kommen erst mit dem Ausbau auf mehr Spuren' : ''))}</div>`;
@@ -115296,6 +115306,7 @@ function xlaTap(b) {
   if (!c || c.st !== 'fertig') return;
   if (a === 'part') { const k = +b.dataset.k; c.sel = c.sel === k ? -1 : k; xlaPaint(); return; }
   if (a === 'song' || a === 'szenen' || a === 'beides') { c.mode = a; xlaChanged(c); return; }
+  if (a === 'tph' || a === 'tpf') { c.tp = a === 'tpf' ? 'fest' : 'halbton'; xlaChanged(c); return; }   // Schritt 2
   if (a === 'lane') {
     const k = +b.dataset.k;
     if (c.on.has(k)) c.on.delete(k);
@@ -115338,6 +115349,7 @@ function xlaProject(res, c) {
     t.sound = xlaSound(r.sound, drum);
     if (!drum) {
       t.follow = !!r.follow; t.os = false;
+      if (r.xs === 1 && !t.follow) t.xs = 1; else delete t.xs;   // Schritt 2: ⇅½ Halbton (gespeichert mit follow:false)
       if (isNum(r.med)) t.kbOct = clamp(Math.floor(r.med / 12) - 1, 1, 7);
       const sp = t.sound && t.sound.engine === 'analog' && t.sound.p;
       if (sp && i > DRUM_T && sp.poly > 4) sp.poly = clamp(Math.max(4, xlaMaxPoly(r.clips.filter(Boolean).map(x => x.notes).concat(Object.values(own).filter(o => o.from.t === i).map(o => o.notes)))), 4, sp.poly);   // CPU-Regel §4.2: Spuren 6–8 mit 4 Stimmen, außer die Noten brauchen mehr
@@ -115345,6 +115357,7 @@ function xlaProject(res, c) {
     if (r.mix && t.sound && t.sound.fx) { t.sound.fx.vol = clamp(Math.round(.8 * r.mix.vol * 100) / 100, 0, 1); if (isNum(r.mix.pan)) t.sound.fx.pan = clamp(r.mix.pan, -1, 1); }
     t.clips = new Array(N_SCN).fill(null).map((_, s) => { const x = r.clips[s]; if (!x) return null; const o = {len: x.len, key: x.key, notes: x.notes}; if (ts) o.ts = ts; return o; });
   }
+  if (res.xs) p.xlaHt = 1;                                  // Schritt 2: in diesem Projekt wechselt ⇅ an der Spur ⇅½ → fest → ⇅
   const div = res.tracks.map(r => r && r.sound && r.sound.fx && r.sound.fx.echoDiv).find(Boolean);
   if (div && typeof ECHO_DIVS !== 'undefined' && ECHO_DIVS.includes(div)) { p.fxBus.echo.divL = p.fxBus.echo.divR = div; }   // Delay des Synths → Projekt-Echo (Notenwert)
   p.scenes.forEach((sc, s) => { const x = res.scenes[s]; if (x && x.name) sc.name = String(x.name).slice(0, 12); });
@@ -115372,11 +115385,12 @@ async function xlaApply() {
   c.applying = false;
   if (r === false) { xlaPaint(); return false; }
   if (typeof setSongView === 'function') setSongView(sv);   // gleich mit dem Wechsel: es wird nur die Zielansicht aufgebaut (keine Long Task)
+  { const k = res.tracks.findIndex(x => x && x.kind === 'synth'); if (k >= 0 && k !== R.selT && typeof selectTrack === 'function') try { selectTrack(k); } catch (e) { logErr(e); } }   // Schritt 2: die erste importierte Spur ist gewählt (⇅½ sichtbar)
   XLA.cur = null; if (xlaPop()) closePop();
   xlaCall({op: 'close', doc: c.doc}).catch(() => {});
   if (prev) undoPush({kind: 'xla', before: prev, label: 'DAW-Projekt öffnen'});
   const nS = res.scenes.filter(x => x.name).length;
-  toast('DAW-Projekt geöffnet · ' + (res.mode === 'song' ? 'Song ' + res.song.bars + ' Takte' : nS + (nS === 1 ? ' Szene' : ' Szenen') + (res.song ? ' · Song ' + res.song.bars + ' Takte' : '')) + (res.report.gone.length ? ' · ' + res.report.gone.length + ' Spuren noch ohne Platz' : ''),
+  toast('DAW-Projekt geöffnet · ' + (res.mode === 'song' ? 'Song ' + res.song.bars + ' Takte' : nS + (nS === 1 ? ' Szene' : ' Szenen') + (res.song ? ' · Song ' + res.song.bars + ' Takte' : '')) + (res.report.gone.length ? ' · ' + res.report.gone.length + ' Spuren noch ohne Platz' : '') + (res.xs ? ' · Tastatur: Halbton' : ''),
     prev ? {label: '↶ Rückgängig', fn: () => undo()} : null);
   return true;
 }
@@ -115395,13 +115409,89 @@ function xlaUndoApply(e, val) {
     (async () => { try { if (kv && kv.mode !== 'memory') { await kv.del('proj:' + v.id); PROJ.index = (await projIndexLoad()).filter(x => x.id !== v.id); await projIndexSave(); } } catch (x) {} })();   // wie openProject: es ist jetzt das offene Projekt
   } else {                                                 // ↷: das offene (vorige) Projekt wird gesichert, der Import kommt wieder
     const keep = parkSnapshot(); if (keep) parkFile(keep).catch(() => {});
-    applyProject(p, {}); if (autosave) autosave.flush();
+    applyProject(p, {ui: true}); if (autosave) autosave.flush();   // Schritt 2: mit der Auswahl des Imports (die erste importierte Spur) – ↷ bitgleich
   }
   UNDO.length = 0; UNDO.push(...U); REDO.length = 0; REDO.push(...Rd);
   UI.dirty.strip = true; edUndoBtns();
 }
 // Verlauf-Rekorder (VC2a): der Projektwechsel ist kein Teilbaum des Projekts – histOpen des neuen Projekts hält ihn fest (sonst Diff des ganzen Projekts = Long Task)
 try { HIST.kind('xla', () => []); } catch (e) {}
+/* ---------- Schritt 2: HALBTON je Spur (⇅½) – BAUPLAN P4 ----------
+   Eine Synth-Spur mit xs:1 (gespeichert immer zusammen mit follow:false) folgt dem Träger GENAU in Halbtönen: jede Taste in
+   TRANSPONIEREN verschiebt ihre Noten um den Abstand des Grundtons zur Projekt-Tonart (Oktave wie eingestellt: nächster Weg / absolut),
+   ohne Stufen und ohne Skala – so wie eine ⇅-Spur im Modus HALBTON, aber nur diese Spur. Die Projekt-Harmonie bleibt: eigene ⇅-Spuren
+   im selben Projekt folgen weiter nach AKKORD/TONART. Ältere Fassungen kennen xs nicht (normTrack) und spielen die Spur fest und exakt.
+   Die Rückung je Teil (JAM3) und „Abschnitt transponieren“ (TRP1) wirken wie bei festen Spuren (outPitch addiert sie nach mapOut).
+   Nie: Drums, Perkussion (North), STIMME, Drum-Einzelspur (MTX3). Haken: mapOut, clipNoteFor, normTrack, normalizeProject, Spurkopf,
+   Strip ⇅ (Anzeige + Tippen). Kostet nichts in Projekten ohne xs (ein Feldvergleich je Note). */
+function xlaXsOn(i) { const tr = S.tracks[i]; return !!tr && tr.xs === 1 && tr.kind === 'synth' && tr.follow === false && !tr.stimme && !percIs(tr) && !(typeof mtx3Dr === 'function' && mtx3Dr(i)); }
+// die Verschiebung unter dem Träger-Eintrag e: Grundton gegen die PROJEKT-Tonart (= Song-Tonart des Imports), so wie der Träger sie
+// schon rechnet (e.shift: Tastatur, Song-Träger, MIDI-Export; nächster Weg / absolut, Tritonus nach der vorigen Richtung) – so gehen alle
+// Szenen gleich weit, auch wenn eine Szene ihre Tonart später selbst erkennt (Bezug „Auto“). clipKey bleibt für die Haken-Form.
+function xlaXsShift(clipKey, e) {
+  if (!e || !e.target) return 0;
+  if (isNum(e.shift)) return e.shift;
+  return T.opts.octaveMode === 'absolute' ? e.target.rootNote - Harmony.refNote(S.key) : Harmony.nearestShift(e.target.root, S.key.root, 0);
+}
+// mapOut (Haken): die Note, wie sie unter dem Träger klingt (ohne Rückung – die addiert outPitch danach)
+function xlaXsOut(i, clipKey, note, time, entry) {
+  const e = entry || T.targetAt(time + 1e-6); let o = note + xlaXsShift(clipKey, e);
+  while (o > 127) o -= 12; while (o < 0) o += 12;
+  return o;
+}
+// clipNoteFor (Haken): Aufnahme/FANG/Schritt-Eingabe unter dem Träger – die Clip-Note, die als `played` klingt (gehört = gespeichert)
+function xlaXsNoteFor(track, clipKey, played, time, entry) {
+  const e = entry || T.targetAt(time + 1e-6), f = jam3FtNow(track, time) || 0, n0 = played - f - xlaXsShift(clipKey, e);
+  if (n0 >= 0 && n0 <= 127 && outPitch(track, clipKey, n0, time, e) === played) return n0;
+  let best = clamp(n0, 0, 127), be = Infinity;
+  for (let d = 0; d <= 24; d++) for (const n of d ? [n0 - d, n0 + d] : [n0]) {
+    if (n < 0 || n > 127) continue;
+    const err = Math.abs(outPitch(track, clipKey, n, time, e) - played); if (!err) return n; if (err < be) { be = err; best = n; }
+  }
+  return best;
+}
+// Strip (Haken in renderStrip): ⇅½ an der Spur-Taste, auch wenn das Häkchen aus Platzgründen versteckt ist
+function xlaStrip(tr, i) {
+  const on = !!tr && tr.xs === 1 && xlaXsOn(i), b = EL.bFolgt; if (!b) return;
+  if (b.classList.contains('xlaxs') !== on) b.classList.toggle('xlaxs', on);
+  if (!on) return;
+  xlaCss2(); b.classList.add('on');
+  const ck = b.querySelector('.ck'); if (ck && ck.textContent !== '½') ck.textContent = '½';
+  b.setAttribute('aria-label', 'Folgt in Halbtönen (Noten genau) – antippen: fest');
+}
+function xlaCss2() {
+  if (XLA.css2) return; XLA.css2 = true;
+  const s = document.createElement('style'); s.id = 'xlaCss2';
+  s.textContent = ['#bFolgt.xlaxs .ck,#strip #bFolgt.xlaxs .ck{display:inline-block;width:auto;color:var(--amber)}',
+    // Spurkopf: „⇅½“ ist breiter als „⇅“ – der Name macht Platz, wo beide in einer Zeile stehen (wie bei „fest“, .th.hfix)
+    '@media (orientation:landscape) and (max-height:560px){.th:has(>.fb.xlaxs){padding-right:26px}}',
+    '@media (orientation:portrait) and (max-height:600px){.th:has(>.fb.xlaxs) .nm{max-width:calc(100% - 26px)}}'].join('\n');
+  document.head.appendChild(s);
+}
+// Spurkopf (Haken in renderGrid): Klasse des Zeichens „⇅½“ – leuchtet wie „⇅“, wenn ein Träger klingt
+function xlaHeadCls() { xlaCss2(); return T.targetAt(nowT()).target ? 'fb act xlaxs' : 'fb xlaxs'; }
+// Strip ⇅ antippen (Haken): im DAW-Projekt mit Halbton (oder an einer ⇅½-Spur) drei Stufen ⇅½ Halbton → fest → ⇅ folgt → ⇅½;
+// sonst (false) wie bisher folgt ↔ fest. Perkussion und STIMME wie bisher.
+function xlaFolgtTap(i) {
+  const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth' || tr.stimme || percIs(tr) || !(S.xlaHt === 1 || tr.xs === 1)) return false;
+  const st = tr.xs === 1 && tr.follow === false ? 'xs' : tr.follow !== false ? 'folgt' : 'fest';
+  if (st === 'xs') { tr.follow = false; delete tr.xs; }
+  else if (st === 'fest') { tr.follow = true; delete tr.xs; }
+  else { tr.follow = false; tr.xs = 1; }
+  if (AU.ctx) remapNow();
+  UI.dirty.all = UI.dirty.strip = true; markDirty();
+  toast(st === 'xs' ? 'fest – Transponieren lässt die Spur aus (Rückung im Song wirkt)' : st === 'fest' ? '⇅ folgt – die Spur folgt den Akkorden' : '⇅½ Halbton – jede Taste verschiebt die Spur genau');
+  return true;
+}
+// Blatt: Abschnitt „Transponieren“ (Halbton vorgewählt, Xander 16.11.)
+function xlaTpHtml(c, B) {
+  const k = c.sum && c.sum.key, nn = k && isNum(k.root) ? noteNames()[k.root] : null;
+  return '<h5>Transponieren</h5><div class="imp1g">' +
+    B('tph', 'Halbton (empfohlen)', 'jede Taste verschiebt alle Szenen genau', true, c.tp !== 'fest' ? 'on' : '') +
+    B('tpf', 'Noten fest', 'nur im Song je Teil (Rückung)', true, c.tp === 'fest' ? 'on' : '') + '</div>' +
+    `<div class="xlainfo">${esc(c.tp === 'fest' ? 'Die Tastatur lässt die Spuren aus. Im Song kannst du je Teil rücken.' :
+      'Tastatur auf ⇅ TRANSPONIEREN: ' + (nn ? 'die Taste ' + nn + ' spielt das Original (' + keyName(k) + '), ' : '') + 'eine Taste höher = einen Halbton höher. Die Rückung je Teil im Song wirkt dazu.')}</div>`;
+}
 /* ---------- Guide ---------- */
 (function xlaGuide() {
   try {
@@ -115410,12 +115500,17 @@ try { HIST.kind('xla', () => []); } catch (e) {}
       'Ein Projekt aus deiner DAW (.cbp) wird ein neues Projekt: die Song-Teile werden erkannt und farbig gezeigt (gleiche Farbe = gleiche Szene). Wähle „Als Song“, „In Szenen“ oder „Beides“ und tippe „Passt“. Die Noten bleiben genau, der Klang ist angenähert. Vorerst höchstens 8 Spuren – du wählst, welche. Dein offenes Projekt bleibt unter Projekte, ↶ holt es zurück.',
       'daw projekt cbp öffnen importieren umwandeln song teile szenen strophe refrain loop spuren übernehmen fremdes projekt',
       () => { ui1Home(); if (typeof imp1Sheet === 'function') imp1Sheet(); return true; }, '.imp1 button[data-i="pick"]'));
+    ui1Entries().push(E('xlaht', 'Transponieren im DAW-Projekt (⇅½ Halbton)', 'Tastatur › ⇅ TRANSPONIEREN · Spur-Taste ⇅',
+      'Im geöffneten DAW-Projekt verschiebt jede Taste alle Szenen genau um Halbtöne: der Grundton deines Songs spielt das Original, eine Taste höher klingt einen Halbton höher. Ein Finger reicht. Die Taste ⇅ an der Spur wechselt: ⇅½ Halbton → fest → ⇅ folgt (nach Akkord). Im Song wirkt dazu die Rückung je Teil. Deine eigenen ⇅-Spuren folgen weiter dem Harmonie-Modus – sollen sie genau mitgehen, an ihrer Taste ⇅ auf ⇅½ tippen.',
+      'transponieren halbton daw projekt cbp tonart verschieben genau taste original rueckung',
+      () => { ui1Home(); return true; }, '#segTr'));
   } catch (e) {}
 })();
 window.__xla = {
   file: (u8, name) => xlaFile(u8 instanceof ArrayBuffer ? u8 : Uint8Array.from(u8).buffer, name || 'Test'),
   cur: () => XLA.cur, last: () => XLA.last, worker: () => !!XLA.w, build: () => (XLA.cur ? xlaBuild(XLA.cur) : null), apply: () => xlaApply(),
-  isCbp: ab => xlaIsCbp(ab), project: (res, c) => xlaProject(res, c || {name: 'Test'}), core: () => xlaCoreMain(), sheet: () => xlaSheet()
+  isCbp: ab => xlaIsCbp(ab), project: (res, c) => xlaProject(res, c || {name: 'Test'}), core: () => xlaCoreMain(), sheet: () => xlaSheet(),
+  xsOn: i => xlaXsOn(i), xsShift: (k, e) => xlaXsShift(k, e), folgtTap: i => xlaFolgtTap(i)
 };
 /* XLA-END */
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();

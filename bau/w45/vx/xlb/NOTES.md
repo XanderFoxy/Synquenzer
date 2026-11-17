@@ -2,6 +2,8 @@
 
 Basis: `rel-4780/index.html` (Synquenzer 4.78.0, md5 68e92c0367cd63eda5a9da08ead8990d) → `basis.html` (unverändert).
 Ergebnis: `index.html` (VERSION bleibt '4.78.0'), gebaut mit `python3 bau.py` aus basis.html + `src/block.js` + `src/block.css` + einzeiligen Haken.
+Stand: `index.html` md5 **018e17d45b501310c1a4f8a78c48cb0b**, 9 570 550 Bytes (Basis 9 543 731, +26 819 = +0,28 %); `bau.py` erzeugt genau diese Datei wieder.
+**Nur vorbereitet (Fassung B) – nichts veröffentlicht, nichts gepusht.**
 Bauplan: `vx/cbpimp/ARCHITEKTUR.md` Variante A (BAUPLAN P1).
 
 ## Plan
@@ -110,7 +112,25 @@ Test-Zugang: `SYNQUENZER.xl` = {room, max, addScene, remScene, setScenes, bank, 
 - Fotos: `fotos/xlb-bank-{hochkant,quer}.png`, `xlb-blatt-…`, `xlb-song-…`, `messung-chromium.png` (keine Songtitel, nur Testdaten).
 - Normales Projekt sieht aus wie 4.78: Bildschirmfotos 428×926, 926×428, 320×568 byte-gleich zur Basis (md5 der PNG).
 
-@@REG@@
+**Regression Matrix / Song / Mixer / MIDI** (`reg/lauf.sh`, Kopien der Tests in `reg/t`, nacheinander, nice -n 10; Logs `reg/o-neu/*.log`,
+A/B-Logs `reg/o-basis/*.log`, Übersicht `reg/neu.txt`, `reg/basis.txt`; Fotos danach gelöscht):
+
+| Test | Bereich | XLB | 4.78 (A/B) | Urteil |
+|---|---|---|---|---|
+| mtx3 | Matrix: Einzelspuren, MIDI je Einzelspur | 51/51 | – | grün |
+| mtx3b | Matrix: Einzelspuren-Rest, Tastatur, Laden | 87/87 | – | grün |
+| mtx3c | Matrix | 26/26 | – | grün |
+| mtx4 | Matrix: mehrere Clips, ↶ ↷ | 117/118 (P2: ein Long Task 62 ms bei „+1 (64 Versionen)“, synchron 9 ms) | 115/118 (gleiche Zeitgrenzen, Last 6–9) | BEKANNT (Zeitgrenze unter Last, in der 4.78-Regression genauso) |
+| mtx (MTX-1…5, 4.55) | Matrix: Rand-Blättern, Szene/Spur duplizieren, Blätter | 91/92 | 91/92, gleiche Prüfungen | gleich (die eine Prüfung erwartet den alten 4.49-Fehler in der Vergleichsdatei) |
+| teil1 | Song: Teile, Lineal, Teil → Szene | 61/61 | – | grün |
+| clip1 | Song/Matrix: Auswahl als Clip | 109/109 | – | grün |
+| trp1 | Song: Abschnitt transponieren, MIDI | 81/81 | – | grün |
+| mx2 | Mixer: MIX-Blatt, Seitenkette, Kanalzug | 34/34 | – | grün |
+| mix3 (4.49) | Mixer: Mix & Master, Chor | 20 OK / 3 FEHLER, Abbruch bei Prüfung 10 | genau dieselben Urteile und derselbe Abbruch | gleich (Test älter als die heutige Bedienung) |
+| midi-ab.mjs | MIDI-Export alter Projekte | **90/90 Dateien bitgleich** (9 Projekte × Szene 1–8 / alle / Song) | Referenz | grün |
+
+→ **Kein Rückschritt gefunden.** Zusätzlich die Pflicht (siehe Messung/Startzeit): topdefs doppelt 0 / Syntax 0, dupkeys 0, smoke errors [],
+„MS 2000“ 1×, „  live: true,“ 1×, Markenwörter je Wort gleich oft wie in der Basis, keine Emojis.
 
 ## Messung
 
@@ -133,7 +153,15 @@ Chromium hier (4 geteilte CPUs, Fremdlast 2–7) – `mess.mjs` → `mess/chromi
 - iPhone 12 Pro Max: **GESCHÄTZT** (nicht gemessen) Faktor 1–2 der Chromium-Last → 24 Spuren ≈ 0,44–0,9, also an den
   Begrenzer-Schwellen 0,45 / 0,60. 16 Spuren ≈ 0,3–0,6. Sicher erst nach Xanders Lauf mit messung.html.
 
-Startzeit (Seite laden bis bereit, je 3 Läufe, Median): @@START@@
+Startzeit (Seite laden bis bereit, je 3 Läufe, Median): Basis 4.78 → XLB, „App bereit“ (BOOT.done) ab Navigation, Chromium hier,
+  Fremdlast 4–6 (`startzeit.mjs` / `startzeit2.mjs`, `mess/startzeit-ende.json`, `mess/startzeit2.json`, `mess/startzeit3.json`):
+  - 3 Läufe (Pflicht, Last 6): 858 → 893 ms (Läufe 858/724/873 → 966/893/734, streut ± 120 ms).
+  - 5 Läufe: 647 → 672 ms; Hauptfaden-Skriptzeit (CDP ScriptDuration) 103 → 93 ms, Aufgaben-Zeit 640 → 658 ms.
+  - 9 Läufe, Reihenfolge wechselnd: 672 → 631 ms; ScriptDuration 104 → 103 ms; Aufgaben-Zeit 657 → 627 ms.
+  → **kein messbarer Unterschied** (die Streuung ist größer als jede Differenz; die Skriptzeit ist gleich). Die erste Fassung war
+  +130 ms (TDZ-Ausnahmen in xlNsN beim Start) – behoben mit dem Merker XLB.sOk. Datei +26,8 KB (9 543 731 → 9 570 550 Bytes, +0,28 %).
+  Beim Start läuft vom Block nur: Konstanten, XLB-Objekt, xlNsN (ohne Ausnahme), xlApi (Objekt mit Pfeilen). Ketten der Zusatzspuren
+  entstehen erst bei Bedarf.
 
 Grenzen (für Fassung B):
 - Höchstens 24 Spuren / 32 Szenen je Projekt (Daten), 4 bzw. 8 sichtbare Spalten, 8 Szenen-Bänke à 4.
@@ -152,3 +180,8 @@ Grenzen (für Fassung B):
 7. Stems/ZIP mit 24 Spuren: Größe nicht gemessen (je Spur eine WAV wie bisher).
 8. MIDI: Spuren ab 15 teilen sich Kanal 16 (vorhandenes midiCh); jede Spur bleibt eine eigene MIDI-Spur.
 9. XLA-Import an maxTracks()/maxScenes() anschließen (XLA-Block nicht angefasst).
+10. Die neue sichtbare Bedienung (leere Spalten mit ＋ Szene, [SZ] halten = Szenen-Blatt, ＋ Spur bis 24, Guide-Eintrag) ist laut Auftrag
+    freigegeben (generelles OK 16.11.); vor der Auslieferung trotzdem im Funk kurz mit Fotos (`fotos/xlb-*.png`) zeigen – CLAUDE.md Regel 3.
+11. mtx4 P2 (Long Task > 50 ms bei 64 dichten Clips) ist eine Zeitgrenze, die auch 4.78 unter Last reißt – auf dem iPhone nicht gemessen.
+12. mix3-test (4.49) bricht in 4.78 und XLB gleich ab (Bedienung seither geändert) – Mixer ist über mx2 (34/34), xlb-test (Mix-&-Master
+    mit 12 Spuren) abgedeckt; ein aktueller Mixer-Test für 24 Spuren fehlt noch (MIX-A/MX1/MX3 mit 24 Eingängen, siehe 6).

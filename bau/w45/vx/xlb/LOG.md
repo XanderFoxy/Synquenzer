@@ -11,3 +11,15 @@
 - 22:21 UTC Startzeit: zuerst +130 ms (DCL) gegenüber 4.78. Halbierung der Haken-Bereiche: Ursache emptyClips → xlNsN mit try/catch auf S im TDZ (viele Ausnahmen beim Start).
   Fix: Merker XLB.sOk nach „let S = demoProject();“ (eine Haken-Zeile) → parse+exec wieder wie Basis (372–411 vs 341–415 ms). Last 4.59 4.68 4.77.
 - 23:09 UTC Neustart der Maschine (uptime 1 min) – Arbeit fortgesetzt. Last 3.10 1.22 0.46. df: 3.9G frei.
+- 23:13 UTC (vor 2. Unterbrechung) Endfassung (md5 018e17d4, bau.py reproduzierbar): xlb-test 64 OK / 0 FEHLER, probe-render (Video-Ton Spur 11) OK,
+  Bildvergleich normales Projekt 428×926 / 926×428 / 320×568 byte-gleich, messung.html-Lauf Chromium 0,12 / 0,25 / 0,38, 0 Aussetzer.
+- 23:28 UTC Fortsetzung. Last 1.20 0.52 0.75. df: 3.7G frei. bau.py → gleiche md5 018e17d4.
+- 23:29 UTC Pflicht: topdefs doppelt 0 / Syntax 0, dupkeys 0, smoke errors [], „MS 2000“ 1×, „  live: true,“ 1×, Markenwörter wie Basis, keine Emojis. Last 1.2.
+- 23:31 UTC Startzeit (3 Läufe Pflicht, Last 6): ready 858 / 893 ms; 5 Läufe 647 / 672; 9 Läufe mit wechselnder Reihenfolge (Last 4–5) 672 / 631,
+  Hauptfaden-Skriptzeit (CDP ScriptDuration) 104 / 103 ms → kein messbarer Unterschied.
+- 23:33 UTC Regression Matrix/Song/Mixer/MIDI gestartet (reg/lauf.sh, Kopien der Tests in reg/t, nacheinander, nice -n 10). Last 4.
+- 23:49 UTC Regression XLB fertig: mtx3 51/51, mtx3b 87/87, mtx3c 26/26, mtx4 117/118 (P2 Long Task 62 ms), mtx 91/92, teil1 61/61,
+  clip1 109/109, trp1 81/81, mx2 34/34, mix3 20 OK/3 FEHLER + Abbruch. Last 1.5–4.9.
+- 23:55 UTC A/B auf 4.78 für die nicht grünen: mix3 und mtx exakt dieselben Urteile, mtx4 115/118 (Last 6–9) → kein Rückschritt.
+- 23:57 UTC midi-ab.mjs: MIDI-Export 9 Altprojekte × 10 Dateien = 90/90 bitgleich zu 4.78. Last 8.9. Fotos der Regression gelöscht (Platte 3,3 GB frei).
+- 23:59 UTC NOTES/LOG fertig. index.html md5 018e17d4 (unverändert seit 22:34), Basis 68e92c03 unverändert. Paketordner 22 MB. df 3,3 GB frei.

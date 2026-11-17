@@ -110432,8 +110432,9 @@ function lt2Make(G, V) {   // Programm ohne Tönungs-Zweig: gleicher Vertex-Shad
    Je-Stimme-Paar wie ein Noten-Lock (I2b) in den Worklet: Klasse n (Welle, Fußlage, HT, FM-Verhältnis) gilt ab dem ersten Sample der
    neuen Stimme (Hüllkurve startet bei 0 = klickfrei), Klasse b gleitet bei Legato in 5 ms. Nativer Weg (WT, ECO): als Sicht o.lkP.
    Im Audio-Faden läuft keine neue Zeile je Sample oder Block (Ausnahme: Worklet-Teil NST1W, nur bei Mono/Legato mit Wellen-Wechsel).
-   Ein Noten-Lock der Note gewinnt (wie „Lock schlägt Reihe“). Akkord: Töne, die zusammen (≤ 35 ms, wie die Glide-Gruppe) beginnen,
-   sind EIN Schritt (Schalter „jede Note“ = jeder Ton ein Schritt). Neu-Planung (FILL, Arp, Clip-Wechsel: cancelTrackFrom) nimmt den
+   Ein Noten-Lock der Note gewinnt (wie „Lock schlägt Reihe“). Akkord = EIN Schritt (Schalter „jede Note“ = jeder Ton ein Schritt):
+   Töne, die praktisch gleichzeitig beginnen (≤ 2 ms), oder – gegriffen/gestrummt – höchstens 35 ms nach dem letzten Akkordton,
+   solange dieser noch gehalten wird (Fenster ≤ 100 ms ab dem ersten Ton). Schnelle Läufe/Triller (Ton davor schon losgelassen) = je Ton ein Schritt. Neu-Planung (FILL, Arp, Clip-Wechsel: cancelTrackFrom) nimmt den
    Zähler zurück; dieselbe Note noch einmal geplant (applySound) bekommt denselben Schritt. ▶ startet immer bei Schritt 1, „neu ab
    Clipstart“ (Standard an) auch jeder Clip-/Szenenstart; ein neuer Render (Video, Song-Datei) ebenso.
    Daten: sound.nst = {on, n, m, v, z: [{p, a, b}], f?, ak, rs, s, pr?} (a/b = Bereich in Reglerstellung 0..1), nur additiv
@@ -110586,7 +110587,7 @@ function nst1St(i, c, T) {
   const tr = S.tracks[i], sig = R.runId + '|' + (c.rs ? R.slot[i] + ':' + R.cstart[i] + ':' + (R.own[i] || '') : '-');
   let st = NST1.st[i];
   if (!st || (st.c !== c && st.key !== T.key) || st.ctx !== AU.ctx || st.sig !== sig || st.uid !== tr.uid)
-    st = NST1.st[i] = {c, key: T.key, ctx: AU.ctx, sig, uid: tr.uid, k: -1, pos: [-1, -1, -1], base: [-1, -1, -1], cur: null, lastT: -1e9, h: []};
+    st = NST1.st[i] = {c, key: T.key, ctx: AU.ctx, sig, uid: tr.uid, k: -1, pos: [-1, -1, -1], base: [-1, -1, -1], cur: null, lastT: -1e9, grpT: -1e9, h: []};
   return st;
 }
 
@@ -110604,12 +110605,12 @@ function nst1Voice(i, out, t0, o, snd) {
       const now = AU.ctx ? AU.ctx.currentTime : 0;
       if (st.h.length > 96 || (st.h.length && st.h[0].t < now - 4)) st.h = st.h.filter(x => x.t >= now - 4).slice(-64);
       let before = null;
-      if (!c.ak && st.cur && Math.abs(t0 - st.lastT) <= .035) idx = st.cur;                 // Akkord = ein Schritt
+      if (!c.ak && st.cur && nst1Chord(i, st, t0)) { idx = st.cur; if (t0 > st.lastT) st.lastT = t0; }   // Akkord = ein Schritt
       else {
-        before = {k: st.k, pos: st.pos.slice(), base: st.base.slice(), cur: st.cur, lastT: st.lastT};
+        before = {k: st.k, pos: st.pos.slice(), base: st.base.slice(), cur: st.cur, lastT: st.lastT, grpT: st.grpT};
         nst1Adv(st, c, L);
         idx = []; for (let j = 0; j < L; j++) idx.push(T.lanes[j] ? nst1Idx(st, c, T, j) : -1);
-        st.cur = idx; st.lastT = t0;
+        st.cur = idx; st.lastT = st.grpT = t0;
       }
       st.h.push({t: t0, out: key, idx, before, k: st.k});
     }
@@ -110635,12 +110636,25 @@ function nst1Voice(i, out, t0, o, snd) {
   } catch (e) { logErr(e); return o; }
   finally { const d = performance.now() - tm; NST1.cpu.n++; NST1.cpu.ms += d; if (d > NST1.cpu.max) NST1.cpu.max = d; }
 }
+// Gehört die Note zum laufenden Akkord? Gleichzeitig (≤ 2 ms) immer; sonst höchstens 35 ms nach dem letzten Akkordton (Fenster ≤ 100 ms
+// ab dem ersten), und nur, solange dieser Ton noch gehalten wird (gestrummt / live gegriffen). Ein schneller Lauf oder Triller – der Ton
+// davor ist schon losgelassen – ist je Ton ein Schritt (NST1-P, Befund 1: vorher wurden 1/32 ab 215 BPM paarweise zusammengelegt).
+function nst1Chord(i, st, t0) {
+  const dt = t0 - st.lastT;
+  if (Math.abs(dt) <= .002) return true;
+  return dt > 0 && dt <= .035 && t0 - st.grpT <= .1 && nst1Held(i, st.lastT, t0);
+}
+function nst1Held(i, tL, t0) {   // klingt eine Stimme dieser Spur, die bei tL begann, über t0 + 35 ms hinaus noch (Taste gehalten)?
+  for (const v of VOICES) if (v.track === i && !v.dead && Math.abs(v.start - tL) < 1e-4 && v.relT > t0 + .035) return true;
+  return false;
+}
 // Haken cancelTrackFrom: geplante, aber gestrichene Noten ab t zählen nicht – der Zähler geht auf den Stand davor zurück
 function nst1Cancel(i, t) {
   const st = NST1.st[i]; if (!st || !st.h.length) return;
   let f = null; for (const x of st.h) if (x.t >= t - 1e-6 && x.before) { f = x.before; break; }
-  if (f) { st.k = f.k; st.pos = f.pos.slice(); st.base = f.base.slice(); st.cur = f.cur; st.lastT = f.lastT; }
+  if (f) { st.k = f.k; st.pos = f.pos.slice(); st.base = f.base.slice(); st.cur = f.cur; st.lastT = f.lastT; st.grpT = f.grpT; }
   st.h = st.h.filter(x => x.t < t - 1e-6);
+  if (st.lastT >= t - 1e-6) { let m = st.grpT; for (const x of st.h) if (x.t > m) m = x.t; st.lastT = m; }   // gestrichene Akkordtöne: letzter verbliebener
 }
 function nst1Reset(i) { NST1.st[i] = null; }
 // Vorschau: die ersten N Noten ab Schritt 1 (dieselbe Rechnung wie beim Spielen)
@@ -110685,8 +110699,8 @@ function nst1Presets(snd) {
   const e = snd && snd.engine, A = (p, lo, hi) => nst1Lane(nst1KindOfKey(snd, p) || {d: [lo, hi]}, p, lo, hi);
   const up = (t, k, v) => { const P = S.tracks[t].sound.p; if (!(+P[k] >= v)) setP(t, k, v); };
   if (e === 'analog') return [
-    {id: 'radio', l: 'Sendersuche', sub: 'Osz 2 springt + gleitet, Rauschen', c: {n: 8, m: 'rnd', v: 'gegen', z: [A('o2semi', -12, 12), A('o2fine', -50, 50)]},
-      tw: t => { up(t, 'o2lvl', .7); up(t, 'noise', .1); const s = S.tracks[t].sound; if (!s.mods.some(m => m.dst === 'o2pitch') && s.mods.length < 8) modSetK(t, 'menv', 'o2pitch', .12); return 'Osz 2 hörbar, Rauschen, Hüllk. 2 → Osz-2-Tonhöhe (Gleiten)'; }},
+    {id: 'radio', l: 'Sendersuche', sub: 'Osz 2 pfeift, gleitet ein, Rausch-Stoß', c: {n: 8, m: 'rnd', v: 'gegen', z: [A('o2semi', -12, 12), A('o2fine', -50, 50)]},
+      tw: t => nst1Radio(t, up)},
     {id: 'gegen', l: 'Gegenläufig', sub: 'Osz 2 hoch, Osz 3 runter – sie kreuzen sich', c: {n: 5, m: 'up', v: 'gegen', z: [A('o2semi', -7, 7), A('o3semi', -7, 7)]},
       tw: t => { up(t, 'o2lvl', .6); up(t, 'o3lvl', .6); return 'Osz 2 + 3 hörbar'; }},
     {id: 'faecher', l: 'Fächer', sub: '3 Sägen: Mitte · Tiefe · Höhe', c: {n: 4, m: 'ud', v: 'spreiz', z: [A('o1fine', -50, 50), A('o2fine', -50, 50), A('o3fine', -50, 50)]},
@@ -110711,6 +110725,21 @@ function nst1Presets(snd) {
     {id: 'radio', l: 'Sendersuche', sub: 'Position springt', c: {n: 8, m: 'rnd', v: 'gleich', z: [A('wt.pos', 0, 1)]}}];
   return [];
 }
+// Schnellwahl „Sendersuche“ (Analog), NST1-P Befund 3: je Note gleitet Osz 2 aus etwa +10 HT in seine (zufällige) Station – der Pfeifton
+// beim Drehen am Sender-Knopf – und ein Rausch-Stoß klingt in derselben Zeit ab (rosa, falls der Klang noch kein Rauschen hatte). Hüllk. 2 wird nur angepasst, wenn sie noch nichts steuert;
+// Routen kommen nur dazu, wo noch keine liegt (höchstens 8). Alles zusammen ist EIN ↶.
+function nst1Radio(t, up) {
+  const s0 = S.tracks[t].sound, P0 = s0.p, quiet2 = !(+P0.o2lvl > .05), envFree = !s0.mods.some(m => m.src === 'menv'), did = [];
+  const noNoise = !(+P0.noise > .02) && !(+P0.kfNc) && !s0.mods.some(m => m.dst === 'noise');
+  if (quiet2) { setP(t, 'o2w', 3); did.push('Osz 2 als Sinus (Pfeifton)'); } else did.push('Osz 2 hörbar');
+  up(t, 'o2lvl', .7); up(t, 'noise', .08);
+  if (noNoise) { setP(t, 'kfNc', 1); did.push('Rauschen rosa'); }   // rosa: bleibt auch hinter einem dunklen Filter hörbar (wie AM-Rauschen)
+  if (envFree) { setP(t, 'mA', .001); setP(t, 'mD', .25); setP(t, 'mS', 0); }
+  const s = S.tracks[t].sound;
+  if (!s.mods.some(m => m.dst === 'o2pitch') && s.mods.length < 8) { modSetK(t, 'menv', 'o2pitch', .4); did.push('Gleiten: Hüllk. 2 → Osz-2-Tonhöhe'); }
+  if (!s.mods.some(m => m.dst === 'noise') && s.mods.length < 8) { modSetK(t, 'menv', 'noise', 1); did.push('Rausch-Stoß: Hüllk. 2 → Rauschen'); }
+  return did.join(' · ');
+}
 function nst1Preset(t, id) {
   const tr = S.tracks[t]; if (!tr || tr.kind !== 'synth') return false;
   const P = nst1Presets(tr.sound).find(x => x.id === id); if (!P) return false;
@@ -110719,7 +110748,12 @@ function nst1Preset(t, id) {
     if (P.tw) { try { note = P.tw(t) || ''; } catch (e) { logErr(e); } }
     return Object.assign({on: 1, ak: 0, rs: 1, s: (c0 && c0.s) || ((Math.random() * 4294967295) >>> 0) || 1, pr: P.l}, JSON.parse(JSON.stringify(P.c)));
   });
-  if (ok) { try { lcdShow('Je Note', P.l + (note ? ' · ' + note : '')); } catch (e) {} if (note) toast('Je Note: ' + P.l + ' – ' + note, {label: 'Rückgängig', fn: () => undo()}); }
+  if (ok) {
+    try { lcdShow('Je Note', P.l + (note ? ' · ' + note : '')); } catch (e) {}
+    const O = NST1.open, inSheet = !!(O && O.t === t && document.querySelector('.pop.nst1pop'));
+    if (O) O.note = inSheet && note ? {pr: P.l, txt: 'Dazu: ' + note} : null;
+    if (note && !inSheet) toast('Je Note: ' + P.l + ' – ' + note, {label: 'Rückgängig', fn: () => undo()});   // Hinweis im Blatt statt Toast (NST1-P, Befund 2)
+  }
   return ok;
 }
 
@@ -110732,9 +110766,13 @@ function nst1Css() {
 .pop.nst1pop .n1r{display:flex;align-items:center;gap:6px;margin:0 0 7px;min-width:0}
 .pop.nst1pop .n1r > .lb{flex:0 0 62px;font:600 10px/1.15 var(--font-ui);color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em}
 .pop.nst1pop .n1r > .seg{flex:1 1 auto;display:flex;min-width:0}
-.pop.nst1pop .n1r .seg button{flex:1 1 0;min-width:0;min-height:44px;height:44px;padding:0 2px;font-size:12px;line-height:1.1}
+.pop.nst1pop .n1r .seg button{flex:1 1 0;min-width:0;min-height:44px;height:44px;padding:0 2px;font-size:12px;line-height:1.05;white-space:normal;hyphens:manual;-webkit-hyphens:manual;overflow-wrap:normal}
+.pop.nst1pop .n1r .seg.n1vb button,.pop.nst1pop .n1r .seg.n1ak button,.pop.nst1pop .n1r .seg.n1rs button{letter-spacing:0}
 .pop.nst1pop .n1r .seg button svg{width:26px;height:20px;display:block;margin:0 auto}
-.pop.nst1pop .n1r .seg.n1pat button small{display:block;font-size:9px;opacity:.8;margin-top:1px}
+.pop.nst1pop .n1r .seg.n1pat button small{display:block;font-size:9px;opacity:.8;margin-top:1px;letter-spacing:0;line-height:1;white-space:normal}
+@media (max-width:400px){.pop.nst1pop .n1r.n1rs{flex-wrap:wrap;row-gap:3px}.pop.nst1pop .n1r.n1rs > .lb{flex:0 0 100%}.pop.nst1pop .n1r.n1rs > .seg{flex:1 1 100%}}
+.pop.nst1pop .n1tw{display:flex;align-items:center;gap:8px;margin:-3px 0 9px;padding:4px 4px 4px 8px;border:1px solid var(--line);border-radius:8px}
+.pop.nst1pop .n1tw small{flex:1 1 auto;font-size:11px;line-height:1.25;color:var(--text-dim)}.pop.nst1pop .n1tw button{flex:0 0 auto;min-width:44px;min-height:44px;padding:0 10px;font-size:13px}
 .pop.nst1pop .n1r .seg button:disabled{opacity:.35}
 .pop.nst1pop .n1sum{font-size:11px;color:var(--text-dim);margin:0 0 8px;min-height:14px}
 .pop.nst1pop .n1pre{display:grid;grid-template-columns:repeat(auto-fill,minmax(124px,1fr));gap:6px;margin:0 0 9px}
@@ -110777,17 +110815,18 @@ function nst1Paint(p) {
   const seg = (cls, list, cur, attr, dis) => `<div class="seg ${cls}">` + list.map(([k, l, ti]) => `<button class="${String(k) === String(cur) ? 'on' : ''}" data-${attr}="${esc(String(k))}"${dis ? ' disabled' : ''}${ti ? ` aria-label="${esc(ti)}"` : ''} aria-pressed="${String(k) === String(cur)}">${l}</button>`).join('') + '</div>';
   const pres = nst1Presets(snd);
   let h = `<h4>Je Note weiterschalten · ${esc(tr.name)}</h4>`;
-  h += `<div class="n1r"><span class="lb">Je Note</span>${seg('n1on', [[1, 'An'], [0, 'Aus']], on ? 1 : 0, 'on')}</div>`;
+  h += `<div class="n1r n1rs"><span class="lb">Je Note</span>${seg('n1on', [[1, 'An'], [0, 'Aus']], on ? 1 : 0, 'on')}</div>`;
   h += `<div class="n1sum">${esc(on ? nst1Sum(snd) : 'Jede neue Note (egal welche Tonhöhe) = der nächste Schritt.')}</div>`;
   if (c) h += `<div class="${on ? '' : 'n1off'}">` + nst1Dia(snd) + '</div>';
   if (pres.length) h += '<div class="n1pre">' + pres.map(P => `<button class="rb${c && c.pr === P.l ? ' on' : ''}" data-pr="${P.id}"><b>${esc(P.l)}</b><small>${esc(P.sub)}</small></button>`).join('') + '</div>';
+  if (O.note && c && c.pr === O.note.pr) h += `<div class="n1tw"><small>${esc(O.note.txt)}</small><button class="rb" data-a="undo" aria-label="Schnellwahl rückgängig">↶</button></div>`;   // statt Toast: verdeckt nichts
   const body = [];
   body.push(`<div class="n1r"><span class="lb">Ziel</span><div class="n1os n1k">` + Ks.map(k => `<button class="rb${k.id === K.id ? ' on' : ''}" data-k="${k.id}" aria-pressed="${k.id === K.id}">${esc(k.l)}</button>`).join('') + '</div></div>');
   if (K.c.length > 1) body.push(`<div class="n1r"><span class="lb">${/^(ratio|ffine|ol)$/.test(K.id) ? 'Operator' : 'Welche'}</span><div class="n1os">` +
     K.c.map(([pp, l]) => `<button class="rb${sel.includes(pp) ? ' on' : ''}" data-os="${esc(pp)}" aria-pressed="${sel.includes(pp)}">${esc(l)}</button>`).join('') + '</div></div>');
-  body.push(`<div class="n1r"><span class="lb">Muster</span>${seg('n1pat', NST1_PAT.map(([k, l]) => [k, NST1_ICO[k] + '<small>' + esc(l) + '</small>', l]), m, 'm')}</div>`);
-  body.push(`<div class="n1r"><span class="lb">Verbund</span>${seg('n1vb', NST1_VB.map(([k, l]) => [k, esc(l)]), v, 'v', L < 2)}</div>`);
-  body.push(`<div class="n1r"><span class="lb">Schritte</span>${seg('n1n', [2, 3, 4, 5, 6, 7, 8].map(x => [x, String(x)]), n, 'n')}</div>`);
+  body.push(`<div class="n1r n1rs"><span class="lb">Muster</span>${seg('n1pat', NST1_PAT.map(([k, l]) => [k, NST1_ICO[k] + '<small>' + esc(l) + '</small>', l]), m, 'm')}</div>`);
+  body.push(`<div class="n1r n1rs"><span class="lb">Verbund</span>${seg('n1vb', NST1_VB.map(([k, l]) => [k, esc(l).replace('gegenläufig', 'gegen&shy;läufig'), l]), v, 'v', L < 2)}</div>`);
+  body.push(`<div class="n1r n1rs"><span class="lb">Schritte</span>${seg('n1n', [2, 3, 4, 5, 6, 7, 8].map(x => [x, String(x)]), n, 'n')}</div>`);
   if (c) c.z.forEach((z, j) => {
     const e = LKT[z.p], KK = nst1KindOfKey(snd, z.p); if (!e) return;
     body.push(`<div class="n1ln"><div class="n1lt"><i style="background:${NST1_COL[j]}"></i>${esc((KK ? KK.l + ' · ' : '') + nst1CandName(KK, z.p))}</div><div class="n1lr">` +
@@ -110796,8 +110835,8 @@ function nst1Paint(p) {
   });
   if (c && m === 'fix') body.push(`<div class="n1r"><span class="lb">Folge</span><div class="n1fx">` + Array.from({length: n}, (_, q) => {
     const x = c.f && c.f[q] != null ? Math.min(n - 1, c.f[q]) : q; return `<button class="rb" data-fx="${q}" aria-label="Schritt ${q + 1}: Stufe ${x + 1}">${x + 1}</button>`; }).join('') + '</div></div>');
-  body.push(`<div class="n1r"><span class="lb">Akkord</span>${seg('n1ak', [[0, 'ein Schritt'], [1, 'jede Note']], c ? c.ak : 0, 'ak')}</div>`);
-  body.push(`<div class="n1r"><span class="lb">Neu ab Clip</span>${seg('n1rs', [[1, 'Start'], [0, 'weiterzählen']], c ? c.rs : 1, 'rs')}</div>`);
+  body.push(`<div class="n1r n1rs"><span class="lb">Akkord</span>${seg('n1ak', [[0, 'ein Schritt'], [1, 'jede Note']], c ? c.ak : 0, 'ak')}</div>`);
+  body.push(`<div class="n1r n1rs"><span class="lb">Neu ab Clip</span>${seg('n1rs', [[1, 'Start'], [0, 'weiterzählen']], c ? c.rs : 1, 'rs')}</div>`);
   body.push(`<div class="n1foot"><button class="rb" data-a="probe"${R.playing ? ' disabled' : ''}>▶ 8 Noten</button><small>${esc(R.playing ? 'Läuft gerade – spiel einfach Noten: jede ist ein Schritt.' : 'Hör die Treppe: 8 gleiche Noten, jede ein Schritt weiter.')}</small></div>`);
   h += `<div class="${on || !c ? '' : 'n1off'}">` + body.join('') + '</div>';
   const sc = p.scrollTop; p.innerHTML = h; p.scrollTop = sc;
@@ -110817,11 +110856,23 @@ function nst1Dia(snd) {
   });
   return `<svg class="n1dia" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Treppe der nächsten 8 Noten">${g}</svg>`;
 }
+// Ziel-Wechsel: dieselben Oszillatoren / Operatoren behalten (Engine mk: Timbre + Osz, nicht alle Wege des Timbres – NST1-P)
+const nst1Who = p => { let m = /^(o[123])[a-z]/.exec(p) || /^((fm6|fmx)\.ops\.[0-5])\./.exec(p); if (m) return m[1];
+  m = /^mk\.t\.([01])\.(?:(o[12])\.|mix\.(o[12]|n)$|(f)\.)/.exec(p); return m ? 't' + m[1] + '.' + (m[2] || m[3] || m[4]) : p; };
+function nst1Keep(c, KK) {
+  if (!c || !c.z.length) return [];
+  const who = c.z.map(z => nst1Who(z.p)), same = KK.c.filter(q => who.includes(nst1Who(q[0]))).map(q => q[0]);
+  if (same.length) return same.slice(0, 3);
+  const tim = who.map(w => (/^t[01]\./.test(w) ? w.slice(0, 2) : null)).filter(Boolean), one = KK.c.find(q => tim.includes(nst1Who(q[0]).slice(0, 2)));
+  return one ? [one[0]] : [];
+}
 function nst1Wire(p) {
   onTap(p, b => {
     const O = NST1.open; if (!O) return;
     const t = O.t, snd = S.tracks[t].sound, Ks = nst1Kinds(snd), d = b.dataset, K = Ks.find(k => k.id === O.k) || Ks[0];
     if (d.a === 'probe') { nst1Probe(t); return; }
+    if (d.a === 'undo') { O.note = null; try { undo(); } catch (e) { logErr(e); } nst1MarkAll(); nst1Paint(p); return; }
+    if (!d.pr) O.note = null;
     if (d.pr) { nst1Preset(t, d.pr); }
     else if (d.on != null) {
       const want = d.on === '1';
@@ -110831,8 +110882,7 @@ function nst1Wire(p) {
       const KK = Ks.find(k => k.id === d.k); if (!KK) return; O.k = KK.id;
       const c = snd.nst;
       if (nst1Same(snd, c, KK)) { nst1Paint(p); return; }
-      const keep = c ? c.z.map(z => z.p.replace(/^(o[123]|mk\.t\.[01]|(fm6|fmx)\.ops\.[0-5]).*$/, '$1')) : [];
-      const keys = KK.c.filter(q => keep.some(x => q[0].startsWith(x) && x.length > 1)).map(q => q[0]);
+      const keys = nst1Keep(c, KK);
       nst1Edit(t, 'Je Note: ' + KK.l, c0 => { const nc = nst1Def(snd, KK, keys.length ? keys : [KK.c[0][0]], c0); if (c0) { nc.on = c0.on; nc.f = c0.f; } return nc; });
     }
     else if (d.os) {
