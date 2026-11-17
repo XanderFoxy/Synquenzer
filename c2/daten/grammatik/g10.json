@@ -93,19 +93,20 @@
    "erklaerung": "Passiv Perfekt im Nebensatz: Partizip – worden – sind."
   },
   {
-   "id": "u04",
+   "id": "n04",
    "typ": "sortieren",
    "teile": [
-    "war,",
-    "die Referentin",
-    "zu spät",
-    "kam",
+    "Weil",
     "der Zug",
-    "ausgefallen",
-    "Weil"
+    "kam",
+    "hatte",
+    "werden müssen,",
+    "zu spät",
+    "die Referentin",
+    "umgeleitet"
    ],
-   "loesung": "Weil der Zug ausgefallen war, kam die Referentin zu spät.",
-   "erklaerung": "Nebensatz im Vorfeld, dann sofort das finite Verb des Hauptsatzes (kam)."
+   "loesung": "Weil der Zug hatte umgeleitet werden müssen, kam die Referentin zu spät.",
+   "erklaerung": "Plusquamperfekt mit Ersatzinfinitiv im Nebensatz: „hatte“ steht vor „umgeleitet werden müssen“."
   },
   {
    "id": "u05",
@@ -236,12 +237,12 @@
    "erklaerung": "Nach „desto“ + Komparativ folgt sofort das Verb."
   },
   {
-   "id": "u14",
+   "id": "n14",
    "typ": "fehler",
-   "satz": "Weil die Bibliothek renoviert wird, sie bleibt bis März geschlossen.",
-   "fehler": "sie bleibt",
-   "korrektur": "bleibt sie",
-   "erklaerung": "Der Nebensatz steht im Vorfeld, das finite Verb folgt direkt."
+   "satz": "Er räumte ein, dass er die E-Mails löschen hat lassen.",
+   "fehler": "löschen hat lassen",
+   "korrektur": "hat löschen lassen",
+   "erklaerung": "Auch „lassen“ bildet den Ersatzinfinitiv: Im Nebensatz steht „hat“ vor den Infinitiven."
   },
   {
    "id": "u15",
@@ -280,16 +281,16 @@
    "erklaerung": "Ersatzinfinitiv: „hat“ vor zwei Infinitiven (lesen wollen)."
   },
   {
-   "id": "u19",
+   "id": "n19",
    "typ": "auswahl",
-   "frage": "Welcher Satz ist korrekt?",
+   "frage": "Welcher Satz ist standardsprachlich korrekt?",
    "optionen": [
-    "Als die Nachricht kam, war es schon zu spät.",
-    "Als die Nachricht kam, es war schon zu spät.",
-    "Als kam die Nachricht, war es schon zu spät."
+    "Dass er die Unterlagen hätte prüfen müssen, bestreitet er.",
+    "Dass er die Unterlagen prüfen hätte müssen, bestreitet er.",
+    "Dass er hätte die Unterlagen prüfen müssen, bestreitet er."
    ],
    "richtig": 0,
-   "erklaerung": "Nebensatz mit Verb am Ende im Vorfeld, danach das finite Verb."
+   "erklaerung": "Ersatzinfinitiv: „hätte“ direkt vor den beiden Infinitiven, Objekte davor."
   },
   {
    "id": "u20",

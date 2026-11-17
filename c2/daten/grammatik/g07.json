@@ -137,19 +137,17 @@
    "aus": "luecke"
   },
   {
-   "id": "u07",
+   "id": "n07",
    "typ": "auswahl",
-   "frage": "Die Stadtverwaltung versprach, bei der Planung auf die Anwohner Rücksicht zu ___.",
+   "frage": "Die Opposition will den Minister für die Panne zur Rechenschaft ___.",
    "optionen": [
-    "nehmen",
-    "geben",
-    "machen",
-    "halten"
+    "stellen",
+    "ziehen",
+    "bringen",
+    "nehmen"
    ],
-   "richtig": 0,
-   "hinweis": "Funktionsverb, Infinitiv",
-   "erklaerung": "„Rücksicht nehmen auf“.",
-   "aus": "luecke"
+   "richtig": 1,
+   "erklaerung": "„jemanden zur Rechenschaft ziehen“."
   },
   {
    "id": "u08",
@@ -253,16 +251,17 @@
    "erklaerung": "„stehen“ beschreibt den Zustand, ohne Handelnden: Der Plan steht zur Diskussion = wird diskutiert."
   },
   {
-   "id": "u15",
+   "id": "n15",
    "typ": "auswahl",
-   "frage": "„Wir müssen bis Freitag eine Entscheidung ___.“",
+   "frage": "Die Sanierung des Theaters ist ins ___ geraten.",
    "optionen": [
-    "tun",
-    "treffen",
-    "machen"
+    "Stehen",
+    "Stocken",
+    "Halten",
+    "Stoppen"
    ],
    "richtig": 1,
-   "erklaerung": "Die feste Verbindung lautet „eine Entscheidung treffen“."
+   "erklaerung": "„ins Stocken geraten“ = nicht mehr vorankommen."
   },
   {
    "id": "u16",
@@ -383,12 +382,12 @@
    "erklaerung": "Futur: „wird“ an Position 2, „in Kraft treten“ als Einheit am Ende."
   },
   {
-   "id": "u24",
+   "id": "n24",
    "typ": "fehler",
-   "satz": "Der Ausschuss hat in dieser Frage eine wichtige Entscheidung gemacht.",
+   "satz": "Die Maßnahme hat ihr Ziel verfehlt und keine Abhilfe gemacht.",
    "fehler": "gemacht",
-   "korrektur": "getroffen",
-   "erklaerung": "Die feste Verbindung lautet „eine Entscheidung treffen“."
+   "korrektur": "geschaffen",
+   "erklaerung": "Nomen-Verb-Verbindung: „Abhilfe schaffen“."
   },
   {
    "id": "u25",
@@ -452,24 +451,21 @@
    "erklaerung": "Genau das wird in Schreiben Teil 1 oft verlangt – in beide Richtungen."
   },
   {
-   "id": "u33",
+   "id": "n33",
    "typ": "sortieren",
-   "ausgang": "Die Regierung entschied schließlich, das Projekt zu stoppen.",
-   "anweisung": "Verwenden Sie „eine Entscheidung treffen“.",
+   "ausgang": "Die Stadt akzeptiert längere Fahrzeiten, um die Altstadt zu entlasten.",
+   "anweisung": "Verwenden Sie „in Kauf nehmen“.",
    "teile": [
-    "zu stoppen",
-    "die Entscheidung,",
-    "schließlich",
-    "Die Regierung",
-    "traf",
-    "das Projekt"
+    "nimmt",
+    "um",
+    "längere Fahrzeiten",
+    "Die Stadt",
+    "zu entlasten",
+    "in Kauf,",
+    "die Altstadt"
    ],
-   "loesung": "Die Regierung traf schließlich die Entscheidung, das Projekt zu stoppen.",
-   "loesungen": [
-    "Schließlich traf die Regierung die Entscheidung, das Projekt zu stoppen."
-   ],
-   "erklaerung": "„entscheiden“ → „die Entscheidung treffen“; der Infinitiv mit zu bleibt.",
-   "aus": "umformen"
+   "loesung": "Die Stadt nimmt längere Fahrzeiten in Kauf, um die Altstadt zu entlasten.",
+   "erklaerung": "„etwas in Kauf nehmen“ = einen Nachteil bewusst akzeptieren."
   },
   {
    "id": "u34",

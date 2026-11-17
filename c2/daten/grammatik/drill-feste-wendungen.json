@@ -75,18 +75,17 @@
    "aus": "luecke"
   },
   {
-   "id": "u03",
+   "id": "n03",
    "typ": "auswahl",
-   "frage": "Nach langem Überlegen hat er endlich eine Entscheidung ___.",
+   "frage": "Der Bürgermeister wird sich den Vorwurf ___ lassen müssen, die Warnungen ignoriert zu haben.",
    "optionen": [
-    "genommen",
-    "gegeben",
-    "gemacht",
-    "getroffen"
+    "gefallen",
+    "nehmen",
+    "geben",
+    "stellen"
    ],
-   "richtig": 3,
-   "erklaerung": "eine Entscheidung treffen oder fällen.",
-   "aus": "luecke"
+   "richtig": 0,
+   "erklaerung": "„sich einen Vorwurf gefallen lassen müssen“ = ihn hinnehmen müssen."
   },
   {
    "id": "u04",
@@ -145,18 +144,17 @@
    "aus": "luecke"
   },
   {
-   "id": "u08",
+   "id": "n08",
    "typ": "auswahl",
-   "frage": "Geld ___ für viele Menschen bei der Berufswahl eine große Rolle.",
+   "frage": "Die Ergebnisse der Studie ___ allen bisherigen Annahmen Hohn.",
    "optionen": [
-    "spielt",
-    "hat",
-    "macht",
-    "nimmt"
+    "machen",
+    "sprechen",
+    "bieten",
+    "geben"
    ],
-   "richtig": 0,
-   "erklaerung": "eine Rolle spielen.",
-   "aus": "luecke"
+   "richtig": 1,
+   "erklaerung": "„einer Sache Hohn sprechen“ (gehoben) = in krassem Widerspruch zu ihr stehen."
   },
   {
    "id": "u09",
@@ -243,18 +241,17 @@
    "aus": "luecke"
   },
   {
-   "id": "u15",
+   "id": "n15",
    "typ": "auswahl",
-   "frage": "Sie hat in kurzer Zeit erstaunliche Fortschritte ___.",
+   "frage": "Die Opposition ließ kein gutes ___ an dem Entwurf.",
    "optionen": [
-    "gemacht",
-    "gebracht",
-    "genommen",
-    "getan"
+    "Wort",
+    "Stück",
+    "Haar",
+    "Blatt"
    ],
-   "richtig": 0,
-   "erklaerung": "Fortschritte machen oder erzielen.",
-   "aus": "luecke"
+   "richtig": 2,
+   "erklaerung": "„kein gutes Haar an etwas lassen“ = es vollständig kritisieren."
   },
   {
    "id": "u16",
@@ -425,18 +422,17 @@
    "aus": "luecke"
   },
   {
-   "id": "u28",
+   "id": "n28",
    "typ": "auswahl",
-   "frage": "Kannst du mir bitte ___ geben, ob du morgen kommst?",
+   "frage": "Der Plan ist noch nicht spruchreif; wir sollten ihn vorerst nicht an die große ___ hängen.",
    "optionen": [
-    "Bescheid",
-    "Meldung",
-    "Wissen",
-    "Kenntnis"
+    "Wand",
+    "Glocke",
+    "Tafel",
+    "Leine"
    ],
-   "richtig": 0,
-   "erklaerung": "jemandem Bescheid geben (sagen) = informieren.",
-   "aus": "luecke"
+   "richtig": 1,
+   "erklaerung": "„etwas an die große Glocke hängen“ = es überall herumerzählen."
   },
   {
    "id": "u29",
@@ -522,17 +518,17 @@
    "erklaerung": "Feste Wendung: Das ist lange her."
   },
   {
-   "id": "u35",
+   "id": "n35",
    "typ": "auswahl",
-   "frage": "„Sie hat die Prüfung mit Auszeichnung ___.“",
+   "frage": "Die Verhandlungen stehen auf ___; ein Abbruch ist jederzeit möglich.",
    "optionen": [
-    "bestanden",
-    "gewonnen",
-    "getroffen",
-    "erreicht"
+    "der Kippe",
+    "dem Sprung",
+    "der Strecke",
+    "dem Schlauch"
    ],
    "richtig": 0,
-   "erklaerung": "eine Prüfung bestehen (oder ablegen)."
+   "erklaerung": "„auf der Kippe stehen“ = ungewiss sein. „auf dem Sprung sein“ = gleich gehen wollen, „auf dem Schlauch stehen“ = etwas nicht verstehen."
   },
   {
    "id": "u36",
@@ -561,17 +557,17 @@
    "erklaerung": "infrage (in Frage) stellen = anzweifeln."
   },
   {
-   "id": "u38",
+   "id": "n38",
    "typ": "auswahl",
-   "frage": "Welches Verb passt? „eine Rede ___“",
+   "frage": "Gegen den Bescheid kann innerhalb eines Monats Widerspruch ___ werden.",
    "optionen": [
-    "sprechen",
-    "geben",
-    "sagen",
-    "halten"
+    "gemacht",
+    "gegeben",
+    "eingelegt",
+    "gestellt"
    ],
-   "richtig": 3,
-   "erklaerung": "eine Rede oder einen Vortrag halten."
+   "richtig": 2,
+   "erklaerung": "Verwaltungssprache: „Widerspruch einlegen“ (auch: „Widerspruch erheben“)."
   },
   {
    "id": "u39",
@@ -613,17 +609,17 @@
    "erklaerung": "angelehnt an + Akkusativ."
   },
   {
-   "id": "u42",
+   "id": "n42",
    "typ": "auswahl",
-   "frage": "Welches Verb passt? „im Ausland Erfahrungen ___“",
+   "frage": "Welches Verb passt? „einer Entwicklung Vorschub ___“ (sie begünstigen)",
    "optionen": [
-    "treffen",
-    "sammeln",
-    "nehmen",
-    "stellen"
+    "geben",
+    "leisten",
+    "machen",
+    "tun"
    ],
    "richtig": 1,
-   "erklaerung": "Erfahrungen sammeln (oder machen)."
+   "erklaerung": "„einer Sache Vorschub leisten“ = sie (meist ungewollt) fördern."
   },
   {
    "id": "u43",
@@ -840,15 +836,12 @@
    "erklaerung": "„auslösen“ = verursachen; ein Rätsel wird gelöst."
   },
   {
-   "id": "u52",
+   "id": "n52",
    "typ": "fehler",
-   "satz": "Er hat eine wichtige Entscheidung gemacht.",
-   "fehler": "gemacht",
-   "korrektur": [
-    "getroffen",
-    "gefällt"
-   ],
-   "erklaerung": "Kollokation: eine Entscheidung treffen oder fällen."
+   "satz": "Mit diesem Urteil hat das Gericht einen Präzedenzfall gestellt.",
+   "fehler": "gestellt",
+   "korrektur": "geschaffen",
+   "erklaerung": "Feste Verbindung: „einen Präzedenzfall schaffen“."
   },
   {
    "id": "u53",
@@ -894,18 +887,21 @@
    "erklaerung": "Rücksicht nehmen auf."
   },
   {
-   "id": "u58",
+   "id": "n58",
    "typ": "sortieren",
-   "ausgang": "Er entschied sich spontan.",
-   "anweisung": "Formulieren Sie mit „Entscheidung“.",
+   "ausgang": "Die Ministerin bestritt nicht, dass Fehler gemacht worden waren.",
+   "anweisung": "Formulieren Sie mit „in Abrede stellen“.",
    "teile": [
-    "spontan eine Entscheidung",
-    "traf",
-    "Er"
+    "gemacht worden waren",
+    "stellte",
+    "Fehler",
+    "in Abrede,",
+    "nicht",
+    "Die Ministerin",
+    "dass"
    ],
-   "loesung": "Er traf spontan eine Entscheidung.",
-   "erklaerung": "sich entscheiden → eine Entscheidung treffen/fällen.",
-   "aus": "umformen"
+   "loesung": "Die Ministerin stellte nicht in Abrede, dass Fehler gemacht worden waren.",
+   "erklaerung": "„etwas in Abrede stellen“ (gehoben) = bestreiten; verneint: „nicht in Abrede stellen“ = zugeben."
   },
   {
    "id": "u59",

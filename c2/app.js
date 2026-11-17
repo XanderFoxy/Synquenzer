@@ -7,7 +7,7 @@ import { lade, ladeIndex, liste, allesVorladen } from './daten.js';
 import { waehle, poolStand } from './wiederholung.js';
 import { einst, setzeEinst, serie, zielStand, wocheAktiv, summe, heutePunkte } from './konto.js';
 
-export const VERSION = '0.5.0';
+export const VERSION = '0.6.0';
 export const BEREICHE = [
   { id: 'hoeren', name: 'Hören', text: 'Ohne Text, wie in der Prüfung' },
   { id: 'lesen', name: 'Lesen', text: 'Kommentare, Sachtexte, Literatur' },

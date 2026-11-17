@@ -50,19 +50,17 @@
  ],
  "uebungen": [
   {
-   "id": "u01",
+   "id": "n01",
    "typ": "auswahl",
-   "frage": "___ dem Abschluss ihres Studiums zog sie nach Wien.",
+   "frage": "___ Wahrung der Neutralität verzichtete das Gericht auf eine Stellungnahme.",
    "optionen": [
-    "Nach",
-    "Auf",
-    "Zu",
-    "Um"
+    "Zum",
+    "Zur",
+    "Bei",
+    "Durch"
    ],
-   "richtig": 0,
-   "hinweis": "nachdem → ?",
-   "erklaerung": "„nachdem“ wird im Nominalstil zu „nach“ + Dativ.",
-   "aus": "luecke"
+   "richtig": 1,
+   "erklaerung": "Zweck im Nominalstil: zur Wahrung (= um … zu wahren)."
   },
   {
    "id": "u02",
@@ -154,19 +152,17 @@
    "aus": "luecke"
   },
   {
-   "id": "u08",
+   "id": "n08",
    "typ": "auswahl",
-   "frage": "___ seiner Krankheit konnte er nicht an der Sitzung teilnehmen.",
+   "frage": "„Nachdem das Gesetz in Kraft getreten war, …“ – welche Nominalisierung ist korrekt?",
    "optionen": [
-    "Dank",
-    "Statt",
-    "Trotz",
-    "Wegen"
+    "Nach dem Inkrafttreten des Gesetzes …",
+    "Nach dem Inkrafttreten von dem Gesetz …",
+    "Nach Treten des Gesetzes in Kraft …",
+    "Nach Inkrafttretens des Gesetzes …"
    ],
-   "richtig": 3,
-   "hinweis": "weil → ?",
-   "erklaerung": "Grund im Nominalstil: wegen, aufgrund oder infolge + Genitiv.",
-   "aus": "luecke"
+   "richtig": 0,
+   "erklaerung": "in Kraft treten → das Inkrafttreten; Ergänzung im Genitiv."
   },
   {
    "id": "u09",
@@ -506,12 +502,12 @@
    "erklaerung": "bei + Dativ + Genitivattribut; das Präfix „auf“ bildet die rechte Satzklammer."
   },
   {
-   "id": "u29",
+   "id": "n29",
    "typ": "fehler",
-   "satz": "Wegen er krank war, sagte er die Reise ab.",
-   "fehler": "Wegen",
-   "korrektur": "Weil",
-   "erklaerung": "„wegen“ ist eine Präposition; für einen Nebensatz braucht man „weil“."
+   "satz": "Durch die Einführung von dem neuen Verfahren sanken die Kosten deutlich.",
+   "fehler": "von dem neuen Verfahren",
+   "korrektur": "des neuen Verfahrens",
+   "erklaerung": "Im Nominalstil steht das Objekt als Genitivattribut."
   },
   {
    "id": "u30",

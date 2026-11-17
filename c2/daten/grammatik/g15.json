@@ -141,18 +141,17 @@
    "aus": "luecke"
   },
   {
-   "id": "u07",
+   "id": "n07",
    "typ": "auswahl",
-   "frage": "Sie fragte, ___ die Bibliothek auch am Sonntag geöffnet sei.",
+   "frage": "Indirekte Rede: Die Sprecherin erklärte, sie ___ nichts von den Plänen. (Konjunktiv I von „wissen“)",
    "optionen": [
-    "wenn",
-    "ob",
-    "falls",
-    "dass"
+    "wüsste",
+    "wisse",
+    "weiß",
+    "wusste"
    ],
    "richtig": 1,
-   "erklaerung": "Indirekte Ja-Nein-Frage: ob + Verb am Ende.",
-   "aus": "luecke"
+   "erklaerung": "Konjunktiv I vom Infinitivstamm: er wisse."
   },
   {
    "id": "u08",
@@ -565,11 +564,11 @@
    "erklaerung": "laut Polizei, laut Gesetz – ohne Artikel ist der Kasus nicht sichtbar."
   },
   {
-   "id": "u36",
+   "id": "n36",
    "typ": "rf",
-   "aussage": "Indirekte Fragen ohne Fragewort werden mit „dass“ eingeleitet.",
-   "wert": false,
-   "erklaerung": "Ja-Nein-Fragen werden mit „ob“ eingeleitet."
+   "aussage": "In der Redewiedergabe kann schon das einleitende Verb (behaupten, einräumen, beteuern) Distanz oder Zustimmung signalisieren.",
+   "wert": true,
+   "erklaerung": "„Er behauptet, …“ lässt Zweifel erkennen, „Sie räumt ein, …“ ein Zugeständnis."
   }
  ]
 }

@@ -121,18 +121,17 @@
    "aus": "luecke"
   },
   {
-   "id": "u06",
+   "id": "n06",
    "typ": "auswahl",
-   "frage": "An Ihrer Stelle ___ ich mir diese Entscheidung gut überlegen.",
+   "frage": "Ohne die Spende ___ die Restaurierung nie zustande gekommen.",
    "optionen": [
-    "würden",
+    "hätte",
+    "wäre",
     "würde",
-    "wird",
-    "wurde"
+    "sei"
    ],
    "richtig": 1,
-   "erklaerung": "Ratschlag: würde + Infinitiv. „wurde“ wäre Präteritum.",
-   "aus": "luecke"
+   "erklaerung": "„zustande kommen“ bildet das Perfekt mit „sein“ → wäre … gekommen."
   },
   {
    "id": "u07",
@@ -218,17 +217,17 @@
    "erklaerung": "Bei zwei Infinitiven steht „hätte“ im Nebensatz vor ihnen, das Modalverb im Infinitiv."
   },
   {
-   "id": "u13",
+   "id": "n13",
    "typ": "auswahl",
-   "frage": "Wie heißt das Verb „kommen“ im Konjunktiv II, dritte Person Singular?",
+   "frage": "Wie lautet der Konjunktiv II von „werfen“ (er/sie/es)?",
    "optionen": [
-    "kömme",
-    "käme",
-    "kommte",
-    "kamme"
+    "wärfe",
+    "würfe",
+    "werfte",
+    "wurfe"
    ],
    "richtig": 1,
-   "erklaerung": "Starke Verben bilden den Konjunktiv II vom Präteritumstamm mit Umlaut: kam → käme."
+   "erklaerung": "Starke Verben bilden den Konjunktiv II vom Präteritum mit Umlaut: warf → würfe (ältere Form, heute meist „würde werfen“)."
   },
   {
    "id": "u14",
@@ -524,12 +523,12 @@
    "erklaerung": "Nach „Ich wünschte“ folgt ein irrealer Wunsch im Konjunktiv II."
   },
   {
-   "id": "u32",
+   "id": "n32",
    "typ": "fehler",
-   "satz": "An deiner Stelle wurde ich mich sofort bewerben.",
-   "fehler": "wurde",
-   "korrektur": "würde",
-   "erklaerung": "„wurde“ ist Präteritum; der Ratschlag braucht den Konjunktiv II „würde“."
+   "satz": "Wäre der Antrag rechtzeitig gestellt worden, hätte man ihn bewilligt werden können.",
+   "fehler": "bewilligt werden",
+   "korrektur": "bewilligen",
+   "erklaerung": "Aktiv mit „man“: hätte man ihn bewilligen können (Passiv: hätte er bewilligt werden können)."
   },
   {
    "id": "u33",
@@ -546,11 +545,11 @@
    "erklaerung": "Nach „als ob“ steht es am Ende; nur nach „als“ allein folgt es direkt."
   },
   {
-   "id": "u35",
+   "id": "n35",
    "typ": "rf",
-   "aussage": "„Ich hätte gern einen Termin am Montag.“ ist eine höfliche Bitte, keine irreale Aussage.",
+   "aussage": "„Das wäre geschafft!“ drückt keinen irrealen Fall aus, sondern stellt fest, dass etwas endlich erledigt ist.",
    "wert": true,
-   "erklaerung": "Der Konjunktiv II dient hier der Höflichkeit."
+   "erklaerung": "Konjunktiv II als Ausdruck des Abschlusses (oft mit Erleichterung)."
   },
   {
    "id": "u36",

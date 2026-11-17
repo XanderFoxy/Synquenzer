@@ -164,18 +164,17 @@
    "aus": "luecke"
   },
   {
-   "id": "u09",
+   "id": "n09",
    "typ": "auswahl",
-   "frage": "Hör ___ zu, ich muss dir etwas erzählen!",
+   "frage": "Sie wird ___ nicht etwa krank sein?",
    "optionen": [
-    "denn",
-    "etwa",
-    "mal",
-    "wohl"
+    "ja",
+    "doch",
+    "eben",
+    "halt"
    ],
-   "richtig": 2,
-   "erklaerung": "„mal“ (oder „doch“) macht den Imperativ weniger hart.",
-   "aus": "luecke"
+   "richtig": 1,
+   "erklaerung": "„doch nicht etwa“: besorgte Frage, man hofft auf ein Nein."
   },
   {
    "id": "u10",
@@ -244,17 +243,17 @@
    "erklaerung": "eben = Es ist nun einmal so."
   },
   {
-   "id": "u15",
+   "id": "n15",
    "typ": "auswahl",
-   "frage": "Welche Partikel passt zu einer beiläufigen, freundlichen Bitte? „Kannst du mir ___ helfen?“",
+   "frage": "Welche Partikel zeigt, dass man ein Nein erhofft? „Hast du ___ den Schlüssel verloren?“",
    "optionen": [
-    "wohl",
-    "mal",
     "eben",
+    "etwa",
+    "halt",
     "ja"
    ],
    "richtig": 1,
-   "erklaerung": "mal macht Bitten leichter und beiläufiger."
+   "erklaerung": "„etwa“ in Entscheidungsfragen: Befürchtung, man erwartet ein Nein."
   },
   {
    "id": "u16",

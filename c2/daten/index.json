@@ -1,6 +1,6 @@
 {
  "version": 1,
- "erzeugt": "2026-11-16T14:15:41.939Z",
+ "erzeugt": "2026-11-17T05:14:42.032Z",
  "bereiche": {
   "grammatik": [
    {
@@ -431,6 +431,15 @@
     "zeit_min": 15
    },
    {
+    "id": "lit-rilke-rodin",
+    "datei": "lesen/lit-rilke-rodin.json",
+    "titel": "Rainer Maria Rilke: Auguste Rodin",
+    "art": "Literatur",
+    "teil": "Literatur – gemeinfreier Auszug (Training für Interpretation und Rezension)",
+    "aufgaben": 9,
+    "zeit_min": 14
+   },
+   {
     "id": "lit-tucholsky-neudeutsch",
     "datei": "lesen/lit-tucholsky-neudeutsch.json",
     "titel": "Kurt Tucholsky: Neudeutsch",
@@ -438,6 +447,15 @@
     "teil": "Literatur – gemeinfreier Auszug (Training für Interpretation und Rezension)",
     "aufgaben": 9,
     "zeit_min": 14
+   },
+   {
+    "id": "lit-zweig-drei-meister",
+    "datei": "lesen/lit-zweig-drei-meister.json",
+    "titel": "Stefan Zweig: Drei Meister (Einleitung)",
+    "art": "Literatur",
+    "teil": "Literatur – gemeinfreier Auszug (Training für Interpretation und Rezension)",
+    "aufgaben": 9,
+    "zeit_min": 10
    }
   ],
   "themen": [
@@ -674,8 +692,8 @@
   "grammatik_uebungen": 1058,
   "hoeren_aufgaben": 105,
   "hoeren_minuten": 28.8,
-  "lesen_texte": 12,
-  "lesen_aufgaben": 113,
+  "lesen_texte": 14,
+  "lesen_aufgaben": 131,
   "themen": 24,
   "wortschatz_eintraege": 1011,
   "wortschatz_uebungen": 306

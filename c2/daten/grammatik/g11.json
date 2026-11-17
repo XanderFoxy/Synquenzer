@@ -106,18 +106,17 @@
    "aus": "luecke"
   },
   {
-   "id": "u05",
+   "id": "n05",
    "typ": "auswahl",
-   "frage": "Das Thema, über ___ wir gestern diskutiert haben, wird uns noch lange beschäftigen.",
+   "frage": "Die Gründe, ___ die Sitzung vertagt wurde, blieben unklar.",
    "optionen": [
-    "dem",
-    "den",
-    "dessen",
-    "das"
+    "dessentwegen",
+    "derentwegen",
+    "denenwegen",
+    "die wegen"
    ],
-   "richtig": 3,
-   "erklaerung": "„diskutieren über“ + Akkusativ; „das Thema“ ist neutral: über das.",
-   "aus": "luecke"
+   "richtig": 1,
+   "erklaerung": "Bezugswort im Plural („die Gründe“) → derentwegen."
   },
   {
    "id": "u06",
@@ -191,18 +190,17 @@
    "aus": "luecke"
   },
   {
-   "id": "u11",
+   "id": "n11",
    "typ": "auswahl",
-   "frage": "Die Kollegin, mit ___ ich das Projekt geleitet habe, ist inzwischen Professorin.",
+   "frage": "Das sind Vorwürfe, ___ sich niemand gern aussetzt.",
    "optionen": [
-    "dem",
     "die",
-    "der",
-    "denen"
+    "deren",
+    "denen",
+    "derer"
    ],
    "richtig": 2,
-   "erklaerung": "„mit“ + Dativ, feminin: mit der.",
-   "aus": "luecke"
+   "erklaerung": "„sich einer Sache aussetzen“ → Dativ Plural: denen."
   },
   {
    "id": "u12",
@@ -234,16 +232,17 @@
    "aus": "luecke"
   },
   {
-   "id": "u14",
+   "id": "n14",
    "typ": "auswahl",
-   "frage": "„Das ist die Kollegin, ___ ich das Buch geliehen habe.“",
+   "frage": "Die Zahl derer, ___ die Reform tatsächlich zugutekommt, ist geringer als behauptet.",
    "optionen": [
-    "der",
+    "die",
+    "denen",
     "deren",
-    "die"
+    "derer"
    ],
-   "richtig": 0,
-   "erklaerung": "„jemandem etwas leihen“: Dativ feminin – der."
+   "richtig": 1,
+   "erklaerung": "„jemandem zugutekommen“ → Dativ Plural: denen."
   },
   {
    "id": "u15",
@@ -270,16 +269,17 @@
    "erklaerung": "„sich ärgern über“, Bezug auf den ganzen Satz: worüber."
   },
   {
-   "id": "u17",
+   "id": "n17",
    "typ": "auswahl",
-   "frage": "„Das Haus, ___ ich aufgewachsen bin, steht nicht mehr.“",
+   "frage": "Es gibt Fragen, ___ man in einem Bewerbungsgespräch besser schweigt.",
    "optionen": [
-    "in dem",
-    "in den",
-    "in das"
+    "worüber",
+    "über die",
+    "die",
+    "denen"
    ],
-   "richtig": 0,
-   "erklaerung": "Ort (wo?): in + Dativ, neutral: in dem."
+   "richtig": 1,
+   "erklaerung": "Bezug auf ein Nomen: Präposition + Relativpronomen; „worüber“ wäre umgangssprachlich."
   },
   {
    "id": "u18",
@@ -360,19 +360,21 @@
    "erklaerung": "Genitiv „dessen“ + Nomen; im Relativsatz steht das Verb am Ende, danach geht der Hauptsatz mit dem Verb weiter."
   },
   {
-   "id": "u22",
+   "id": "n22",
    "typ": "sortieren",
    "teile": [
-    "über",
-    "Das ist genau der Punkt,",
-    "wir",
-    "sprechen",
-    "müssen",
-    "den",
-    "noch einmal"
+    "Folgen",
+    "heute",
+    "noch kaum",
+    "abschätzen lassen",
+    "ist",
+    "deren",
+    "sich",
+    "eine Entwicklung,",
+    "Das"
    ],
-   "loesung": "Das ist genau der Punkt, über den wir noch einmal sprechen müssen.",
-   "erklaerung": "Präposition vor dem Relativpronomen; Modalverb am Ende."
+   "loesung": "Das ist eine Entwicklung, deren Folgen sich heute noch kaum abschätzen lassen.",
+   "erklaerung": "Genitiv-Relativpronomen „deren“ (Bezug: die Entwicklung); Verb am Ende."
   },
   {
    "id": "u23",
@@ -428,12 +430,12 @@
    "erklaerung": "Bezug auf den ganzen Satz: weiterführendes „was“."
   },
   {
-   "id": "u29",
+   "id": "n29",
    "typ": "fehler",
-   "satz": "Das ist das Thema, über was wir gestern gesprochen haben.",
-   "fehler": "was",
-   "korrektur": "das",
-   "erklaerung": "Bei einem Nomen als Bezugswort: Präposition + Relativpronomen – über das."
+   "satz": "Die Zeugin, derer Aussage das Verfahren ins Rollen brachte, bleibt anonym.",
+   "fehler": "derer",
+   "korrektur": "deren",
+   "erklaerung": "Relativpronomen im Genitiv: „deren“. „derer“ ist Demonstrativ (die Zahl derer, die …)."
   },
   {
    "id": "u30",
@@ -450,24 +452,23 @@
    "erklaerung": "die Autorin, deren …; der Autor, dessen …; die Autoren, deren …"
   },
   {
-   "id": "u33",
+   "id": "n33",
    "typ": "sortieren",
-   "ausgang": "Ich habe den Film gestern gesehen. Der Film hat mich tief bewegt.",
-   "anweisung": "Verbinden Sie die Sätze mit einem Relativsatz. Beginnen Sie mit „Der Film“.",
+   "ausgang": "Die Kommission legte einen Bericht vor. Auf seine Veröffentlichung hatte man lange gewartet.",
+   "anweisung": "Verbinden Sie die Sätze mit einem Relativsatz. Beginnen Sie mit „Die Kommission“.",
    "teile": [
-    "den",
-    "hat",
-    "gestern gesehen",
-    "Der Film,",
-    "ich",
-    "bewegt",
-    "mich",
-    "habe,",
-    "tief"
+    "vor,",
+    "auf dessen",
+    "einen Bericht",
+    "man",
+    "legte",
+    "gewartet hatte",
+    "Veröffentlichung",
+    "Die Kommission",
+    "lange"
    ],
-   "loesung": "Der Film, den ich gestern gesehen habe, hat mich tief bewegt.",
-   "erklaerung": "Akkusativ maskulin: den; Verb am Ende des Relativsatzes.",
-   "aus": "umformen"
+   "loesung": "Die Kommission legte einen Bericht vor, auf dessen Veröffentlichung man lange gewartet hatte.",
+   "erklaerung": "Präposition + Genitiv-Relativpronomen: auf dessen Veröffentlichung."
   },
   {
    "id": "u34",

@@ -209,40 +209,43 @@
    "aus": "luecke"
   },
   {
-   "id": "u14",
+   "id": "n14",
    "typ": "auswahl",
-   "frage": "„___ des Dauerregens fand das Straßenfest statt.“",
+   "frage": "___ seines Amtes ordnete der Bürgermeister die Räumung an.",
    "optionen": [
-    "Wegen",
-    "Infolge",
-    "Trotz"
-   ],
-   "richtig": 2,
-   "erklaerung": "Das Fest fand statt, obwohl es regnete: Gegensatz → trotz."
-  },
-  {
-   "id": "u15",
-   "typ": "auswahl",
-   "frage": "Welche Form ist standardsprachlich?",
-   "optionen": [
-    "wegen den Streik",
-    "wegen des Streiks",
-    "wegen dem Streik"
+    "Zwecks",
+    "Kraft",
+    "Angesichts",
+    "Mangels"
    ],
    "richtig": 1,
-   "erklaerung": "In der Schriftsprache verlangt „wegen“ den Genitiv."
+   "erklaerung": "„kraft“ + Genitiv (gehoben) = aufgrund von: kraft seines Amtes."
   },
   {
-   "id": "u17",
+   "id": "n15",
    "typ": "auswahl",
-   "frage": "„Meiner Meinung ___ ist der Vorschlag unausgereift.“",
+   "frage": "___ eines Einspruchs der Denkmalpflege musste die Ausgrabung gestoppt werden.",
    "optionen": [
-    "nach",
+    "Zufolge",
+    "Infolge",
+    "Zuliebe",
+    "Zuwider"
+   ],
+   "richtig": 1,
+   "erklaerung": "„infolge“ + Genitiv steht voran; „zufolge“, „zuliebe“, „zuwider“ stehen nach dem Nomen (mit Dativ)."
+  },
+  {
+   "id": "n17",
+   "typ": "auswahl",
+   "frage": "Das Vorhaben läuft dem Geist der Verfassung ___.",
+   "optionen": [
     "zufolge",
+    "zuwider",
+    "zugunsten",
     "gemäß"
    ],
-   "richtig": 0,
-   "erklaerung": "Die feste Wendung lautet „meiner Meinung nach“ (Dativ, nachgestellt)."
+   "richtig": 1,
+   "erklaerung": "„einer Sache zuwiderlaufen“ = ihr widersprechen."
   },
   {
    "id": "u18",
@@ -398,11 +401,11 @@
    "erklaerung": "„zugunsten“ + Genitiv: der Opfer."
   },
   {
-   "id": "u30",
+   "id": "n30",
    "typ": "rf",
-   "aussage": "„trotz“ und „wegen“ stehen in der Schriftsprache mit dem Genitiv.",
+   "aussage": "„entlang“ steht nachgestellt meist mit dem Akkusativ: den Fluss entlang.",
    "wert": true,
-   "erklaerung": "Der Dativ (trotz dem, wegen dem) ist umgangssprachlich."
+   "erklaerung": "Vorangestellt meist Genitiv (entlang des Flusses), nachgestellt Akkusativ."
   },
   {
    "id": "u31",

@@ -146,32 +146,30 @@
    "aus": "luecke"
   },
   {
-   "id": "u09",
+   "id": "n09",
    "typ": "auswahl",
-   "frage": "Die Großmutter kommt nur selten zu Besuch; die Kinder freuen sich schon seit Wochen auf ___.",
+   "frage": "Der Autor hält sich nicht lange ___ auf, die Vorgeschichte zu erzählen.",
    "optionen": [
-    "sie",
-    "ihr",
-    "ihre",
-    "sich"
+    "darauf",
+    "damit",
+    "daran",
+    "davon"
    ],
-   "richtig": 0,
-   "erklaerung": "Bei Personen kein Pronominaladverb: auf sie (die Großmutter), nicht „darauf“.",
-   "aus": "luecke"
+   "richtig": 1,
+   "erklaerung": "„sich mit etwas aufhalten“ → damit, hier vor einem Infinitiv."
   },
   {
-   "id": "u10",
+   "id": "n10",
    "typ": "auswahl",
-   "frage": "Die Stadt ist zu Recht stolz ___ ihre behutsam restaurierte Altstadt.",
+   "frage": "Die Debatte erschöpfte sich weitgehend ___, Schuldige zu benennen.",
    "optionen": [
-    "auf",
-    "für",
-    "über",
-    "an"
+    "daran",
+    "damit",
+    "darin",
+    "davon"
    ],
-   "richtig": 0,
-   "erklaerung": "„stolz auf“ + Akkusativ.",
-   "aus": "luecke"
+   "richtig": 2,
+   "erklaerung": "„sich in etwas erschöpfen“ = nicht über etwas hinausgehen → darin."
   },
   {
    "id": "u11",
@@ -188,32 +186,30 @@
    "aus": "luecke"
   },
   {
-   "id": "u12",
+   "id": "n12",
    "typ": "auswahl",
-   "frage": "Der Roman handelt ___ einer Frau, die ihre Vergangenheit verschweigt.",
+   "frage": "Die Ergebnisse lassen ___ schließen, dass die Methode funktioniert.",
    "optionen": [
-    "von",
-    "über",
-    "aus",
-    "an"
-   ],
-   "richtig": 0,
-   "erklaerung": "„handeln von“ + Dativ.",
-   "aus": "luecke"
-  },
-  {
-   "id": "u13",
-   "typ": "auswahl",
-   "frage": "Die Bevölkerung leidet seit Jahren ___ der hohen Inflation.",
-   "optionen": [
-    "über",
-    "unter",
-    "von",
-    "mit"
+    "daraus",
+    "darauf",
+    "davon",
+    "daran"
    ],
    "richtig": 1,
-   "erklaerung": "„leiden unter“ + Dativ.",
-   "aus": "luecke"
+   "erklaerung": "„auf etwas schließen lassen“ → darauf."
+  },
+  {
+   "id": "n13",
+   "typ": "auswahl",
+   "frage": "Die Reform krankt vor allem ___ ihrer mangelhaften Finanzierung.",
+   "optionen": [
+    "unter",
+    "von",
+    "an",
+    "mit"
+   ],
+   "richtig": 2,
+   "erklaerung": "„kranken an“ + Dativ = an einem Mangel leiden."
   },
   {
    "id": "u14",
@@ -242,59 +238,61 @@
    "erklaerung": "„denken an“ → woran. „An was“ ist umgangssprachlich, „worauf“ passt nicht zum Verb."
   },
   {
-   "id": "u17",
+   "id": "n17",
    "typ": "auswahl",
-   "frage": "„Die Kommission besteht ___ zwölf Mitgliedern.“",
+   "frage": "Die Behauptung zeugt ___ erstaunlicher Unkenntnis.",
    "optionen": [
-    "aus",
-    "auf",
-    "in"
+    "über",
+    "von",
+    "für",
+    "aus"
    ],
-   "richtig": 0,
-   "erklaerung": "„bestehen aus“ (zusammengesetzt sein); „bestehen auf“ heißt dagegen „fordern“."
+   "richtig": 1,
+   "erklaerung": "„von etwas zeugen“ = es erkennen lassen."
   },
   {
-   "id": "u19",
+   "id": "n19",
    "typ": "auswahl",
-   "frage": "„Mit ___ hast du über das Projekt gesprochen?“",
+   "frage": "___ beruft sich die Klägerin eigentlich?",
    "optionen": [
-    "wen",
-    "was",
-    "wem"
+    "Woran",
+    "Wofür",
+    "Worauf",
+    "Worüber"
    ],
    "richtig": 2,
-   "erklaerung": "„sprechen mit“ + Dativ; Frage nach einer Person: mit wem."
+   "erklaerung": "„sich berufen auf“; Frage nach einer Sache: Worauf?"
   },
   {
-   "id": "u20",
+   "id": "n20",
    "typ": "zuordnen",
    "paare": [
     [
-     "sich verlassen",
+     "sich ergeben",
+     "aus"
+    ],
+    [
+     "hinauslaufen",
      "auf"
     ],
     [
-     "abhängen",
-     "von"
+     "sich hinwegsetzen",
+     "über"
     ],
     [
-     "sich beschäftigen",
-     "mit"
+     "einwilligen",
+     "in"
     ],
     [
-     "teilnehmen",
-     "an"
-    ],
-    [
-     "leiden",
-     "unter"
-    ],
-    [
-     "sich fürchten",
+     "zurückschrecken",
      "vor"
+    ],
+    [
+     "liebäugeln",
+     "mit"
     ]
    ],
-   "erklaerung": "Feste Präpositionen lernt man immer zusammen mit dem Verb."
+   "erklaerung": "Verben mit fester Präposition (C1/C2)."
   },
   {
    "id": "u21",
@@ -390,17 +388,17 @@
    "erklaerung": "Korrelat „darauf“ im Hauptsatz, im dass-Satz Verb am Ende: geführt werden."
   },
   {
-   "id": "u25",
+   "id": "n25",
    "typ": "sortieren",
    "teile": [
-    "sich",
-    "man",
-    "kann",
-    "Auf ihre Urteile",
-    "verlassen"
+    "setzte sich",
+    "seiner Berater",
+    "über alle Bedenken",
+    "Er",
+    "hinweg"
    ],
-   "loesung": "Auf ihre Urteile kann man sich verlassen.",
-   "erklaerung": "Präpositionalobjekt im Vorfeld, dann Verb, Subjekt, Reflexivpronomen; der Infinitiv steht am Ende."
+   "loesung": "Er setzte sich über alle Bedenken seiner Berater hinweg.",
+   "erklaerung": "„sich über etwas hinwegsetzen“: Präfix „hinweg“ schließt die Klammer."
   },
   {
    "id": "u27",
@@ -419,12 +417,12 @@
    "erklaerung": "„sich interessieren für“."
   },
   {
-   "id": "u30",
+   "id": "n30",
    "typ": "fehler",
-   "satz": "Der Erfolg hängt nicht nur am Talent ab, sondern auch vom Fleiß.",
-   "fehler": "am",
-   "korrektur": "vom",
-   "erklaerung": "„abhängen von“: vom Talent."
+   "satz": "Der Erfolg der Verhandlungen hängt maßgeblich dafür ab, ob beide Seiten nachgeben.",
+   "fehler": "dafür",
+   "korrektur": "davon",
+   "erklaerung": "„abhängen von“ → Korrelat „davon“ vor dem ob-Satz."
   },
   {
    "id": "u32",
@@ -441,18 +439,17 @@
    "erklaerung": "Wenn „über“ zum Verb gehört, folgt in aller Regel der Akkusativ."
   },
   {
-   "id": "u35",
+   "id": "n35",
    "typ": "auswahl",
-   "frage": "Sie träumt von einer eigenen Buchhandlung. – Fragen Sie nach „von einer eigenen Buchhandlung“.",
+   "frage": "Er verwahrte sich gegen die Unterstellung. – Fragen Sie nach „gegen die Unterstellung“.",
    "optionen": [
-    "Worüber träumt sie?",
-    "Woran träumt sie?",
-    "Wovon träumt sie?",
-    "Von wem träumt sie?"
+    "Wovor verwahrte er sich?",
+    "Wogegen verwahrte er sich?",
+    "Woran verwahrte er sich?",
+    "Wofür verwahrte er sich?"
    ],
-   "richtig": 2,
-   "erklaerung": "„träumen von“, Frage nach einer Sache: wo + von = wovon.",
-   "aus": "umformen"
+   "richtig": 1,
+   "erklaerung": "Sache + Präposition „gegen“ → Wogegen? („Gegen was“ ist umgangssprachlich.)"
   },
   {
    "id": "u36",

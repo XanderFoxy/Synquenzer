@@ -50,102 +50,94 @@
  ],
  "uebungen": [
   {
-   "id": "u01",
+   "id": "n01",
    "typ": "auswahl",
-   "frage": "___ freut mich sehr, dass du gekommen bist.",
+   "frage": "Welcher Satz ist korrekt, wenn der dass-Satz am Anfang steht?",
    "optionen": [
-    "Er",
-    "Sich",
-    "Es",
-    "Man"
+    "Dass die Reform überfällig ist, steht außer Frage.",
+    "Dass die Reform überfällig ist, steht es außer Frage.",
+    "Dass die Reform überfällig ist, es steht außer Frage."
    ],
-   "richtig": 2,
-   "erklaerung": "Korrelat-es im Vorfeld; es verweist auf den dass-Satz.",
-   "aus": "luecke"
+   "richtig": 0,
+   "erklaerung": "Steht der dass-Satz im Vorfeld, entfällt das Korrelat „es“."
   },
   {
-   "id": "u02",
+   "id": "n02",
    "typ": "auswahl",
-   "frage": "Ich finde ___ wichtig, dass alle mitreden dürfen.",
+   "frage": "Ich halte ___ für unwahrscheinlich, dass der Termin gehalten wird.",
    "optionen": [
+    "ihn",
     "es",
     "sich",
-    "ihn",
-    "mir"
-   ],
-   "richtig": 0,
-   "erklaerung": "Korrelat-es im Mittelfeld: „finden“ braucht ein Objekt, das der dass-Satz füllt.",
-   "aus": "luecke"
-  },
-  {
-   "id": "u03",
-   "typ": "auswahl",
-   "frage": "Hast du an den Termin gedacht? – Nein, ___ habe ich gar nicht gedacht.",
-   "optionen": [
-    "darauf",
-    "dafür",
-    "darüber",
-    "daran"
-   ],
-   "richtig": 3,
-   "erklaerung": "denken an + Sache → daran.",
-   "aus": "luecke"
-  },
-  {
-   "id": "u04",
-   "typ": "auswahl",
-   "frage": "Ich kann ___ gut vorstellen, wie schwierig das war.",
-   "optionen": [
-    "mir",
-    "meiner",
-    "mich",
-    "ich"
-   ],
-   "richtig": 0,
-   "erklaerung": "sich etwas vorstellen: Dativ, weil der wie-Satz das Akkusativobjekt ist.",
-   "aus": "luecke"
-  },
-  {
-   "id": "u05",
-   "typ": "auswahl",
-   "frage": "Wir freuen ___ schon sehr auf den Urlaub.",
-   "optionen": [
-    "euch",
-    "wir",
-    "uns",
-    "unser"
-   ],
-   "richtig": 2,
-   "erklaerung": "sich freuen auf: Reflexivpronomen im Akkusativ (1. Person Plural: uns).",
-   "aus": "luecke"
-  },
-  {
-   "id": "u07",
-   "typ": "auswahl",
-   "frage": "___ sprecht ihr gerade? – Über das neue Projekt.",
-   "optionen": [
-    "Wofür",
-    "Worum",
-    "Worauf",
-    "Worüber"
-   ],
-   "richtig": 3,
-   "erklaerung": "Frage nach einer Sache mit Präposition: wo(r)- + Präposition.",
-   "aus": "luecke"
-  },
-  {
-   "id": "u08",
-   "typ": "auswahl",
-   "frage": "Ich habe von Frau Berger lange nichts gehört. Hast du etwas von ___ gehört?",
-   "optionen": [
-    "ihr",
-    "ihrer",
-    "sie",
     "ihm"
    ],
+   "richtig": 1,
+   "erklaerung": "Korrelat „es“ kündigt den nachgestellten dass-Satz an."
+  },
+  {
+   "id": "n03",
+   "typ": "auswahl",
+   "frage": "Der Bericht nennt zwei Ursachen: Bürokratie und Personalmangel. ___ wiegt nach Ansicht der Autoren schwerer.",
+   "optionen": [
+    "Letztere",
+    "Letzterer",
+    "Letzteres",
+    "Letzten"
+   ],
+   "richtig": 1,
+   "erklaerung": "„Letzterer“ verweist auf das zuletzt Genannte: der Personalmangel (maskulin)."
+  },
+  {
+   "id": "n04",
+   "typ": "auswahl",
+   "frage": "Er hat ___ sich nicht nehmen lassen, persönlich zu gratulieren.",
+   "optionen": [
+    "es",
+    "das",
+    "ihn",
+    "dies"
+   ],
    "richtig": 0,
-   "erklaerung": "Bei Personen: Präposition + Personalpronomen (von + Dativ: ihr).",
-   "aus": "luecke"
+   "erklaerung": "Feste Wendung: „es sich nicht nehmen lassen, … zu“."
+  },
+  {
+   "id": "n05",
+   "typ": "auswahl",
+   "frage": "Die Behörde weigerte sich, ___ Stellung zu nehmen.",
+   "optionen": [
+    "darauf",
+    "dazu",
+    "darüber",
+    "davon"
+   ],
+   "richtig": 1,
+   "erklaerung": "„Stellung nehmen zu“ → dazu."
+  },
+  {
+   "id": "n07",
+   "typ": "auswahl",
+   "frage": "Alles, ___ sie sich in ihrer Rede berief, war längst widerlegt.",
+   "optionen": [
+    "auf das",
+    "worauf",
+    "das",
+    "auf was"
+   ],
+   "richtig": 1,
+   "erklaerung": "Nach „alles“ steht „was“, mit Präposition: worauf."
+  },
+  {
+   "id": "n08",
+   "typ": "auswahl",
+   "frage": "Die Autorin dankte ihrer Lektorin. ___ Hartnäckigkeit sei es zu verdanken, dass das Buch erschien. (Gemeint ist eindeutig die Lektorin.)",
+   "optionen": [
+    "Ihrer",
+    "Deren",
+    "Dessen",
+    "Seiner"
+   ],
+   "richtig": 1,
+   "erklaerung": "„deren“ bezieht sich eindeutig auf die zuletzt genannte Person; „ihrer“ bliebe mehrdeutig."
   },
   {
    "id": "u09",
@@ -176,30 +168,29 @@
    "aus": "luecke"
   },
   {
-   "id": "u11",
+   "id": "n11",
    "typ": "auswahl",
    "frage": "Welcher Satz ist korrekt?",
    "optionen": [
-    "Ich habe mir seinen Namen leider nicht gemerkt.",
-    "Ich habe mich seinen Namen leider nicht gemerkt.",
-    "Ich habe seinen Namen mich leider nicht gemerkt.",
-    "Ich habe mir seines Namens leider nicht gemerkt."
+    "Es wurde bis spät in die Nacht verhandelt.",
+    "Bis spät in die Nacht wurde es verhandelt.",
+    "Bis spät in die Nacht es wurde verhandelt."
    ],
    "richtig": 0,
-   "erklaerung": "sich etwas merken: Reflexivpronomen im Dativ, Objekt im Akkusativ; das Pronomen steht vorn im Mittelfeld."
+   "erklaerung": "Das Platzhalter-„es“ steht nur im Vorfeld; besetzt ein anderes Satzglied das Vorfeld, fällt es weg."
   },
   {
-   "id": "u12",
+   "id": "n12",
    "typ": "auswahl",
-   "frage": "„Ich habe mich sehr ___ geärgert.“ (über die Verspätung)",
+   "frage": "Die Frage, ___ sich die Debatte entzündete, blieb ungeklärt.",
    "optionen": [
-    "worüber",
-    "über ihn",
-    "darüber",
-    "über es"
+    "woran",
+    "an der",
+    "worauf",
+    "an die"
    ],
-   "richtig": 2,
-   "erklaerung": "Sache nach Präposition: Pronominaladverb da(r)- + Präposition."
+   "richtig": 1,
+   "erklaerung": "„sich entzünden an“ + Dativ; Bezug auf ein Nomen → an der (woran wäre umgangssprachlich)."
   },
   {
    "id": "u13",
@@ -215,17 +206,16 @@
    "erklaerung": "Personen: Präposition + wen/wem."
   },
   {
-   "id": "u14",
+   "id": "n14",
    "typ": "auswahl",
-   "frage": "Welcher Satz ist korrekt?",
+   "frage": "„Es wurden mehrere Fehler gefunden.“ – Welche Umstellung ist korrekt?",
    "optionen": [
-    "Heute gibt es keine Termine mehr.",
-    "Es heute gibt keine Termine mehr.",
-    "Heute gibt keine Termine mehr.",
-    "Heute es gibt keine Termine mehr."
+    "Mehrere Fehler wurden gefunden.",
+    "Mehrere Fehler wurde es gefunden.",
+    "Mehrere Fehler wurden es gefunden."
    ],
    "richtig": 0,
-   "erklaerung": "„es gibt“ ist fest: Das „es“ bleibt auch, wenn das Vorfeld anders besetzt ist."
+   "erklaerung": "Das Platzhalter-„es“ entfällt; das Verb richtet sich nach dem Subjekt (Plural)."
   },
   {
    "id": "u15",
@@ -241,17 +231,17 @@
    "erklaerung": "Bezug auf einen Bruder (maskulin, Nominativ): Ersterer."
   },
   {
-   "id": "u16",
+   "id": "n16",
    "typ": "auswahl",
-   "frage": "„Kannst du ___ das bitte bis morgen überlegen?“",
+   "frage": "„Der Plan ist gescheitert, ___ war vorhersehbar.“",
    "optionen": [
-    "deiner",
-    "dir",
-    "du",
-    "dich"
+    "was",
+    "das",
+    "welches",
+    "wo"
    ],
    "richtig": 1,
-   "erklaerung": "sich etwas überlegen: Dativ, weil „das“ Akkusativ ist."
+   "erklaerung": "Hauptsatz mit Verb an Position 2 → Demonstrativ „das“; mit „was“ müsste das Verb ans Ende (…, was vorhersehbar war)."
   },
   {
    "id": "u17",
@@ -269,18 +259,16 @@
    "aus": "umformen"
   },
   {
-   "id": "u18",
+   "id": "n18",
    "typ": "auswahl",
-   "frage": "Über welches Thema habt ihr diskutiert? – Fragen Sie mit einem Fragewort mit wo(r)-.",
+   "frage": "Welcher Satz ist standardsprachlich?",
    "optionen": [
-    "Woüber habt ihr diskutiert?",
-    "Wovon habt ihr diskutiert?",
-    "Worum habt ihr diskutiert?",
-    "Worüber habt ihr diskutiert?"
+    "Darauf kann man sich nicht verlassen.",
+    "Da kann man sich nicht drauf verlassen.",
+    "Auf das kann man sich nicht verlassen."
    ],
-   "richtig": 3,
-   "erklaerung": "Frage nach einer Sache: wo(r)- + Präposition.",
-   "aus": "umformen"
+   "richtig": 0,
+   "erklaerung": "Das Pronominaladverb steht zusammen; die getrennte Form „da … drauf“ ist umgangssprachlich."
   },
   {
    "id": "u19",
@@ -450,12 +438,12 @@
    "erklaerung": "sich freuen über → darüber; das Reflexivpronomen steht weit vorn."
   },
   {
-   "id": "u29",
+   "id": "n29",
    "typ": "fehler",
-   "satz": "Ich habe mich seinen Namen nicht gemerkt.",
-   "fehler": "mich",
-   "korrektur": "mir",
-   "erklaerung": "sich etwas merken: Dativ, weil „seinen Namen“ Akkusativ ist."
+   "satz": "Wir sind uns dem Risiko durchaus bewusst.",
+   "fehler": "dem Risiko",
+   "korrektur": "des Risikos",
+   "erklaerung": "„sich einer Sache bewusst sein“ verlangt den Genitiv."
   },
   {
    "id": "u30",
@@ -466,12 +454,12 @@
    "erklaerung": "Sache nach Präposition: In der Standardsprache steht das Pronominaladverb."
   },
   {
-   "id": "u31",
+   "id": "n31",
    "typ": "fehler",
-   "satz": "Gestern es hat den ganzen Tag geregnet.",
-   "fehler": "es hat",
-   "korrektur": "hat es",
-   "erklaerung": "Verb an Position 2; „es“ (fest bei „regnen“) rückt ins Mittelfeld."
+   "satz": "Das Ergebnis entspricht nicht dem, worauf die Kommission angestrebt hatte.",
+   "fehler": "worauf",
+   "korrektur": "was",
+   "erklaerung": "„etwas anstreben“ hat ein Akkusativobjekt → was; „worauf“ passt nur zu Verben mit „auf“ (hoffen auf, hinarbeiten auf)."
   },
   {
    "id": "u32",
@@ -496,11 +484,11 @@
    "erklaerung": "Personen: auf sie, über wen."
   },
   {
-   "id": "u35",
+   "id": "n35",
    "typ": "rf",
-   "aussage": "In „Ich wasche mir die Hände.“ steht das Reflexivpronomen im Dativ, weil „die Hände“ schon Akkusativ ist.",
+   "aussage": "In „Darauf, dass der Plan gelingt, setzen alle“ verweist „darauf“ auf den folgenden dass-Satz.",
    "wert": true,
-   "erklaerung": "Mit Akkusativobjekt: Dativ; ohne: Ich wasche mich."
+   "erklaerung": "Pronominaladverb als Korrelat (setzen auf)."
   },
   {
    "id": "u36",

@@ -174,20 +174,21 @@
    "erklaerung": "Infinitiv Perfekt: gesehen zu haben – „zu“ steht vor dem Hilfsverb."
   },
   {
-   "id": "u10",
+   "id": "n10",
    "typ": "sortieren",
    "teile": [
-    "ein Stipendium",
-    "bekommen",
-    "im nächsten Jahr",
-    "zu",
-    "Sie hofft,"
+    "nichts",
+    "zu haben",
+    "von den Vorgängen",
+    "gewusst",
+    "gibt vor,",
+    "Er"
    ],
-   "loesung": "Sie hofft, im nächsten Jahr ein Stipendium zu bekommen.",
+   "loesung": "Er gibt vor, von den Vorgängen nichts gewusst zu haben.",
    "loesungen": [
-    "Sie hofft, ein Stipendium im nächsten Jahr zu bekommen."
+    "Er gibt vor, nichts von den Vorgängen gewusst zu haben."
    ],
-   "erklaerung": "Im Infinitivsatz steht „zu“ direkt vor dem Infinitiv am Ende."
+   "erklaerung": "Infinitiv Perfekt (gewusst zu haben) nach „vorgeben“; die Ergänzung steht davor."
   },
   {
    "id": "u11",
@@ -282,22 +283,20 @@
    "erklaerung": "Futur im Nebensatz: Infinitiv vor „werden“ am Ende."
   },
   {
-   "id": "u17",
+   "id": "n17",
    "typ": "sortieren",
    "teile": [
+    "gekannt,",
+    "man",
+    "Hätte",
     "das Problem",
-    "kennt,",
-    "nicht",
-    "nicht",
-    "kann",
-    "man",
-    "Wenn",
-    "die Ursachen",
-    "man",
-    "lösen"
+    "wäre",
+    "gelöst worden",
+    "längst",
+    "die Ursachen"
    ],
-   "loesung": "Wenn man die Ursachen nicht kennt, kann man das Problem nicht lösen.",
-   "erklaerung": "Nebensatz im Vorfeld (Verb am Ende), dann Modalverb an Position 2, Infinitiv am Ende."
+   "loesung": "Hätte man die Ursachen gekannt, wäre das Problem längst gelöst worden.",
+   "erklaerung": "Bedingung ohne „wenn“: Verb an Position 1; im Hauptsatz folgt sofort das finite Verb."
   },
   {
    "id": "u18",
@@ -440,29 +439,28 @@
    "erklaerung": "Nach dem Vorfeld folgt das finite Verb."
   },
   {
-   "id": "u27",
+   "id": "n27",
    "typ": "fehler",
-   "satz": "Ich glaube, dass sie in diesem Punkt hat recht.",
-   "fehler": "hat recht",
-   "korrektur": "recht hat",
-   "erklaerung": "Im dass-Satz steht das finite Verb am Ende."
+   "satz": "Der Gutachter wies darauf hin, dass man die Statik hätte prüfen lassen gemusst.",
+   "fehler": "gemusst",
+   "korrektur": "müssen",
+   "erklaerung": "Drei Verben am Ende: Ersatzinfinitiv „müssen“ statt „gemusst“ (hätte prüfen lassen müssen)."
   },
   {
-   "id": "u28",
+   "id": "n28",
    "typ": "fehler",
-   "satz": "Weil die Mieten steigen, viele Familien ziehen aufs Land.",
-   "fehler": "viele Familien ziehen",
-   "korrektur": "ziehen viele Familien",
-   "erklaerung": "Der Nebensatz besetzt das Vorfeld, danach das Verb.",
-   "grundlage": true
+   "satz": "Hätte der Vorstand rechtzeitig gehandelt, der Konzern wäre nicht in Schieflage geraten.",
+   "fehler": "der Konzern wäre",
+   "korrektur": "wäre der Konzern",
+   "erklaerung": "Der Bedingungssatz besetzt das Vorfeld, danach steht das finite Verb."
   },
   {
-   "id": "u29",
+   "id": "n29",
    "typ": "fehler",
-   "satz": "Er schreibt, dass er kann morgen nicht kommen.",
-   "fehler": "kann morgen nicht kommen",
-   "korrektur": "morgen nicht kommen kann",
-   "erklaerung": "Im Nebensatz steht das Modalverb am Ende."
+   "satz": "Sie bedauerte, dass sie den Termin nicht wahrnehmen hat können.",
+   "fehler": "wahrnehmen hat können",
+   "korrektur": "hat wahrnehmen können",
+   "erklaerung": "Ersatzinfinitiv im Nebensatz: Das finite „hat“ steht vor beiden Infinitiven."
   },
   {
    "id": "u30",
@@ -489,21 +487,20 @@
    "erklaerung": "Ersatzinfinitiv: Das Pronomen steht im Mittelfeld vor dem Verbkomplex."
   },
   {
-   "id": "u33",
+   "id": "n33",
    "typ": "fehler",
-   "satz": "Wir müssen dieses Problem lösen jetzt.",
-   "fehler": "lösen jetzt",
-   "korrektur": "jetzt lösen",
-   "erklaerung": "Der Infinitiv schließt die Klammer; die Zeitangabe steht davor.",
-   "grundlage": true
+   "satz": "Die Akten sollen schon vor Jahren vernichtet sein worden.",
+   "fehler": "sein worden",
+   "korrektur": "worden sein",
+   "erklaerung": "Infinitiv Perfekt Passiv: vernichtet worden sein."
   },
   {
-   "id": "u34",
+   "id": "n34",
    "typ": "fehler",
-   "satz": "Die Sitzung fängt heute erst an um zehn Uhr.",
-   "fehler": "an um zehn Uhr",
-   "korrektur": "um zehn Uhr an",
-   "erklaerung": "Das Präfix „an“ steht am Ende der Satzklammer."
+   "satz": "So sehr er sich auch bemühte, es ihm gelang nicht, das Publikum zu überzeugen.",
+   "fehler": "es ihm gelang",
+   "korrektur": "es gelang ihm",
+   "erklaerung": "Der Konzessivsatz mit „so sehr … auch“ steht vor dem Satz; danach ein normaler Hauptsatz mit dem Verb an Position 2."
   },
   {
    "id": "u35",
@@ -522,12 +519,12 @@
    "erklaerung": "Passivinfinitiv: Partizip + werden."
   },
   {
-   "id": "u37",
+   "id": "n37",
    "typ": "fehler",
-   "satz": "Ich frage mich, warum hat niemand protestiert.",
-   "fehler": "hat niemand protestiert",
-   "korrektur": "niemand protestiert hat",
-   "erklaerung": "Indirekter Fragesatz: Verb am Ende."
+   "satz": "Ungeklärt ist, inwiefern hat die Leitung von den Mängeln gewusst.",
+   "fehler": "hat die Leitung von den Mängeln gewusst",
+   "korrektur": "die Leitung von den Mängeln gewusst hat",
+   "erklaerung": "Indirekter Fragesatz mit „inwiefern“: finites Verb am Ende."
   },
   {
    "id": "u38",
@@ -546,13 +543,12 @@
    "erklaerung": "Auch der zweite Teil des dass-Satzes ist Nebensatz: Verb am Ende."
   },
   {
-   "id": "u40",
+   "id": "n40",
    "typ": "fehler",
-   "satz": "Wenn ich mehr Zeit hätte, ich würde mehr lesen.",
-   "fehler": "ich würde",
-   "korrektur": "würde ich",
-   "erklaerung": "Der Nebensatz besetzt das Vorfeld; danach steht das finite Verb.",
-   "grundlage": true
+   "satz": "Niemand konnte sagen, ob die Ausstellung wird verlängert werden.",
+   "fehler": "wird verlängert werden",
+   "korrektur": "verlängert werden wird",
+   "erklaerung": "Futur Passiv im Nebensatz: „wird“ steht am Ende. Nach vorn rückt es nur vor zwei Infinitive (z. B. … wird verlängern müssen)."
   },
   {
    "id": "u41",
@@ -570,19 +566,17 @@
    "aus": "luecke"
   },
   {
-   "id": "u42",
+   "id": "n42",
    "typ": "auswahl",
-   "frage": "Ich bin sicher, dass sie die Prüfung bestehen ___.",
+   "frage": "Die Fachleute sind sicher: Die Brücke ___ in absehbarer Zeit gesperrt werden müssen.",
    "optionen": [
     "wird",
-    "hat",
     "ist",
-    "wurde"
+    "wäre",
+    "hatte"
    ],
    "richtig": 0,
-   "hinweis": "werden, Präsens",
-   "erklaerung": "Futur im Nebensatz: „wird“ ganz am Ende.",
-   "aus": "luecke"
+   "erklaerung": "Futur I mit Modalverb im Passiv: wird … gesperrt werden müssen."
   },
   {
    "id": "u43",
@@ -614,19 +608,17 @@
    "aus": "luecke"
   },
   {
-   "id": "u45",
+   "id": "n45",
    "typ": "auswahl",
-   "frage": "Wenn das Wetter mitspielt, ___ das Fest im Park statt.",
+   "frage": "Kaum ___ die Ergebnisse bekannt geworden, begann eine heftige Debatte.",
    "optionen": [
-    "stattfindet",
-    "findet",
-    "finden",
-    "fand"
+    "hatten",
+    "waren",
+    "wurden",
+    "sind"
    ],
    "richtig": 1,
-   "hinweis": "stattfinden, Präsens",
-   "erklaerung": "Nebensatz im Vorfeld, dann das finite Verb; „statt“ am Ende.",
-   "aus": "luecke"
+   "erklaerung": "„bekannt werden“ bildet das Perfekt mit „sein“; Vorzeitigkeit: Plusquamperfekt „waren … geworden“."
   },
   {
    "id": "u46",
@@ -745,21 +737,24 @@
    "erklaerung": "Ohne Modalverb steht das finite Verb im Relativsatz ganz am Ende."
   },
   {
-   "id": "u55",
+   "id": "n55",
    "typ": "sortieren",
-   "ausgang": "Es regnete. Trotzdem fand das Konzert statt.",
-   "anweisung": "Verbinden Sie die Sätze mit „obwohl“ und beginnen Sie mit dem Nebensatz.",
+   "ausgang": "Die Regierung hätte die Warnungen ernst nehmen müssen. Sie tat es nicht.",
+   "anweisung": "Beginnen Sie mit „Obwohl die Regierung“.",
    "teile": [
-    "regnete,",
-    "statt",
+    "nicht",
+    "die Warnungen",
+    "tat",
+    "müssen,",
+    "die Regierung",
+    "es",
+    "hätte",
     "Obwohl",
-    "fand",
-    "das Konzert",
-    "es"
+    "ernst nehmen",
+    "sie"
    ],
-   "loesung": "Obwohl es regnete, fand das Konzert statt.",
-   "erklaerung": "Nebensatz im Vorfeld, danach sofort das finite Verb.",
-   "aus": "umformen"
+   "loesung": "Obwohl die Regierung die Warnungen hätte ernst nehmen müssen, tat sie es nicht.",
+   "erklaerung": "Ersatzinfinitiv im Nebensatz: „hätte“ vor „ernst nehmen müssen“; danach im Hauptsatz das Verb zuerst."
   },
   {
    "id": "u56",
@@ -827,12 +822,11 @@
    "erklaerung": "Danach folgt im Hauptsatz sofort das finite Verb."
   },
   {
-   "id": "u60",
+   "id": "n60",
    "typ": "rf",
-   "aussage": "Im Infinitivsatz steht „zu“ hinter dem Infinitiv: Er versuchte, das Problem lösen zu.",
-   "wert": false,
-   "erklaerung": "„zu“ steht vor dem Infinitiv: …, das Problem zu lösen.",
-   "grundlage": true
+   "aussage": "In „…, dass man das Problem wird lösen müssen“ steht „wird“ vorn, weil zwei Infinitive folgen.",
+   "wert": true,
+   "erklaerung": "Wie beim Ersatzinfinitiv rückt das finite Verb vor zwei Infinitive am Satzende."
   }
  ]
 }

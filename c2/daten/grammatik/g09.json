@@ -84,18 +84,21 @@
    "erklaerung": "Im Mittelfeld: temporal (gestern) – modal (mit dem Zug) – lokal (nach Brüssel)."
   },
   {
-   "id": "u03",
+   "id": "n03",
    "typ": "sortieren",
    "teile": [
-    "hat",
-    "Sie",
-    "ihm",
-    "schon dreimal",
-    "es",
-    "erklärt"
+    "die Brücke",
+    "werden müssen",
+    "schon vor Jahren",
+    "Dem Gutachten zufolge",
+    "gesperrt",
+    "hätte"
    ],
-   "loesung": "Sie hat es ihm schon dreimal erklärt.",
-   "erklaerung": "Zwei Pronomen: Akkusativ vor Dativ (es ihm)."
+   "loesung": "Dem Gutachten zufolge hätte die Brücke schon vor Jahren gesperrt werden müssen.",
+   "loesungen": [
+    "Dem Gutachten zufolge hätte schon vor Jahren die Brücke gesperrt werden müssen."
+   ],
+   "erklaerung": "Vorfeld: Angabe mit „zufolge“; Konjunktiv II Passiv mit Modalverb: hätte … gesperrt werden müssen."
   },
   {
    "id": "u04",
@@ -149,17 +152,18 @@
    "erklaerung": "Vergleiche dürfen ausgeklammert werden, also hinter dem Partizip stehen."
   },
   {
-   "id": "u07",
+   "id": "n07",
    "typ": "sortieren",
    "teile": [
-    "nur bei schönem Wetter",
-    "sie",
-    "Mit dem Rad",
-    "zur Arbeit",
-    "fährt"
+    "Die Vorwürfe",
+    "zurückgewiesen",
+    "bislang",
+    "mit keinem Wort",
+    "der Konzern",
+    "hat"
    ],
-   "loesung": "Mit dem Rad fährt sie nur bei schönem Wetter zur Arbeit.",
-   "erklaerung": "Das Vorfeld ist besetzt (mit dem Rad), das Verb folgt an Position 2; die lokale Angabe steht am Ende des Mittelfelds."
+   "loesung": "Die Vorwürfe hat der Konzern bislang mit keinem Wort zurückgewiesen.",
+   "erklaerung": "Objekt im Vorfeld, Subjekt direkt nach dem finiten Verb."
   },
   {
    "id": "u08",
@@ -176,12 +180,12 @@
    "erklaerung": "Objekt im Vorfeld; Futur: „wird“ an Position 2, Infinitiv am Ende."
   },
   {
-   "id": "u09",
+   "id": "n09",
    "typ": "fehler",
-   "satz": "Gestern ich habe den Artikel noch einmal gründlich gelesen.",
-   "fehler": "ich habe",
-   "korrektur": "habe ich",
-   "erklaerung": "Nach dem Vorfeld (Gestern) folgt sofort das finite Verb."
+   "satz": "Die Ministerin hat gestern den Journalisten ihn vorgestellt.",
+   "fehler": "den Journalisten ihn",
+   "korrektur": "ihn den Journalisten",
+   "erklaerung": "Im Mittelfeld steht das Pronomen vor dem Nomen."
   },
   {
    "id": "u10",
@@ -192,12 +196,12 @@
    "erklaerung": "Das Partizip schließt die Satzklammer; Angaben stehen davor im Mittelfeld."
   },
   {
-   "id": "u11",
+   "id": "n11",
    "typ": "fehler",
-   "satz": "Trotzdem er hat die Stelle angenommen.",
-   "fehler": "er hat",
-   "korrektur": "hat er",
-   "erklaerung": "„trotzdem“ besetzt das Vorfeld, danach kommt das Verb."
+   "satz": "Den Preis hat bekommen schließlich eine junge Lyrikerin aus Graz.",
+   "fehler": "hat bekommen schließlich eine junge Lyrikerin aus Graz",
+   "korrektur": "hat schließlich eine junge Lyrikerin aus Graz bekommen",
+   "erklaerung": "Das Partizip schließt die Klammer am Satzende."
   },
   {
    "id": "u12",
@@ -208,12 +212,12 @@
    "erklaerung": "Pronomen stehen im Mittelfeld vor Nomen."
   },
   {
-   "id": "u13",
+   "id": "n13",
    "typ": "fehler",
-   "satz": "Morgen wir fahren früh los, um den Stau zu vermeiden.",
-   "fehler": "wir fahren",
-   "korrektur": "fahren wir",
-   "erklaerung": "Nach dem Vorfeld (Morgen) steht das finite Verb an Position 2."
+   "satz": "Gestern hat der Minister zu den Vorwürfen sich geäußert.",
+   "fehler": "zu den Vorwürfen sich",
+   "korrektur": "sich zu den Vorwürfen",
+   "erklaerung": "Das Reflexivpronomen steht weit vorn im Mittelfeld, direkt nach dem Subjekt."
   },
   {
    "id": "u14",
@@ -224,76 +228,66 @@
    "erklaerung": "Das trennbare Präfix „ab“ steht am Ende der Klammer."
   },
   {
-   "id": "u15",
-   "typ": "auswahl",
-   "frage": "Nach langem Zögern ___ die Jury dem Debütanten den Preis zugesprochen.",
-   "optionen": [
-    "wird",
-    "wurde",
-    "ist",
-    "hat"
-   ],
-   "richtig": 3,
-   "hinweis": "haben, Präsens",
-   "erklaerung": "Das finite Hilfsverb steht an Position 2, das Partizip am Ende.",
-   "aus": "luecke"
-  },
-  {
-   "id": "u17",
-   "typ": "auswahl",
-   "frage": "Die Kommission ___ vor, die Frist um zwei Monate zu verlängern.",
-   "optionen": [
-    "vorschlägt",
-    "schlägt",
-    "schlägst",
-    "schlagen"
-   ],
-   "richtig": 1,
-   "hinweis": "vorschlagen, Präsens",
-   "erklaerung": "Der Verbstamm steht an Position 2, „vor“ am Klammerende vor dem Infinitivsatz.",
-   "aus": "luecke"
-  },
-  {
-   "id": "u18",
-   "typ": "auswahl",
-   "frage": "Seit der Reform ___ deutlich mehr Studierende ihr Studium in der Regelstudienzeit ab.",
-   "optionen": [
-    "schließen",
-    "geschlossen",
-    "schließt",
-    "abschließen"
-   ],
-   "richtig": 0,
-   "hinweis": "abschließen, Präsens",
-   "erklaerung": "Vorfeld „Seit der Reform“, dann das finite Verb; „ab“ steht am Ende.",
-   "aus": "luecke"
-  },
-  {
-   "id": "u19",
-   "typ": "auswahl",
-   "frage": "Nach den Protesten ___ die Regierung die umstrittene Reform vorerst zurück.",
-   "optionen": [
-    "nehmen",
-    "genommen",
-    "zurücknimmt",
-    "nimmt"
-   ],
-   "richtig": 3,
-   "hinweis": "zurücknehmen, Präsens",
-   "erklaerung": "Klammer: nimmt … zurück.",
-   "aus": "luecke"
-  },
-  {
-   "id": "u20",
+   "id": "n15",
    "typ": "auswahl",
    "frage": "Welcher Satz ist korrekt?",
    "optionen": [
-    "Gestern hat er es ihr gegeben.",
-    "Gestern er hat es ihr gegeben.",
-    "Gestern hat er ihr es gegeben."
+    "Die Leitung hat es den Mitarbeitern verschwiegen.",
+    "Die Leitung hat den Mitarbeitern verschwiegen es.",
+    "Die Leitung hat den Mitarbeitern es verschwiegen."
    ],
    "richtig": 0,
-   "erklaerung": "Verb an Position 2; Pronomen: Akkusativ (es) vor Dativ (ihr)."
+   "erklaerung": "Unbetontes „es“ steht im Mittelfeld vor dem Nomen."
+  },
+  {
+   "id": "n17",
+   "typ": "auswahl",
+   "frage": "Den Ausschlag für die Entscheidung ___ letztlich ein Gutachten aus dem Jahr 2019.",
+   "optionen": [
+    "gaben",
+    "gab",
+    "gegeben",
+    "geben"
+   ],
+   "richtig": 1,
+   "erklaerung": "Subjekt ist „ein Gutachten“ (Singular), „den Ausschlag“ ist Akkusativobjekt im Vorfeld."
+  },
+  {
+   "id": "n18",
+   "typ": "auswahl",
+   "frage": "Wem die Leitung übertragen werden soll, darüber ___ der Stiftungsrat erst im Herbst.",
+   "optionen": [
+    "entscheiden",
+    "entscheidet",
+    "entschieden",
+    "zu entscheiden"
+   ],
+   "richtig": 1,
+   "erklaerung": "Der Nebensatz wird durch „darüber“ wieder aufgenommen; danach das finite Verb an Position 2."
+  },
+  {
+   "id": "n19",
+   "typ": "auswahl",
+   "frage": "In welchem Satz wird nur „pünktlich“ verneint?",
+   "optionen": [
+    "Der Zug ist nicht pünktlich angekommen, aber immerhin angekommen.",
+    "Der Zug ist pünktlich nicht angekommen.",
+    "Nicht der Zug ist pünktlich angekommen."
+   ],
+   "richtig": 0,
+   "erklaerung": "„nicht“ steht direkt vor dem verneinten Element; der Zusatz zeigt die Sondernegation."
+  },
+  {
+   "id": "n20",
+   "typ": "auswahl",
+   "frage": "Welcher Satz ist korrekt?",
+   "optionen": [
+    "Gestern hat sie sich ihm gegenüber erstaunlich offen gezeigt.",
+    "Gestern hat sie ihm gegenüber erstaunlich offen sich gezeigt.",
+    "Gestern sie hat sich ihm gegenüber erstaunlich offen gezeigt."
+   ],
+   "richtig": 0,
+   "erklaerung": "Verb an Position 2, Reflexivpronomen früh im Mittelfeld, Partizip am Ende."
   },
   {
    "id": "u21",
@@ -392,28 +386,26 @@
    "erklaerung": "Umgekehrt: Pronomen zuerst – Er hat es dem Kollegen gegeben."
   },
   {
-   "id": "u28",
+   "id": "n28",
    "typ": "rf",
-   "aussage": "Trennbare Präfixe stehen im Hauptsatz am Ende der Satzklammer: Die Sitzung fängt um neun an.",
+   "aussage": "Ein langer Infinitivsatz steht meist hinter der rechten Satzklammer: Sie hat versucht, den Vertrag fristgerecht zu kündigen.",
    "wert": true,
-   "erklaerung": "Das Präfix bildet die rechte Klammer."
+   "erklaerung": "Ausklammerung (Nachfeld) ist bei Infinitivsätzen die Regel."
   },
   {
-   "id": "u29",
+   "id": "n29",
    "typ": "sortieren",
-   "ausgang": "Ich habe den Artikel gestern im Zug gelesen.",
-   "anweisung": "Stellen Sie „gestern“ ins Vorfeld.",
+   "ausgang": "Der Abgeordnete hat den Vorwurf der Bestechung entschieden zurückgewiesen.",
+   "anweisung": "Stellen Sie „den Vorwurf der Bestechung“ ins Vorfeld.",
    "teile": [
-    "im Zug",
-    "habe",
-    "Gestern",
-    "gelesen",
-    "ich",
-    "den Artikel"
+    "entschieden",
+    "Den Vorwurf der Bestechung",
+    "der Abgeordnete",
+    "hat",
+    "zurückgewiesen"
    ],
-   "loesung": "Gestern habe ich den Artikel im Zug gelesen.",
-   "erklaerung": "Nach dem Vorfeld folgt das finite Verb, dann das Subjekt.",
-   "aus": "umformen"
+   "loesung": "Den Vorwurf der Bestechung hat der Abgeordnete entschieden zurückgewiesen.",
+   "erklaerung": "Ein Satzglied im Vorfeld – auch ein langes Objekt; danach das finite Verb."
   },
   {
    "id": "u30",
@@ -432,20 +424,21 @@
    "aus": "umformen"
   },
   {
-   "id": "u31",
+   "id": "n31",
    "typ": "sortieren",
-   "ausgang": "Die Firma hat das Angebot abgelehnt.",
-   "anweisung": "Verneinen Sie den ganzen Satz mit „nicht“.",
+   "ausgang": "Der Minister ist auf Druck der Opposition zurückgetreten.",
+   "anweisung": "Verneinen Sie nur „auf Druck der Opposition“ und ergänzen Sie „sondern aus eigenem Antrieb“.",
    "teile": [
-    "abgelehnt",
-    "hat",
-    "Die Firma",
+    "auf Druck der Opposition,",
+    "zurückgetreten",
     "nicht",
-    "das Angebot"
+    "Der Minister",
+    "aus eigenem Antrieb",
+    "sondern",
+    "ist"
    ],
-   "loesung": "Die Firma hat das Angebot nicht abgelehnt.",
-   "erklaerung": "Satznegation steht vor dem Klammerende.",
-   "aus": "umformen"
+   "loesung": "Der Minister ist nicht auf Druck der Opposition, sondern aus eigenem Antrieb zurückgetreten.",
+   "erklaerung": "Sondernegation: „nicht“ direkt vor dem verneinten Satzglied, Berichtigung mit „sondern“."
   },
   {
    "id": "u32",

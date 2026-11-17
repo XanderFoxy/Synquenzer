@@ -64,49 +64,43 @@
    "aus": "luecke"
   },
   {
-   "id": "u02",
+   "id": "n02",
    "typ": "auswahl",
-   "frage": "Er verließ den Raum, ___ sich zu verabschieden.",
+   "frage": "Er verließ den Saal, ___ eine Erklärung abgegeben zu haben.",
    "optionen": [
+    "um",
     "ohne",
-    "indem",
     "damit",
-    "dass"
+    "indem"
    ],
-   "richtig": 0,
-   "hinweis": "eine erwartete Handlung bleibt aus",
-   "erklaerung": "ohne … zu: Eine erwartete Handlung findet nicht statt. Auch „(an)statt … zu“ ist möglich: Er tut etwas anderes an ihrer Stelle.",
-   "aus": "luecke"
+   "richtig": 1,
+   "erklaerung": "„ohne … zu“ mit Infinitiv Perfekt: Die erwartete Handlung ist ausgeblieben."
   },
   {
-   "id": "u03",
+   "id": "n03",
    "typ": "auswahl",
-   "frage": "Ich freue mich ___, euch bald wiederzusehen.",
+   "frage": "Er beklagt, von niemandem ___.",
    "optionen": [
-    "daran",
-    "davon",
-    "darauf",
-    "dafür"
+    "gewarnt zu haben",
+    "gewarnt worden zu sein",
+    "gewarnt geworden zu sein",
+    "zu gewarnt sein"
    ],
-   "richtig": 2,
-   "hinweis": "Korrelat",
-   "erklaerung": "sich freuen auf → Korrelat „darauf“ (Vorfreude auf etwas Zukünftiges).",
-   "aus": "luecke"
+   "richtig": 1,
+   "erklaerung": "„von niemandem“ verlangt Passiv; Vorzeitigkeit: Infinitiv Perfekt Passiv (gewarnt worden zu sein)."
   },
   {
-   "id": "u04",
+   "id": "n04",
    "typ": "auswahl",
-   "frage": "Es ist nicht leicht, nach so langer Zeit wieder ___.",
+   "frage": "Sie scheint die Warnung nicht ernst ___ zu haben.",
    "optionen": [
-    "anzufangen",
-    "angefangen",
-    "anfangen",
-    "zu anfangen"
+    "nehmen",
+    "genommen",
+    "zu nehmen",
+    "nahm"
    ],
-   "richtig": 0,
-   "hinweis": "anfangen",
-   "erklaerung": "Trennbares Verb: an-zu-fangen.",
-   "aus": "luecke"
+   "richtig": 1,
+   "erklaerung": "„scheinen“ + Infinitiv Perfekt: ernst genommen zu haben."
   },
   {
    "id": "u05",
@@ -180,30 +174,29 @@
    "aus": "luecke"
   },
   {
-   "id": "u11",
+   "id": "n11",
    "typ": "auswahl",
    "frage": "Welcher Satz ist korrekt?",
    "optionen": [
-    "Ich habe beschlossen, mit dem Rauchen zu aufhören.",
-    "Ich habe beschlossen, mit dem Rauchen aufzuhören haben.",
-    "Ich habe beschlossen, mit dem Rauchen aufzuhören.",
-    "Ich habe beschlossen, mit dem Rauchen aufhören."
+    "Er ist nicht zu überzeugen gewesen.",
+    "Er ist nicht zu überzeugt gewesen.",
+    "Er ist nicht überzeugen zu gewesen."
    ],
-   "richtig": 2,
-   "erklaerung": "„beschließen“ verlangt „zu“; bei trennbaren Verben steht es zwischen Präfix und Stamm."
+   "richtig": 0,
+   "erklaerung": "„sein + zu + Infinitiv“ im Perfekt: ist … zu überzeugen gewesen."
   },
   {
-   "id": "u12",
+   "id": "n12",
    "typ": "auswahl",
-   "frage": "„Ich gebe dir das Geld, ___ du dir ein Ticket kaufen kannst.“",
+   "frage": "Es kommt ___ an, die Quellen sorgfältig zu prüfen.",
    "optionen": [
-    "ohne",
-    "statt",
-    "um",
-    "damit"
+    "daran",
+    "darauf",
+    "es",
+    "dafür"
    ],
-   "richtig": 3,
-   "erklaerung": "Verschiedene Subjekte (ich – du): „damit“ statt „um … zu“."
+   "richtig": 1,
+   "erklaerung": "„ankommen auf“ → Korrelat „darauf“ vor dem Infinitivsatz."
   },
   {
    "id": "u13",
@@ -219,17 +212,16 @@
    "erklaerung": "Infinitiv Perfekt Passiv: Partizip II + worden + zu sein."
   },
   {
-   "id": "u15",
+   "id": "n15",
    "typ": "auswahl",
-   "frage": "„Sie ging an mir vorbei, ohne ___.“",
+   "frage": "Welcher Satz ist korrekt?",
    "optionen": [
-    "mich grüßen",
-    "mich zu grüßen",
-    "zu mich grüßen",
-    "dass mich zu grüßen"
+    "Er behauptet, sie nie getroffen zu haben.",
+    "Er behauptet, sie nie zu haben getroffen.",
+    "Er behauptet, nie sie getroffen zu haben."
    ],
-   "richtig": 1,
-   "erklaerung": "ohne … zu: Objekt vor „zu“ + Infinitiv."
+   "richtig": 0,
+   "erklaerung": "Infinitiv Perfekt: Partizip + zu haben; Pronomen vor „nie“."
   },
   {
    "id": "u16",
@@ -245,20 +237,22 @@
    "erklaerung": "sich gewöhnen an → daran."
   },
   {
-   "id": "u17",
+   "id": "n17",
    "typ": "sortieren",
-   "ausgang": "Er hat sich nicht verabschiedet. Er ist gegangen.",
-   "anweisung": "Verbinden Sie mit „ohne … zu“.",
+   "ausgang": "Er hat die Vorwürfe nicht entkräftet. Er hat sie bloß wiederholt.",
+   "anweisung": "Verbinden Sie mit „statt … zu“ und beginnen Sie mit „Statt“.",
    "teile": [
-    "ist",
-    "Er",
-    "zu verabschieden",
-    "gegangen,",
-    "ohne sich"
+    "er",
+    "die Vorwürfe",
+    "bloß",
+    "zu entkräften,",
+    "sie",
+    "wiederholt",
+    "Statt",
+    "hat"
    ],
-   "loesung": "Er ist gegangen, ohne sich zu verabschieden.",
-   "erklaerung": "Gleiches Subjekt: ohne … zu; das Reflexivpronomen steht vor „zu“.",
-   "aus": "umformen"
+   "loesung": "Statt die Vorwürfe zu entkräften, hat er sie bloß wiederholt.",
+   "erklaerung": "„(an)statt … zu“: Die erwartete Handlung wird durch eine andere ersetzt."
   },
   {
    "id": "u18",
@@ -454,28 +448,28 @@
    "erklaerung": "Infinitiv Perfekt: Partizip II + zu haben am Ende."
   },
   {
-   "id": "u29",
+   "id": "n29",
    "typ": "fehler",
-   "satz": "Ich habe vergessen, dich zu anrufen.",
-   "fehler": "zu anrufen",
-   "korrektur": "anzurufen",
-   "erklaerung": "Trennbares Verb: „zu“ steht zwischen Präfix und Stamm."
+   "satz": "Die Mieter wehren sich dagegen, aus ihren Wohnungen verdrängt zu haben.",
+   "fehler": "verdrängt zu haben",
+   "korrektur": "verdrängt zu werden",
+   "erklaerung": "Die Mieter werden verdrängt → Infinitiv Passiv: verdrängt zu werden."
   },
   {
-   "id": "u30",
+   "id": "n30",
    "typ": "fehler",
-   "satz": "Sie kann sehr gut zu tanzen.",
-   "fehler": "zu tanzen",
-   "korrektur": "tanzen",
-   "erklaerung": "Nach Modalverben steht der Infinitiv ohne „zu“."
+   "satz": "Sie hat ihn das Projekt allein leiten zu lassen.",
+   "fehler": "leiten zu lassen",
+   "korrektur": "leiten lassen",
+   "erklaerung": "„lassen“ steht ohne „zu“; im Perfekt Ersatzinfinitiv: hat … leiten lassen."
   },
   {
-   "id": "u31",
+   "id": "n31",
    "typ": "fehler",
-   "satz": "Ich leihe dir mein Auto, um du pünktlich ankommst.",
-   "fehler": "um",
-   "korrektur": "damit",
-   "erklaerung": "Verschiedene Subjekte und konjugiertes Verb: „damit“."
+   "satz": "Er versprach, die Unterlagen nachzureichen und zu überprüfen sie.",
+   "fehler": "zu überprüfen sie",
+   "korrektur": "sie zu überprüfen",
+   "erklaerung": "Im Infinitivsatz steht „zu + Infinitiv“ am Ende, das Objekt davor."
   },
   {
    "id": "u32",
@@ -493,11 +487,11 @@
    "erklaerung": "Sonst steht „damit“."
   },
   {
-   "id": "u34",
+   "id": "n34",
    "typ": "rf",
-   "aussage": "„Er scheint krank zu sein.“ und „Er lässt sich helfen.“ brauchen beide „zu“.",
-   "wert": false,
-   "erklaerung": "„scheinen“ verlangt „zu“, „lassen“ nicht."
+   "aussage": "Nach verneintem „brauchen“ steht standardsprachlich der Infinitiv mit „zu“: Du brauchst nicht zu kommen.",
+   "wert": true,
+   "erklaerung": "„brauchen“ wird wie ein Modalverb gebraucht, verlangt aber „zu“."
   },
   {
    "id": "u35",
@@ -507,11 +501,11 @@
    "erklaerung": "Sie bedauert, gegangen zu sein. – Erst ging sie, dann bedauert sie es."
   },
   {
-   "id": "u36",
+   "id": "n36",
    "typ": "rf",
-   "aussage": "Bei trennbaren Verben steht „zu“ vor dem ganzen Verb: zu anfangen.",
+   "aussage": "„Er pflegt früh aufzustehen.“ – Nach „pflegen“ im Sinne von „gewöhnlich tun“ steht ein Komma.",
    "wert": false,
-   "erklaerung": "Richtig: anzufangen – „zu“ zwischen Präfix und Stamm."
+   "erklaerung": "„pflegen“, „scheinen“, „drohen“ bilden mit dem Infinitiv eine Einheit: kein Komma."
   }
  ]
 }

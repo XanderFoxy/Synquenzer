@@ -109,19 +109,17 @@
    "aus": "luecke"
   },
   {
-   "id": "u06",
+   "id": "n06",
    "typ": "auswahl",
-   "frage": "Der Dozent empfahl ___ einen Podcast über Sprachgeschichte.",
+   "frage": "Die Satzung räumt ___ Vorsitzenden weitreichende Befugnisse ein. (gemeint ist eine Frau)",
    "optionen": [
-    "wir",
-    "unsere",
-    "unser",
-    "uns"
+    "die",
+    "der",
+    "dem",
+    "des"
    ],
-   "richtig": 3,
-   "hinweis": "wir",
-   "erklaerung": "„jemandem etwas empfehlen“: Person im Dativ – uns.",
-   "aus": "luecke"
+   "richtig": 1,
+   "erklaerung": "„jemandem etwas einräumen“ → Dativ; feminin: der Vorsitzenden."
   },
   {
    "id": "u07",
@@ -195,18 +193,17 @@
    "aus": "luecke"
   },
   {
-   "id": "u12",
+   "id": "n12",
    "typ": "auswahl",
-   "frage": "___ Interesse an historischen Romanen ist ungebrochen.",
+   "frage": "___ Ressentiment gegen Fremde lässt sich mit Statistiken allein nicht widerlegen.",
    "optionen": [
-    "Das",
     "Der",
     "Die",
+    "Das",
     "Den"
    ],
-   "richtig": 0,
-   "erklaerung": "„das Interesse“ ist neutral, obwohl es auf -e endet.",
-   "aus": "luecke"
+   "richtig": 2,
+   "erklaerung": "„das Ressentiment“ (aus dem Französischen) ist neutral."
   },
   {
    "id": "u13",
@@ -364,32 +361,30 @@
    "aus": "luecke"
   },
   {
-   "id": "u24",
+   "id": "n24",
    "typ": "auswahl",
-   "frage": "Wir gratulieren ___ Preisträgerin herzlich zu dieser Auszeichnung.",
+   "frage": "Nach der Affäre wurde der Minister ___ Amtes enthoben.",
    "optionen": [
-    "die",
-    "den",
-    "das",
-    "der"
+    "seinem",
+    "seines",
+    "seinen",
+    "sein"
    ],
-   "richtig": 3,
-   "erklaerung": "„gratulieren“ + Dativ, feminin: der.",
-   "aus": "luecke"
+   "richtig": 1,
+   "erklaerung": "„jemanden eines Amtes entheben“ – gehobenes Verb mit Genitivobjekt."
   },
   {
-   "id": "u25",
+   "id": "n25",
    "typ": "auswahl",
-   "frage": "Die Ärztin riet ___ Patienten dringend zu mehr Bewegung.",
+   "frage": "Die Ausstellung verhalf ___ fast vergessenen Malerin zu später Anerkennung.",
    "optionen": [
     "die",
-    "das",
-    "dem",
-    "der"
+    "des",
+    "der",
+    "den"
    ],
    "richtig": 2,
-   "erklaerung": "„raten“ + Dativ: dem Patienten (n-Deklination).",
-   "aus": "luecke"
+   "erklaerung": "„jemandem zu etwas verhelfen“ → Dativ: der Malerin."
   },
   {
    "id": "u26",
@@ -510,28 +505,30 @@
    "erklaerung": "Nomen auf -ik sind feminin: die Thematik, die Statistik, die Kritik."
   },
   {
-   "id": "u35",
+   "id": "n35",
    "typ": "auswahl",
-   "frage": "„Mein Nachbar hat ___ beim Umzug geholfen.“",
+   "frage": "Welches Nomen ist neutral?",
    "optionen": [
-    "mich",
-    "mir",
-    "meiner"
+    "Habitus",
+    "Prozedere",
+    "Fauxpas",
+    "Ägide"
    ],
    "richtig": 1,
-   "erklaerung": "„helfen“ + Dativ: mir."
+   "erklaerung": "das Prozedere; aber der Habitus, der Fauxpas, die Ägide."
   },
   {
-   "id": "u36",
+   "id": "n36",
    "typ": "auswahl",
-   "frage": "„Der Erfolg gibt ___ recht.“ (der Autorin)",
+   "frage": "Welches Nomen ist maskulin?",
    "optionen": [
-    "ihr",
-    "sie",
-    "ihre"
+    "Faible",
+    "Ressentiment",
+    "Duktus",
+    "Akribie"
    ],
-   "richtig": 0,
-   "erklaerung": "„jemandem recht geben“: Dativ – ihr."
+   "richtig": 2,
+   "erklaerung": "der Duktus; aber das Faible, das Ressentiment, die Akribie."
   },
   {
    "id": "u37",
@@ -547,16 +544,17 @@
    "erklaerung": "der Konflikt; das Labor, das Indiz, das Gremium."
   },
   {
-   "id": "u38",
+   "id": "n38",
    "typ": "auswahl",
-   "frage": "„Die Jury verlieh ___ den Hauptpreis.“",
+   "frage": "Die Kritikerin attestierte ___ Roman eine bemerkenswerte sprachliche Präzision.",
    "optionen": [
-    "den Regisseur",
-    "dem Regisseur",
-    "des Regisseurs"
+    "den",
+    "des",
+    "dem",
+    "der"
    ],
-   "richtig": 1,
-   "erklaerung": "„jemandem etwas verleihen“: Person im Dativ."
+   "richtig": 2,
+   "erklaerung": "„jemandem/einer Sache etwas attestieren“ → Dativ: dem Roman."
   },
   {
    "id": "u39",
@@ -572,16 +570,17 @@
    "erklaerung": "das Genre; die Methode, der Prozess, der Aspekt."
   },
   {
-   "id": "u40",
+   "id": "n40",
    "typ": "auswahl",
-   "frage": "„Wir haben uns sehr über ___ Ergebnis gefreut.“",
+   "frage": "Die Kommission enthielt sich ___ Urteils über die Verantwortlichen.",
    "optionen": [
-    "den",
-    "das",
-    "dem"
+    "einem",
+    "eines",
+    "einen",
+    "ein"
    ],
    "richtig": 1,
-   "erklaerung": "„sich freuen über“ + Akkusativ; „das Ergebnis“ ist neutral."
+   "erklaerung": "„sich einer Sache enthalten“ verlangt den Genitiv."
   },
   {
    "id": "u41",
@@ -624,12 +623,12 @@
    "erklaerung": "„das Buch“ → das Lehrbuch."
   },
   {
-   "id": "u46",
+   "id": "n46",
    "typ": "fehler",
-   "satz": "Der Ergebnis der Umfrage hat alle Beteiligten überrascht.",
-   "fehler": "Der",
-   "korrektur": "Das",
-   "erklaerung": "„das Ergebnis“ ist neutral."
+   "satz": "Der Fauxpas des Botschafters war so peinlich, dass sie tagelang die Schlagzeilen beherrschte.",
+   "fehler": "sie",
+   "korrektur": "er",
+   "erklaerung": "„der Fauxpas“ ist maskulin → das Pronomen heißt „er“."
   },
   {
    "id": "u47",
@@ -687,27 +686,35 @@
    "erklaerung": "Die Endung zeigt das Genus: der Prozess, das Verfahren, die Methode, Plural die Indizien."
   },
   {
-   "id": "u52",
+   "id": "n52",
    "typ": "zuordnen",
    "paare": [
     [
-     "die App",
-     "Ich nutze sie täglich."
+     "der Gehalt",
+     "Inhalt, Substanz"
     ],
     [
-     "der Podcast",
-     "Ich höre ihn täglich."
+     "das Gehalt",
+     "Lohn, Einkommen"
     ],
     [
-     "das Lehrbuch",
-     "Ich lese es täglich."
+     "der Erbe",
+     "Person, die etwas erbt"
     ],
     [
-     "die Kollegin",
-     "Ich schreibe ihr täglich."
+     "das Erbe",
+     "Hinterlassenschaft"
+    ],
+    [
+     "der Bund",
+     "Bündnis, Vereinigung"
+    ],
+    [
+     "das Bund",
+     "Gebinde, z. B. ein Bund Petersilie"
     ]
    ],
-   "erklaerung": "Pronomen nach Genus und Kasus: sie (Akk. fem.), ihn (Akk. mask.), es (Akk. neutr.), ihr (Dat. fem.)."
+   "erklaerung": "Gleiche Form, anderes Genus, andere Bedeutung."
   },
   {
    "id": "u53",
@@ -785,11 +792,11 @@
    "erklaerung": "Beide enden auf -nis, aber: das Ergebnis (neutral), die Erkenntnis (feminin)."
   },
   {
-   "id": "u58",
+   "id": "n58",
    "typ": "rf",
-   "aussage": "In „Er hat mir die Videos gegeben“ steht die Person im Akkusativ.",
-   "wert": false,
-   "erklaerung": "„mir“ ist Dativ; die Sache (die Videos) steht im Akkusativ."
+   "aussage": "In „Er wurde des Landes verwiesen“ steht „des Landes“ im Genitiv, weil „jemanden eines Ortes verweisen“ ein Genitivobjekt verlangt.",
+   "wert": true,
+   "erklaerung": "Gehobene Wendung mit Genitiv (ebenso: jemanden des Saales verweisen)."
   },
   {
    "id": "u59",
@@ -844,20 +851,18 @@
    "aus": "umformen"
   },
   {
-   "id": "u62",
+   "id": "n62",
    "typ": "sortieren",
-   "ausgang": "Der Dozent gibt den Studierenden jede Woche neue Texte.",
-   "anweisung": "Ersetzen Sie „den Studierenden“ durch ein Pronomen.",
+   "ausgang": "Man trug ihr den Vorsitz an.",
+   "anweisung": "Formen Sie ins Passiv um und beginnen Sie mit „Ihr“.",
    "teile": [
-    "Der Dozent",
-    "neue Texte",
-    "ihnen",
-    "jede Woche",
-    "gibt"
+    "angetragen",
+    "wurde",
+    "der Vorsitz",
+    "Ihr"
    ],
-   "loesung": "Der Dozent gibt ihnen jede Woche neue Texte.",
-   "erklaerung": "Dativ Plural des Personalpronomens: ihnen.",
-   "aus": "umformen"
+   "loesung": "Ihr wurde der Vorsitz angetragen.",
+   "erklaerung": "Im Passiv bleibt das Dativobjekt im Dativ (ihr); das Akkusativobjekt wird Subjekt (der Vorsitz)."
   }
  ]
 }

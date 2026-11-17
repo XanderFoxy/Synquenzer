@@ -48,46 +48,43 @@
  ],
  "uebungen": [
   {
-   "id": "u01",
+   "id": "n01",
    "typ": "auswahl",
-   "frage": "Das Projekt ist ___ teuer, aber es wird sich langfristig lohnen.",
+   "frage": "Die Reform ist ___ gescheitert, als sie die Betroffenen nicht einbezogen hat.",
    "optionen": [
-    "entweder",
-    "sowohl",
-    "zwar",
-    "weder"
+    "sofern",
+    "insofern",
+    "soweit",
+    "sodass"
+   ],
+   "richtig": 1,
+   "erklaerung": "„insofern …, als“ schränkt eine Aussage auf einen Gesichtspunkt ein."
+  },
+  {
+   "id": "n02",
+   "typ": "auswahl",
+   "frage": "___ sehr die Opposition auch protestierte, die Mehrheit stand.",
+   "optionen": [
+    "Je",
+    "Obwohl",
+    "So",
+    "Als"
    ],
    "richtig": 2,
-   "erklaerung": "„zwar … aber“: Man räumt etwas ein und setzt etwas dagegen.",
-   "aus": "luecke"
+   "erklaerung": "Konzessiv: „so sehr … auch“; der Hauptsatz folgt mit normaler Wortstellung."
   },
   {
-   "id": "u02",
+   "id": "n03",
    "typ": "auswahl",
-   "frage": "Die Studie überzeugt ___ durch ihre Methode als auch durch ihre klare Sprache.",
+   "frage": "Das Gutachten ist ___ widersprüchlich, ___ es kaum verwertbar ist.",
    "optionen": [
-    "weder",
-    "entweder",
-    "zwar",
-    "sowohl"
+    "so … wie",
+    "derart … dass",
+    "zu … als",
+    "je … desto"
    ],
-   "richtig": 3,
-   "erklaerung": "„sowohl … als auch“ = beides.",
-   "aus": "luecke"
-  },
-  {
-   "id": "u03",
-   "typ": "auswahl",
-   "frage": "Der Roman ist ___ spannend noch gut geschrieben.",
-   "optionen": [
-    "weder",
-    "zwar",
-    "sowohl",
-    "entweder"
-   ],
-   "richtig": 0,
-   "erklaerung": "„weder … noch“ = nicht das eine und nicht das andere.",
-   "aus": "luecke"
+   "richtig": 1,
+   "erklaerung": "Folge mit Gradangabe: „derart …, dass“."
   },
   {
    "id": "u04",
@@ -104,19 +101,17 @@
    "aus": "luecke"
   },
   {
-   "id": "u05",
+   "id": "n05",
    "typ": "auswahl",
-   "frage": "Die Messwerte waren unvollständig; ___ ließ sich die Hypothese nicht überprüfen.",
+   "frage": "Die Zahlen sind beeindruckend, ___ sie nur einen Teil der Wahrheit zeigen.",
    "optionen": [
-    "deshalb",
-    "weil",
-    "trotzdem",
-    "obwohl"
+    "zumal",
+    "sofern",
+    "wenngleich",
+    "sodass"
    ],
-   "richtig": 0,
-   "hinweis": "Konnektor: Folge",
-   "erklaerung": "Konjunktionaladverb im Vorfeld, danach das Verb (ließ).",
-   "aus": "luecke"
+   "richtig": 2,
+   "erklaerung": "„wenngleich“ (gehoben) = obwohl."
   },
   {
    "id": "u06",
@@ -134,19 +129,17 @@
    "aus": "luecke"
   },
   {
-   "id": "u07",
+   "id": "n07",
    "typ": "auswahl",
-   "frage": "Er gab sich gelassen, ___ er innerlich vor Wut kochte.",
+   "frage": "___ man der Studie glauben darf, ist der Effekt größer als vermutet.",
    "optionen": [
-    "obwohl",
-    "sodass",
-    "trotzdem",
-    "weil"
+    "Sodass",
+    "Sofern",
+    "Indem",
+    "Zumal"
    ],
-   "richtig": 0,
-   "hinweis": "Konnektor: Gegengrund",
-   "erklaerung": "Konzessiver Nebensatz: Verb am Ende.",
-   "aus": "luecke"
+   "richtig": 1,
+   "erklaerung": "„sofern“ = vorausgesetzt, dass."
   },
   {
    "id": "u08",
@@ -208,55 +201,54 @@
    "aus": "luecke"
   },
   {
-   "id": "u12",
+   "id": "n12",
    "typ": "auswahl",
-   "frage": "Sie war völlig erschöpft, ___ arbeitete sie bis Mitternacht weiter.",
+   "frage": "Er beteuerte seine Unschuld, ___ alle Indizien gegen ihn sprachen.",
    "optionen": [
-    "trotzdem",
-    "deshalb",
-    "obwohl",
-    "weil"
+    "zumal",
+    "obgleich",
+    "sofern",
+    "indem"
    ],
-   "richtig": 0,
-   "hinweis": "Konnektor: Gegengrund",
-   "erklaerung": "Konjunktionaladverb im Vorfeld des zweiten Hauptsatzes, danach das Verb.",
-   "aus": "luecke"
+   "richtig": 1,
+   "erklaerung": "„obgleich“ (gehoben) = obwohl."
   },
   {
-   "id": "u14",
+   "id": "n14",
    "typ": "auswahl",
    "frage": "Welcher Satz ist korrekt?",
    "optionen": [
-    "Sie blieb zu Hause, denn sie erkältet war.",
-    "Sie blieb zu Hause, denn sie war erkältet.",
-    "Sie blieb zu Hause, denn war sie erkältet."
+    "Er lehnte ab, zumal ihm die Zeit fehlte.",
+    "Er lehnte ab, zumal fehlte ihm die Zeit.",
+    "Er lehnte ab, zumal die Zeit fehlte ihm."
    ],
-   "richtig": 1,
-   "erklaerung": "„denn“ steht auf Position 0, danach normale Hauptsatzstellung."
+   "richtig": 0,
+   "erklaerung": "„zumal“ ist Subjunktion: Verb am Ende."
   },
   {
-   "id": "u15",
+   "id": "n15",
    "typ": "auswahl",
    "frage": "Welcher Satz ist korrekt?",
    "optionen": [
-    "Die Kosten sind hoch, deshalb wir verschieben das Projekt.",
-    "Die Kosten sind hoch, deshalb verschieben wir das Projekt.",
-    "Die Kosten sind hoch, deshalb wir das Projekt verschieben."
-   ],
-   "richtig": 1,
-   "erklaerung": "„deshalb“ besetzt das Vorfeld: Verb an Position 2."
-  },
-  {
-   "id": "u16",
-   "typ": "auswahl",
-   "frage": "„Er hat nicht angerufen, ___ eine lange E-Mail geschrieben.“",
-   "optionen": [
-    "sondern",
-    "doch",
-    "aber"
+    "Die Mittel sind erschöpft, mithin ist das Projekt gescheitert.",
+    "Die Mittel sind erschöpft, mithin das Projekt ist gescheitert.",
+    "Die Mittel sind erschöpft, mithin das Projekt gescheitert ist."
    ],
    "richtig": 0,
-   "erklaerung": "Nach einer Verneinung berichtigt „sondern“."
+   "erklaerung": "„mithin“ (gehoben = folglich) ist ein Adverb im Vorfeld: Verb direkt danach."
+  },
+  {
+   "id": "n16",
+   "typ": "auswahl",
+   "frage": "Die Studie widerlegt die These nicht; ___ stützt sie sie in wesentlichen Punkten.",
+   "optionen": [
+    "hingegen",
+    "vielmehr",
+    "indessen",
+    "zumal"
+   ],
+   "richtig": 1,
+   "erklaerung": "„vielmehr“ berichtigt eine vorangehende Verneinung."
   },
   {
    "id": "u17",
@@ -271,47 +263,48 @@
    "erklaerung": "„folglich“ = Folge, „indem“ = Mittel."
   },
   {
-   "id": "u18",
+   "id": "n18",
    "typ": "auswahl",
-   "frage": "„___ die Datenlage dünn ist, lassen sich vorsichtige Schlüsse ziehen.“",
+   "frage": "Er gab keine Erklärung ab, ___ dass er die Vorwürfe pauschal zurückwies.",
    "optionen": [
-    "Obwohl",
-    "Damit",
-    "Weil"
+    "statt",
+    "ohne",
+    "außer",
+    "als"
    ],
-   "richtig": 0,
-   "erklaerung": "Gegengrund: Trotz dünner Daten sind Schlüsse möglich."
+   "richtig": 2,
+   "erklaerung": "„außer dass“ = abgesehen davon, dass."
   },
   {
-   "id": "u19",
+   "id": "n19",
    "typ": "zuordnen",
    "paare": [
     [
-     "zwar",
-     "aber"
+     "einerseits",
+     "andererseits"
     ],
     [
-     "weder",
-     "noch"
+     "wenn auch",
+     "so doch"
     ],
     [
-     "sowohl",
-     "als auch"
+     "je nachdem",
+     "ob"
     ],
     [
-     "entweder",
-     "oder"
-    ],
-    [
-     "je",
-     "desto"
+     "zu (+ Adjektiv)",
+     "als dass"
     ],
     [
      "nicht nur",
      "sondern auch"
+    ],
+    [
+     "so sehr",
+     "auch"
     ]
    ],
-   "erklaerung": "Zweiteilige Konnektoren gehören fest zusammen."
+   "erklaerung": "Zweiteilige Konnektoren (C1/C2)."
   },
   {
    "id": "u20",
@@ -365,24 +358,24 @@
    "erklaerung": "„zwar“ im Vorfeld, Verb an Position 2; nach „aber“ (Position 0) normale Hauptsatzstellung."
   },
   {
-   "id": "u22",
+   "id": "n22",
    "typ": "sortieren",
    "teile": [
-    "trotzdem",
-    "die Wahl",
+    "die Wogen",
+    "nicht",
+    "bemühte,",
+    "glätten",
+    "ließen sich",
     "sie",
-    "verloren,",
-    "fest",
-    "hat",
-    "Die Partei",
-    "an ihrem Kurs",
-    "hält"
+    "So sehr",
+    "auch",
+    "sich"
    ],
-   "loesung": "Die Partei hat die Wahl verloren, trotzdem hält sie an ihrem Kurs fest.",
+   "loesung": "So sehr sie sich auch bemühte, die Wogen ließen sich nicht glätten.",
    "loesungen": [
-    "Die Partei hat die Wahl verloren, sie hält trotzdem an ihrem Kurs fest."
+    "So sehr sie sich auch bemühte, ließen sich die Wogen nicht glätten."
    ],
-   "erklaerung": "„trotzdem“ im Vorfeld: Verb direkt danach; im Mittelfeld ist es ebenfalls möglich."
+   "erklaerung": "„so sehr … auch“ steht vor dem Hauptsatz, der seine normale Wortstellung behält."
   },
   {
    "id": "u23",
@@ -425,20 +418,20 @@
    "erklaerung": "„damit“ leitet einen Zwecksatz ein, das Verb steht am Ende."
   },
   {
-   "id": "u25",
+   "id": "n25",
    "typ": "fehler",
-   "satz": "Sie kam nicht zur Sitzung, weil sie war krank.",
-   "fehler": "sie war krank",
-   "korrektur": "sie krank war",
-   "erklaerung": "Nach „weil“ steht das finite Verb am Ende."
+   "satz": "Die Sitzung wurde vertagt, zumal fehlten wichtige Unterlagen.",
+   "fehler": "fehlten wichtige Unterlagen",
+   "korrektur": "wichtige Unterlagen fehlten",
+   "erklaerung": "„zumal“ leitet einen Nebensatz ein: Verb am Ende."
   },
   {
-   "id": "u26",
+   "id": "n26",
    "typ": "fehler",
-   "satz": "Der Plan ist teuer, deshalb wir müssen sparen.",
-   "fehler": "wir müssen",
-   "korrektur": "müssen wir",
-   "erklaerung": "„deshalb“ besetzt das Vorfeld: Verb an Position 2."
+   "satz": "Die Kosten sind gestiegen, wohingegen die Einnahmen sind gesunken.",
+   "fehler": "die Einnahmen sind gesunken",
+   "korrektur": "die Einnahmen gesunken sind",
+   "erklaerung": "„wohingegen“ ist Subjunktion: finites Verb am Ende."
   },
   {
    "id": "u28",
@@ -465,18 +458,18 @@
    "erklaerung": "Nach einer Verneinung berichtigt „sondern“."
   },
   {
-   "id": "u31",
+   "id": "n31",
    "typ": "rf",
-   "aussage": "Nach „denn“ steht das Verb wie im Hauptsatz an Position 2.",
+   "aussage": "„mithin“ ist ein Adverb: Es kann allein das Vorfeld besetzen, danach folgt das finite Verb.",
    "wert": true,
-   "erklaerung": "„denn“ zählt nicht als Satzglied (Position 0)."
+   "erklaerung": "Mithin ist der Antrag abgelehnt."
   },
   {
-   "id": "u32",
+   "id": "n32",
    "typ": "rf",
-   "aussage": "„trotzdem“ ist eine Subjunktion; das Verb steht danach am Ende.",
-   "wert": false,
-   "erklaerung": "„trotzdem“ ist ein Konjunktionaladverb: Trotzdem hält sie an ihrem Kurs fest."
+   "aussage": "„wenngleich“ ist eine Subjunktion: Das Verb steht am Ende des Nebensatzes.",
+   "wert": true,
+   "erklaerung": "…, wenngleich die Mittel knapp sind."
   },
   {
    "id": "u33",
@@ -509,46 +502,40 @@
    "aus": "umformen"
   },
   {
-   "id": "u35",
+   "id": "n35",
    "typ": "sortieren",
-   "ausgang": "Weil die Nachfrage gestiegen ist, erhöht der Verlag die Auflage.",
-   "anweisung": "Verwenden Sie „deshalb“.",
+   "ausgang": "Die Nachfrage brach ein. Der Verlag stellte die Reihe ein.",
+   "anweisung": "Verbinden Sie die Sätze mit „infolgedessen“.",
    "teile": [
-    "Die Nachfrage",
+    "ein",
     "der Verlag",
-    "gestiegen,",
-    "die Auflage",
-    "erhöht",
-    "deshalb",
-    "ist"
+    "ein,",
+    "infolgedessen",
+    "stellte",
+    "Die Nachfrage",
+    "die Reihe",
+    "brach"
    ],
-   "loesung": "Die Nachfrage ist gestiegen, deshalb erhöht der Verlag die Auflage.",
-   "loesungen": [
-    "Die Nachfrage ist gestiegen, der Verlag erhöht deshalb die Auflage."
-   ],
-   "erklaerung": "„deshalb“ besetzt das Vorfeld (Verb danach) oder steht im Mittelfeld.",
-   "aus": "umformen"
+   "loesung": "Die Nachfrage brach ein, infolgedessen stellte der Verlag die Reihe ein.",
+   "erklaerung": "„infolgedessen“ ist ein Adverb: Verb direkt danach."
   },
   {
-   "id": "u36",
+   "id": "n36",
    "typ": "sortieren",
-   "ausgang": "Er spricht Englisch. Er spricht auch Französisch.",
-   "anweisung": "Verbinden Sie die Sätze mit „sowohl … als auch“.",
+   "ausgang": "Der Text ist sehr schwierig. Man kann ihn nicht ohne Vorbereitung lesen.",
+   "anweisung": "Verbinden Sie die Sätze mit „zu …, als dass“.",
    "teile": [
-    "spricht",
-    "Englisch",
-    "als",
-    "Er",
-    "Französisch",
-    "sowohl",
-    "auch"
+    "ohne Vorbereitung",
+    "zu schwierig,",
+    "Der Text",
+    "als dass",
+    "man",
+    "lesen könnte",
+    "ist",
+    "ihn"
    ],
-   "loesung": "Er spricht sowohl Englisch als auch Französisch.",
-   "loesungen": [
-    "Er spricht sowohl Französisch als auch Englisch."
-   ],
-   "erklaerung": "„sowohl … als auch“ verbindet hier zwei Objekte.",
-   "aus": "umformen"
+   "loesung": "Der Text ist zu schwierig, als dass man ihn ohne Vorbereitung lesen könnte.",
+   "erklaerung": "„zu …, als dass“ + Konjunktiv II: Die Folge tritt nicht ein."
   }
  ]
 }

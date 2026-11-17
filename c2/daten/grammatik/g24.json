@@ -156,18 +156,17 @@
    "aus": "luecke"
   },
   {
-   "id": "u08",
+   "id": "n08",
    "typ": "auswahl",
-   "frage": "___ Freundschaft zwischen den beiden hielt ein Leben lang.",
+   "frage": "Welche Bildung ist korrekt?",
    "optionen": [
-    "Die",
-    "Den",
-    "Das",
-    "Der"
+    "die Regierungserklärung",
+    "die Regierungerklärung",
+    "die Regierungenerklärung",
+    "die Regierungserklärungs"
    ],
    "richtig": 0,
-   "erklaerung": "Nomen auf -schaft sind feminin.",
-   "aus": "luecke"
+   "erklaerung": "Nach -ung steht im Kompositum das Fugen-s."
   },
   {
    "id": "u09",
@@ -184,19 +183,17 @@
    "aus": "luecke"
   },
   {
-   "id": "u10",
+   "id": "n10",
    "typ": "auswahl",
-   "frage": "Die beiden ___ wurden ausführlich diskutiert.",
+   "frage": "Wie lautet der Plural von „das Genus“?",
    "optionen": [
-    "Thema",
-    "Themen",
-    "Themes",
-    "Themas"
+    "die Genusse",
+    "die Genera",
+    "die Genüsse",
+    "die Genen"
    ],
    "richtig": 1,
-   "hinweis": "das Thema, Plural",
-   "erklaerung": "Thema → Themen.",
-   "aus": "luecke"
+   "erklaerung": "Lateinischer Plural: die Genera."
   },
   {
    "id": "u11",
@@ -225,16 +222,17 @@
    "erklaerung": "Visum → Visa (auch: Visen)."
   },
   {
-   "id": "u13",
+   "id": "n13",
    "typ": "auswahl",
-   "frage": "Welches Genus hat „Bildungssystem“?",
+   "frage": "Welche Vorsilbe bildet das Gegenteil von „legitim“?",
    "optionen": [
-    "das",
-    "die",
-    "der"
+    "un-",
+    "il-",
+    "in-",
+    "a-"
    ],
-   "richtig": 0,
-   "erklaerung": "Das Grundwort „System“ ist neutral: das Bildungssystem."
+   "richtig": 1,
+   "erklaerung": "Vor l wird lateinisch „in-“ zu „il-“: illegitim (ebenso illegal)."
   },
   {
    "id": "u14",
@@ -319,18 +317,17 @@
    "aus": "umformen"
   },
   {
-   "id": "u20",
+   "id": "n20",
    "typ": "auswahl",
-   "frage": "die Planung der Stadt – Bilden Sie ein Kompositum mit Artikel.",
+   "frage": "Welches Adjektiv bedeutet „nicht rückgängig zu machen, nicht umkehrbar“?",
    "optionen": [
-    "die Planungsstadt",
-    "die Stadtsplanung",
-    "die Stadtplanung",
-    "das Stadtplanung"
+    "irrelevant",
+    "irreversibel",
+    "irritabel",
+    "irrational"
    ],
-   "richtig": 2,
-   "erklaerung": "Das Grundwort „Planung“ bestimmt das Genus.",
-   "aus": "umformen"
+   "richtig": 1,
+   "erklaerung": "irreversibel (lat. revertere = umkehren)."
   },
   {
    "id": "u21",
@@ -528,11 +525,11 @@
    "erklaerung": "Das Grundwort steht am Ende."
   },
   {
-   "id": "u35",
+   "id": "n35",
    "typ": "rf",
-   "aussage": "Nomen auf -ung, -heit, -keit und -schaft sind feminin.",
+   "aussage": "Bei Verben auf -eln fällt in der Ableitung auf -ung das e meist aus: wandeln → die Wandlung.",
    "wert": true,
-   "erklaerung": "die Zeitung, die Freiheit, die Möglichkeit, die Gesellschaft."
+   "erklaerung": "Ebenso: handeln → die Handlung, verwechseln → die Verwechslung."
   },
   {
    "id": "u36",

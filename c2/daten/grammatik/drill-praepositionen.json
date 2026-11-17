@@ -84,74 +84,69 @@
    "aus": "luecke"
   },
   {
-   "id": "u05",
+   "id": "n05",
    "typ": "auswahl",
-   "frage": "Wie sagt man das ___ Deutsch?",
+   "frage": "Die Behörde berief sich ___ eine Verordnung aus dem Jahr 1952.",
    "optionen": [
-    "auf",
     "an",
-    "für",
-    "über"
+    "zu",
+    "auf",
+    "für"
+   ],
+   "richtig": 2,
+   "erklaerung": "„sich berufen auf“ + Akkusativ."
+  },
+  {
+   "id": "n06",
+   "typ": "auswahl",
+   "frage": "Die Bevölkerung lehnte sich ___ die Willkür der Obrigkeit auf.",
+   "optionen": [
+    "gegen",
+    "über",
+    "an",
+    "vor"
    ],
    "richtig": 0,
-   "erklaerung": "auf Deutsch (in einer Sprache sprechen oder schreiben).",
-   "aus": "luecke"
+   "erklaerung": "„sich auflehnen gegen“."
   },
   {
-   "id": "u06",
+   "id": "n07",
    "typ": "auswahl",
-   "frage": "___ Deutschen gibt es drei grammatische Geschlechter.",
+   "frage": "Viele Leser nahmen Anstoß ___ der derben Sprache des Romans.",
    "optionen": [
-    "Am",
-    "Beim",
-    "Zum",
-    "Im"
-   ],
-   "richtig": 3,
-   "erklaerung": "im Deutschen = in der deutschen Sprache (als System).",
-   "aus": "luecke"
-  },
-  {
-   "id": "u07",
-   "typ": "auswahl",
-   "frage": "Sie ist zu Recht stolz ___ ihre Fortschritte.",
-   "optionen": [
-    "auf",
-    "für",
     "über",
-    "an"
-   ],
-   "richtig": 0,
-   "erklaerung": "stolz auf + Akkusativ.",
-   "aus": "luecke"
-  },
-  {
-   "id": "u08",
-   "typ": "auswahl",
-   "frage": "Er ist ___ die Organisation des Kongresses verantwortlich.",
-   "optionen": [
+    "an",
     "auf",
-    "für",
-    "über",
-    "an"
+    "für"
    ],
    "richtig": 1,
-   "erklaerung": "verantwortlich für + Akkusativ.",
-   "aus": "luecke"
+   "erklaerung": "„Anstoß nehmen an“ + Dativ."
   },
   {
-   "id": "u09",
+   "id": "n08",
    "typ": "auswahl",
-   "frage": "Der Erfolg hängt stark ___ einer guten Vorbereitung ab.",
+   "frage": "Der Erfolg der Reform steht und fällt ___ der Bereitschaft der Länder mitzuziehen.",
    "optionen": [
+    "an",
     "von",
-    "über",
-    "aus",
-    "an"
+    "mit",
+    "bei"
    ],
-   "richtig": 0,
-   "erklaerung": "abhängen von + Dativ.",
-   "aus": "luecke"
+   "richtig": 2,
+   "erklaerung": "„mit etwas stehen und fallen“ = vollständig davon abhängen."
+  },
+  {
+   "id": "n09",
+   "typ": "auswahl",
+   "frage": "Bevor sie unterschrieb, vergewisserte sie sich ___ Zustimmung des Vorstands.",
+   "optionen": [
+    "über die",
+    "von der",
+    "der",
+    "an der"
+   ],
+   "richtig": 2,
+   "erklaerung": "„sich einer Sache vergewissern“ verlangt den Genitiv, keine Präposition."
   },
   {
    "id": "u10",
@@ -210,19 +205,17 @@
    "aus": "luecke"
   },
   {
-   "id": "u14",
+   "id": "n14",
    "typ": "auswahl",
-   "frage": "Sie hat sich ___ eine Stelle als Übersetzerin beworben.",
+   "frage": "Die Kanzlerin sah sich ___ einer Welle der Kritik konfrontiert.",
    "optionen": [
-    "um",
-    "an",
-    "über",
-    "nach"
+    "von",
+    "mit",
+    "vor",
+    "gegen"
    ],
-   "richtig": 0,
-   "erklaerung": "sich bewerben um + Akkusativ (die Stelle), bei + Dativ (die Firma).",
-   "grundlage": true,
-   "aus": "luecke"
+   "richtig": 1,
+   "erklaerung": "„sich mit etwas konfrontiert sehen“."
   },
   {
    "id": "u15",
@@ -253,18 +246,17 @@
    "aus": "luecke"
   },
   {
-   "id": "u17",
+   "id": "n17",
    "typ": "auswahl",
-   "frage": "Die Ausstellung besteht ___ drei Teilen.",
+   "frage": "Der Verdacht beruht ___ einer anonymen Aussage.",
    "optionen": [
-    "von",
+    "an",
     "aus",
-    "mit",
-    "durch"
+    "auf",
+    "in"
    ],
-   "richtig": 1,
-   "erklaerung": "bestehen aus = sich zusammensetzen aus; bestehen auf = etwas fordern.",
-   "aus": "luecke"
+   "richtig": 2,
+   "erklaerung": "„beruhen auf“ + Dativ."
   },
   {
    "id": "u18",
@@ -309,19 +301,17 @@
    "aus": "luecke"
   },
   {
-   "id": "u21",
+   "id": "n21",
    "typ": "auswahl",
-   "frage": "Das war keine Absicht, das ist mir ___ Versehen passiert.",
+   "frage": "Der Altkanzler erfreut sich nach wie vor ___ Gesundheit.",
    "optionen": [
-    "aus",
-    "im",
-    "mit",
-    "von"
+    "bester",
+    "beste",
+    "besten",
+    "an bester"
    ],
    "richtig": 0,
-   "erklaerung": "aus Versehen = unabsichtlich; mit Absicht = absichtlich.",
-   "grundlage": true,
-   "aus": "luecke"
+   "erklaerung": "„sich einer Sache erfreuen“ + Genitiv; ohne Artikel stark: bester Gesundheit."
   },
   {
    "id": "u22",
@@ -367,116 +357,108 @@
    "aus": "luecke"
   },
   {
-   "id": "u25",
+   "id": "n25",
    "typ": "auswahl",
-   "frage": "Die Bibliothek ist ___ Montag bis Samstag geöffnet.",
+   "frage": "Er fahndete jahrelang ___ dem verschollenen Manuskript.",
    "optionen": [
-    "von",
-    "an",
-    "aus",
-    "über"
-   ],
-   "richtig": 0,
-   "erklaerung": "von … bis: Anfang und Ende eines Zeitraums.",
-   "aus": "luecke"
-  },
-  {
-   "id": "u26",
-   "typ": "auswahl",
-   "frage": "Die neue Regelung gilt ___ dem 1. Januar.",
-   "optionen": [
-    "von",
-    "bei",
-    "ab",
-    "zu"
-   ],
-   "richtig": 2,
-   "erklaerung": "ab (Zukunft oder allgemein) oder seit (schon begonnen) + Dativ.",
-   "aus": "luecke"
-  },
-  {
-   "id": "u27",
-   "typ": "auswahl",
-   "frage": "Wir haben uns ___ Wochenende in Leipzig getroffen.",
-   "optionen": [
-    "am",
-    "beim",
-    "im",
-    "zum"
-   ],
-   "richtig": 0,
-   "erklaerung": "Tage und Wochenende: am (an dem).",
-   "aus": "luecke"
-  },
-  {
-   "id": "u28",
-   "typ": "auswahl",
-   "frage": "Wir treffen uns ___ acht Uhr vor dem Theater.",
-   "optionen": [
-    "zu",
-    "in",
-    "am",
-    "um"
-   ],
-   "richtig": 3,
-   "erklaerung": "Uhrzeit: um (genau) oder gegen (ungefähr).",
-   "aus": "luecke"
-  },
-  {
-   "id": "u29",
-   "typ": "auswahl",
-   "frage": "Nach dem Umzug stellte sie die alten Bücher ___ das oberste Regal.",
-   "optionen": [
-    "in",
-    "bei",
+    "um",
     "nach",
-    "zu"
-   ],
-   "richtig": 0,
-   "hinweis": "wohin?",
-   "erklaerung": "Wechselpräposition mit Richtung: Akkusativ (das oberste Regal).",
-   "aus": "luecke"
-  },
-  {
-   "id": "u30",
-   "typ": "auswahl",
-   "frage": "Die alten Bücher stehen jetzt ___ obersten Regal.",
-   "optionen": [
-    "zum",
-    "ins",
-    "im",
-    "beim"
-   ],
-   "richtig": 2,
-   "hinweis": "wo?",
-   "erklaerung": "Wechselpräposition ohne Richtung: Dativ – in dem → im.",
-   "aus": "luecke"
-  },
-  {
-   "id": "u32",
-   "typ": "auswahl",
-   "frage": "Welche Präposition passt? „Sie hat keine Angst mehr ___ der Prüfung.“",
-   "optionen": [
-    "über",
-    "von",
-    "vor",
+    "auf",
     "für"
    ],
-   "richtig": 2,
-   "erklaerung": "Angst haben vor + Dativ."
+   "richtig": 1,
+   "erklaerung": "„fahnden nach“ + Dativ."
   },
   {
-   "id": "u33",
+   "id": "n26",
    "typ": "auswahl",
-   "frage": "„Wir sind sehr ___ Ihre Antwort gespannt.“",
+   "frage": "Die Partei buhlt ___ die Gunst der jungen Wählerinnen und Wähler.",
    "optionen": [
     "nach",
     "für",
+    "um",
+    "an"
+   ],
+   "richtig": 2,
+   "erklaerung": "„buhlen um“ + Akkusativ."
+  },
+  {
+   "id": "n27",
+   "typ": "auswahl",
+   "frage": "___ Ermangelung eines besseren Vorschlags stimmte der Rat zu.",
+   "optionen": [
+    "Aus",
+    "In",
+    "Zur",
+    "Bei"
+   ],
+   "richtig": 1,
+   "erklaerung": "Feste Wendung (gehoben): „in Ermangelung“ + Genitiv."
+  },
+  {
+   "id": "n28",
+   "typ": "auswahl",
+   "frage": "Das Gericht befand den Angeklagten ___ schuldig.",
+   "optionen": [
+    "als",
+    "zu",
+    "für",
+    "wegen"
+   ],
+   "richtig": 2,
+   "erklaerung": "„jemanden für schuldig befinden/erklären“."
+  },
+  {
+   "id": "n29",
+   "typ": "auswahl",
+   "frage": "Der Vorfall wirft ein bezeichnendes Licht ___ die Zustände in der Behörde.",
+   "optionen": [
+    "über",
     "auf",
+    "an",
+    "in"
+   ],
+   "richtig": 1,
+   "erklaerung": "„ein Licht auf etwas werfen“ + Akkusativ."
+  },
+  {
+   "id": "n30",
+   "typ": "auswahl",
+   "frage": "Das Projekt scheiterte letztlich ___ der fehlenden Finanzierung.",
+   "optionen": [
+    "von",
+    "mit",
+    "an",
     "über"
    ],
    "richtig": 2,
-   "erklaerung": "gespannt sein auf + Akkusativ."
+   "erklaerung": "„scheitern an“ + Dativ."
+  },
+  {
+   "id": "n32",
+   "typ": "auswahl",
+   "frage": "Er tat den Einwand als Kleinigkeit ab und ging ___ Tagesordnung über.",
+   "optionen": [
+    "in die",
+    "zur",
+    "auf die",
+    "an die"
+   ],
+   "richtig": 1,
+   "erklaerung": "Feste Wendung: „zur Tagesordnung übergehen“."
+  },
+  {
+   "id": "n33",
+   "typ": "auswahl",
+   "frage": "Die Aussagen der Zeugen decken sich nicht ___ den Akten.",
+   "optionen": [
+    "zu",
+    "an",
+    "mit",
+    "bei"
+   ],
+   "richtig": 2,
+   "erklaerung": "„sich decken mit“ = übereinstimmen."
   },
   {
    "id": "u34",
@@ -506,44 +488,43 @@
    "erklaerung": "aufgrund + Genitiv: aufgrund des Wetters."
   },
   {
-   "id": "u37",
+   "id": "n37",
    "typ": "auswahl",
-   "frage": "„Er bedankte sich ___ uns ___ die Einladung.“",
+   "frage": "Die Gewerkschaft drängt ___ eine rasche Einigung.",
    "optionen": [
-    "bei … für",
-    "für … bei",
-    "an … für",
-    "bei … über"
-   ],
-   "richtig": 0,
-   "erklaerung": "sich bei jemandem (Dativ) für etwas (Akkusativ) bedanken."
-  },
-  {
-   "id": "u38",
-   "typ": "auswahl",
-   "frage": "„Sie legte die Unterlagen ___ Schreibtisch.“ (Richtung)",
-   "optionen": [
-    "im",
-    "auf dem",
-    "auf den",
-    "am"
-   ],
-   "richtig": 2,
-   "erklaerung": "wohin? → Akkusativ: auf den Schreibtisch.",
-   "grundlage": true
-  },
-  {
-   "id": "u39",
-   "typ": "auswahl",
-   "frage": "Welche Präposition gehört zu „verzichten“?",
-   "optionen": [
-    "von",
-    "an",
+    "nach",
     "auf",
+    "zu",
     "für"
    ],
+   "richtig": 1,
+   "erklaerung": "„drängen auf“ + Akkusativ (eine Einigung)."
+  },
+  {
+   "id": "n38",
+   "typ": "auswahl",
+   "frage": "Der Streit artete schließlich ___ eine Schlägerei aus.",
+   "optionen": [
+    "zu",
+    "auf",
+    "an",
+    "in"
+   ],
+   "richtig": 3,
+   "erklaerung": "„ausarten in“ + Akkusativ."
+  },
+  {
+   "id": "n39",
+   "typ": "auswahl",
+   "frage": "Der Begriff geht ___ einen römischen Rechtsgelehrten zurück.",
+   "optionen": [
+    "an",
+    "von",
+    "auf",
+    "zu"
+   ],
    "richtig": 2,
-   "erklaerung": "verzichten auf + Akkusativ."
+   "erklaerung": "„zurückgehen auf“ + Akkusativ = seinen Ursprung haben in."
   },
   {
    "id": "u40",
@@ -572,66 +553,66 @@
    "erklaerung": "Kritik an + Dativ."
   },
   {
-   "id": "u42",
+   "id": "n42",
    "typ": "zuordnen",
    "paare": [
     [
-     "sich beschäftigen",
-     "mit"
-    ],
-    [
-     "sich bewerben",
-     "um"
-    ],
-    [
-     "sich verlassen",
-     "auf"
-    ],
-    [
-     "teilnehmen",
+     "sich ergötzen",
      "an"
     ],
     [
-     "sich fürchten",
+     "sich hüten",
      "vor"
     ],
     [
-     "abhängen",
-     "von"
-    ]
-   ],
-   "erklaerung": "Verben mit fester Präposition."
-  },
-  {
-   "id": "u43",
-   "typ": "zuordnen",
-   "paare": [
+     "sich verwahren",
+     "gegen"
+    ],
     [
-     "stolz",
+     "sich belaufen",
      "auf"
     ],
     [
-     "zufrieden",
+     "münden",
+     "in"
+    ],
+    [
+     "sich auszeichnen",
+     "durch"
+    ]
+   ],
+   "erklaerung": "Gehobene Verben mit fester Präposition."
+  },
+  {
+   "id": "n43",
+   "typ": "zuordnen",
+   "paare": [
+    [
+     "erpicht",
+     "auf"
+    ],
+    [
+     "gefeit",
+     "gegen"
+    ],
+    [
+     "behaftet",
      "mit"
     ],
     [
-     "verantwortlich",
-     "für"
+     "befugt",
+     "zu"
     ],
     [
-     "abhängig",
-     "von"
+     "bewandert",
+     "in"
     ],
     [
-     "interessiert",
-     "an"
-    ],
-    [
-     "erstaunt",
+     "erbost",
      "über"
     ]
    ],
-   "erklaerung": "Adjektive mit fester Präposition."
+   "erklaerung": "Adjektive mit fester Präposition (C1/C2)."
   },
   {
    "id": "u44",
@@ -696,35 +677,35 @@
    "erklaerung": "Feste Fügungen mit Präposition."
   },
   {
-   "id": "u46",
+   "id": "n46",
    "typ": "zuordnen",
    "paare": [
     [
-     "Sie hängt das Gemälde",
-     "an die Wand."
+     "die Absage",
+     "an"
     ],
     [
-     "Das Gemälde hängt",
-     "an der Wand."
+     "der Anspruch",
+     "auf"
     ],
     [
-     "Er setzt sich",
-     "auf das Sofa."
+     "der Hang",
+     "zu"
     ],
     [
-     "Er sitzt",
-     "auf dem Sofa."
+     "die Abkehr",
+     "von"
     ],
     [
-     "Sie legt den Vertrag",
-     "in die Schublade."
+     "die Gier",
+     "nach"
     ],
     [
-     "Der Vertrag liegt",
-     "in der Schublade."
+     "der Verstoß",
+     "gegen"
     ]
    ],
-   "erklaerung": "Wechselpräpositionen: Richtung (wohin?) → Akkusativ, Ort (wo?) → Dativ."
+   "erklaerung": "Nomen behalten oft die Präposition des Verbs (absagen → die Absage an)."
   },
   {
    "id": "u47",
@@ -794,20 +775,20 @@
    "erklaerung": "In der Schriftsprache steht „wegen“ mit dem Genitiv."
   },
   {
-   "id": "u54",
+   "id": "n54",
    "typ": "fehler",
-   "satz": "Die Konferenz findet im nächsten Montag statt.",
-   "fehler": "im",
-   "korrektur": "am",
-   "erklaerung": "Wochentage: am."
+   "satz": "Die Reform zielt dafür ab, die Verfahren zu beschleunigen.",
+   "fehler": "dafür",
+   "korrektur": "darauf",
+   "erklaerung": "„abzielen auf“ → Korrelat „darauf“ vor dem Infinitivsatz (nicht „dafür“)."
   },
   {
-   "id": "u55",
+   "id": "n55",
    "typ": "fehler",
-   "satz": "Wir sind sehr gespannt für das Ergebnis.",
+   "satz": "Die Ministerin hat sich entschieden für den Vorwurf der Vetternwirtschaft verwahrt.",
    "fehler": "für",
-   "korrektur": "auf",
-   "erklaerung": "gespannt sein auf + Akkusativ."
+   "korrektur": "gegen",
+   "erklaerung": "„sich verwahren gegen“ = etwas entschieden zurückweisen."
   },
   {
    "id": "u56",
@@ -885,11 +866,11 @@
    "erklaerung": "Ich interessiere mich für Literatur. – Mein Interesse an Literatur."
   },
   {
-   "id": "u63",
+   "id": "n63",
    "typ": "rf",
-   "aussage": "Nach „unter“ steht bei einer Ortsangabe (wo?) der Akkusativ.",
-   "wert": false,
-   "erklaerung": "Ort (wo?) → Dativ: unter dem Tisch; Richtung (wohin?) → Akkusativ: unter den Tisch."
+   "aussage": "„bewandert“ steht mit „in“ + Dativ: Sie ist in der Barockmusik sehr bewandert.",
+   "wert": true,
+   "erklaerung": "„in etwas bewandert sein“ = sich gut auskennen."
   },
   {
    "id": "u64",
