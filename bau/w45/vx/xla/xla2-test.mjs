@@ -112,12 +112,12 @@ async function lang3() {
     let nan = 0, peak = 0, lost = 0; const lostAt = []; for (let i = 0; i < nb; i++) { nan += blocks[i * 5 + 3]; if (PK(i) > peak) peak = PK(i); if (i && F(i) - F(i - 1) !== 128) { lost += Math.max(1, Math.round((F(i) - F(i - 1)) / 128) - 1); if (lostAt.length < 12) lostAt.push(+(F(i - 1) / sr).toFixed(2)); } }
     const frameOf = t => Math.round(t * sr), idxAt = t => { const f = frameOf(t); let lo = 0, hi = nb - 1; while (lo < hi) { const mid = (lo + hi) >> 1; if (F(mid) < f) lo = mid + 1; else hi = mid; } return lo; };
     const playA = idxAt(t0 + .3), playB = idxAt(tStop - .1), gapA = idxAt(tStopSong - .2), gapB = idxAt(tStopSong + 1.5);
-    let run = 0, runMax = 0; for (let i = playA; i < playB; i++) { if (i >= gapA && i <= gapB) { run = 0; continue; } if (PK(i) < 1e-5) { run++; if (run > runMax) runMax = run; } else run = 0; }
+    let run = 0, runMax = 0, silAt = null; for (let i = playA; i < playB; i++) { if (i >= gapA && i <= gapB) { run = 0; continue; } if (PK(i) < 1e-5) { run++; if (run > runMax) { runMax = run; silAt = +(F(i - run + 1) / sr).toFixed(2); } } else run = 0; }
     const mds = []; for (let i = playA; i < playB; i++) if (!(i >= gapA && i <= gapB)) mds.push(MD(i)); mds.sort((a, b) => a - b);
     const p999 = mds[Math.floor(mds.length * .999)] || 0, pMax = mds[mds.length - 1] || 0;
     const atChg = chg.filter(x => isFinite(x.time) && x.time > t0 + .3 && x.time < tStop - .1).map(x => { const i0 = idxAt(x.time - .006), i1 = idxAt(x.time + .03); let mm = 0; for (let i = i0; i <= i1; i++) mm = Math.max(mm, MD(i)); return +mm.toFixed(4); });
     const tail = []; for (let s0 = 0; s0 < 4; s0 += .5) { const a = idxAt(tStop + s0), b2 = idxAt(tStop + s0 + .5); let mm = 0; for (let i = a; i < b2; i++) mm = Math.max(mm, PK(i)); tail.push(+(20 * Math.log10(mm + 1e-12)).toFixed(1)); }
-    return {sec: +(tStop - t0).toFixed(1), notes: log.size, st, chg: chg.length - 1, nan, peak: +peak.toFixed(4), lost, maxSilentMs: +(runMax * 128 / sr * 1000).toFixed(1), p999: +p999.toFixed(4), pMax: +pMax.toFixed(4), atChgMax: Math.max(0, ...atChg), atChg: atChg.length, tail, alive, tick: TICKERR.n - tick0, lt: window.__lt2.filter(d => d[0] > 100), lostAt, t0: +t0.toFixed(2), tStopSong: +tStopSong.toFixed(2), events: chg.filter(x => isFinite(x.time)).slice(0, 4).map(x => +x.time.toFixed(2))};
+    return {sec: +(tStop - t0).toFixed(1), notes: log.size, st, chg: chg.length - 1, nan, peak: +peak.toFixed(4), lost, maxSilentMs: +(runMax * 128 / sr * 1000).toFixed(1), p999: +p999.toFixed(4), pMax: +pMax.toFixed(4), atChgMax: Math.max(0, ...atChg), atChg: atChg.length, tail, alive, tick: TICKERR.n - tick0, lt: window.__lt2.filter(d => d[0] > 100), lostAt, silAt, t0: +t0.toFixed(2), tStopSong: +tStopSong.toFixed(2), events: chg.filter(x => isFinite(x.time)).slice(0, 4).map(x => +x.time.toFixed(2))};
   });
   info('3 Minuten: ' + JSON.stringify(RUN));
   if (process.env.BASIS3 === '1') { info('Vergleichslauf (ohne ⇅½): nur Ausgang'); } else ok(RUN.sec >= 178 && RUN.st.song.n > 300 && RUN.st.song.bad === 0 && RUN.st.song.d1 > 20 && RUN.st.song.d0 > 20 && RUN.st.matrix.n > 100 && RUN.st.matrix.bad === 0 && RUN.st.drBad === 0,
@@ -148,7 +148,7 @@ const tp1 = await p.evaluate(() => { const B = [...document.querySelectorAll('.x
   return {h5, btn: B.map(b => ({x: b.dataset.x, t: b.querySelector('b') ? b.querySelector('b').textContent : b.textContent, s: b.querySelector('small') ? b.querySelector('small').textContent : '', on: b.classList.contains('on')})), inf, key: window.__xla.cur().sum.key}; });
 ok(c && c.st === 'fertig' && tp1.h5.includes('Transponieren') && tp1.btn.length === 2 && tp1.btn[0].x === 'tph' && tp1.btn[0].on && !tp1.btn[1].on && /Halbton \(empfohlen\)/.test(tp1.btn[0].t) && /Noten fest/.test(tp1.btn[1].t) && c.tp === 'halbton',
   'Blatt: Abschnitt „Transponieren“ – „Halbton (empfohlen)“ vorgewählt, daneben „Noten fest“', tp1.btn.map(x => x.t + ' / ' + x.s + (x.on ? ' [an]' : '')));
-ok(/die Taste [A-H][♯♭]? spielt das Original/.test(tp1.inf) && /einen Halbton höher/.test(tp1.inf), 'Hinweis in einfachem Deutsch: welche Taste das Original spielt, eine Taste höher = einen Halbton', tp1.inf);
+ok(/die Taste [A-H][♯♭]? spielt das Original/.test(tp1.inf) && /kürzesten Weg, höchstens 6 Halbtöne/.test(tp1.inf) && !/eine Taste höher = einen Halbton/.test(tp1.inf), 'Hinweis in einfachem Deutsch: welche Taste das Original spielt, jede andere auf dem kürzesten Weg (Prüfung: wie die Tasten im Standard „nächster Weg“)', tp1.inf);
 await p.evaluate(() => { const e = [...document.querySelectorAll('.xla h5')].find(h => h.textContent === 'Transponieren'); if (e) e.scrollIntoView({block: 'center'}); });
 let m = await measure(p);
 ok(layoutOk(m, 428), 'Blatt hochkant 428×926 mit „Transponieren“: ✕ sichtbar, Tasten ≥ 44, nichts außerhalb, keine Überlappung', m);
@@ -167,7 +167,7 @@ const A = await p.evaluate(() => ({tr: S.tracks.map(t => ({n: t.name, k: t.kind,
   strip: {cls: EL.bFolgt.className, ck: EL.bFolgt.querySelector('.ck').textContent, ckVis: EL.bFolgt.querySelector('.ck').offsetWidth > 0, aria: EL.bFolgt.getAttribute('aria-label')}}));
 const imp = A.tr.map((t, i) => ({...t, i})).filter(t => t.k === 'synth' && (t.cl || t.lane));
 ok(imp.length >= 3 && imp.every(t => t.f === false && t.xs === 1 && t.os === false) && A.tr.filter(t => t.k === 'drum').every(t => t.xs == null), 'Passt: alle importierten Synth-Spuren ⇅ fest + xs:1, Eine Skala aus; DRUMS ohne xs', imp.map(t => t.n));
-ok(A.tr[3].n === 'Synth 4' && A.tr[3].f === true && A.tr[3].xs == null, 'die leere Spur „Synth 4“ bleibt eine normale ⇅-Spur (folgt, ohne xs)');
+ok(A.tr[3].n === 'Synth 4' && A.tr[3].f === false && A.tr[3].xs === 1, 'Prüfung: die leere Spur „Synth 4“ steht im Halbton-Projekt auch auf ⇅½ (follow:false + xs:1, wie BAUPLAN P4: eigene Spuren gehen in Halbtönen mit)', A.tr[3]);
 ok(A.ht === 1 && A.mode === harm0.def && /Tastatur: Halbton/.test(A.toast), 'Projekt: Kennzeichen xlaHt, Projekt-Harmonie unverändert (' + A.mode + '), Meldung „… · Tastatur: Halbton“', A.toast.slice(0, 80));
 ok(A.sel === imp[0].i && /xlaxs/.test(A.strip.cls) && / on|^on| on$/.test(' ' + A.strip.cls + ' ') && A.strip.ck === '½' && A.strip.ckVis && /Halbtönen/.test(A.strip.aria), 'gewählt ist die erste importierte Spur; ihre Spur-Taste zeigt ⇅½ (auch hochkant sichtbar)', A.strip);
 await p.evaluate(() => setSongView(false)); await p.waitForTimeout(500);
@@ -206,6 +206,7 @@ ok(K.chord && K.chord.bad === 0 && K.chord.drBad === 0 && K.chord.sh === K.chord
 /* ===== 4. Wiedergabe in der Matrix per Touch + eigene ⇅-Spur (Wechselwirkung) ===== */
 await p.evaluate(async () => { const h = S.settings.harmony; h.octaveMode = 'nearest'; T.setOptions(transposerOpts()); await __press([60 + S.key.root]); setKbMode('play');   // zurück aufs Original
   const r = S.key.root, maj = S.key.scale === 'ionian', third = maj ? 4 : 3;
+  window.__xla.folgtTap(3); window.__xla.folgtTap(3);   // Prüfung: die leere Spur steht jetzt auf ⇅½ – hier zweimal getippt (⇅½ → fest → ⇅ folgt), wie wer sie den Akkorden folgen lassen will
   SYNQUENZER.setClip(3, 1, {len: 1, key: {root: r, scale: S.key.scale}, notes: [0, 1, 2, 3].map(q => ({t: q, d: .9, n: 60 + r + [0, third, 7, third][q], v: .7}))});   // eigene Spur: Grundton, Terz, Quinte
   clearLog(); });
 await tapSel(p, '#clipGrid .scn[data-s="1"]'); await p.waitForTimeout(400); if (!(await p.evaluate(() => R.playing))) await tapSel(p, '#bPlay'); await p.waitForTimeout(1800);

@@ -2,7 +2,8 @@
 
 Basis: `rel-4780/index.html` (Synquenzer 4.78.0, md5 68e92c0367cd63eda5a9da08ead8990d) → `basis.html` (unverändert).
 Ergebnis: `index.html` (VERSION bleibt '4.78.0'), gebaut mit `python3 bau.py` aus basis.html + `src/block.js` + `src/block.css` + einzeiligen Haken.
-Stand: `index.html` md5 **018e17d45b501310c1a4f8a78c48cb0b**, 9 570 550 Bytes (Basis 9 543 731, +26 819 = +0,28 %); `bau.py` erzeugt genau diese Datei wieder.
+Stand nach der Prüfung (17.11.): `index.html` md5 **ad25315ffa4e4ba08074903d8a6a59f3**, 9 573 218 Bytes (Basis 9 543 731, +29 487 = +0,31 %);
+`bau.py` erzeugt genau diese Datei wieder. Fassung vor der Prüfung: `index.vor-pruef.html` (md5 018e17d4…), siehe Abschnitt „Prüfung“.
 **Nur vorbereitet (Fassung B) – nichts veröffentlicht, nichts gepusht.**
 Bauplan: `vx/cbpimp/ARCHITEKTUR.md` Variante A (BAUPLAN P1).
 
@@ -19,7 +20,7 @@ Bauplan: `vx/cbpimp/ARCHITEKTUR.md` Variante A (BAUPLAN P1).
 ## Änderung
 
 Alle neue Logik steht im Block `/* XLB-BEGIN */ … /* XLB-END */` (JS, direkt nach `orderFor`) und im CSS-Block `/* XLB-BEGIN */`.
-Außerhalb nur einzeilige Haken mit „XLB“ im Kommentar (bau.py: 96 Zeilen ersetzt, 7 davor, 19 danach eingefügt; jede an Zeilennummer +
+Außerhalb nur einzeilige Haken mit „XLB“ im Kommentar (bau.py nach der Prüfung: 108 Zeilen ersetzt, 8 davor, 21 danach eingefügt; jede an Zeilennummer +
 Text der Basis gebunden). Kein anderer Paket-Block verändert.
 
 ### Stellen, die an MAX_T / N_SCN / einer festen 8 hingen
@@ -40,8 +41,8 @@ Feste 8er-Felder → MAX_T (24) bzw. XL_S (32)
   (32949–32954), `cs` (33720), `CAP.last` (36518), `MODS_DIRTY` (43577), Video-Farben `--t1…--t24` (75334),
   `KEYC.cache` je Szene (36422, 52885 → XL_S).
 - Unverändert, laufen jetzt bis 24 (prüfen jeweils AU.tracks[i] / i < NT()): Schleifen 30239 (mit Lazy-Haken), 30727, 30741, 32684,
-  50614, 51975, 52853, 71471–71500 (G10J), 95453; `sr.ev` (34132/34254), `midiArrs` (54875); Pegel-Messer `MTR_IN = MAX_T + 1` = 25
-  Eingänge, Master = Eingang 24 (48066–48173, Video 75440–78302 nutzen dieselbe Zahl).
+  50614, 51975, 52853, 71471–71500 (G10J), 95453; `sr.ev` (34132/34254), `midiArrs` (54875); Pegel-Messer: `MTR_IN = MAX_T + 1` = 25
+  ist nur noch die logische Größe; der echte Messer hat je Projekt 9 (wie 4.78) oder 25 Eingänge (Prüfung, siehe unten).
 
 Engine / Wiedergabe
 - `ensureAudio`: `if (!xlDefer(i)) buildTrack(i)` (30032); Ketten-Schleife überspringt aufgeschobene Zusatzspuren (nach 30239).
@@ -172,8 +173,7 @@ Grenzen (für Fassung B):
 
 1. Farben der Spuren 9–24 wiederholen die Farben 1–8 (`--t9 = --t1` …). Eigene Farben = sichtbare Änderung → Vorschlag im Funk.
 2. Live-Grenze 16 oder 24 Spuren erst nach dem iPhone-Lauf (messung.html) festlegen; ggf. Hinweis/Begrenzung im ＋ Spur.
-3. Pegel-Messer hat jetzt immer 25 Eingänge (vorher 9): im Video-Rendering ≈ +2,9 MB je Minute Messwerte; lässt sich auf NT()+1
-   kürzen, wenn es stört.
+3. ~~Pegel-Messer hat immer 25 Eingänge~~ → erledigt in der Prüfung: normal 9 Eingänge wie 4.78, nur mit mehr als 8 Spuren 25.
 4. „Szene duplizieren“ ohne freie Szene macht das Projekt nicht größer (wie 4.78: keine freie Szene → aus). ＋ Szene zuerst.
 5. Tasten 1–4 (Bluetooth-Tastatur) starten weiter Szene 1–4 wie in 4.78; Szenen 5–32 nur per Tipp (nicht geändert).
 6. MIX-A / MX1 / MX3 mit 24 Eingängen in WebKit (iPhone) nicht geprüft (Chromium ok).
@@ -185,3 +185,47 @@ Grenzen (für Fassung B):
 11. mtx4 P2 (Long Task > 50 ms bei 64 dichten Clips) ist eine Zeitgrenze, die auch 4.78 unter Last reißt – auf dem iPhone nicht gemessen.
 12. mix3-test (4.49) bricht in 4.78 und XLB gleich ab (Bedienung seither geändert) – Mixer ist über mx2 (34/34), xlb-test (Mix-&-Master
     mit 12 Spuren) abgedeckt; ein aktueller Mixer-Test für 24 Spuren fehlt noch (MIX-A/MX1/MX3 mit 24 Eingängen, siehe 6).
+
+## Prüfung (17.11., Nachbesserung nach dem Prüfer)
+
+Sicherung vorher: `index.vor-pruef.html` (md5 018e17d45b501310c1a4f8a78c48cb0b), `bau.vor-pruef.py`, `src.vor-pruef/`, `xlb-test.vor-pruef.mjs`.
+Alle drei echten Befunde des Prüfers nachgeprüft (mit eigenen Tests auf der alten Fassung nachgestellt) und behoben. Die drei übrigen
+Prüfer-„Fehler“ (newProjectRaw ohne normalizeProject, 2× Mixer-Namenszählung) sind keine Fehler der App – bestätigt: alle Aufrufer von
+newProjectRaw normalisieren danach (xlNormFail / normalizeProject), Track-Fabriken nutzen absichtlich die Szenenzahl des offenen Projekts.
+
+| # | Befund (Schwere) | nachgeprüft | Behebung |
+|---|---|---|---|
+| 1 | Song-Editor: Blöcke der Spuren 9–24 ohne Farbe (hoch) | echt: `SV.cols` hatte 8 Farben, Spur 9/10 Pixel [11,12,15] | Haken Z. 37263: `SV.cols` = alle `MAX_T` Farben (`--t1…--t24`). Wirkt auch in Glas-Ansicht, Gesang-Take-Zeile, G3-Schweif, Video-Spurfarben, Song-Leiste. |
+| 2 | Pegel-Messer immer 25 Eingänge → Video-Speicher ×2,7 auch im normalen Projekt (mittel) | echt: 25 Eingänge, 51 Werte je Fenster | Eingänge je Projekt: `xlMtrN()` = 9 (≤ 8 Spuren, wie 4.78) oder 25. Speicher je Messer mit eigener Breite (`mtrStore(cap, n)`, `Q.w`), Master immer letzter Eingang; außen heißt er weiter `k = MAX_T` (`xlMtrK` in `mtrAt` rechnet um, Spuren ohne Eingang → leer). `mtrTap` nur für Spuren mit Eingang; `mixaMoveTaps` verbindet den Master mit `n − 1`. Wechselt die Spurzahl über/unter 8, baut `mtrFrame` den Live-Messer einmal neu (`xlMtrRe`: alter Knoten aus + getrennt). Video-Render nimmt die Zahl des Projekts. |
+| 3 | „Szene n entfernen“ lässt Song-Marke „Sn“ verwaist zurück (klein) | echt: Szene 9 mit Marke S9 entfernt, Marke „Szene 9“ blieb | `xlScnRemWhy` zählt auch Song-Marken `part = 'Sn'` und die laufende/wartende Akkord-Zeile (`R.row` / `R.rowPend`) als „benutzt“ → verweigert, Knopf im Szenen-Blatt fehlt. Zusätzlich: `R.lastScene` hinter der letzten Szene wird gelöscht. |
+
+Haken neu (alle mit „XLB“ im Kommentar, an Zeilennummer + Text gebunden, bau.py Abschnitt „Prüfung (XLB-P)“): 37263, 48069, 48071, 48087 (davor),
+48088, 48091, 48092, 48101 (danach), 48104, 48107, 48111, 48115, 48162 (danach), 66972. Neue Block-Funktionen: `xlMtrN`, `xlMtrK`, `xlMtrRe`,
+`xlMarkUsed`; Test-Zugang `SYNQUENZER.xl.mtr()`, `.remWhy()`. Kein anderer Paket-Block angefasst. Diff-Prüfung: 108 Zeilen ersetzt, 27 eingefügt
+(außerhalb des Blocks), 0 gelöscht, 0 ohne Kennung.
+
+Tests (alle nacheinander, nice -n 10; Last 2–7):
+- `xlb-test.mjs` um **T6** ergänzt (14 Prüfungen): Pixel Spur 9/10 in Kästchen- und Glas-Ansicht; Messer live 9 Eingänge (A/B 4.78 = 9),
+  über 8 Spuren 25 mit Pegel auf Spur 9 + Master, zurück 9; Video-Render normal 19 Werte je Fenster wie 4.78 (1,5 MB/min, gleich), groß 51 mit
+  Pegel Spur 9 + Master; Szene entfernen mit Marke / wartender Akkord-Zeile verweigert, ohne erlaubt + ↶. Konsole jeweils ohne Fehler.
+- Gegenprobe: dieselben T6-Prüfungen auf `index.vor-pruef.html` → 10 FEHLER (die Befunde sind damit bestätigt), auf der neuen Fassung 14/14.
+- **xlb-test gesamt: 78 OK / 0 FEHLER** (64 alte + 14 neue; `mess/xlb-test-p.log`, `mess/voll/xlb-test.json`), darin Touch-Gesten
+  hochkant 428×926 und quer 926×428.
+- Regression `reg/lauf.sh … pruef mx2 mtx teil1 mix3`: mx2 34/34, teil1 61/61, mtx 91/92 und mix3 20/3 + Abbruch – Urteile Zeile für Zeile
+  gleich wie vor der Prüfung (und wie 4.78). midi-ab 90/90 bitgleich. probe-render (Video-Ton Spur 11) OK. Bildvergleich normales Projekt
+  428×926 / 926×428 / 320×568 byte-gleich zu 4.78.
+- Pflicht: topdefs doppelt 0 / Syntax 0, dupkeys 0, smoke errors [], „MS 2000“ 1×, „  live: true,“ 1×, Markenwörter je Wort wie Basis, keine
+  neuen Emojis (nur das vorhandene ✕ im Schließen-Knopf).
+
+Startzeit (3 Läufe je Seite, abwechselnd, Median „bereit“ / Skriptzeit; `mess/startzeit-pruef-*.json`, Last ≈ 2):
+- 4.78 → XLB-P: 625 → 646 ms (Läufe 593/625/673 → 631/654/646), Skriptzeit 98 → 95 ms.
+- XLB vor Prüfung → XLB-P: 600 → 589 ms, Skriptzeit 102 → 89 ms.
+→ kein messbarer Unterschied; beim Start läuft vom neuen Code nichts (Messer-Prüfung erst im rAF, ein Vergleich je Bild).
+
+Fotos für Xander (iPhone 12 Pro Max, deviceScaleFactor 2, nur Testdaten; `fotos-xlbp.mjs`): `fotos/xlbp-song-hochkant.png` (12 Spuren, alle
+in Farbe), `fotos/xlbp-matrix-quer.png` (Szenen 9–10 + ＋ Szene), `fotos/xlbp-blatt-hochkant.png` ([SZ] gehalten → Szenen-Blatt). Die
+älteren Fotos des Bauers liegen in `fotos-bauer/` (xlb-song-* zeigen noch den Farbfehler). Kurzbeschreibung: `KURZ.md`.
+
+Offen nach der Prüfung: Punkte 1, 2, 4–12 oben bleiben (Punkt 3 erledigt). Wichtig für die Auslieferung: Punkt 10 – die neue sichtbare
+Bedienung vorher im Funk mit den Fotos zeigen (CLAUDE.md Regel 3); das „generelle OK vom 16.11.“ steht nur im Auftrag.
+

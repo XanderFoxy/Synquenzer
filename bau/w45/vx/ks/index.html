@@ -19267,6 +19267,7 @@ const KSX = (() => {
   function patch(snd, o) {
     for (const k in o) {
       const v = o[k];
+      if (k === 'lvDb') { snd.p.level = clamp((+snd.p.level || .3) * Math.pow(10, v / 20), .001, 4); continue; }   // KS3: Pegel einer zweiten Schicht relativ (dB)
       if (isRt(k)) { const [s, d] = k.split(':'); snd.mods = (snd.mods || []).filter(m => !(m.src === s && m.dst === d)); if (v) snd.mods.push({src: s, dst: d, amt: v}); }
       else if (k.startsWith('fx.')) { const ps = k.slice(3).split('.'); let o2 = snd.fx = snd.fx || {}; while (ps.length > 1) { const q = ps.shift(); o2 = o2[q] = Object.assign({}, o2[q] || {}); } o2[ps[0]] = v; }
       else snd.p[k] = v;
@@ -19638,8 +19639,12 @@ const KSX = (() => {
      auf dieselbe Lautheit geeicht (LV, gemessen offline mit demselben Worklet über die Phrase der Karte). */
   CH.push({k: 6, n: 'Werkstatt: zerlegt und Rezepte', pg: []});
   const kc = x => +(x * MOD_K.cutoff).toFixed(4), rt = (src, dst, amt) => ({src, dst, amt});
-  const LV = {W1: [0, 0, 0, 0], W2: [0, 0, 0, 0], R01: 0, R02: 0, R03: 0, R04: 0, R05: 0, R06: 0, R07: 0, R08: 0, R09: 0, R10: 0, R11: 0, R12: 0, R13: 0, R14: 0, R15: 0, R16: 0, R17: 0, R18: 0, R19: 0};
-  const lvl = (s, d) => { if (d) s.p.level = clamp((+s.p.level || .3) * Math.pow(10, d / 20), .001, 4); return s; };
+  // Pegel-Eichung (dB auf den Klang-Pegel): Ziel −24 LUFS trocken über die Phrase der Karte (offline, Worklet, Spur-Ausgang); gemessen mit probe-ks3.mjs
+  // Klänge mit Drive (FX): [dB auf den Klang-Pegel vor dem Drive, dB auf die Spur-Lautstärke danach] – so bleibt die Verzerrung wie gedacht
+  const LV = {W1: [-1.4, .1, -5.4, [-5.4, -6.8]], W2: [.5, -2.4, -2.8, [-2.8, -6.5]], R01: 7.5, R02: [4.5, -4.7], R03: [-3.2, -7.8], R04: -6.6, R05: 10.4, R06: -2, R07: -4.3, R08: 11.3,
+    R09: 7.8, R10: 2.7, R11: .8, R12: -12.4, R13: -2.4, R14: 6.6, R15: 2.6, R16: 6.5, R17: -5.6, R18: .3, R19: [0, -7.5]};
+  const lvl = (s, d) => { const [a, b] = Array.isArray(d) ? d : [d, 0]; if (a) s.p.level = clamp((+s.p.level || .3) * Math.pow(10, a / 20), .001, 4);
+    if (b) s.fx.vol = clamp((s.fx.vol == null ? .8 : +s.fx.vol) * Math.pow(10, b / 40), 0, 1); return s; };
   const KF_A = 69 + 12 * Math.log2(632.4555 / 440) - 36, VOW = f => 'aeiou'[Math.max(0, Math.min(4, Math.round((69 + 12 * Math.log2(Math.max(20, f) / 440) - KF_A) / 18)))];
   const pct = v => Math.round(v * 100) + ' %', st1 = v => (v > .05 ? '+' : v < -.05 ? MINUS : '') + dec(Math.abs(v), 1) + ' HT';
   const rsL = () => Math.min(9.5, 7.5 * 60 / Math.max(20, S.bpm || 120));   // R06: 2 Takte minus 1/8 (die Pause vor der Eins)
@@ -19755,7 +19760,7 @@ const KSX = (() => {
       start: () => RS('R05', {o1lvl: 0, noise: 1, kfNc: 1, ftype: 1, cutoff: 250, res: .15, kt: 0, fenv: .45, fvel: .5, fA: 2, fD: 3, fS: .1, fR: 2.5, fCurve: .3, aA: 1.8, aD: 3.5, aS: .15, aR: 2.5, poly: 6},
         'Meer', {rev: .3}),
       page: ['env', 'flt'], rings: ['fenv', 'fA', 'aA'], keys: ['ftype', 'cutoff', 'fenv', 'fA', 'aA'],
-      ab: [['Körper: LP12', {}], ['Gischt: HP12', {kfNc: 0, ftype: 5, cutoff: 2500, res: .1, fenv: 0, aA: 2.4, aD: 1.5, aS: 0, aR: 1.2}]], alt: ['Gischt', 1],
+      ab: [['Körper: LP12', {}], ['Gischt: HP12', {kfNc: 0, ftype: 5, cutoff: 2500, res: .1, fenv: 0, aA: 2.4, aD: 1.5, aS: 0, aR: 1.2, lvDb: -18.8}]], alt: ['Gischt', 1],
       ph: [[0, 3.2, 48, .9], [3.6, 2.6, 48, .7]], calc: {gate: 3.2, dur: 6, note: 48},
       task: 'Atmosphäre, Chillout, Ruhe. Jede Welle ist eine Note: 2–4 s, jede anders lang.',
       why: 'Eine Welle baut sich auf (das Filter öffnet), bricht und rollt aus. Zwei Spuren: der Körper (Tiefpass) und die Gischt (Hochpass), die erst am Bruch kommt.',
@@ -19792,7 +19797,7 @@ const KSX = (() => {
         'Impact-Sub', {rev: 0}, [rt('menv', 'pitch', 1)]),
       page: ['env', 'mod'], rings: ['menv:pitch', 'mD', 'aD'], keys: ['o1w', 'menv:pitch', 'mD', 'aD', 'fx.rev'], graph: 'pitch',
       ab: [['Billig: Sub ohne Fall', {'menv:pitch': 0}], ['Sub: fällt 2 Oktaven', {}]],
-      alt: ['Impact-Körper', {o1lvl: 0, noise: 1, kfNc: 0, cutoff: 150, res: .2, drive: .4, fenv: .7, fA: .001, fD: .25, fS: 0, fR: .1, fCurve: .7, aD: .4, 'menv:pitch': 0, 'fx.rev': .45, 'fx.drive': .3}],
+      alt: ['Impact-Körper', {o1lvl: 0, noise: 1, kfNc: 0, cutoff: 150, res: .2, drive: .4, fenv: .7, fA: .001, fD: .25, fS: 0, fR: .1, fCurve: .7, aD: .4, 'menv:pitch': 0, 'fx.rev': .45, 'fx.drive': .3, lvDb: 15.1}],
       ph: [[0, .5, 40, 1]], calc: {gate: .5, dur: 1.6, note: 40},
       task: 'Die Eins nach Riser oder Pause, Szenenwechsel. Mindestens 1/8 Pause davor.',
       why: 'Schichten mit Aufgaben: der Sub (Sinus fällt 2 Oktaven in 0,25 s) gibt die Wucht, der Körper (Rauschen hell → dunkel, mit Hall) die Größe. Zwei Spuren: „Lade: Impact-Körper“ für die zweite.',
@@ -19802,7 +19807,7 @@ const KSX = (() => {
         l1shape: 2, l1rate: 1.2, l1sync: 0, l1retrig: 1, poly: 4}, 'Whoosh', {rev: .2}, [rt('lfo1', 'pan', 1)]),
       page: ['env', 'flt'], rings: ['fA', 'fD', 'lfo1:pan'], keys: ['ftype', 'cutoff', 'fenv', 'fA', 'fD', 'lfo1:pan'],
       ab: [['Whoosh', {}], ['Rauschfahne', {ftype: 1, cutoff: 300, res: .2, fenv: 0, fA: 1.5, fS: 1, fR: .005, fCurve: 0, aA: 1.5, aCurve: 0, aS: 1, aR: .005, mA: 1.5, mS: 1, mCurve: 0,
-        'menv:fenv': .5, 'menv:amp': 1, 'lfo1:pan': 0, 'fx.rev': .35}]], alt: ['Rauschfahne', 1],
+        'menv:fenv': .5, 'menv:amp': 1, 'lfo1:pan': 0, 'fx.rev': .35, lvDb: 1.4}]], alt: ['Rauschfahne', 1],
       ph: [[0, 1.5, 60, .8]], calc: {gate: 1.5, dur: 2, note: 60},
       task: 'Übergänge, Szenenwechsel – „etwas fliegt vorbei“. Die Rauschfahne führt in eine Eins.',
       why: 'Rauschen geht auf und wieder zu, Filter und Lautstärke gleichzeitig; ein LFO (Säge, Neustart) zieht es von links nach rechts. Die Rauschfahne schwillt spät an und bricht hart ab.',
@@ -19810,10 +19815,10 @@ const KSX = (() => {
     rz('R11', 'Blubbern', 'Textur, Sequenz · S&H auf den Cutoff', 'Blubbern', {
       start: () => RS('R11', {o1w: 0, o1lvl: 1, o2w: 1, o2pw: .4, o2fine: -6, o2lvl: .5, ftype: 0, cutoff: 700, res: .9, kt: .5, drive: .1, fenv: .25, fA: .001, fD: .09, fS: 0, fR: .1,
         aA: .002, aD: .4, aS: .85, aR: .2, l1shape: 4, l1sync: .25, l1retrig: 0, kfSh1: 0, poly: 4}, 'Blubbern', {rev: .15, dly: .35, chorus: {mode: 'I', mix: .5, rate: 1, depth: 1}}, [rt('lfo1', 'cutoff', kc(.25))]),
-      page: ['filter', 'ctl'], rings: ['res', 'l1sync|l1rate', 'lfo1:cutoff'], keys: ['res', 'l1shape', 'l1sync|l1rate', 'lfo1:cutoff', 'fD'],
+      page: ['filter', 'ctl'], rings: ['res', 'l1sync|l1rate', 'lfo1:cutoff'], keys: ['res', 'l1shape', 'l1sync|l1rate', 'lfo1:cutoff', 'fD'], rnd: true,
       ab: [['Billig: Resonanz 40 %', {res: .4}], ['Richtig: Resonanz 90 %', {}]],
       alt: ['Wasserblasen', {o1w: 3, o2lvl: 0, ftype: 1, cutoff: 20000, res: 0, kt: 0, fenv: 0, aA: .001, aD: .08, aS: 0, aR: .05, aCurve: .8, mA: .001, mD: .045, mS: 0, mR: .05, mCurve: .6,
-        l1sync: 0, l1rate: 9, 'lfo1:cutoff': 0, 'menv:pitch': -.3, 'lfo1:pitch': .5, 'fx.dly': .25, 'fx.rev': .25, 'fx.chorus.mode': 'off'}],
+        l1sync: 0, l1rate: 9, 'lfo1:cutoff': 0, 'menv:pitch': -.3, 'lfo1:pitch': .5, 'fx.dly': .25, 'fx.rev': .25, 'fx.chorus.mode': 'off', lvDb: 12.8}],
       ph: KS2PH.eighths(48), calc: {gate: .2, dur: .6, note: 48},
       task: 'Textur in Sequenzen, „Daten“-Klang, Unterwasser-Szene.',
       why: 'Der Ton bleibt, nur der Cutoff springt 8-mal pro Sekunde auf einen neuen Zufallswert (S&H 1/16). Mit hoher Resonanz „spricht“ jeder Sprung. Blasen: kurzer Sinus, der nach oben zieht.',
@@ -19821,7 +19826,7 @@ const KSX = (() => {
     rz('R12', 'Computer', '80er-Textur, Hook · S&H im Raster', 'Computer', {
       start: () => RS('R12', {o1w: 1, o1pw: .5, o1lvl: 1, o2w: 3, o2semi: 7, o2lvl: .35, kfRm: .4, ftype: 3, cutoff: 1500, res: .5, kt: .6, fenv: 0, aA: .002, aD: .1, aS: 1, aR: .1,
         l1shape: 4, l1sync: .25, l1retrig: 0, kfSh1: 1, l2shape: 3, l2sync: .25, l2retrig: 0, poly: 2}, 'Computer', {rev: .15, dly: .45}, [rt('lfo1', 'pitch', .5), rt('lfo2', 'amp', -1)]),
-      page: ['lfo', 'l1'], rings: ['l1sync|l1rate', 'kfSh1', 'lfo2:amp'], keys: ['l1sync|l1rate', 'kfSh1', 'lfo1:pitch', 'lfo2:amp', 'kfRm'],
+      page: ['lfo', 'l1'], rings: ['l1sync|l1rate', 'kfSh1', 'lfo2:amp'], keys: ['l1sync|l1rate', 'kfSh1', 'lfo1:pitch', 'lfo2:amp', 'kfRm'], rnd: true,
       ab: [['Billig: frei, ohne Raster', {l1sync: 0, l1rate: 7.3, kfSh1: 0, kfRm: 0, 'lfo2:amp': 0}], ['Richtig: Takt, Tonart, Pausen', {}]],
       ph: [[0, 3.5, 72, .8]], calc: {gate: 3.5, dur: 3.8, note: 72},
       task: '80er-Textur, Intro-Hook, „Computer rechnet“.',
@@ -19849,7 +19854,7 @@ const KSX = (() => {
       start: () => RS('R15', {o1uni: 3, uniDet: .3, uniMix: .7, o2w: 1, o2pw: .4, o2oct: -1, o2lvl: .35, ftype: 0, cutoff: 650, res: .28, drive: .3, kt: .5, fenv: .52, fvel: .4, fA: .001, fD: .22, fS: 0, fR: .2,
         aA: .002, aD: .45, aS: 0, aR: .25, ampVel: .4, poly: 6}, 'Stab', {rev: .15, chorus: {mode: 'I', mix: .5, rate: 1, depth: 1}}),
       page: ['env', 'amp'], rings: ['aS', 'fS', 'fx.rev'], keys: ['aS', 'fS', 'fD', 'fenv', 'fx.rev'],
-      ab: [['Billig: hält, Hall 45 %', {aS: 1, fS: .6, 'fx.rev': .45, 'fx.chorus.mode': 'off'}], ['Richtig: kurz, Hall 15 %', {}]],
+      ab: [['Billig: hält, Hall 45 %', {aS: 1, fS: .6, 'fx.rev': .45}], ['Richtig: kurz, Hall 15 %', {}]],   // Chorus in beiden: sonst 1,6 dB am Master (Hall-Unterschied allein ≈ 0,5 dB)
       ph: KS2PH.stab(), calc: {gate: .3, dur: 1.2, note: 57},
       task: 'Akkord-Schläge auf Offbeats, Refrain-Akzente, House und 80er.',
       why: 'Ein Stab endet von selbst: beide Hüllkurven Sustain 0. Die Filter-Hüllkurve ist kurz und kräftig – jeder Schlag beginnt hell und wird sofort dunkel.',
@@ -19886,7 +19891,7 @@ const KSX = (() => {
         fenv: .83, fvel: 0, fA: .35, fD: 1, fS: .55, fR: .7, fCurve: .7, aA: .03, aD: .8, aS: .8, aR: .6, mA: .001, mD: .35, mS: 0, mR: .5, mCurve: .8, l1shape: 0, l1rate: 31, l1sync: 0, l1retrig: 0},
         'Brüllen', {rev: .15, drive: .4}, [rt('menv', 'pitch', 5 / 24), rt('lfo1', 'pitch', .01), rt('lfo1', 'cutoff', kc(.03))]),
       page: ['env', 'mod'], rings: ['menv:pitch', 'mD', 'aS'], keys: ['menv:pitch', 'mD', 'aS', 'fenv', 'fA'], graph: 'pitch',
-      ab: [['Starr', {'menv:pitch': 0}], ['Mit Fall +5 HT', {}]], alt: ['Brüllen VOKAL', {ftype: 6, cutoff: 5060, fenv: -1, res: .4, fA: 1.2, fS: 1, fR: 2}],
+      ab: [['Starr', {'menv:pitch': 0}], ['Mit Fall +5 HT', {}]], alt: ['Brüllen VOKAL', {ftype: 6, cutoff: 5060, fenv: -1, res: .4, fA: 1.2, fS: 1, fR: 2, lvDb: -2.3}],
       ph: [[0, 1.6, 39, .9]], calc: {gate: 1.6, dur: 2.4, note: 39},
       task: 'Effekt, Hook, Drop-Akzent. Schicht für Schicht: Werkstatt „Monster-Swell“.',
       why: 'Ein Tier holt aus und lässt los: die Tonhöhe fällt am Anfang (+5 HT → 0 in 0,35 s), die Lautstärke bleibt oben (Sustain 80 %), während das Filter aufgeht. 31 Hz auf Tonhöhe und Cutoff geben die Kehle.',
@@ -20081,6 +20086,8 @@ const KSX = (() => {
       const b = g.el.getBoundingClientRect(); r._g = g;
       r.style.left = Math.round(b.left - 3) + 'px'; r.style.top = Math.round(b.top - 3) + 'px'; r.style.width = Math.round(b.width + 6) + 'px'; r.style.height = Math.round(b.height + 6) + 'px';
       r.classList.toggle('lb', b.top < 30); if (r.firstChild.textContent !== g.lb) r.firstChild.textContent = g.lb;
+      const sp = r.firstChild; sp.style.left = ''; const lr = sp.getBoundingClientRect(), ov = lr.right - (window.innerWidth - 4);   // KS3: Etikett am rechten Rand nach links schieben
+      if (ov > 0) sp.style.left = Math.round(-2 - Math.min(ov, lr.left - 4)) + 'px';
     });
     const lr = []; for (const r of KS.rings) { const a = r.firstChild.getBoundingClientRect(); if (lr.some(q => a.left < q.right && a.right > q.left && a.top < q.bottom && a.bottom > q.top)) { r.classList.toggle('lb', !r.classList.contains('lb')); } lr.push(r.firstChild.getBoundingClientRect()); }
     return groups;
@@ -20276,9 +20283,15 @@ const KSX = (() => {
   const abOf = (T, i) => (i < 2 ? T.ab[i] : T.ab2 ? T.ab2[i - 2] : null);
   const variant = (T, i) => patch(T.start(), fnv(abOf(T, i)[1]));
   const phLen = (T, s) => fnv(T.ph).reduce((m, [t, d]) => Math.max(m, t + d), 0) + Math.min(2.5, (+s.p.aR || .3) + .3);
+  // KS3: der Drive der Spur (FX, nach dem Filter: tanh-Kennlinie wie driveCurve, Ausgleich 1/(1 + 1,5 · Drive) in der Spur-Lautstärke)
+  // wird auf den Offline-Render gerechnet – sonst klingt ein Beispiel mit Drive am Master lauter (W1/W2 Schicht 4: 6 dB). Zufall (S&H): Mittel aus 3 Läufen.
+  const drvFx = (x, d) => { if (!(d > .005)) return x; const k = 1 + Math.round(d * 100) / 100 * 8, th = Math.tanh(k), g = 1 / (1 + d * 1.5), y = new Float32Array(x.length);
+    for (let i = 0; i < x.length; i++) y[i] = Math.tanh(k * Math.max(-1, Math.min(1, x[i]))) / th * g; return y; };
   async function lvOf(snds, T) {
-    const len = Math.min(8, Math.max(...snds.map(s => phLen(T, s)))) + .05;
-    const ch = await render(snds, fnv(T.ph), len); return ch.map(x => loud(x, 48000));
+    const len = Math.min(8, Math.max(...snds.map(s => phLen(T, s)))) + .05, n = T.rnd ? 3 : 1, acc = snds.map(() => 0);
+    const vl = s => { const v = (s.fx || {}).vol; return 40 * Math.log10(Math.max(1e-3, v == null ? .8 : +v) / .8); };   // Spur-Lautstärke (vol², nach dem Drive) gegen den Grundwert 80 %
+    for (let r = 0; r < n; r++) { const ch = await render(snds, fnv(T.ph), len); ch.forEach((x, i) => { acc[i] += loud(drvFx(x, +((snds[i].fx || {}).drive) || 0), 48000) + vl(snds[i]); }); }
+    return acc.map(v => v / n);
   }
   async function prefetch() { try { await gains(); } catch (e) {} }
   // Pegel der Beispiele dieser Aufgabe (einmal je Aufgabe, offline): Ziel = das leiseste – nichts wird lauter gemacht

@@ -31,6 +31,59 @@ const H = `const wait = ms => new Promise(r => setTimeout(r, ms));
   const chordClip = (ps, d) => ps.map(n => ({t: 0, d: d || 4, n, v: .8}));
   const mapP = (i, n) => mapOut(i, S.tracks[i].clips[0].key, n, Infinity);`;
 const run = (p, fn, arg) => p.evaluate('(async () => { ' + H + ' return (' + fn.toString() + ')(' + JSON.stringify(arg == null ? null : arg) + '); })()');
+/* ARP1-P (K2/Z): Messung im Lauf wie beim Prüfer – 6 Synth-Spuren (VA, FM, WT je 2×), Akkorde + Achtel-Bass, Szenenwechsel alle 8 s.
+   Gemessen wird arpTick einschließlich spawnVoice (die Stimmen des Arps), spawnVoice je Note (Arp / Clip), Long Tasks
+   (PerformanceObserver), „Vorlauf aufgebraucht“ (der Planer kam erst wieder dran, als die Audio-Uhr seinen letzten Horizont schon
+   überschritten hatte – nur dann können Noten zu spät kommen oder ausfallen; gemessen an arpTick(now, h), das jeder planende tick
+   aufruft; Abstände zwischen zwei Aufrufen allein sagen nichts, weil tickAhead(.3) – z. B. beim Autosichern – 300 ms vorausplant und die
+   tick danach früh zurückkehren) und Noten, die beim Anlegen schon > 3 ms hinter der Audio-Uhr lagen (zu spät gehört). */
+const PERF = `
+  const perfSetup = async (arp) => {
+    await host();
+    if (!window.__lt) { window.__lt = []; try { new PerformanceObserver(l => { for (const e of l.getEntries()) window.__lt.push({d: e.duration, t: e.startTime}); }).observe({entryTypes: ['longtask']}); } catch (e) {} }
+    while (S.tracks.filter(t => t.kind === 'synth').length < 6) { if (addTrack() < 0) break; }
+    const syn = S.tracks.map((t, i) => i).filter(i => S.tracks[i].kind === 'synth').slice(0, 6), engs = ['analog', 'fm6', 'wt', 'analog', 'fm6', 'wt'];
+    syn.forEach((i, k) => applySound(i, factorySound(INIT_IDS[engs[k]]))); await wait(500);
+    for (const t of S.tracks) if (t.kind === 'synth') t.clips = t.clips.map(() => null);
+    const K = () => Object.assign({}, S.key), chords = [[48, 52, 55, 59], [50, 53, 57, 60], [45, 48, 52, 55], [43, 47, 50, 53]];
+    syn.forEach((i, k) => {
+      S.tracks[i].clips[0] = normClip({len: 2, key: K(), notes: chords.flatMap((ch, q) => ch.map(n => ({t: q * 2, d: k % 2 ? .25 : 1.9, n: n + 12 * (k % 3), v: .7})))}, 'synth', S.key);
+      S.tracks[i].clips[1] = normClip({len: 1, key: K(), notes: [36, 36, 43, 43, 41, 41, 40, 40].map((n, q) => ({t: q * .5, d: .25, n: n + 12 * (k % 3), v: .8}))}, 'synth', S.key);
+    });
+    const cfgs = [{m: 'oktave', r: 16}, {m: 'aufab', r: 32, o: 3}, {m: 'zufall', r: 32, tri: 1, rep: 2, sw: 30}, {m: 'treppe', r: 16, tri: 1, o: 2, la: 1}, {m: 'akkord', r: 8, o: 2, g: 40}, {m: 'gespielt', r: 32, o: 4, g: 30}];
+    syn.forEach((i, k) => A.set(i, arp ? Object.assign({on: 1, g: 60, fig: 1}, cfgs[k]) : null));
+    return syn;
+  };
+  const perfRun = async (syn, sek, arp, edits) => {
+    const M = {arpT: 0, arpN: 0, arpMax: 0, arpSv: 0, svA: 0, svAN: 0, svC: 0, svCN: 0, late: 0, late10: 0, lateA: 0, lateMax: 0, gaps: 0, gapMax: 0, ivMax: 0, ticks: 0, edits: 0};
+    const oa = window.arpTick, os = window.spawnVoice; let inA = false, lastT = 0, lastH = null;
+    window.spawnVoice = function (i, out, vel, t0, o) { const a = performance.now(), d = AU.ctx ? AU.ctx.currentTime - t0 : 0; try { return os.apply(this, arguments); } finally { const e = performance.now() - a, ar = !!(o && o.src === 'arp'); if (ar) { M.svA += e; M.svAN++; } else { M.svC += e; M.svCN++; } if (inA) M.arpSv += e; if (d > .003 && R.playing) { M.late++; if (d > .01) M.late10++; if (ar) M.lateA++; if (d > M.lateMax) M.lateMax = d; } } };
+    window.arpTick = function (now, h) { const a = performance.now(); if (lastT && R.playing) { const g = a - lastT; if (g > M.ivMax) M.ivMax = g; if (lastH != null && now > lastH) { M.gaps++; M.gapMax = Math.max(M.gapMax, (now - lastH) * 1000); } } lastT = a; lastH = R.playing ? now + (typeof h === 'number' && h > 0 ? h : LOOKAHEAD) : null; M.ticks++; inA = true; try { return oa.apply(this, arguments); } finally { inA = false; const e = performance.now() - a; M.arpT += e; M.arpN++; if (e > M.arpMax) M.arpMax = e; } };
+    window.__lt.length = 0; const e0 = TICKERR.n, P = ['auf', 'ab', 'aufab', 'treppe', 'oktave', 'gespielt', 'akkord', 'zufall'], engs = ['analog', 'fm6', 'wt'], EV = [];
+    S.bpm = 128; setSongView(false); launchScene(0);
+    const t0 = performance.now(); let k = 0, maxV = 0;
+    try {
+      while (performance.now() - t0 < sek * 1000) {
+        await wait(2000); k++;
+        if (k % 4 === 0) { EV.push(['szene', performance.now()]); launchScene(k % 8 === 0 ? 0 : 1); }
+        if (edits) {   // Klangwechsel und stumm in beiden Läufen (fairer Vergleich), Arp-Änderungen nur mit Arp
+          if (arp) { EV.push(['arp', performance.now()]); const i = syn[k % syn.length]; arp1Edit(i, 'Arp-Muster', cc => Object.assign(cc || {}, {m: P[k % P.length], on: k % 7 ? 1 : 0, g: 30 + (k * 7) % 60})); M.edits++; }
+          if (k % 11 === 0) { EV.push(['klang', performance.now()]); applySound(syn[1], factorySound(INIT_IDS[engs[(k / 11) % 3 | 0]])); }
+          if (k % 13 === 0) { EV.push(['stumm', performance.now()]); setMute(syn[0], true); await wait(400); setMute(syn[0], false); }
+        }
+        maxV = Math.max(maxV, VOICES.filter(v => !v.dead).length);
+      }
+    } finally { stop(); await wait(800); window.arpTick = oa; window.spawnVoice = os; }
+    const L0 = window.__lt.slice(), lt = L0.map(x => x.d), r2 = x => +x.toFixed(3), wo = {};
+    for (const x of L0) { let w = 'Lauf'; for (const [n, t] of EV) if (t <= x.t + 1 && x.t - t < 300) w = n; wo[w] = (wo[w] || 0) + 1; }   // Long Task in den 300 ms nach einem Ereignis = diesem zugeordnet
+    return {sek, maxV, edits: M.edits, err: TICKERR.n - e0, ticks: M.ticks, vorlaufWeg: M.gaps, vorlaufWegMaxMs: +M.gapMax.toFixed(1), abstandMaxMs: Math.round(M.ivMax),
+      lt: lt.length, ltWo: wo, ltMin: r2(lt.length / sek * 60), ltMax: lt.length ? Math.round(Math.max(...lt)) : 0, ltSum: Math.round(lt.reduce((x, y) => x + y, 0)),
+      arpMs: r2(M.arpT / Math.max(1, M.arpN)), arpMax: +M.arpMax.toFixed(1), arpAnteil: +(M.arpT / (sek * 10)).toFixed(2), arp1Ms: r2((M.arpT - M.arpSv) / Math.max(1, M.arpN)), arp1Anteil: +((M.arpT - M.arpSv) / (sek * 10)).toFixed(3),
+      svArpUs: M.svAN ? Math.round(M.svA / M.svAN * 1000) : 0, svClipUs: M.svCN ? Math.round(M.svC / M.svCN * 1000) : 0, nArp: M.svAN, nClip: M.svCN,
+      late: M.late, late10: M.late10, lateArp: M.lateA, lateMaxMs: +(M.lateMax * 1000).toFixed(1),
+      voices: VOICES.filter(v => !v.dead && v.end > AU.ctx.currentTime + .05).length, st: typeof ARP1K !== 'undefined' ? ARP1K.ST.size : 0, playing: R.playing};
+  };`;
+const runP = (p, fn, arg) => p.evaluate('(async () => { ' + H + PERF + ' return (' + fn.toString() + ')(' + JSON.stringify(arg == null ? null : arg) + '); })()');
 const tDown = (p, x, y) => p.cdp.send('Input.dispatchTouchEvent', {type: 'touchStart', touchPoints: [{x, y, id: 1, radiusX: 4, radiusY: 4, force: 1}]});
 const tUp = p => p.cdp.send('Input.dispatchTouchEvent', {type: 'touchEnd', touchPoints: []});
 async function tap(p, x, y) { await tDown(p, x, y); await p.waitForTimeout(60); await tUp(p); await p.waitForTimeout(300); }
@@ -271,6 +324,16 @@ try {
       UI.expArp = true; o.log1 = bytes(SYNQUENZER.buildMidi({mode: 'log'})); UI.expArp = false; o.log2 = bytes(SYNQUENZER.buildMidi({mode: 'log'})); UI.expArp = true;
       // Export-Blatt: Zeile „Arp“ nur, wenn eine MIDI-Spur Arp an hat
       o.row = arp1ExpRow().includes('data-va="wg-arp"'); A.set(i, null); o.rowOff = arp1ExpRow() === '';
+      // ARP1-P (D5b): Arp auf einer Spur hinter den ersten 5 (Melodie bzw. neu angelegt) – Zeile da, „wie im Clip“ wirkt auch dort
+      let j = S.tracks.findIndex((t, k) => k >= MIDI_T && arp1EngOk(t)); if (j < 0) { j = addTrack(); if (j >= 0) applySound(j, factorySound(INIT_IDS.analog)); }
+      o.j = j; o.jName = j >= 0 ? S.tracks[j].name : null;
+      if (j >= 0) {
+        S.tracks[j].clips[0] = normClip({len: 1, key: Object.assign({}, S.key), notes: [60, 64, 67].map(n => ({t: 0, d: 4, n, v: .8}))}, 'synth', S.key);
+        A.set(j, {on: 1, m: 'auf', r: 16}); o.rowJ = arp1ExpRow().includes('data-va="wg-arp"');
+        const cnt = () => { const m = va1MidiClip(j, 0, true); return m && m.counts ? m.counts[j] : null; };
+        UI.expArp = true; o.jOn = cnt(); UI.expArp = false; o.jOff = cnt(); UI.expArp = true;
+        A.set(j, null); o.rowJOff = arp1ExpRow() === '';
+      }
       return o;
     });
     const sc = midiNotes(r.scene).filter(n => n.ch === r.ch), off = midiNotes(r.sceneOff).filter(n => n.ch === r.ch), sg = midiNotes(r.song).filter(n => n.ch === r.ch), cl = midiNotes(r.clip).filter(n => n.ch === r.ch);
@@ -281,7 +344,33 @@ try {
     ok(off.length === r.clipN, 'D3 Schalter „wie im Clip“: nur die ' + r.clipN + ' Clip-Noten (wie bisher)', off.length);
     ok(r.log1 && r.log2 && eq(r.log1, r.log2) && midiNotes(r.log1).filter(n => n.ch === r.ch).length >= 8, 'D4 Mitschnitt: mit und ohne Schalter bytegleich (Arp-Noten einmal drin, nie doppelt)', midiNotes(r.log1 || []).filter(n => n.ch === r.ch).length);
     ok(r.row && r.rowOff, 'D5 Export-Blatt: Zeile „Arp: als Noten | wie im Clip“ nur, wenn eine Spur Arp an hat');
+    ok(r.j >= 5 && r.rowJ && r.jOn === 16 && r.jOff === 3 && r.rowJOff, 'D5b Arp auf Spur ' + (r.j + 1) + ' (' + r.jName + ', hinter den ersten 5): Zeile da, „als Noten“ 16 Arp-Noten, „wie im Clip“ die 3 Clip-Noten', {j: r.j, row: r.rowJ, an: r.jOn, aus: r.jOff});
     await p.close();
+    // ARP1-P (D6): MIDI „als Noten“ = gehört, wenn eine kurze Note kurz vor einem Szenen-/Clipwechsel liegt (die Wiedergabe kappt dort)
+    const p2 = await page();
+    const r2 = await run(p2, async () => {
+      await host(); const i = va(), o = {}; applySound(i, factorySound(INIT_IDS.analog)); S.settings.swing = 0; S.bpm = 120; await wait(200);
+      const K = () => Object.assign({}, S.key), bytes = m => (m && m.bytes ? Array.from(m.bytes) : null);
+      const cases = [
+        ['ganze Figur, Akkord 1/16 vor dem Wechsel (Auf-Ab 2 Okt.)', [{t: 0, d: .25, n: 48, v: .8}, ...[60, 64, 67].map(n => ({t: 3.5, d: .25, n, v: .8}))], [{t: 2, d: .5, n: 50, v: .8}], {on: 1, m: 'aufab', r: 16, o: 2, fig: 1, la: 0}],
+        ['Oktav-Bass, letzte Sechzehntel vor dem Wechsel, danach Pause', [36, 36, 43, 43, 41, 41, 40].map((n, k) => ({t: k * .5, d: .25, n, v: .8})).concat([{t: 3.75, d: .25, n: 40, v: .8}]), [{t: 2, d: .25, n: 38, v: .8}], {on: 1, m: 'oktave', r: 16, o: 1, fig: 1, la: 0}],
+        ['Latch über den Wechsel', [60, 64, 67].map(n => ({t: 0, d: 1, n, v: .8})), [{t: 2, d: .5, n: 50, v: .8}], {on: 1, m: 'auf', r: 16, o: 1, fig: 0, la: 1}]];
+      for (const [nm, n1, n2, cfg] of cases) {
+        for (const t of S.tracks) t.clips = t.clips.map(() => null);
+        S.tracks[i].clips[0] = normClip({len: 1, key: K(), notes: n1}, 'synth', S.key); S.tracks[i].clips[1] = normClip({len: 1, key: K(), notes: n2}, 'synth', S.key);
+        A.set(i, cfg); SYNQUENZER.songFromChain([{scene: 0, bars: 1}, {scene: 1, bars: 1}]);
+        const s = await rend(2);
+        o[nm] = {heard: lg(s, i, 'arp').map(e => [+e.b.toFixed(3), e.p]), all: bytes(SYNQUENZER.buildMidi({mode: 'all'})), song: bytes(SYNQUENZER.buildMidi({mode: 'song'})), va1: bytes(va1MidiSong([i], true))};
+      }
+      o.ch = midiCh(i); return o;
+    });
+    for (const [nm, v] of Object.entries(r2)) { if (nm === 'ch') continue;
+      const res = {}; let all = true;
+      for (const k of ['all', 'song', 'va1']) { const mn = v[k] ? midiNotes(v[k]).filter(n => n.ch === r2.ch).map(n => [+n.t.toFixed(3), n.p]) : null;
+        const same = !!mn && mn.length === v.heard.length && mn.every((x, q) => Math.abs(x[0] - v.heard[q][0]) < .003 && x[1] === v.heard[q][1]); res[k] = mn ? mn.length : null; if (!same) all = false; }
+      ok(all, 'D6 MIDI „als Noten“ = gehört am Szenenwechsel – ' + nm + ' (alle Szenen, Song, Ganzer Song)', {gehoert: v.heard.length, midi: res, ab4: v.heard.filter(x => x[0] >= 3.4).slice(0, 5)});
+    }
+    await p2.close();
   }
 
   /* ================= E: Festschreiben + ↶ ================= */
@@ -304,6 +393,26 @@ try {
     ok(r.after.length === r.heard.length && r.after.every((e, k) => e[2] === 'clip' && e[0] === r.heard[k][0] && e[1] === r.heard[k][1]), 'E2 Der festgeschriebene Clip klingt wie vorher der Arp (' + r.heard.length + ' Noten, Zeit + Tonhöhe, jetzt Clip-Noten)');
     ok(r.undoClip && r.undoArp && r.undoArp.on === 1 && r.redoN === r.nNotes && r.redoArp === 0, 'E3 ↶ = alter Clip + Arp wieder an · ↷ = wieder festgeschrieben');
     ok(/kein Clip/.test(r.why) && /aus/.test(r.whyOff), 'E4 Leerer Clip / Arp aus: Knopf grau mit Grund', [r.why, r.whyOff]);
+    // ARP1-P (E5): Song-Swing + eigener Arp-Swing – als Clip-Noten käme der Song-Swing noch einmal dazu (nicht ausgleichbar): Knopf grau
+    // mit Grund; sonst klingt der festgeschriebene Clip wie der Arp
+    const r5 = await run(p, async () => {
+      const i = va(), o = {}; await host();
+      // lock: eine Arp-Note fiele in ein Swing-Fenster des Songs (Sechzehntel-Offbeat ± 0,02 Schlag); 1/8 mit +50 % liegt auf x,625 – frei
+      const cases = [['Song-Swing, Arp 0, 1/32', {m: 'auf', r: 32, sw: 0}, .5, 0], ['Song-Swing, Arp +20 %, 1/32', {m: 'auf', r: 32, sw: 20}, .5, 1], ['Song-Swing, Arp +10 %, 1/16', {m: 'auf', r: 16, sw: 10}, .5, 1], ['Song-Swing, Arp −10 %, 1/16', {m: 'auf', r: 16, sw: -10}, .5, 1], ['Song-Swing, Arp +50 %, 1/8', {m: 'auf', r: 8, sw: 50}, .5, 0], ['ohne Song-Swing, Arp +20 %, 1/32', {m: 'auf', r: 32, sw: 20}, 0, 0]];
+      for (const [nm, cfg, ssw, lock] of cases) {
+        S.settings.swing = ssw; S.bpm = 120;
+        solo(i, [60, 64, 67].map(n => ({t: 0, d: 4, n, v: .8})), 1, 1);
+        A.set(i, Object.assign({on: 1, g: 50, o: 1, ks: 1, fig: 1, rep: 1, tri: 0, la: 0}, cfg)); R.selS = 0;
+        const s1 = await rend(1), a1 = lg(s1, i, 'arp').map(e => [+e.b.toFixed(4), e.p]), why = A.bakeWhy(i, 0), u0 = UNDO.length;
+        const done = A.bake(i, 0);
+        let diff = null; if (done) { const s2 = await rend(1), a2 = lg(s2, i).map(e => [+e.b.toFixed(4), e.p]); diff = 0; for (let k = 0; k < Math.max(a1.length, a2.length); k++) if (!a1[k] || !a2[k] || Math.abs(a1[k][0] - a2[k][0]) > .002 || a1[k][1] !== a2[k][1]) diff++; undo(); }
+        o[nm] = {why, bake: done, u: UNDO.length - u0, n: a1.length, diff, lock};
+      }
+      S.settings.swing = 0; return o;
+    });
+    for (const [nm, v] of Object.entries(r5)) {
+      ok(v.lock ? (!v.bake && /Song-Swing/.test(v.why) && v.u === 0) : (v.bake && !v.why && v.diff === 0 && v.n > 0), 'E5 In den Clip schreiben – ' + nm + ': ' + (v.lock ? 'Knopf grau mit Grund' : 'klingt wie der Arp'), v);
+    }
     await p.close();
   }
 
@@ -390,11 +499,45 @@ try {
     let g = await p.evaluate(() => ({a: SYNQUENZER.arp1.get(R.selT), txt: (document.querySelector('#synthSheet .a1row .a1sum') || {}).textContent}));
     ok(g.a && g.a.on === 1 && /Auf · 1\/16/.test(g.txt), 'H2 ' + n + ': Tipp „AN“ → Arp an (Auf · 1/16 · 1 Okt.), Zusammenfassung in der Zeile', g.txt);
     await p.screenshot({path: path.join(fotos, 'arp1-stimme-an-' + n + '.png')});
+    // ARP1-P (H1b): lange Zusammenfassung („Treppe · 1/16T · 4 Okt. · ×4 · Latch“) – die Zeile bleibt in der Karte (vorher 9 px darüber)
+    {
+      const lw = await run(p, async () => { const i = R.selT, a0 = A.get(i); A.set(i, {on: 1, m: 'treppe', r: 16, tri: 1, o: 4, rep: 4, la: 1}); await wait(250);
+        const r = document.querySelector('#synthSheet .a1row'), b = r && r.querySelector('.a1sum b'); if (!r) return null; const a = r.getBoundingClientRect(), c = r.parentElement.getBoundingClientRect();
+        const o = {right: Math.round(a.right), card: Math.round(c.right), vw: innerWidth, txt: b ? b.textContent : '', cut: b ? b.scrollWidth > b.clientWidth : null}; o.pic = 1; window.__a1keep = a0; return o; });
+      ok(lw && lw.right <= lw.card + .5 && lw.right <= lw.vw - 8, 'H1b ' + n + ': lange Zusammenfassung – Zeile ARP bleibt in der Karte', lw);
+      if (n === 'hochkant') await p.screenshot({path: path.join(fotos, 'arp1-stimme-lang-' + n + '.png')});
+      await run(p, async () => { A.set(R.selT, window.__a1keep); await wait(200); });
+    }
     if (sumB) await tap(p, sumB.x, sumB.y);
     await p.waitForTimeout(400);
     const st = await p.evaluate(() => { const P = document.querySelector('.pop.a1pop'); if (!P) return null; const r = P.getBoundingClientRect(); const bs = [...P.querySelectorAll('button')].filter(b => b.getClientRects().length && !b.classList.contains('ux1-px')); const small = bs.map(b => b.getBoundingClientRect()).filter(q => q.height < 43.5 || q.width < 30).length; return {in: r.left >= 7.5 && r.top >= 7.5 && r.right <= innerWidth - 7.5 && r.bottom <= innerHeight - 7.5, small, n: bs.length, scroll: P.scrollHeight > P.clientHeight + 1, over: P.scrollWidth > P.clientWidth + 1}; });
     ok(st && st.in && st.small === 0 && !st.over, 'H3 ' + n + ': Blatt „Arp“ ganz im Bild (8 px Rand), alle ' + (st ? st.n : 0) + ' Tasten ≥ 44 px, nichts läuft seitlich über' + (st && st.scroll ? ', innen rollbar' : ''), st);
     await p.screenshot({path: path.join(fotos, 'arp1-blatt-' + n + '.png')});
+    // ARP1-P (H3b): Gate › und Swing › stehen untereinander und bleiben beim Tippen stehen (die Zusatzschrift hat feste Breite)
+    {
+      const pos = () => p.evaluate(() => { const q = s => { const e = document.querySelector('.pop.a1pop ' + s); if (!e) return null; const r = e.getBoundingClientRect(); return {x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2)}; }; return {g: q('button[data-g="+"]'), sw: q('button[data-sw="+"]'), gm: q('button[data-g="-"]'), swm: q('button[data-sw="-"]')}; });
+      const xs = {g: [], sw: [], gm: [], swm: []};
+      for (const st of [{g: 80, sw: 0}, {g: 30, sw: 5}, {g: 100, sw: -100}, {g: 5, sw: 100}]) {
+        await run(p, async (x) => { A.set(R.selT, Object.assign(A.get(R.selT), x)); ARP1UI.paint(); await wait(80); }, st);
+        const q = await pos(); for (const k of Object.keys(xs)) xs[k].push(q[k] ? q[k].x : null);
+      }
+      const still = Object.values(xs).every(L => L.every(x => x != null && x === L[0]));
+      ok(still && xs.g[0] === xs.sw[0] && xs.gm[0] === xs.swm[0], 'H3b ' + n + ': Gate ‹ › und Swing ‹ › stehen untereinander und wandern nicht (Song / eigener / kurz / gebunden)', xs);
+      await run(p, async () => { A.set(R.selT, Object.assign(A.get(R.selT), {g: 80, sw: 0})); ARP1UI.paint(); await wait(80); });
+      await p.evaluate(() => { const b = document.querySelector('.pop.a1pop button[data-sw="+"]'); if (b) b.scrollIntoView({block: 'center'}); }); await p.waitForTimeout(150);
+      const c0 = (await pos()).sw; await tap(p, c0.x, c0.y); await tap(p, c0.x, c0.y);
+      const sw2 = await p.evaluate(() => SYNQUENZER.arp1.get(R.selT).sw);
+      ok(sw2 === 10, 'H3b ' + n + ': zweimal an dieselbe Stelle auf Swing › getippt = +10 % (vorher +5 %, der Knopf war weggewandert)', sw2);
+      await run(p, async () => { A.set(R.selT, Object.assign(A.get(R.selT), {sw: 0})); ARP1UI.paint(); await wait(80); });
+      // H3c: „In den Clip schreiben“ einzeilig (Szene steht im Hinweis) · H3d: Key Sync / Latch / Kurze Noten – Titel über Untertitel
+      const lay = await p.evaluate(() => { const P = document.querySelector('.pop.a1pop'); if (!P) return null;
+        const lines = b => { const r = document.createRange(); r.selectNodeContents(b); const ys = new Set([...r.getClientRects()].map(q => Math.round(q.top))); return ys.size; };
+        const bk = P.querySelector('button[data-a="bake"]'), o = {bakeH: bk ? Math.round(bk.getBoundingClientRect().height) : null, bakeLines: bk ? lines(bk) : null, tg: []};
+        for (const b of P.querySelectorAll('.a1tgs button')) { const sm = b.querySelector('small'), r = document.createRange(); r.setStart(b, 0); r.setEndBefore(sm); const t = r.getBoundingClientRect(), q = sm.getBoundingClientRect(), bb = b.getBoundingClientRect(); o.tg.push({below: q.top >= t.bottom - 1, inside: q.bottom <= bb.bottom + .5 && t.top >= bb.top - .5}); }
+        return o; });
+      ok(lay && lay.bakeLines === 1 && lay.bakeH <= 46, 'H3c ' + n + ': „In den Clip schreiben“ einzeilig', lay && {h: lay.bakeH, zeilen: lay.bakeLines});
+      ok(lay && lay.tg.length === 3 && lay.tg.every(x => x.below && x.inside), 'H3d ' + n + ': Key Sync / Latch / Kurze Noten – Titel über dem Untertitel', lay && lay.tg);
+    }
     await tapSel(p, '.pop.a1pop button[data-q="okt"]');
     g = await p.evaluate(() => SYNQUENZER.arp1.get(R.selT));
     ok(g && g.m === 'oktave' && g.r === 16 && g.fig === 1, 'H4 ' + n + ': Schnellwahl „Oktav-Bass“ → Oktave · 1/16 · ganze Figur', g);
@@ -420,6 +563,21 @@ try {
     await p.screenshot({path: path.join(fotos, 'arp1-menue-' + n + '.png')});
     if (ent) { await tap(p, ent.x, ent.y); await p.waitForTimeout(400); }
     ok(await p.evaluate(() => SYNQUENZER.arp1.isOpen()), 'H8 ' + n + ': Tipp öffnet das Blatt');
+    // ARP1-P (H8b): direkt nach ↶ (Hinweis-Streifen „Rückgängig: Arp festschreiben / ↷ Wiederholen“, 5 s) ⋯ › Arpeggiator tippen
+    {
+      const u = await run(p, async () => { closePop(); const i = R.selT, s = R.selS;
+        S.tracks[i].clips[s] = normClip({len: 1, key: Object.assign({}, S.key), notes: [60, 64, 67].map(n => ({t: 0, d: 2, n, v: .8}))}, 'synth', S.key);
+        A.set(i, {on: 1, m: 'auf', r: 16}); const b = A.bake(i, s); await wait(100); undo(); await wait(120); return {bake: b, toast: EL.toast.classList.contains('show'), txt: EL.toast.textContent}; });
+      if (more) await tap(p, more.x, more.y);
+      await p.waitForTimeout(120);
+      const ov = await p.evaluate(() => { const b = document.querySelector('.pop button[data-a="arp1"]'), T = EL.toast; if (!b) return null; const r = b.getBoundingClientRect(), q = T.getBoundingClientRect(), sh = T.classList.contains('show');
+        return {toast: sh, over: sh && r.bottom > q.top + 1 && r.top < q.bottom - 1 && r.right > q.left + 1 && r.left < q.right - 1, x: r.left + r.width / 2, y: r.top + r.height / 2}; });
+      if (n === 'quer') await p.screenshot({path: path.join(fotos, 'arp1-menue-nach-undo-' + n + '.png')});
+      if (ov) await tap(p, ov.x, ov.y);
+      await p.waitForTimeout(400);
+      const opened = await p.evaluate(() => SYNQUENZER.arp1.isOpen());
+      ok(u.bake && u.toast && ov && !ov.over && opened, 'H8b ' + n + ': direkt nach ↶ ⋯ › Arpeggiator – kein Hinweis-Streifen über dem Eintrag, Tipp öffnet das Blatt', {undo: u.toast, streifen: ov && ov.toast, ueber: ov && ov.over, offen: opened});
+    }
     await run(p, async () => { closePop(); closeEditor(); });
     // Export-Blatt mit der Zeile „Arp“
     const ex = await run(p, async () => { va1Sheet(); await wait(500); const b = document.querySelector('[data-va="wg-arp"]'); if (b) b.scrollIntoView({block: 'center'}); await wait(200); const r = b ? b.getBoundingClientRect() : null; return r ? {h: r.height, n: document.querySelectorAll('[data-va="wg-arp"]').length} : null; });
@@ -448,15 +606,6 @@ try {
       await host(); const i = va(), o = {};
       const t0 = performance.now(); arpSrcLoad(); o.arpLoad = performance.now() - t0;
       const t1 = performance.now(); arp1UiLoad(); o.uiLoad = performance.now() - t1;
-      const notes = []; for (let q = 0; q < 8; q++) for (const n of [48, 52, 55, 59]) notes.push({t: q * .5, n, d: .5, v: .8});
-      solo(i, notes, 1, 1); A.set(i, {on: 1, m: 'aufab', r: 32, o: 3, g: 60, ks: 1});
-      launchScene(0); await wait(500);
-      const T = []; for (let k = 0; k < 80; k++) { const a = performance.now(); tick(); T.push(performance.now() - a); await wait(25); }
-      stop(); A.set(i, null);
-      launchScene(0); await wait(500);
-      const T0 = []; for (let k = 0; k < 80; k++) { const a = performance.now(); tick(); T0.push(performance.now() - a); await wait(25); }
-      stop(); T.sort((x, y) => x - y); T0.sort((x, y) => x - y);
-      o.tick = T[40]; o.tickMax = T[79]; o.tick0 = T0[40];
       // Adapter: kein Neubau je Blick (dasselbe Objekt solange tr.arp gleich bleibt)
       A.set(i, {on: 1, m: 'auf'}); const m1 = arp1Adapt(S.tracks[i]), m2 = arp1Adapt(S.tracks[i]); o.same = m1 === m2;
       // Muster-Rechnung gnNotes: gleiche Ergebnisse wie arpPattern (Auf, Ab, Auf-Ab, Zufall, Treppe) über 300 Zufallsfälle, Puffer bleibt gleich groß
@@ -469,10 +618,19 @@ try {
       return o;
     });
     ok(r.arpLoad < 5 && r.uiLoad < 5, 'K1 Blöcke laden: Arp-Kern ' + r.arpLoad.toFixed(2) + ' ms, Blatt (sq-arp1-src) ' + r.uiLoad.toFixed(2) + ' ms (< 5 ms, einmal)');
-    ok(r.tick < .5, 'K2 Planer-Durchlauf (tick) mit Arp 1/32 Auf-Ab, 3 Oktaven, 4-Ton-Akkord: Median ' + r.tick.toFixed(3) + ' ms (ohne Arp ' + r.tick0.toFixed(3) + ' ms), max ' + r.tickMax.toFixed(2) + ' ms');
     ok(r.same, 'K3 Adapter je Spur zwischengespeichert (kein Neubau je Blick des Planers)');
     ok(r.diff === 0, 'K4 gnNotes = arpPattern des MS-Arps für Auf, Ab, Auf-Ab, Zufall, Treppe (1 500 Zufallsfälle)', r.diff);
     await p.close();
+    // ARP1-P (K2): Rechenzeit im Lauf mit 6 Arp-Spuren (30 s) – arpTick mit den Stimmen (spawnVoice) und der Anteil der Arp-Rechnung selbst
+    {
+      const pk = await page();
+      const k2 = await runP(pk, async () => { const syn = await perfSetup(true); return await perfRun(syn, 30, true, false); });
+      info('K2 Lauf 30 s mit 6 Arp-Spuren', k2);
+      // Grenze aus PLAN.md: „tick mit Arp ≤ 0,5 ms“ – hier ehrlich mit den Stimmen (spawnVoice) des Arps gemessen, im Lauf, 6 Spuren
+      ok(k2.err === 0 && k2.arpMs <= .5, 'K2 Planer mit 6 Arp-Spuren im Lauf (1/8 … 1/32T, Stimmen-Anlage eingerechnet): ' + k2.arpMs.toFixed(3) + ' ms je Durchlauf (≤ 0,5 ms), max ' + k2.arpMax + ' ms, ' + k2.arpAnteil + ' % des Haupt-Fadens; davon Arp-Rechnung ohne spawnVoice ' + k2.arp1Ms.toFixed(3) + ' ms (' + k2.arp1Anteil + ' %)', {arpMs: k2.arpMs, arpMax: k2.arpMax, anteil: k2.arpAnteil, arp1Ms: k2.arp1Ms, lt: k2.lt, ltMax: k2.ltMax});
+      info('K2 spawnVoice je Note: Arp ' + k2.svArpUs + ' µs (' + k2.nArp + ' Noten), Clip ' + k2.svClipUs + ' µs (' + k2.nClip + ')');
+      await pk.close();
+    }
     // Startzeit: Basis gegen ARP1 abwechselnd
     const T = {b: [], n: []};
     for (let k = 0; k < 4; k++) for (const [key, f] of [['b', basis], ['n', file]]) {
@@ -484,40 +642,19 @@ try {
     ok(med(T.n) < med(T.b) * 1.1 + 30, 'K5 Startzeit nicht messbar schlechter (Median ARP1 ' + med(T.n) + ' ms gegen Basis ' + med(T.b) + ' ms)', T);
   }
 
-  /* ================= Z: 3 Minuten Wiedergabe ================= */
+  /* ================= Z: 3 Minuten Wiedergabe (ARP1-P: 6 Arp-Spuren, gemessen gegen 60 s ohne Arp) ================= */
   if (ONLY.includes('Z')) {
     const p = await page();
     const n0 = errs.length;
-    const r = await run(p, async () => {
-      await host(); const o = {edits: 0};
-      const syn = S.tracks.map((t, i) => i).filter(i => S.tracks[i].kind === 'synth').slice(0, 3);
-      const engs = ['analog', 'fm6', 'wt'];
-      syn.forEach((i, k) => { applySound(i, factorySound(INIT_IDS[engs[k]])); });
-      for (const t of S.tracks) if (t.kind === 'synth') t.clips = t.clips.map(() => null);
-      const [a, b2, c] = syn;
-      S.tracks[a].clips[0] = normClip({len: 1, key: Object.assign({}, S.key), notes: [36, 36, 43, 43, 41, 41, 40, 40].map((n, k) => ({t: k * .5, d: .25, n, v: .8}))}, 'synth', S.key);
-      S.tracks[a].clips[1] = normClip({len: 2, key: Object.assign({}, S.key), notes: [33, 33, 33, 33, 38, 38, 40, 40].map((n, k) => ({t: k, d: .5, n, v: .8}))}, 'synth', S.key);
-      S.tracks[b2].clips[0] = normClip({len: 1, key: Object.assign({}, S.key), notes: [...[60, 64, 67].map(n => ({t: 0, d: 2, n, v: .7})), ...[62, 65, 69].map(n => ({t: 2, d: 2, n, v: .7}))]}, 'synth', S.key);
-      S.tracks[b2].clips[1] = normClip({len: 1, key: Object.assign({}, S.key), notes: [57, 60, 64].map(n => ({t: 0, d: 1, n, v: .7}))}, 'synth', S.key);
-      S.tracks[c].clips[0] = normClip({len: 1, key: Object.assign({}, S.key), notes: [72, 74, 76, 79].map((n, k) => ({t: k, d: .9, n, v: .6}))}, 'synth', S.key);
-      A.set(a, {on: 1, m: 'oktave', r: 16, g: 70}); A.set(b2, {on: 1, m: 'aufab', r: 16, tri: 1, o: 2, g: 60, la: 1}); A.set(c, {on: 1, m: 'zufall', r: 32, g: 40, sw: 30, rep: 2});
-      S.bpm = 128; setSongView(false); launchScene(0);
-      const t0 = performance.now(), M = ['auf', 'ab', 'aufab', 'treppe', 'oktave', 'gespielt', 'akkord', 'zufall']; let k = 0, maxV = 0;
-      while (performance.now() - t0 < 180000) {
-        await wait(2500); k++;
-        if (k % 4 === 0) launchScene(k % 8 === 0 ? 0 : 1);
-        const i = syn[k % 3]; arp1Edit(i, 'Arp-Muster', cc => Object.assign(cc || {}, {m: M[k % M.length], on: k % 7 ? 1 : 0})); o.edits++;
-        if (k % 11 === 0) { applySound(syn[1], factorySound(INIT_IDS[engs[(k / 11) % 3 | 0]])); }
-        if (k % 13 === 0) { setMute(syn[0], true); await wait(400); setMute(syn[0], false); }
-        maxV = Math.max(maxV, VOICES.filter(v => !v.dead).length);
-      }
-      stop(); await wait(800);
-      o.voices = VOICES.filter(v => !v.dead && v.end > AU.ctx.currentTime + .05).length; o.st = ARP1K.ST.size; o.err = TICKERR.n; o.maxV = maxV; o.playing = R.playing;
-      o.arpNotes = (() => { let n = 0; for (let q = Math.max(0, LOG.n - 4096); q < LOG.n; q++) { const e = LOG.buf[q % 4096]; if (e && e.src === 'arp') n++; } return n; })();
-      return o;
-    });
-    ok(errs.length === n0 && r.err === 0, 'Z1 3 Minuten Wiedergabe (3 Spuren mit Arp: VA Oktav-Bass, FM Auf-Ab-Triolen mit Latch, WT Zufall 1/32 mit Swing; Szenenwechsel, ' + r.edits + ' Arp-Änderungen, Klangwechsel, stumm): keine Konsolen- und Planer-Fehler', errs.slice(n0, n0 + 3));
-    ok(r.voices === 0 && r.st === 0, 'Z2 danach keine hängende Stimme, kein Arp-Zustand', r);
+    const r0 = await runP(p, async () => { const syn = await perfSetup(false); return await perfRun(syn, 60, false, true); });
+    info('Z0 ohne Arp 60 s (dieselben 6 Spuren, Clips, Szenen- und Klangwechsel)', r0);
+    const r = await runP(p, async () => { const syn = await perfSetup(true); return await perfRun(syn, 180, true, true); });
+    info('Z mit 6 Arp-Spuren 180 s (Szenenwechsel, Arp-Änderungen, Klangwechsel, stumm)', r);
+    ok(errs.length === n0 && r.err === 0 && r0.err === 0, 'Z1 3 Minuten mit 6 Arp-Spuren (VA, FM, WT; Oktave, Auf-Ab 1/32, Zufall 1/32T mit Swing, Treppe mit Latch, Akkord, Gespielt 4 Okt.; ' + r.edits + ' Arp-Änderungen, Szenenwechsel, Klangwechsel, stumm): keine Konsolen- und Planer-Fehler', errs.slice(n0, n0 + 3));
+    ok(r.voices === 0 && r.st === 0 && !r.playing, 'Z2 danach keine hängende Stimme, kein Arp-Zustand', {voices: r.voices, st: r.st, maxV: r.maxV});
+    const perMin = x => +(x.late / x.sek * 60).toFixed(1);
+    ok(r.vorlaufWeg <= Math.max(2, r0.vorlaufWeg / r0.sek * r.sek * 2) && r.late10 <= Math.max(3, r0.late10 / r0.sek * r.sek * 2), 'Z3 Timing unter Last: Vorlauf des Planers aufgebraucht ' + r.vorlaufWeg + '× (ohne Arp ' + r0.vorlaufWeg + '× in 60 s), Noten > 10 ms zu spät ' + r.late10 + ' von ' + (r.nArp + r.nClip) + ' (ohne Arp ' + r0.late10 + ' von ' + r0.nClip + ')', {mit: {vorlaufWeg: r.vorlaufWeg, maxMs: r.vorlaufWegMaxMs, abstandMaxMs: r.abstandMaxMs, late: r.late, late10: r.late10, lateArp: r.lateArp, lateMaxMs: r.lateMaxMs, proMin: perMin(r)}, ohne: {vorlaufWeg: r0.vorlaufWeg, maxMs: r0.vorlaufWegMaxMs, abstandMaxMs: r0.abstandMaxMs, late: r0.late, late10: r0.late10, lateMaxMs: r0.lateMaxMs, proMin: perMin(r0)}});
+    info('Z4 Long Tasks je Minute: mit Arp ' + r.ltMin + ' (max ' + r.ltMax + ' ms, Summe ' + r.ltSum + ' ms in 180 s, nach ' + JSON.stringify(r.ltWo) + ') · ohne Arp ' + r0.ltMin + ' (max ' + r0.ltMax + ' ms, nach ' + JSON.stringify(r0.ltWo) + ') · arpTick mit Stimmen im Mittel ' + r.arpMs + ' ms (max ' + r.arpMax + ' ms, ' + r.arpAnteil + ' % des Haupt-Fadens), davon Arp-Rechnung ' + r.arp1Ms + ' ms · spawnVoice je Note Arp ' + r.svArpUs + ' µs / Clip ' + r.svClipUs + ' µs (ohne Arp ' + r0.svClipUs + ' µs) · ' + r.nArp + ' Arp-Noten, ' + r.nClip + ' Clip-Noten, bis ' + r.maxV + ' Stimmen');
     await p.close();
   }
   ok(!errs.length, 'Konsole ohne Fehler (alle Abschnitte)', errs.slice(0, 5));

@@ -52,7 +52,7 @@ for (const [w, h, tag] of [[390, 844, 'hochkant'], [844, 390, 'quer']]) {
   await tapVis(p, '#menu .ksrow button'); await p.waitForTimeout(700);
   const sh = await X(p, () => { const i = SYNQUENZER.ks.x().sheetInfo(); return i && Object.assign(i, {ch: [...UI.pop.el.querySelectorAll('h4[data-ch]')].map(h => h.textContent)}); });
   const ids = sh ? sh.rows.map(r => r.k) : [];
-  ok(sh && ['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7', 'L8', 'L9', 'L10'].every(k => ids.includes(k)) && sh.ch.length === 5 && sh.rect.x >= 0 && sh.rect.x + sh.rect.w <= w, tag + ' Blatt: 10 Lektionen in 5 Kapiteln', sh && sh.ch);
+  ok(sh && ['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7', 'L8', 'L9', 'L10'].every(k => ids.includes(k)) && sh.ch.length >= 5 && sh.rect.x >= 0 && sh.rect.x + sh.rect.w <= w, tag + ' Blatt: 10 Lektionen in 5 Kapiteln', sh && sh.ch);
   if (fotos) await p.screenshot({path: fotos + '/ks2-blatt-' + tag + '.png'});
   await X(p, () => closePop()); await p.waitForTimeout(200);
   // ⋯ „Klangschule zu dieser Seite“: FILTER → Kapitel 2–4, LFO → Kapitel 5

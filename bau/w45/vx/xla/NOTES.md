@@ -85,3 +85,96 @@ PRIVAT: Getestet nur mit synthetischen .cbp (Kopien aus `vx/cbpimp/tests`). Kein
 5. Erste Auswahl nach dem Import ist die vorher gewählte Spur (z. B. eine leere SYNTH 4); ggf. die erste importierte Spur wählen.
 6. Klang angenähert (Bericht je Spur); Audio-Spuren (WAVs), Akkord- und Text-Spur kommen später (BRÜCKE A7–A9).
 7. Am echten iPhone 12 noch nicht gemessen (Worker-Start, erstes Blatt, Wechsel).
+
+
+---
+
+# XLA · Schritt 2 von 2: HALBTON (⇅½) + P5-Prüfung (Fassung A)
+
+Ausgang `index.vor-schritt2.html` (md5 3c83a1d2). Endfassung `index.html` – md5 **25b48280b98ed07cf479d1bb446a2ac7**. VERSION bleibt '4.78.0', Basis 68e92c03 unverändert.
+Bau: `python3 apply.py` (basis.html + xla-core.js + xla-block.js + Haken). Sicherungen: `*.vor-schritt2.*`.
+
+## Plan
+
+- P4 aus BAUPLAN, Weg P4.3 (wie im Auftrag): jede importierte Synth-Spur bekommt **xs:1**, gespeichert **mit follow:false**. Neue Fassung:
+  die Tastatur (⇅ TRANSPONIEREN) verschiebt sie genau in Halbtönen. Ältere Fassungen kennen xs nicht → Spur ist dort ⇅ fest, Noten exakt.
+- Die Projekt-Harmonie bleibt (kein Wechsel auf HALBTON fürs ganze Projekt) → eigene ⇅-Spuren folgen weiter nach AKKORD/TONART.
+- Rückung je Teil (JAM3) und „Abschnitt transponieren“ (TRP1) wirken auf ⇅½-Spuren wie auf feste Spuren (ohne neuen Code).
+- P5: Durchlauf als Xander, 3 Minuten Wiedergabe, Regression der berührten Bereiche.
+
+## Änderung
+
+**Kern `xla-core.js`:** `transpose: 'halbton'` → Spuren `follow:false, os:false, xs:1`, Ergebnis `xs:true, transpose`, `settings: null`
+(vorher: Spuren ⇅ folgt + Projekt-Harmonie „chromatic“). Ohne Angabe: „fest“ (wie Schritt 1). Node-Test **32/32** (HALBTON-Test neu, „fest“-Test neu).
+
+**Block XLA, Abschnitt „Schritt 2“** (`xla-block.js`):
+- `xlaXsOn(i)` (nur Synth, ⇅ fest, xs:1; nie Perkussion/STIMME/Drum-Einzelspur), `xlaXsShift` = Verschiebung des Träger-Eintrags
+  **gegen die Projekt-Tonart** (e.shift, wie der Träger sie rechnet: nächster Weg/absolut, Tritonus nach voriger Richtung) – so gehen alle
+  Szenen gleich weit, auch wenn eine Szene ihre Tonart später selbst erkennt. `xlaXsOut` (Note + k, in 0…127 oktaviert),
+  `xlaXsNoteFor` (Aufnahme/FANG/Schritt-Eingabe: gespeichert wird die Note, die als die gespielte klingt, inkl. Rückung).
+- Blatt: Abschnitt **„Transponieren“** – „Halbton (empfohlen) · jede Taste verschiebt alle Szenen genau“ (vorgewählt) | „Noten fest · nur im
+  Song je Teil (Rückung)“, Hinweis „Tastatur auf ⇅ TRANSPONIEREN: die Taste C spielt das Original (C-Dur), eine Taste höher = einen Halbton höher …“.
+- Passt: `xs` je Spur, Projekt-Kennzeichen `xlaHt:1`, Meldung „… · Tastatur: Halbton“, **die erste importierte Spur ist gewählt** (Offen 5 aus Schritt 1).
+- Anzeige: Spurkopf „⇅½“ (leuchtet wie ⇅ bei Träger; Name macht Platz, CSS mit :has nur in engen Lagen), Spur-Taste „⇅½“ (auch wenn das
+  Häkchen sonst versteckt ist), Video-Spurkopf ⇅ statt FEST.
+- Spur-Taste ⇅ antippen: im Halbton-Projekt (oder an einer ⇅½-Spur) **⇅½ → fest → ⇅ folgt → ⇅½** mit kurzer Meldung; sonst wie bisher folgt ↔ fest.
+- ↷ des Imports mit der Auswahl des Imports (applyProject ui:true) → bitgleich.
+- Guide „Transponieren im DAW-Projekt (⇅½ Halbton)“ → ⇅ TRANSPONIEREN.
+
+**Haken außerhalb (je eine Zeile, Kennung XLA):** mapOut · clipNoteFor · normTrack (xs nur mit follow:false) · normalizeProject (xlaHt) ·
+Spurkopf (renderGrid) · renderStrip · Klick auf ⇅ · Video-Spurkopf. Kein anderes Aussehen/keine andere Bedienung geändert.
+
+## Tests
+
+- `node tests/core-test.cjs` → **32/32**.
+- `node xla2-test.mjs index.html basis.html` (Playwright, Touch per CDP, 428×926 / 926×428 / 320×640) → **51/51** (`xla2-test.out`, 290 s):
+  Blatt-Abschnitt + Hinweis + Layout hochkant/quer/320 · Passt (xs, xlaHt, Harmonie unverändert, Meldung, Auswahl, ⇅½ an Taste und Köpfen) ·
+  **Tastatur genau**: nächster Weg −5…+6 (768 Notenprüfungen), absolut −12…+12 (1 600), TONART (Grundton außerhalb der Tonart), „Eine Skala“ an,
+  Akkord gedrückt – 0 falsch, DRUMS unverändert · **Matrix per Touch** (Szene, ▶, TRANSP., Taste): noteLog jede Note genau · **eigene ⇅-Spur**:
+  folgt dem Akkord und klingt genau wie ohne ⇅½-Spuren · Stopp ohne hängende Noten · **Song**: Rückung +1 ab Teil 3 + Träger +2 → davor +2,
+  danach +3 · **MIDI-Export** +1 ab dem Teil, mit Song-Träger +2 dazu · ↶/↷ der Rückung (Touch) · Speichern/Laden bitgleich ·
+  **4.78.0 öffnet die Datei**: Spuren ⇅ fest, Noten/Song gleich, Tastatur lässt sie aus · Spur-Taste ⇅½→fest→⇅→⇅½ (Touch) · normales Projekt
+  unverändert · Aufnahme unter Träger (gehört = gespeichert) · „Noten fest“-Import · Guide ·
+  **P5 als Xander**: Menü › Öffnen … (.cbp) → Beides/Halbton → Passt → ↶/↷ bitgleich → Szene 3 per Touch → Taste → +5 → Song ▶ (+5) →
+  speichern/laden → Rückung im Marken-Blatt (Touch) → ↶ (Touch) → ↷ ·
+  **3 Minuten** (Song mit Schleife 110 s + Matrix mit Szenenwechseln, 28 Träger-Wechsel, Rückung ab Teil 5): 588 Noten der ⇅½-Spuren genau
+  (0 falsch), 883 Drum-Schläge unverändert, Ausgang ohne NaN/Übersteuern (Spitze 0,62), keine Knackser an den Wechseln (größter Sprung
+  dort 0,23 = 99,9-%-Wert der ganzen Wiedergabe), nach dem Stopp alle Stimmen frei und Ausklang unter −79 dBFS, Planer 0 Fehler, Konsole leer.
+- Schritt-1-Test `xla-test.mjs` → **46/46** (eine Auswahl im Test auf die erste Wahl-Gruppe beschränkt; 1. Lauf unter Last 1 Long Task 174 ms beim Lesen, 2. Lauf 0).
+- Regression: **trp1 81/81** (Abschnitt transponieren, Song, MIDI, Video, ↶) · **mtx3 51/51** (Matrix) · **beg1 56/58** (Träger/Tastatur/Begleiter):
+  „Prüfung 5 (5/4 ohne Stil)“ scheitert genauso an der unveränderten Basis 4.78.0 (57/58) und im XLB-Lauf; das zweite Element wechselt mit
+  der Last („Ausgang“ 1. Lauf, „Aufnahme = Live“ 2. Lauf – beide auch im Release-Lauf r4780 rot) → nicht von XLA.
+- Fotos (`fotos/`): `xla2-p-blatt.png` (Abschnitt Transponieren), `xla2-p-matrix.png` (⇅½ an Köpfen + Spur-Taste), `xla2-l-blatt.png`, `xla2-l-matrix.png`, `smoke-end.png`.
+- Pflicht (`pflicht.out`, `pflicht2.sh`): topdefs 26 Skripte, doppelt 0, Syntax 0 · dupkeys 0 · Rauchtest `errors []` · „MS 2000“ 1× · `^  live: true,` 1× ·
+  VERSION '4.78.0' · Markenwörter: 0 Wörter häufiger als in der Basis · keine Emojis/Bildzeichen in Block und Kern.
+
+## Messung
+
+- Startzeit (3 Läufe je Datei, frischer Kontext, abwechselnd; Median DCL / load / App bereit), zweimal:
+  A: Basis 682 / 720 / 794 ms · neu 634 / 675 / 752 ms · B: Basis 637 / 685 / 778 ms · neu 682 / 726 / 777 ms → kein messbarer Unterschied (Streuung ± 100 ms bei Last 7–8).
+- Größe: 9 633 709 Byte (+9,6 KB gegen Schritt 1, +90 KB gegen Basis); gzip -9 3 188 640 (+31,6 KB gegen Basis, +1,0 %).
+- Laufzeit (`t2/cost.mjs`, 60 s Matrix, Szenenwechsel + Träger-Wechsel alle 4 s): `xlaXsOut` 194 Aufrufe, **0,8 ms gesamt**; applyCarrierChange
+  höchstens 0,7 ms je Wechsel (Schritt-1-Fassung 0,3 ms). Long Tasks > 50 ms: neu 3, Schritt-1-Fassung 9 (Last).
+- 3-Minuten-Lauf: Takt-Lücken des Audio-Fadens (headless, geteilte CPU) neu 82, Vergleichslauf ohne ⇅½ 180 (`xla2-lang-basis.out`); eine
+  Stille von 64 ms trat auch im beg1-Lauf auf → Umgebung, am iPhone zu messen.
+
+## Wechselwirkung mit eigenen ⇅-Spuren (AKKORD)
+
+- Keine Beeinflussung: eine eigene ⇅-Spur klingt im Halbton-Projekt Note für Note wie ohne ⇅½-Spuren (geprüft).
+- Musikalisch: ⇅½-Spuren gehen nur um den Grundton, eigene ⇅-Spuren nach dem Harmonie-Modus. Mit einem Akkord (z. B. Am in C-Dur) oder
+  mit „Ein Ton bleibt in der Tonart“ (Standard) bleibt die eigene Spur in der Tonart, der Import wird genau verschoben – das kann sich reiben.
+  Ausweg ohne neue Bedienung: an der eigenen Spur ⇅ auf ⇅½ tippen (geht im Halbton-Projekt) oder Harmonie-Modus HALBTON. Guide sagt das.
+
+## Offen
+
+1. **Funk:** Die sichtbaren Teile (Abschnitt „Transponieren“ im Blatt, „⇅½“ an Kopf/Spur-Taste, Tippen ⇅½ → fest → ⇅ im Halbton-Projekt)
+   sind in diesem Paket nur gebaut, nicht ausgeliefert – vor der Auslieferung mit Xander abstimmen (CLAUDE.md Regel 3), falls sein OK nicht
+   schon im Funk steht.
+2. „Song › Transponieren …“ (ganzer Song, song.xp) bewegt wie bisher nur ⇅-Spuren; ⇅½-Spuren gehen mit der Tastatur und der Rückung je Teil
+   (Rückung am ersten Teil = ganzer Song). Soll „Song transponieren“ sie mitnehmen → Entscheidung.
+3. In 4.78 gespeichert: xs und xlaHt fallen weg (Spuren bleiben fest, Noten exakt); zurück in der neuen Fassung ist ⇅½ dann nur über einen neuen Import.
+4. Tippen auf ⇅ hat (wie bisher) keinen ↶-Eintrag.
+5. Tritonus (6 Halbtöne) geht wie bei ⇅-Spuren in die zuletzt benutzte Richtung (+6 oder −6).
+6. Video: ⇅½-Spuren zeigen im Video „⇅“ (nicht „⇅½“).
+7. Aus Schritt 1 weiter offen: Fassung B (24/32), Anzeige „Szene 1“ bei Als Song, Audio-/Akkord-/Text-Spuren, Klang angenähert,
+   echte Datei nur bei Xander (nur synthetische Dateien hier), Messung am iPhone 12 (Startzeit, Takt-Lücken, Blatt).

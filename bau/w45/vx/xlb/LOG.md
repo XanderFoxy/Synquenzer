@@ -23,3 +23,10 @@
 - 23:55 UTC A/B auf 4.78 für die nicht grünen: mix3 und mtx exakt dieselben Urteile, mtx4 115/118 (Last 6–9) → kein Rückschritt.
 - 23:57 UTC midi-ab.mjs: MIDI-Export 9 Altprojekte × 10 Dateien = 90/90 bitgleich zu 4.78. Last 8.9. Fotos der Regression gelöscht (Platte 3,3 GB frei).
 - 23:59 UTC NOTES/LOG fertig. index.html md5 018e17d4 (unverändert seit 22:34), Basis 68e92c03 unverändert. Paketordner 22 MB. df 3,3 GB frei.
+- 00:52 UTC Nachbesserung nach Prüfung gestartet. Sicherung index.vor-pruef.html (md5 018e17d4), bau.vor-pruef.py, src.vor-pruef/. Last 5.48 6.80 6.57. df  frei.
+- 01:00 UTC Befunde nachgeprüft (alle 3 echt): SV.cols nur 8, Messer immer 25 Eingänge, Szene entfernen trotz Marke „S9“. Behoben in bau.py
+  (Abschnitt XLB-P, 12 Haken) + Block (xlMtrN/xlMtrK/xlMtrRe, xlMarkUsed). Neuer Bau md5 ad25315f. T6 (14 Prüfungen) neu: 14/14 OK;
+  dieselben Prüfungen auf index.vor-pruef.html: 10 FEHLER (Befunde bestätigt). Last 7.03 5.79 6.03.
+- 01:14 UTC xlb-test 78/78 (T6 neu 14/14), Regression mx2/mtx/teil1/mix3 gleich wie vorher, midi-ab 90/90, probe-render OK, Bildvergleich byte-gleich,
+  Pflicht grün, Startzeit 4.78 625 → 646 ms / vor Prüfung 600 → 589 ms (3 Läufe, kein messbarer Unterschied). Fotos fotos/xlbp-*.png (3), KURZ.md,
+  NOTES „Prüfung“. Endfassung md5 ad25315f (bau.py reproduzierbar). Ordner 36M, df 3.3G frei. Last 3.61 3.17 4.41.

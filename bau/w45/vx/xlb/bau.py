@@ -168,6 +168,26 @@ B(113334, 'window.SYNQUENZER = SYNQUENZER;', 'SYNQUENZER.xl = xlApi();          
 R(113416, "let KNOWN_NEED = ['lf', 'lk', 'lw', 'sr', 'st'];", "let KNOWN_NEED = ['lf', 'lk', 'lw', 'sr', 'st', 'xl'];", '   /* XLB: + xl */')
 A(113419, 'if (!p || !Array.isArray(p.tracks)) return [];', "  if (p.tracks.length > 8 || (Array.isArray(p.scenes) && p.scenes.length > 8)) s.add('xl');   /* XLB: mehr als 8 Spuren oder Szenen */")
 
+# ---------- Prüfung (XLB-P): Song-Farben bis 24, Pegel-Messer je Projekt, Szene entfernen mit Song-Marke ----------
+R(37263, "SV.cols = [1, 2, 3, 4, 5, 6, 7, 8].map(k => cs.getPropertyValue('--t' + k).trim() || '#888');",
+  "SV.cols = Array.from({length: MAX_T}, (_, k) => cs.getPropertyValue('--t' + (k + 1)).trim() || '#888');", '   /* XLB: Farben aller 24 Spuren (vorher 8: Blöcke der Spuren 9–24 ohne Farbe) */')
+R(48069, 'function mtrStore(cap) { return {cap, t: new Float64Array(cap), v: new Float32Array(cap * MTR_W),',
+  'function mtrStore(cap, n) { const w = 1 + 2 * (n || MTR_IN); return {cap, n: n || MTR_IN, w, t: new Float64Array(cap), v: new Float32Array(cap * w),', '   /* XLB: Breite je Messer (normal 8 Spuren + Master wie 4.78) */')
+R(48071, 'MTR_W', 'Q.w', C, count=4)
+B(48087, 'const j = mtrFind(Q, tau);', '  const xk = xlMtrK(Q, k); if (xk < 0) return o;                  /* XLB: Spur ohne Eingang in diesem Messer → leer; k = MAX_T = Master (letzter Eingang) */')
+R(48088, 'c = 1 + 2 * k,', 'c = 1 + 2 * xk,')
+R(48091, 'Q.v[q * MTR_W + c]', 'Q.v[q * Q.w + c]')
+R(48092, 'Q.v[q * MTR_W + c + 1]', 'Q.v[q * Q.w + c + 1]')
+A(48101, "if (!off && SynthHost.state !== 'ready') return null;", '  const xn = xlMtrN();                                               /* XLB: Eingänge: 8 Spuren + Master wie 4.78, mit mehr als 8 Spuren 24 + Master */')
+R(48104, 'numberOfInputs: MTR_IN,', 'numberOfInputs: xn,')
+R(48107, '{node, ctx: c, tap: [],', '{node, ctx: c, n: xn, tap: [],')
+R(48107, 'mtrStore(Math.ceil(c.length / 128) + 8)', 'mtrStore(Math.ceil(c.length / 128) + 8, xn)')
+R(48107, 'mtrStore(160)', 'mtrStore(160, xn)')
+R(48111, 'AU.M.ceil.connect(node, 0, MAX_T)', 'AU.M.ceil.connect(node, 0, xn - 1)')
+R(48115, 'if (!M || !A || !A.cut || A.cut.context !== M.ctx) return;', 'if (!M || !A || !A.cut || A.cut.context !== M.ctx || i >= M.n - 1) return;', '   /* XLB: nur Spuren mit Eingang */')
+A(48162, 'if (!M || M.off) { if (MTR.vis) mtrBlank(); return; }', '  if (M.n !== xlMtrN()) { xlMtrRe(); return; }                      /* XLB: Spurzahl über/unter 8 → Messer mit passender Eingangszahl neu */')
+R(66972, 'to.connect(AU.meter.node, 0, MAX_T)', 'to.connect(AU.meter.node, 0, (AU.meter.n || MTR_IN) - 1)', '   /* XLB: Master = letzter Eingang */')
+
 # ---------- CSS ----------
 B(5218, '</style>', '@@CSS@@')
 

@@ -7243,9 +7243,9 @@ const ARP1UI = (function () {
 .pop.a1pop .a1st{display:flex;align-items:center;gap:4px;flex:1 1 auto;min-width:0}
 .pop.a1pop .a1st button{min-width:44px;min-height:44px;padding:0;font-size:16px}
 .pop.a1pop .a1st b{flex:1 1 0;text-align:center;font-size:12px;min-width:0;white-space:nowrap}
-.pop.a1pop .a1st small{flex:0 1 auto;font-size:10px;color:var(--text-dim);min-width:0;line-height:1.15}
+.pop.a1pop .a1st small{flex:0 0 64px;font-size:10px;color:var(--text-dim);min-width:0;line-height:1.15}   /* ARP1-P: feste Breite – die › bleiben beim Tippen stehen */
 .pop.a1pop .a1tgs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin:0 0 8px}
-.pop.a1pop .a1tgs button{min-height:44px;padding:2px 4px;font-size:11px;line-height:1.15;min-width:0}
+.pop.a1pop .a1tgs button{min-height:44px;padding:2px 4px;font-size:11px;line-height:1.15;min-width:0;flex-direction:column;justify-content:center;gap:1px}   /* ARP1-P: Titel über Untertitel */
 .pop.a1pop .a1pre{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:0 0 8px}
 .pop.a1pop .a1pre button{min-height:44px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;text-align:left;padding:4px 7px;line-height:1.15;min-width:0}
 .pop.a1pop .a1pre button b{display:block;font-size:12px}.pop.a1pop .a1pre button small{display:block;font-size:10px;color:var(--text-dim)}
@@ -7292,11 +7292,11 @@ const ARP1UI = (function () {
     body.push(`<div class="a1r"><span class="lb">Wieder&shy;holen</span>${seg([[1, '1×', 'jeder Schritt einmal'], [2, '2×', 'jeder Schritt zweimal'], [3, '3×', 'jeder Schritt dreimal'], [4, '4×', 'jeder Schritt viermal']], c.rep, 'rep')}</div>`);
     body.push(`<div class="a1r"><span class="lb">Gate</span><div class="a1st"><button class="rb" data-g="-" aria-label="Gate kürzer">‹</button><b>${c.g} %</b><button class="rb" data-g="+" aria-label="Gate länger">›</button><small>${c.g >= 100 ? 'gebunden' : c.g <= 30 ? 'kurz' : ''}</small></div></div>`);
     body.push(`<div class="a1r"><span class="lb">Swing</span><div class="a1st"><button class="rb" data-sw="-" aria-label="Swing weniger">‹</button><b>${c.sw ? (c.sw > 0 ? '+' : '') + c.sw + ' %' : 'Song'}</b><button class="rb" data-sw="+" aria-label="Swing mehr">›</button><small>${c.sw ? 'eigener' : '0 = Song-Swing'}</small></div></div>`);
-    body.push('<div class="a1tgs">' + `<button class="rb${c.ks ? ' on' : ''}" data-ks="1" aria-pressed="${!!c.ks}">Key Sync<br><small>neu ab Taste</small></button>` +
-      `<button class="rb${c.la ? ' on' : ''}" data-la="1" aria-pressed="${!!c.la}">Latch<br><small>hält weiter</small></button>` +
-      `<button class="rb${c.fig ? ' on' : ''}" data-fig="1" aria-pressed="${!!c.fig}">Kurze Noten<br><small>ganze Figur</small></button></div>`);
-    body.push(`<div class="a1foot"><button class="rb" data-a="probe"${R.playing || !on ? ' disabled' : ''}>▶ Probe</button><button class="rb" data-a="bake"${why ? ' disabled' : ''}>In den Clip schreiben · Szene ${s + 1}</button></div>`);
-    body.push(`<div class="a1hint">${esc(why ? 'In den Clip schreiben: ' + why + '.' : 'Schreibt die Arp-Noten einer Clip-Länge als echte Noten in den Clip und schaltet den Arp aus (ein ↶).')}${R.playing ? ' Läuft gerade – spiel Tasten oder lass den Clip laufen.' : ''}</div>`);
+    body.push('<div class="a1tgs">' + `<button class="rb${c.ks ? ' on' : ''}" data-ks="1" aria-pressed="${!!c.ks}">Key Sync<small>neu ab Taste</small></button>` +
+      `<button class="rb${c.la ? ' on' : ''}" data-la="1" aria-pressed="${!!c.la}">Latch<small>hält weiter</small></button>` +
+      `<button class="rb${c.fig ? ' on' : ''}" data-fig="1" aria-pressed="${!!c.fig}">Kurze Noten<small>ganze Figur</small></button></div>`);
+    body.push(`<div class="a1foot"><button class="rb" data-a="probe"${R.playing || !on ? ' disabled' : ''}>▶ Probe</button><button class="rb" data-a="bake"${why ? ' disabled' : ''}>In den Clip schreiben</button></div>`);
+    body.push(`<div class="a1hint">${esc(why ? 'In den Clip schreiben: ' + why + '.' : 'Schreibt die Arp-Noten einer Clip-Länge als echte Noten in den Clip (Szene ' + (s + 1) + ') und schaltet den Arp aus (ein ↶).')}${R.playing ? ' Läuft gerade – spiel Tasten oder lass den Clip laufen.' : ''}</div>`);
     h += `<div class="${on ? '' : 'a1off'}">` + body.join('') + '</div>';
     const sc = p.scrollTop; p.innerHTML = h; p.scrollTop = sc; O.col = -1;
     if (p.isConnected) { try { popFit(p); } catch (e) {} }
@@ -110703,7 +110703,9 @@ function arp1Render(notes, cfg, o) {
       if (e0 - x.on < fs - Eb) { const e = Math.min(x.on + fs, Math.max(e0, nx)); if (e > e0 + Eb) x.off = e; }
     }
   }
-  const brk = o.brk || [];
+  const brk = (o.brk || []).slice().sort((x, y) => x - y);
+  // ARP1-P: ein Szenen-/Clipwechsel kappt die Noten dort (wie ARPC.cut beim Abspielen) – auch eine durch „ganze Figur“ verlängerte
+  if (brk.length) for (const x of ev) { const b = brk.find(q => q > x.on + Eb); if (b != null && x.off > b) x.off = Math.max(x.on, b); }
   // Gruppen einmal vorab (sie hängen nur von früheren Noten ab): gS = Anfang der Gruppe, pmx = größtes Ende bis hierher
   const gS = new Array(ev.length), pmx = new Array(ev.length);
   { let g = -1, mx = -Infinity; for (let k = 0; k < ev.length; k++) { const x = ev[k]; if (g < 0 || x.on >= mx - E6) { g = k; mx = -Infinity; } gS[k] = g; if (x.off > mx) mx = x.off; pmx[k] = mx; } }
@@ -110764,13 +110766,33 @@ function arp1Skip() { ARP1X.skip = 1; }
 function arp1RenderLead(h) {
   try { if (R.playing && S.tracks.some(arp1Gn)) tick(h); } catch (e) { logErr(e); }
 }
+// ARP1-P: Song-MIDI (buildMidiSong, va1MidiSong) erkennt man an der ersten Marke „Song“ (Szenen: „Szene n“, Mitschnitt: arp1Skip)
+function arp1MidiIsSong(marks) {
+  const m = marks && marks[0]; if (!m || m.tk !== 0 || !m.b) return false;
+  const w = metaText(6, 'Song'); return m.b.length === w.length && m.b.every((x, k) => x === w[k]);
+}
+/* ARP1-P: die Wechsel der Clip-Blöcke einer Spur im Song (Schläge) – dort schneidet die Wiedergabe (laneSwitch → cutTrackAt →
+   ARPC.cut): eine durch „ganze Figur“ verlängerte Note und ein gelatchter Akkord enden da. Dieselbe Block-Rechnung wie buildMidiSong. */
+function arp1LaneBrk(i) {
+  const song = S.song, lane = song && song.lanes ? song.lanes[i] : null, out = []; if (!lane || !lane.length) return out;
+  let cur = null;
+  for (const e of lane) {
+    const og = laneOriginAt(lane, e.bar);
+    if (cur && og.slot === cur.slot && Math.abs(og.cs - cur.cs) < 1e-6 && (og.own || null) === cur.own) continue;
+    const b = barBeat(e.bar); if (b > 1e-9 && (cur || og.slot >= 0)) out.push(b);
+    cur = og.slot >= 0 ? {slot: og.slot, own: og.own || null, cs: og.cs} : null;
+  }
+  return out;
+}
 function arp1Midi(evs, idxs, marks, endTk, counts) {
   if (ARP1X.skip) { ARP1X.skip = 0; return evs; }
   if (UI.expArp === false) return evs;
   try {
-    const PPQ = 480, end = endTk / PPQ, bk = (marks || []).map(x => x.tk / PPQ).filter(b => b > 0);
+    const PPQ = 480, end = endTk / PPQ, bk = (marks || []).map(x => x.tk / PPQ).filter(b => b > 0), song = arp1MidiIsSong(marks);
     for (const i of idxs) {
       const tr = S.tracks[i]; if (!arp1Gn(tr) || !evs[i] || !evs[i].length) continue;
+      // Song-MIDI (Song, je Spur, alle Spuren): die Wechsel der Clip-Blöcke dieser Spur, wie die Wiedergabe sie schneidet (ARP1-P)
+      const brk = song ? arp1LaneBrk(i) : bk;
       const open = new Map(), notes = [], rest = []; let ch = null;
       for (const e of evs[i]) {
         const st = e.b[0] & 0xF0;
@@ -110779,7 +110801,7 @@ function arp1Midi(evs, idxs, marks, endTk, counts) {
         else rest.push(e);
       }
       if (!notes.length) continue;
-      const r = arp1Render(notes, tr.arp, {a: 0, b: end, brk: bk, spb: 60 / S.bpm, seed: arp1K().seedOf(i)}), out = rest;
+      const r = arp1Render(notes, tr.arp, {a: 0, b: end, brk, spb: 60 / S.bpm, seed: arp1K().seedOf(i)}), out = rest;
       for (const n of r) {
         const t0 = Math.round(n.t * PPQ), t1 = Math.max(t0 + 1, Math.round(Math.min(end, n.t + n.d) * PPQ));
         out.push({tk: t0, b: [0x90 | ch, n.p, Math.min(127, Math.max(1, Math.round(n.v * 127)))], o: 1}, {tk: t1, b: [0x80 | ch, n.p, 0], o: 0});
@@ -110789,10 +110811,11 @@ function arp1Midi(evs, idxs, marks, endTk, counts) {
   } catch (e) { logErr(e); }
   return evs;
 }
-// Export-Blatt: Zeile „Arp: als Noten | wie im Clip“ (nur, wenn eine der MIDI-Spuren Arp an hat)
+// Export-Blatt: Zeile „Arp: als Noten | wie im Clip“ (nur, wenn eine Spur Arp an hat – ARP1-P: jede Spur, nicht nur die ersten 5:
+// „Song“, „Ganzer Song“ und „Eine Spur“ schreiben auch Spur 6 und höher, z. B. Melodie oder eine neu angelegte Spur)
 function arp1ExpRow() {
   try {
-    if (!midiBaseIdx().some(i => arp1Gn(S.tracks[i]))) return '';
+    if (!S.tracks.some(arp1Gn)) return '';
     arp1Css(); const on = UI.expArp !== false;
     return `<div class="va1tr wg-va1arp" role="group" aria-label="Arp im MIDI"><span class="small">Arp:</span><button class="mbtn rb${on ? ' on' : ''}" data-va="wg-arp" data-v="1" aria-pressed="${on}">als Noten</button><button class="mbtn rb${on ? '' : ' on'}" data-va="wg-arp" data-v="0" aria-pressed="${!on}">wie im Clip</button></div>`;
   } catch (e) { logErr(e); return ''; }
@@ -110805,6 +110828,9 @@ function arp1BakeWhy(t, s) {
   if (!arp1Gn(tr)) return 'Arp ist aus';
   if (!c || !c.notes || !c.notes.length) return 'Szene ' + (s + 1) + ': kein Clip mit Noten';
   if (c.audio) return 'Audio-Clip';
+  // ARP1-P: eigener Arp-Swing ersetzt den Song-Swing; als Clip-Noten bekäme eine Note in einem Swing-Fenster des Songs (Sechzehntel-
+  // Offbeat ± 0,02 Schlag) den Song-Swing noch einmal dazu – ausgleichen lässt sich das nicht (eine ungeswingte .25 gibt es dann nicht)
+  if (tr.arp.sw && S.settings.swing && arp1BakeNotes(t, s).some(n => swingOffset(n.t) !== 0)) return 'eigener Swing + Song-Swing (einen auf 0 stellen)';
   return '';
 }
 function arp1BakeNotes(t, s) {
@@ -110832,7 +110858,7 @@ function arp1Css() {
   if (ARP1X.css) return; ARP1X.css = true;
   const st = document.createElement('style'); st.id = 'arp1Css';
   st.textContent = `
-.a1row{gap:6px 10px;margin-top:4px}
+.a1row{gap:6px 10px;margin-top:4px;max-width:100%}
 .a1row .lgrp{flex:0 0 auto}
 .a1row .seg.a1oo button{min-width:52px;min-height:44px}
 .a1row .a1sum{flex:1 1 auto;min-width:0;min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:6px;padding:0 10px;text-align:left}
@@ -110876,6 +110902,13 @@ function arp1MoreBtn(t) {
 }
 function arp1MoreTap(p, anchor, t) {
   try {
+    // ARP1-P: ein Hinweis-Streifen mit Knöpfen (z. B. direkt nach ↶, 5 s) lag quer über den untersten Einträgen – der Tipp traf den
+    // Streifen statt „Arpeggiator“. Deckt er beim Öffnen des Menüs einen Eintrag, schließt er (der Schritt bleibt über ↶ ↷ erreichbar).
+    requestAnimationFrame(() => { try {
+      const T = EL.toast; if (!T || !T.classList.contains('show') || !p.isConnected) return;
+      const q = T.getBoundingClientRect();
+      if ([...p.querySelectorAll('button[data-a]')].some(b => { const r = b.getBoundingClientRect(); return r.bottom > q.top + 1 && r.top < q.bottom - 1 && r.right > q.left + 1 && r.left < q.right - 1; })) hideToast();
+    } catch (e) { logErr(e); } });
     onTap(p, () => setTimeout(() => {
       const tr = S.tracks[t], e = tr && tr.sound && tr.sound.engine;
       if (e === 'mk' || e === 'bm') { toast('Diese Klangerzeugung hat einen eigenen Arp: ' + (e === 'mk' ? 'GERÄT › ARP' : 'Arp-Taste')); return; }

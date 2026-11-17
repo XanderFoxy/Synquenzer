@@ -33831,6 +33831,7 @@ function outPitch(i, clipKey, note, time, entry) {
   const tr = S.tracks[i];
   if (typeof trp1Pre === 'function' && R.songPlay && S.song && S.song.marks && S.song.marks.length) note = trp1Pre(i, note, time);   /* TRP1 */
   const o = mapOut(i, clipKey, note, time, entry);
+  if (tr.xs === 1 && typeof xlaXsPost === 'function' && xlaXsOn(i)) return xlaXsPost(o, time);   /* XLA: ⇅½ nimmt song.xp mit wie ⇅ folgt (Song transponieren, Rückung, Abschnitt) */
   if ((XP.tl.length > 1 || XP.tl[0].semi) && tr.kind === 'synth' && tr.follow !== false) { const x = xpAt(time + 1e-6); if (x) return clamp(o + x, 0, 127); }
   if (tr.follow === false) { const f = jam3FtNow(i, time); if (f) return clamp(o + f, 0, 127); }   // JAM3: die Rückung nimmt ⇅ feste Spuren mit
   return o;
@@ -36395,6 +36396,7 @@ function addTrack() {
   if (!canAddTrack()) { toast('Höchstens 8 Spuren – leere Spuren lassen sich neu belegen'); haptic('err'); return -1; }
   if (rec.state !== 'off' || R.songRec) { toast('Erst Aufnahme beenden'); return -1; }
   const i = NT(), t = newSynthTrack(i);
+  if (typeof xlaNewTrack === 'function') xlaNewTrack(t);   /* XLA: im Halbton-Projekt ist die neue Synth-Spur ⇅½ */
   restoreTrack(i, JSON.stringify(t));
   undoPush({kind: 'track', track: i, before: null, label: '＋ Spur ' + S.tracks[i].name});
   selectTrack(i);
@@ -42786,6 +42788,7 @@ const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
 const modeOfDegree = (scale, deg) => Harmony.SCALE_ORDER[(Harmony.SCALE_ORDER.indexOf(scale) + deg) % 7];
 // readout for one key (§4.2): in the key -> „D · Stufe II · Dorisch“ (OP-Z), outside -> „E♭ · Tonart +3“
 function singleReadout(tgt) {
+  if (typeof xlaHtView === 'function' && xlaHtView()) return null;   /* XLA: im Halbton-Projekt keine Stufe (der Import geht genau um den Grundton) */
   const h = S.settings.harmony;
   if (!tgt || tgt.kind === 'chord' || !(h.mode === 'scale' || (h.mode === 'chord' && h.single === 'key'))) return null;
   const ref = sceneRefKey(), SC = Harmony.SCALES[ref.scale]; if (!SC || Harmony.SCALE_ORDER.indexOf(ref.scale) < 0) return null;
@@ -42857,6 +42860,7 @@ function osShownBase() {
   return osBase(R.selS);
 }
 function shownShift(e) {
+  if (typeof xlaHtView === 'function' && xlaHtView()) return xlaShown(e);   /* XLA: im Halbton-Projekt zeigt der Träger, was der Import tut („+2 · → D-Dur“) */
   const t = e && e.target; if (!t) return {shift: 0, snap: null, key: null, target: ''};
   const ref = heardBaseKey(), h = S.settings.harmony, n = 60 + ref.root;
   let shift = e.shift, snap = null, key = null;
@@ -55638,7 +55642,7 @@ function int54MidiClips(song, i, tr, L, entAt, withC, add) {          // INT54
       if (nt.t >= cL - 1e-9) continue; const st = o + nt.t; if (st >= b1 - 1e-9 || st < b0 - 1e-9 || (fxm && ueMutedAt(fxm, st, nt.n))) continue;   // INT54
       let p = nt.n; if (withC && !(typeof mtx3Dr === 'function' && mtx3Dr(i))) { const e2 = entAt(st); if (e2 && e2.target) p = mapOut(i, c.key || S.key, nt.n, 0, e2); }   // INT54 · MTX3: Drum-Noten
       if (typeof trp1P === 'function') p = trp1P(song, i, st, nt.n, p, c.key || S.key, withC ? entAt : null);   /* TRP1 */
-      if (typeof mtx3Dr === 'function' && mtx3Dr(i)) { /* MTX3: Drum-Noten ohne Rückung */ } else if (tr.follow && song.xp && song.xp.length) { let v = 0; for (const x of song.xp) { if (x.beat > st + 1e-6) break; v = x.semi; } p += v; } else if (!tr.follow) p += jam3Fest(song, st);   // INT54: ⇅ folgt: song.xp · ⇅ fest: JAM3-Rückung
+      if (typeof mtx3Dr === 'function' && mtx3Dr(i)) { /* MTX3: Drum-Noten ohne Rückung */ } else if ((typeof xlaSx === 'function' && xlaSx(i, song)) || tr.follow && song.xp && song.xp.length) { let v = 0; for (const x of song.xp) { if (x.beat > st + 1e-6) break; v = x.semi; } p += v; } else if (!tr.follow) p += jam3Fest(song, st);   // INT54: ⇅ folgt: song.xp · ⇅ fest: JAM3-Rückung · XLA: ⇅½ wie ⇅ folgt (song.xp)
       add(st, Math.min(b1, st + Math.max(nt.d, 1 / 32)), clamp(Math.round(p), 0, 127), nt.v);   // INT54
     }                                                                 // INT54
   }                                                                   // INT54
@@ -55680,7 +55684,7 @@ function buildMidiSong(withC) {
         let p = nt.n;
         if (tr.kind === 'synth' && withC) { const en2 = entAt(st); if (en2 && en2.target) p = mapOut(i, c.key || S.key, nt.n, 0, en2); }
         if (typeof trp1P === 'function') p = trp1P(song, i, st, nt.n, p, c.key || S.key, withC ? entAt : null);   /* TRP1 */
-        if (tr.kind === 'synth' && tr.follow && song.xp && song.xp.length) { let v = 0; for (const x of song.xp) { if (x.beat > st + 1e-6) break; v = x.semi; } p += v; }   // V2d: song.xp
+        if (tr.kind === 'synth' && ((typeof xlaSx === 'function' && xlaSx(i, song)) || tr.follow && song.xp && song.xp.length)) { let v = 0; for (const x of song.xp) { if (x.beat > st + 1e-6) break; v = x.semi; } p += v; }   // V2d: song.xp · XLA: ⇅½ wie ⇅ folgt (song.xp)
         else if (tr.kind === 'synth' && !tr.follow && !percIs(tr)) p += jam3Fest(song, st);   // JAM3: Rückung auch für ⇅ fest
         dedAdd(i, ch, ded, st, en, percIs(tr) ? percGm(nt.n) : clamp(Math.round(p), 0, 127), nt.v);   // PERC
       }
@@ -77612,7 +77616,7 @@ function va1MidiSong(idxs, withC) {
         let p = nt.n;
         if (tr.kind === 'synth' && withC && !(typeof mtx3Dr === 'function' && mtx3Dr(i))) { const e2 = entAt(st); if (e2 && e2.target) p = mapOut(i, c.key || S.key, nt.n, 0, e2); }   /* MTX3: Drum-Noten */
         if (typeof trp1P === 'function') p = trp1P(song, i, st, nt.n, p, c.key || S.key, withC ? entAt : null);   /* TRP1 */
-        if (tr.kind === 'synth' && !(typeof mtx3Dr === 'function' && mtx3Dr(i)) && tr.follow && song.xp && song.xp.length) { let v = 0; for (const x of song.xp) { if (x.beat > st + 1e-6) break; v = x.semi; } p += v; }
+        if (tr.kind === 'synth' && !(typeof mtx3Dr === 'function' && mtx3Dr(i)) && ((typeof xlaSx === 'function' && xlaSx(i, song)) || tr.follow && song.xp && song.xp.length)) { let v = 0; for (const x of song.xp) { if (x.beat > st + 1e-6) break; v = x.semi; } p += v; }   /* XLA: ⇅½ wie ⇅ folgt (song.xp) */
         else if (tr.kind === 'synth' && !tr.follow && !percIs(tr) && !(typeof mtx3Dr === 'function' && mtx3Dr(i))) p += jam3Fest(song, st);   // JAM3: Rückung auch für ⇅ fest · MTX3
         add(st, en, percIs(tr) ? percGm(nt.n) : clamp(Math.round(p), 0, 127), nt.v);
       }
@@ -80540,7 +80544,7 @@ function vvkScore(a, b) {
         if (syn) {
           try { const en = entAt(s); if (en && en.target) p = mapOut(i, c.key || S.key, nt.n, 0, en); } catch (e) { p = nt.n; }
           if (typeof trp1P === 'function') p = trp1P(song, i, s, nt.n, p, c.key || S.key, entAt);   /* TRP1 */
-          if (tr.follow && song.xp && song.xp.length) { let v = 0; for (const x of song.xp) { if (x.beat > s + 1e-6) break; v = x.semi; } p += v; }
+          if ((typeof xlaSx === 'function' && xlaSx(i, song)) || tr.follow && song.xp && song.xp.length) { let v = 0; for (const x of song.xp) { if (x.beat > s + 1e-6) break; v = x.semi; } p += v; }   /* XLA: ⇅½ wie ⇅ folgt (song.xp) */
           else if (!tr.follow) p += jam3Fest(song, s);               // JAM3: Rückung auch für ⇅ fest
         } else p = tr.kind === 'drum' ? nt.n : percGm(nt.n);
         add(s, Math.min(nt.d, b1 - s), Math.round(p), nt.v);
@@ -106638,10 +106642,10 @@ function kf1Plan(b0, b1) {
 }
 // INT54: Rückung (JAM2/JAM3) und „Song transponieren“ verschieben die Noten einer Spur (outPitch): Folgespuren um song.xp (XP.tl), feste Spuren
 // um JAM3.ft – „S&H in der Tonart“ rastet dann in die verschobene Tonart, mit der Zeit der Stufe (wie beim Szenenwechsel) (INT54)
-function int54KfSh(i, t) { try { const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth') return 0; return tr.follow !== false ? (XP.tl.length > 1 || XP.tl[0].semi ? xpAt(t + 1e-6) || 0 : 0) : jam3FtNow(i, t) || 0; } catch (e) { return 0; } }   // INT54: wie outPitch
+function int54KfSh(i, t) { try { const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth') return 0; return tr.follow !== false || (tr.xs === 1 && typeof xlaXsOn === 'function' && xlaXsOn(i)) ? (XP.tl.length > 1 || XP.tl[0].semi ? xpAt(t + 1e-6) || 0 : 0) : jam3FtNow(i, t) || 0; } catch (e) { return 0; } }   // INT54: wie outPitch · XLA: ⇅½ wie ⇅ folgt
 const int54KfKeyX = (k, x) => (x ? [(((k[0] + x) % 12) + 12) % 12, k[1]] : k);   // INT54: [Grundton, Maske relativ zum Grundton]
 function int54KfPlanX(i, E, key, sb, b0, b1) {                       // INT54
-  const tl = S.tracks[i].follow !== false ? XP.tl : JAM3.ft, P = [b0];   // INT54
+  const tl = S.tracks[i].follow !== false || (S.tracks[i].xs === 1 && typeof xlaXsOn === 'function' && xlaXsOn(i)) ? XP.tl : JAM3.ft, P = [b0];   // INT54 · XLA: ⇅½ wie ⇅ folgt
   if (sb != null && sb > b0 + 1e-6) P.push(sb);                       // INT54
   for (const e of tl) if (e.b > b0 + 1e-6 && e.b < b1 + 1e-6) P.push(e.b);   // INT54
   P.sort((p, q) => p - q);                                            // INT54
@@ -115357,6 +115361,7 @@ function xlaProject(res, c) {
     if (r.mix && t.sound && t.sound.fx) { t.sound.fx.vol = clamp(Math.round(.8 * r.mix.vol * 100) / 100, 0, 1); if (isNum(r.mix.pan)) t.sound.fx.pan = clamp(r.mix.pan, -1, 1); }
     t.clips = new Array(N_SCN).fill(null).map((_, s) => { const x = r.clips[s]; if (!x) return null; const o = {len: x.len, key: x.key, notes: x.notes}; if (ts) o.ts = ts; return o; });
   }
+  if (res.xs) for (let i = 0; i < nt; i++) if (!res.tracks[i]) xlaNewTrack(p.tracks[i], true);   // Prüfung (BAUPLAN P4: im Halbton-Projekt gehen auch eigene Spuren in Halbtönen): die leeren Synth-Spuren (SYNTH 3/4, MELODIE …) ⇅½
   if (res.xs) p.xlaHt = 1;                                  // Schritt 2: in diesem Projekt wechselt ⇅ an der Spur ⇅½ → fest → ⇅
   const div = res.tracks.map(r => r && r.sound && r.sound.fx && r.sound.fx.echoDiv).find(Boolean);
   if (div && typeof ECHO_DIVS !== 'undefined' && ECHO_DIVS.includes(div)) { p.fxBus.echo.divL = p.fxBus.echo.divR = div; }   // Delay des Synths → Projekt-Echo (Notenwert)
@@ -115439,9 +115444,37 @@ function xlaXsOut(i, clipKey, note, time, entry) {
   while (o > 127) o -= 12; while (o < 0) o += 12;
   return o;
 }
+// Prüfung: eine ⇅½-Spur nimmt die Teil-Transposition song.xp mit wie eine ⇅-Spur (Song › Transponieren, Rückung je Teil, „Abschnitt
+// transponieren“ – die beiden letzten schreiben song.xp UND den Stand der festen Spuren gleich, also bleibt die Rückung, wie sie war) –
+// statt des Stands der festen Spuren (JAM3). Haken: outPitch, MIDI-Export (Song, Spur, Einzelspuren), Video-Tastatur, S&H in der Tonart.
+const xlaXpNow = time => ((XP.tl.length > 1 || XP.tl[0].semi) ? xpAt(time + 1e-6) || 0 : 0);
+function xlaXsPost(o, time) { const x = xlaXpNow(time); return x ? clamp(o + x, 0, 127) : o; }
+// Export-Haken: true = diese Spur nimmt song.xp (statt jam3Fest)
+function xlaSx(i, song) { return !!(song && Array.isArray(song.xp)) && xlaXsOn(i); }
+// neue/leere Synth-Spur im Halbton-Projekt (Haken addTrack; Passt): ⇅½ wie der Import – nie Perkussion, STIMME, Drum-Einzelspur
+function xlaNewTrack(t, force) {
+  if (!t || t.kind !== 'synth' || t.stimme || percIs(t) || t.dvx || !(force || S.xlaHt === 1)) return;
+  t.follow = false; t.xs = 1;
+}
+// Anzeige (Haken shownShift, singleReadout): im Halbton-Projekt zeigt der Träger, was der Import tut – „+2 · → D-Dur“ (genau um den
+// Grundton, keine Stufe, kein Einrasten in TONART), gerechnet wie xlaXsOut, Ziel = Tonart der importierten Clips + Verschiebung
+function xlaHtView() {
+  if (S.xlaHt !== 1) return false;
+  for (let i = 0; i < S.tracks.length; i++) if (S.tracks[i].xs === 1 && xlaXsOn(i)) return true;
+  return false;
+}
+function xlaRefKey() {
+  for (let i = 0; i < S.tracks.length; i++) { const tr = S.tracks[i]; if (tr.xs !== 1 || !xlaXsOn(i)) continue; const c = tr.clips.find(x => x && x.key && x.notes && x.notes.length); if (c) return c.key; }
+  return S.key;
+}
+function xlaShown(e) {
+  if (!e || !e.target) return {shift: 0, snap: null, key: null, target: ''};
+  const shift = xlaXsShift(null, e), k = xlaRefKey(), key = {root: PCx(k.root + shift), scale: k.scale};
+  return {shift, snap: null, key, target: keyName(key)};
+}
 // clipNoteFor (Haken): Aufnahme/FANG/Schritt-Eingabe unter dem Träger – die Clip-Note, die als `played` klingt (gehört = gespeichert)
 function xlaXsNoteFor(track, clipKey, played, time, entry) {
-  const e = entry || T.targetAt(time + 1e-6), f = jam3FtNow(track, time) || 0, n0 = played - f - xlaXsShift(clipKey, e);
+  const e = entry || T.targetAt(time + 1e-6), f = xlaXpNow(time), n0 = played - f - xlaXsShift(clipKey, e);   // Prüfung: song.xp statt Stand der festen Spuren (wie outPitch)
   if (n0 >= 0 && n0 <= 127 && outPitch(track, clipKey, n0, time, e) === played) return n0;
   let best = clamp(n0, 0, 127), be = Infinity;
   for (let d = 0; d <= 24; d++) for (const n of d ? [n0 - d, n0 + d] : [n0]) {
@@ -115474,6 +115507,7 @@ function xlaHeadCls() { xlaCss2(); return T.targetAt(nowT()).target ? 'fb act xl
 // sonst (false) wie bisher folgt ↔ fest. Perkussion und STIMME wie bisher.
 function xlaFolgtTap(i) {
   const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth' || tr.stimme || percIs(tr) || !(S.xlaHt === 1 || tr.xs === 1)) return false;
+  if (typeof mtx3Dr === 'function' && mtx3Dr(i)) { if (tr.xs === 1) delete tr.xs; return false; }   // Prüfung: Drum-Einzelspur (MTX3) kennt ⇅½ nicht – wie bisher folgt ↔ fest
   const st = tr.xs === 1 && tr.follow === false ? 'xs' : tr.follow !== false ? 'folgt' : 'fest';
   if (st === 'xs') { tr.follow = false; delete tr.xs; }
   else if (st === 'fest') { tr.follow = true; delete tr.xs; }
@@ -115490,7 +115524,7 @@ function xlaTpHtml(c, B) {
     B('tph', 'Halbton (empfohlen)', 'jede Taste verschiebt alle Szenen genau', true, c.tp !== 'fest' ? 'on' : '') +
     B('tpf', 'Noten fest', 'nur im Song je Teil (Rückung)', true, c.tp === 'fest' ? 'on' : '') + '</div>' +
     `<div class="xlainfo">${esc(c.tp === 'fest' ? 'Die Tastatur lässt die Spuren aus. Im Song kannst du je Teil rücken.' :
-      'Tastatur auf ⇅ TRANSPONIEREN: ' + (nn ? 'die Taste ' + nn + ' spielt das Original (' + keyName(k) + '), ' : '') + 'eine Taste höher = einen Halbton höher. Die Rückung je Teil im Song wirkt dazu.')}</div>`;
+      'Tastatur auf ⇅ TRANSPONIEREN: ' + (nn ? 'die Taste ' + nn + ' spielt das Original (' + keyName(k) + '). ' : '') + 'Jede andere Taste spielt den Song genau in ihrer Tonart – auf dem kürzesten Weg, höchstens 6 Halbtöne höher oder tiefer. „Song transponieren“ und die Rückung je Teil wirken dazu.')}</div>`;   // Prüfung: Standard „nächster Weg“ (G … H gehen nach unten)
 }
 /* ---------- Guide ---------- */
 (function xlaGuide() {
@@ -115501,8 +115535,8 @@ function xlaTpHtml(c, B) {
       'daw projekt cbp öffnen importieren umwandeln song teile szenen strophe refrain loop spuren übernehmen fremdes projekt',
       () => { ui1Home(); if (typeof imp1Sheet === 'function') imp1Sheet(); return true; }, '.imp1 button[data-i="pick"]'));
     ui1Entries().push(E('xlaht', 'Transponieren im DAW-Projekt (⇅½ Halbton)', 'Tastatur › ⇅ TRANSPONIEREN · Spur-Taste ⇅',
-      'Im geöffneten DAW-Projekt verschiebt jede Taste alle Szenen genau um Halbtöne: der Grundton deines Songs spielt das Original, eine Taste höher klingt einen Halbton höher. Ein Finger reicht. Die Taste ⇅ an der Spur wechselt: ⇅½ Halbton → fest → ⇅ folgt (nach Akkord). Im Song wirkt dazu die Rückung je Teil. Deine eigenen ⇅-Spuren folgen weiter dem Harmonie-Modus – sollen sie genau mitgehen, an ihrer Taste ⇅ auf ⇅½ tippen.',
-      'transponieren halbton daw projekt cbp tonart verschieben genau taste original rueckung',
+      'Im geöffneten DAW-Projekt verschiebt jede Taste alle Szenen genau um Halbtöne: die Taste mit dem Grundton deines Songs spielt das Original, jede andere Taste spielt den Song genau in ihrer Tonart – auf dem kürzesten Weg, höchstens 6 Halbtöne höher oder tiefer (mit Oktave „absolut“: eine Taste höher = einen Halbton höher). Ein Finger reicht. Leere und neue Synth-Spuren stehen hier auch auf ⇅½, so passt alles zusammen. Die Taste ⇅ an der Spur wechselt: ⇅½ Halbton → fest → ⇅ folgt (nach Akkord). Im Song wirken dazu „Song transponieren“ und die Rückung je Teil.',   // Prüfung: Text wie die Tasten im Standard, eigene Spuren ⇅½
+      'transponieren halbton daw projekt cbp tonart verschieben genau taste original rueckung song transponieren eigene spur',
       () => { ui1Home(); return true; }, '#segTr'));
   } catch (e) {}
 })();

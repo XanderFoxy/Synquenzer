@@ -28524,7 +28524,7 @@ function trackOrder() { const o = S.ui && Array.isArray(S.ui.order) ? S.ui.order
    Scheiben (≤ 6 ms je Aufgabe) nach dem Laden, vor ihrem ersten Ton sofort. Normale Projekte (≤ 8 Spuren) bauen wie bisher alles sofort.
    Abfrage für andere Pakete (XLA-Import): maxTracks() = 24, maxScenes() = 32, xlRoom() = {maxT, maxS, std, nt, ns, freeT, freeS, xl}. */
 const XL_S = 32, XL_STD = 8;
-const XLB = {nn: 0, sOk: false, q: [], qT: 0, pend: new Set(), sleep: new Set(), woke: 0, built: 0, buildMs: 0, engQ: 0, gh: new Map()};
+const XLB = {nn: 0, sOk: false, q: [], qT: 0, pend: new Set(), sleep: new Set(), woke: 0, built: 0, buildMs: 0, engQ: 0, gh: new Map(), mre: 0};
 // ---- Abfrage (XLA-Import und andere Pakete) ----
 function maxTracks() { return MAX_T; }
 function maxScenes() { return XL_S; }
@@ -28580,6 +28580,7 @@ function xlScnCount(n) {
   if (R.editor === 'clip' && ED.clip && ED.clip.s >= n) closeClipSheet();
   S.scenes.length = n; for (const tr of S.tracks) xlFit(tr, n);
   if (R.selS >= n) R.selS = n - 1;
+  if (isNum(R.lastScene) && R.lastScene >= n) R.lastScene = R.lastSceneBeat = null;   // die zuletzt gestartete Szene gibt es nicht mehr
 }
 function xlAfterScn() {
   UI.sceneBank = xlSbClamp(UI.sceneBank); if (S.ui) S.ui.sceneBank = UI.sceneBank;
@@ -28604,11 +28605,14 @@ function xlScnPut(val) {
   xlAfterScn();
 }
 function xlScnRemWhy() {
-  const n = NS(), k = n - 1;
+  const n = NS(), k = n - 1, sk = 'S' + n, sg = S.song;
   if (n <= XL_STD) return 'Mindestens 8 Szenen';
-  if (S.tracks.some(tr => tr.clips[k]) || (S.scenes[k] && S.scenes[k].chords) || mtxSlotUsed(k)) return 'Szene ' + n + ' ist nicht leer (Clips, Akkorde, Song oder Teil)';
+  if (S.tracks.some(tr => tr.clips[k]) || (S.scenes[k] && S.scenes[k].chords) || mtxSlotUsed(k) || xlMarkUsed(sg, sk) ||
+    (R.row && R.row.src === sk) || (R.rowPend && R.rowPend.src === sk)) return 'Szene ' + n + ' ist nicht leer (Clips, Akkorde, Song oder Teil)';
   return '';
 }
+// eine Song-Marke zeigt auf die Szene (Prüfung XLB: sonst bliebe nach „Szene n entfernen“ eine Marke „Szene n“ ohne Szene)
+function xlMarkUsed(sg, sk) { return !!(sg && Array.isArray(sg.marks) && sg.marks.some(m => m && m.part === sk)); }
 function xlScnAdd(quiet) {
   const no = m => { if (!quiet) { toast(m); haptic('err'); } return -1; };
   if (NS() >= XL_S) return no('Höchstens ' + XL_S + ' Szenen');
@@ -28770,6 +28774,20 @@ function xlWake(i) {
   const k = XLB.q.indexOf(i); if (k >= 0) XLB.q.splice(k, 1);
   xlBuild(i, 'wake');
 }
+// ---- Pegel-Messer (VV4-F): Eingänge je Projekt. Normal 8 Spuren + Master = 9 wie 4.78 (gleiche Arbeit, gleicher Speicher im
+// Video: ≈ 1,6 MB je Minute), erst mit mehr als 8 Spuren 24 + Master = 25. Der Master ist immer der letzte Eingang; außen heißt er
+// weiter k = MAX_T (mtrAt rechnet um). Wechselt die Spurzahl über/unter 8, baut mtrFrame den Live-Messer einmal neu. ----
+function xlMtrN() { return XLB.sOk && S && S.tracks.length > XL_STD ? MAX_T + 1 : XL_STD + 1; }
+function xlMtrK(Q, k) { const n = Q.n || MTR_IN; return k === MAX_T ? n - 1 : k >= 0 && k < n - 1 ? k : -1; }
+function xlMtrRe() {
+  const M = AU.meter; if (!M || M.off || M.ctx !== AU.ctx || UI.vvOff) return false;
+  try { M.node.port.postMessage({on: false, dispose: true}); } catch (e) {}
+  M.tap.forEach((x, i) => { if (x) { try { x.disconnect(M.node, 0, i); } catch (e) {} } });
+  try { if (AU.M && AU.M.ceil) AU.M.ceil.disconnect(M.node); } catch (e) {}
+  try { M.node.port.onmessage = null; M.node.disconnect(); } catch (e) {}
+  AU.meter = null; XLB.mre++;
+  return !!mtrBuild();
+}
 // „Viel Last“-Hinweis (cpuHeavyCheck) auch ab 16 gleichzeitig spielenden Spuren
 function xlHeavy() { let k = 0; for (let i = 0; i < NT(); i++) if (R.slot[i] >= 0 && S.tracks[i] && !S.tracks[i].mute) k++; return k >= 16; }
 // ---- MIDI je Szene / Mitschnitt: im großen Projekt alle Spuren (normal wie bisher Synth 1–4 + DRUMS) ----
@@ -28792,7 +28810,7 @@ function xlApi() {
       lab: UI.szb ? UI.szb.children[1].textContent : null, pages: MX.pages ? MX.pages.length : 1, tb: trackBankOf()}),
     next: () => { xlSceneNext(); return xlSG(); }, sheet: () => xlBankSheet(UI.szb),
     lazy: () => ({q: XLB.q.slice(), sleep: [...XLB.sleep], woke: XLB.woke, built: XLB.built, ms: +XLB.buildMs.toFixed(2), chains: S.tracks.map((_, i) => !!AU.tracks[i]), engines: S.tracks.map((_, i) => !!(AU.synth && AU.synth[i]))}),
-    wake: i => { xlWake(i); return !!AU.tracks[i]; }, engQ: () => XLB.engQ, pend: () => [...XLB.pend], tLim: () => xlTLim(), canAdd: () => xlCanAddT(), dormant: i => xlDormant(i)
+    wake: i => { xlWake(i); return !!AU.tracks[i]; }, engQ: () => XLB.engQ, mtr: () => ({n: AU.meter ? AU.meter.n : null, inputs: AU.meter && AU.meter.node ? AU.meter.node.numberOfInputs : null, w: AU.meter ? AU.meter.Q.w : null, re: XLB.mre, want: xlMtrN()}), remWhy: () => xlScnRemWhy(), pend: () => [...XLB.pend], tLim: () => xlTLim(), canAdd: () => xlCanAddT(), dormant: i => xlDormant(i)
   };
 }
 /* XLB-END */
@@ -37574,7 +37592,7 @@ function svLayout() {
   // the label column rows line up with the canvas rows
   SV.labs.style.setProperty('--svr', SV.rulerH + 'px'); SV.labs.style.setProperty('--svh', SV.rowH + 'px');
   const cs = getComputedStyle(document.documentElement);
-  SV.cols = [1, 2, 3, 4, 5, 6, 7, 8].map(k => cs.getPropertyValue('--t' + k).trim() || '#888');
+  SV.cols = Array.from({length: MAX_T}, (_, k) => cs.getPropertyValue('--t' + (k + 1)).trim() || '#888');   /* XLB: Farben aller 24 Spuren (vorher 8: Blöcke der Spuren 9–24 ohne Farbe) */
   SV.sig = ''; UI.dirty.song = true; konPathSync();
   if (SV.zId !== (S && S.id)) sx8ZoomLoad(); else if (SV.cellW < sx8Min() - 1e-6 || SV.cellW > SX8_MAX) SV.cellW = sx8Clamp(SV.cellW);   // SX8: Zoom des Projekts; Drehen/Größe hält die Grenzen
 }
@@ -48381,9 +48399,9 @@ function grmFrame() {
 const MTR_IN = MAX_T + 1, MTR_W = 1 + 2 * MTR_IN, MTR_HOLD = 1.5, MTR_LED = Math.pow(10, -.3 / 20), MTR_FLOOR = -48;
 const MTR = {want: false, chkT: 0, vis: false, els: [], master: [], disp: new Float32Array(MTR_IN * 4), drawn: [], frames: 0, on: false};
 // a time-ordered store of meter windows (live: ring of cap windows; video: all windows of the render)
-function mtrStore(cap) { return {cap, t: new Float64Array(cap), v: new Float32Array(cap * MTR_W), cnt: 0, seq: 0, lost: 0}; }
+function mtrStore(cap, n) { const w = 1 + 2 * (n || MTR_IN); return {cap, n: n || MTR_IN, w, t: new Float64Array(cap), v: new Float32Array(cap * w), cnt: 0, seq: 0, lost: 0}; }   /* XLB: Breite je Messer (normal 8 Spuren + Master wie 4.78) */
 function mtrPut(Q, a, seq, n) {
-  for (let w = 0; w < (n || 1); w++) { const j = Q.cnt % Q.cap; Q.t[j] = a[w * MTR_W]; Q.v.set(a.subarray(w * MTR_W, (w + 1) * MTR_W), j * MTR_W); Q.cnt++; }
+  for (let w = 0; w < (n || 1); w++) { const j = Q.cnt % Q.cap; Q.t[j] = a[w * Q.w]; Q.v.set(a.subarray(w * Q.w, (w + 1) * Q.w), j * Q.w); Q.cnt++; }   /* XLB */
   if (seq != null) { if (Q.seq && seq !== Q.seq + 1) Q.lost += Math.max(0, seq - Q.seq - 1); Q.seq = seq; }
 }
 // the newest window that ends at or before τ (logical index) or -1
@@ -48399,12 +48417,13 @@ const mtrDb = x => (x > 1e-6 ? 20 * Math.log10(x) : -120);
 // span = 0: the newest window (live, ≈ 32 ms); span > 0: all windows ending in (τ − span, τ] together (video: one picture)
 function mtrAt(Q, tau, k, o, oi, span) {
   o[oi] = o[oi + 1] = o[oi + 2] = o[oi + 3] = 0;
+  const xk = xlMtrK(Q, k); if (xk < 0) return o;                  /* XLB: Spur ohne Eingang in diesem Messer → leer; k = MAX_T = Master (letzter Eingang) */
   const j = mtrFind(Q, tau); if (j < 0 || tau - Q.t[j % Q.cap] > .25) return o;    // nothing measured near τ (stopped meter): empty
-  let h = 0, pk = 0, ss = 0, m = 0; const lo = Math.max(0, Q.cnt - Q.cap), c = 1 + 2 * k, lim = tau - (span || 0) + 1e-9;
+  let h = 0, pk = 0, ss = 0, m = 0; const lo = Math.max(0, Q.cnt - Q.cap), c = 1 + 2 * xk, lim = tau - (span || 0) + 1e-9;   /* XLB */
   for (let x = j; x >= lo; x--) {
     const q = x % Q.cap, tx = Q.t[q]; if (tx <= tau - MTR_HOLD) break;
-    const p = Q.v[q * MTR_W + c]; if (p > h) h = p;
-    if (!m || tx > lim) { const r = Q.v[q * MTR_W + c + 1]; ss += r * r; m++; if (p > pk) pk = p; }
+    const p = Q.v[q * Q.w + c]; if (p > h) h = p;   /* XLB */
+    if (!m || tx > lim) { const r = Q.v[q * Q.w + c + 1]; ss += r * r; m++; if (p > pk) pk = p; }   /* XLB */
   }
   o[oi] = pk; o[oi + 1] = Math.sqrt(ss / Math.max(1, m)); o[oi + 2] = h; o[oi + 3] = h > MTR_LED ? 1 : 0;
   return o;
@@ -48414,20 +48433,21 @@ const mtrFrac = x => { const d = mtrDb(x); return d <= MTR_FLOOR ? 0 : d >= 0 ? 
 function mtrBuild(off) {
   const c = AU.ctx; if (!c || AU.meter || typeof AudioWorkletNode !== 'function') return null;
   if (!off && SynthHost.state !== 'ready') return null;
+  const xn = xlMtrN();                                               /* XLB: Eingänge: 8 Spuren + Master wie 4.78, mit mehr als 8 Spuren 24 + Master */
   let node;
   try {
-    node = new AudioWorkletNode(c, 'synq-meter', {numberOfInputs: MTR_IN, numberOfOutputs: 1, outputChannelCount: [1], channelCount: 2,
+    node = new AudioWorkletNode(c, 'synq-meter', {numberOfInputs: xn, numberOfOutputs: 1, outputChannelCount: [1], channelCount: 2,   /* XLB */
       channelCountMode: 'explicit', channelInterpretation: 'speakers', processorOptions: off ? {on: true, win: 1, batch: 16, total: c.length} : {on: MTR.on}});
   } catch (e) { logErr(e); return null; }
-  const M = AU.meter = {node, ctx: c, tap: [], off: !!off, Q: off ? mtrStore(Math.ceil(c.length / 128) + 8) : mtrStore(160)};
+  const M = AU.meter = {node, ctx: c, n: xn, tap: [], off: !!off, Q: off ? mtrStore(Math.ceil(c.length / 128) + 8, xn) : mtrStore(160, xn)};   /* XLB */
   node.port.onmessage = e => { const m = e.data; if (m && m.mtr) mtrPut(M.Q, m.mtr, m.seq, m.n); };
   node.connect(c.destination);
   for (let i = 0; i < NT(); i++) mtrTap(i);
-  try { if (AU.M && AU.M.ceil) AU.M.ceil.connect(node, 0, MAX_T); } catch (e) { logErr(e); }
+  try { if (AU.M && AU.M.ceil) AU.M.ceil.connect(node, 0, xn - 1); } catch (e) { logErr(e); }   /* XLB */
   return M;
 }
 function mtrTap(i) {
-  const M = AU.meter, A = AU.tracks[i]; if (!M || !A || !A.cut || A.cut.context !== M.ctx) return;
+  const M = AU.meter, A = AU.tracks[i]; if (!M || !A || !A.cut || A.cut.context !== M.ctx || i >= M.n - 1) return;   /* XLB: nur Spuren mit Eingang */
   const old = M.tap[i]; if (old === A.cut) return;
   if (old) { try { old.disconnect(M.node, 0, i); } catch (e) {} }
   try { A.cut.connect(M.node, 0, i); M.tap[i] = A.cut; } catch (e) { logErr(e); }
@@ -48475,6 +48495,7 @@ function mtrVisible() {
 function mtrFrame() {
   const M = AU.meter, P0 = performance.now();
   if (!M || M.off) { if (MTR.vis) mtrBlank(); return; }
+  if (M.n !== xlMtrN()) { xlMtrRe(); return; }                      /* XLB: Spurzahl über/unter 8 → Messer mit passender Eingangszahl neu */
   if (LIM.level >= 2) { if (MTR.on) { mtrSend(false); mtrBlank(); } return; }       // CPU-Begrenzer ≥ 2: aus (0 ms)
   if (P0 - MTR.chkT > 250) { MTR.chkT = P0; MTR.vis = mtrVisible(); }
   if (MTR.vis !== MTR.on) { mtrSend(MTR.vis); if (!MTR.vis) { mtrBlank(); return; } }
@@ -67287,7 +67308,7 @@ function mixaIdle() {
    vol → synq-mixa (Master)        → B ┴→ out → destination, Analyser, Meter, Song-Aufnahme, Stimme-Referenz */
 function mixaAmP() { const a = S.fxBus && S.fxBus.am; return a && a.on ? mx1AmP(a, {lo: a.lo, hi: a.hi, thr: a.thr, ra: a.ra, at: a.at, rl: a.rl, gain: a.gain, ceil: a.ceil}) : null; }   // MX1
 function mixaMoveTaps(from, to) {
-  try { if (AU.meter && AU.meter.node && AU.meter.ctx === AU.ctx) { try { from.disconnect(AU.meter.node); } catch (e) {} to.connect(AU.meter.node, 0, MAX_T); } } catch (e) { logErr(e); }
+  try { if (AU.meter && AU.meter.node && AU.meter.ctx === AU.ctx) { try { from.disconnect(AU.meter.node); } catch (e) {} to.connect(AU.meter.node, 0, (AU.meter.n || MTR_IN) - 1); } } catch (e) { logErr(e); }   /* XLB: Master = letzter Eingang */
   try { if (typeof SREC !== 'undefined' && SREC.dst) { try { from.disconnect(SREC.dst); } catch (e) {} to.connect(SREC.dst); } } catch (e) { logErr(e); }
   try { if (typeof ST !== 'undefined' && ST.run && ST.run.node && ST.run.node.context === AU.ctx) { try { from.disconnect(ST.run.node); } catch (e) {} to.connect(ST.run.node, 0, 1); } } catch (e) { logErr(e); }
   try { if (UI.g10Out && UI.g10Out.an && UI.g10Out.an.context === AU.ctx) { try { from.disconnect(UI.g10Out.an); } catch (e) {} to.connect(UI.g10Out.an); } } catch (e) {}

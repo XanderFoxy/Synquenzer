@@ -28,7 +28,7 @@ s = before(s, "  if (kind !== 'drum') { const lk = lkNoteNorm(src.lk, null); if 
            "  if (kind !== 'drum' && src.fc != null) lage1NoteNorm(src, out);   /* LAGE1: Filter je Note */", 'H2')
 # H3 Wiedergabe: Cutoff je Stimme
 s = before(s, "  if (!out.length && !nN && !nV) return null;\n  return {lk: out.length ? out : null, lkP: nN ? nat : null, lkv: nV ? lkv : null};",
-           "  if (nt && nt.fc && lage1LkAdd(i, snd, wk, nt, out, nat)) nN++;   /* LAGE1: Filter je Note = Cutoff je Stimme */", 'H3')
+           "  if (nt && nt.fc && lage1LkAdd(i, snd, wk, nt, out, nat, clip)) nN++;   /* LAGE1: Filter je Note = Cutoff je Stimme (Basis mit Klangzustand des Clips) */", 'H3')
 # H4 Planer: Noten mit fc holen ihre Paare
 s = once(s, "      const lx = (e.nt && e.nt.lk) || clip.ln ? lkNoteX(i, clip, e.nt, e.rb) : null;   // I2b: Locks / Reihen-Startwert der Note",
             "      const lx = (e.nt && (e.nt.lk || e.nt.fc)) || clip.ln ? lkNoteX(i, clip, e.nt, e.rb) : null;   // I2b: Locks / Reihen-Startwert der Note · LAGE1: + Filter je Note", 'H4')

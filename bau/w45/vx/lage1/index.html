@@ -29911,7 +29911,7 @@ function lkNoteX(i, clip, nt, rb) {
     const y = xs == null ? lkBase(snd, ln.p) : lkFromN(e, xs); if (typeof y !== 'number' || !isFinite(y)) return;
     out.push(e.cls === 'n' ? e.wi : -1 - e.wi, y); if (xs != null) lkv[ln.p] = xs;
   });
-  if (nt && nt.fc && lage1LkAdd(i, snd, wk, nt, out, nat)) nN++;   /* LAGE1: Filter je Note = Cutoff je Stimme */
+  if (nt && nt.fc && lage1LkAdd(i, snd, wk, nt, out, nat, clip)) nN++;   /* LAGE1: Filter je Note = Cutoff je Stimme (Basis mit Klangzustand des Clips) */
   if (!out.length && !nN && !nV) return null;
   return {lk: out.length ? out : null, lkP: nN ? nat : null, lkv: nV ? lkv : null};
 }
@@ -97407,10 +97407,15 @@ function lage1NoteNorm(src, out) { const x = +src.fc; if (!isFinite(x)) return; 
 
 /* ---------- 2 · Wiedergabe: Cutoff je Stimme (lkNoteX-Haken) ---------- */
 // out = Worklet-Paare [Platz, Wert …], nat = Werte des nativen Wegs. Basis = Cutoff-Lock der Note (schon da), sonst der Klang.
-// true = nat bekam einen neuen Wert (lkNoteX zählt ihn mit)
-function lage1LkAdd(i, snd, wk, nt, out, nat) {
+// true = nat bekam einen neuen Wert (lkNoteX zählt ihn mit). Prüfung: die Basis ist der Klang, den der Clip spielt – mit seinem
+// Klangzustand ◆ (clip.st), nicht nur der Grundklang
+function lage1StSnd(i, snd, clip) {
+  const st = clip && clip.st; if (!st || typeof v6aStOk !== 'function' || !v6aStOk(i, st) || (V6A.ed && V6A.ed.i === i)) return snd;   // im ◆-Editor stehen die Werte schon im Klang
+  try { return v6aApply(snd, st); } catch (e) { return snd; }
+}
+function lage1LkAdd(i, snd, wk, nt, out, nat, clip) {
   const fc = clamp(Math.round(+nt.fc) || 0, -64, 63); if (!fc || !lage1FcEng(snd) || !snd.p) return false;
-  const semi = fc / LAGE1_FC, pair = (e, f) => {                  // vorhandenes Paar dieses Platzes ändern, sonst anhängen
+  const bs = lage1StSnd(i, snd, clip), semi = fc / LAGE1_FC, pair = (e, f) => {                  // vorhandenes Paar dieses Platzes ändern, sonst anhängen
     for (let j = 0; j < out.length; j += 2) if (out[j] === e.wi) { out[j + 1] = f(out[j + 1]); return true; }
     return false;
   };
@@ -97420,7 +97425,7 @@ function lage1LkAdd(i, snd, wk, nt, out, nat) {
       const path = 'mk.t.' + k + '.f.cut', e = LKT[path]; if (!e || !lkVoiceOk(e, snd)) continue;
       const f = b => clamp(Math.round(b + semi * LAGE1_MK), 0, 127);
       if (pair(e, f)) continue;
-      const b = lkBase(snd, path); if (typeof b === 'number' && isFinite(b) && out.length < 32) out.push(e.wi, f(b));
+      const b = lkBase(bs, path); if (typeof b === 'number' && isFinite(b) && out.length < 32) out.push(e.wi, f(b));
     }
     return false;
   }
@@ -97428,10 +97433,10 @@ function lage1LkAdd(i, snd, wk, nt, out, nat) {
   const f = b => clamp(b * Math.pow(2, semi / 12), 20, 20000);
   if (wk && lkVoiceOk(e, snd)) {
     if (pair(e, f)) return false;
-    const b = lkBase(snd, 'cutoff'); if (typeof b === 'number' && isFinite(b) && out.length < 32) out.push(e.wi, f(b));
+    const b = lkBase(bs, 'cutoff'); if (typeof b === 'number' && isFinite(b) && out.length < 32) out.push(e.wi, f(b));
     return false;
   }
-  const had = isNum(nat.cutoff), b = had ? nat.cutoff : lkBase(snd, 'cutoff'); if (!isNum(b)) return false;
+  const had = isNum(nat.cutoff), b = had ? nat.cutoff : lkBase(bs, 'cutoff'); if (!isNum(b)) return false;
   nat.cutoff = f(b); return !had;
 }
 
@@ -97480,7 +97485,7 @@ function lage1ScaleSet(key) {
 // Oktave falten (rein, ohne den Clip zu ändern): {L: [{o, t, d, n, n0, f, drop, fix}], moved, fixed, rep, mer, drp}
 function lage1Fold(c, scope, B, part, mode, key) {
   const inS = new Set(scope), hit = lage1Hit(part, B), sh = part === 'oben' ? -12 : 12;
-  const L = c.notes.map(o => ({o, t: o.t, d: o.d, n: o.n, n0: o.n, f: false, drop: false, fix: ''}));
+  const L = c.notes.map(o => ({o, t: o.t, d: o.d, n: o.n, n0: o.n, na: o.n, ne: o.n, f: false, drop: false, fix: ''}));   // Prüfung: na/ne = Ursprungston des ersten/letzten Teils (nach Zusammenziehen)
   let moved = 0;
   for (const x of L) { if (!inS.has(x.o) || !hit(x.o)) continue; const y = x.n + sh; if (y < 0 || y > 127) continue; x.n = y; x.f = true; moved++; }
   L.sort((a, b) => a.t - b.t || a.n - b.n);
@@ -97502,21 +97507,45 @@ function lage1Fold(c, scope, B, part, mode, key) {
   const prevOf = x => { let tm = null, best = null; for (let k = idx.get(x) - 1; k >= 0; k--) { const q = L[k]; if (q.drop || q.t >= x.t - EPS) continue; if (tm == null) { tm = q.t; best = q; } else if (q.t < tm - EPS) break; if (q.n === x.n) return q; } return best; };
   const nextOf = x => { let tm = null, best = null; for (let k = idx.get(x) + 1; k < L.length; k++) { const q = L[k]; if (q.drop || q.t <= x.t + EPS) continue; if (tm == null) { tm = q.t; best = q; } else if (q.t > tm + EPS) break; if (q.n === x.n) return q; } return best; };
   const near = (a, b) => b.t - (a.t + a.d) <= 1 + EPS;               // b beginnt höchstens einen Schlag nach dem Ende von a
+  // Prüfung: baut Tonhöhe y für x eine neue Doppelnote? (gleicher Ton im Einsatz davor / danach mit Lücke ≤ 1 Schlag oder zeitgleich)
+  const maxD = L.reduce((m, q) => Math.max(m, q.d), 0);
+  const clash = (x, y) => {
+    const k0 = idx.get(x); let tp = null, tn = null;
+    for (let k = k0 - 1; k >= 0; k--) {
+      const q = L[k]; if (q.t < x.t - EPS && tp == null && !q.drop) tp = q.t;
+      if (tp != null && q.t < tp - EPS && q.t + maxD < x.t - EPS) break;
+      if (q.drop || q.n !== y) continue;
+      if (over(q, x) || (tp != null && Math.abs(q.t - tp) <= EPS && near(q, x))) return true;
+    }
+    for (let k = k0 + 1; k < L.length; k++) {
+      const q = L[k]; if (q.t > x.t + EPS && tn == null && !q.drop) tn = q.t;
+      if (tn != null && q.t > tn + EPS && q.t >= x.t + x.d - EPS) break;
+      if (q.drop || q.n !== y) continue;
+      if (over(q, x) || (tn != null && Math.abs(q.t - tn) <= EPS && near(x, q))) return true;
+    }
+    return false;
+  };
   for (const x of L) {
     if (!x.f || x.drop) continue;
     const p = prevOf(x), z = nextOf(x);
-    const pc = p && p.n === x.n && p.n0 !== x.n0 && near(p, x), zc = !pc && z && z.n === x.n && z.n0 !== x.n0 && near(x, z);
+    const pc = p && p.n === x.n && p.ne !== x.na && near(p, x), zc = !pc && z && z.n === x.n && z.na !== x.ne && near(x, z);
     if (!pc && !zc) continue;
     R.fixed++;
     if (mode === 'weg') { x.drop = true; x.fix = 'weg'; R.drp++; continue; }
     if (mode === 'ziehen') {
-      if (pc) { p.d = Math.max(p.t + p.d, x.t + x.d) - p.t; x.drop = true; p.fix = 'zus'; }
-      else { x.d = Math.max(x.t + x.d, z.t + z.d) - x.t; z.drop = true; x.fix = 'zus'; }
+      if (pc) { p.d = Math.max(p.t + p.d, x.t + x.d) - p.t; x.drop = true; p.fix = 'zus'; p.ne = x.ne;
+        if (z && z !== p && !z.drop && z.n === x.n && z.na !== x.ne && near(x, z)) { p.d = Math.max(p.t + p.d, z.t + z.d) - p.t; z.drop = true; p.ne = z.ne; } }   // Prüfung: auch der Ton danach (C3 C4→C3 C3 = ein Ton)
+      else { x.d = Math.max(x.t + x.d, z.t + z.d) - x.t; z.drop = true; x.fix = 'zus'; x.ne = z.ne; }
       R.mer++; continue;
     }
-    // Kontur halten: der nächste Ton der Tonart in die alte Richtung (vom Nachbarn aus gesehen)
-    if (pc) { const dir = Math.sign(x.n0 - p.n0) || (part === 'oben' ? 1 : -1); let y = step(p.n, dir); const z2 = nextOf(x); if (z2 && z2.n === y && near(x, z2)) y = step(y, dir); x.n = y; }
-    else { const dir = Math.sign(z.n0 - x.n0) || (part === 'oben' ? -1 : 1); x.n = step(z.n, -dir); }
+    // Kontur halten: der nächste Ton der Tonart in die alte Richtung (vom Nachbarn aus gesehen). Prüfung: der neue Ton baut keine neue
+    // Doppelnote (davor, danach, zeitgleich) und springt nicht zurück über (unter) den Trennton – sonst ein Leiterton weiter, zuletzt
+    // die andere Richtung
+    const ref = pc ? p : z, d0 = pc ? (Math.sign(x.na - p.ne) || (part === 'oben' ? 1 : -1)) : -(Math.sign(z.na - x.ne) || (part === 'oben' ? -1 : 1));
+    const side = hit({n: x.n}), C = [];
+    for (const d of [d0, -d0]) { let y = ref.n; for (let k = 0; k < 3; k++) { y = step(y, d); C.push(y); } }
+    let y = C.find(v => hit({n: v}) === side && !clash(x, v)); if (y == null) y = C.find(v => !clash(x, v)); if (y == null) y = C[0];
+    x.n = y;
     x.fix = 'kontur'; R.rep++;
   }
   for (const x of L) if (x.fix === 'zus') x.d = Math.round(x.d * 1e6) / 1e6;   // zusammengezogene Längen ohne Rundungsrest
@@ -97571,6 +97600,7 @@ function lage1Css() {
       '.lage1p .lage1-r>.rb.lage1-pm{flex:none;width:44px;padding:0;font-size:18px}' +
       '.lage1p .lage1-r>.seg.lage1-sg{flex:2 1 0;width:auto}.lage1p .lage1-r>.seg.lage1-sg:only-child{flex:1 1 auto}.lage1p .lage1-r>.rb.lage1-tg{flex:1 1 0;min-width:112px}' +
       '.lage1p .lage1-r>.rb.lage1-go{color:#1b1004;background:linear-gradient(#ffc45a,#e89c1c);border-color:#ffd27a}' +
+      '.lage1p .lage1-r>.lage1-cnt+.rb.lage1-go{flex:0 0 auto;max-width:62%}' +   /* Prüfung: „Teilen → Synth 3“ bleibt lesbar, der Text daneben bricht um */
       '.lage1p .lage1-r>.rb.lage1-go:disabled{color:var(--text-dim);background:linear-gradient(var(--chassis-2),var(--chassis));border-color:var(--line)}' +
       '.lage1p .lage1-n{flex:1 1 auto;min-width:0;text-align:center;font:700 13px/1.15 var(--font-num);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
       '.lage1p .lage1-n small{display:block;font:600 10px/1.2 var(--font-ui);color:var(--text-dim)}' +
@@ -97610,8 +97640,28 @@ function lage1Open(t, s, tab) {
 function lage1Data() {
   const U = LAGE1.ui; if (!U) return null;
   const c = lage1Clip(); if (!c) return null;
-  const sc = lage1Scope(c), B = lage1B(c, sc.ns), part = lage1Part(), mv = sc.ns.filter(lage1Hit(part, B));
-  return {U, t: U.t, s: U.s, tr: S.tracks[U.t], c, sc, B, part, mv, tab: lage1Tab()};
+  const sc = lage1Scope(c), B = lage1B(c, sc.ns), part = lage1Part(), mv = sc.ns.filter(lage1Hit(part, B)), tab = lage1Tab();
+  const P = tab === 'teilen' ? lage1SplitPlan(U.s, mv, lage1Cur(U, U.t)) : null;
+  return {U, t: U.t, s: U.s, tr: S.tracks[U.t], c, sc, B, part, mv, tab, P, hl: P ? P.go : mv};
+}
+const lage1Cur = (U, t) => { const tg = lage1Tgts(t); return tg.length ? tg[U.tg % tg.length] : null; };
+// Prüfung: was beim Teilen wirklich wandert. Hat das Ziel hier schon einen Clip, passen nur Noten vor dessen Ende hinein (MTX3 ließe die
+// anderen weg) – sie bleiben in der Quelle; Noten, die über das Ende reichen, werden dort gekürzt (wie MTX3)
+function lage1SplitPlan(s, mv, to) {
+  const d = to != null && to !== 'new' && S.tracks[to] ? S.tracks[to].clips[s] : null;
+  if (!d) return {to, d: null, go: mv, stay: [], cut: 0};
+  const Lb = clipB(d), go = [], stay = []; let cut = 0;
+  for (const n of mv) { if (n.t >= Lb - 1e-9) stay.push(n); else { go.push(n); if (n.t + n.d > Lb + 1e-9) cut++; } }
+  return {to, d, go, stay, cut};
+}
+function lage1SplitTx(D, P) {
+  if (!D.mv.length) return 'Keine Note ' + lage1BLabel(D);
+  const nm = P.d ? S.tracks[P.to].name : '', bars = P.d ? P.d.len + (P.d.len === 1 ? ' Takt' : ' Takte') : '';
+  if (!P.go.length) return (D.mv.length === 1 ? 'Die Note liegt hinter dem Ende von ' + nm + ' (' + bars + ') und bleibt hier' : 'Alle ' + D.mv.length + ' Noten liegen hinter dem Ende von ' + nm + ' (' + bars + ') und bleiben hier');
+  let s = P.go.length + (P.go.length === 1 ? ' Note wandert' : ' Noten wandern') + ' · Timing bleibt';
+  if (P.stay.length) s += ' · ' + P.stay.length + (P.stay.length === 1 ? ' liegt hinter dem Ende von ' + nm + ' (' + bars + ') und bleibt hier' : ' liegen hinter dem Ende von ' + nm + ' (' + bars + ') und bleiben hier');
+  if (P.cut) s += ' · ' + P.cut + (P.cut === 1 ? ' Note wird' : ' Noten werden') + ' am Clip-Ende gekürzt';
+  return s;
 }
 // Ziele für „Lage teilen“: neue Spur (wenn Platz), dann die anderen Synth-Spuren
 function lage1Tgts(t) {
@@ -97635,7 +97685,8 @@ function lage1Paint() {
     h += nw ? `<div class="lage1-r">${seg('snd', [['gleich', 'Gleich'], ['hell', 'Heller'], ['weich', 'Weicher'], ['anders', 'Anderer …']], lage1SndPick())}</div>`
       : `<div class="lage1-r"><span class="lage1-t">${cur == null ? 'Höchstens ' + MAX_T + ' Spuren – erst eine Spur entfernen' : 'Die Ziel-Spur behält ihren Klang.'}</span></div>`;
     if (nw && !eng && lage1SndPick() !== 'gleich' && lage1SndPick() !== 'anders') h += '<div class="lage1-r"><span class="lage1-t">Dieser Klang hat keinen Filter zum Verstellen – die neue Spur bekommt den gleichen Klang.</span></div>';
-    h += `<div class="lage1-r"><span class="lage1-t lage1-cnt"></span><button class="rb lage1-go" data-a="split"${mv.length && cur != null ? '' : ' disabled'}>Teilen</button></div>`;
+    else if (nw && (lage1SndPick() === 'hell' || lage1SndPick() === 'weich') && !lage1SndRoom(tr.sound, lage1SndPick() === 'hell' ? 12 : -12)) h += `<div class="lage1-r"><span class="lage1-t">Der Filter ist schon ganz ${lage1SndPick() === 'hell' ? 'offen – „Heller“' : 'zu – „Weicher“'} ändert hier nichts.</span></div>`;   /* Prüfung */
+    h += `<div class="lage1-r"><span class="lage1-t lage1-cnt"></span><button class="rb lage1-go" data-a="split"${D.P && D.P.go.length && cur != null ? '' : ' disabled'}>Teilen</button></div>`;
   } else if (tab === 'falten') {
     h += `<div class="lage1-r">${seg('part', [['oben', 'Obere ↓ −12'], ['unten', 'Untere ↑ +12']], part)}</div>`;
     h += `<div class="lage1-r">${seg('mode', [['kontur', 'Kontur halten'], ['ziehen', 'Zusammenziehen'], ['weg', 'Weglassen']], lage1Mode())}</div>`;
@@ -97644,7 +97695,7 @@ function lage1Paint() {
   } else {
     const on = !!lage1Pref().flt, eng = lage1FcEng(tr.sound), nf = c.notes.filter(n => n.fc).length;
     h += `<div class="lage1-r"><button class="rb${on ? ' on' : ''}" data-a="lane" aria-pressed="${on}">${on ? '✓ ' : ''}Filter-Zeile unter den Noten</button></div>`;
-    h += `<div class="lage1-r"><span class="lage1-t">${eng ? 'Hoch ziehen = heller, runter = dunkler (je Note, ab Notenbeginn). ' + nf + (nf === 1 ? ' Note hat' : ' Noten haben') + ' einen Wert.' : 'Dieser Klang hat keinen Filter je Note (geht bei VA, FM, WT und ' + esc(MK_LABEL) + ').'}</span></div>`;
+    h += `<div class="lage1-r"><span class="lage1-t">${eng ? 'Hoch ziehen = heller, runter = dunkler (je Note, ab Notenbeginn). ' + nf + (nf === 1 ? ' Note hat' : ' Noten haben') + ' einen Wert.' + (on ? ' Die Zeile liegt unter diesem Blatt: zum Ziehen ✕ tippen.' : ' Der Schalter macht das Blatt zu, damit die Zeile frei ist.') : 'Dieser Klang hat keinen Filter je Note (geht bei VA, FM, WT und ' + esc(MK_LABEL) + ').'}</span></div>`;
     h += `<div class="lage1-r"><button class="rb" data-a="ktup"${mv.length && part === 'oben' ? '' : ' disabled'}>Oben heller</button><button class="rb" data-a="fc0"${sc.ns.some(n => n.fc) ? '' : ' disabled'}>Alle auf 0</button></div>`;
     h += '<div class="lage1-r"><span class="lage1-t">Key-Tracking im Klang macht hohe Töne heller, aber tiefe dumpfer. „Oben heller“ macht es nur über dem Trennton.</span></div>';
   }
@@ -97665,11 +97716,11 @@ function lage1Live(D0) {
   let F = null;
   if (tab === 'falten') F = lage1FoldC(D);
   if (cnt) {
-    if (tab === 'teilen') cnt.textContent = mv.length ? mv.length + (mv.length === 1 ? ' Note wandert' : ' Noten wandern') + ' · Timing bleibt' : 'Keine Note ' + lage1BLabel(D);
+    if (tab === 'teilen') cnt.textContent = lage1SplitTx(D, D.P);
     else if (F) cnt.textContent = F.moved ? F.moved + (F.moved === 1 ? ' Note' : ' Noten') + ' eine Oktave ' + (D.part === 'oben' ? 'runter' : 'hoch') + (F.fixed ? ' · ' + F.fixed + (F.fixed === 1 ? ' Doppelnote' : ' Doppelnoten') + ' gelöst (' + [F.rep && F.rep + ' ersetzt', F.mer && F.mer + ' verbunden', F.drp && F.drp + ' weg'].filter(Boolean).join(', ') + ')' : ' · keine Doppelnoten') : 'Keine Note ' + lage1BLabel(D);
   }
   for (const k of ['pv0', 'pv1']) { const b = q(`[data-a="${k}"]`); if (b) { const on = !!(LAGE1.pv && LAGE1.pv.tag === k); b.textContent = on ? '■ Stopp' : k === 'pv0' ? '▶ Vorher' : '▶ Nachher'; b.classList.toggle('on', on); } }
-  const go = q('[data-a="split"],[data-a="fold"]'); if (go) { go.disabled = !mv.length || (tab === 'teilen' && !lage1Tgts(U.t).length); if (tab === 'teilen') { const tg = lage1Tgts(U.t), cur = tg.length ? tg[U.tg % tg.length] : null; go.textContent = cur === 'new' ? 'Teilen → neue Spur' : cur == null ? 'Teilen' : 'Teilen → ' + S.tracks[cur].name; } }
+  const go = q('[data-a="split"],[data-a="fold"]'); if (go) { go.disabled = !mv.length || (tab === 'teilen' && (!lage1Tgts(U.t).length || !D.P.go.length)); if (tab === 'teilen') { const tg = lage1Tgts(U.t), cur = tg.length ? tg[U.tg % tg.length] : null; go.textContent = cur === 'new' ? 'Teilen → neue Spur' : cur == null ? 'Teilen' : 'Teilen → ' + S.tracks[cur].name; } }
   const kt = q('[data-a="ktup"]'); if (kt) kt.disabled = !mv.length || D.part !== 'oben';
   const z0 = q('[data-a="fc0"]'); if (z0) z0.disabled = !sc.ns.some(n => n.fc);
   U.sig = lage1Sig(c);
@@ -97693,7 +97744,7 @@ function lage1CvDraw(cv, D, F) {
   const dpr = Math.min(2, window.devicePixelRatio || 1), W = cv.clientWidth || 300, H = cv.clientHeight || 64;
   cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
   const g = cv.getContext('2d'); if (!g) return; g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
-  const {c, B, mv} = D, L = Math.max(clipB(c), 1e-6), bb = clipBarB(c), hitS = new Set(mv);
+  const {c, B} = D, L = Math.max(clipB(c), 1e-6), bb = clipBarB(c), hitS = new Set(D.hl);
   let lo = Math.min(127, B - 1), hi = Math.max(0, B); for (const n of c.notes) { lo = Math.min(lo, n.n); hi = Math.max(hi, n.n); }
   if (F) for (const x of F.L) { lo = Math.min(lo, x.n); hi = Math.max(hi, x.n); }
   lo -= 1; hi += 1;
@@ -97751,7 +97802,7 @@ function lage1Act(b) {
   if (a === 'split') { lage1DoSplit(); return; }
   if (a === 'fold') { lage1DoFold(); return; }
   if (a === 'pv0' || a === 'pv1') { if (LAGE1.pv && LAGE1.pv.tag === a) lage1PvStop(); else lage1Preview(a); lage1Live(); return; }
-  if (a === 'lane') { lage1LaneSet(!lage1Pref().flt); lage1Paint(); return; }
+  if (a === 'lane') { const on = !lage1Pref().flt; lage1LaneSet(on); if (on) { closePop(); toast('FILT-Zeile ist an: unter den Noten hoch oder runter ziehen. „Lage ▾“ holt das Blatt zurück.'); return; } lage1Paint(); return; }   // Prüfung: die Zeile liegt unter dem Blatt – es geht dafür zu
   if (a === 'ktup') { lage1DoKt(); return; }
   if (a === 'fc0') { lage1DoFc0(); return; }
 }
@@ -97771,27 +97822,36 @@ function lage1DoSplit(o) {
   const {U, t, s, mv, part} = D; if (!mv.length) { toast('Keine Note ' + lage1BLabel(D)); haptic('err'); return -1; }
   const tg = lage1Tgts(t); if (!tg.length) { toast('Kein Ziel frei'); haptic('err'); return -1; }
   const to = o.to != null ? o.to : tg[U.tg % tg.length], nw = to === 'new', pick = o.snd || lage1SndPick(), src = S.tracks[t].name;
+  const P = lage1SplitPlan(s, mv, to); if (!P.go.length) { toast(lage1SplitTx(D, P)); haptic('err'); return -1; }   // Prüfung: nur was ins Ziel passt
   lage1PvStop();
-  const j = mtx3Out(t, s, mv, to, false, true);
+  const j = mtx3Out(t, s, P.go, to, false, true);
   if (j < 0) { toast('Teilen ging nicht'); haptic('err'); return -1; }
-  const top = UNDO[UNDO.length - 1];
+  const top = UNDO[UNDO.length - 1], hint = (MTX3.last && Array.isArray(MTX3.last.hint) ? MTX3.last.hint : []).slice();   // MTX3-Hinweise (z. B. Song) mit in die Meldung
+  if (P.stay.length) hint.unshift(P.stay.length + (P.stay.length === 1 ? ' Note bleibt' : ' Noten bleiben') + ' hier (hinter dem Ende von ' + S.tracks[j].name + ')');
+  if (P.cut) hint.push(P.cut + ' am Clip-Ende gekürzt');
   let sndTx = '';
   if (nw) {
     S.tracks[j].name = (src + ' · ' + part).slice(0, 24);
-    if (pick === 'hell' || pick === 'weich') sndTx = lage1SndShift(j, pick === 'hell' ? 12 : -12) ? (pick === 'hell' ? ', Klang heller' : ', Klang weicher') : '';
+    if (pick === 'hell' || pick === 'weich') sndTx = lage1SndShift(j, pick === 'hell' ? 12 : -12) ? (pick === 'hell' ? ', Klang heller' : ', Klang weicher') : !lage1FcEng(S.tracks[j].sound) ? ', gleicher Klang (kein Filter)' : pick === 'hell' ? ', gleicher Klang – Filter schon ganz offen' : ', gleicher Klang – Filter schon ganz zu';
     UI.dirty.grid = UI.dirty.strip = UI.dirty.all = true; if (typeof MX !== 'undefined') MX.key = '';
   }
   if (top && top.kind === 'group' && top.mtx3) { top.label = 'Lage teilen → ' + S.tracks[j].name; top.lage1 = 'split'; }
-  LAGE1.n++; LAGE1.last = {op: 'split', from: t, to: j, s, n: mv.length, part, B: D.B, snd: nw ? pick : null};
-  toast(mv.length + (mv.length === 1 ? ' Note' : ' Noten') + ' → ' + String(S.tracks[j].name).toUpperCase() + (nw ? ' (neue Spur' + sndTx + ')' : ''), {label: 'Rückgängig', fn: () => undo()});
+  LAGE1.n++; LAGE1.last = {op: 'split', from: t, to: j, s, n: P.go.length, stay: P.stay.length, cut: P.cut, hint: hint.slice(), part, B: D.B, snd: nw ? pick : null};
+  toast(P.go.length + (P.go.length === 1 ? ' Note' : ' Noten') + ' → ' + String(S.tracks[j].name).toUpperCase() + (nw ? ' (neue Spur' + sndTx + ')' : '') + (hint.length ? ' · ' + hint.join(' · ') : ''), {label: 'Rückgängig', fn: () => undo()});
   haptic('pop');
   if (nw && pick === 'anders' && !o.stay) { closePop(); try { openBrowser(j); } catch (e) { logErr(e); } return j; }
   lage1Paint(); lage1RollRefresh();
   return j;
 }
-// der Klang der neuen Spur: Cutoff ± 1 Oktave (VA/FM/WT: Hz, Platte: beide Timbres); false = dieser Klang hat keinen Filter
+// Prüfung: kann der Cutoff um semi noch wandern? (FM steht oft ganz offen auf 20 kHz – dann ist „Heller“ dasselbe)
+function lage1SndRoom(snd, semi) {
+  if (!snd || !snd.p || !lage1FcEng(snd)) return false;
+  if (snd.engine === 'mk') { const T = snd.p.mk && snd.p.mk.t; return Array.isArray(T) && T.some(x => x && x.f && isNum(x.f.cut) && clamp(Math.round(x.f.cut + semi * LAGE1_MK), 0, 127) !== x.f.cut); }
+  return isNum(snd.p.cutoff) && Math.abs(clamp(snd.p.cutoff * Math.pow(2, semi / 12), 20, 20000) - snd.p.cutoff) > 1e-9;
+}
+// der Klang der neuen Spur: Cutoff ± 1 Oktave (VA/FM/WT: Hz, Platte: beide Timbres); false = kein Filter oder schon am Anschlag
 function lage1SndShift(j, semi) {
-  const tr = S.tracks[j]; if (!tr || !tr.sound || !tr.sound.p || !lage1FcEng(tr.sound)) return false;
+  const tr = S.tracks[j]; if (!tr || !tr.sound || !tr.sound.p || !lage1FcEng(tr.sound) || !lage1SndRoom(tr.sound, semi)) return false;
   const sd = deep(tr.sound), p = sd.p;
   if (sd.engine === 'mk') { const T = p.mk && p.mk.t; if (!Array.isArray(T)) return false; let k = 0; for (const x of T) if (x && x.f && isNum(x.f.cut)) { x.f.cut = clamp(Math.round(x.f.cut + semi * LAGE1_MK), 0, 127); k++; } if (!k) return false; }
   else { if (!isNum(p.cutoff)) return false; p.cutoff = clamp(p.cutoff * Math.pow(2, semi / 12), 20, 20000); }
@@ -97811,7 +97871,7 @@ function lage1DoFold() {
   afterClipEdit(t, s);
   if (ED.roll && ED.rollAt && ED.rollAt.t === t && ED.rollAt.s === s) { try { ED.roll.select(ED.roll.selection.filter(n => c.notes.includes(n))); ED.roll.refresh(); rollHeadUpdate(); } catch (e) { logErr(e); } }
   LAGE1.n++; LAGE1.last = {op: 'fold', t, s, moved: F.moved, fixed: F.fixed, rep: F.rep, mer: F.mer, drp: F.drp, mode, part, B};
-  toast(F.moved + (F.moved === 1 ? ' Note' : ' Noten') + ' gefaltet' + (F.fixed ? ' · ' + F.fixed + ' Doppelnoten gelöst' : ''), {label: 'Rückgängig', fn: () => undo()});
+  toast(F.moved + (F.moved === 1 ? ' Note' : ' Noten') + ' gefaltet' + (F.fixed ? ' · ' + F.fixed + (F.fixed === 1 ? ' Doppelnote' : ' Doppelnoten') + ' gelöst' : ''), {label: 'Rückgängig', fn: () => undo()});
   haptic('pop'); lage1Paint(); lage1RollRefresh();
   return F;
 }
@@ -97885,7 +97945,7 @@ function lage1Tint(Rl, c, st) {
   const box = (beat, n, d) => { const p = Rl._xy(beat, n); return {x: p.x - r.left, y: p.y - r.top - rowH / 2, w: Math.max(3, d * ppb), h: rowH}; };
   g.save();
   const F = D.tab === 'falten' ? lage1FoldC(D) : null;
-  for (const n of D.mv) { const b = box(n.t, n.n, n.d); if (b.x > W || b.x + b.w < 0 || b.y > H || b.y + b.h < 0) continue; g.globalAlpha = .38; g.fillStyle = amb; g.fillRect(b.x + 1, b.y + 2, b.w - 2, b.h - 4); g.globalAlpha = 1; g.strokeStyle = amb; g.lineWidth = 1.5; g.strokeRect(b.x + 1.5, b.y + 2.5, b.w - 3, b.h - 5); }
+  for (const n of D.hl) { const b = box(n.t, n.n, n.d); if (b.x > W || b.x + b.w < 0 || b.y > H || b.y + b.h < 0) continue; g.globalAlpha = .38; g.fillStyle = amb; g.fillRect(b.x + 1, b.y + 2, b.w - 2, b.h - 4); g.globalAlpha = 1; g.strokeStyle = amb; g.lineWidth = 1.5; g.strokeRect(b.x + 1.5, b.y + 2.5, b.w - 3, b.h - 5); }
   if (F) { g.setLineDash([3, 3]); for (const x of F.L) { if (x.drop || (!x.f && !x.fix)) continue; const b = box(x.t, x.n, x.d); if (b.x > W || b.x + b.w < 0 || b.y > H || b.y + b.h < 0) continue; g.strokeStyle = x.fix === 'kontur' ? '#ffffff' : amb; g.lineWidth = 1.5; g.strokeRect(b.x + 1.5, b.y + 2.5, b.w - 3, b.h - 5); } g.setLineDash([]); }
   const yB = box(0, D.B, 0).y + rowH;
   if (yB > -2 && yB < H + 2) { g.strokeStyle = amb; g.lineWidth = 1.5; g.setLineDash([6, 4]); g.beginPath(); g.moveTo(0, yB); g.lineTo(W, yB); g.stroke(); g.setLineDash([]); }
@@ -98039,7 +98099,8 @@ const LAGE1_API = {
   open: tab => (ED.rollAt ? lage1Open(ED.rollAt.t, ED.rollAt.s, tab) : false), close: () => { if (LAGE1.ui) closePop(); },
   setB: n => lage1SetB(n), set: (k, v) => { lage1PrefSet(k, v); if (LAGE1.ui) lage1Paint(); lage1RollRefresh(); }, tgt: k => { if (LAGE1.ui) { LAGE1.ui.tg = k | 0; lage1Paint(); } },
   split: o => lage1DoSplit(o), fold: () => lage1DoFold(), kt: () => lage1DoKt(), fc0: () => lage1DoFc0(), lane: on => lage1LaneSet(on),
-  calc: (t, s, B, part, mode) => { const c = S.tracks[t].clips[s]; const F = lage1Fold(c, c.notes, B, part, mode, c.key); return {moved: F.moved, fixed: F.fixed, rep: F.rep, mer: F.mer, drp: F.drp, notes: F.L.filter(x => !x.drop).map(x => ({t: x.t, d: x.d, n: x.n}))}; },
+  calc: (t, s, B, part, mode) => { const c = S.tracks[t].clips[s]; const F = lage1Fold(c, c.notes, B, part, mode, c.key); return {moved: F.moved, fixed: F.fixed, rep: F.rep, mer: F.mer, drp: F.drp, notes: F.L.filter(x => !x.drop).map(x => ({t: x.t, d: x.d, n: x.n, n0: x.n0, fix: x.fix}))}; },
+  plan: () => { const D = lage1Data(); return D && D.P ? {go: D.P.go.length, stay: D.P.stay.length, cut: D.P.cut, tx: lage1SplitTx(D, D.P)} : null; },
   suggest: (t, s) => lage1Suggest(S.tracks[t].clips[s].notes), lk: (t, s, k) => { const c = S.tracks[t].clips[s]; return lkNoteX(t, c, c.notes[k], c.notes[k].t); },
   keyAt: y => (ED.roll ? lage1KeyAt(ED.roll, y) : null), lanePt: (beat, v) => { const cv = LAGE1.lcv; if (!cv || !ED.roll) return null; const r = cv.getBoundingClientRect(), f = ED.roll.fol(), g = lage1LaneGeo(cv); return {x: r.left + (beat - f.x0) * f.ppb + 3, y: r.top + g.mid - v / 64 * g.amp}; },
   cvPt: n => { const U = LAGE1.ui, cv = U && U.p && U.p.querySelector('.lage1-cv'), m = cv && cv._lage1; if (!m) return null; const r = cv.getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + 3 + (m.hi - n) * m.rh + m.rh / 2 - .5}; },

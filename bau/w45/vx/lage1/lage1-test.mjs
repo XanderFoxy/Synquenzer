@@ -57,7 +57,7 @@ for (const [W, H] of VIEWS) {
     m3.scrollIntoView({inline: 'nearest'}); const h3 = hitH(m3); b.scrollIntoView({inline: 'nearest'}); const r = b.getBoundingClientRect();
     return {prev: prev && prev.textContent, txt: b.textContent, w: Math.round(r.width), hit: hitH(b), hitAuslagern: h3, bar: Math.round(bar.height)}; });
   ok(T('L1 [Lage ▾] gleich hinter [Auslagern ▾], Trefferfläche so hoch wie die Leiste (wie Auslagern), ≥ 44 px breit'), kPos.prev === 'Auslagern ▾' && kPos.txt === 'Lage ▾' && kPos.w >= 44 && kPos.hit >= kPos.bar - 1 && kPos.hit >= kPos.hitAuslagern, kPos);
-  await tap(kb); await sleep(300);
+  await tap(await at(() => ED.roll.el.acts.querySelector('.lage1rb'))); await sleep(300);   // Prüfung: Lage nach dem Scrollen der Leiste neu messen
   const P1 = await p.evaluate(() => { const P = UI.pop && UI.pop.el; if (!P) return null; const r = P.getBoundingClientRect(), bs = [...P.querySelectorAll('button')].filter(x => x.getClientRects().length);
     const small = bs.filter(x => { const q = x.getBoundingClientRect(); return q.width < 44 - .5 || q.height < 44 - .5; }).map(x => x.textContent.trim());
     const cut = bs.filter(x => x.scrollWidth > x.clientWidth + 1).map(x => x.textContent.trim());
@@ -114,6 +114,21 @@ for (const [W, H] of VIEWS) {
   const S3b = await p.evaluate(snd3 => { const c = S.tracks[2].clips[0], q = S.tracks[0].clips[0]; return {tg: c ? c.notes.map(x => x.n) : null, src: q.notes.map(x => x.n), snd: JSON.stringify(S.tracks[2].sound) === snd3, nt: NT()}; }, snd3);
   ok(T('L3 umgekehrt: untere Noten (unter C3) → vorhandene Spur Synth 3, deren Klang bleibt'), /Synth 3/.test(tg) && JSON.stringify(S3b.tg) === JSON.stringify([36, 43]) && !S3b.src.some(n => n < 48) && S3b.snd, {tg, S3b});
   await p.evaluate(() => { undo(); SYNQUENZER.lage1.set('part', 'oben'); });
+  // Prüfung: Ziel Synth 3 hat in Szene 1 nur 1 Takt – die oberen Noten in Takt 2 bleiben in der Quelle, Blatt und Meldung sagen es
+  await p.evaluate(() => { const c = S.tracks[0].clips[0]; c.notes = [0, 1, 2, 3, 4, 5, 6, 7].map(k => ({t: k, d: .5, n: k % 2 ? 72 : 48, v: .8})); clipChanged(0, 0);
+    S.tracks[2].clips[0] = normClip({len: 1, key: {root: 0, scale: 'ionian', src: 'auto'}, notes: [{t: 0, d: 1, n: 40, v: .8}]}, 'synth', S.key); clipChanged(2, 0); ED.roll.select([]); ED.roll.refresh(); SYNQUENZER.lage1.setB(60);
+    window.__lt = []; if (!window.__ltW) { window.__ltW = true; const o = window.toast; window.toast = (m, a) => { window.__lt.push(String(m)); return o(m, a); }; } });
+  await sleep(200);
+  tg = await p.evaluate(() => UI.pop.el.querySelector('[data-a="tgt"]').textContent);
+  for (let k = 0; k < 6 && !/Synth 3/.test(tg); k++) { await tap(await btn('[data-a="tgt"]')); tg = await p.evaluate(() => UI.pop.el.querySelector('[data-a="tgt"]').textContent); }
+  const pre3c = await p.evaluate(() => ({src: JSON.stringify(cleanClip(S.tracks[0].clips[0])), tgt: JSON.stringify(cleanClip(S.tracks[2].clips[0])), cnt: UI.pop.el.querySelector('.lage1-cnt').textContent, plan: SYNQUENZER.lage1.plan(), go: (g => ({tx: g.textContent, cut: g.scrollWidth > g.clientWidth + 1, w: Math.round(g.getBoundingClientRect().width), h: Math.round(g.getBoundingClientRect().height)}))(UI.pop.el.querySelector('[data-a="split"]'))}));
+  await tap(await btn('[data-a="split"]')); await sleep(250);
+  const S3c = await p.evaluate(() => ({src: S.tracks[0].clips[0].notes.map(n => n.n + '@' + n.t), tgt: S.tracks[2].clips[0].notes.map(n => n.n + '@' + n.t), toast: window.__lt.slice(-1)[0] || '', last: SYNQUENZER.lage1.info().last}));
+  ok(T('L3 Prüfung: Ziel-Clip kürzer (1 Takt) – Blatt sagt vorher „2 Noten wandern · 2 liegen hinter dem Ende von Synth 3 … bleiben hier“, Knopf „Teilen → Synth 3“ ganz lesbar'), /Synth 3/.test(tg) && /^2 Noten wandern/.test(pre3c.cnt) && /2 liegen hinter dem Ende von Synth 3 \(1 Takt\) und bleiben hier/.test(pre3c.cnt) && pre3c.plan && pre3c.plan.go === 2 && pre3c.plan.stay === 2 && pre3c.go.tx === 'Teilen → Synth 3' && !pre3c.go.cut && pre3c.go.w >= 44 && pre3c.go.h >= 44, {tg, cnt: pre3c.cnt, go: pre3c.go});
+  ok(T('L3 Prüfung: nur 72@1 und 72@3 wandern, 72@5 und 72@7 bleiben in der Quelle (keine Note geht verloren), Meldung zählt richtig'), JSON.stringify(S3c.tgt) === JSON.stringify(['40@0', '72@1', '72@3']) && JSON.stringify(S3c.src) === JSON.stringify(['48@0', '48@2', '48@4', '72@5', '48@6', '72@7']) && /^2 Noten → SYNTH 3/.test(S3c.toast) && /2 Noten bleiben hier/.test(S3c.toast) && S3c.last.n === 2 && S3c.last.stay === 2, S3c);
+  const U3c = await p.evaluate(pre => { undo(); return JSON.stringify(cleanClip(S.tracks[0].clips[0])) === pre.src && JSON.stringify(cleanClip(S.tracks[2].clips[0])) === pre.tgt; }, pre3c);
+  ok(T('L3 Prüfung: ein ↶ stellt Quelle und Ziel wieder her'), U3c);
+  await p.evaluate(() => { S.tracks[2].clips[0] = null; clipChanged(2, 0); SYNQUENZER.lage1.tgt(0); });
   // ---------- L4 Oktave falten: Doppelnoten lösen (Kontur, Zusammenziehen, Weglassen), Vorschau vorher/nachher, ein ↶ ----------
   // C3 → C4 (gefaltet: C3 = Wiederholung) · Akkord C3+C4 (gefaltet: übereinander) · C4 C4 (Wiederholung war schon da) · G3 → D4 → …
   const FS = [[0, 48], [1, 60], [2, 48], [2, 60], [3, 55], [4, 62], [5, 50], [6, 64], [7, 64]];
@@ -124,7 +139,8 @@ for (const [W, H] of VIEWS) {
   const kN = calc.k.notes.map(x => x.t + ':' + x.n).join(' ');
   ok(T('L4 Kontur halten: Wiederholung → nächster Ton der Tonart in alter Richtung, Akkord-Doppel → ein Ton, alte Wiederholung bleibt'), kN === '0:48 1:50 2:48 3:55 4:52 5:50 6:52 7:52' && calc.k.moved === 5 && calc.k.fixed === 3, {kN, k: [calc.k.moved, calc.k.fixed, calc.k.rep, calc.k.mer]});
   const zN = calc.z.notes.map(x => x.t + ':' + x.n + ':' + x.d).join(' ');
-  ok(T('L4 Zusammenziehen: gleiche Folgetöne werden ein längerer Ton'), zN === '0:48:1.9 2:48:0.9 3:55:0.9 4:50:1.9 6:52:0.9 7:52:0.9' && calc.z.mer === 3, {zN, mer: calc.z.mer});
+  // Prüfung: C3 · C4→C3 · C3 werden ein Ton (vorher blieb C3 C3 als neue Wiederholung stehen)
+  ok(T('L4 Zusammenziehen: gleiche Folgetöne werden ein längerer Ton (auch der Ton danach: C3 C4 C3 → ein C3)'), zN === '0:48:2.9 3:55:0.9 4:50:1.9 6:52:0.9 7:52:0.9' && calc.z.mer === 3, {zN, mer: calc.z.mer});
   const wN = calc.w.notes.map(x => x.t + ':' + x.n).join(' ');
   ok(T('L4 Weglassen: die gefalteten Doppelnoten fallen weg'), wN === '0:48 2:48 3:55 5:50 6:52 7:52' && calc.w.drp === 3, {wN, drp: calc.w.drp});
   const cnt = await p.evaluate(() => UI.pop.el.querySelector('.lage1-cnt').textContent);
@@ -151,13 +167,40 @@ for (const [W, H] of VIEWS) {
   const cU = await p.evaluate(() => SYNQUENZER.lage1.calc(0, 0, 60, 'unten', 'weg'));
   ok(T('L4 Untere ↑ +12: tiefe Noten eine Oktave hoch, Doppelnoten weg'), cU.moved === 4 && cU.notes.every(x => x.n >= 60), {moved: cU.moved, n: cU.notes.map(x => x.n)});
   await tap(await btn('[data-part="oben"]')); await tap(await btn('[data-mode="kontur"]'));
+  // Prüfung: Kontur baut keine neue Tonwiederholung und bleibt auf der gefalteten Seite des Trenntons (Fälle + 300 Zufallsläufe)
+  const K4 = await p.evaluate(() => {
+    const c = S.tracks[0].clips[0], keep = c.notes, L1 = SYNQUENZER.lage1, put = ns => { c.notes = ns.map(([t, n, d]) => ({t, d: d || .45, n, v: .8})); };
+    const r = {};
+    put([[0, 55], [.5, 65], [1, 53]]); r.gff = L1.calc(0, 0, 60, 'oben', 'kontur').notes.map(x => x.n);          // G3 F4 F3
+    put([[0, 47], [.5, 59]]); r.bb = L1.calc(0, 0, 48, 'oben', 'kontur').notes.map(x => x.n);                    // B2 B3, Trennton C3
+    put([[0, 60], [.5, 48], [1, 62]]); r.up = L1.calc(0, 0, 60, 'unten', 'kontur').notes.map(x => x.n);          // C4 C3 D4, Untere ↑
+    let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647, sc = [0, 2, 4, 5, 7, 9, 11];
+    const st = {kontur: {neu: 0, seite: 0}, weg: {neu: 0}, ziehen: {mehr: 0}}, reps = L => { let k = 0; for (let i = 1; i < L.length; i++) if (L[i].n === L[i - 1].n && L[i].t - (L[i - 1].t + L[i - 1].d) <= 1 + 1e-6) k++; return k; };
+    for (let run = 0; run < 300; run++) {
+      const ns = []; for (let k = 0; k < 16; k++) ns.push([k * .5, 12 * (3 + Math.floor(rnd() * 3)) + sc[Math.floor(rnd() * 7)]]); put(ns);
+      const orig = ns.map(([t, n]) => ({t, n, d: .45}));
+      for (const m of ['kontur', 'weg', 'ziehen']) {
+        const R = L1.calc(0, 0, 60, 'oben', m), L = R.notes.slice().sort((a, b) => a.t - b.t);
+        if (m === 'ziehen') { if (reps(L) > reps(orig)) st.ziehen.mehr++; continue; }
+        for (let i = 1; i < L.length; i++) { const a = L[i - 1], z = L[i]; if (a.n === z.n && z.t - (a.t + a.d) <= 1 + 1e-6 && a.n0 !== z.n0) st[m].neu++; }
+        if (m === 'kontur') for (const x of L) if (x.fix === 'kontur' && x.n >= 60) st.kontur.seite++;
+      }
+    }
+    r.st = st; c.notes = keep; return r;
+  });
+  ok(T('L4 Prüfung: Kontur G3 F4 F3 → G3 A3 F3 (keine neue Wiederholung G3 G3), B2 B3 (Trennton C3) → B2 A2 (bleibt unter C3), Untere ↑ C4 C3 D4 → C4 E4 D4'), JSON.stringify(K4.gff) === '[55,57,53]' && JSON.stringify(K4.bb) === '[47,45]' && JSON.stringify(K4.up) === '[60,64,62]', K4);
+  ok(T('L4 Prüfung: 300 Zufallsläufe – Kontur und Weglassen 0 neue Wiederholungen, Kontur 0× zurück über den Trennton, Zusammenziehen nie mehr Wiederholungen als vorher'), K4.st.kontur.neu === 0 && K4.st.kontur.seite === 0 && K4.st.weg.neu === 0 && K4.st.ziehen.mehr === 0, K4.st);
   // ---------- L5 Filter je Note: Zeile FILT, Ziehen/Wischen per Touch, ↶ ↷, Schild wechselt, ⇕ zeigt VEL ----------
   await p.evaluate(() => { const c = S.tracks[0].clips[0]; c.notes = []; const seq = [36, 43, 48, 52, 55, 60, 64, 67, 72, 76, 79, 84, 72, 67, 60, 55]; for (let k = 0; k < 16; k++) c.notes.push({t: k * .5, d: .45, n: seq[k], v: .8}); clipChanged(0, 0); ED.roll.select([]); ED.roll.refresh(); SYNQUENZER.lage1.setB(69); });
-  await tap(await btn('[data-tab="filter"]'));
-  await tap(await btn('[data-a="lane"]')); await sleep(200);
-  const L5a = await p.evaluate(() => { const lab = ED.roll.el.vel.parentNode.previousElementSibling, cv = ED.roll.el.vel.parentNode.querySelector('canvas.lage1-fl'); return {lab: lab.textContent, on: !!(cv && !cv.hidden), flt: SYNQUENZER.lage1.info().flt}; });
-  ok(T('L5 Schalter „Filter-Zeile“: Zeile heißt FILT und liegt über VEL'), L5a.lab === 'FILT' && L5a.on && L5a.flt, L5a);
+  await tap(await btn('[data-tab="filter"]')); await sleep(150);
   await shot('l5-blatt-filter');
+  await tap(await btn('[data-a="lane"]')); await sleep(300);
+  const L5a = await p.evaluate(() => { const lab = ED.roll.el.vel.parentNode.previousElementSibling, cv = ED.roll.el.vel.parentNode.querySelector('canvas.lage1-fl'), r = cv && cv.getBoundingClientRect();
+    const hit = r ? [.25, .5, .75].map(f => document.elementFromPoint(r.left + r.width * f, r.top + r.height / 2) === cv) : []; return {lab: lab.textContent, on: !!(cv && !cv.hidden), flt: SYNQUENZER.lage1.info().flt, open: !!UI.pop, hit, lane: r && [Math.round(r.top), Math.round(r.bottom)]}; });
+  ok(T('L5 Schalter „Filter-Zeile“: Zeile heißt FILT, das Blatt geht zu, die Zeile ist per Touch frei (Prüfung)'), L5a.lab === 'FILT' && L5a.on && L5a.flt && !L5a.open && L5a.hit.length === 3 && L5a.hit.every(Boolean), L5a);
+  await tap(await at(() => ED.roll.el.acts.querySelector('.lage1rb'))); await sleep(250);
+  const L5o = await p.evaluate(() => ({tab: SYNQUENZER.lage1.info().tab, lane: UI.pop && UI.pop.el.querySelector('[data-a="lane"]').textContent, tx: !!UI.pop && UI.pop.el.textContent.includes('unter diesem Blatt')}));
+  ok(T('L5 [Lage ▾] holt das Blatt zurück (Reiter Filter, „✓ Filter-Zeile“, Hinweis „liegt unter diesem Blatt“)'), L5o.tab === 'filter' && /^✓/.test(L5o.lane || '') && L5o.tx, L5o);
   await tap(await btn('[data-a="x"]')); await sleep(250);
   ok(T('L5 ✕ schließt das Blatt'), !(await p.evaluate(() => !!UI.pop)));
   const u5 = await p.evaluate(() => UNDO.length);
@@ -230,6 +273,36 @@ for (const [W, H] of VIEWS) {
   });
   ok(T('L7 MIDI (Szene): CC74 = 64 + fc an jedem Notenbeginn (64, 96, 32, 0), jeweils vor dem Note-an'), JSON.stringify(L7.cc) === JSON.stringify(['0:64', '480:96', '960:32', '1440:0']) && L7.before, L7);
   ok(T('L7 MIDI: zweite Spur (FM) ebenso, Spur ohne Filter-Werte ohne CC; Export-Blatt „Spur“ ebenso'), JSON.stringify(L7.t2cc) === JSON.stringify([64, 96, 32, 0]) && L7.t4cc === 0 && JSON.stringify(L7.va1) === JSON.stringify([64, 96, 32, 0]), {t2: L7.t2cc, t4: L7.t4cc, va1: L7.va1});
+  // Prüfung: Filter je Note richtet sich nach dem Klangzustand ◆ des Clips (Cutoff 380 → Zustand 95 Hz: 95 / +32 = 380 / −32 = 24 / 95)
+  const L6s = await p.evaluate(async () => {
+    const wait = ms => new Promise(r => setTimeout(r, ms)), c0 = S.tracks[0].clips[0], keep = JSON.stringify(cleanClip(c0)), base = S.tracks[0].sound.p.cutoff, st = Math.round(base / 4);
+    const c = S.tracks[0].clips[0] = normClip({len: 1, key: {root: 0, scale: 'ionian', src: 'auto'}, notes: [0, 32, -32, 0].map((fc, k) => { const n = {t: k, d: .9, n: 48, v: .8}; if (fc) n.fc = fc; return n; })}, 'synth', S.key);
+    c.st = {eng: S.tracks[0].sound.engine, p: {cutoff: st}}; clipChanged(0, 0); SYNQUENZER.lkProbe(0, 64); AU.synth[0].lkReps = [];
+    launchScene(0); await wait(2400); stop(); await wait(1400);
+    const E = AU.synth[0], m = new Map(); for (const r of E.lkReps || []) for (const v of r.lkRep || []) m.set(v.id, Math.round(v.cut));
+    S.tracks[0].clips[0] = normClip(JSON.parse(keep), 'synth', S.key); clipChanged(0, 0);
+    return {base, st, c: [...m.values()].slice(0, 4), live: VOICES.filter(v => !v.dead).length};
+  });
+  ok(T('L6 Prüfung: Filter je Note mit Klangzustand ◆ des Clips – Basis ist der Zustand (95 → 95 / 380 / 24 / 95 Hz)'), L6s.c.length === 4 && [L6s.st, L6s.st * 4, L6s.st / 4, L6s.st].every((v, k) => Math.abs(L6s.c[k] - v) <= 1) && L6s.live === 0, L6s);
+  // Prüfung: FM mit ganz offenem Filter (20 kHz): „Heller“ sagt vorher und nachher ehrlich, dass sich nichts ändert
+  const E2 = await p.evaluate(async () => { const w = ms => new Promise(r => setTimeout(r, ms));
+    const i = S.tracks.findIndex((t, k) => t.kind === 'synth' && t.sound && t.sound.engine === 'fm6'); if (i < 0) return {fm: 'keine FM-Spur'};
+    S.tracks[i].clips[0] = normClip({len: 1, key: {root: 0, scale: 'ionian', src: 'auto'}, notes: [{t: 0, d: .5, n: 48, v: .8}, {t: 1, d: .5, n: 76, v: .8}]}, 'synth', S.key); clipChanged(i, 0);
+    closeRoll(); await w(100); selectTrack(i); openRoll(i, 0); await w(300); window.__lt = [];
+    SYNQUENZER.lage1.open('teilen'); SYNQUENZER.lage1.setB(60); SYNQUENZER.lage1.set('snd', 'hell'); SYNQUENZER.lage1.tgt(0); await w(100);
+    const hint = UI.pop.el.textContent.includes('Der Filter ist schon ganz offen'), cut0 = S.tracks[i].sound.p.cutoff, nt = NT(), j = SYNQUENZER.lage1.split({to: 'new'});
+    const out = {i, cut0, cutNeu: S.tracks[j].sound.p.cutoff, toast: window.__lt.slice(-1)[0] || '', hint, neu: NT() === nt + 1}; undo(); SYNQUENZER.lage1.close(); closeRoll(); return out; });
+  ok(T('L3 Prüfung: FM-Filter ganz offen – Blatt sagt „„Heller“ ändert hier nichts“, Meldung „gleicher Klang – Filter schon ganz offen“ statt „heller“'), E2.cut0 === 20000 && E2.cutNeu === 20000 && E2.hint && E2.neu && /gleicher Klang – Filter schon ganz offen/.test(E2.toast) && !/Klang heller/.test(E2.toast), E2);
+  // Prüfung (vorher ungeprüft): WT spielt nativ – die Stimme bekommt den Filter je Note (2000 Hz, −16 → 1000 Hz); Platte mit ◆ (Timbre-Cutoff 60, +16 → 73)
+  const L6w = await p.evaluate(async () => { const w = ms => new Promise(r => setTimeout(r, ms)); ensureAudio(); const keep = deep(S.tracks[2].sound), out = {};
+    { const sd = deep(factorySound('f-init-tabelle')); sd.p.cutoff = 2000; sd.p.kt = 0; sd.p.fenv = 0; applySound(2, sd); } await w(300); out.eng = S.tracks[2].sound.engine; out.nativ = !AU.synth[2];
+    const c = S.tracks[2].clips[0] = normClip({len: 1, key: {root: 0, scale: 'ionian', src: 'auto'}, notes: [{t: 0, d: 1, n: 60, v: .8}, {t: 1, d: 1, n: 60, v: .8, fc: -16}]}, 'synth', S.key); clipChanged(2, 0);
+    const v0 = lage1Hear(2, 0, c.notes[0]), v1 = lage1Hear(2, 0, c.notes[1]); await w(120);
+    out.f = [v0, v1].map(v => v && v.fA ? Math.round(v.fA.frequency.value) : null); for (const v of [v0, v1]) if (v) v.release(AU.ctx.currentTime + .05);
+    applySound(2, factorySound('f-init-am')); await w(300); const wi = LKT['mk.t.0.f.cut'].wi, pick = x => { if (!x || !x.lk) return null; for (let j = 0; j < x.lk.length; j += 2) if (x.lk[j] === wi) return x.lk[j + 1]; return null; };
+    c.notes[1].fc = 16; c.st = {eng: 'mk', p: {'mk.t.0.f.cut': 60}}; out.mk = pick(SYNQUENZER.lage1.lk(2, 0, 1)); delete c.st;
+    S.tracks[2].clips[0] = null; clipChanged(2, 0); applySound(2, keep); await w(1200); out.live = VOICES.filter(v => !v.dead).length; return out; });
+  ok(T('L6 Prüfung: WT (nativ) Filter je Note an der Stimme 2000 → 1000 Hz (−16); Platte mit Klangzustand ◆ Timbre-Cutoff 60 → 73 (+16)'), L6w.eng === 'wt' && L6w.nativ && JSON.stringify(L6w.f) === '[2000,1000]' && L6w.mk === 73 && L6w.live === 0, L6w);
   // ---------- L8 Speichern / Laden: fc, geteilte Spur, Zeilen-Einstellung bleiben ----------
   const sv = await p.evaluate(() => { SYNQUENZER.lage1.lane(true); return {ok: saveNow(), c0: JSON.stringify(cleanClip(S.tracks[0].clips[0])), nt: NT()}; });
   await p.reload(); await p.waitForFunction(() => typeof BOOT !== 'undefined' && BOOT.done && window.SYNQUENZER, null, {timeout: 90000}); await sleep(700);

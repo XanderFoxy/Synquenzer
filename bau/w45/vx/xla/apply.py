@@ -52,5 +52,28 @@ src = rep(src, "  on(EL.bFolgt, 'click', () => { const tr = S.tracks[R.selT]; if
           "  on(EL.bFolgt, 'click', () => { const tr = S.tracks[R.selT]; if (typeof xlaFolgtTap === 'function' && xlaFolgtTap(R.selT)) return; /* XLA: ⇅½ → fest → ⇅ im DAW-Projekt */ if (tr.kind === 'synth') setTrackFollow(R.selT, !tr.follow); });")
 src = rep(src, "tr.kind === 'synth' && !tr.follow ? 'fest' : 'f', nm0 = String(tr.name || '').toUpperCase();",
           "tr.kind === 'synth' && !tr.follow && tr.xs !== 1 ? 'fest' : 'f', nm0 = String(tr.name || '').toUpperCase();   /* XLA: eine ⇅½-Spur zeigt im Video ⇅ statt FEST */")
+# 5. Prüfung (Nachbessern nach dem Prüfer): Anzeige, Song transponieren, neue Spuren – Haken je eine Zeile, Kennung XLA
+def repl_line(s, a, b, tag):
+    """ändert eine bestehende Zeile (a → b, genau einmal) und hängt die Kennung an ihr Zeilenende"""
+    c = s.count(a); assert c == 1, (c, a[:80])
+    i = s.find(a); le = s.find('\n', i)
+    line = s[s.rfind('\n', 0, i) + 1:le].replace(a, b)
+    line += ('   ' if '//' not in line[-200:] else ' · ') + ('/* ' + tag + ' */' if '//' not in line[-200:] else tag)
+    return s[:s.rfind('\n', 0, i) + 1] + line + s[le:]
+src = rep(src, "  const o = mapOut(i, clipKey, note, time, entry);\n",
+          "  const o = mapOut(i, clipKey, note, time, entry);\n  if (tr.xs === 1 && typeof xlaXsPost === 'function' && xlaXsOn(i)) return xlaXsPost(o, time);   /* XLA: ⇅½ nimmt song.xp mit wie ⇅ folgt (Song transponieren, Rückung, Abschnitt) */\n")
+src = rep(src, "function shownShift(e) {\n",
+          "function shownShift(e) {\n  if (typeof xlaHtView === 'function' && xlaHtView()) return xlaShown(e);   /* XLA: im Halbton-Projekt zeigt der Träger, was der Import tut („+2 · → D-Dur“) */\n")
+src = rep(src, "function singleReadout(tgt) {\n",
+          "function singleReadout(tgt) {\n  if (typeof xlaHtView === 'function' && xlaHtView()) return null;   /* XLA: im Halbton-Projekt keine Stufe (der Import geht genau um den Grundton) */\n")
+src = rep(src, "  const i = NT(), t = newSynthTrack(i);\n",
+          "  const i = NT(), t = newSynthTrack(i);\n  if (typeof xlaNewTrack === 'function') xlaNewTrack(t);   /* XLA: im Halbton-Projekt ist die neue Synth-Spur ⇅½ */\n")
+X = "(typeof xlaSx === 'function' && xlaSx(i, song)) || "
+src = repl_line(src, "} else if (tr.follow && song.xp && song.xp.length) {", "} else if (" + X + "tr.follow && song.xp && song.xp.length) {", "XLA: ⇅½ wie ⇅ folgt (song.xp)")
+src = repl_line(src, "if (tr.kind === 'synth' && tr.follow && song.xp && song.xp.length) {", "if (tr.kind === 'synth' && (" + X + "tr.follow && song.xp && song.xp.length)) {", "XLA: ⇅½ wie ⇅ folgt (song.xp)")
+src = repl_line(src, "mtx3Dr(i)) && tr.follow && song.xp && song.xp.length) {", "mtx3Dr(i)) && (" + X + "tr.follow && song.xp && song.xp.length)) {", "XLA: ⇅½ wie ⇅ folgt (song.xp)")
+src = repl_line(src, "          if (tr.follow && song.xp && song.xp.length) {", "          if (" + X + "tr.follow && song.xp && song.xp.length) {", "XLA: ⇅½ wie ⇅ folgt (song.xp)")
+src = repl_line(src, "return tr.follow !== false ? (XP.tl.length > 1", "return tr.follow !== false || (tr.xs === 1 && typeof xlaXsOn === 'function' && xlaXsOn(i)) ? (XP.tl.length > 1", "XLA: ⇅½ wie ⇅ folgt")
+src = repl_line(src, "const tl = S.tracks[i].follow !== false ? XP.tl : JAM3.ft, P = [b0];", "const tl = S.tracks[i].follow !== false || (S.tracks[i].xs === 1 && typeof xlaXsOn === 'function' && xlaXsOn(i)) ? XP.tl : JAM3.ft, P = [b0];", "XLA: ⇅½ wie ⇅ folgt")
 open(os.path.join(here, 'index.html'), 'w', encoding='utf-8').write(src)
 print('ok', len(src))

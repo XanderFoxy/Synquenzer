@@ -244,3 +244,128 @@ KS2 lief in drei Anläufen (zwei Neustarts des Rechners); der dritte Lauf hat de
 `src/ks2-lessons.js` (Entwurf, eingearbeitet), `src/sonde-l6.py` + `sonde/` (WAVs + `sonde-l6.json`), `src/probe-ks2.mjs`, `src/probe-live.mjs`,
 `src/probe-rings.mjs`, `src/probe-var2.mjs`, `src/probe-sonde.mjs`, `src/probe-bauch.mjs`, `src/probe-ab.mjs`, `src/probe-ab2.mjs`,
 `src/probe-search.mjs`, `src/probe-sheet.mjs`, `fotos/ks2-*.png` (Blatt, je Aufgabe hochkant/quer, gemessen, Messen, Treppe).
+
+## KS3 – Kapitel 6 „Werkstatt“: W1 Aufreißen, W2 Monster-Swell, 19 Rezept-Karten
+
+Stand 17.11.2026, ~01:02 UTC. `index.html` md5 **639c421dc7f10b92c5de67a7da318115** (Sicherung davor: `index.vor-ks3.html` = Ergebnis KS2,
+md5 c6f0b4ea). Gebaut mit `src/apply-ks3.py` aus `index.vor-ks3.html` + `src/ks-block.js` + `src/ks-main.js` (alte Stände
+`src/ks-block.ks2.js`, `src/ks-main.ks2.js`). VERSION bleibt '4.78.0'. Basis rel-4780 unverändert (68e92c03).
+
+### Änderung
+
+- **Stiller Block `sq-ks-src`**: 99,6 → **148,2 KB** (1176 → 1532 Zeilen), weiter nur `KSX`, ausgewertet erst beim ersten Öffnen.
+  - **Blatt**: Kapitel 6 „Werkstatt: zerlegt und Rezepte“ mit W1, W2 (je „4 Schichten“), darunter „Rezepte – 19 Klänge zum Laden“
+    (kompakte Zeilen, ✓ wie bei den Lektionen). „Weiter mit …“ läuft nach L10 in W1, W2, R01 … weiter.
+  - **W1 „Aufreißen zerlegt“** (werkzeug/machart.py `aufreissen_evt`, MACHART „Nachbau Synquenzer“): Säge Es1 −8/+8 ct + Säge +1 Okt.
+    je 80 %, Rauschen 60 %, LP24, MONO. Schicht 1 Filterfahrt 100 Hz → 4,85 kHz in 2 s (Hör-Vergleich gleichmäßig gegen spät öffnend:
+    Hüllk. 2 → Hüllk.-Menge 0,93 bei Hüllk.-Menge 0 = Produkt zweier Rampen ≈ x²); 2 Resonanz wandert (Hüllk. 2 → Resonanz 0 → 75 %);
+    3 lauter und breiter (Hüllk. 2 → Lautstärke +100 %, → Uni-Verstimm. 0,4, Osz 1 Unison 3); 4 komplett (Drive FX 30 %, Hall 18 %).
+  - **W2 „Monster-Swell zerlegt“** (`swell_evt`): Säge + Säge +9 ct, Sub Rechteck 30 %, Rauschen rosa 85 %. Schicht 1 aus dem Nichts
+    (Amp-ATTACK 0 gegen 1,8 s; LP24 120 Hz → 4,4 kHz); 2 VOKAL u → a (Cutoff 5,06 kHz = u, Hüllk.-Menge −100 %); 3 Tonhöhenbogen
+    (Hüllk. 2 → Tonhöhe +4 HT, alle Osz −3 HT: −3 → +1 → −1,8 HT) und Kehle (LFO 1 Sinus 28 Hz → Lautstärke ±35 %); 4 komplett
+    (Drive 30 %, Chorus I, Hall 20 %).
+  - **Werkstatt-Karte**: Kopf „Werkstatt · Schicht k/4“ + Titel der Schicht; ◀ ▶ wechseln zuerst die Schicht (an den Enden die
+    Nachbar-Lektion), in der Rückmeldung zusätzlich „Schicht n ▶“. „Neu“ (was dazukommt), Zahlen aus dem Klang (Cutoff nach 1/1,5/2 s,
+    Resonanz am Ende, Lautstärke-Zuwachs, Vokal je Zeitpunkt, Tonhöhenbogen – neu gerechnet bei jedem Dreh), „Warum“, Hör-Vergleich
+    vorige gegen diese Schicht (pegelgleich), Graph, 2–3 Rahmen an den neuen Reglern. Jede Schicht lädt ihren Klang; die Drehs der
+    vorigen Schicht fallen weg (↶ beginnt je Schicht am Anfang der Lektion). Letzte Schicht erreicht = erledigt.
+  - **19 Rezept-Karten R01–R19** (REZEPTBUCH Abschnitt „Synquenzer“, werkzeug/rezepte.py): ladbarer Startklang = der „richtige“ Klang;
+    Kopf „Rezept r/19“; Hör-Vergleich billig gegen richtig (bzw. zwei Varianten); „Wofür“; Werte-Zeile aus dem Klang („Werte: Typ BP12 ·
+    Cutoff 700 Hz · LFO 1 → Cutoff +15 % …“, ändert sich beim Drehen); „Prinzip“ und „Klingt billig, wenn …“; 2–3 Rahmen; Knöpfe
+    [◎ Was ist anders?] [Lade: …] [▶ Dein Stand] [Übernehmen]. Keine Aufgabe, keine Gerätenamen, keine Werksklang-Namen.
+  - **Zweite Schicht laden** („Lade: …“, ein ↶, noch einmal = wieder der Startklang): R03 Sirene Yelp, R05 Gischt (HP12, 7 dB unter dem
+    Körper), R09 Impact-Körper (3 dB unter dem Sub, mit Hall 45 %), R10 Rauschfahne, R11 Wasserblasen, R19 Brüllen VOKAL.
+  - **Übernehmen**: Name „Schule: <Karte>“ bzw. der geladenen Schicht („Schule: Gischt“), ein ↶ „Klangschule: …“; Rezept = erledigt.
+  - **◎ Was ist anders?** ist die vorhandene Funktion (`wiaToggle`): weiße Punkte an den Reglern, die den Klang machen. ✕ / Übernehmen
+    stellen den Zustand von vorher wieder her.
+  - **Fortschritt**: Werkstatt = letzte Schicht erreicht; Rezept = „Richtig“ gehört oder übernommen (`uiPrefs().ks`, nicht im Projekt).
+  - **Rechnen**: Hüllk. 2 jetzt auch → Hüllk.-Menge (clamp wie control()), → Cutoff (× 120 HT), → Lautstärke (× (1 + Menge)); L1–L10
+    unverändert (ks1/ks2-Test).
+  - **Pegel**: jeder Startklang (8 Schichten, 19 Rezepte) auf **−24 LUFS** geeicht (offline, dasselbe Worklet, über die Phrase der Karte;
+    Tabelle `LV`). Beim Pegelabgleich (Hör-Vergleich, Eichung) rechnet die Karte jetzt den **Spur-Drive** (tanh-Kennlinie wie
+    `driveCurve`, Ausgleich 1/(1 + 1,5 · Drive)) und die Spur-Lautstärke auf den Offline-Render; vorher klang W1 Schicht 4 am Master
+    6 dB lauter. Klänge mit Drive: Pegel vor dem Drive wie ohne, Eichung über die Spur-Lautstärke dahinter (die Verzerrung bleibt wie
+    gedacht). Zufall (S&H, R11/R12): Mittel aus 3 Renderläufen.
+  - Rahmen-Etiketten, die rechts aus dem Bild ragen würden, rücken nach links (betrifft auch L1–L10, nur wenn es eng ist).
+  - Werte in den Einheiten des Rezeptbuchs: Hz, s, Anteile; Mod-Mengen als Engine-Menge (Tonhöhe 1 = 24 HT, Cutoff `kc(Anzeige-%)`,
+    Hüllk.-Menge-Route 0,93 = Anzeige 47 %, Resonanz-Route in Resonanz-Einheiten).
+- **Hauptskript, KS-Block**: 21 Such-Einträge (W1, W2, R01–R19), Kopf-Kommentar. **Keine neuen Haken, Engine unverändert.**
+- **Sichtbar neu** nur in der Klangschule (Kapitel 6 im Blatt, Werkstatt- und Rezept-Karten). Kein neuer Knopf, Regler und Seiten unverändert.
+
+**Abweichungen vom Konzept / Rezeptbuch:**
+- Kein eigenes **Generator-Skript** (Konzept KS3): die Werte stehen in Rezeptbuch-Einheiten direkt im Block; die Übereinstimmung mit
+  den Hörbeispielen prüft der Test gegen `machart.json` und gegen die gemessenen Zahlen von `messen_rezepte.py` (gleiche Messart).
+- W2 Schicht 2: VOKAL u → a braucht **Hüllk.-Menge −100 %** (72 HT, die Vokale liegen 18 HT auseinander), nicht −50 % wie in
+  MACHART (das reicht nur bis „i“). Der Weg ist u-o-i-e-a; Filter-KURVE 0, damit „o“ früh kommt (0,5 s; Vorbild 0,84 s).
+- W2: der „Körper“ des Vorbilds (zweites Filter) fehlt – eine Spur hat ein Filter (E6 „zweites Filter“ = KS4). Schicht 4 sagt das.
+- W1: der Einschlag ist eine eigene Spur (Verweis auf Rezept „Impact“); die Breite kommt aus Uni-Verstimm., nicht aus 9 ms Versatz.
+- R05, R09: zwei Spuren im Rezept → „Lade: …“ für die zweite Schicht; der Knall von R09 fehlt.
+- R02 billig: die Engine fährt die Tonhöhe immer in Halbtönen („linear in Hz“ geht nicht) → billig = Sinus, 450 ms.
+- Hör-Vergleiche nur mit Unterschied im Klang, Hall/Echo gleich: R02 billig und R16 Waah mit Echo, R15 billig mit Chorus (sonst 1,6 dB
+  am Master). Ausnahme R15 Hall 45/15 % und W1/W2 Schicht 4 (der Unterschied ist dort das Thema).
+- R04: billig = ein LFO 0,5 Hz; beide LFOs mit Neustart (gleicher Pegel je Wiedergabe). R10: Whoosh-Gate = A + D (Python: Gate = A).
+  R14: Vibrato ±14 ct (0,6 %) statt „+1 %“ (= ±24 ct). R06: Länge 2 Takte minus 1/8 im Song-Tempo (bis 9,5 s), nicht fest 5,75 s.
+- Wasserblasen: die Karte spielt den Blubbern-Rhythmus; unregelmäßige Noten spielt man selbst.
+
+### Tests
+
+`ks3-test.mjs` (Ausgabe `ks3-test.out`, Protokoll `ks3-test.log`): **209/209**, hochkant 390×844 und quer 844×390, Chromium, Berührung.
+- je Ausrichtung: stiller Block beim Start nicht ausgewertet; Blatt über ≡ › Wo finde ich …? › Klangschule: Kapitel 6 mit W1, W2 und
+  19 Rezepten, Antippen „Sirene“ öffnet die Karte; Suche (Hubschrauber, Aufreißen, Monster-Swell, Downlifter, Sirene, Wind, Riser),
+  Sprung öffnet W2; W1/W2 je 4 Schichten: lädt, 2–3 Rahmen auf sichtbaren Zielen (±2 px), Karte im Bild ohne Rahmen zu verdecken,
+  Zahlen + „Warum“ + Knöpfe, ↶ beginnt je Schicht neu, Weiterschalten per Fingertipp („Schicht 2 ▶“ und Kopf ▶), Kopf ◀ zurück,
+  letzte Schicht = erledigt; 19 Rezepte: lädt (Kopf „Rezept r/19“), Rahmen, Karte, Werte-Zeile, Prinzip, „Klingt billig, wenn …“,
+  Knöpfe (mit „Lade: …“ genau bei den 6 zweischichtigen); ◎ Was ist anders? per Fingertipp (R16: Punkte an 5 Reglern der sichtbaren Seite), ✕ per Fingertipp
+  stellt es zurück; danach Projekt **bitgleich** (mit und ohne Ansicht); keine Fehler in der Konsole.
+- hochkant zusätzlich:
+  - **Rechnen gegen machart.json**: W1 Cutoff bei 0/1/1,5/1,75/2 s 100/323/1094/2230/4496 Hz gegen 100/305/1010/2184/4524 Hz
+    (≤ 0,11 Okt.); Lautstärke-Zuwachs +6,0 dB gegen +6,9 dB; W2 Tonhöhe −3/+1/−1,8 HT gegen −3/+1/−1,7 HT; VOKAL u (5055 Hz) → a (79 Hz).
+  - **Pegel**: alle 8 Schichten und 19 Startklänge −24 LUFS ±1 dB (S&H als Mittel aus 3 Läufen); zweite Schichten Gischt −31,
+    Impact-Körper −27,5, sonst −23,9 … −24 LUFS.
+  - **A/B am Master** (live, hear + Mitschnitt): W1/1 0,2 · W2/1 0,0 · R01 0,1 · R02 0,2 · R08 0,2 · R12 0,8 · R16 0,1 · R18 0,1 dB
+    (±1 dB); mit Hall-/Drive-Unterschied R15 1,5 · W1/4 0,6 · W2/4 1,2 dB (≤ 1,5 dB).
+  - „Richtig“ gehört = Rezept ✓ (R17), Fortschritt nicht im Projekt.
+  - **Übernehmen** aller 19 Rezepte + W1: je genau ein ↶ mit dem Namen der Karte, ↶ danach bitgleich; Fingertipp „Lade: Gischt“
+    = ein ↶ (HP12, Knopf zeigt „Lade: Meer“), Übernehmen dann „Schule: Gischt“, ↶ bitgleich.
+  - **Sonde gegen den Python-Nachbau** (Messart von `messen_rezepte.py`, App-Klang offline, trocken): R16 Schwerpunkt 10/80/200 ms
+    Waah 1457/1267/801, Tock 633/565/448 Hz (Python 2065/1445/624, 747/385/405); R08 Plus 1780 → 270 → 163 Hz fällt, Minus 3236 → 245
+    → **2948 Hz** im Release (Python 3245 → 413 → 1423: geht wieder auf); R13 Pfeifton 384/837/1695/2054 Hz (Python 384/795/1700/2200,
+    ≤ 1,2 HT); R06 Schwerpunkt 1361 → 2618 → 5172 → 8155 Hz (Python 1,3 → 7,7 kHz); R07 Schwerpunkt 689–724 Hz (Python 770–820 Hz).
+- `ks1-test.mjs` auf dieser Fassung **75/75** (`ks1-test.ks3.out`), `ks2-test.mjs` **149/149** (`ks2-test.ks3.out`, mit Sonde). In
+  `ks2-test.mjs` eine Zeile angepasst: das Blatt hat jetzt 6 Kapitel (Prüfung „genau 5“ → „mindestens 5“).
+
+### Pflichtprüfungen
+
+- `topdefs.cjs`: Skripte 26, Namen 8066, doppelt 0, Syntaxfehler 0; `dupkeys.cjs` 0; `blockcheck.cjs`: sq-ks-src 143,1 KB (Zeichen),
+  oberste Namen `KSX`, Kollision 0, doppelte Schlüssel 0; `undef.cjs`: nur die bekannten `SQStore`/`SynthHost`.
+- Rauchtest `dirigent-test/smoke.mjs`: Titel SYNQUENZER, Fehler [] (`fotos/smoke.png`).
+- „MS 2000“ 1×, `^  live: true,` 1×, VERSION '4.78.0'; Markenwörter Basis 123, neu 123, neuer Code 0; keine Emojis als Grafik
+  (neu nur ◎, das die App schon nutzt).
+
+### Messungen
+
+- **Größe**: roh 9 655 104 → 9 702 863 B; gzip 3 195 019 → **3 210 094 B (+15,1 KB)**; KS1–KS3 zusammen **+53,1 KB gzip (+1,7 %)**
+  gegenüber der Basis (Konzept schätzte ≈ 30 KB – vor allem die Texte der 19 Rezepte und 8 Schichten).
+- **Startzeit** (`startzeit.mjs`, 3 Läufe abwechselnd, frischer Kontext): auf e1e08493 (Stand vor dem Etiketten-Rand, Unterschied nur
+  eine Zeile im stillen Block) bei Last ≈ 6: App bereit Basis 761/890/781 ms (Median 781), neu 929/758/797 ms (Median 797); auf der
+  Endfassung bei Last ≈ 10: Basis 2015/2001/829, neu 1111/2493/818 ms (Rauschen). Unverändert im Rahmen des Rauschens; der Block
+  wird beim Start nicht ausgewertet (Test).
+- Pegel-Eichung offline je Klang 0,2–0,6 s (einmal je Karte, 0,6–0,9 s nach dem Öffnen vorab, wie KS1/KS2).
+- Paketordner 60 MB.
+
+### Offen
+
+- Hall-/Echo-Fahnen zählen beim Pegelabgleich nicht mit (R15: 1,5 dB am Master); der Drive wird jetzt mitgerechnet.
+- Der Körper (zweites Filter) in W2 und der Knall in R09 fehlen bis E6 (KS4); W1 ohne Einschlag (eigene Spur).
+- Die Werkstatt-Schichten tauschen den ganzen Klang: wer in Schicht 2 dreht und dann zu Schicht 3 geht, verliert die Drehs
+  (gewollt: jede Schicht ist ein sauberer Vergleich; „Übernehmen“ nimmt die aktuelle Schicht).
+- Quer ist die Karte oft nur ~170 px hoch: „Schicht n ▶“ und die Tipps liegen dann im rollenden Teil (Kopf ▶ ist immer sichtbar).
+- Hörbeispiele der Rezepte sind nicht angehört (wie in KS1/KS2: nur gemessen).
+- Offene Punkte aus KS1/KS2 bleiben. Nächster Schritt laut Konzept: KS4 (E4–E7).
+
+### Dateien (neu in KS3)
+
+`ks3-test.mjs` + `ks3-test.out` + `ks3-test.log`, `ks1-test.ks3.out`, `ks2-test.ks3.out`, `startzeit.ks3.out`, `index.vor-ks3.html`,
+`src/apply-ks3.py`, `src/ks-block.ks2.js` / `src/ks-main.ks2.js` (Stand KS2, für apply-ks3), `src/probe-keys.mjs` (Regler je Seite),
+`src/probe-ks3.mjs` (Karten + Lautheit, für die Eichung), `src/probe-rnd.mjs` (Streuung der S&H-Klänge), `src/probe-shot.mjs`,
+`fotos/ks3-*.png` (Blatt, W1/W2 Schicht 1 und 3, R01/R05/R12/R19, hochkant und quer), `fotos/p-ks3-*.png` (Probe).
