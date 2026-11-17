@@ -1,3 +1,9 @@
+## 4.81.0 — Mehr Spuren: bis 16 Spuren live · 17.11.2026
+
+- **Mehr Spuren: bis 16 Spuren live (auf deinem iPhone gemessen), DAW-Projekt öffnet jetzt bis 16 Spuren auf einmal** (15 Synth-Spuren + DRUMS, mit Klang aus der DAW).
+- So geht's: ■ einer Spur halten → **＋ Spur** (bis 16). [SZ] halten oder einen Szenen-Kopf halten → **＋ Szene** (bis 32). [▲▼] blättert durch die Spuren, [SZ] durch die Szenen. Projekte mit bis zu 8 Spuren und 8 Szenen bleiben genau wie bisher.
+Tests: Mehr Spuren 79/79 (alte Projekte bitgleich wie 4.80, 16 Spuren × 32 Szenen speichern/laden/spielen, Grenze 16, Touch hochkant und quer) · 16 Spuren × 3 Szenen 30 s gerendert ohne Fehler und ohne Übersteuern, jede Spur klingt · echtes DAW-Projekt in einem Schritt: 15 Synth-Spuren + DRUMS, 13 mit Klang aus der DAW, 18/18 · Matrix mit 16 Spuren per Touch 12/12, nichts überlappt · Auslieferung grün, 12 Werksklänge bitgleich, App 18 KB größer (+0,3 %).
+
 ## 4.80.0 — DAW-Projekt öffnen: Klänge und Drums kommen gleich mit · 17.11.2026
 
 - **Neu beim DAW-Projekt öffnen: Abschnitt „Klang“** (Menü › Export › Audio/MIDI importieren › Projektdatei .cbp): Mit **„Klänge aus der DAW übernehmen“** (schon vorgewählt, wenn die Datei Spuren des analogen DAW-Synths hat) bekommt jede dieser Synth-Spuren gleich ihren Klang aus der DAW, dazu einen Spur-EQ wie die EQ-Effekte der DAW-Spur und das Echo wie im Synth. Spuren mit Amp-Simulation bekommen keinen EQ. **„Werksklänge“** öffnet genau wie bisher. Der ganze Import ist weiter ein ↶.
