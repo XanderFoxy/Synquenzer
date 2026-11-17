@@ -19,3 +19,5 @@
 - 01:03 UTC KS4 Start, Basis KS3 index.html md5 639c421d (Sicherung index.vor-ks4.html); Last: 3.33 5.51 5.95, Platte frei 3.2G
 - 01:19 UTC KS4 fortgesetzt nach Neustart des Rechners (index.html noch KS3 639c421d, keine KS4-Teile vorhanden); Last: 3.35 1.15 0.41, Platte frei 3.3G
 - 01:46 UTC KS4 Kern gebaut (src/ks4-wk.js Worklet E4–E7, src/ks4-main.js Bedienung/Speichern/Guide, src/apply-ks4.py 16 Haken); erster Bau index.tmp.html; Last: 1.27 2.64 2.44
+- 02:08 UTC KS4 Lektionen: L9 Bonus 2 (Riser 8 Takte im TAKT), L9 Laser auch mit Tonh.-Hk., L10 Bonus 2 (Treppe ohne Tonart), W2 Schicht 4 Körper = FILTER 2, R05 Gischt = FILTER 2 (Gischt-Spur bleibt als Lade), R09 Knall im Impact-Körper; Pegel geeicht (probe-ks4lv.mjs); ks2/ks3-Test je eine Zeile angepasst (KS4-Kommentar)
+- 02:21 UTC KS4 fortgesetzt nach Neustart (3. Lauf): index.html noch KS3 639c421d, Zwischenstand index.tmp.html baea77c1, ks4-test.out 02:15; Last: 1.59 0.58 0.21, Platte frei 3.2G

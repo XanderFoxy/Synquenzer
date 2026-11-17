@@ -15,3 +15,4 @@
 - 00:50 UTC Ende Schritt 2: xla2-test 51/51 (inkl. 3 Min), xla-test 46/46, Kern 32/32, trp1 81/81, mtx3 51/51, beg1 56/58 (Basis 57/58, gleiche Prüfung 5 + Last), Pflicht ohne Befund, Startzeit 2× je 3 Läufe ohne Unterschied. Endfassung md5 25b48280. Paketordner 31M, Platte frei 3.3G, Last: 5.87 7.17 6.66. Nichts veröffentlicht, Repo nicht angefasst.
 - 01:43 UTC Prüfung Start (Nachbessern nach Prüfer), Sicherung index.vor-pruef.html (md5 25b48280), Last: 2.74 3.27 2.57, Platte frei 3.2G
 - 02:00 UTC Befunde behoben (Anzeige, Song transponieren/xp, leere+neue Spuren ⇅½, Hinweis/Guide, MTX3-Tippen), 10 Haken neu/geändert; xla3-test 29/29; Last: 4.05 4.62 3.64
+- 02:23 UTC Fortsetzung nach Neustart des Containers (Stand: Befunde behoben, xla3 29/29, Regression + Pflicht 02:17, Startzeit 02:18); jetzt Nachprüfung der Behebungen, Prüfer-Sonden erneut, Fotos, KURZ, NOTES Prüfung. Last: 4.98 2.33 0.92, Platte frei 3.2G

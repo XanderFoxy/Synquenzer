@@ -72,7 +72,7 @@ for (const [w, h, tag] of [[390, 844, 'hochkant'], [844, 390, 'quer']]) {
   ok(await X(p, () => !!(KS_L && KS_L.les.id === 'L7')), tag + ' Sprung aus der Suche öffnet Lektion 7');
   await X(p, () => SYNQUENZER.ks.x().close()); await p.waitForTimeout(300);
   const meas = await X(p, () => ['L5', 'L6', 'L7', 'L8', 'L9', 'L10'].map(id => id + ':' + SYNQUENZER.ks.x().check(id).map(r => (r.meas ? 'M' : '-')).join('')).join(' '));
-  ok(meas === 'L5:-- L6:M L7:M L8:MM L9:-- L10:--', tag + ' Messen nur in L6–L8 (+ L8 Bonus)', meas);
+  ok(meas === 'L5:-- L6:M L7:M L8:MM L9:--- L10:---', tag + ' Messen nur in L6–L8 (+ L8 Bonus)', meas);   // KS4: L9 und L10 je ein zweiter Bonus (ohne Messen)
 
   // jede Aufgabe: lädt, Rahmen, Karte, Start ✗, Lösung ✓ (mit Messung, wo nötig)
   const pre = await SER(p), preF = await FULL(p);

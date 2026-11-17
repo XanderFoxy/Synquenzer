@@ -146,9 +146,9 @@ for (const [w, h, tag] of [[390, 844, 'hochkant'], [844, 390, 'quer']]) {
       return r; }, RZ);
     const bad = Object.entries(lv).filter(([k, v]) => !/alt/.test(k) && Math.abs(v + 24) > 1);
     ok(!bad.length, 'Pegel: alle 8 Schichten und 19 Startklänge bei −24 LUFS (±1 dB)', bad.length ? bad : {min: r1(Math.min(...Object.values(lv))), max: r1(Math.max(...Object.entries(lv).filter(([k]) => !/alt/.test(k)).map(e => e[1])))});
-    const want = {'R03 alt': -24, 'R05 alt': -31, 'R09 alt': -27, 'R10 alt': -24, 'R11 alt': -24, 'R19 alt': -24};
+    const want = {'R03 alt': -24, 'R05 alt': -31, 'R09 alt': -25.8, 'R10 alt': -24, 'R11 alt': -24, 'R19 alt': -24};   // KS4: R09 Impact-Körper trägt den Knall (FILTER 2): Körper −3 + Knall −8 dB = −1,8 dB unter dem Sub
     const ba = Object.entries(want).filter(([k, v]) => Math.abs(lv[k] - v) > 1);
-    ok(!ba.length, 'Pegel: zweite Schichten (Gischt 7 dB unter dem Körper, Impact-Körper 3 dB unter dem Sub, sonst gleich laut)', Object.fromEntries(Object.keys(want).map(k => [k, r1(lv[k])])));
+    ok(!ba.length, 'Pegel: zweite Schichten (Gischt 7 dB unter dem Körper, Impact-Körper mit Knall 1,8 dB unter dem Sub, sonst gleich laut)', Object.fromEntries(Object.keys(want).map(k => [k, r1(lv[k])])));
 
     await p.waitForFunction(() => { ensureAudio(); return typeof SynthHost !== 'undefined' && SynthHost.state === 'ready' && AU.ctx && AU.ctx.state === 'running'; }, null, {timeout: 60000});
     // A/B am Master pegelgleich (±1 dB) – Karten ohne Unterschied in Hall/Echo; die mit (R15, W1/4) nur berichtet

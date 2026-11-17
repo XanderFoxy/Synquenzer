@@ -169,3 +169,21 @@ selbst – auf der alten Fassung 15 FEHLER genau wie die Befunde, auf der neuen 
 | 17 | Tastatur hinter dem Blatt (Abdunkeln) | – | sichtbare Änderung → Vorschlag im Funk-Entwurf | – |
 Nebenbei: Prüfer-Test U meldete FEHLER nur, weil er nach R auf derselben Seite lief (Arp schon gesetzt) – Test korrigiert (beginnt ohne
 Arp), Kette selbst war und ist dateigleich. Prüfer-Test W angepasst: „gesperrt mit Grund“ zählt als richtig.
+
+**Tests** (`arp1-test.mjs index.html .`, Endlauf `test-ergebnis.txt`): **110/110** (vorher 86/87 auf der alten Fassung; neu D5b, D6 × 3,
+E5 × 6, H1b × 2, H3b × 4, H3c × 2, H3d × 2, H8b × 2, K2 neu, Z1–Z3 neu). Lauf davor 109/110: Z3 war ein Messfehler (siehe LOG 01:48).
+**Prüfer-Tests auf dem Neubau** (`pruef/nach/prueferlauf.out`, angehängt an `pruef/rev/ergebnis.txt`): pr LTWGRUMB **30/30** (W mit
+„gesperrt mit Grund“, U ohne Reihenfolge-Fehler, M 4/4, G-e weiter INFO = Vorschlag), extra **1/1**, j-combo **J OK** in beiden
+Reihenfolgen (Gegenprobe zeigt jetzt die Lücke). Touch-Ablauf des Prüfers (`tx-flow.mjs`, Fotos `pruef/nach/touch/`): hochkant 42/45,
+quer 44/47 – alle behobenen Punkte OK (5a–5d, 11a, 12-0, 15b); offen nur die Basis-Punkte (Reiter STIMME 28 px, FERTIG quer 36 px,
+2 px Überlauf am × der Basis) und quer kein × (wie die Basis). tx-s4 (lange Zeile): rechter Rand 413 bzw. 911, in der Karte.
+cpu.mjs **2/4** (Prüfer-Grenzen): C1 OK; C2 13 Long Tasks in 180 s (max 783 ms, unter Fremdlast) gegen 0 ohne Arp; C3 arpTick mit
+spawnVoice 0,465 ms je Durchlauf, max 37,6 ms, 1,8 % (Grenze < 1 %, < 4 ms). prof.mjs: spawnVoice 237 µs je Arp-Note gegen 145 µs je
+Clip-Note, Spitzen 8–28 ms nur dort, wo 1–9 Stimmen in einem Durchlauf starten. Das ist die Stimmen-Anlage der Basis, nicht die
+Arp-Rechnung (0,07–0,08 ms); in Z kam keine Note zu spät (0 von 14 736). Gebaut ist dafür nichts (Basis, eigenes Paket) – siehe Messung.
+**Pflicht** (index.html 67bfca59): topdefs 26 Skripte, 8091 Namen, 0 doppelt, 0 Syntaxfehler · dupkeys 0 · smoke `errors []` ·
+„MS 2000“ 1× · `^  live: true,` 1× · VERSION 4.78.0 · keine Emojis in den Blöcken · Markenwörter 46 = Basis 46 · node --check der Blöcke
+sq-arp-src und sq-arp1-src OK. NST1-Kombi in beiden Reihenfolgen neu gebaut: topdefs 0/0, dupkeys 0 (Kombi-Dateien danach gelöscht).
+**Fotos** (`fotos/`, aus dem Endlauf): alle 12 neu, dazu `arp1-stimme-lang-hochkant.png` (lange Zusammenfassung, Zeile in der Karte) und
+`arp1-menue-nach-undo-quer.png` (⋯ direkt nach ↶: kein Streifen über „Arpeggiator“). Nachstellung alt/neu: `pruef/nach/deh-alt/`,
+`pruef/nach/deh/`.

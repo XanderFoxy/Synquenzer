@@ -174,7 +174,7 @@ await p.evaluate(() => setSongView(false)); await p.waitForTimeout(500);
 const H = await p.evaluate(() => { const o = []; for (const i of MX.rows) { const h = UI.heads[i]; if (!h) continue; const f = h.fb.getBoundingClientRect(), n = h.nm.getBoundingClientRect(), ov = Math.min(f.right, n.right) - Math.max(f.left, n.left) > 1 && Math.min(f.bottom, n.bottom) - Math.max(f.top, n.top) > 1;
   o.push({i, fb: h.fb.textContent, vis: f.width > 0, ov}); } return o; });
 const hx = H.filter(x => imp.some(t => t.i === x.i));
-ok(hx.length === imp.length && hx.every(x => x.fb === '⇅½' && x.vis && !x.ov) && H.find(x => x.i === 3).fb === '⇅', 'Matrix-Spurköpfe: importierte Spuren „⇅½“, „Synth 4“ „⇅“, nichts überdeckt den Namen', H.map(x => x.i + ':' + x.fb + (x.ov ? '!' : '')));
+ok(hx.length === imp.length && hx.every(x => x.fb === '⇅½' && x.vis && !x.ov) && H.find(x => x.i === 3).fb === '⇅½' && !H.find(x => x.i === 3).ov, 'Matrix-Spurköpfe: importierte Spuren „⇅½“ und (Prüfung) auch die leere „Synth 4“, nichts überdeckt den Namen', H.map(x => x.i + ':' + x.fb + (x.ov ? '!' : '')));
 await p.screenshot({path: path.join(fotos, 'xla2-p-matrix.png')});
 
 /* ===== 3. Tastatur genau in Halbtönen (über die echte Eingabe) ===== */
