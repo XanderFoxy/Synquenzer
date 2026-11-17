@@ -217,7 +217,7 @@ export const ton = {
     try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch {}
   },
   zaehltoene: zLade,   // 020-klang
-  ende() { if (TEST) { proto.push({ art: 'ende', t_ms: uhrRef ? uhrRef.zeit() : 0 }); return; } if (!ctx || einst.art === 'aus') return; const t = ctx.currentTime + 0.05; glocke(t, 294); glocke(t + 0.3, 392); glocke(t + 0.6, 494); },
+  ende() { if (TEST) { proto.push({ art: 'ende', t_ms: uhrRef ? uhrRef.zeit() : 0 }); return; } if (!ctx || einst.art === 'aus' || ctx.state !== 'running') return; const t = ctx.currentTime + 0.05; glocke(t, 294); glocke(t + 0.3, 392); glocke(t + 0.6, 494); },
   async pruefen() {
     if (TEST) { for (const a of ['ein', 'halten', 'aus']) proto.push({ art: 'pruefen', hz: HZ[a], t_ms: 0 }); return { ok: true, zustand: 'test', latenz_ms: 0 }; }
     ton.entsperren(); if (!ctx) return { ok: false, zustand: 'kein Web Audio', latenz_ms: 0 };

@@ -13,6 +13,7 @@ export const laeuft = () => aktiv;
 export function oeffne(plan, opt) {
   if (aktiv) aktiv.beenden('gestoppt', true);
   const { T, einst = {}, quelle = 'frei', beiEnde, riskant = false, test = false } = opt, sperre = opt.sperre || (() => {});   // Doppeltipp-Schutz (app.js)
+  let tonVor = einst.ton && einst.ton !== 'aus' ? einst.ton : 'klang';   // 0.2.2 N3: zuletzt gewählter Klang für Ton aus → an
   const host = $('#sitzung'); host.classList.remove('figur-gross', 'eng'); host.classList.toggle('riskant', riskant);
   const kk = plan.runden > 0;
   host.classList.toggle('mit-kk', kk);
@@ -181,7 +182,7 @@ export function oeffne(plan, opt) {
     else if (a === 'atmen') kuerze();
     else if (a === 'stopp') { if (T.id === 'ruhe_zuege') { tippZahl++; el.stopp.textContent = 'Einatmen (' + tippZahl + ')'; } else kuerze(); }
     else if ((a === 'ton' || a === 'ansage') && b.dataset.ton === 'tippen') { ton.entsperren(einst.musik, { neu: true }); }
-    else if (a === 'ton') { einst.ton = einst.ton === 'aus' ? 'klang' : 'aus'; ton.einstellen({ art: einst.ton }); tonAnz = ''; tonZeige(); if (opt.merke) opt.merke({ ton: einst.ton }); }
+    else if (a === 'ton') { if (einst.ton !== 'aus') tonVor = einst.ton; einst.ton = einst.ton === 'aus' ? tonVor : 'aus';   /* 0.2.2 N3: gewählter Klang (z. B. Wind) bleibt beim Aus/An */ ton.einstellen({ art: einst.ton }); tonAnz = ''; tonZeige(); if (opt.merke) opt.merke({ ton: einst.ton }); }
     else if (a === 'ansage') { einst.ansage = einst.ansage ? false : 'stimme'; /* 016 */ ton.einstellen({ ansage: einst.ansage }); tonAnz = ''; tonZeige(); if (opt.merke) opt.merke({ ansage: einst.ansage }); if (einst.ansage === 'stimme' && !ton.stimme) import('./stimme.js').then((S) => { const p = S.bereiteVor(ton, einst); ton.einstellen({}); const geh = () => { if (ton.stimme && aktiv && aktiv.uhr === uhr && uhr.plan && einst.ansage === 'stimme') ton.stimme.starte(uhr); }; return p.then(geh, geh); }).catch(() => {}); }   // 021 M5: in der Übung eingeschaltet → echte Stimme in der gewählten Sprache laden (sonst de-Systemstimme); 0.2.1 B3: Lauf erst starten, wenn das Sprite da ist (sonst bliebe der Weg auf „System“ fest)
     else if (a === 'seitevorn') { einst.ansicht = einst.ansicht === 'vorn' ? 'seite' : 'vorn'; b.textContent = einst.ansicht === 'vorn' ? 'Seite' : 'Vorne'; if (an) an.ansicht(einst.ansicht); if (opt.merke) opt.merke({ ansicht: einst.ansicht }); }
     else if (a === 'ansicht' && an) { gross = !gross; host.classList.toggle('figur-gross', gross); f.groesse(kreisPx()); if (an.modus) an.modus(gross ? 'gross' : 'klein'); zeileNeu(); }

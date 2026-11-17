@@ -342,13 +342,18 @@ const HAND = {
     { h: [14.6, 31.0, 180, -1, .85, 'rechts'], a: [[17.4, 1.0], [21.6, 8.5], [24.6, 18.5], [22.0, 25.6], [17.6, 30.6]], w: [5.0, 4.6, 4.4, 3.8, 3.1] }],
 };
 HAND.brust = HAND.beide = HAND.bauch;
-function handForm(id) {   // flache, offene Hand: Handfläche, 4 schlanke Finger, Daumen (oben); erst die Kontur aller Teile, dann die Füllung = eine Silhouette
+function handTeile() {   // Handfläche, 4 Finger, Daumen
   const t = [`<rect x="${-3.3 * S}" y="${-2.5 * S}" width="${5.0 * S}" height="${5.0 * S}" rx="${2.1 * S}"/>`];
   [[-1.8, 4.4], [-.6, 5.0], [.6, 4.7], [1.8, 3.7]].forEach(([y, l]) => t.push(`<rect x="${1.0 * S}" y="${r1((y - .55) * S)}" width="${r1(l * S)}" height="${r1(1.1 * S)}" rx="${r1(.55 * S)}"/>`));
   t.push(`<rect x="${-.55 * S}" y="${-.62 * S}" width="${3.4 * S}" height="${1.24 * S}" rx="${.62 * S}" transform="translate(${-1.2 * S} ${-2.0 * S}) rotate(-32)"/>`);
-  const f = t.join('');
-  return `<g fill="url(#${id}hrand)" stroke="url(#${id}hrand)" stroke-width="1.4">${f}</g><g fill="url(#${id}haut)">${f}</g>
-<path d="M${q(-2.2, -1.0)}Q${q(-.8, -.2)} ${q(.6, -.8)}" fill="none" stroke="#c98f6e" stroke-opacity=".4" stroke-width=".7" stroke-linecap="round"/>`;
+  return t.join('');
+}
+// 0.2.2 M1: Glas-Hände – heller Rand (Maske: Kontur minus Fläche), Fläche durchscheinend
+const handMaske = (id) => { const f = handTeile(); return `<mask id="${id}hm" maskUnits="userSpaceOnUse" x="-40" y="-40" width="80" height="80"><g fill="#fff" stroke="#fff" stroke-width="1.6">${f}</g><g fill="#000">${f}</g></mask>`; };
+function handForm(id) {
+  const f = handTeile();
+  return `<g mask="url(#${id}hm)" fill="#e6f5ff" stroke="#e6f5ff" stroke-width="1.6" opacity=".8">${f}</g><g fill="url(#${id}haut)" opacity=".2">${f}</g>
+<path d="M${q(-2.2, -1.0)}Q${q(-.8, -.2)} ${q(.6, -.8)}" fill="none" stroke="#e6f5ff" stroke-opacity=".35" stroke-width=".7" stroke-linecap="round"/>`;
 }
 const handTf = ([x, y, w, sp, k]) => `translate(${q(x, y)}) rotate(${w}) scale(${k} ${sp * k})`;
 
@@ -410,8 +415,7 @@ ${med ? `<path d="M${q(-4.9, -21.9)}Q${q(-3.5, -20.9)} ${q(-2.1, -21.9)}M${q(2.1
 <radialGradient id="${id}alv" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffffff" stop-opacity=".95"/><stop offset=".45" style="stop-color:currentColor" stop-opacity=".6"/><stop offset="1" style="stop-color:currentColor" stop-opacity="0"/></radialGradient>
 <linearGradient id="${id}mus" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff8a66"/><stop offset="1" stop-color="#e2463f"/></linearGradient>
 <linearGradient id="${id}knochen" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#cfd9ea"/><stop offset=".5" stop-color="#fbfcff"/><stop offset="1" stop-color="#cfd9ea"/></linearGradient>
-<linearGradient id="${id}haut" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe2cf"/><stop offset="1" stop-color="#f0b892"/></linearGradient>
-<linearGradient id="${id}hrand" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff3ea"/><stop offset="1" stop-color="#c98f6e"/></linearGradient>
+<linearGradient id="${id}haut" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e3f2ff"/><stop offset=".6" stop-color="#bcd9f5"/><stop offset="1" stop-color="#f2d6c4"/></linearGradient>${seite || med ? '' : handMaske(id)}
 <linearGradient id="${id}aus" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--an-grund,#151c25)" stop-opacity="0"/><stop offset="1" style="stop-color:var(--an-grund,#151c25)"/></linearGradient>
 <linearGradient id="${id}f" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="${L[1]}" stop-opacity=".9"/><stop data-k="f1" offset=".5" stop-color="${L[1]}" stop-opacity=".9"/><stop data-k="f2" offset=".5" stop-color="${L[1]}" stop-opacity=".16"/><stop offset="1" stop-color="${L[1]}" stop-opacity=".16"/></linearGradient>
 ${MUSKEL_IDS.map((m) => `<path id="${id}m${m}" d="${m === 'zwerchfell' ? G.dz : ''}"/>`).join('')}<path id="${id}pl1" data-k="lu1" d="${G.lu1}"/>${G.lu2 ? `<path id="${id}pl2" data-k="lu2" d="${G.lu2}"/>` : ''}</defs>
@@ -571,9 +575,9 @@ export function erzeugeAnatomie(host, o = {}) {
     for (const seite of [0, 1]) {
       let L = v.el.lab.filter((l) => l.s === seite && sicht.has(l.k)).sort((a, b) => a.y - b.y);
       let y = vy + fu * 1.4 + (seite ? 46 / v.s : chip.hidden ? 0 : (Z.chipH || 34) / v.s); const ys = [];   // rechts oben liegt „Vorne/Seite“ (46 px), links oben der Zonen-Chip (34 px)
-      // 022: passen nicht alle Namen in die Spalte (kleine Box, viele arbeitende Muskeln), fallen die unwichtigsten weg statt aus der Box zu ragen
+      // 022: passen nicht alle Namen in die Spalte, fallen die unwichtigsten weg (nicht aus der Box ragen)
       const lim0 = vy + vh - (seite ? 46 / v.s : fu * (mod === 'gross' ? 5.6 : .6)), hoehe = (A) => A.reduce((a, l, i) => a + (i < A.length - 1 ? l.n * fu * 1.15 + fu * .5 : (l.n - 1) * fu * 1.15), 0);
-      const rang = (l) => (KURZ[l.k] ? 1 + 10 * (Z.op[l.k] || 0) : { lunge: 3, luftroehre: 2.5, nase: 2, mund: 2, bronchien: 1.5 }[l.k] || 1);
+      const rang = (l) => (KURZ[l.k] ? 1 + 10 * (Z.opMax[l.k] || 0) : { lunge: 3, luftroehre: 2.5, nase: 2, mund: 2, bronchien: 1.5 }[l.k] || 1);
       while (L.length > 1 && hoehe(L) > lim0 - y) { let w = 0; L.forEach((l, i) => { if (rang(l) < rang(L[w])) w = i; }); Z.ohne.add(L[w].k); L = L.filter((_, i) => i !== w); }
       for (const l of L) { y = Math.max(y, l.y * S - (l.n - 1) * fu * .55); ys.push(y); y += l.n * fu * 1.15 + fu * .5; }
       let lim = vy + vh - (seite ? 46 / v.s : fu * (mod === 'gross' ? 5.6 : .6)); for (let i = L.length - 1; i >= 0; i--) { ys[i] = Math.min(ys[i], lim - (L[i].n - 1) * fu * 1.15); lim = ys[i] - fu * 1.15 - fu * .5 + fu * .2; }
@@ -613,7 +617,7 @@ export function erzeugeAnatomie(host, o = {}) {
   function haende(W, an, zone, g) {
     const E = W.el; if (!E.haende) { Z.handAn = false; return; }
     const key = an ? zone : ''; if (key !== Z.handKey) {
-      Z.handKey = key; Z.handAn = !!an; put(E.haende, 'opacity', an ? '.86' : '0'); put(E.armB, 'opacity', an ? '1' : '0'); put(E.armH, 'opacity', an ? '0' : '1');
+      Z.handKey = key; Z.handAn = !!an; put(E.haende, 'opacity', an ? '1' : '0'); put(E.armB, 'opacity', an ? '1' : '0'); put(E.armH, 'opacity', an ? '0' : '1');
       if (an) HAND[zone].forEach((h, i) => { put(E['hand' + i], 'transform', handTf(h.h)); });
       Z.armKey = null;
     }
@@ -639,6 +643,8 @@ export function erzeugeAnatomie(host, o = {}) {
     const aktiv = phase === 'aus' && (z.vz != null ? z.vz < 0 : v < -.02);
     if (phase === 'stoss_aus' && Z.phase !== 'stoss_aus') Z.stoss0 = t;
     const ts = t - Z.stoss0, env = ts < 0 ? 0 : ts < 120 ? 1 - (1 - ts / 120) ** 2 : Math.max(0, 1 - (ts - 120) / 250);
+    // 0.2.2 K3: Stoß-Takt – Pfeile/Lichtstrom ruhig statt Blinken
+    const stz = phase === 'stoss_aus' || ((phase === 'halten_leer' || phase === 'leer') && ts >= 0 && ts < 700);
     if (phase !== Z.phase || art !== Z.art) {
       box.setAttribute('aria-label', ariaText(phase, art, aktiv)); box.setAttribute('data-art', art); box.setAttribute('data-phase', phase);
       if (Z.lern && phase !== Z.phase) { Z.lern = 0; Z.lernFertig = true; }
@@ -668,7 +674,7 @@ export function erzeugeAnatomie(host, o = {}) {
     // Lungen-Hof (HTML, Compositor): leuchtet beim Einatmen auf, klingt beim Ausatmen ab – jedes Bild
     const gl = Math.round((.2 + .8 * fL) * 50) / 50; if (gl !== Z.glut) { Z.glut = gl; glut.style.opacity = gl; glut.style.transform = `scale(${r1(92 + 12 * fL) / 100})`; Z.schreib++; }
     // Lichtperlen: Einatmen von der Kehle in die Lunge, Ausatmen zurück; Halten: keine
-    if (ruhig || !fl) perlen(W, g, () => [-1, 0]);
+    if (ruhig || !fl || stz) perlen(W, g, () => [-1, 0]);
     else { const P = sm(cl(p / .92, 0, 1)), Lt = .62; perlen(W, g, (kk) => { const f = P * (1 + Lt) - (kk / (NPERL - 1)) * Lt; if (f < 0 || f > 1) return [-1, 0]; return [ein ? f : 1 - f, cl(f / .08, 0, 1) * cl((1 - f) / .14, 0, 1) * schluss * (kk % 2 ? .85 : 1)]; }); }
     // Figur-SVG höchstens 30-mal je Sekunde neu zeichnen: die Atembewegung ist langsam (< 0,3 px je Schritt), Perlen und Hof laufen mit vollen 60 Bildern.
     // So halbiert sich die Zeichenarbeit der Glasfigur je Sekunde (iPhone-12-Drosselung: 60 Bilder statt ~54).
@@ -698,17 +704,19 @@ export function erzeugeAnatomie(host, o = {}) {
     const sichtbar = new Set();
     for (const s of STR) {
       const i = reihe.indexOf(s); let op = 0;
-      if (fl && i >= 0) op = ruhig ? .7 * schluss : cl((front - i / 4) / .1, 0, 1) * schluss;
+      if (stz) op = i >= 0 ? .5 : 0;
+      else if (fl && i >= 0) op = ruhig ? .7 * schluss : cl((front - i / 4) / .1, 0, 1) * schluss;
       op = r1(op * 100) / 100; Z.so[s] = op; const e = E['s_' + s]; if (e) put(e, 'opacity', op);
       if (op > 0) sichtbar.add(s === 'nasL' || s === 'nasR' ? 'nase' : s);
     }
     Z.so.nase = Math.max(Z.so.nase || 0, Z.so.nasL || 0, Z.so.nasR || 0);
-    put(E.alv, 'opacity', r1((ein ? cl((front - .7) / .3, 0, 1) * (.4 + .6 * fL) * schluss : aus ? cl(1 - front * 3, 0, 1) * fL * schluss : 0) * 100) / 100);
+    // 0.2.2 K2: Bläschen nur am Ende des Einatmens
+    put(E.alv, 'opacity', r1((ein && !stz ? cl((front - .7) / .3, 0, 1) * (.4 + .6 * fL) * schluss : 0) * 100) / 100);
     // ---- Bewegungs-Pfeile: nur Bewegungen der aktuellen Phase und Zone; nie Gegenpfeile
     const gk = art + tiefe; if (Z.gk !== gk) { const e0 = koerper({ art, tiefe, phase: 'ein', anteil: 1, v: 1 }); Z.gk = gk; Z.gw = { zw: -e0.kz > 1.5, ba: e0.ba > .8, ri: e0.ri > .45, fl: e0.fl > .45, bh: e0.bh > .6, sh: e0.sh > .8 }; }
     const gw = Z.gw;
     for (const P of E.pf) {
-      const an = !ruhig && P.ph === (ein ? 'ein' : aus ? 'aus' : '-') && gw[P.gw] && (!P.zonen || P.zonen.includes(zone)), op = an ? cl((p - P.st) / .08, 0, 1) * (1 - cl((p - .88) / .12, 0, 1)) : 0;
+      const an = !ruhig && P.ph === (ein ? 'ein' : aus || stz ? 'aus' : '-') && gw[P.gw] && (!P.zonen || P.zonen.includes(zone)), op = !an ? 0 : stz ? .75 : cl((p - P.st) / .08, 0, 1) * (1 - cl((p - .88) / .12, 0, 1));
       put(P.g, 'opacity', r1(op * 100) / 100);
     }
     // ---- Hände (Vorne)
@@ -716,8 +724,12 @@ export function erzeugeAnatomie(host, o = {}) {
     haende(W, handAn, zone, g);
     // ---- Beschriftung: arbeitende Muskeln + erreichte Stationen (Namen-Modus: alle Muskeln blass)
     for (const m of MUSKEL_IDS) if (nam || Z.op[m] > .12) sichtbar.add(m);
-    const key = [...sichtbar].sort().join(',') + ans + (chip.hidden ? '' : 'c');
-    if (key !== Z.sichtSet) { Z.sichtSet = key; stapel(W, sichtbar); }
+    // 0.2.2 K1: feste Plätze – gestapelt über alle Namen seit dem letzten Wechsel; Rang = stärkste Arbeit seither
+    if (!Z.sichtSet || Z.lageArt !== art) { Z.lage = new Set(); Z.lageArt = art; Z.opMax = {}; }
+    for (const k of sichtbar) Z.lage.add(k);
+    for (const m of MUSKEL_IDS) if (Z.op[m] > (Z.opMax[m] || 0)) Z.opMax[m] = Z.op[m];
+    const key = [...Z.lage].sort().map((k) => Z.opMax[k] > .6 ? k + '+' : k).join(',') + ans + (chip.hidden ? '' : 'c');
+    if (key !== Z.sichtSet) { Z.sichtSet = key; stapel(W, Z.lage); }
     for (const l of E.lab) { const mu = !!KURZ[l.k], sOp = mu ? cl(Z.op[l.k] / .3, 0, 1) : Z.so[l.k] || 0; put(l.g, 'opacity', r1((sichtbar.has(l.k) && !(Z.ohne && Z.ohne.has(l.k)) ? (mu && nam ? .45 + .55 * sOp : sOp) : 0) * 100) / 100); }
     // Liter, Hinweis, Lernsatz (nur groß)
     const gr = mod === 'gross'; put(E.liter, 'opacity', gr ? 1 : 0); put(E.hinweis, 'opacity', gr ? 1 : 0);

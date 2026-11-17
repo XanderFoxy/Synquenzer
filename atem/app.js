@@ -8,7 +8,7 @@ import { ton } from './ton.js';   // statisch: der Ton entsteht im Tipp auf Star
 import * as LAY from './layout.js';   // 020-layout: Navigation, Heute, Fortschritt, Mehr, Hinweise
 let ZM = null; const zmLade = () => import('./signale.js').then((m) => { ZM = m; if (ton.zaehltoene) ton.zaehltoene(); return m; }, () => null);   // 020-klang: Zähltöne erst bei Bedarf
 
-export const VERSION = '0.2.1';   // 021
+export const VERSION = '0.2.2';   // 022
 const TEST = /[?&]test=1/.test(location.search);
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -252,7 +252,7 @@ async function endeSitzung(erg, ui, st, extra) {
   let messText = '';
   if (T.messwert && ende !== 'unterbrochen') {
     let w = null;
-    if (T.id === 'ruhe_zuege') { if (ende === 'fertig') w = { t: eintrag.t, n: erg.tippZahl }; }
+    if (T.id === 'ruhe_zuege') { if (ende === 'fertig' && erg.tippZahl > 0) w = { t: eintrag.t, n: erg.tippZahl }; }   // 0.2.2 N6: ohne Tipp kein 0/min im Verlauf
     else { const k = erg.gekuerzt.find((x) => x.wand_ms != null); if (k) w = { t: eintrag.t, s: Math.round(k.wand_ms / 1000) }; }
     if (w) { speicher.messwert(T.messwert, w); messText = `<p class="messwert">${w.s != null ? w.s + ' s' : w.n + '/min'}</p><p class="leise">Persönlicher Verlaufswert – vergleiche nur mit dir selbst.</p>`; if (!eintrag.baustein) eintrag.baustein = T.messwert; }
   }
