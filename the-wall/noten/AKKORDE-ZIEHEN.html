@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Akkorde ziehen</title>
+<style>
+:root{--bg:#fbfaf7;--fg:#1d1c1a;--mut:#8a857c;--lin:#e4e0d8;--chip:#1d1c1a;--chipfg:#fff;--gold:#b8860b;--hi:#f5e3ad;--bar:#fffdf8;--rot:#c0392b}
+@media (prefers-color-scheme:dark){:root{--bg:#141312;--fg:#eeeae2;--mut:#8c877e;--lin:#2c2a27;--chip:#e0b24a;--chipfg:#141312;--gold:#e0b24a;--hi:#5a4a1f;--bar:#1c1b19;--rot:#e0665a}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--fg)}
+body{font:17px/1.3 -apple-system,system-ui,sans-serif;padding:12px 16px 210px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+h1{font-size:18px;margin:4px 0 2px}
+.hint{color:var(--mut);font-size:13px;margin:0 0 6px}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);margin:20px 0 2px;font-weight:600}
+.nur{color:var(--mut);font-size:14px;margin:2px 0}
+.z{display:flex;flex-wrap:wrap;column-gap:.45em;margin:0 0 4px;padding-bottom:4px;border-bottom:1px solid var(--lin)}
+.w{display:inline-flex;align-items:flex-end}
+.s{position:relative;padding:26px 1px 2px;font-size:20px;border-radius:5px;min-width:14px}
+.d{color:var(--mut);font-size:14px;padding:0 1px 4px;align-self:flex-end}
+.s.ziel{background:var(--hi)}
+.c,.pal{display:inline-block;background:var(--chip);color:var(--chipfg);border-radius:7px;font:600 15px/24px -apple-system,system-ui,sans-serif;padding:0 7px;white-space:nowrap;touch-action:none;cursor:grab}
+.c{position:absolute;left:0;top:0;z-index:2}
+.c.weg{opacity:.2}
+#geist{position:fixed;left:0;top:0;z-index:50;pointer-events:none;box-shadow:0 6px 18px rgba(0,0,0,.35);transform-origin:0 100%}
+#geist[hidden]{display:none}
+#leiste{position:fixed;left:0;right:0;bottom:0;background:var(--bar);border-top:1px solid var(--lin);padding:8px 16px calc(10px + env(safe-area-inset-bottom));z-index:40}
+#leiste.loesch{background:var(--rot)}
+#leiste.loesch *{visibility:hidden}
+#leiste.loesch::after{content:"Loslassen = Akkord löschen";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600}
+#palette{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px}
+.pal{font-size:16px;line-height:32px;padding:0 10px}
+#status{font-size:13px;color:var(--mut);min-height:18px;margin-bottom:6px}
+#knoepfe{display:flex;gap:8px}
+#knoepfe button{flex:1;font:600 15px -apple-system,system-ui,sans-serif;padding:9px 4px;border-radius:9px;border:1px solid var(--lin);background:var(--bg);color:var(--fg)}
+#knoepfe #fertig{background:var(--gold);color:#fff;border-color:var(--gold)}
+#ausgabe{display:none;margin-top:18px}
+#ausgabe textarea{width:100%;height:320px;font:12px/1.35 ui-monospace,Menlo,monospace;background:var(--bar);color:var(--fg);border:1px solid var(--lin);border-radius:8px;padding:8px;-webkit-user-select:text;user-select:text}
+#ausgabe p{font-size:14px;margin:4px 0}
+</style>
+</head>
+<body>
+<h1>The Wall – Akkorde ziehen</h1>
+<p class="hint">Akkord anfassen und auf die Silbe schieben, er rastet dort ein. Unten aus der Leiste kommen neue Akkorde. Willst du einen Akkord löschen, ziehst du ihn in die Leiste.</p>
+<div id="blatt"></div>
+<div id="ausgabe"><p id="gesendet"></p><p id="kopiert">Text kopiert. Bitte an Claude schicken.</p><textarea id="aus" readonly></textarea></div>
+<div id="geist" class="c" hidden></div>
+<div id="leiste">
+  <div id="palette"></div>
+  <div id="status">Akkord anfassen und ziehen</div>
+  <div id="knoepfe"><button id="zurueck">↶ Zurück</button><button id="neu">Neu</button><button id="fertig">Fertig</button></div>
+</div>
+<script>
+const DATA=[{"name": "Intro", "nur": "Ebm – Gb – Db – Ab/C – Ebm – Gb – Db – Ab/C", "zeilen": [], "ak": {}}, {"name": "Strophe 1", "nur": "", "zeilen": [[["Wel", "come"], ["to"], ["the"], ["fake"], ["zom", "bies"], ["li", "ving"]], [["for"], ["Gods"], ["sake"]], [["In"], ["a"], ["world"], ["of"], ["Sheep"]], [["Eve", "ry", "thing"], ["we"], ["Do"], ["be", "lieve"]]], "ak": {"0.0": "Bbm", "0.4": "Gb", "0.5": "Ab", "1.0": "Fm", "2.0": "Bbm", "2.3": "Gb", "3.0": "Ab", "3.4": "Bbsus4"}}, {"name": "Refrain 1", "nur": "", "zeilen": [[["We"], ["claim"], ["we"], ["know"], ["It"], ["all"]], [["Can’t"], ["see"], ["Who"], ["is"], ["be", "hind"], ["this"], ["wall."]], [["Don’t"], ["wait,"], ["fol", "low"], ["the"], ["light"]], [["wake"], ["up"], ["o", "pen"], ["your"], ["eyes."]]], "ak": {"0.1": "Ebm", "0.5": "Gb", "1.1": "Db", "1.4": "Ab/C", "2.1": "Ebm", "2.5": "Gb", "3.1": "Db", "3.5": "Ab/C"}}, {"name": "Strophe 2", "nur": "", "zeilen": [[["Why"], ["can’t"], ["we"], ["just"], ["feel"]], [["there"], ["is"], ["so"], ["much"], ["more"], ["to"], ["see"]], [["Are"], ["we"], ["hyp", "no", "tised?"]], [["What"], ["does"], ["it"], ["need"], ["to"], ["rea", "lise"]]], "ak": {"0.0": "Bbm", "0.4": "Gb", "1.0": "Ab", "1.3": "Fm", "2.0": "Bbm", "2.2": "Gb", "3.1": "Ab", "3.4": "Bbsus4"}}, {"name": "Refrain 2", "nur": "", "zeilen": [[["We"], ["claim"], ["we"], ["know"], ["It"], ["all"]], [["Can’t"], ["see"], ["Who"], ["is"], ["be", "hind"], ["this"], ["wall."]], [["Don’t"], ["wait,"], ["fol", "low"], ["the"], ["light"]], [["wake"], ["up"], ["o", "pen"], ["your"], ["eyes."]]], "ak": {"0.0": "Ebm", "0.5": "Gb", "1.1": "Db", "1.4": "Ab/C", "2.1": "Ebm", "2.5": "Gb", "3.1": "Db", "3.5": "Ab/C"}}, {"name": "Tag nach Refrain 2", "nur": "", "zeilen": [[["o", "pen"], ["your"], ["eyes"]]], "ak": {"0.3": "Ebm"}}, {"name": "Übergang", "nur": "Bbm – Gb – Ab – Bbsus4", "zeilen": [], "ak": {}}, {"name": "Zwischenteil", "nur": "Ebm – Gb – Db – Ab/C – Ebm – Gb – Db – Ab/C", "zeilen": [], "ak": {}}, {"name": "Refrain 3", "nur": "", "zeilen": [[["We"], ["claim"], ["we"], ["know"], ["It"], ["all"]], [["Can’t"], ["see"], ["Who"], ["is"], ["be", "hind"], ["this"], ["wall."]], [["Don’t"], ["wait,"], ["fol", "low"], ["the"], ["light"]], [["wake"], ["up"], ["o", "pen"], ["your"], ["eyes."]]], "ak": {"0.0": "Ebm", "0.5": "Gb", "1.1": "Db", "1.4": "Ab/C", "2.1": "Ebm", "2.5": "Gb", "3.1": "Db", "3.5": "Ab/C"}}, {"name": "Outro", "nur": "", "zeilen": [[["o", "pen"], ["your"], ["eyes"]]], "ak": {"0.3": "Bb"}}];
+const AKK=['Bbm','Gb','Ab','Fm','Bbsus4','Ebm','Db','Ab/C','Bb'];
+const SPEICHER='tw-akk-silben-1';
+let A={}, verlauf=[];
+function start(){A={};DATA.forEach((p,pi)=>{for(const k in p.ak)A[pi+'.'+k]=p.ak[k]})}
+try{const s=localStorage.getItem(SPEICHER);if(s)A=JSON.parse(s);else start()}catch(e){start()}
+function sichern(){try{localStorage.setItem(SPEICHER,JSON.stringify(A))}catch(e){}}
+function esc(t){return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+const blatt=document.getElementById('blatt');
+function zeichnen(){
+  let h='';
+  DATA.forEach((p,pi)=>{
+    h+='<h2>'+esc(p.name)+'</h2>';
+    if(p.nur)h+='<div class="nur">'+esc(p.nur)+'</div>';
+    p.zeilen.forEach((z,li)=>{
+      h+='<div class="z">';let si=0;
+      z.forEach(w=>{
+        h+='<span class="w">';
+        w.forEach((s,j)=>{
+          if(j)h+='<i class="d">·</i>';
+          const k=pi+'.'+li+'.'+si,a=A[k];
+          h+='<span class="s" data-k="'+k+'">'+esc(s)+(a?'<b class="c" data-k="'+k+'" data-a="'+esc(a)+'">'+esc(a)+'</b>':'')+'</span>';
+          si++;
+        });
+        h+='</span>';
+      });
+      h+='</div>';
+    });
+  });
+  blatt.innerHTML=h;
+}
+const pal=document.getElementById('palette');
+pal.innerHTML=AKK.map(a=>'<b class="pal" data-a="'+a+'">'+a+'</b>').join('');
+const geist=document.getElementById('geist'),leiste=document.getElementById('leiste'),status=document.getElementById('status');
+function silbeText(k){const [pi,li,si]=k.split('.').map(Number);let n=0;for(const w of DATA[pi].zeilen[li]){if(si<n+w.length){return w.map((s,j)=>j===si-n?'['+s+']':s).join('')}n+=w.length}return '?'}
+let zug=null,plaetze=[],ziel=null,rafId=0;
+function vermessen(){plaetze=[...document.querySelectorAll('.s')].map(s=>{const r=s.getBoundingClientRect();return{k:s.dataset.k,el:s,x:r.left+scrollX,y:r.top+scrollY,w:r.width,h:r.height}})}
+function trefferPunkt(){
+  // linke Kante des Akkords = Silbenanfang; Punkt knapp unter dem Akkord
+  return{x:zug.gx+3,y:zug.gy+zug.gh+12};
+}
+function suchen(){
+  const p=trefferPunkt(),px=p.x+scrollX,py=p.y+scrollY;
+  let best=null,bd=1e9;
+  for(const s of plaetze){
+    const dx=Math.max(s.x-px,0,px-(s.x+s.w)),dy=Math.max(s.y-py,0,py-(s.y+s.h));
+    const d=Math.hypot(dx,dy*1.6);
+    if(d<bd){bd=d;best=s}
+  }
+  return bd<60?best:null;
+}
+function setzeGeist(x,y){
+  zug.gx=x-zug.ox;zug.gy=y-zug.oy;
+  geist.style.transform='translate('+zug.gx+'px,'+zug.gy+'px) scale(1.12)';
+}
+function aktualisieren(){
+  const imMuell=zug.y>leiste.getBoundingClientRect().top;
+  leiste.classList.toggle('loesch',imMuell&&!!zug.von);
+  const neu=imMuell?null:suchen();
+  if(ziel!==neu){if(ziel)ziel.el.classList.remove('ziel');ziel=neu;if(ziel)ziel.el.classList.add('ziel')}
+  status.textContent=imMuell?(zug.von?'Loslassen = löschen':'Hier nichts'):(ziel?zug.a+' → '+silbeText(ziel.k):'Über eine Silbe schieben');
+}
+function schleife(){
+  if(!zug)return;
+  const lt=leiste.getBoundingClientRect().top;
+  let v=0;
+  if(zug.y>=70&&zug.y<=lt-60)zug.scharf=true; // Rand-Rollen erst nach dem ersten Weg in die Mitte
+  if(!zug.scharf);
+  else if(zug.y<70)v=-Math.min(14,(70-zug.y)/4+3);
+  else if(zug.y>lt-60&&zug.y<lt)v=Math.min(14,(zug.y-(lt-60))/4+3);
+  if(v){scrollBy(0,v);aktualisieren()}
+  rafId=requestAnimationFrame(schleife);
+}
+document.addEventListener('pointerdown',e=>{
+  const c=e.target.closest('.c,.pal');
+  if(!c||zug)return;
+  e.preventDefault();
+  const r=c.getBoundingClientRect(),touch=e.pointerType!=='mouse';
+  zug={id:e.pointerId,a:c.dataset.a,von:c.classList.contains('c')?c.dataset.k:null,el:c,
+       ox:e.clientX-r.left,oy:(e.clientY-r.top)+(touch?52:0),x:e.clientX,y:e.clientY,x0:e.clientX,y0:e.clientY};
+  try{c.setPointerCapture(e.pointerId)}catch(_){}
+  geist.textContent=zug.a;geist.hidden=false;
+  zug.gh=geist.offsetHeight;
+  if(zug.von)c.classList.add('weg');
+  vermessen();setzeGeist(e.clientX,e.clientY);aktualisieren();
+  rafId=requestAnimationFrame(schleife);
+});
+function bewegen(e){if(!zug||e.pointerId!==zug.id)return;zug.x=e.clientX;zug.y=e.clientY;setzeGeist(e.clientX,e.clientY);aktualisieren()}
+addEventListener('pointermove',bewegen);
+function ende(e,abbruch){
+  if(!zug||e.pointerId!==zug.id)return;
+  cancelAnimationFrame(rafId);
+  const z=zug,t=ziel,muell=leiste.classList.contains('loesch');
+  zug=null;geist.hidden=true;leiste.classList.remove('loesch');
+  if(ziel){ziel.el.classList.remove('ziel');ziel=null}
+  z.el.classList.remove('weg');
+  if(abbruch){status.textContent='Akkord anfassen und ziehen';return}
+  const vorher=JSON.stringify(A);
+  if(muell&&z.von){delete A[z.von];status.textContent=z.a+' gelöscht'}
+  else if(t&&t.k!==z.von){if(z.von)delete A[z.von];A[t.k]=z.a;status.textContent=z.a+' auf '+silbeText(t.k)}
+  else{status.textContent='Akkord anfassen und ziehen';return}
+  verlauf.push(vorher);sichern();zeichnen();
+}
+addEventListener('pointerup',e=>ende(e,false));
+addEventListener('pointercancel',e=>ende(e,true));
+document.addEventListener('touchmove',e=>{if(zug)e.preventDefault()},{passive:false});
+document.getElementById('zurueck').onclick=()=>{if(!verlauf.length){status.textContent='Nichts zum Zurücknehmen';return}A=JSON.parse(verlauf.pop());sichern();zeichnen();status.textContent='Zurückgenommen'};
+document.getElementById('neu').onclick=()=>{if(!confirm('Alles auf meinen Vorschlag zurücksetzen?'))return;verlauf.push(JSON.stringify(A));start();sichern();zeichnen();status.textContent='Zurückgesetzt'};
+function text(){
+  const o=['The Wall – Akkorde (von Xander gesetzt)',''],genau=[];
+  DATA.forEach((p,pi)=>{
+    o.push('['+p.name+']');if(p.nur)o.push(p.nur);
+    p.zeilen.forEach((z,li)=>{
+      let t='',sp=[],si=0;
+      z.forEach((w,wi)=>{if(wi)t+=' ';w.forEach(s=>{sp[si++]=t.length;t+=s})});
+      let ak='';
+      sp.forEach((c,i)=>{const k=pi+'.'+li+'.'+i,a=A[k];if(!a)return;const col=Math.max(c,ak.length?ak.length+1:0);ak=ak.padEnd(col,' ')+a;genau.push(p.name+' Z'+(li+1)+': '+a+' @ '+silbeText(k))});
+      if(ak)o.push(ak);o.push(t);
+    });
+    o.push('');
+  });
+  return o.join('\n')+'— genau —\n'+genau.join('\n')+'\n';
+}
+// Nur die Akkord-Positionen (Schlüssel → Akkordname) gehen an Claude, nie der Liedtext.
+const MELDUNG_URL='https://dbdnsryoivvezspgydpx.supabase.co/rest/v1/akkord_meldung';
+const MELDUNG_KEY='sb_publishable_6utuy3es2447DjAQvxdrUQ_F-6fE5_M';
+let zuletztGesendet=null,unterwegs=null;
+function senden(){
+  const daten=JSON.stringify(A);
+  if(daten===zuletztGesendet)return Promise.resolve(true);
+  if(unterwegs&&unterwegs.daten===daten)return unterwegs.p; // zweites Tippen während des Sendens: nicht doppelt schicken
+  const p=(async()=>{
+    const ab=new AbortController(),uhr=setTimeout(()=>ab.abort(),8000);
+    try{
+      const r=await fetch(MELDUNG_URL,{method:'POST',signal:ab.signal,
+        headers:{apikey:MELDUNG_KEY,Authorization:'Bearer '+MELDUNG_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},
+        body:JSON.stringify({lied:'the-wall',daten:JSON.parse(daten)})});
+      if(!r.ok)return false;
+      zuletztGesendet=daten;return true;
+    }catch(e){return false}finally{clearTimeout(uhr)}
+  })();
+  unterwegs={daten,p};
+  p.then(()=>{if(unterwegs&&unterwegs.p===p)unterwegs=null});
+  return p;
+}
+document.getElementById('fertig').onclick=async()=>{
+  const t=text(),ta=document.getElementById('aus'),ges=document.getElementById('gesendet');
+  ta.value=t;document.getElementById('ausgabe').style.display='block';
+  ges.textContent='Wird an Claude gesendet …';
+  const gesendet=senden();
+  let ok=false;
+  try{await navigator.clipboard.writeText(t);ok=true}catch(e){}
+  if(!ok){try{ta.focus();ta.select();ok=document.execCommand('copy')}catch(e){}}
+  document.getElementById('kopiert').textContent=ok?'Text kopiert. Bitte an Claude schicken.':'Text unten markieren, kopieren und an Claude schicken.';
+  ta.scrollIntoView({behavior:'smooth',block:'start'});
+  const angekommen=await gesendet;
+  ges.textContent=angekommen?'An Claude gesendet ✓':'Senden ging nicht – Text kopieren und schicken';
+  if(angekommen)document.getElementById('kopiert').textContent=ok?'Text ist zur Sicherheit auch kopiert.':'';
+};
+zeichnen();
+</script>
+</body>
+</html>

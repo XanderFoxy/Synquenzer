@@ -1,0 +1,50 @@
+# Formant-Chor – Rezept (Cubasis, Tiefpass-Synth)
+
+**Warum klingt das wie ein Chor?** Ein gesungener Vokal hat im Klang **drei Spitzen gleichzeitig** (Formanten F1, F2, F3).
+Der Mund macht diese Spitzen. Eine Spitze allein klingt nur nach „gefiltertem Synth“. Erst wenn alle drei **zugleich**
+klingen, hört das Ohr „a“ oder „o“. Darum: **3 Spuren, dieselben Noten, jede Spur macht eine Spitze.**
+
+**Wichtig:** Ein „O-Chor“ ist **nicht** A + E + O übereinander (das wird Matsch). Ein O-Chor = **die 3 Formanten des O**.
+Ein A-Chor = die 3 Formanten des A. Vokal wechseln = nur die 3 Cutoffs ändern, die Noten bleiben.
+
+## Formanten (Männerstimme, Tenor, Richtwerte in Hz)
+
+| Vokal | F1  | F2   | F3   |
+|-------|-----|------|------|
+| a     | 650 | 1080 | 2650 |
+| e     | 400 | 1700 | 2600 |
+| i     | 290 | 1870 | 2800 |
+| o     | 400 | 800  | 2600 |
+| u     | 350 | 600  | 2700 |
+
+In der Hörprobe und im MIDI stehen hellere Werte: **a = 800 / 1150 / 2900**, **o = 450 / 800 / 2830** (Frauen-/Sopran-Lage
+aus der bekannten Synth-Tabelle). Die klingen am Synth deutlicher. Für einen dunklen Männerchor die Tabelle nehmen.
+Jede Stimme ist anders: nach Gehör ruhig ±10 % schieben.
+
+## Einstellung je Spur (Synth hat nur Tiefpass)
+
+| Regler | Einstellung |
+|---|---|
+| Welle | Säge; 2 Oszillatoren leicht verstimmt (±5–10 Cent) oder Unison 3 → Chor-Breite |
+| Filter | Tiefpass **24 dB** (am deutlichsten; 18/12 dB = weicher, weniger Vokal) |
+| Cutoff | **genau auf den Formanten der Spur** (F1, F2 oder F3) – fest |
+| Resonanz | **hoch**, ca. 70–85 %: Spitze klar hörbar, aber noch kein Pfeifen |
+| Key-Follow | **0** – sonst wandert die Spitze mit den Noten, und der Vokal ist weg |
+| Filter-Hüllkurve | Menge **0** – der Cutoff darf sich nicht bewegen |
+| Lautstärke-Hüllkurve | Attack ~300 ms, Sustain voll, Release ~800 ms |
+| Pegel | F1 **0 dB**, F2 **−6 dB**, F3 **−12 dB** (im MIDI steht schon CC7 = 100 / 71 / 50) |
+
+Zeigt der Cutoff-Regler keine Hz an: Spur solo, Resonanz hoch, Cutoff drehen, bis es so klingt wie in der Hörprobe
+(Teil 2, „nur F1“ / „nur F2“ / „nur F3“).
+
+## Tipps
+
+- **Tiefpass ≠ Bandpass:** Der Tiefpass lässt alles **unter** dem Cutoff durch. Darum klingt Teil 2 der Hörprobe dumpfer.
+  Abhilfe: im Cubasis-Mixer den **EQ (Band 1) auf Low-Cut** stellen – bei F2 etwa 700 Hz, bei F3 etwa 2000 Hz.
+  Tiefpass + Low-Cut = fast ein Bandpass.
+- **F2 und F3 leiser** als F1 – so ist es auch in der echten Stimme.
+- **Hauch:** etwas **Rauschen** (Noise, 10–20 %) in jede Spur, durch denselben Filter → klingt nach Atem.
+- Etwas Vibrato (LFO auf Tonhöhe, ~5 Hz, sehr wenig), dann Chorus und Hall dahinter.
+
+**Im Synquenzer** geht das in **einer** Spur: im Klang-Editor Filtertyp **„Vokal“** wählen (a – e – i – o – u).
+Der setzt die drei Spitzen auf einmal.
