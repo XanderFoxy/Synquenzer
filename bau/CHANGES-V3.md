@@ -1,3 +1,9 @@
+## 4.79.1 — Klang aus DAW-Datei + Retro-Werksklänge · 17.11.2026
+
+- **Neu im Klang-Browser: „Aus DAW-Datei“** (Klang-Editor einer Synth-Spur › oben den Klangnamen antippen › unten im Browser): Du wählst ein DAW-Projekt (.cbp) und siehst alle Synth-Spuren der Datei mit Wellen und Cutoff. Ein Tipp legt diesen Klang auf deine Spur, ↶ holt den alten zurück. Danach stellt „↳ Hall/Echo wie im Preset“ das Echo des Projekts so ein wie das Delay im Synth (mit eigenem ↶). Die Datei wird nur gelesen, Sample-Spuren bleiben draußen.
+- **10 neue Retro-Werksklänge** in „Alle“ und in Bass, Lead, Fläche, Pluck, Poly, Sequenz und Effekte: Retro-Bass Rund und Tief, Retro-Lead Hell und Weich, Retro-Fläche Warm und Hauch, Retro-Pluck, Retro-Stab, Retro-Sequenz, Retro-Resonanz.
+Tests: Klang aus DAW-Datei 33/33 per Touch (hochkant und quer, auf der fertigen Datei und auf der Auslieferung) + Kern 33/33; dazu ohne Rückschritt DAW-Projekt 46/46 · 29/29 · 14/14 · 46/46, Lage 112/112, Je Note 94/94. Auslieferung: 12 Werksklänge bitgleich, Probe „Blöcke“ ALLES OK, 0 Seitenfehler, App 19 KB größer (+0,3 %).
+
 ## 4.79.0 — DAW-Projekt öffnen und in Halbtönen transponieren, Lagen-Werkzeuge, Je Note weiterschalten · 17.11.2026
 
 - **Neu: DAW-Projekt öffnen** (Menü › Export › Audio/MIDI importieren › Datei wählen, Projektdatei .cbp): Deine Spuren und Teile kommen als Szenen und Song in die App (bis 8 Spuren × 8 Szenen), ein ↶ holt dein voriges Projekt zurück. Mit **Halbton ⇅½** (schon vorgewählt) spielt auf der Tastatur unter ⇅ TRANSPONIEREN jede Taste den ganzen Song genau in ihrer Tonart, C ist das Original.
