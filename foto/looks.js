@@ -153,6 +153,9 @@ void main(){ vec4 p = E(); vec3 c = max(p.rgb, 0.0); float l = F(Lt);
   intensiv: KOPF + `uniform sampler2D Lt; uniform sampler2D k1; uniform sampler2D k2; uniform sampler2D k3; uniform sampler2D en;
 uniform sampler2D haut; uniform int mitHaut; uniform vec3 tau; uniform vec4 s; uniform float st; uniform float lf; uniform float sf; uniform float ff; uniform float ks; uniform float pv;
 uniform vec4 reg; uniform vec4 subj[4]; uniform int nSubj; uniform float seiten; uniform sampler2D kh; uniform sampler2D kf; uniform float sKf;
+// 0.5 vorbereitet: „Weich (neu)“ = mehr örtliches Abwedeln/Nachbelichten über die Form-Ebene, weniger globale Kurve. Ausgeschaltet
+// (WN = 0 als Konstante → wird weggerechnet, Ergebnis wie 0.4); nur params.weichNeu === true nimmt die Variante „intensivWeich“ (WN = 1).
+const float WN = 0.0;
 float kern(float d, float t){ return sign(d)*max(abs(d) - t, 0.0); }
 // weiche Begrenzung der Detail-Bänder: Textur (kleine Ausschläge) fast linear, große Sprünge an Kanten gedämpft → kein heller Umriss
 float sanft(float d, float g){ return d/(1.0 + abs(d)/g); }
@@ -188,7 +191,7 @@ void main(){ vec4 p = E(); vec3 c = max(p.rgb, 0.0); float l = F(Lt);
   // Ton-Durchgänge auf der mittleren Basis (fast rauschfrei); Struktur und Fein-Rest kommen danach dazu (Frequenztrennung)
   float e = b2;
   // Durchgang 1: Licht formen – weiches Licht, grob, auf grauer Ebene aus der Form-Ebene gemalt
-  e = weichesLicht(e, 9.0*st*lf*(0.55 + 0.45*Wt)*dForm);
+  e = weichesLicht(e, 9.0*st*lf*(0.55 + 0.45*Wt)*(1.0 + 0.6*WN)*dForm);
   // Durchgang 2: Abwedeln – Negativ multiplizieren auf den Lichtern der Formen (heller als ihre Umgebung) + Glanz auf dem Motiv
   float hell = smoothstep(0.0, 0.05, b2 - b3)*a3*hb;
   //   + Mitten leicht aufhellen (Negativ multiplizieren, geringe Deckkraft, Mitten-Maske) – hält die Gesamthelligkeit gegen das Nachbelichten
@@ -199,13 +202,13 @@ void main(){ vec4 p = E(); vec3 c = max(p.rgb, 0.0); float l = F(Lt);
   // Durchgang 3: Nachbelichten – Multiplizieren in den Tiefen der Formen und im Unwichtigen (Motiv tritt hervor)
   float dunkel = smoothstep(0.0, 0.05, b3 - b2)*a3*hb;
   //   sehr dunkle Stellen werden nicht weiter abgedunkelt (kein Absaufen)
-  e *= 1.0 - (0.42*st*lf*wS*dunkel*(1.0 - 0.5*hs) + 0.09*st*lf*(1.0 - Wt)*(1.0 - wL))*smoothstep(0.03, 0.16, e);
+  e *= 1.0 - (0.42*st*lf*wS*dunkel*(1.0 - 0.5*hs) + 0.09*st*lf*(1.0 - Wt)*(1.0 - wL)*(1.0 - 0.4*WN))*smoothstep(0.03, 0.16, e);
   // Durchgang 4: Klarheit in den Mitten (Form-Ebene, Mitteltöne gewichtet)
-  float ec = clamp(e, 0.0, 1.0); e += 3.0*st*lf*4.0*ec*(1.0 - ec)*dForm*(1.0 - 0.4*hs);
+  float ec = clamp(e, 0.0, 1.0); e += 3.0*st*lf*(1.0 + 0.3*WN)*4.0*ec*(1.0 - ec)*dForm*(1.0 - 0.4*hs);
   // Gesamtkontrast: S-Kurve um die Bildmitte pv (0,25…0,42 kodiert, aus der Analyse) – tiefere Schatten, hellere Lichter, Mitte bleibt;
   // dunkle Bilder werden so nicht noch dunkler, tiefste Tiefen geschont
   ec = clamp(e, 0.0, 1.0); float sk = 2.0*ec*(1.0 - ec)*(ec - pv); if (sk < 0.0) sk *= smoothstep(0.02, 0.16, ec);
-  e = ec + ks*st*sk*(1.0 - 0.75*hs) + (e - ec);
+  e = ec + ks*(1.0 - 0.3*WN)*st*sk*(1.0 - 0.75*hs) + (e - ec);
   float off = e - b2;   // örtliche Ton-Verschiebung (für die Hülle der Detail-Bänder)
   // Durchgang 5: Struktur – Band zurück + Ineinanderkopieren, mittlerer Radius (der „gemalte“ Detail-Kontrast), Haut ruhiger
   e = ineinander(e + (b1 - b2), 14.0*st*sf*(0.1 + 0.9*W)*(1.0 - 0.55*hs)*gs*dStr);
@@ -313,6 +316,7 @@ void main(){ ivec2 P = PX(), G = textureSize(ein, 0) - 1; vec3 c0 = texelFetch(e
   vec3 u = sk > 1.0 ? K(unscharf, sk).rgb : F4(unscharf).rgb; aus = vec4(schutz(mix(p.rgb, u, smoothstep(0.25*sk, 1.0 + 0.5*sk, a)), p.rgb), p.a); }`,
 };
 export const SHADER = Object.freeze(Object.fromEntries(Object.entries(FS).map(([k, v]) => ['looks-' + k, v])));
+FS.intensivWeich = FS.intensiv.replace('const float WN = 0.0;', 'const float WN = 1.0;');   // „Weich (neu)“, nur über params.weichNeu
 const prog = (ctx, n) => ctx.programm('looks-' + n, FS[n]);
 
 // ================================================================ Bausteine (GPU)
@@ -393,7 +397,7 @@ function intensivKern(ctx, ein, s, st) {
   const gesB = ctx.region ? ctx.b / ctx.region.b : ctx.b, gesH = ctx.region ? ctx.h / ctx.region.h : ctx.h;
   const ht = hautTex(ctx), sig = rauschJetzt(ctx.analyse, ctx.pxProQuelle || 1);
   const kh = kantenHuelle(ctx, Lt);
-  const o = ctx.pass(prog(ctx, 'intensiv'), {
+  const o = ctx.pass(prog(ctx, s?.params?.weichNeu === true ? 'intensivWeich' : 'intensiv'), {
     s: [...k.map((x) => x.s), kh.s], sKf: kh.sf, mitHaut: ht ? 1 : 0, tau: [2.0, 1.1, 1.0].map((f) => Math.max(0.002, f * sig)), st, lf, sf, ff, ks: 1.8 * (0.4 + 0.6 * kornRauschen(ctx.analyse)), pv: klemme(ctx.analyse?.belichtung?.p50 ?? 0.42, 0.25, 0.42), reg, subj, nSubj: n, seiten: gesB / gesH,
   }, { ein, Lt, k1: k[0].tex, k2: k[1].tex, k3: k[2].tex, en, haut: ht || Lt, kh: kh.tex, kf: kh.fein });
   ctx.frei(Lt); ctx.frei(en); ctx.frei(kh.tex); ctx.frei(kh.fein); for (const x of k) ctx.frei(x.tex);

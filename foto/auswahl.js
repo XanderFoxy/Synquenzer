@@ -1,6 +1,6 @@
 // Bildwerk – Auswahl/Masken (Agent D). Signaturen FEST (ARCH.md §4.6). KI-Teile über RpcKanal (wk-ki), Rest rein.
 // Rein = kein DOM: läuft im Worker wk-rechnen und im Haupt-Faden. Masken: Uint8 0..255, Arbeitsauflösung, Quell-Koordinaten.
-import { KLASSE, MASKE, FEHLER, BildwerkFehler, neueId } from './typen.js';
+import { KLASSE, MASKE, FEHLER, BildwerkFehler, neueId, gesichtsKopie } from './typen.js';
 export { KLASSE, MASKE };
 
 // ================================================================ Hilfen (rein)
@@ -400,7 +400,7 @@ async function teilMaske(t, ctx) {
 }
 
 // ================================================================ KI-gestützt (Haupt-Faden → wk-ki)
-async function kopie(bild) { return typeof createImageBitmap === 'function' ? createImageBitmap(bild) : bild; }
+async function kopie(bild) { return typeof createImageBitmap === 'function' ? gesichtsKopie(bild) : bild; }
 export async function erkenneGesichter(ki, bild, opts = {}) {
   const k = await kopie(bild);
   return ki.rufe('gesichter', { bild: k }, { transfer: [k], signal: opts.signal, onFortschritt: opts.onFortschritt });

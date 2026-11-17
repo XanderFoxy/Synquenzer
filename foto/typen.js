@@ -23,7 +23,7 @@
  * @typedef {{setze(params:object):void,zerstoere():void}} UIHandle
  */
 
-export const VERSION = '0.4.0';
+export const VERSION = '0.5.0';
 export const ARBEITS_KANTE = 2048;   // lange Seite Arbeitsbild (Vorschau, Masken)
 export const ANALYSE_KANTE = 1024;   // lange Seite Analysebild
 export const KACHEL = 1024;          // Export-Kachel ohne Rand
@@ -132,3 +132,11 @@ export function renderReihenfolge(schritte) {
 
 /** Kurze Seite und Pixelradius aus Anteil. */
 export function radiusPx(anteil, b, h) { return anteil * Math.min(b, h); }
+
+/** Kopie fürs Gesichter-Finden: der KI-Worker rechnet ohnehin mit höchstens 1280 px (Ergebnis normiert) – also gleich
+ *  verkleinert kopieren statt das ganze Foto (12 MP: 48 MB, 48 MP: 192 MB weniger Spitze, kürzere Übergabe). */
+export async function gesichtsKopie(bmp, kante = 1280) {
+  const s = kante / Math.max(bmp.width, bmp.height);
+  if (s >= 1) return createImageBitmap(bmp);
+  try { return await createImageBitmap(bmp, { resizeWidth: Math.max(1, Math.round(bmp.width * s)), resizeHeight: Math.max(1, Math.round(bmp.height * s)), resizeQuality: 'high' }); } catch { return createImageBitmap(bmp); }
+}

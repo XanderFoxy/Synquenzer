@@ -1,6 +1,6 @@
 // Bildwerk – Kern/UI. AppKern-Schnittstelle FEST (ARCH.md §4.11).
 // Start, Zustand, Undo/Redo, Ereignisse, Reiter/Blätter, Gesten, Vorher/Nachher, Öffnen/Speichern/Teilen, IndexedDB.
-import { VERSION, ANALYSE_KANTE, DB_NAME, DB_VERSION, ART, FEHLER, BildwerkFehler, neuesDokument, neuerSchritt, neueId } from './typen.js';
+import { VERSION, ANALYSE_KANTE, DB_NAME, DB_VERSION, ART, FEHLER, BildwerkFehler, neuesDokument, neuerSchritt, neueId, gesichtsKopie } from './typen.js';
 import { kanal } from './rpc.js';
 import { erstellePipeline } from './gl.js';
 import { setzeQuellen } from './modelle.js';
@@ -81,12 +81,16 @@ export async function starte(wurzel, opts = {}) {
   // Zwei-Finger-Zoom der ganzen Oberfläche sperren (Safari ignoriert user-scalable=no); die Bildfläche hat eigene Gesten.
   for (const t of ['gesturestart', 'gesturechange']) document.addEventListener(t, (e) => e.preventDefault(), { passive: false });
   let db = null; try { db = await oeffneDB(); } catch { db = null; }
-  const rasterMem = new Map();
+  const rasterMem = new Map(), rasterAusstehend = new Set();
   const raster = {
-    async lege(daten, art = 'blob') {
+    /** o.hintergrund: in IndexedDB schreiben, ohne darauf zu warten (Öffnen: Foto erscheint sofort; das Sichern des Dokuments wartet). */
+    async lege(daten, art = 'blob', o = {}) {
       const rasterId = neueId('r'); const eintrag = { rasterId, art, daten, b: daten?.b, h: daten?.h };
       rasterMem.set(rasterId, eintrag);
-      if (db) try { await idb(db, 'raster', 'readwrite', (s) => s.put(eintrag)); } catch (e) { console.warn('Raster nicht gespeichert', e); }
+      if (db) {
+        const p = idb(db, 'raster', 'readwrite', (s) => s.put(eintrag)).catch((e) => console.warn('Raster nicht gespeichert', e));
+        if (o.hintergrund) { rasterAusstehend.add(p); p.finally(() => rasterAusstehend.delete(p)); } else await p;
+      }
       return rasterId;
     },
     async hole(id) {
@@ -100,6 +104,8 @@ export async function starte(wurzel, opts = {}) {
     clearTimeout(sicherungsTimer);
     sicherungsTimer = setTimeout(async () => {
       if (!db || !z.doc) return;
+      while (rasterAusstehend.size) await Promise.all([...rasterAusstehend]);   // Dokument nie vor seinem Original sichern (auch wenn beim Warten ein neues Foto kam)
+      if (!z.doc) return;
       try { await idb(db, 'dokumente', 'readwrite', (s) => s.put({ ...z.doc, geaendert: Date.now() })); try { sessionStorage.setItem('bildwerk-offen', z.doc.id); } catch {} } catch (e) { console.warn('Sicherung', e); }
     }, 500);
   }
@@ -295,7 +301,7 @@ export async function starte(wurzel, opts = {}) {
   async function oeffne(datei, o = {}) {
     const t0 = performance.now();
     const bitmap = await dekodiere(datei);
-    const rasterId = await raster.lege(datei, 'original');
+    const rasterId = await raster.lege(datei, 'original', { hintergrund: true });
     const doc = neuesDokument({ b: bitmap.width, h: bitmap.height, rasterId, mime: datei.type || 'image/jpeg', name: (o.name || datei.name || 'Foto').replace(/\.[^.]+$/, '') });
     await ladeBitmap(bitmap, doc);
     app.test?.laufzeiten.push({ was: 'oeffnen', ms: performance.now() - t0, b: bitmap.width, h: bitmap.height });
@@ -347,7 +353,7 @@ export async function starte(wurzel, opts = {}) {
     if (!z.doc || z.doc.gesichter?.length || z.gesichterGeprueft === docId) return; z.gesichterGeprueft = docId;
     let st; try { st = await ki.rufe('status', {}); } catch { return; }
     if (!st?.ids?.['gesicht-landmarken']?.imCache || !z.bitmap) return;
-    const kopie = await createImageBitmap(z.bitmap);
+    const kopie = await gesichtsKopie(z.bitmap);
     const g = await ki.rufe('gesichter', { bild: kopie }, { transfer: [kopie] });
     if (!z.doc || z.doc.id !== docId || !g?.length) return;
     setzeGesichter(g); await analysiere({ ohneGesichter: true });

@@ -3,7 +3,7 @@
 // automatisch im Batch. REGEL: Fotos einer Person werden NUR auf ein Gesicht gelegt, das der Vergleich als diese Person
 // erkennt; unbekannte Gesichter bleiben unberührt; kein Raten von Geschlecht/Alter. Alles bleibt auf dem Gerät (IndexedDB).
 // Aufbau: (1) reine Rechnung (Node-Tests), (2) Speicher, (3) Erkennen/Anwenden (Foto + Batch), (4) Bedienung.
-import { IDENTITAET, FEHLER, BildwerkFehler, ART, neueId } from './typen.js';
+import { IDENTITAET, FEHLER, BildwerkFehler, ART, neueId, gesichtsKopie } from './typen.js';
 import { vergleiche, urteilListe, referenzHinzufuegen, ladeReferenzen, loescheReferenz, gesichtsMerkmal, frischeAuf } from './hoch.js';
 
 /**
@@ -157,7 +157,7 @@ export async function modelleDa(app) { return (await imCache(app, 'gesicht-landm
 /** Gesichter finden (oder übergebene nehmen) und je Gesicht das Merkmal rechnen (null = zu klein). bmp: ImageBitmap der Quelle. */
 export async function erkenneGesichter(app, { bmp, b, h, gesichter = null }) {
   let gs = gesichter?.length && gesichter[0].landmarken?.length >= 478 * 3 ? gesichter : null;
-  if (!gs) { const k = await createImageBitmap(bmp); gs = (await app.ki.rufe('gesichter', { bild: k }, { transfer: [k] })) || []; }
+  if (!gs) { const k = await gesichtsKopie(bmp); gs = (await app.ki.rufe('gesichter', { bild: k }, { transfer: [k] })) || []; }
   const merkmale = [];
   for (const g of gs) {
     const p5 = g.punkte5, aug = p5 ? Math.hypot((p5[2] - p5[0]) * b, (p5[3] - p5[1]) * h) : 0;

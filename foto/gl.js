@@ -446,11 +446,14 @@ export function erstellePipeline(canvas, opts = {}) {
     if (o.maxKante && Math.max(ausB, ausH) > o.maxKante) { const f = o.maxKante / Math.max(ausB, ausH); ausB = Math.round(ausB * f); ausH = Math.round(ausH * f); }
     const pxProQuelle = ausB / gm.ausgabeB;               // Ausgabe-Pixel je Quell-Pixel
     const kachel = o.kachel || KACHEL;
-    const daten = new Uint8ClampedArray(ausB * ausH * 4);
+    // 0.5 (Speicher): beim normalen Export jede Kachel gleich in die Kodier-Leinwand schreiben – kein zweiter Vollbild-Puffer
+    // (12 MP: −48 MB, 16,7 MP: −67 MB Spitze auf dem iPhone). Nur o.roh braucht die Pixel als ein Feld.
+    const leinwand = o.roh ? null : neueLeinwand(ausB, ausH), l2d = leinwand?.getContext('2d') || null;
+    const daten = l2d ? null : new Uint8ClampedArray(ausB * ausH * 4);
     const kx = Math.ceil(ausB / kachel), ky = Math.ceil(ausH / kachel), gesamt = kx * ky; let fertig = 0;
     const hochFaktor = skala > 1 && o.hochKachel && Math.abs(ausB / gm.ausgabeB - skala) < 1e-6 ? skala : 1;
     for (let ty = 0; ty < ky; ty++) for (let tx = 0; tx < kx; tx++) {
-      if (o.signal?.aborted) { alleFrei(); throw new BildwerkFehler(FEHLER.ABBRUCH, 'abgebrochen'); }
+      if (o.signal?.aborted) { alleFrei(); if (leinwand) { leinwand.width = 1; leinwand.height = 1; } throw new BildwerkFehler(FEHLER.ABBRUCH, 'abgebrochen'); }
       const ox = tx * kachel, oy = ty * kachel, ob = Math.min(kachel, ausB - ox), oh = Math.min(kachel, ausH - oy);
       // Ziel-uv der Kachel -> Ausgabe normiert
       const zielZuAusgabe = new Float32Array([ob / ausB, 0, 0, 0, oh / ausH, 0, ox / ausB, oy / ausH, 1]);
@@ -486,12 +489,14 @@ export function erstellePipeline(canvas, opts = {}) {
       const ziel = temp('rgba8', ob, oh);
       ausgabe(ziel, { zielZuAusgabe, ausgabeZuQuelle: gm.matrix, nach: r, flipY: false, kodiere: 1, absOff: [ox, oy], zielH: oh });
       const px = await leseAsync(ziel, 0, 0, ob, oh, 'u8');
-      for (let y = 0; y < oh; y++) daten.set(px.subarray(y * ob * 4, (y + 1) * ob * 4), ((oy + y) * ausB + ox) * 4);
+      if (l2d) l2d.putImageData(new ImageData(px, ob, oh), ox, oy);
+      else for (let y = 0; y < oh; y++) daten.set(px.subarray(y * ob * 4, (y + 1) * ob * 4), ((oy + y) * ausB + ox) * 4);
       alleFrei();
       fertig++; o.onFortschritt?.(fertig / gesamt, `Kachel ${fertig}/${gesamt}`);
       await new Promise((ok) => setTimeout(ok, 0));
     }
     if (o.roh) return { b: ausB, h: ausH, daten };
+    if (l2d) { try { return await leinwandZuBlob(leinwand, format, o.qualitaet ?? 0.92); } finally { leinwand.width = 1; leinwand.height = 1; } }
     return kodiereBild({ b: ausB, h: ausH, daten }, format, o.qualitaet ?? 0.92);
   }
   const api = {
@@ -603,6 +608,23 @@ export function erstellePipeline(canvas, opts = {}) {
   return api;
 }
 
+/** Leere 2D-Leinwand (OffscreenCanvas, sonst Canvas) – null, wenn keine geht (dann kodiert kodiereBild aus dem Puffer). */
+function neueLeinwand(b, h) {
+  try { if (typeof OffscreenCanvas !== 'undefined') { const c = new OffscreenCanvas(b, h); if (c.getContext('2d')) return c; } } catch {}
+  try { if (typeof document !== 'undefined') { const c = document.createElement('canvas'); c.width = b; c.height = h; if (c.getContext('2d')) return c; } } catch {}
+  return null;
+}
+function blobAusCanvas(c, format, qualitaet) {
+  return new Promise((ok, fehl) => c.toBlob((b) => (b ? ok(b) : fehl(new BildwerkFehler(FEHLER.SPEICHER, 'Kodieren fehlgeschlagen'))), format, qualitaet));
+}
+async function leinwandZuBlob(c, format, qualitaet) {
+  if (!c.convertToBlob) return blobAusCanvas(c, format, qualitaet);
+  try { return await c.convertToBlob({ type: format, quality: qualitaet }); } catch (e) {
+    if (typeof document === 'undefined') throw e;   // Rückfall wie kodiereBild: über eine Seiten-Leinwand kodieren
+    const d = document.createElement('canvas'); d.width = c.width; d.height = c.height; d.getContext('2d').drawImage(c, 0, 0);
+    try { return await blobAusCanvas(d, format, qualitaet); } finally { d.width = 1; d.height = 1; }
+  }
+}
 /** Bild kodieren (JPEG/PNG) über OffscreenCanvas bzw. Canvas. */
 export async function kodiereBild(bild, format = 'image/jpeg', qualitaet = 0.92) {
   const id = new ImageData(bild.daten, bild.b, bild.h);

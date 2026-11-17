@@ -2,7 +2,7 @@
 // Aufbau: (1) reine Rechnung (läuft im Worker und in Node-Tests), (2) Worker-Teil `wkKi` (wk-ki ruft hoch/merkmal),
 // (3) Haupt-Faden-Abläufe (Kachel-Brücke, Merkmal, Referenzen in IndexedDB, Prüfung, Auffrischen), (4) Bedienung.
 // Import ohne Nebenwirkung: kein DOM, kein fetch beim Import.
-import { IDENTITAET, FEHLER, BildwerkFehler, ART, neueId, neuerSchritt, DB_NAME, DB_VERSION } from './typen.js';
+import { IDENTITAET, FEHLER, BildwerkFehler, ART, neueId, neuerSchritt, DB_NAME, DB_VERSION, gesichtsKopie } from './typen.js';
 import { flickenStufe, merkeFlicken, setzeFlickenLader } from './entfernen.js';
 export { IDENTITAET };
 
@@ -586,7 +586,7 @@ export function gesichtsRechteck(g, B, H, faktor = 1.9) {
 export async function referenzHinzufuegen(app, datei, opts = {}) {
   const bmp = await createImageBitmap(datei, { imageOrientation: 'from-image' }).catch(() => createImageBitmap(datei));
   try {
-    const k = await createImageBitmap(bmp);
+    const k = await gesichtsKopie(bmp);
     const gs = await app.ki.rufe('gesichter', { bild: k }, { transfer: [k] });
     if (!gs?.length) throw fehler(FEHLER.UNBEKANNT, 'Im Referenzfoto wurde kein Gesicht gefunden');
     // PERSONEN: Referenz einer Person nur aus Fotos mit EINEM deutlichen Gesicht (sonst könnte das falsche Gesicht gelernt werden)
@@ -828,7 +828,7 @@ ${['staerke:Stärke', 'augen:Augen', 'haut:Haut', 'haare:Haare'].map((x) => { co
       z.gesichter = doc.gesichter?.length && doc.gesichter[0].landmarken?.length >= 478 * 3 ? doc.gesichter : [];
       if (!z.gesichter.length) {
         status('Suche Gesichter …');
-        try { const k = await createImageBitmap(app.quelleBitmap()); z.gesichter = await app.ki.rufe('gesichter', { bild: k }, { transfer: [k] }); if (z.gesichter?.length) app.setzeGesichter?.(z.gesichter); } catch (e) { status(e.text || e.message || String(e), 'nein-t'); }
+        try { const k = await gesichtsKopie(app.quelleBitmap()); z.gesichter = await app.ki.rufe('gesichter', { bild: k }, { transfer: [k] }); if (z.gesichter?.length) app.setzeGesichter?.(z.gesichter); } catch (e) { status(e.text || e.message || String(e), 'nein-t'); }
         status('');
       }
       z.refs = await ladeReferenzen(); zeigeGesichter(); zeigeRefs(); pruefe();
