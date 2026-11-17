@@ -243,6 +243,8 @@ export async function main(args = process.argv.slice(2), env = process.env, test
   let r;
   try { r = await lauf({ cfg, wunschliste, filmListen, essenListen, dateienVorher, vorher, zustand, holeText, env, jetzt, alle: fixtures || !!rohDir || args.includes('--alle'), log: console.log, schnittstellenCache: !fixtures && !rohDir }); }
   catch (e) { roh?.abschluss({ absturz: String(e?.message || e) }); throw e; }
+  // Runde 9: Hosts, die 429 meldeten und bei denen der Radar im Lauf selbst langsamer wurde (nur Protokoll, keine Daten)
+  if (holeText.bremse?.size) console.log(`nach HTTP 429 gebremst: ${[...holeText.bremse].map(([h, ms]) => `${h} ${Math.round(ms / 1000)} s Abstand`).join(', ')}`);
   // Erster Lauf überhaupt: nichts nachmelden, nur einmal Bescheid geben (kein Push-Gewitter)
   const erstlauf = !zustand.gemeldet;
   const plan = plane({ eintraege: r.alleEintraege, zustand: r.zustand, cfg, jetzt, modus: erstlauf ? 'still' : modus });

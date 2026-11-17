@@ -7,6 +7,10 @@
 // false = keine Wiederholung (Obergrenze je Lauf erreicht).
 // Fehler mit Retry-After-Kopf tragen den Wunsch als e.retryAfterMs (MV8): der Radar wartet mit dem Neuversuch des Moduls
 // mindestens so lange (faellig.mjs) – die Drosselung hier bleibt unverändert.
+// Runde 9 (Läufe 43970348817 + 44004388489: Google News antwortet mitten im Lauf 429 ohne Retry-After, die Wiederholung nach
+// 3 s ebenso, der nächste Abruf Sekunden später wieder 200): HTTP 429 = „zu schnell“ -> für den Rest des Laufs bremst der
+// Radar bei genau diesem Host selbst: Abstand verdoppelt (höchstens abruf.bremse429MaxMs), die eine Wiederholung frühestens
+// nach abruf.wiederhol429Ms. Beides nur, wenn gesetzt (config.json); ohne die Werte bleibt alles wie vorher (Tests).
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
@@ -23,11 +27,16 @@ export function retryAfterMs(wert, jetztMs = Date.now()) {
 
 export function macheAbruf(abruf, fetchImpl = globalThis.fetch) {
   const letzter = new Map();
+  const bremse = new Map(); // Host -> eigener, längerer Abstand nach HTTP 429 (nur dieser Lauf)
+  const mitPausen = abruf.pauseMs > 0; // pauseMs 0 (Tests) = ganz ohne Pausen, auch ohne Bremse
+  const bremseMax = mitPausen && abruf.bremse429MaxMs > 0 ? abruf.bremse429MaxMs : 0;
+  const warte429 = mitPausen && abruf.wiederhol429Ms > 0 ? abruf.wiederhol429Ms : 0;
   // timeoutMs je Abruf: für langsame, aber erlaubte Abfragen (Overpass rechnet bis zu 90 s), sonst abruf.timeoutMs
-  return async function holeText(url, { headers = {}, method = 'GET', body, timeoutMs, darfWiederholen } = {}) {
+  async function holeText(url, { headers = {}, method = 'GET', body, timeoutMs, darfWiederholen } = {}) {
     const host = new URL(url).host;
-    const pause = abruf.pauseMs > 0 ? Math.max(abruf.pauseMs, abruf.pauseMsJeHost?.[host] ?? 0) : 0;
+    const grund = abruf.pauseMs > 0 ? Math.max(abruf.pauseMs, abruf.pauseMsJeHost?.[host] ?? 0) : 0;
     for (let versuch = 0; ; versuch++) {
+      const pause = Math.max(grund, bremse.get(host) || 0);
       const seit = Date.now() - (letzter.get(host) || 0);
       if (seit < pause) await warte(pause - seit);
       letzter.set(host, Date.now());
@@ -38,13 +47,16 @@ export function macheAbruf(abruf, fetchImpl = globalThis.fetch) {
           method, body, signal: ctl.signal, redirect: 'follow',
           headers: { 'user-agent': abruf.userAgent, 'accept-language': 'de-DE,de;q=0.9', ...headers },
         });
+        // 429: dieser Host bekommt für den Rest des Laufs den doppelten Abstand (höchstens bremseMax)
+        if (r.status === 429 && bremseMax) bremse.set(host, Math.min(bremseMax, Math.max(grund, bremse.get(host) || 0) * 2));
         // Wiederholung frühestens nach dem Host-Abstand (Overpass „at capacity“ 502: 10 s statt 3 s, Roh-Lauf 43887290010)
-        // und nicht vor dem Retry-After des Dienstes
+        // und nicht vor dem Retry-After des Dienstes; nach 429 frühestens nach warte429 bzw. dem gebremsten Abstand
         if ((r.status === 429 || r.status >= 500) && versuch < 1) {
           const ra = retryAfterMs(r.headers?.get?.('retry-after'));
           if ((ra == null || ra <= (abruf.retryAfterMaxMs ?? 60000)) && (darfWiederholen ? darfWiederholen() : true)) {
             await r.body?.cancel?.().catch(() => {});
-            await warte(Math.max(abruf.wiederholMs ?? 3000, pause, ra ?? 0));
+            const extra429 = r.status === 429 ? Math.max(warte429, bremse.get(host) || 0) : 0;
+            await warte(Math.max(abruf.wiederholMs ?? 3000, pause, ra ?? 0, extra429));
             continue;
           }
         }
@@ -61,7 +73,9 @@ export function macheAbruf(abruf, fetchImpl = globalThis.fetch) {
         throw e;
       } finally { clearTimeout(t); }
     }
-  };
+  }
+  holeText.bremse = bremse; // für Tests und Lauf-Bericht: Hosts, bei denen der Radar nach 429 selbst langsamer wurde
+  return holeText;
 }
 
 // Für Tests und --fixtures: URL -> aufgezeichnete Antwort. karte = [[teilDerUrl, dateiname], ...] (erster Treffer gewinnt).

@@ -87,6 +87,35 @@ test('woche.js Fuß: Prospekt für Döbeln, Märkte aus Nachbarstadt/bundesweit 
   assert.doesNotMatch(t2, /Nicht aus dem Prospekt|in Döbeln gibt/);
 });
 
+test('woche.js Fuß (Runde 9, OFFEN A26): ausgeblendeter Markt mit Chemnitzer Prospekt macht den Fuß nicht „Döbeln/Chemnitz“', () => {
+  const I = modul()._intern;
+  const jetzt = Date.parse(JETZT);
+  // wie die Live-Daten 17.11.: REWE nur Chemnitz, nächste Filiale 15 km (nah: false), alle anderen Döbeln
+  const d = { ...plain(KNALLER), standort: 'Döbeln/Chemnitz', ort: 'Döbeln', maerkte: {
+    kaufland: { name: 'Kaufland', ort: 'Döbeln', nah: true, filiale: { adresse: 'x', km: 0.2 } },
+    rewe: { name: 'REWE', ort: 'Chemnitz', nah: false, filiale: { adresse: 'y', km: 15 } } } };
+  const n = I.normalisiere(d, jetzt);
+  const lagen = new Map(n.maerkte.map(m => [m.id, I.lageVon(m, n, null, null)]));
+  assert.equal(lagen.get('rewe').nah, false);
+  const text = nbsp(I.fuss(n, lagen).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' '));
+  assert.match(text, /Prospekte für Döbeln von kaufDA – einzelne Filialen können abweichen\./);
+  assert.doesNotMatch(text, /Chemnitz|in Döbeln gibt/);
+  // „Gelesen: …“ nennt ebenfalls nur gezeigte Märkte
+  const mitZahl = I.normalisiere({ ...d, maerkte: { kaufland: { ...d.maerkte.kaufland, gesamt: 491, gelesen: 16 }, rewe: { ...d.maerkte.rewe, gesamt: 628, gelesen: 25 } } }, jetzt);
+  const t0 = nbsp(I.fuss(mitZahl, new Map(mitZahl.maerkte.map(m => [m.id, I.lageVon(m, mitZahl, null, null)]))).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' '));
+  assert.match(t0, /Gelesen: Kaufland 16 von 491 Angeboten/);
+  assert.doesNotMatch(t0, /REWE/);
+  // Neben-Stadt-Markt in der Nähe bleibt genannt
+  const nah = I.normalisiere({ ...d, maerkte: { ...d.maerkte, rewe: { ...d.maerkte.rewe, nah: true, filiale: { adresse: 'y', km: 4 } } } }, jetzt);
+  const lagen2 = new Map(nah.maerkte.map(m => [m.id, I.lageVon(m, nah, null, null)]));
+  const t2 = nbsp(I.fuss(nah, lagen2).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' '));
+  assert.match(t2, /Prospekte Döbeln\/Chemnitz von kaufDA – ob es das in Döbeln gibt/);
+  assert.match(t2, /Nicht aus dem Prospekt für Döbeln: REWE \(Chemnitz\)/);
+  // ältere Datei ohne Ort je Markt: standort wie bisher
+  const alt = I.normalisiere({ ...d, maerkte: { kaufland: { name: 'Kaufland' } } }, jetzt);
+  assert.match(nbsp(I.fuss(alt).replace(/<[^>]+>/g, ' ')), /Prospekte Döbeln\/Chemnitz von kaufDA/);
+});
+
 test('woche.js liest tolerant: ohne Vergleichspreis kein Knaller, % selbst nachgerechnet, nur https, abgelaufen raus', () => {
   const I = modul()._intern;
   const jetzt = Date.parse(JETZT);

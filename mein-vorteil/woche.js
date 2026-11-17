@@ -427,10 +427,22 @@
     if (S.pos) hinweise.push(`<p class="wo-ort-hinweis">Der Standort bleibt auf diesem Gerät${S.fil?.stand ? ` · Filialen laut OpenStreetMap, Stand ${esc(standText(S.fil.stand) || '')}` : ''}.</p>`);
     return `<div class="wo-ort"><p class="wo-ort-text">${PIN}<span>${esc(wo)}</span></p><div class="wo-ort-knoepfe">${knoepfe.join('')}</div>${hinweise.join('')}</div>`;
   }
+  // Prospekt-Orte nur der gezeigten Märkte, in der Reihenfolge des Radars (standort „Döbeln/Chemnitz/…“). Runde 9 (OFFEN A26):
+  // REWE kommt nur mit Chemnitzer Prospekt und ohne Filiale bis 10 km – ausgeblendet, darf der Fuß nicht „Prospekte
+  // Döbeln/Chemnitz … ob es das in Döbeln gibt“ sagen. Ohne Ort an den Märkten (ältere Dateien) gilt standort wie bisher.
+  function gezeigterStandort() {
+    const st = S.n.standort || '';
+    const orte = new Set(S.n.maerkte.filter(m => m.ort && !m.keinMarkt && (S.weitere || istNah(m.id))).map(m => (/^bundesweit/.test(m.ort) ? 'bundesweit' : m.ort)));
+    if (!orte.size) return st;
+    const teile = st.split('/').filter(o => orte.has(o));
+    for (const o of orte) if (!teile.includes(o)) teile.push(o);
+    return teile.join('/');
+  }
   function fussHtml() {
-    const ort = S.n.standort && S.n.standort !== 'bundesweit' ? `Prospekte ${S.n.standort}` : 'Prospekte bundesweit';
+    const standort = gezeigterStandort();
+    const ort = standort && standort !== 'bundesweit' ? `Prospekte ${standort}` : 'Prospekte bundesweit';
     // Prospekt für den eigenen Ort (Döbeln) oder nicht – Märkte aus Nachbarstadt/bundesweit sichtbar nennen
-    const lokal = !!S.n.standort && S.n.standort === S.n.ort;
+    const lokal = !!standort && standort === S.n.ort;
     const fremd = S.n.maerkte.filter(m => m.ort && m.ort !== S.n.ort && !m.keinMarkt && (S.weitere || istNah(m.id)));
     const ohneMarkt = S.n.maerkte.filter(m => m.keinMarkt).map(m => m.name);
     const ortText = lokal ? `Prospekte für ${S.n.ort} von kaufDA – einzelne Filialen können abweichen.` : `${ort} von kaufDA – ob es das in ${S.n.ort} gibt, im Markt oder in der App prüfen.`;
@@ -440,11 +452,11 @@
     const markt = S.markt !== 'alle' ? S.n.maerkte.find(m => m.id === S.markt) : null;
     const ohneArt = (S.n.angebote.some(a => a.art === 'unbekannt') ? ' Grau ohne „UVP“ = der Prospekt sagt nicht, welcher Preis verglichen wird.' : '')
       + (S.n.angebote.some(a => a.art === 'geschaetzt') ? ' „≈ … geschätzt“ = im Prospekt steht kein Vergleichspreis; verglichen mit demselben Artikel im selben Markt aus einem früheren Prospekt.' : '');
-    const gesamt = S.n.maerkte.filter(m => m.gesamt > 0);
+    const gesamt = S.n.maerkte.filter(m => m.gesamt > 0 && (S.weitere || istNah(m.id))); // wie die Prospekt-Orte: nur gezeigte Märkte
     const gesamtText = gesamt.length ? `<p class="wo-fuss-text">Gelesen: ${esc(gesamt.map(m => `${m.name} ${m.gelesen ?? '?'} von ${m.gesamt}`).join(', '))} Angeboten der Prospekte – kaufDA zeigt je Markt nur einen Teil, der Radar sucht den Rest über Stichworte und sammelt die Woche über.</p>` : '';
     return `<p class="wo-fuss-text"><b>Gold umrandet</b> = echter Streichpreis im Prospekt. <b>UVP</b> = gegen die Preisempfehlung des Herstellers gerechnet – die liegt oft über dem üblichen Ladenpreis.${esc(ohneArt)} „bis −n %“ = ab-Preis (die günstigste Sorte). Rabatte abgerundet. ${esc(ortText)}</p>`
       + gesamtText
-      + (fremd.length && S.n.standort !== 'bundesweit' ? `<p class="wo-fuss-text">Nicht aus dem Prospekt für ${esc(S.n.ort)}: ${esc(fremd.map(m => `${m.name} (${m.ort})`).join(', '))} – im Markt oder in der App prüfen.</p>` : '')
+      + (fremd.length && standort !== 'bundesweit' ? `<p class="wo-fuss-text">Nicht aus dem Prospekt für ${esc(S.n.ort)}: ${esc(fremd.map(m => `${m.name} (${m.ort})`).join(', '))} – im Markt oder in der App prüfen.</p>` : '')
       + (ohneMarkt.length ? `<p class="wo-fuss-text">Kein Markt in der Nähe: ${esc(ohneMarkt.join(', '))}.</p>` : '')
       + (markt?.link ? `<p class="wo-fuss-text"><a class="wo-link" href="${esc(markt.link)}" target="_blank" rel="noopener">Alle Angebote von ${esc(markt.name)} bei kaufDA ›</a></p>` : '')
       + (stoer.length || alt.length ? `<details class="wo-quellen"><summary>Quellen</summary><ul>${stoer.map(f => `<li class="wo-stoerung">${esc(f)}</li>`).join('')}${alt.length ? `<li>Letzter Stand behalten: ${esc(alt.join(', '))}</li>` : ''}</ul></details>` : '');
@@ -813,6 +825,6 @@ a.wo-kachel:active { background: var(--flaeche); }
     start, lade,
     get gestartet() { return !!S.el; },
     // für Tests (ohne Browser): reine Funktionen
-    _intern: { normalisiere, angebotNorm, lageVon, imGebiet, filialenNorm, kmZwischen, NAH_KM, UMKREIS_KM, wochenEnde, merkTeile, MERK_BYTES, kachel: a => kachel(a), fuss: n => { const vor = S.n; S.n = n; try { return fussHtml(); } finally { S.n = vor; } }, STUFEN, CSS: () => CSS },
+    _intern: { normalisiere, angebotNorm, lageVon, imGebiet, filialenNorm, kmZwischen, NAH_KM, UMKREIS_KM, wochenEnde, merkTeile, MERK_BYTES, kachel: a => kachel(a), fuss: (n, lagen) => { const vor = S.n, vorL = S.lagen; S.n = n; if (lagen) S.lagen = lagen; try { return fussHtml(); } finally { S.n = vor; S.lagen = vorL; } }, STUFEN, CSS: () => CSS },
   };
 })();

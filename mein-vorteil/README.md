@@ -202,7 +202,7 @@ Die Daten kommen nur stündlich (Konzerte alle 3 h). Deshalb blendet die Seite s
   Ohne Netz bleibt er stehen (Stand-Zeile: „offline“). Ist nur eine Quelle gestört, steht „letzter Stand von
   17:35 Uhr – Quelle gerade gestört“ (auch oben im Reiter). Konzerte und Neuerscheinungen laden unabhängig.
 - `sw.js` (nur `/mein-vorteil/`): Seite erst aus dem Netz, nach 3 s oder ohne Netz die letzte Kopie; Daten von
-  `raw.githubusercontent.com` gehen nie durch den Worker. Cache-Stufe `mein-vorteil-10` (16.11.2026, MV7).
+  `raw.githubusercontent.com` gehen nie durch den Worker. Cache-Stufe `mein-vorteil-11` (17.11.2026, Runde 9: Woche-Fuß).
 - „Quellen & Hinweise (Vorteile)“ (unter „Mehr“): je Bereich Zahl und Stand, darunter klein je Quelle die Regel aus
   `status.<bereich>.quellen` des Radars – „Schnittstelle“ (Programm-Schnittstelle trotz robots.txt, Xanders Entscheidung
   vom 16.11.2026, siehe `vorteile/README.md`) bzw. „gesperrt (Regeln)“ (robots.txt/Nutzungsbedingungen). Ältere Daten
@@ -241,7 +241,10 @@ selben Markt aus einem früheren Prospekt) -> hellgraue Plakette „≈ −n %�
 an jeder Kachel (44 px) oder lange drücken (550 ms, ohne zu wischen; öffnet dann nicht) -> Gruppe „Gemerkt“ oben, gespeichert in
 `mein-vorteil-woche-gemerkt`; die Seite schickt die Liste (id, Titel, Markt, Preise, Gültigkeit – nichts Persönliches) als
 einfache Anfrage an das ntfy-Thema `…-merken` (öffentlich wie das Push-Thema), bei jeder Änderung und spätestens alle 6 h; der
-Radar erinnert per Push am ersten Gültigkeitstag ab 7 Uhr. Fuß: „Gelesen: Aldi Nord n von 359 …“.
+Radar erinnert per Push am ersten Gültigkeitstag ab 7 Uhr. Fuß: „Gelesen: Aldi Nord n von 359 …“. Die Prospekt-Orte im Fuß
+(„Prospekte für Döbeln“ bzw. „Prospekte Döbeln/Chemnitz … ob es das in Döbeln gibt“) zählen nur die gezeigten Märkte
+(seit 17.11.2026): REWE mit Chemnitzer Prospekt und ohne Filiale bis 10 km ist ausgeblendet und macht den Fuß nicht mehr
+zu „Döbeln/Chemnitz“, auch „Gelesen: …“ nennt ihn dann nicht; mit „weitere Märkte“ steht er wieder dabei.
 
 **Produktbilder (seit 16.11.2026):** Angebotskarten der eigenen Produkte zeigen `bild` (marktguru/mydealz, aus `current.json`)
 als 64-px-Bild links neben Kopf, Titel und Preis (die Karte wird dadurch nicht höher); „weitere Angebote“ und „Andere Snacks“

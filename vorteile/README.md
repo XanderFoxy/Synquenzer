@@ -116,6 +116,13 @@ Wer mehr will, trägt bei einem Gerät die Geizhals-Adresse ein (wird höchstens
   und laufen im normalen Takt. Übergang: hat ein älterer Lauf einen Fehlversuch noch als „gelaufen“ gemerkt
   (`lauf` = `status.stand` mit „letzter Stand“/Störung, so am 16.11. 15:03 bei Filialen und Essen), tragen Vorprüfung und Lauf
   den Neuversuch einmal nach (`neuversuchNachtragen`). Tests: `scan/test/neuversuch.test.mjs`.
+- **Bremse nach HTTP 429** (seit 17.11.2026, Runde 9; Anlass: Läufe 43970348817 und 44004388489 – Google News antwortete
+  mitten im Lauf 429 ohne `Retry-After`, die Wiederholung 3 s später ebenso, Sekunden danach wieder 200; Erleben bzw. Remix
+  galten dadurch als gestört): meldet ein Host 429, verdoppelt `lib/http.mjs` für den Rest des Laufs den Abstand zu genau
+  diesem Host (`abruf.bremse429MaxMs`, höchstens 15 s), und die eine Wiederholung kommt frühestens nach
+  `abruf.wiederhol429Ms` (20 s) bzw. nach dem längeren `Retry-After`. Andere Hosts und 5xx bleiben unverändert; ohne die
+  beiden Werte (und mit `pauseMs` 0 in Tests) gilt das alte Verhalten. Das Protokoll nennt „nach HTTP 429 gebremst: …“.
+  Tests: `scan/test/bremse429.test.mjs`.
 - `scan/rechnen.mjs` – die Deal-Mathe. `scan/benachrichtigen.mjs` – Sofort/Zusammenfassung, Dedupe, Tageslimit.
 - `scan/module/*.mjs` – ein Modul pro Bereich. `scan/lib/` – Abruf (höflich: eigener User-Agent, Pause pro Server), RSS, Text.
   Gleiches Muster und gleiches Datenformat wie `schnaeppchen/scan/` und `konzerte/scan/`.
