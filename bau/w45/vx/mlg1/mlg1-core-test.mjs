@@ -55,6 +55,16 @@ ok(C.parse('kurz') === null && C.parse(new Uint8Array(200)) === null, 'Unlesbare
 let thr = ''; try { C.cbp(new Uint8Array(100)); } catch (e) { thr = e.message; } ok(/Kein DAW-Projekt/.test(thr), 'Keine .cbp → klare Meldung', thr);
 const r0 = toVa({}), p0 = r0.sound.p; ok(r0.sound.engine === 'analog' && p0.o1lvl === 1 && p0.cutoff === 20000 && Number.isFinite(p0.level), 'Leerer Klang → gültiger Analog-Klang', [p0.cutoff, p0.level]);
 const rZ = toVa({'18': '0', '28': '0', '35': 'Off'}); ok(rZ.rep.miss.some(s => /stumm/.test(s)), 'Beide Osz. 0 % ohne Rauschen → „stumm“ gemeldet');
+// 6b. MLG1-P: Wurzel am Aufbau erkannt (nicht am Namen), kaputtes Base64 = nur diese Spur fällt weg, kurze Delay-Werte als angenähert gemeldet
+const ent = (k, ty, pl) => { const kb = Buffer.from(k + '\0'), h = Buffer.alloc(4); h.writeUInt32LE(kb.length); const t = Buffer.alloc(2); t.writeUInt16LE(ty); return Buffer.concat([h, kb, t, pl]); };
+const txt = (k, v) => { const vb = Buffer.from('﻿' + v + '\0'), n = Buffer.alloc(4); n.writeUInt32LE(vb.length); return ent(k, 8, Buffer.concat([n, vb])); };
+const fol = (k, kids) => { const h = Buffer.alloc(6); h.writeUInt16LE(6); h.writeUInt32LE(kids.length, 2); return ent(k, 2, Buffer.concat([h, ...kids])); };
+const kids = []; for (let q = 0; q < 24; q++) kids.push(txt((q + 16).toString(16).toUpperCase(), String(q)));
+const tree = Buffer.concat([Buffer.from([1, 2, 3, 4, 5, 6, 7, 8]), fol('IrgendeinDoc', [fol('params', [txt('42', '777'), ...kids])])]);
+const PT = C.parse(tree.toString('base64'));   // wie in der .cbp: Base64-Text
+ok(PT && PT['42'] === '777' && Object.keys(PT).length === 25, 'Parameter-Baum mit beliebigem Wurzel-Namen lesbar (keine Namens-Kennung im Code)', PT && PT['42']);
+ok(C.parse('!!!kein Base64!!!'.repeat(8)) === null, 'Kaputtes Base64 → null statt Ausnahme (andere Spuren bleiben lesbar)');
+const rd = toVa({'200': 'On', '207': '1/16T'}); ok(rd.echo.divR === '1/32' && rd.rep.appr.some(s => /rechts 1\/32 statt/.test(s)), 'Delay 1/16T → rechts 1/32 als angenähert gemeldet', rd.rep.appr.filter(s => /Delay/.test(s)));
 // 7. Werksklänge
 const W = vm.runInContext('mlgWerk()', ctx), BR = ['bass', 'lead', 'poly', 'flaeche', 'pluck', 'sequenz', 'effekt'], DEMO = ['bass', 'lead', 'pad', 'arp', 'stab', 'seq16'];
 ok(W.length >= 8 && W.length <= 12 && new Set(W.map(w => w.id)).size === W.length && W.every(w => /^f-retro-/.test(w.id)), W.length + ' Werksklänge, eindeutige IDs', W.map(w => w.name));

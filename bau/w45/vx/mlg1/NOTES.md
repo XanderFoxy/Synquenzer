@@ -9,7 +9,7 @@ außerhalb des Pakets.
 
 | Teil | Wo | Was |
 |---|---|---|
-| Parser | `mlgCore().parse(b64 \| Uint8Array)` | Parameter-Baum des Synths (u32 Länge, Schlüssel, u16 Typ; 8 = Text, 2/6 = Ordner, 2/7 = Binär) → `{Hex-ID: Anzeigetext}`; BOM entfernt; robust (Wächter, Teilergebnis ab 20 Werten) |
+| Parser | `mlgCore().parse(b64 \| Uint8Array)` | Parameter-Baum des Synths (u32 Länge, Schlüssel, u16 Typ; 8 = Text, 2/6 = Ordner, 2/7 = Binär) → `{Hex-ID: Anzeigetext}`; BOM entfernt; Wurzel am Aufbau erkannt, nicht an einem Namen (MLG1-P); robust (Wächter, Teilergebnis ab 20 Werten, kaputtes Base64 = nur diese Spur fehlt) |
 | .cbp-Leser | `mlgCore().cbp(u8)` | Kennung + XOR 0x7C + CBOR (eigener kleiner Decoder), nur `Buses[].Track.Instrument` mit PluginId 1 → `[{nr, name, preset, patch}]`. Nur lesen, nichts wird gesendet |
 | Übersetzer | `mlToVa(patch, name)` (DOM-frei) | → `{sound, rep: {ok, appr, miss}, echo}`; `sound.bus.echo` = Vorschlag für das Projekt-Echo |
 | Werksklänge | `mlgWerk()` | 10 eigene Klänge im Klartext-Format des Synths (eigene Werte, keine fremden Presets), durch denselben Übersetzer: Retro-Bass Rund/Tief, Retro-Lead Hell/Weich, Retro-Fläche Warm/Hauch, Retro-Pluck, Retro-Stab, Retro-Sequenz, Retro-Resonanz |
@@ -40,12 +40,12 @@ Sonst ändert sich nichts an Aussehen, Größe oder Bedienung.
 | Mono 2, Stimmen C, Glide 3/4 | `mode`, `poly`, `glide` | ms → s | genau |
 | LFO 1/2 Welle/Rate 70/72, 80/82 | `l1shape/l1rate`, `l2…` | Tiefen der fest verdrahteten Wege stehen nicht im Klartext → keine Wege (gemeldet) | offen |
 | Chorus 105/102/101/106 | `fx.chorus` | Modus I, Rate Hz / 0,5, Tiefe %/50, Mischung %/50 | angenähert |
-| Delay 200/207/204/206/205 | `bus.echo` + `fx.dly` | **Modus st**: links X, rechts X/2 (Prüfung W1), Rückkopplung %, Hi-Cut 9 kHz; „D“ = punktiert; Anteil × 1,6 auf den Echo-Send. Exakt für 1/1 … 1/16 (rechts genau halbe Zeit, getestet) | Zeit genau, Klang angenähert |
+| Delay 200/207/204/206/205 | `bus.echo` + `fx.dly` | **Modus st**: links X, rechts X/2 (Prüfung W1), Rückkopplung %, Hi-Cut 9 kHz; „D“ = punktiert; Anteil × 1,6 auf den Echo-Send. Exakt für 1/1 … 1/16 (rechts genau halbe Zeit, getestet); 1/16., 1/16T und 1/32 rechts → 1/32 (kürzester Wert des Echos), als angenähert gemeldet (MLG1-P) | Zeit genau, Klang angenähert |
 | Pegel E | `level` | 0,55 × E/100 (gemessen: gleiche Lautheit wie das Original bei Fader 0 dB) | kalibriert |
 
 ## 3. Kalibrierung (gemessen, Zusammenfassung – Einzelwerte privat)
 
-Methode: 14 Synth-Spuren eines echten Projekts, je zwei getrennte 8-s-Fenster (A, B). Offline-Render in Chromium durch die App-Engine
+Methode: 15 Synth-Spuren mit Noten eines echten Projekts (die Datei hat 17 Synth-Spuren, 2 ohne Noten), je zwei getrennte 8-s-Fenster (A, B); eine Spur hat nur Fenster A, daher n = 14 in B. Offline-Render in Chromium durch die App-Engine
 (Analog-Worklet über `SynthHost.track`, OfflineAudioContext) mit **denselben MIDI-Noten** wie im Original, gegen die echten Spur-Exporte.
 Maße: Terzband-Abweichung (31,5 Hz–16 kHz, beide auf Gesamtpegel normiert, Bänder bis 45 dB unter dem lautesten), Pegel (dB RMS),
 Spektral-Schwerpunkt, Hüllkurve (20-ms-RMS). Globale Konstanten per Gitter in Fenster A gewählt:
@@ -55,22 +55,29 @@ Spektral-Schwerpunkt, Hüllkurve (20-ms-RMS). Globale Konstanten per Gitter in F
 - Rauschen ×2 (Rausch-Klänge waren 12 dB zu leise), Pegel 0,55 (Median-Abweichung 0 dB).
 - Offline-Render: ganz stille Ergebnisse (Nachrichten zu spät im Worklet, selten) werden erkannt und wiederholt.
 
-Ergebnis:
+Ergebnis (Fenster B = nicht zum Lernen benutzt):
 
-| | Mittel Terz-Abweichung | Spuren ≤ 3 dB |
+| Stufe | Mittel Terz-Abweichung | Spuren ≤ 3 dB |
 |---|---|---|
-| nur Übersetzer (roh), Fenster A / B | 5,9 / 6,6 dB | 2 von 15 / 3 von 14 |
-| Übersetzer + Spur-Ausgleich (gelernt in A, **gemessen in B**) | 2,6 dB | 11 von 14 (+1 Spur nur mit Fenster A: 1,9 dB) |
+| nur Übersetzer (roh) – so lädt „Aus DAW-Datei“ | 6,6 dB (Fenster A: 5,9) | 3 von 14 |
+| Übersetzer + Inserts der Spur **direkt aus der Datei** (K4a-Kurven, ohne Lernen) → Spur-EQ der App; Spuren mit Amp-Sim ausgenommen | 5,1 dB | 5 von 14 |
+| Übersetzer + **Spur-EQ der App** (Blatt „EQ · KOMP“, gefittet mit der echten App-Kennlinie in A) | **3,4 dB** | **8 von 14** |
+| Übersetzer + freier Terzband-EQ (Obergrenze eines linearen EQs) | 2,6 dB | 11 von 14 |
 
 Die Restabweichung „roh“ kommt überwiegend aus den Inserts der Original-Spuren (EQ-Low-Cuts bis 2,5 kHz, Präsenz +5 dB bei 3 kHz,
-Kanalzug, Amp-Simulation), die nicht im Synth stecken. Der Spur-Ausgleich ist ein Terzband-EQ (geglättet) je Spur und steht im privaten
-Projekt. 3 Spuren erreichen 3 dB nicht: Amp-Simulation (Obertöne entstehen erst im Insert), Fenster mit anderer Lage als das Lern-Fenster,
-und eine Spur, deren Export fast nur Hallfahne einer einzelnen Note ist.
+Kanalzug, Amp-Simulation), die nicht im Synth stecken. Die Stufe „App“ ist ein Nachbau, den die App genau so abspielt (Spur-EQ-Werte je Spur
+stehen nur im privaten Projekt). Grenzen der App, die den Rest erklären: Low-Cut nur bis 500 Hz (eine Original-Spur schneidet bei ≈ 2,5 kHz),
+feste Shelf-Frequenzen 150 Hz / 6 kHz, keine Amp-Simulation. Versuch Amp-Sim → Filter-Drive: kein Gewinn (der Tiefpass schneidet die
+Obertöne wieder ab), verworfen. Nicht erreicht außerdem: eine Spur, deren Export fast nur Hallfahne einer einzelnen Note ist, und eine Spur,
+deren Prüf-Fenster andere Lagen spielt als das Lern-Fenster.
+
+Vorschlag (sichtbar neu, daher nur Vorschlag – Regel 3): „Aus DAW-Datei“ könnte zusätzlich die EQ-Inserts der Spur (StudioEQ/ShelfEQ,
+Werte nach K4a) in den Spur-EQ der App übersetzen und anbieten („↳ EQ wie in der DAW“). Gemessen: direkt aus den Inserts 6,6 → 5,1 dB (bei reinen EQ/Filter-Ketten bis 6,5 → 1,1 dB), der gelernte Spur-EQ zeigt die Grenze der App (3,4 dB).
 
 ## 4. Tests
 
-- `node mlg1-core-test.mjs index.html` – Kern DOM-frei (vm): **30 OK, 0 FEHLER** (Parser, .cbp-Leser, Übersetzer inkl. Grenzen, Key Follow ±,
-  Hüllkurve ±, Delay st für alle Notenwerte, Robustheit, Werksklänge, keine Markennamen).
+- `node mlg1-core-test.mjs index.html` – Kern DOM-frei (vm): **33 OK, 0 FEHLER** (Parser, .cbp-Leser, Übersetzer inkl. Grenzen, Key Follow ±,
+  Hüllkurve ±, Delay st für alle Notenwerte, Robustheit, Werksklänge, keine Markennamen; MLG1-P: Wurzel mit beliebigem Namen, kaputtes Base64, Delay 1/16T gemeldet).
 - `node mlg1-test.mjs index.html` – Playwright Chromium, Touch, echter Datei-Wähler, 428×926 + 926×428, Fotos DPR 2: **33 OK, 0 FEHLER**
   (Knopf nur auf Synth-Spuren, falsche Datei → Meldung ohne Änderung, Liste ohne Sample-Spur, Klang = Kern, Echo st 1/4. | 1/8.,
   ↶ Echo, ↶ Klang, ↷, Rundreise, 10 Werksklänge in Liste + offline hörbar ohne Übersteuern, keine Konsolenfehler). Ausgabe `mlg1-test.out`.
@@ -88,3 +95,28 @@ Fotos: `fotos/mlg1-{p,l}-browser.png`, `mlg1-{p,l}-liste.png`, `mlg1-{p,l}-gelad
 - LFO-Tiefen und Vibrato am Mod-Rad: stehen nicht im Klartext (Gruppe A0…BF) – eine Kalibrier-Aufnahme mit LFO-Fahrten würde sie klären.
 - Ein Echo für alle Spuren: verschiedene Delay-Notenwerte mehrerer Spuren gehen nur über „Delay je Spur“ (BRUECKE C2).
 - Hüllkurven über 10/15 s werden begrenzt (gemeldet). Ring/Sub sind nur übersetzt, wenn sie an sind (im Original-Projekt nie).
+
+## 6. Prüfung (MLG1-P, unabhängiger Prüfer, 2026-11-17)
+
+Selbst nachgemessen (privat, Werkzeuge in `scratchpad/pruef-mlg1/`, nichts davon im Paket):
+- Stem-Fenster A/B neu aus den FLAC-Stems geschnitten, alle 15 Spuren neu durch die App-Engine gerendert und **durch den echten Spur-EQ der App
+  im Zeitbereich** geschickt (`mixaDspMake().Track`, dieselbe Klasse wie im Mix-Worklet, Werte `mix` aus dem privaten Projekt) statt wie in der
+  Kalibrierung über die Kennlinie im Frequenzbereich; Terz-Abweichung eigenständig neu geschrieben.
+- Ergebnis Fenster B (n = 14): roh **6,5 dB** (Bericht 6,6), 3 von 14 ≤ 3 dB (gleich); Spur-EQ der App **3,2 dB** (Bericht 3,4), **8 von 14** (gleich);
+  Inserts → App **4,8 dB** (Bericht 5,1), 5 von 14 (gleich). Fenster A roh 5,9 dB (gleich). Einzelspuren meist ±0,2 dB; zwei Rausch-/Einzelton-Spuren
+  streuen von Render zu Render um 1–2 dB (Spur 9 B, Spur 22 B). Die Zahlen in §3, KURZ.md und im Bericht stimmen also (eher vorsichtig).
+- Behoben (klein, je Kennung MLG1-P im Block):
+  1. Der Parser suchte den Parameter-Baum über eine 13-Byte-Kennung, die als Bytefolge den Produktnamen des Synths enthielt (der Marken-Test
+     sah sie nicht, weil sie als Zahlen dastand). Jetzt wird die Wurzel am Aufbau erkannt (Länge, druckbarer Schlüssel, Typ 2/Ordner 6).
+     Gegen die echte Projektdatei geprüft: alle 17 Synth-Spuren mit je 386 Werten und alle Übersetzungen **bitgleich** wie vorher; Testdatei gleich.
+  2. Kaputtes Base64 in einer Spur warf bisher eine englische Browser-Meldung und verwarf die ganze Datei; jetzt fällt nur diese Spur weg.
+  3. Delay 1/16., 1/16T, 1/32: rechts wird 1/32 (es gibt kein 1/32. / 1/32T im Echo) – das ist jetzt als „angenähert“ gemeldet statt still.
+  4. NOTES §3: „14 Synth-Spuren“ → 15 mit Noten (17 in der Datei), n = 14 in Fenster B.
+- Nach den Korrekturen: Kern-Test **33/33**, Bedienungs-Test **33/33** (hochkant + quer, Fotos DPR 2 neu), Pflicht ohne Befund (topdefs 0/0, dupkeys 0,
+  Rauchtest ohne Fehler, „MS 2000“ 1×, „live: true,“ 1×, VERSION 4.78.0, Markenwörter nicht mehr als Basis), `apply.py` baut aus basis.html (68e92c03)
+  index.html md5 1333a31d; Größe +27 KB roh / +9,8 KB gzip.
+- Startzeit (6 Läufe je Fassung, frischer Kontext, abwechselnd): „App bereit“ Median Basis 539 ms / neu 558 ms, DOMContentLoaded 476 / 475 ms –
+  Unterschied im Rauschen (Spannen 524–625 / 484–592 ms, Last 7). Der Block selbst kostet gemessen ≈ 1 ms Auswerten + 3 ms für die 10 Werksklänge.
+- Hinweis (kein Fehler): `tests/gen_cbp.py` schreibt für die Testdatei den echten Wurzel-Namen des Formats; das ist nur das Test-Werkzeug,
+  nicht die App.
+

@@ -114453,11 +114453,18 @@ function mlgCore() {
   /* ---- Parameter-Baum (Base64 → Text-Einträge: u32 Länge, Schlüssel, u16 Typ; 8 = Text, 2/6 = Ordner, 2/7 = Binär) ---- */
   function b64u8(s) { const bin = atob(String(s).replace(/\s+/g, '')), o = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) o[i] = bin.charCodeAt(i); return o; }
   function parse(src) {
-    const raw = typeof src === 'string' ? (src.length < 64 ? null : b64u8(src)) : src instanceof Uint8Array ? src : null;
+    let raw = null; try { raw = typeof src === 'string' ? (src.length < 64 ? null : b64u8(src)) : src instanceof Uint8Array ? src : null; } catch (e) { return null; }   // MLG1-P: kaputtes Base64 = nur diese Spur fällt weg
     if (!raw) return null;
-    const sig = [82, 101, 116, 114, 111, 108, 111, 103, 117, 101, 68, 111, 99]; let at = -1;
-    outer: for (let k = 4; k < raw.length - 13; k++) { for (let j = 0; j < 13; j++) if (raw[k + j] !== sig[j]) continue outer; at = k - 4; break; }
-    if (at < 0) return null;
+    // MLG1-P: Wurzel des Baums am Aufbau erkennen, nicht an einem Namen (u32 Länge 2…64, druckbarer Schlüssel mit 0 am Ende, Typ 2 + Ordner 6)
+    for (let k = 0; k + 12 < raw.length; k++) {
+      const L = raw[k] | raw[k + 1] << 8 | raw[k + 2] << 16 | raw[k + 3] << 24, e = k + 4 + L;
+      if (L < 2 || L > 64 || e + 4 > raw.length || raw[e - 1] !== 0 || raw[e] !== 2 || raw[e + 1] !== 0 || raw[e + 2] !== 6 || raw[e + 3] !== 0) continue;
+      let pr = true; for (let j = k + 4; j < e - 1; j++) if (raw[j] < 32 || raw[j] > 126) { pr = false; break; }
+      const r = pr ? tree(raw, k) : null; if (r) return r;
+    }
+    return null;
+  }
+  function tree(raw, at) {
     const dv = new DataView(raw.buffer, raw.byteOffset, raw.byteLength), out = {}; let p = at, guard = 0;
     const str = (a, n) => { let s = ''; for (let k = a; k < a + n && k < raw.length; k++) { const c = raw[k]; if (c === 0) break; if (c === 0xEF && raw[k + 1] === 0xBB && raw[k + 2] === 0xBF) { k += 2; continue; } s += String.fromCharCode(c); } return s; };
     function entry(path, depth) {
@@ -114583,6 +114590,7 @@ function mlgCore() {
       fx.dly = r3(clamp(mix * 1.6, 0, 1));
       ok.push('Delay ' + x + ' links / ' + echo.divR + ' rechts (Projekt-Echo st, Rückkopplung ' + Math.round(fb * 100) + ' %)');
       if (!DIV[String(g('207') || '').replace(/\s+/g, '')]) appr.push('Delay-Notenwert „' + g('207') + '“ → ' + x);
+      if (x === '1/16.' || x === '1/16T' || x === '1/32') appr.push('Delay rechts ' + echo.divR + ' statt genau halber Zeit (kürzester Wert des Echos)');   // MLG1-P
       appr.push('Ein Echo für alle Spuren: „Hall/Echo wie im Preset“ stellt es ein');
     }
     const sound = {engine: 'analog', ev: 1, name: String(name || 'DAW-Synth').slice(0, 24), cat: 'eigene', p, mods, fx, origin: 'daw:va', bus: echo ? {echo} : null};

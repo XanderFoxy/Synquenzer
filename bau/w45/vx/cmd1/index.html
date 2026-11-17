@@ -114429,24 +114429,24 @@ function updPre(v, o) {
 /* CMD1: Werks-Kit „Elektro-Maschine“ – ein klassischer Elektro-Drumcomputer, Klang für Klang aus Synthese nachgebaut.
    Keine Samples: jede Stimme ist die eingebaute Drum-Engine (Ton + Rauschen + Metall + Klick) mit eigenen Werten. Die Werte
    wurden je Stimme so lange angepasst, bis Terzband-Spektrum, Hüllkurve (Abklingen bis −20 / −40 dB) und Pegel einem
-   gemessenen Einzelschlag nahe kamen (Messung außerhalb der App). SHAKER = Pedal-Hat (schließt die offene Hat), BECKEN = kurzes
-   helles Synth-Becken. Ein Kit-Eintrag (Reiter Kits) + 12 Klänge (Instrument-Browser „Elektro-Maschine · …“), sonst nichts.
+   gemessenen Einzelschlag nahe kamen (Messung außerhalb der App; Hats ab 200 Hz verglichen). SHAKER = Pedal-Hat (schließt die
+   offene Hat), BECKEN = helles Synth-Becken (ohne Vorlage). Ein Kit-Eintrag (Reiter Kits) + 12 Klänge (Instrument-Browser „Elektro-Maschine · …“), sonst nichts.
    Ein Haken: direkt nach SQF (vor DRUM_FACTORY) – cmdKit trägt Kit-Daten, Kit-Eintrag, Name und Vorbild-Zeile ein. Der Haken läuft,
    bevor dieser Block ausgeführt ist: hier stehen darum nur (gehobene) Funktionen, keine const/let (sonst Zugriff vor der Definition). */
 function cmdKitData() {
   return {
-    "kick": {"model": "bd", "tLvl": 1, "wav": "sine", "nTyp": "lowpass", "frq": 52.08, "pAmt": 14.85, "pDec": 0.0338, "tDec": 0.792, "tCrv": 0.0501, "tSpk": 0.782, "tHld": 0.0275, "cLvl": 0.373, "cTyp": 1, "cTon": 0.304, "o2": 0.392, "o2r": 1.972, "nLvl": 0.239, "nFrq": 8701.0, "nDec": 0.183, "lvl": 0.8},
-    "snare": {"model": "sd", "tLvl": 0.41, "wav": "triangle", "frq": 182.0, "pAmt": 1.32, "pDec": 0.0789, "tDec": 0.376, "tCrv": 0.0338, "o2": 0.281, "o2r": 2.086, "nLvl": 0.462, "nCol": 0, "nTyp": "bandpass", "nFrq": 4776.0, "nQ": 0.817, "nHp": 357.3, "nDec": 0.427, "nCrv": 0.0177, "nBur": 3, "nGap": 0.0087, "lvl": 0.8},
-    "rim": {"model": "rs", "tLvl": 1, "mLvl": 0, "frq": 115, "tDec": 0.4, "mDec": 0.4, "lvl": 0.8},
-    "clap": {"model": "cp", "tLvl": 0.678, "wav": "triangle", "frq": 578.4, "pAmt": 7.572, "pDec": 0.1, "tDec": 0.0466, "tCrv": 0.403, "o2": 0.195, "o2r": 2.027, "nLvl": 0.631, "nCol": 0, "nTyp": "lowpass", "nFrq": 7190.0, "nQ": 0.754, "nHp": 547.6, "nDec": 0.182, "nCrv": 0.213, "nBur": 2, "nGap": 0.0108, "lvl": 0.8},
-    "hatC": {"model": "ch", "mLvl": 0.212, "mTun": 1.457, "mHi": 0.242, "mLo": 1.3, "mQ": 1.392, "mHp": 6387.0, "mDec": 0.0624, "mCrv": 0.781, "mHld": 0.0076, "nLvl": 0.42, "nTyp": "bandpass", "nFrq": 8468.0, "nQ": 0.304, "nDec": 0.0301, "nCrv": 0.41, "lvl": 0.8},
-    "hatO": {"model": "oh", "mLvl": 1.352, "mTun": 0.508, "mHi": 1.664, "mLo": 1.44, "mQ": 1.999, "mHp": 10709.0, "mDec": 0.102, "mCrv": 0.198, "mHld": 0.0253, "nLvl": 0.668, "nTyp": "bandpass", "nFrq": 5957.0, "nQ": 0.302, "nDec": 0.673, "nCrv": 0.629, "lvl": 0.8},
-    "tomL": {"model": "tm", "tLvl": 1, "wav": "sine", "frq": 71.94, "pAmt": 5.308, "pDec": 0.498, "tDec": 0.39, "tCrv": 0.493, "tHld": 0.0469, "o2": 0.932, "o2r": 1.487, "nLvl": 0.628, "nTyp": "highpass", "nFrq": 736.4, "nQ": 0.931, "nDec": 0.416, "nCrv": 0.0799, "lvl": 0.8},
-    "tomM": {"model": "tm", "tLvl": 1, "wav": "sine", "frq": 74.14, "pAmt": 2.698, "pDec": 0.512, "tDec": 1.378, "tCrv": 0.157, "tHld": 0.0165, "o2": 0.705, "o2r": 1.294, "nLvl": 0.459, "nTyp": "lowpass", "nFrq": 6135.0, "nQ": 0.742, "nDec": 0.471, "nCrv": 0.584, "lvl": 0.8},
-    "tomH": {"model": "tm", "tLvl": 1, "mLvl": 0, "frq": 115, "tDec": 0.4, "mDec": 0.4, "lvl": 0.8},
-    "cym": {"model": "cy", "mLvl": 0.9, "mLo": 0.6, "mTun": 1.45, "mHp": 6000, "mDec": 1.5, "nLvl": 0.3, "nTyp": "highpass", "nFrq": 8000, "nDec": 1.1, "lvl": 0.8},
-    "perc": {"model": "sd", "tLvl": 0.856, "wav": "sine", "frq": 151.4, "pAmt": 3.368, "pDec": 0.0107, "tDec": 0.115, "tCrv": 0.293, "o2": 0.0924, "o2r": 1.279, "nLvl": 0.552, "nCol": 1, "nTyp": "lowpass", "nFrq": 10097.0, "nQ": 0.508, "nHp": 39.91, "nDec": 0.336, "nCrv": 0.691, "nBur": 2, "nGap": 0.0105, "lvl": 0.8},
-    "shaker": {"model": "ch", "mLvl": 0.481, "mTun": 0.811, "mHi": 0.53, "mLo": 0.663, "mQ": 1.045, "mHp": 7221.0, "mDec": 0.022, "mCrv": 0.712, "mHld": 0.0178, "nLvl": 0.227, "nTyp": "bandpass", "nFrq": 4102.0, "nQ": 0.328, "nDec": 0.0993, "nCrv": 0.282, "lvl": 0.8, "choke": 1}};
+    "kick": {"model": "bd", "tLvl": 1, "wav": "sine", "nTyp": "lowpass", "frq": 44.76, "pAmt": 15.05, "pDec": 0.0582, "tDec": 0.438, "tCrv": 0.0981, "tSpk": 0.667, "tHld": 0.0794, "cLvl": 0.851, "cTyp": 1, "cTon": 0.724, "o2": 0.561, "o2r": 2.14, "nLvl": 0.243, "nFrq": 6499.0, "nDec": 0.177, "lvl": 0.47},
+    "snare": {"model": "sd", "tLvl": 0.749, "wav": "sine", "frq": 136.9, "pAmt": 9.984, "pDec": 0.0882, "tDec": 0.534, "tCrv": 0.0127, "o2": 0.959, "o2r": 2.114, "nLvl": 0.515, "nCol": 0, "nTyp": "lowpass", "nFrq": 11212.0, "nQ": 2.123, "nHp": 100.8, "nDec": 0.175, "nCrv": 0.507, "nBur": 3, "nGap": 0.0191, "o2d": 1.054, "tSpk": 0.892, "lvl": 0.408},
+    "rim": {"model": "rs", "tLvl": 0.28, "wav": "triangle", "frq": 367.0, "pAmt": 7.492, "pDec": 0.149, "tDec": 0.0242, "tCrv": 0.345, "o2": 0.0792, "o2r": 1.309, "nLvl": 0.738, "nCol": 1, "nTyp": "bandpass", "nFrq": 1998.0, "nQ": 0.49, "nHp": 122.8, "nDec": 0.118, "nCrv": 0.0292, "nBur": 3, "nGap": 0.0083, "o2d": 0.895, "tSpk": 0.379, "lvl": 1.0},
+    "clap": {"model": "cp", "tLvl": 0.295, "wav": "triangle", "frq": 559.5, "pAmt": 10.97, "pDec": 0.0569, "tDec": 0.208, "tCrv": 0.693, "o2": 0.224, "o2r": 1.677, "nLvl": 1.537, "nCol": 0, "nTyp": "lowpass", "nFrq": 5261.0, "nQ": 3.596, "nHp": 618.1, "nDec": 0.161, "nCrv": 0.502, "nBur": 2, "nGap": 0.0057, "o2d": 0.356, "tSpk": 0.482, "lvl": 0.27},
+    "hatC": {"model": "ch", "mLvl": 0.542, "mTun": 0.53, "mHi": 0.941, "mLo": 1.053, "mQ": 1.104, "mHp": 7706.0, "mDec": 0.0341, "mCrv": 0.808, "mHld": 0.0163, "nLvl": 1.131, "nTyp": "bandpass", "nFrq": 6440.0, "nQ": 0.438, "nDec": 0.0278, "nCrv": 0.47, "lvl": 0.17},
+    "hatO": {"model": "oh", "mLvl": 0.75, "mTun": 1.265, "mHi": 1.514, "mLo": 0.405, "mQ": 0.658, "mHp": 9936.0, "mDec": 0.329, "mCrv": 0.822, "mHld": 0.0201, "nLvl": 0.932, "nTyp": "bandpass", "nFrq": 6660.0, "nQ": 0.323, "nDec": 1.061, "nCrv": 0.589, "lvl": 0.086},
+    "tomL": {"model": "tm", "tLvl": 1, "wav": "sine", "frq": 74.76, "pAmt": 5.771, "pDec": 0.126, "tDec": 0.25, "tCrv": 0.37, "tHld": 0.116, "o2": 0.0614, "o2r": 1.586, "nLvl": 0.258, "nTyp": "bandpass", "nFrq": 3563.0, "nQ": 0.547, "nDec": 0.0606, "nCrv": 0.769, "o2d": 0.506, "tSpk": 0.874, "lvl": 0.245},
+    "tomM": {"model": "tm", "tLvl": 1, "wav": "sine", "frq": 99.75, "pAmt": 0.0436, "pDec": 0.0142, "tDec": 0.909, "tCrv": 0.101, "tHld": 0.0758, "o2": 0.294, "o2r": 1.364, "nLvl": 0.252, "nTyp": "lowpass", "nFrq": 4931.0, "nQ": 0.42, "nDec": 0.585, "nCrv": 0.965, "o2d": 0.343, "tSpk": 0.167, "lvl": 0.214},
+    "tomH": {"model": "tm", "tLvl": 1, "wav": "triangle", "frq": 88.49, "pAmt": 11.46, "pDec": 0.391, "tDec": 0.398, "tCrv": 0.674, "tHld": 0.0205, "o2": 0.617, "o2r": 1.437, "nLvl": 0.462, "nTyp": "bandpass", "nFrq": 3176.0, "nQ": 1.186, "nDec": 0.226, "nCrv": 0.579, "o2d": 0.941, "tSpk": 0.522, "lvl": 0.163},
+    "cym": {"model": "cy", "mLvl": 0.9, "mLo": 0.6, "mTun": 1.45, "mHp": 6000, "mDec": 1.5, "nLvl": 0.3, "nTyp": "highpass", "nFrq": 8000, "nDec": 1.1, "lvl": 0.132},
+    "perc": {"model": "sd", "tLvl": 0.802, "wav": "sine", "frq": 149.7, "pAmt": 3.77, "pDec": 0.0827, "tDec": 0.0306, "tCrv": 0.423, "o2": 0.14, "o2r": 1.803, "nLvl": 0.897, "nCol": 1, "nTyp": "lowpass", "nFrq": 8509.0, "nQ": 0.933, "nHp": 45.23, "nDec": 0.332, "nCrv": 0.675, "nBur": 2, "nGap": 0.009, "o2d": 1.217, "tSpk": 0.119, "lvl": 0.539},
+    "shaker": {"model": "ch", "mLvl": 0.967, "mTun": 0.786, "mHi": 0.614, "mLo": 0.479, "mQ": 1.838, "mHp": 11795.0, "mDec": 0.0776, "mCrv": 0.184, "mHld": 0.0333, "nLvl": 0.832, "nTyp": "bandpass", "nFrq": 7945.0, "nQ": 0.373, "nDec": 0.0777, "nCrv": 0.248, "lvl": 0.234, "choke": 1}};
 }
 function cmdKit(F, NAMES, REF) {
   const CMD1_NAME = 'Elektro-Maschine';
@@ -114455,8 +114455,10 @@ function cmdKit(F, NAMES, REF) {
     if (NAMES.includes(CMD1_NAME)) return true;
     const K = cmdKitData();
     F.NEW_KITS[CMD1_NAME] = K;
+    // trocken wie die gemessenen Einzelschläge (die anderen Werks-Kits haben 8 % Hall): Hall/Echo bleiben frei zum Selbst-Einstellen
     F.KITS.push({id: 'f-kit-elektro-maschine', name: CMD1_NAME, cat: 'drums', engine: 'drum', ev: 1, base: null, p: K,
-      tip: 'Klassischer Elektro-Drumcomputer, aus Synthese nachgebaut (keine Samples): satter Kick mit langem Ausklang, helle Clap-Snare, sehr kurze helle Hats, tiefe Toms mit langem Ausklang. SHAKER spielt die Pedal-Hat.'});
+      fx: {drive: 0, chorus: {mode: 'off', mix: 1, rate: 1, depth: 1}, rev: 0, dly: 0, vol: .85, pan: 0},
+      tip: 'Klassischer Elektro-Drumcomputer, Klang für Klang aus Synthese nachgebaut (keine Samples): tiefer Kick mit kurzem Schlag, helle Clap-Snare, sehr kurze helle Hats, tiefe Toms mit langem Ausklang. SHAKER spielt die Pedal-Hat und schließt die offene Hat.'});
     NAMES.push(CMD1_NAME);
     REF[CMD1_NAME] = 'Elektro-Drumcomputer, synthetisch nachgebaut';
     return true;

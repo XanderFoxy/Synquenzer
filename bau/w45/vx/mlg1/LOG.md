@@ -1,0 +1,14 @@
+# LOG MLG1 (Klang aus DAW-Datei → Analog-Motor, Retro-Werksklänge)
+- 03:24 UTC Start, Basis rel-4780 (md5 68e92c03), VERSION 4.78.0 bleibt.
+- 03:29 apply.py + Block mlg1-block.js (Parser, .cbp-Leser, mlToVa, mlgWerk, mlgFoot) + 2 einzeilige Haken (Kennung MLG1).
+- 03:36 Kern-Test (vm, DOM-frei) 30/30; tests/gen_cbp.py → test-3synth.cbp (eigene Werte).
+- 03:38 Kalibrierung (privat, nachbau/werk): 14 Synth-Spuren, Fenster A/B, Render durch die App-Engine (OfflineAudioContext), Gitter Filter-Hk./Resonanz/Rauschen/Pegel → 137,4 HT, 0,96, ×2, 0,55.
+- 03:40 freier Spur-Ausgleich (gelernt A, gemessen B): 2,6 dB, 11/14 ≤ 3 dB; Hörvergleich mp3 je Spur.
+- 03:45 mlg1-test.mjs (Chromium, Touch, 428×926 + 926×428, Fotos DPR 2) 33/33; Pflicht ohne Befund; NOTES.md.
+- 04:43 UTC 2. Lauf (Fortsetzung): Stand geprüft – basis md5 68e92c03, apply.py baut index.html bitgleich (md5 18bebf87), Pflicht von 03:46 ohne Befund. Platte frei 3,0G.
+- 04:47 Ausgleich auf den echten Spur-EQ der App gefittet (mlg_appeq.mjs, Kennlinie mx1Core().eqDb, Nelder-Mead 25 Starts) → gemessen in B: 3,4 dB, 8/14 ≤ 3 dB. Hörvergleich neu = genau das, was die App mit diesen Werten spielt. Werte je Spur ins private Projekt (mix).
+- 04:49 Versuch Amp Sim → Filter-Drive (0,35/0,7) auf 3 Spuren: kein Gewinn, verworfen. Last: 13,7.
+- 04:53 Inserts direkt aus der Datei (K4a-Kurven, ohne Lernen) → Spur-EQ der App: 6,6 → 5,1 dB (Amp-Sim-Spuren ausgenommen, Regel vorab: nicht linear). Grundlage für den Vorschlag „↳ EQ wie in der DAW“.
+- 04:58 Zwischen-Audio (192 MB .f32) gelöscht; KALIBRIERUNG-MLG1.md (privat) mit 4 Stufen je Spur; NOTES §3, KURZ.md, LOG.md. Platte frei 2,5G, Last: 24.
+- 05:20 UTC MLG1-P (unabhängiger Prüfer): Pflicht + Kern-Test auf dem alten Stand ohne Befund (30/30). Nachmessung privat (scratchpad/pruef-mlg1): Stem-Fenster neu geschnitten, 15 Spuren neu gerendert, echter Spur-EQ der App im Zeitbereich (mixaDspMake().Track) → B: roh 6,5 dB (3/14), App 3,2 dB (8/14), Inserts→App 4,8 dB (5/14) – Bericht bestätigt.
+- 05:35 Behoben (Kennung MLG1-P): Parser ohne Namens-Kennung (Wurzel am Aufbau; echte Datei 17 Spuren × 386 Werte bitgleich), kaputtes Base64 verwirft nur die Spur, Delay 1/16./1/16T/1/32 rechts als angenähert gemeldet; NOTES §3 Spurzahl (15 mit Noten, n = 14). Kern-Test 33/33, Pflicht ohne Befund, index.html md5 1333a31d.
