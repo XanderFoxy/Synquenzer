@@ -3,7 +3,9 @@
 `index.html` = `basis.html` (Synquenzer 4.78.0, rel-4780, md5 68e92c03…) + Hauptblock `/* KE1-BEGIN … KE1-END */` hinter
 `/* LT2-END */` + stiller Block `<script type="text/plain" id="sq-ke1-src">` (vor `sq-md-src`, ebenfalls `/* KE1-BEGIN … KE1-END */`)
 + 5 einzeilige Haken (alle mit „KE1“). Keine vorhandene Zeile geändert (`diff basis.html index.html`: nur `a`-Zeilen). VERSION bleibt
-4.78.0. Bauen: `python3 apply.py` (basis.html + `src/ke1-main.js` + `src/compose.js` + `src/ke1-core.js` + `src/ke1-ui.js` → index.html).
+4.78.0. Bauen: `python3 apply.py` (basis.html + `src/ke1-main.js` + `src/compose.js` + `src/ke1-core.js` + `src/ke1-ui.js` → index.html;
+im stillen Block ohne Kommentare über `src/strip.cjs` – acorn, nur echte Kommentare, Abbruch wenn der Syntaxbaum nicht gleich bleibt –,
+weil die Auslieferung text/plain-Blöcke bytegleich übernimmt; `src/` behält die Kommentare).
 Nur Scratchpad, nichts veröffentlicht, keine Datenbank, kein Netzabruf. Markenfrei: die Engine heißt in der Bedienung nur über `MK_LABEL`
 („MS 2000“ steht genau 1× in der Datei), keine Geräte-/App-Namen.
 
@@ -24,8 +26,12 @@ Hüllkurve, Rauschen, Vibrato; neu: Speicherwellen Top-3 aus den Tabellen-Teilt�
 22,05 kHz, Nelder–Mead-Blöcke + CMA-ES) für **Engine 3** (Hypothesen + Filtertyp 24/12 LP, 12 BP, 12 HP), **VA** (dieselbe Hypothese
 umgerechnet auf Hz/s, Vibrato über LFO 1 → Tonhöhe) und **FM** (2 Operatoren in der FM-Engine, Verhältnis/Index aus den Bessel-Linien,
 Index-Hüllkurve) → je Engine Ergebnis + Gewissheit + Render bei 44,1 kHz für A/B.
-- **Budget:** 6 s / 450 Versuche (bei laufender Wiedergabe 4 s / 320); Engine 3 bekommt immer den größten Teil (50 %), Zeit- und
-  Versuchsgrenze, Stopp-Prüfung nach jedem Versuch, Fortschritt höchstens alle 200 ms, Zeichnen höchstens 4×/s.
+- **Budget:** 6 s / 450 Versuche (bei laufender Wiedergabe 6 s / 320 mit Pausen im Worker); Engine 3 bekommt immer den größten Teil
+  (50 %), Zeit- und Versuchsgrenze, Stopp-Prüfung nach jedem Versuch, Fortschritt höchstens alle 200 ms, Zeichnen höchstens 4×/s
+  (bei Wiedergabe 2×/s).
+- **Wächter (neu, unsichtbar):** solange gerechnet wird, misst der Hauptfaden seinen 50-ms-Takt. Wiedergabe an → Worker 40 % Rechenzeit;
+  kommt der Takt > 30 ms zu spät (Gerät ausgelastet) → 3 s nur 15 %; Wiedergabe aus → volle Rechenzeit. Gilt auch, wenn die Wiedergabe
+  erst während des Rechnens startet/endet (vorher lief der Worker dann mit voller Kraft weiter). Nachricht `{t:'duty'}` an den Worker.
 - **Stufe-1-Welle bleibt**, wenn eine andere Welle nicht > 10 % näher ist (Prototyp-Befund 1: Stufe 2 verwechselt sonst Rechteck/Dreieck/Sinus).
 - **Gewissheit:** diskrete Werte (Welle, OSZ 2, Filtertyp, Engine, FM-Verhältnis) über exp(−ΔD/T), T = 0,25 × D; stetige Werte aus den
   nahen Versuchen gewichtet (10–90-%-Spanne). Danach **gedeckelt nach der Ähnlichkeit** (Eichlauf, Saat 20261117: „sicher“ stimmte bei
@@ -55,23 +61,42 @@ Index-Hüllkurve) → je Engine Ergebnis + Gewissheit + Render bei 44,1 kHz für
 ## Messwerte (Chromium, Xeon 4 Kerne, Rechnerlast 2–6, `nice -n 10`)
 Siehe `test-ergebnis.txt` (Endlauf) – Kurzfassung:
 - Start: Bild hochkant/quer pixelgleich zur Basis; Block nicht ausgewertet, kein Worker; Startzeit (Median aus 3) nicht langsamer.
-- HTML +109,5 KB roh / +36 KB gzip (+1,15 %); Block 103 KB roh / **34,7 KB gzip** (Budget ≤ 35 KB).
+- Größe (gzip -9, Bytes): Block 102 766 roh / **33 241 gzip**; Datei +107 526 roh / **+34 809 gzip** (+1,1 %); ausgeliefert
+  (`vx/perf2/ausliefern.mjs`) +106 351 roh / **+34 283 gzip**. Budget ≤ 35 KB gehalten (Test A2). Vorher (mit Kommentaren) 36 177 /
+  +37 436 – knapp drüber; die alte Angabe „34,7 KB“ war veraltet.
 - Erster Tipp: Block 3,8 ms, Worker-Bau 8–23 ms; während Laden + Rechnen + Zeichnen **0 Aufgaben ≥ 50 ms** im Hauptfaden
   (Zeichnen ≤ 25 ms). Der erste Tipp der App überhaupt startet die Audio-Engine (bis ~300 ms, gibt es in 4.78 genauso) – im Test vorher.
 - Zeit je Ton 3,9 s (sauber) / 5,9 s (Mikro) für ~445 Versuche, Stufe 1 ~300 ms (Xeon). iPhone: **nicht gemessen** (Faktor 2–3 geschätzt
   → Zeitgrenze 6 s greift, dann weniger Versuche).
-- Stopp: Antwort 22–25 ms im Worker. 0 Netzaufrufe.
+- Stopp: Antwort ≤ 100 ms im Worker (gemessen 22–55 ms). 0 Netzaufrufe.
+- **3 min Wiedergabe + immer wieder erkennen (P3, neu):** siehe unten „Wiedergabe unter Last“.
 
 ## Trefferquoten
-Endlauf-Tabelle in `test-ergebnis.txt` (Saat 20261118, nicht zum Eichen benutzt). Eichlauf (Saat 20261117) unter
-`src/korpus-eichlauf-20261117.{json,log}`. Wichtigste Punkte (Eichlauf, 14 saubere + 12 Mikro-artige Engine-3-Töne):
-Welle 71 % sauber / 25 % Mikro; Vibrato 100 %; Tonhöhe 1 ct (Mikro 13 ct); Speicherwelle Top-3 2/2; Filter-Grenze Median 6,6 HT
-(Prototyp 1,5 – die drei Engines teilen sich die Versuche); Amp-Abfall ~2,3 Oktaven (wie Prototyp); FM-Töne: Verhältnis 2/3 richtig.
+Endlauf-Tabelle in `test-ergebnis.txt` (Korpus-Saat 20261118, **nicht** zum Eichen benutzt; Render-Saat der Engine 7 – im Lauf-Text
+stand dafür früher nur „Saat 7“). Eichlauf (Saat 20261117) unter `src/korpus-eichlauf-20261117.{json,log}`. Beide je 14 saubere +
+12 Mikro-artige Engine-3-Töne; die Zahlen sind über drei Endläufe gleich (Ergebnis hängt nur an den Versuchsgrenzen, nicht an der Zeit).
+
+| | Endlauf sauber | Endlauf Mikro | Eichlauf sauber / Mikro |
+|---|---|---|---|
+| Welle OSZ 1 richtig | **36 %** (5/14) | 33 % (4/12) | 71 % / 25 % |
+| OSZ 2 an/aus · Lage | 93 % · 91 % | 83 % · 60 % | |
+| Filtertyp 24/12 dB | 64 % | 67 % | |
+| Filter-Grenze, Median Halbtöne (≤ 3 HT) | 8,5 (29 %) | 4,0 (50 %) | 6,6 / 23 |
+| Vibrato an/aus | 93 % | 92 % | 100 % |
+| Tonhöhe, Median ct | 1 | 9 | 1 / 13 |
+| Speicherwelle in Top-3 | 1/2 | – | 2/2 |
+| richtige Engine (Engine 3 zuerst) | 100 % | 83 % | |
+| Zeit je Ton / Versuche (Xeon, Last 2–4) | 3,3 s / 445 | 5,1 s / 443 | |
+
+Lesart: Die Wellen-Trefferquote schwankt stark mit der Stichprobe (71 % ↔ 36 % bei je 14 Tönen) – der Prototyp-Prüfer hatte das schon
+gesehen (PRUEFUNG.md: 10–31 % bei Mikro). Gleich klingt der Nachbau trotzdem oft (D-Median 1,0, „sehr nah“/„nah“ bei den meisten sauberen
+Tönen), weil Welle + Filter sich gegenseitig ausgleichen. „sicher“-Zeilen stimmen in 88 %, „geraten“-Zeilen in 26 % (K2).
 
 ## Ehrliche Grenzen
 1. **Gleich klingend ≠ gleiche Regler.** Kleiner Abstand („sehr nah“) heißt oft trotzdem andere Filter-/Hüllkurven-Werte (Filter-Grenze im
    Median mehrere Halbtöne daneben). Darum steht beim Filter nie „sicher“.
-2. **Welle** ist weiter das schwächste Glied bei Mikro/Hall (25 %). Raum/Hall wird nicht ausgeblendet (KE1j), nur als Hinweis gezeigt.
+2. **Welle** ist das schwächste Glied: 36 % sauber / 33 % Mikro im Endlauf (Eichlauf 71 % / 25 %). Raum/Hall wird nicht ausgeblendet
+   (KE1j), nur als Hinweis gezeigt. Nächster Hebel: Welle aus dem Anschlag schätzen (Prototyp §9.1), bevor der Filter zugeht.
 3. **Engine-Wahl:** Engine-3-Töne werden oft gleich gut mit VA/FM nachgebaut; der Gleichstand-Vorrang (10 %) ist nicht am Gehör geeicht.
 4. **Gewissheit** gedeckelt nach Eichlauf, nicht nach ECE geeicht; Prozentwerte sind „wie sicher die Suche ist“, nicht „wie oft richtig“.
 5. **Nur ein Ton, nur Timbre 1**, keine Effekte, kein Keytrack/Anschlag/Unison/Ring/Sync, nur einfache Speicherwellen (55 von 64),

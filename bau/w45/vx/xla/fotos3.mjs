@@ -26,7 +26,8 @@ async function open(p) {
   for (let k = 0; k < 80; k++) { await p.waitForTimeout(100); const ok = await p.evaluate(() => { const c = window.__xla.cur(); return !!(c && c.res && !c.building); }); if (ok) break; }
 }
 async function keyTap(p, semi) {
-  await tapSel(p, '#segTr'); await p.waitForTimeout(200);
+  await tapSel(p, '#segTr'); await p.waitForTimeout(400);
+  if (await p.evaluate(() => !EL.coach.hidden)) { await tapSel(p, '#coachOk'); await p.waitForTimeout(400); }   // Hilfe-Karte (erstes TRANSPONIEREN) wie Xander mit „Verstanden“ schließen
   const n = await p.evaluate(k => { const r = S.key.root; const L = [...KB.byNote.entries()].filter(([n, x]) => x.el.offsetParent && x.el.getBoundingClientRect().width > 6).map(([n]) => n); return L.find(n => ((n - r) % 12 + 12) % 12 === k); }, semi);
   const c = await p.evaluate(n => { const k = KB.byNote.get(n); const q = k.el.getBoundingClientRect(); return {x: q.left + q.width / 2, y: q.top + q.height * .8}; }, n);
   await tap(p, c.x, c.y, 120); await p.waitForTimeout(700);

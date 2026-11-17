@@ -369,3 +369,126 @@ md5 c6f0b4ea). Gebaut mit `src/apply-ks3.py` aus `index.vor-ks3.html` + `src/ks-
 `src/apply-ks3.py`, `src/ks-block.ks2.js` / `src/ks-main.ks2.js` (Stand KS2, für apply-ks3), `src/probe-keys.mjs` (Regler je Seite),
 `src/probe-ks3.mjs` (Karten + Lautheit, für die Eichung), `src/probe-rnd.mjs` (Streuung der S&H-Klänge), `src/probe-shot.mjs`,
 `fotos/ks3-*.png` (Blatt, W1/W2 Schicht 1 und 3, R01/R05/R12/R19, hochkant und quer), `fotos/p-ks3-*.png` (Probe).
+
+## KS4 – Engine-Wünsche E4–E7 (Takt-Hüllkurven, LFO-Raster/Glätten, Filter 2, Tonhöhen-Hüllkurve)
+
+Stand 17.11.2026, ~03:05 UTC. `index.html` md5 **5d6e564f6498243198965f258829f75d** (Sicherung davor: `index.vor-ks4.html` = Ergebnis KS3,
+md5 639c421d). Gebaut mit `src/apply-ks4.py` aus `index.vor-ks4.html` + `src/ks-block.js` + `src/ks-main.js` + `src/ks4-main.js` +
+`src/ks4-wk.js` (alte Stände `src/ks-block.ks3.js`, `src/ks-main.ks3.js`). VERSION bleibt '4.78.0'. Basis rel-4780 unverändert (68e92c03).
+Xander: generelles OK, „Engine-Wünsche E4–E7 alle bauen“.
+
+### Änderung
+
+- **Worklet** (`sq-worklet-src`, Block `/* KS4-BEGIN (worklet) … KS4-END */` hinter KF12, ASCII): 21 neue Klang-Werte, jeder **neutral,
+  solange er fehlt**. Ohne KS4-Schlüssel bleiben die Schalter `ks4T/ks4L/ks4P/ks4F` aus – keine Zeile KS4 läuft in `control()` oder
+  `renderVoice()` (Golden bitgleich, siehe Tests).
+  - **E4 Hüllkurven im Takt**: `ksAa/ksAd/ksAr` (Lautstärke), `ksFa/ksFd/ksFr` (Filter), `ksMa/ksMd/ksMr` (Hüllk. 2) in Schlägen
+    (1/32 … 8/1 = 8 Takte); `deriveInto` rechnet Schläge × 60 / Song-Tempo in die Hüllkurven-Koeffizienten; Tempowechsel → neu ableiten.
+    Ein Riser über 8 Takte geht jetzt in jedem Tempo (Sekunden enden bei 10 s).
+  - **E5 Raster ohne Song-Tonart + Glätten** je LFO: `ksR1/ksR2` 1 = Halbton, 2 = Quinte + Oktaven (nur die Tonhöhen-Routen dieses LFO,
+    relativ zur Note; „S&H in der Tonart“ hat Vorrang), 3 … 16 = so viele gleiche Stufen des LFO-Werts (auf jedes Ziel: Säge = Treppe);
+    `ksG1/ksG2` 0 … 1 Glätten (ein Pol je Stimme, 100 % = über die ganze Stufe).
+  - **E6 Filter 2**: ein 12-dB-Zustandsvariablen-Filter (TPT) je Stimme und Kanal, `ksF2` 1 LP12 · 2 HP12 · 3 BP12 · 4 KERBE,
+    `ksF2w` 0 in Reihe hinter Filter 1 (Anteil = nass) · 1 parallel aus derselben Mischung (Anteil = Pegel), Cutoff `ksF2c`, Resonanz
+    `ksF2r`, Menge `ksF2e` × 72 HT von `ksF2q` Filt.-Hk. │ Hüllk. 2 │ LFO 1. Koeffizient je Steuerblock, je Abtastwert verschliffen.
+    So einfach wie möglich: ein Filter, keine eigene Hüllkurve, kein Drive.
+  - **E7 Tonhöhen-Hüllkurve** `ksPe` −48 … +48 HT × Hüllk. 2 auf die Tonhöhe (nach dem Raster) – dasselbe wie die Route Hüllk. 2 →
+    Tonhöhe, ohne MOD und bis 48 HT mit einem Griff.
+  - Keine Speicher-Anlage in `process()`: Zustände in `v.ks4` (mit der Stimme angelegt), zwei Puffer beim Laden.
+- **Hauptskript, Block `KS4-BEGIN`** (hinter dem KS-Block): Regler-Beschreibungen, Speichern/Laden (`ks4Norm` in `normAnalog`: nur gültige
+  Werte ≠ neutral, begrenzt; Regel 28: Werksklänge und alte Projekte bleiben Zeichen für Zeichen gleich), feste Reihenfolge der Schlüssel
+  (Speichern/Laden bitgleich), Bedienung, Guide, „Was ist anders?“, Test-API `SYNQUENZER.ks.ks4`.
+- **Bedienung** (im Stil des Klang-Editors, kein neuer Knopf im Kopf, kein Lock, keine Mod-Ziele):
+  - **HÜLLK. › AMP/FILTER/MOD**: Schalter **TAKT** (wie SYNC): hochkant oben rechts in der Hüllkurven-Grafik, quer am Ende der Form-Zeile
+    (38 px, so hoch wie die Form-Chips). TAKT an: A, D, R zeigen Noten (1/32 … 8/1), die Sekunden laufen gespiegelt mit; FREI rechnet die
+    Noten in Sekunden zurück. Je ein ↶.
+  - **LFO 1/2**: ein Chip **RASTER ▾** → Blatt mit Aus · Halbton · Quinte + Oktave · 3/4/5/6/8/12/16 Stufen und Glätten Aus/25/50/100 %,
+    oben steht, was das Raster gerade tut. Hochkant eine flache Zeile „RASTER“ unter „S&H Tonart“ (40 px), quer neben START.
+  - **FILTER › FILTER 2** (eigener Unter-Reiter, nur VA): AUS │ LP12 │ HP12 │ BP12 │ KERBE, Weg REIHE │ PARALLEL, Menge von FILT.-HK. │
+    HÜLLK. 2 │ LFO 1, Regler Cutoff, Resonanz, Menge, Anteil, ein Satz Hinweis. AUS nimmt alle Filter-2-Schlüssel weg.
+  - **OSZ › STIMME**: Regler **Tonh.-Hk.** (±48 HT, Rastpunkte ±12/±24) und daneben **Fallzeit** (= Hüllk. 2 DECAY).
+  - **Kein bestehender Regler rückt** (Rechtecke je Regler hochkant 390×844 und quer 844×390 ±1 px gleich). Neue Zeilen erscheinen nur,
+    wenn die Seite mit ihnen **ohne Dichte-Stufe** passt (`ks4Fit`, ein Haken in `fitBody`); sonst zeigt die Seite einen schmalen Chip
+    (LFO: rechts in der Regler-Zeile, die Vorschau wird schmaler; OSZ › STIMME: „TONH.-HK. ▾“ in der Zeile MODUS mit Blatt −24 … +48 HT).
+    So bleibt jede Seite auf 375×667, 360×740, 414×896, 320×568 in derselben Dichte-Stufe wie vorher.
+  - Ohne Worklet (Wavetable) sind die Teile grau („nur bei VA und FM“).
+- **Guide/Suche**: 4 Einträge – „Hüllkurve im Takt“, „LFO-Raster und Glätten“, „Filter 2 (Kerbfilter)“, „Tonhöhen-Hüllkurve“; TAKT und
+  FILTER 2 wählen eine VA-Spur (die gewählte, sonst die erste).
+- **Lektionen** (stiller Block `sq-ks-src`, 148,2 → 152,2 KB): **L9 Bonus 2** „Riser über 8 Takte“ (Hüllk. 2 im TAKT 8/1; 10 s in
+  Sekunden = ✗ mit Hinweis), **L9 Laser** geht auch mit Tonh.-Hk. +24 statt der Route, **L10 Bonus 2** „Treppe ohne Tonart“ (Raster
+  8 Stufen), **W2 Schicht 4** mit dem Körper aus dem Vorbild (Filter 2 LP parallel, 10 dB unter dem Vokal), **R05** Gischt im selben
+  Klang (Filter 2 HP12 parallel von Hüllk. 2, 7 dB unter dem Körper; die Gischt-Spur bleibt als „Lade: …“), **R09** Knall auf der
+  Körper-Schicht (Filter 2 HP, Hüllk. 2 20 ms). Rechnen kennt Zeiten im Takt und die Tonhöhen-Hüllkurve. Rahmen auf den neuen Reglern.
+- **Haken**: 16 einzeilige mit Kennung KS4 (9 im Worklet, 1 in `normAnalog`, 5 im Klang-Editor, 1 in `fitBody`).
+
+**Abweichungen:**
+- Glätten ist kein eigener Regler, sondern im Raster-Blatt (4 Werte) – ein Regler hätte auf der LFO-Seite einen bestehenden verschoben.
+- Auf kleinen Schirmen (Seite schon dicht) gibt es Tonh.-Hk. nur als Chip mit festen Werten; fein über MOD (Route) oder größeren Schirm.
+- FILTER 2 nur im VA (die FM-Filterseite hat keinen Unter-Reiter dafür); E4/E5/E7 laufen im selben Kern auch für FM (E7 gemessen).
+- In `ks2-test.mjs` und `ks3-test.mjs` je eine Zeile angepasst (L9/L10 haben je einen zweiten Bonus ohne Messen; R09-Körper trägt den Knall:
+  Pegel −25,8 statt −27,5 LUFS).
+
+### Tests
+
+`ks4-test.mjs` (Ausgabe `ks4-test.out`): **94/94**, Chromium, Berührung, hochkant 390×844 und quer 844×390.
+- je Lage: bestehende Regler auf HÜLLK. AMP/MOD, LFO 1/2, FILTER REGLER, OSZ STIMME gleich (±1 px gegen die Fassung davor); neue Teile im
+  Bild ohne Überlappung; TAKT per Fingertipp (A1/32 │ D1/4 │ R1/4, ein ↶, Engine hat die Noten, ↶ bitgleich, FREI = Sekunden, Schlüssel
+  weg); Raster-Chip + Blatt (10 Raster-, 4 Glätten-Werte), 8 Stufen + Glätten 50 % (Engine hat sie), zwei ↶ bitgleich; FILTER 2 (aus =
+  gesperrt, KERBE = 7 Grundwerte, alle 7 Teile im Bild, AUS = Schlüssel weg, ↶ bitgleich; FM ohne FILTER 2); Tonh.-Hk. +24 HT (Engine);
+  Guide 4/4 springen zum Ziel, Suche findet 4/4; Lektionen L9/3, L10/3, W2/4, R05, R09: Rahmen auf sichtbaren Zielen, Lösung ✓, nach ✕
+  Projekt bitgleich; keine Fehler in der Konsole.
+- kleinere Schirme (375×667, 360×740, 414×896, 320×568): Dichte-Stufe je Seite (LFO, HÜLLK., OSZ, FILTER) wie vorher, Raster-Chip und TAKT
+  sichtbar.
+- Daten: kein Werksklang (89 VA/FM) trägt KS4-Schlüssel; neutrale Werte und Filter 2 AUS werden nicht gespeichert; ungültige Werte begrenzt
+  oder verworfen; **Speichern/Laden 15 KS4-Werte bitgleich**, danach spielt die Engine genau diese Werte; ganzer Klang ohne KS4-Schlüssel →
+  Engine neutral; **altes Projekt (Fassung davor) laden + speichern bitgleich**. Zusätzlich (`src/probe-reload.mjs`): Autosave mit 11
+  KS4-Werten, Seite neu geladen → Werte und Engine gleich.
+- Engine-Sonden (Offline, dasselbe Worklet, Zufall fest): E4 Noten = dieselben Sekunden **bitgleich** (120 BPM, 60 BPM, Filter-Hk. 160 BPM:
+  −326…−328 dB); E7 +24 HT = Route 100 %, +48 HT = zwei Routen **bitgleich**; E5 4 Stufen aus der Säge −10,5/−4/+4/+12 HT, HALBTON genau
+  −10/−7/−4/−1/+3/+7/+10 HT (frei ¼ HT daneben), QUINTE nur −12/−5/0/+7/+12, Glätten 100 %: größter S&H-Sprung 12,6 → 1,8 HT,
+  „S&H in der Tonart“ hat Vorrang (bitgleich); E6 KERBE 1 kHz −28 dB (Nachbarn ±4 dB), PARALLEL HP 3 kHz + LP 300 Hz +45,7 dB Tiefen,
+  BP 1 kHz +17 dB über den Nachbarn, REIHE Anteil 50 % −6 dB Höhen, Menge von Filt.-Hk. −41,5 → −65,5 dB; E7 auf FM = Route.
+- Lektionen: L9 und L10 je 3 Aufgaben Start ✗ / Lösung ✓; Pegel W2/4 −24,1, R05 −24,1 („Nur Körper“ −24,8, Gischt-Spur −31), R09 −24,
+  Impact-Körper mit Knall −25,7 LUFS; Anteile Körper −10, Gischt −7, Knall −3,3 dB (Ziele −10/−7/−3,3).
+- **Golden-Render (Art K1/NS1)**: alle **78 VA/FM-Werksklänge** über `mkRender` (2 s, Akkord + Einzelton, Zufall fest), FNV je Kanal:
+  vorher (Fassung davor) = nachher **bitgleich**, Kontrolle neu = neu. `vx/perf2/golden.mjs` Basis rel-4780 gegen diese Fassung
+  (`golden-ks4.out`): 12 Werksklänge (analog/fm6/wt/mk/bm) bitgleich, Song-Render Länge und Pegel gleich (±1 %), Konsole ohne Fehler –
+  **ERGEBNIS bitgleich**.
+- **CPU** (8 s Offline-Render, 6 Stimmen, je 15 Läufe abwechselnd, Rechner unter Last 5–7): vorher 218,5 / 281,3 ms (Bestwert / Median),
+  ohne KS4-Schlüssel 246,9 / 296,1 ms (Median **105 %**), mit FILTER 2 106 %, mit allem (TAKT, Raster, Glätten, Kerbe, Tonh.-Hk.) 105 %.
+  Ohne KS4-Schlüssel läuft im Worklet je Block nur die Abfrage von vier Schaltern; die Streuung kommt von der Last (ein früherer Lauf: 103 %).
+- Regression: `ks1-test.mjs` **75/75** (`ks1-test.ks4.out`), `ks2-test.mjs` **149/149** mit Sonde (`ks2-test.ks4.out`), `ks3-test.mjs`
+  **209/209** (`ks3-test.ks4.out`).
+
+### Pflichtprüfungen
+
+- `topdefs.cjs`: Skripte 26, Namen 8101, doppelt 0, Syntaxfehler 0; `dupkeys.cjs` 0; `blockcheck.cjs`: sq-ks-src 152,2 KB, oberste Namen
+  `KSX`, Kollision 0, doppelte Schlüssel 0; `undef.cjs`: 23 Meldungen wie davor (nur `SQStore`/`SynthHost`).
+- Rauchtest `dirigent-test/smoke.mjs`: Titel SYNQUENZER, Fehler [] (`fotos/smoke-ks4.png`).
+- „MS 2000“ 1×, `^  live: true,` 1×, VERSION '4.78.0'; Markenwörter Basis 123, neu 123, neuer Code 0; keine Emojis als Grafik
+  (neu nur ▾ │ ·, die die App schon nutzt).
+
+### Messungen
+
+- **Größe**: roh 9 702 863 → 9 748 113 B; gzip 3 210 102 → **3 224 940 B (+14,8 KB)**; KS1–KS4 zusammen **+67,9 KB gzip (+2,2 %)**.
+- **Startzeit** (`startzeit.mjs`, 3 Läufe abwechselnd, frischer Kontext, Last ≈ 6–7): App bereit Basis 913/792/1022 ms (Median 913),
+  neu 850/785/846 ms (Median 846) – unverändert im Rauschen; der stille Block wird beim Start nicht ausgewertet, der KS4-Block im
+  Hauptskript legt nur Beschreibungen und eine Stilregel an.
+- Paketordner 92 MB.
+
+### Offen
+
+- Die LFO-Vorschau zeigt das Raster nicht (Säge bleibt Säge in der Grafik); der Chip und das Blatt sagen es.
+- TAKT, Raster, Filter 2 und Tonh.-Hk. sind nicht modulierbar und nicht als Lock (PL1) zu setzen – „gilt für den ganzen Klang“.
+- Auf kleinen Schirmen ist Tonh.-Hk. nur in festen Schritten (Chip-Blatt) erreichbar.
+- Quer kann der Raster-Chip bei „8 STUFEN · GLATT“ abgekürzt werden (…), das Blatt zeigt alles.
+- Hörbeispiele für die neuen Teile sind nicht angehört, nur gemessen (wie KS1–KS3).
+- Offene Punkte aus KS1–KS3 bleiben (Hall-Fahne beim Pegelabgleich, quer „Schicht n ▶“ im rollenden Teil).
+
+### Dateien (neu in KS4)
+
+`ks4-test.mjs` + `ks4-test.out`, `ks1-test.ks4.out`, `ks2-test.ks4.out`, `ks3-test.ks4.out`, `golden-ks4.out`, `startzeit.ks4.out`,
+`index.vor-ks4.html`, `src/apply-ks4.py`, `src/ks4-wk.js` (Worklet), `src/ks4-main.js` (Hauptskript), `src/ks-block.ks3.js` /
+`src/ks-main.ks3.js` (Stand KS3, für apply-ks4), Proben `src/probe-ks4*.mjs`, `src/probe-sh.mjs` (S&H wiederholbar), `src/probe-fit.mjs`,
+`src/probe-slack.mjs`, `src/probe-kr.mjs`, `src/probe-rows.mjs`, `src/probe-chip.mjs`, `src/probe-reload.mjs`, `src/probe-lfoshot.mjs`,
+`src/probe-pgshot.mjs`, Fotos `fotos/ks4-*.png` (Seiten, Lektionen, hochkant/quer), `fotos/p-ks4-*.png` (LFO/OSZ auf 375×667 und 390×844).

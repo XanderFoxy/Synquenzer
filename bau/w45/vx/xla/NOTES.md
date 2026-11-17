@@ -178,3 +178,78 @@ Spurkopf (renderGrid) · renderStrip · Klick auf ⇅ · Video-Spurkopf. Kein an
 6. Video: ⇅½-Spuren zeigen im Video „⇅“ (nicht „⇅½“).
 7. Aus Schritt 1 weiter offen: Fassung B (24/32), Anzeige „Szene 1“ bei Als Song, Audio-/Akkord-/Text-Spuren, Klang angenähert,
    echte Datei nur bei Xander (nur synthetische Dateien hier), Messung am iPhone 12 (Startzeit, Takt-Lücken, Blatt).
+
+
+---
+
+# Prüfung (Nachbessern nach dem Prüfer, 17.11.)
+
+Ausgang `index.vor-pruef.html` (md5 25b48280, Endfassung Schritt 2). Zwischenstand nach den Behebungen `index.vor-pruef2.html` (md5 50425b93).
+**Endfassung `index.html` – md5 9aae12693fa5952248f1ae5da15884e5.** VERSION bleibt '4.78.0', Basis rel-4780 unverändert (68e92c03).
+Bau: `python3 apply.py` (Abschnitte 5 und 6 neu). Sicherungen: `*.vor-pruef.*`, `*.vor-pruef2.*`. Arbeit unterbrochen durch einen Neustart des
+Containers (02:20); danach jede Behebung neu nachgeprüft.
+
+## Befunde (Prüfer: 3 mittel, 3 klein) – nachgeprüft, alle echt, behoben
+
+Der Befund-Text im Auftrag brach nach Befund 4 ab. Befund 5 ist aus der Prüfer-Ausgabe `pruef/p5.out` nachgestellt; Befund 6 war nicht lesbar –
+an seiner Stelle steht unten ein selbst gefundener Fehler derselben Art (Hilfe-Text sagt im Halbton-Projekt Falsches).
+
+1. **mittel – Anzeige zeigte die eigenen ⇅-Spuren, nicht den Import** (p6: Taste D „+2 · → D Dorisch“ bei D-Dur-Import; TONART F♯ „+5“ bei +6).
+   Behoben: Haken `shownShift` und `singleReadout` → im Halbton-Projekt (`xlaHt` und mindestens eine ⇅½-Spur) zeigt der Träger, was der Import tut,
+   gerechnet wie `xlaXsOut`: „+2 · → D-Dur“, „+6 · → F♯-Dur“, Akkord Am „−3 · → A-Dur“; das Lesefeld zeigt keine Stufe. Sonst unverändert.
+   Prüfer-Sonden neu: p3b TONART „+6 · → F♯-Dur“ = Import 6/6/6; gemischte Clip-Tonart „+4“ = Verschiebung 4; p1 R1 0 Abweichungen in 16 Fällen.
+2. **mittel – eigene ⇅-Spuren rieben mit dem Import** (p6: unter D 2 von 7 Tönen fremd, unter E 4/7). Behoben (Weg 1 des Vorschlags, wie
+   BAUPLAN P4.1 „im importierten Projekt gehen auch eigene neue Spuren in Halbtönen“): bei „Passt“ werden auch die leeren Synth-Spuren ⇅½, und
+   „＋ Spur“ im Halbton-Projekt legt eine ⇅½-Spur an (Haken `addTrack`). Nie Perkussion, STIMME, Drum-Einzelspur. Normales Projekt: wie bisher.
+   Wer eine Spur nach Akkord will, tippt ⇅ an der Spur (⇅½ → fest → ⇅). p6b: 0 fremde Töne unter allen Tasten und dem Akkord.
+3. **mittel – Song › Transponieren bewegte keine Import-Spur** (p1 R2: 0 von 3 späten Noten). Behoben: ⇅½-Spuren nehmen `song.xp` wie ⇅ folgt –
+   Haken in `outPitch`, MIDI-Export (Song, Spur, Einzelspuren), Video-Tastatur, S&H in der Tonart, Aufnahme (`xlaXsNoteFor`). Rückung je Teil und
+   „Abschnitt transponieren“ schreiben `song.xp` mit, wirken also wie vorher. p1 R2 neu: 3 von 3 verschoben.
+4. **klein – Hinweis und Guide stimmten im Standard „nächster Weg“ nicht** (p4: Tasten 0 … +6, dann −5 … −1). Behoben: Blatt-Hinweis „die Taste C
+   spielt das Original (C-Dur). Jede andere Taste spielt den Song genau in ihrer Tonart – auf dem kürzesten Weg, höchstens 6 Halbtöne …“; der Guide
+   sagt dasselbe und erklärt „absolut“.
+5. **klein – Drum-Einzelspur (MTX3) im Halbton-Projekt** (p5: Tippen meldete „⇅½ Halbton“, ohne dass ⇅½ wirkt). Behoben: `xlaFolgtTap` lässt
+   Drum-Einzelspuren aus – dort wie bisher folgt ↔ fest, nie ⇅½.
+6. **selbst gefunden – Hilfe-Karte „Transponieren – so funktioniert's“** (erstes TRANSPONIEREN und „? So funktioniert's“ im Harmonie-Modus) sagte im
+   Halbton-Projekt „Taste leuchtet = Stufe in der Tonart“ – für ⇅½ falsch. Behoben: ein Haken in `showCoach`, gleiche Karte und Knöpfe, im
+   DAW-Projekt (⇅½) der Text: „jede Taste verschiebt den ganzen Song genau um Halbtöne · Taste C = Original (C-Dur), jede andere Taste … kürzester Weg
+   (höchstens 6 Halbtöne) · Akkord = genau auf den Grundton · Spuren mit ⇅ (ohne ½) folgen wie bisher den Akkorden“; mit Oktave „absolut“: „Eine Taste
+   höher = einen Halbton höher“. Ohne ⇅½-Spur und im normalen Projekt bleibt der Text wie in 4.78.0.
+
+Diff gegen die Basis: zwei Blöcke (Kern-Text, Logik) mit XLA-BEGIN/END und 24 einzeilige Haken (14 neue, 10 geänderte Zeilen), jede mit Kennung XLA
+(geprüft: 0 Zeilen außerhalb der Blöcke ohne XLA).
+
+## Tests (Prüfung)
+
+- **`xla4-test.mjs` (neu, Hilfe-Karte) → 14/14** (`xla4-test.out`, 30 s): erstes TRANSPONIEREN per Touch hochkant und quer, Text, Karte im Rasterbereich,
+  nie über den Tasten, ohne Rollen, „Verstanden“ per Touch · Harmonie-Modus › „? So funktioniert's“ per Touch · Oktave absolut · alle Spuren auf ⇅ →
+  Text wie 4.78.0 · normales Projekt Text und Lage genau wie 4.78.0 · Konsole leer.
+- **`xla3-test.mjs` (Befunde 1–5) → 29/29** auf der Endfassung (`t2/end-xla3.log`, 68 s).
+- **`xla2-test.mjs`** kurz → **46/46** auf der Endfassung (`t2/end-xla2-kurz.log`); mit 3-Minuten-Wiedergabe auf 50425b93 (`t2/pruef-xla2.log`):
+  Song 367 + Matrix 225 Noten der ⇅½-Spuren genau (0 falsch), 883 Drum-Schläge gleich, Spitze 0,665, längste Stille 17,4 ms, Konsole leer; einziges
+  FEHLER dort war die alte Erwartung „Synth 4 ⇅“ (jetzt gewollt ⇅½) – Test angepasst.
+- **`xla-test.mjs` (Schritt 1) → 46/46** auf der Endfassung (`t2/end-xla1.log`).
+- Regression auf 50425b93 (Unterschied zur Endfassung nur der Hilfe-Karten-Haken, im normalen Projekt ohne Wirkung – xla4 C4): trp1 81/81, mtx3 51/51,
+  beg1 57/59 („Prüfung 5“ auch an der Basis rot; die Block-Prüfung vergleicht gegen die alte vx/basis.html – nicht XLA).
+- Prüfer-Sonden erneut (`pruef2/`, auf 50425b93): p1 (R2 3/3, R1 0 Abweichungen), p3b, p5b, p6b (angepasst: die leeren Spuren sind jetzt ⇅½;
+  eine eigene ⇅-Spur entsteht per Tippen) – Konsole leer.
+- Fotos (`fotos/`, 428×926 / 926×428, deviceScaleFactor 2, nur synthetische Datei): `xla3-p-blatt.png`, `xla3-p-matrix.png` („D +2 · → D-Dur“, alle
+  Synth-Spuren ⇅½), `xla3-l-matrix.png` („F♯ +6 · → F♯-Dur“), `xla4-l-hilfe.png` (Hilfe-Karte quer), `smoke-end.png`.
+- Pflicht (`pflicht.out`): topdefs 26 Skripte, doppelt 0, Syntax 0 · dupkeys 0 · Rauchtest `errors []` · „MS 2000“ 1× · `^  live: true,` 1× ·
+  VERSION '4.78.0' · Markenwörter: 0 Wörter häufiger als in der Basis; in den 1 148 neuen Zeilen kein Markenwort (auch klein geschrieben) · keine Emojis.
+
+## Messung (Prüfung)
+
+- Startzeit (`startzeit.mjs`, 3 Läufe je Datei, Median „App bereit“), Last 5–7: Lauf A Basis 589 / neu 588 ms, Lauf B 655 / 647 ms; 02:18-Lauf 605 / 590 ms
+  → kein messbarer Unterschied. Neuer Code läuft nur im Halbton-Projekt (eine Abfrage `S.xlaHt` je Aufruf).
+- Größe 9 639 102 Byte (+95 KB gegen die Basis, +1,0 %); gzip -9 3 190 328 (+33 KB).
+- Paketordner 52 MB, Platte frei 3,1 GB.
+
+## Offen (Prüfung)
+
+1. **Funk:** Die sichtbaren Neuerungen sollte Xander in eigenen Worten bestätigen (CLAUDE.md Regel 3; das „generelle OK vom 16.11.“ stand nur im
+   Auftragstext): Abschnitt „Transponieren“, „⇅½“ an Spurkopf und Spur-Taste, Tipp-Wechsel ⇅½ → fest → ⇅, **neu: leere und neue Synth-Spuren im
+   DAW-Projekt ⇅½**, Text der Hilfe-Karte im DAW-Projekt.
+2. Befund 6 des Prüfers war im Auftrag abgeschnitten – bitte nachreichen, falls er nicht der Hilfe-Karte entspricht.
+3. Im Halbton-Projekt leuchten die Tasten weiter nach Stufe der Tonart (gilt für ⇅-Spuren; für ⇅½ ohne Bedeutung) – nicht geändert (sichtbar → Funk).
+4. Nur synthetische .cbp getestet; am echten iPhone 12 nicht gemessen.

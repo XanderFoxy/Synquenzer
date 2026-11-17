@@ -1,16 +1,17 @@
 // KE1-Test „Klang erkennen“. Aufruf: node ke1-test.mjs <index.html> [ordner]   (Basis = basis.html daneben; Fotos/Hörbeispiele im Ordner)
 // Abschnitte: A Start unverändert (Bild, Block nicht geladen, kein Worker, Startzeit) · B Takes-Blatt per Touch → Blatt, Karte, Reiter,
 // Prozent beim Antippen, Long Tasks · C A/B gleich laut · D Übernehmen neu/vorhanden + ↶ bitgleich, Speichern/Laden · E Original als
-// Instrument · F Stopp · G Netz · H FANG-Ergebnis · I Spektral-Weg · J Guide · K Trefferquoten (Testtöne aus der App-Engine, sauber +
+// Instrument · F Stopp · G Netz · H FANG-Ergebnis · I Spektral-Weg · J Guide · P Wiedergabe während Erkennung (P3: 3 min) · K Trefferquoten (Testtöne aus der App-Engine, sauber +
 // Mikro-Simulation mit Raumhall + Rauschen; VA/FM-Töne für die Engine-Wahl) · L Fotos hochkant/quer · M Hörbeispiele
-// Umgebung: KE1_KORPUS=0 überspringt K/M; KE1_N=<Fälle je Art> (Standard 12).
-import { createRequire } from 'node:module'; import path from 'node:path'; import fs from 'node:fs'; import {execFileSync} from 'node:child_process';
+// Umgebung: KE1_KORPUS=0 überspringt K/M; KE1_NUR=K nur K/M, KE1_NUR=P3 nur P3; KE1_N=<Fälle je Art> (Standard 12); KE1_P3=<Sekunden> (Standard 180, 0 = aus).
+// Korpus: Saat KE1_SAAT (Standard 20261118, nicht zum Eichen benutzt; Eichlauf 20261117); Render-Saat der App-Engine 7.
+import { createRequire } from 'node:module'; import path from 'node:path'; import fs from 'node:fs'; import zlib from 'node:zlib'; import {execFileSync} from 'node:child_process';
 const { chromium } = createRequire(import.meta.url)('/opt/node-tools/node_modules/playwright/index.js');
 const HERE = path.dirname(new URL(import.meta.url).pathname);
 const {roomReverb, detuneResample, rng} = await import(path.join(HERE, 'proto/dsp.mjs'));
 const file = path.resolve(process.argv[2]), out = path.resolve(process.argv[3] || path.dirname(file)), basis = path.join(path.dirname(file), 'basis.html');
 const fotos = path.join(out, 'fotos'), hoeren = path.join(out, 'hoeren'); fs.mkdirSync(fotos, {recursive: true}); fs.mkdirSync(hoeren, {recursive: true});
-const KORPUS = process.env.KE1_KORPUS !== '0', NK = +(process.env.KE1_N || 12);
+const KORPUS = process.env.KE1_KORPUS !== '0' && process.env.KE1_NUR !== 'P3', NK = +(process.env.KE1_N || 12);
 let bad = 0, all = 0; const res = [];
 const fmt = d => (d == null ? '' : ' – ' + (typeof d === 'string' ? d : JSON.stringify(d)));
 const ok = (c, m, d) => { all++; const s = (c ? 'OK ' : 'FEHLER ') + m + fmt(d); if (!c) bad++; console.log(s); res.push(s); };
@@ -57,6 +58,8 @@ const jdiff = (a, b2, pth, o) => { o = o || []; if (JSON.stringify(a) === JSON.s
 try {
   info('Rechnerlast beim Start (loadavg 1/5/15 min, 4 Kerne)', fs.readFileSync('/proc/loadavg', 'utf8').trim());
   if (process.env.KE1_NUR !== 'K') {
+  const H0 = {note: 57, tune: 0, hold: 1.0, o1w: 1, c1: 60, o2: 1, o2w: 0, semi: 12, o2lvl: 70, o2tune: 3, n: 0, cut: 45, res: 60, eg: 35, e1a: 0, e1d: 55, e1s: 10, e1r: 40, e2a: 0, e2d: 70, e2s: 90, e2r: 35, vib: 0, l2f: 64, sw: 0, ft: 0};
+  if (process.env.KE1_NUR !== 'P3') {   // KE1_NUR=P3: nur der 3-min-Lauf
   /* ================= A: Start unverändert ================= */
   for (const [w, h, n] of [[428, 926, 'hochkant'], [926, 428, 'quer']]) {
     const A = await page(w, h, basis), B = await page(w, h);
@@ -70,6 +73,11 @@ try {
       ser: SYNQUENZER.serialize().length, guide: ui1Entries().some(e => e.id === 'ke1')}));
     ok(!r.loaded && r.x === 'undefined' && r.core === 'undefined' && r.wk === 0, 'A2 Start: stiller Block nicht ausgewertet, kein Worker angelegt', r);
     info('A2 Block-Größe', (r.block / 1024).toFixed(1) + ' KB roh');
+    {   // Größen-Budget (KONZEPT §3.1 / KE1g): Block ≤ 120 KB roh und ≤ 35 KB gzip, ganze Datei + ≤ 35 KB gzip (gzip -9)
+      const fN = fs.readFileSync(file, 'utf8'), fB = fs.readFileSync(basis, 'utf8'), m = fN.match(/<script type="text\/plain" id="sq-ke1-src">([\s\S]*?)<\/script>/);
+      const gz = t => zlib.gzipSync(Buffer.from(t, 'utf8'), {level: 9}).length, blk = m ? m[1] : '', z = {blockRoh: Buffer.byteLength(blk), blockGzip: gz(blk), htmlPlusGzip: gz(fN) - gz(fB), htmlPlusRoh: Buffer.byteLength(fN) - Buffer.byteLength(fB)};
+      ok(z.blockRoh <= 120000 && z.blockGzip <= 35000 && z.htmlPlusGzip <= 35000, 'A2 Größe: Block ≤ 120 KB roh / ≤ 35 KB gzip, Datei + ≤ 35 KB gzip (Bytes)', z);
+    }
     await close(p);
   }
   {   // Startzeit: frische Kontexte, abwechselnd Basis / neu, 3 Läufe, Median
@@ -84,7 +92,6 @@ try {
   }
 
   /* ================= B–G: Takes-Blatt per Touch, Karte, A/B, Übernehmen, Original, Stopp, Netz ================= */
-  const H0 = {note: 57, tune: 0, hold: 1.0, o1w: 1, c1: 60, o2: 1, o2w: 0, semi: 12, o2lvl: 70, o2tune: 3, n: 0, cut: 45, res: 60, eg: 35, e1a: 0, e1d: 55, e1s: 10, e1r: 40, e2a: 0, e2d: 70, e2s: 90, e2r: 35, vib: 0, l2f: 64, sw: 0, ft: 0};
   let keepRes = null;
   for (const [w, h, n] of [[428, 926, 'hochkant'], [926, 428, 'quer']]) {
     const p = await page(w, h);
@@ -121,7 +128,10 @@ try {
     ok(det && /\d+ %/.test(det), 'B6 Zeile antippen zeigt Prozent und zweitbeste Deutung', det);
     await p.screenshot({path: path.join(fotos, `3-karte-${n}.png`)});
     const lmax = Math.max(0, ...r1.lt.map(l => l.d));
-    ok(lmax < 50, 'B7 Hauptfaden: keine Aufgabe ≥ 50 ms während Laden + Rechnen + Zeichnen (' + n + ')', {longtasks: r1.lt.length, max: lmax, paintMs: +(+r1.st.paintMs).toFixed(1), wMs: +(+r1.st.wMs).toFixed(1), last: fs.readFileSync('/proc/loadavg', 'utf8').split(' ')[0]});
+    // wie P2/P3: streng < 50 ms bei freiem Rechner (Last < 3,5 auf 4 Kernen); unter fremder Last zeigt schon die App ohne KE1 Aufgaben
+    // ≥ 50 ms (Bezug P2/P3) – dann Grenze 100 ms (fängt grobe Fehler wie den früheren 153-ms-Worker-Bau im Tipp)
+    const lastB7 = +fs.readFileSync('/proc/loadavg', 'utf8').split(' ')[0], freiB7 = lastB7 < 3.5;
+    ok(lmax < (freiB7 ? 50 : 100), 'B7 Hauptfaden: keine Aufgabe ≥ ' + (freiB7 ? '50' : '100') + ' ms während Laden + Rechnen + Zeichnen (' + n + ')' + (freiB7 ? '' : ' (Rechner belegt, Last ' + lastB7 + ': Grenze 100 ms)'), {longtasks: r1.lt.length, max: lmax, paintMs: +(+r1.st.paintMs).toFixed(1), wMs: +(+r1.st.wMs).toFixed(1), last: lastB7});
     const small = r1.tb.filter(t => t.h < 44 || t.w < 44);
     ok(!small.length, 'B8 alle Knöpfe im Blatt ≥ 44 px', small.slice(0, 5));
     // Reiter wechseln
@@ -269,6 +279,66 @@ try {
     ok(q.every(c => !c.nan && (c.err || (c.D && c.D.every(d => isFinite(d))))) && q[0].err, 'Q1 unbrauchbare Aufnahme (Stille → Meldung; Rauschen / Knackser → Ergebnis „fern“): nirgends „NaN“', q);
     await close(p);
   }
+  }
+  /* P3: 3 Minuten Wiedergabe, währenddessen immer wieder erkennen (KE1g „3 min Wiedergabe während Analyse ohne Aussetzer“).
+     Gemessen im Hauptfaden: Planer-Vorlauf (keine Note zu spät), Planer-Fehler, lange Aufgaben, Lücken im 10-ms-Takt; dazu Bezug ohne
+     Erkennung. Die Audio-Ausgabe selbst meldet in Chromium ohne Lautsprecher keine Aussetzer (keine playoutStats) – hörbar ist der Planer. */
+  const P3S = +(process.env.KE1_P3 == null ? 180 : process.env.KE1_P3);
+  if (P3S > 0) {
+    const p = await page();
+    const x = await tone(p, H0, {});
+    const ref = await p.evaluate(pcm => SYNQUENZER.tkInject({pcm, sr: 48000, len: 1}), i16(x, .4));
+    const loadS = [], loadIv = setInterval(() => { try { loadS.push(+fs.readFileSync('/proc/loadavg', 'utf8').split(' ')[0]); } catch (e) {} }, 1000);
+    const r = await p.evaluate(async ([rf, sec]) => {
+      const wait = ms => new Promise(q => setTimeout(q, ms));
+      ensureAudio(); await wait(800); play(); await wait(1500);
+      const meter = () => { const M = {min: 9, gap: 0, n: 0, late: 0, lt: 0, ltMax: 0, e0: TICKERR.n, stop: 0}; let last = performance.now();
+        const po = new PerformanceObserver(l => { for (const e of l.getEntries()) { M.lt++; M.ltMax = Math.max(M.ltMax, e.duration); } }); po.observe({type: 'longtask'});
+        const iv = setInterval(() => { const t = performance.now(); M.gap = Math.max(M.gap, t - last); last = t; if (R.playing) { const a = b2t(R.schedBeat) - AU.ctx.currentTime; M.min = Math.min(M.min, a); if (a < 0) M.late++; M.n++; } else M.stop++; }, 10);
+        return () => { clearInterval(iv); po.disconnect(); return {minAheadMs: +(M.min * 1000).toFixed(1), zuSpaet: M.late, maxGapMs: +M.gap.toFixed(1), probes: M.n, aus: M.stop, lt: M.lt, ltMax: Math.round(M.ltMax), tickErr: TICKERR.n - M.e0}; }; };
+      let end = meter(); await wait(10000); const base = end();
+      end = meter(); const t0 = performance.now(), runs = []; let errs = 0;
+      while (performance.now() - t0 < sec * 1000) {
+        const xx = tkRef({t: rf.track, s: rf.scene}), t1 = performance.now(); ke1Go(ke1TkSrc(xx, {t: rf.track, s: rf.scene}));
+        while (performance.now() - t1 < 60000) { const s = SYNQUENZER.ke1.state(); if (s && !s.busy && (s.res || s.err)) break; await wait(100); }
+        const s = SYNQUENZER.ke1.state(); if (!s || s.err || !s.res) errs++; else runs.push({ms: s.res.ms, evals: s.res.evals});
+        SYNQUENZER.ke1.close(); await wait(700);
+      }
+      const k = end(), playing = R.playing, dauer = Math.round((performance.now() - t0) / 1000);
+      const nT = performance.now(); end = meter(); await wait(Math.min(60, sec / 3) * 1000); const nach = end(); stop();   // Nachlauf ohne Erkennung (Bezug unter derselben Last)
+      const ms = runs.map(q => q.ms).sort((a, b3) => a - b3);
+      const bo = (SYNQUENZER.ke1.state() || {}).backoffs || 0;
+      return {playing, dauer, n: runs.length, errs, msMedian: ms[ms.length >> 1], msMax: ms[ms.length - 1], base, k, nach, nachS: Math.round((performance.now() - nT) / 1000), bo};
+    }, [ref, P3S]);
+    clearInterval(loadIv);
+    const nM = Math.round(r.dauer), lMit = loadS.slice(0, nM), lNach = loadS.slice(nM), mx = a => (a.length ? Math.max(...a) : null), md = a => (a.length ? a.slice().sort((x, y) => x - y)[a.length >> 1] : null);
+    const frei = mx(lMit) != null && mx(lMit) < 3.5, lastInfo = {lastMax: mx(lMit), lastMedian: md(lMit), lastNachMax: mx(lNach)};
+    info('P3 Bezug: 10 s Wiedergabe ohne Erkennung vorher, ' + r.nachS + ' s nachher (Rechnerlast 1-min-Mittel, je Sekunde gelesen)', {vorher: r.base, nachher: r.nach, last: lastInfo});
+    ok(r.playing && r.errs === 0 && r.n >= Math.floor(P3S / 12) && r.k.aus === 0, 'P3 ' + Math.round(P3S / 60 * 10) / 10 + ' min Wiedergabe, währenddessen ' + r.n + '× erkannt: Wiedergabe lief durch, jede Erkennung fertig', {dauer_s: r.dauer, n: r.n, fehler: r.errs, msMedian: r.msMedian, msMax: r.msMax, rueckzug: r.bo});
+    // Streng (keine Note zu spät, keine Aufgabe ≥ 50 ms) nur bei freiem Rechner (Last < 3,5 auf 4 Kernen die ganze Zeit, wie P2). Unter fremder
+    // Last zeigt dieselbe Wiedergabe OHNE Erkennung selbst zu späte Noten und lange Aufgaben (src/p3-ohne.log: Last 6–7 → 18 lange Aufgaben
+    // bis 162 ms, Noten bis 280 ms zu spät) – dann nur 0 Planer-Fehler streng, der Rest wird mit dem Nachlauf-Bezug gemeldet.
+    ok(r.k.tickErr === 0 && (!frei || (r.k.zuSpaet === 0 && r.k.minAheadMs > 0)), 'P3 … 0 Planer-Fehler' + (frei ? ', Planer die ganze Zeit im Vorlauf (keine Note zu spät)' : ' (Rechner belegt, Last bis ' + mx(lMit) + ': zu späte Noten und lange Aufgaben nur gemeldet, Bezug ohne Erkennung oben)'), Object.assign({}, lastInfo, r.k));
+    if (frei) ok(r.k.ltMax < 50, 'P3 … keine Aufgabe ≥ 50 ms im Hauptfaden', r.k);
+    await close(p);
+  }
+  /* P4: Wiedergabe startet/endet erst während des Rechnens → Rechenanteil des Workers folgt (40 % / voll); Hauptfaden hängt → 15 % */
+  {
+    const p = await page();
+    const x = await tone(p, H0, {});
+    const ref = await p.evaluate(pcm => SYNQUENZER.tkInject({pcm, sr: 48000, len: 1}), i16(x, .4));
+    const r = await p.evaluate(async rf => {
+      const wait = ms => new Promise(q => setTimeout(q, ms)), st = () => SYNQUENZER.ke1.state(), o = {};
+      ensureAudio(); await wait(800);
+      ke1Go(ke1TkSrc(tkRef({t: rf.track, s: rf.scene}), {t: rf.track, s: rf.scene})); await wait(900);
+      o.ohne = st().dutyNow; play(); await wait(400); o.mit = st().dutyNow;
+      const t0 = performance.now(); while (performance.now() - t0 < 140) {} await wait(120); o.haengt = st().dutyNow;   // Hauptfaden 140 ms blockiert
+      stop(); await wait(400); o.aus = st().dutyNow; o.busy = st().busy; o.bo = st().backoffs;
+      while (st().busy) await wait(100); o.fertig = !!st().res; SYNQUENZER.ke1.close(); return o;
+    }, ref);
+    ok(r.ohne === 0 && (r.mit === .4 || r.mit === .15) && r.haengt === .15 && r.aus === 0 && r.fertig, 'P4 Rechenanteil folgt der Wiedergabe (aus → voll, an → 40 % – oder 15 %, wenn schon der Start der Wiedergabe den Hauptfaden aufhält –, Hauptfaden hängt → 15 %, wieder aus → voll), Erkennung fertig', r);
+    await close(p);
+  }
 
   }
   /* ================= K: Trefferquoten (Testtöne aus der App-Engine) ================= */
@@ -375,7 +445,7 @@ try {
     const sich = rows.filter(q => !q.err), allS = [], allG = [];
     for (const q of sich) for (const [k, f] of [['src', 'okSrc'], ['flt', 'okFlt'], ['amp', 'okAmp'], ['noi', 'okNoi'], ['mov', 'okMov']]) { if (q.words[k] === 'sicher') allS.push(q[f]); if (q.words[k] === 'geraten') allG.push(q[f]); }
     const rS = allS.length ? allS.filter(Boolean).length / allS.length : null, rG = allG.length ? allG.filter(Boolean).length / allG.length : null;
-    info('K Trefferquoten je Parameter (Testtöne aus der App-Engine, Saat 7; Erkennung im Worker der App)\n' + tab.join('\n'));
+    info('K Trefferquoten je Parameter (Testtöne aus der App-Engine, Korpus-Saat ' + (process.env.KE1_SAAT || 20261118) + ', Render-Saat 7; Erkennung im Worker der App)\n' + tab.join('\n'));
     info('K Gewissheit gegen Wahrheit (richtig: Tonquelle = Welle+OSZ 2, Filter = ≤ 3 HT + Typ, Lautstärke = Anstieg/Ausklang ≤ 1 Okt + Halten ≤ 25, Rauschen ≤ 15, Bewegung = Vibrato an/aus)\n' + cal.join('\n'));
     info('K Engine-Wahl bei VA-/FM-Tönen', EV);
     ok(rows.every(q => !q.err), 'K1 jeder Testton liefert ein Ergebnis', rows.filter(q => q.err).map(q => q.c && q.c.id));

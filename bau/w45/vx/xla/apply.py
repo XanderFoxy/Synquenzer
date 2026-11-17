@@ -75,5 +75,8 @@ src = repl_line(src, "mtx3Dr(i)) && tr.follow && song.xp && song.xp.length) {", 
 src = repl_line(src, "          if (tr.follow && song.xp && song.xp.length) {", "          if (" + X + "tr.follow && song.xp && song.xp.length) {", "XLA: ⇅½ wie ⇅ folgt (song.xp)")
 src = repl_line(src, "return tr.follow !== false ? (XP.tl.length > 1", "return tr.follow !== false || (tr.xs === 1 && typeof xlaXsOn === 'function' && xlaXsOn(i)) ? (XP.tl.length > 1", "XLA: ⇅½ wie ⇅ folgt")
 src = repl_line(src, "const tl = S.tracks[i].follow !== false ? XP.tl : JAM3.ft, P = [b0];", "const tl = S.tracks[i].follow !== false || (S.tracks[i].xs === 1 && typeof xlaXsOn === 'function' && xlaXsOn(i)) ? XP.tl : JAM3.ft, P = [b0];", "XLA: ⇅½ wie ⇅ folgt")
+# 6. Prüfung 2: Hilfe-Karte „Transponieren – so funktioniert's“ im Halbton-Projekt mit dem richtigen Text (Haken je eine Zeile, Kennung XLA)
+a = "    'Akkord = alle Spuren folgen dem Akkord (wie Improvisor).'].map(t => `<p>${esc(t)}</p>`).join('') + '</div><div class=\"row\"><button class=\"rb\" id=\"coachOk\">Verstanden</button></div>';\n"
+src = rep(src, a, a + "  if (typeof xlaCoachTxt === 'function') xlaCoachTxt(c);   /* XLA: im DAW-Projekt (⇅½) sagt die Karte, was die Tasten dort tun */\n")
 open(os.path.join(here, 'index.html'), 'w', encoding='utf-8').write(src)
 print('ok', len(src))

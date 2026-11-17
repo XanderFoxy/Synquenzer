@@ -43554,6 +43554,7 @@ function showCoach() {
   c.innerHTML = '<h4>TRANSPONIEREN – SO FUNKTIONIERT\'S</h4><div class="cbody">' + ['Jeder Clip kennt seine Tonart – automatisch erkannt (z. B. a-Moll).',
     'Taste leuchtet = Stufe in der Tonart: alles bleibt in der Tonart (wie OP-Z).', 'Dunkle Taste = neue Tonart: alles wird verschoben.',
     'Akkord = alle Spuren folgen dem Akkord (wie Improvisor).'].map(t => `<p>${esc(t)}</p>`).join('') + '</div><div class="row"><button class="rb" id="coachOk">Verstanden</button></div>';
+  if (typeof xlaCoachTxt === 'function') xlaCoachTxt(c);   /* XLA: im DAW-Projekt (⇅½) sagt die Karte, was die Tasten dort tun */
   c.hidden = false; UI.coach = true;
   if (!c._bound) { c._bound = true; onTap(c, () => hideCoach()); }
 }
@@ -115525,6 +115526,20 @@ function xlaTpHtml(c, B) {
     B('tpf', 'Noten fest', 'nur im Song je Teil (Rückung)', true, c.tp === 'fest' ? 'on' : '') + '</div>' +
     `<div class="xlainfo">${esc(c.tp === 'fest' ? 'Die Tastatur lässt die Spuren aus. Im Song kannst du je Teil rücken.' :
       'Tastatur auf ⇅ TRANSPONIEREN: ' + (nn ? 'die Taste ' + nn + ' spielt das Original (' + keyName(k) + '). ' : '') + 'Jede andere Taste spielt den Song genau in ihrer Tonart – auf dem kürzesten Weg, höchstens 6 Halbtöne höher oder tiefer. „Song transponieren“ und die Rückung je Teil wirken dazu.')}</div>`;   // Prüfung: Standard „nächster Weg“ (G … H gehen nach unten)
+}
+// Prüfung 2: Hilfe-Karte „Transponieren – so funktioniert's“ (Haken in showCoach; erstes TRANSPONIEREN und „? So funktioniert's“
+// im Harmonie-Modus): im DAW-Projekt mit ⇅½ sagt sie, was die Tasten dort tun – nicht „Taste leuchtet = Stufe in der Tonart“.
+// Gleiche Karte, gleiche Knöpfe; im normalen Projekt bleibt der Text wie bisher.
+function xlaCoachTxt(c) {
+  try {
+    const b = c && xlaHtView() ? c.querySelector('.cbody') : null; if (!b) return;
+    const k = xlaRefKey(), nn = k && isNum(k.root) ? noteNames()[k.root] : null, abs = S.settings.harmony.octaveMode === 'absolute';
+    b.innerHTML = ['Im DAW-Projekt (⇅½): jede Taste verschiebt den ganzen Song genau um Halbtöne.',
+      (nn ? 'Taste ' + nn + ' = Original (' + keyName(k) + '). ' : '') + (abs ? 'Eine Taste höher = einen Halbton höher.' :
+        'Jede andere Taste spielt den Song in ihrer Tonart – auf dem kürzesten Weg (höchstens 6 Halbtöne).'),
+      'Akkord = der Song geht genau auf den Grundton des Akkords.',
+      'Spuren mit ⇅ (ohne ½) folgen wie bisher den Akkorden.'].map(t => `<p>${esc(t)}</p>`).join('');
+  } catch (e) {}
 }
 /* ---------- Guide ---------- */
 (function xlaGuide() {

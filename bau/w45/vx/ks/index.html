@@ -14324,6 +14324,7 @@ function defaults() {
     polyH: 0,                                                    /* K2: the stored poly while the limiter caps poly (0 = not capped) */
     kfNc: 0, kfRm: 0, kfSh1: 0, kfSh2: 0,                       /* KF1: noise colour (0 white), ring osc1 x osc2, S&H in key (LFO 1 / 2) */
     strDmp: .4, strHel: .6, strAnr: 0,                           // KF2: Saite (wave 4) - Daempfung, Helligkeit, Anregung (0..1)
+    ...ks4Def(),                                                 // KS4: Takt-Huellkurven, LFO-Raster/Glaetten, Filter 2, Tonh.-Hk. (neutral)
   };
 }
 
@@ -14439,6 +14440,7 @@ class Voice {
     this.lkRm = 0; this.lkF = null;
     this.kfN = new Float64Array(20); this.kfRL = 0;   // KF1: noise colour filter state (0..8), ring phases / flags (9..12), ring level of the last block (13), S&H snap cache (14..17), key of a released note (18, 19); ring level
     this.kfV = new Float64Array(32);                   // KF2: filter type VOKAL (states L/R, the last block's coefficients)
+    this.ks4 = new Float64Array(12);                   // KS4: LFO smoothing (0, 1), filter 2 coefficient (4, 5) and states L/R (6..9)
   }
 }
 // V4a (L3): the phase (cycles) at which a VA wave's fundamental is +sin: saw (2t-1) 0.5, pulse pw/2 - 1/4, triangle 1/4, sine 0
@@ -16471,6 +16473,7 @@ class AnalogCore extends AudioWorkletProcessor {
   onMsg(m) {
     this.kf2Msg(m);                                              // KF2: a wave 4 in this message -> its string lines first
     if (m.set && typeof m.set.eng === 'number') for (const k of KF12_Z) if (!(k in m.set)) m.set[k] = 0;   // KF12 (rule 28): a whole sound without a KF1 key = neutral (0)
+    if (m.set && typeof m.set.eng === 'number') for (const k in KS4_N) if (!(k in m.set)) m.set[k] = KS4_N[k];   // KS4 (rule 28): a whole sound without a KS4 key = neutral
     if (m.ev) { for (const e of m.ev) this.enqueue(e); }
     if (m.kfKey) this.kf1Key(m.kfKey, m.kfT);                     // KF1: the key for S&H in der Tonart [root, mask12], kfT = its bar line
     if (m.mk) this.mk.load(m.mk);                                // MK1 (B.1): before a set that switches to eng 3
@@ -16753,6 +16756,7 @@ class AnalogCore extends AudioWorkletProcessor {
     envCoefs(D.A, P.aA, P.aD, P.aS, P.aR, P.aCurve);
     envCoefs(D.F, P.fA, P.fD, P.fS, P.fR, P.fCurve);
     envCoefs(D.M, P.mA, P.mD, P.mS, P.mR, P.mCurve);
+    this.ks4Der(D, P);   // KS4: switches E5-E7, E4 envelope times in note values (beats at the song tempo)
     const det = P.uniDet, semis = (0.25 * det + 0.75 * det * det * det * det) * 1.8;  // outer voice detune in semitones
     const side = -0.73764 * P.uniMix * P.uniMix + 1.2841 * P.uniMix + 0.044372, mid = -0.55366 * P.uniMix + 0.99785;
     let anyUni = false;
@@ -17159,6 +17163,7 @@ class AnalogCore extends AudioWorkletProcessor {
     if (this.lkTap) this.lkProbeRep();   // I2c: Reihen-Rampen (3 ms); I2b Test
     const P = this.lbP ? this.PR : this.P, src = this.src, dst = this.dst, step = CR * ISR;
     this.tempoAt(frame);
+    if (this.ks4T && this.ks4B !== this.bpm) this.derive();   // KS4 E4: envelopes in note values follow a tempo change
     // global LFO phases: tempo-synced LFOs follow the song position
     const songT = frame * ISR - this.songStart, spb = 60 / this.bpm;
     const r1 = P.l1sync > 0 ? 1 / (P.l1sync * spb) : P.l1rate, r2 = P.l2sync > 0 ? 1 / (P.l2sync * spb) : P.l2rate;
@@ -17189,10 +17194,12 @@ class AnalogCore extends AudioWorkletProcessor {
       src[S_LFO2] = (sh2_ === 5 ? this.lf5(2, P.l2retrig ? p2 : this.g52, P.l2sync) : this.lfoVal(sh2_, p2, P.l2retrig ? v.sh2 : this.gsh2)) * fade2;
       src[S_FENV] = v.fOut; src[S_MENV] = v.mOut; src[S_VEL] = v.vel; src[S_KEY] = (v.pitch - 60) / 24;
       src[S_MW] = P.mw; src[S_RND] = v.rnd; src[S_AENV] = v.aOut;
+      if (this.ks4L) this.ks4Lfo(v, P, src, step, r1, r2);   // KS4 E5: LFO steps and smoothing
       if (v === fv) { this.sc.set(src); this.scHas = true; }
       dst.fill(0);
       for (let i = 0; i < NSLOT; i++) if (this.msrc[i] && this.mdst[i]) dst[this.mdst[i]] += this.mamt[i] * src[this.msrc[i]];
       if (P.kfSh1 || P.kfSh2) this.kf1ShQ(v, P, src, dst);          // KF1: S&H in der Tonart (only S&H routes to pitch)
+      if (this.ks4P) this.ks4Ctl(v, P, src, dst, step);   // KS4 E5/E6/E7: pitch raster, filter 2 coefficient, pitch envelope
       if (v === fv && this.scopeDst) this.scD.set(dst);
       // spec v2 5.1: Uni-Verstimm. modulated per voice and control block; skipped entirely when no route targets it
       if (this.uniMod) {
@@ -17361,8 +17368,10 @@ class AnalogCore extends AudioWorkletProcessor {
       for (let n = 0; n < CR; n++) { x ^= x << 13; x ^= x >>> 17; x ^= x << 5; const y = (x | 0) * 4.656612873e-10 * g; bl[n] += y; if (st) br[n] += y; }
       v.rng = x >>> 0;
     }
+    const ks4F = this.ks4F && this.ks4Pre(v, st);   // KS4 E6: filter 2 (parallel: the mix before filter 1)
     if (this.P.lq >= 1) { this.ladder(v, bl, false); if (st) this.ladder(v, br, true); }
     else { this.ladderEco(v, bl, false); if (st) this.ladderEco(v, br, true); }
+    if (ks4F) this.ks4Post(v, st);   // KS4 E6: filter 2 in series after filter 1 or parallel to it
     // amp envelope (per sample), steal fade, pan, sum
     const A = D.A, gain = v.vgain * v.outG;
     let s = v.aSt, e = v.aOut, fg = v.fadeG;
@@ -19122,6 +19131,109 @@ Object.assign(AnalogCore.prototype, {
   },
 });
 /* KF12-WK-END */
+/* KS4-BEGIN (worklet) ================================================================================================
+   KS4 (Klangschule, Engine-Wuensche E4-E7) in the module 'sq-worklet-src'. ASCII only. Every key is neutral at its default;
+   a sound without a KS4 key runs exactly the code paths of before (old projects and factory sounds bit-identical: the flags
+   ks4T / ks4L / ks4P / ks4F stay false, no line below runs in control() or renderVoice()).
+   - E4 envelope times in note values (beats): ksAa ksAd ksAr (amp), ksFa ksFd ksFr (filter), ksMa ksMd ksMr (Huellk. 2);
+     0 = the seconds of aA ... as before. deriveInto -> ks4Der: envCoefs with beats * 60 / bpm (the core's song tempo);
+     a tempo change re-derives (control). So a riser can run 8 bars at any tempo (the seconds keys stop at 10 s).
+   - E5 per LFO n: ksRn raster 0 off, 1 semitone, 2 fifth + octave (both: the pitch routes of this LFO, relative to the
+     note; "S&H in der Tonart" on an S&H LFO wins), 3..16 = n equal steps of the LFO value (every route: a saw becomes a
+     staircase); ksGn 0..1 smoothing (one pole per voice, tau = ksGn * cycle / 3: at 100 % a step is 95 % there at its end).
+   - E6 filter 2: one 12 dB state-variable filter (TPT, linear) per voice and channel. ksF2 1 LP, 2 HP, 3 BP, 4 notch;
+     ksF2w 0 in series after filter 1 (ksF2m = wet share), 1 parallel to filter 1 from the same mix (ksF2m = its level);
+     cutoff ksF2c Hz, resonance ksF2r (k = 2 - 1.95 r), modulation ksF2e x 72 semitones from ksF2q 0 filter envelope,
+     1 Huellk. 2, 2 LFO 1; coefficient per control block, interpolated per sample (like the ladder).
+   - E7 pitch envelope: ksPe semitones (-48..48) x Huellk. 2 on the pitch sum (after the raster, so it glides freely).
+   No allocation in process(): voice state in v.ks4 (made with the voice), two scratch blocks made at load.
+   ===================================================================================================================== */
+const KS4_N = {ksAa: 0, ksAd: 0, ksAr: 0, ksFa: 0, ksFd: 0, ksFr: 0, ksMa: 0, ksMd: 0, ksMr: 0, ksR1: 0, ksR2: 0, ksG1: 0, ksG2: 0,
+  ksF2: 0, ksF2w: 0, ksF2c: 1000, ksF2r: .2, ksF2m: 1, ksF2q: 0, ksF2e: 0, ksPe: 0};
+function ks4Def() { return Object.assign({}, KS4_N); }
+const KS4_X = new Float64Array(CR), KS4_Y = new Float64Array(CR);   // E6 parallel: the mix before filter 1 (left / right)
+function KS4T(P) { return P.ksAa > 0 || P.ksAd > 0 || P.ksAr > 0 || P.ksFa > 0 || P.ksFd > 0 || P.ksFr > 0 || P.ksMa > 0 || P.ksMd > 0 || P.ksMr > 0; }
+Object.assign(AnalogCore.prototype, {
+  // deriveInto (hook): the switches of E5-E7 and, with E4, the envelope coefficients from beats. Q = the core's keys (locks and
+  // lanes do not carry KS4 keys); P = the view being derived (its seconds, sustain and curve)
+  ks4Der(D, P) {
+    const Q = this.P;
+    this.ks4F = (Q.ksF2 | 0) > 0;
+    this.ks4L = Q.ksR1 >= 3 || Q.ksR2 >= 3 || Q.ksG1 > 0 || Q.ksG2 > 0;
+    this.ks4P = Q.ksR1 === 1 || Q.ksR1 === 2 || Q.ksR2 === 1 || Q.ksR2 === 2 || Q.ksPe !== 0 || this.ks4F;
+    if (this.ks4F) this.ks4C0 = 69 + 12 * Math.log2(clamp(+Q.ksF2c || 1000, 20, 20000) / 440);
+    this.ks4T = KS4T(Q);
+    if (!this.ks4T) return;
+    const b = 60 / (this.bpm > 0 ? this.bpm : 120);
+    this.ks4B = this.bpm;
+    const t = (s, x) => (x > 0 ? x * b : s);
+    envCoefs(D.A, t(P.aA, Q.ksAa), t(P.aD, Q.ksAd), P.aS, t(P.aR, Q.ksAr), P.aCurve);
+    envCoefs(D.F, t(P.fA, Q.ksFa), t(P.fD, Q.ksFd), P.fS, t(P.fR, Q.ksFr), P.fCurve);
+    envCoefs(D.M, t(P.mA, Q.ksMa), t(P.mD, Q.ksMd), P.mS, t(P.mR, Q.ksMr), P.mCurve);
+  },
+  // control (hook, before the routes): E5 steps and smoothing of the LFO values of this voice (r1 / r2 = the LFO rates in Hz)
+  ks4Lfo(v, P, src, step, r1, r2) {
+    const z = v.ks4, fresh = v.t0 <= step * 1.5;
+    let x = src[S_LFO1], n = P.ksR1 | 0;
+    if (n >= 3) x = Math.round((x + 1) * .5 * (n - 1)) / (n - 1) * 2 - 1;
+    if (P.ksG1 > 0) { if (fresh) z[0] = x; else z[0] += (x - z[0]) * (1 - Math.exp(-3 * step * r1 / P.ksG1)); x = z[0]; }
+    src[S_LFO1] = x;
+    x = src[S_LFO2]; n = P.ksR2 | 0;
+    if (n >= 3) x = Math.round((x + 1) * .5 * (n - 1)) / (n - 1) * 2 - 1;
+    if (P.ksG2 > 0) { if (fresh) z[1] = x; else z[1] += (x - z[1]) * (1 - Math.exp(-3 * step * r2 / P.ksG2)); x = z[1]; }
+    src[S_LFO2] = x;
+  },
+  // control (hook, after the routes and S&H in der Tonart): E5 pitch raster, E7 pitch envelope, E6 filter-2 coefficient
+  ks4Ctl(v, P, src, dst, step) {
+    const r1 = P.ksR1, r2 = P.ksR2;
+    if ((r1 === 1 || r1 === 2) && !(P.kfSh1 && (P.l1shape | 0) === 4)) this.ks4Ras(S_LFO1, r1, src, dst);
+    if ((r2 === 1 || r2 === 2) && !(P.kfSh2 && (P.l2shape | 0) === 4)) this.ks4Ras(S_LFO2, r2, src, dst);
+    if (P.ksPe !== 0) dst[D_PITCH] += P.ksPe * v.mOut / 24;
+    if (this.ks4F) {
+      const q = P.ksF2q | 0, e = q === 1 ? v.mOut : q === 2 ? src[S_LFO1] : v.fOut;
+      const n = this.ks4C0 + P.ksF2e * 72 * e, g = lut(GTAN, n < 0 ? 0 : n), z = v.ks4;
+      if (v.t0 <= step * 1.5) { z[4] = g; z[6] = z[7] = z[8] = z[9] = 0; } else z[4] = z[5];
+      z[5] = g;
+    }
+  },
+  // the pitch part of the routes from LFO s snapped relative to the note: r 1 semitones, 2 the fifth and the octaves
+  ks4Ras(s, r, src, dst) {
+    let raw = 0, any = false;
+    for (let i = 0; i < NSLOT; i++) if (this.msrc[i] === s && this.mdst[i] === D_PITCH) { raw += this.mamt[i] * src[s]; any = true; }
+    if (!any) return;
+    const x = raw * 24; let q;
+    if (r === 1) q = Math.round(x);
+    else { const k = Math.floor(x / 12), f = x - 12 * k; q = 12 * k + (f < 3.5 ? 0 : f < 9.5 ? 7 : 12); }
+    dst[D_PITCH] += (q - x) / 24;
+  },
+  // renderVoice (hook, before filter 1): parallel filter 2 takes the mix as it is now
+  ks4Pre(v, st) {
+    if ((this.P.ksF2w | 0) === 1) { KS4_X.set(this.bl); if (st) KS4_Y.set(this.br); }
+    return true;
+  },
+  // renderVoice (hook, after filter 1): filter 2 in series (wet share m) or parallel (added at level m)
+  ks4Post(v, st) {
+    const P = this.P, typ = P.ksF2 | 0, m = clamp(+P.ksF2m, 0, 1), k = 2 - 1.95 * clamp(+P.ksF2r || 0, 0, 1), z = v.ks4;
+    if ((P.ksF2w | 0) === 1) { this.ks4Svf(KS4_X, this.bl, z, 6, typ, k, m, true); if (st) this.ks4Svf(KS4_Y, this.br, z, 8, typ, k, m, true); }
+    else { this.ks4Svf(this.bl, this.bl, z, 6, typ, k, m, false); if (st) this.ks4Svf(this.br, this.br, z, 8, typ, k, m, false); }
+  },
+  // one block of the state-variable filter (Zavalishin TPT): low v2, band v1, high x - k v1 - v2, notch x - k v1; the band is
+  // scaled by k (unity at its peak)
+  ks4Svf(x, out, z, j, typ, k, m, add) {
+    let g = z[4], s1 = z[j], s2 = z[j + 1];
+    const dg = (z[5] - z[4]) / CR;
+    for (let n = 0; n < CR; n++) {
+      g += dg;
+      const a1 = 1 / (1 + g * (g + k)), xi = x[n], v1 = a1 * (s1 + g * (xi - s2)), v2 = s2 + g * v1;
+      s1 = 2 * v1 - s1; s2 = 2 * v2 - s2;
+      const y = typ === 1 ? v2 : typ === 2 ? xi - k * v1 - v2 : typ === 3 ? k * v1 : xi - k * v1;
+      out[n] = add ? out[n] + m * y : xi + m * (y - xi);
+    }
+    if (s1 < 1e-20 && s1 > -1e-20) s1 = 0; if (s2 < 1e-20 && s2 > -1e-20) s2 = 0;   // no denormals on silence
+    z[j] = s1; z[j + 1] = s2;
+  },
+});
+/* KS4-END */
 </script>
 <script type="text/plain" id="sq-ks-src">
 /* ===== KS-BEGIN: Klangschule (Paket KS1) – stiller Block, ausgewertet erst beim ersten Öffnen (ksLoad, Muster mkLoad) =====
@@ -19140,6 +19252,10 @@ Object.assign(AnalogCore.prototype, {
    anders?“, bei zwei Schichten „Lade: …“, Übernehmen. Werte aus MACHART-DEMOS/REZEPTBUCH (werkzeug/machart.py, rezepte.py), in den
    Einheiten des Rezeptbuchs (Hz, s, HT, Anzeige-%) und mit kc()/HT umgerechnet; der Klang-Pegel je Karte ist auf eine Lautheit geeicht.
    Rechnen kennt jetzt auch Hüllk. 2 → Hüllk.-Menge, → Cutoff und → Lautstärke.
+   KS4: die Lektionen nutzen die Engine-Wünsche E4–E7 (Block KS4-BEGIN): L9 Bonus 2 „Riser über 8 Takte“ (Hüllk. 2 im TAKT), L9 Laser auch mit
+   dem Regler Tonh.-Hk., L10 Bonus 2 „Treppe ohne Tonart“ (LFO-Raster STUFEN), W2 Schicht 4 mit Körper (Filter 2 parallel), R05 Gischt im selben
+   Klang (Filter 2 Hochpass von Hüllk. 2), R09 Knall auf der Körper-Schicht (Filter 2 Hochpass, Hüllk. 2 kurz). Rechnen kennt die Zeiten im Takt
+   und die Tonhöhen-Hüllkurve.
    E2 (Lern-Vorhör-Zustand) siehe KS-BEGIN im Hauptskript: KS_L ist die offene Lektion. */
 const KSX = (() => {
   const CSS = `
@@ -19223,10 +19339,12 @@ const KSX = (() => {
   // KS2: dazu Hüllk. 2 (Block-Rate wie die Filter-Hk) und die Tonhöhe = Σ Routen Hüllk. 2 → Tonhöhe × 24 HT × Hk2(t) (wie control())
   function calc(P, o, mods) {
     o = o || {}; const sr = SRATE(), note = o.note == null ? 48 : o.note, vel = o.vel == null ? 100 / 127 : o.vel, gate = o.gate || 1, dur = o.dur || 2;
-    const A = coefs(+P.aA, +P.aD, +P.aS, +P.aR, P.aCurve == null ? .5 : +P.aCurve, sr), F = coefs(+P.fA, +P.fD, +P.fS, +P.fR, P.fCurve == null ? .5 : +P.fCurve, sr);
+    const tk = (s, b) => (+P[b] > 0 ? +P[b] * 60 / Math.max(20, S.bpm || 120) : +P[s]);   // KS4 E4: Zeit im Takt (Schläge im Song-Tempo) wie ks4Der im Worklet
+    const A = coefs(tk('aA', 'ksAa'), tk('aD', 'ksAd'), +P.aS, tk('aR', 'ksAr'), P.aCurve == null ? .5 : +P.aCurve, sr), F = coefs(tk('fA', 'ksFa'), tk('fD', 'ksFd'), +P.fS, tk('fR', 'ksFr'), P.fCurve == null ? .5 : +P.fCurve, sr);
     const mr = d => (mods || []).filter(m => m.src === 'menv' && m.dst === d).reduce((s, m) => s + (+m.amt || 0), 0);
     const ma = mr('pitch'), mf = mr('fenv'), mc = mr('cutoff'), mv = mr('amp');   // KS3: Hüllk. 2 auch → Hüllk.-Menge, → Cutoff, → Lautstärke (wie control())
-    const M = ma || mf || mc || mv ? coefs(P.mA == null ? .001 : +P.mA, P.mD == null ? .5 : +P.mD, +P.mS || 0, P.mR == null ? .5 : +P.mR, P.mCurve == null ? .5 : +P.mCurve, sr) : null;
+    const pe = +P.ksPe || 0;   // KS4 E7: Tonh.-Hk. in HT × Hüllk. 2
+    const M = ma || mf || mc || mv || pe ? coefs(+P.ksMa > 0 ? tk('mA', 'ksMa') : P.mA == null ? .001 : +P.mA, +P.ksMd > 0 ? tk('mD', 'ksMd') : P.mD == null ? .5 : +P.mD, +P.mS || 0, +P.ksMr > 0 ? tk('mR', 'ksMr') : P.mR == null ? .5 : +P.mR, P.mCurve == null ? .5 : +P.mCurve, sr) : null;
     const nb = Math.ceil(dur * sr / CRB), gB = Math.round(gate * sr / CRB), fo = new Float32Array(nb), ao = new Float32Array(nb), so = new Float32Array(nb), mo = new Float32Array(nb);
     const eb = (E, st, x) => { if (st === 1) { x = E.aT + (x - E.aT) * E.aCB; if (x >= 1) return [1, 2]; } else if (st === 2) { x = E.dT + (x - E.dT) * E.dCB; if (x <= E.s) return [E.s, 3]; }
       else if (st === 3) x += (E.s - x) * .2; else if (st === 4) { x = E.rT + (x - E.rT) * E.rCB; if (x <= 0) return [0, 0]; } return [x, st]; };
@@ -19238,7 +19356,7 @@ const KSX = (() => {
       else if (fs === 3) f += (F.s - f) * .2;
       else if (fs === 4) { f = F.rT + (f - F.rT) * F.rCB; if (f <= 0) { f = 0; fs = 0; } }
       fo[b] = f;
-      if (M) { [m, ms] = eb(M, ms, m); so[b] = ma * 24 * m; mo[b] = m; }
+      if (M) { [m, ms] = eb(M, ms, m); so[b] = (ma * 24 + pe) * m; mo[b] = m; }
       for (let n = 0; n < CRB; n++) {
         if (as === 1) { a = A.aT + (a - A.aT) * A.aC; if (a >= 1) { a = 1; as = 2; } }
         else if (as === 2) { a = A.dT + (a - A.dT) * A.dC; if (a <= A.s) { a = A.s; as = 3; } }
@@ -19252,7 +19370,7 @@ const KSX = (() => {
     const ib = t => Math.min(nb - 1, Math.max(0, Math.round(t * sr / CRB)));
     const hzB = b => 440 * Math.pow(2, (Math.max(0, cut0 + Math.max(-1, Math.min(1, fe + mf * mo[b])) * 72 * fo[b] * velF + mc * 120 * mo[b]) - 69) / 12);
     const dbB = b => { const a = ao[b] * Math.max(0, 1 + mv * mo[b]); return a > 1e-6 ? 20 * Math.log10(a) : -120; };
-    return {nb, gate, dur, dt: CRB / sr, fo, ao, so, mo, ma, cut0, velF, fe, ib, hzB, dbB, hz: t => hzB(ib(t)), db: t => dbB(ib(t)), st: t => so[ib(t)],
+    return {nb, gate, dur, dt: CRB / sr, fo, ao, so, mo, ma, pe, cut0, velF, fe, ib, hzB, dbB, hz: t => hzB(ib(t)), db: t => dbB(ib(t)), st: t => so[ib(t)],
       minHz(t0, t1) { let m = 1e9; for (let b = ib(t0); b <= ib(t1); b++) m = Math.min(m, hzB(b)); return m; },
       // erste Zeit nach t0, ab der die Tonhöhe höchstens lim HT über dem Ende liegt (Laser „unten“)
       downAt(lim, t0) { for (let b = ib(t0 || 0); b < nb; b++) if (Math.abs(so[b]) <= lim) return b * CRB / sr; return null; }};
@@ -19263,11 +19381,12 @@ const KSX = (() => {
   // KS2: Werte über einen Schlüssel – Klang-Parameter (p), Spur-Effekte ('fx.…') und Mod-Routen ('quelle:ziel', Wert = Engine-Menge)
   const isRt = k => k.indexOf(':') > 0;
   const rtOf = (snd, k) => { const [s, d] = k.split(':'); return (snd.mods || []).find(m => m.src === s && m.dst === d) || null; };
-  function getV(snd, k) { if (isRt(k)) { const m = rtOf(snd, k); return m ? +m.amt || 0 : 0; } return sndGet(snd, k); }
+  function getV(snd, k) { if (isRt(k)) { const m = rtOf(snd, k); return m ? +m.amt || 0 : 0; } const v = sndGet(snd, k); return v === undefined && typeof KS4N !== 'undefined' && k in KS4N ? KS4N[k] : v; }   // KS4: fehlend = neutral
   function patch(snd, o) {
     for (const k in o) {
       const v = o[k];
       if (k === 'lvDb') { snd.p.level = clamp((+snd.p.level || .3) * Math.pow(10, v / 20), .001, 4); continue; }   // KS3: Pegel einer zweiten Schicht relativ (dB)
+      if (typeof KS4N !== 'undefined' && k in KS4N && (/^ks[AFM][adr]$/.test(k) ? !(v > 0) : v === KS4N[k])) { for (const q of k === 'ksF2' ? KS4_F2 : [k]) delete snd.p[q]; continue; }   // KS4: neutral = Schlüssel weg (Regel 28)
       if (isRt(k)) { const [s, d] = k.split(':'); snd.mods = (snd.mods || []).filter(m => !(m.src === s && m.dst === d)); if (v) snd.mods.push({src: s, dst: d, amt: v}); }
       else if (k.startsWith('fx.')) { const ps = k.slice(3).split('.'); let o2 = snd.fx = snd.fx || {}; while (ps.length > 1) { const q = ps.shift(); o2 = o2[q] = Object.assign({}, o2[q] || {}); } o2[ps[0]] = v; }
       else snd.p[k] = v;
@@ -19276,6 +19395,12 @@ const KSX = (() => {
   }
   // auf die Lektionsspur (Engine, MOD-Liste); ohne ↶ – der Aufrufer bündelt die Schritte (commitSound)
   function setV(t, k, v) {
+    if (typeof KS4N !== 'undefined' && k in KS4N) {   // KS4: Werte der Engine-Wünsche – neutral = Schlüssel weg (Regel 28); TAKT / FILTER 2 / Raster: Seite neu
+      const s = S.tracks[t].sound, tkt = /^ks[AFM][adr]$/.test(k), was = JSON.stringify(Object.keys(s.p).filter(q => /^ks/.test(q)));
+      if (tkt ? !(v > 0) : v === KS4N[k]) ks4Drop(t, k === 'ksF2' ? KS4_F2 : [k]); else if (k === 'ksF2') ks4F2Typ(t, v); else ks4Set(t, k, v);
+      if (was !== JSON.stringify(Object.keys(s.p).filter(q => /^ks/.test(q))) && R.editor === 'synth' && R.selT === t) safeRebuild(openEditor);
+      return v;
+    }
     if (!isRt(k)) {
       const sy = /^l[12]sync$/.test(k), was = sy ? +S.tracks[t].sound.p[k] > 0 : false, r = setP(t, k, v);
       if (sy && was !== (+S.tracks[t].sound.p[k] > 0) && R.editor === 'synth' && R.selT === t) safeRebuild(openEditor);   // Rate ↔ Takt: der Regler wechselt
@@ -19303,18 +19428,26 @@ const KSX = (() => {
   // KS3: weitere Regler der Rezepte (Seiten laut Klang-Editor: OSZ › MIX / STIMME, FX › CHORUS)
   for (const k of ['kfNc', 'kfRm', 'subW', 'subOct']) PAGE[k] = ['osc', 'mix']; for (const k of ['mode', 'poly', 'glide', 'uniDet', 'uniMix', 'uniWidth', 'spread', 'ampVel']) PAGE[k] = ['osc', 'voice'];
   for (const k of ['fx.chorus.mode', 'fx.chorus.mix']) PAGE[k] = ['fx', 'chorus'];
-  const TABN = {osc: 'OSZ', filter: 'FILTER', env: 'HÜLLK.', lfo: 'LFO', mod: 'MOD', fx: 'FX'}, SUBN = {amp: 'LAUTST.-HÜLLK.', flt: 'FILTER', mod: 'MOD', ctl: 'REGLER', mix: 'MIX', l1: 'LFO 1', l2: 'LFO 2', spur: 'SPUR',
+  // KS4: die Regler der Engine-Wünsche E4–E7 (Zeit TAKT, Raster/Glätten, FILTER 2, Tonh.-Hk.)
+  for (const [pre, sub] of [['A', 'amp'], ['F', 'flt'], ['M', 'mod']]) { for (const x of 'adr') PAGE['ks' + pre + x] = ['env', sub]; const lo = pre.toLowerCase(); PAGE['ks4t' + lo] = PAGE['ks4t' + lo + 'q'] = ['env', sub]; }
+  for (const n of [1, 2]) for (const k of ['ksR' + n, 'ksR' + n + 'k', 'ksR' + n + 'q', 'ksG' + n]) PAGE[k] = ['lfo', 'l' + n];
+  for (const k of ['ksF2', 'ksF2w', 'ksF2c', 'ksF2r', 'ksF2m', 'ksF2q', 'ksF2e']) PAGE[k] = ['filter', 'f2']; PAGE.ksPe = PAGE.ks4mD = ['osc', 'voice'];
+  const TABN = {osc: 'OSZ', filter: 'FILTER', env: 'HÜLLK.', lfo: 'LFO', mod: 'MOD', fx: 'FX'}, SUBN = {amp: 'LAUTST.-HÜLLK.', flt: 'FILTER', mod: 'MOD', ctl: 'REGLER', mix: 'MIX', l1: 'LFO 1', l2: 'LFO 2', spur: 'SPUR', f2: 'FILTER 2',
     o1: 'OSZ 1', o2: 'OSZ 2', o3: 'OSZ 3', voice: 'STIMME', chorus: 'CHORUS'};
   const LBL = {aA: 'Amp-ATTACK', aD: 'Amp-DECAY', aS: 'Amp-SUSTAIN', aR: 'Amp-RELEASE', aCurve: 'Amp-KURVE', fA: 'Filter-ATTACK', fD: 'Filter-DECAY', fS: 'Filter-SUSTAIN',
     fR: 'Filter-RELEASE', fenv: 'Hüllk.-Menge', cutoff: 'Cutoff', ftype: 'Typ', res: 'Resonanz', kt: 'Keytrack', mA: 'Hüllk. 2 ATTACK', mD: 'Hüllk. 2 DECAY', mS: 'Hüllk. 2 SUSTAIN',
     mCurve: 'Hüllk. 2 KURVE', noise: 'Rauschen', 'fx.dly': 'Echo', 'fx.rev': 'Hall', l1sync: 'LFO 1 TAKT', l1rate: 'LFO 1 TAKT', kfSh1: 'S&H in der Tonart',
     'menv:pitch': 'Menge Tonhöhe', 'lfo1:pitch': 'Menge Tonhöhe', 'lfo1:cutoff': 'Menge Cutoff', o1lvl: 'Osz 1 Anteil', o1w: 'Osz 1 Welle',
     fCurve: 'Filter-KURVE', mR: 'Hüllk. 2 RELEASE', l1shape: 'LFO 1 Form', l2shape: 'LFO 2 Form', l2sync: 'LFO 2 TAKT', l2rate: 'LFO 2 TAKT', kfNc: 'Rauschfarbe', kfRm: 'Ring',
-    o1uni: 'Osz 1 Unison', o3lvl: 'Osz 3 Anteil', mode: 'Modus', 'fx.drive': 'Drive (FX)', 'fx.chorus.mode': 'Chorus', drive: 'Drive', l2fade: 'LFO 2 Einblenden'};
+    o1uni: 'Osz 1 Unison', o3lvl: 'Osz 3 Anteil', mode: 'Modus', 'fx.drive': 'Drive (FX)', 'fx.chorus.mode': 'Chorus', drive: 'Drive', l2fade: 'LFO 2 Einblenden',
+    ks4tm: 'Hüllk. 2 TAKT', ksMa: 'Hüllk. 2 ATTACK', ksMd: 'Hüllk. 2 DECAY', ksMr: 'Hüllk. 2 RELEASE', ksR1: 'LFO 1 Raster', ksG1: 'LFO 1 Glätten', ksR2: 'LFO 2 Raster', ksG2: 'LFO 2 Glätten',
+    ksF2: 'Filter 2', ksF2w: 'Filter 2 Weg', ksF2c: 'Filter 2 Cutoff', ksF2r: 'Filter 2 Resonanz', ksF2m: 'Filter 2 Anteil', ksF2q: 'Filter 2 Menge von', ksF2e: 'Filter 2 Menge', ksPe: 'Tonh.-Hk.'};   // KS4
   const RTN = k => { const [s, d] = k.split(':'); return (MSRC[s] ? MSRC[s].l : s) + ' → ' + (MDST[d] ? MDST[d].l : d); };   // KS3: Mod-Route allgemein „Quelle → Ziel“
   const lbl = k => LBL[k] || LBL[k.split('|')[0]] || (isRt(k) ? RTN(k) : PD[k] ? PD[k].l : k);
   const lblI = k => (isRt(k) ? RTN(k) : /^l[12]rate$/.test(k) ? 'LFO ' + k[1] + ' Rate' : lbl(k));   // KS3: Werkstatt/Rezepte nennen Routen immer „Quelle → Ziel“
   const val = (k, v) => (k === 'ftype' ? FTYPE_LBL[v | 0] : isRt(k) ? fmtVal('bip', toKnobAmt(k.split(':')[1], v)) : /^l[12]shape$/.test(k) ? LFO_SHAPE_NAME[v | 0]
+    : /^ksR[12]$/.test(k) ? (v >= 3 ? (v | 0) + ' Stufen' : ['aus', 'Halbton', 'Quinte + Oktave'][v | 0]) : k === 'ksF2' ? (v ? KS4_FT[v | 0] : 'aus') : k === 'ksF2w' ? (v ? 'parallel' : 'in Reihe') : k === 'ksF2q' ? KS4_Q[v | 0]   // KS4
+    : /^ks[AFM][adr]$/.test(k) && !(v > 0) ? 'FREI'
     : k === 'mode' ? ['POLY', 'MONO', 'LEGATO'][v | 0] : typeof v === 'string' ? (v === 'off' ? 'aus' : v)
     : PD[k] && !PD[k].fmt && PD[k].vals && PD[k].vals.join() === '0,1' ? (v ? 'an' : 'aus') : PD[k] ? fmtVal(PD[k].fmt, v) : String(v));
 
@@ -19330,6 +19463,7 @@ const KSX = (() => {
     wind: n => [[0, 2.2, n, .8]],
     riserB: () => (16 * 60 / Math.max(20, S.bpm || 120) <= 10 ? 4 : 2),
     riserT: () => KS2PH.riserB() * 4 * 60 / Math.max(20, S.bpm || 120),
+    r8T: () => 8 * 4 * 60 / Math.max(20, S.bpm || 120),   // KS4: 8 Takte im Song-Tempo (Hüllk. 2 im TAKT: 8/1)
   };
   const fnv = x => (typeof x === 'function' ? x() : x);
   const KS2BAUCH = .18;   // L8 Bonus: Osz 1 Anteil der Lösung – gemessen 12 dB unter dem Rauschen (NOTES KS2)
@@ -19566,16 +19700,16 @@ const KSX = (() => {
       ph: [[0, .3, 72, .9], [.75, .3, 69, .9], [1.5, .3, 74, .9]], calc: {gate: .3, dur: .8, note: 72}, graph: 'pitch',
       task: 'Bau einen Laser: 2 Oktaven runter in etwa 180 ms.',
       check(C, P, snd) {
-        const a = snd ? getV(snd, 'menv:pitch') : 0, d = +P.mD, s = +P.mS || 0, dn = C.downAt(.5, .002), t = dn == null ? 'nie' : dec(dn, 2) + ' s';
-        if (a < .9 || a > 1) return {ok: false, v: a, msg: '✗ Menge Tonhöhe ' + val('menv:pitch', a) + ' (= ' + dec(a * 24, 1) + ' HT) – für 2 Oktaven 90–100 % (22–24 HT).'};
+        const a0 = snd ? getV(snd, 'menv:pitch') : 0, pe = +P.ksPe || 0, a = a0 + pe / 24, d = +P.mD, s = +P.mS || 0, dn = C.downAt(.5, .002), t = dn == null ? 'nie' : dec(dn, 2) + ' s';   // KS4: Route + Tonh.-Hk.
+        if (a < .9 || a > 1.02) return {ok: false, v: a, msg: '✗ ' + (pe ? 'Tonhöhe ' + dec(a * 24, 1) + ' HT (Route ' + val('menv:pitch', a0) + ' + Tonh.-Hk. ' + fmtVal('semi', pe) + ')' : 'Menge Tonhöhe ' + val('menv:pitch', a) + ' (= ' + dec(a * 24, 1) + ' HT)') + ' – für 2 Oktaven 22–24 HT.'};
         if (s > .02) return {ok: false, v: s, msg: '✗ Hüllk. 2 SUSTAIN ' + val('mS', s) + ' – die Tonhöhe bleibt oben hängen (Ziel 0).'};
         if (d < .12 || d > .25) return {ok: false, v: d, msg: '✗ Hüllk. 2 DECAY ' + val('mD', d) + ', unten nach ' + t + ' (Ziel DECAY 120–250 ms) – ' + (d > .25 ? 'kürzer.' : 'etwas länger.')};
-        return {ok: true, v: d, msg: '✓ Geschafft – ' + dec(a * 24, 0) + ' HT runter, unten nach ' + t + ' (DECAY ' + val('mD', d) + ', Ziel 120–250 ms).'};
+        return {ok: true, v: d, msg: '✓ Geschafft – ' + dec(a * 24, 0) + ' HT runter' + (pe ? ' (mit Tonh.-Hk. ' + fmtVal('semi', pe) + ')' : '') + ', unten nach ' + t + ' (DECAY ' + val('mD', d) + ', Ziel 120–250 ms).'};
       },
       zones() { return [{ax: 'st', t0: 0, t1: .012, y0: 21.6, y1: 24.5}, {ax: 'st', t0: .1, t1: .25, y0: -1, y1: 1}]; },
       tips: ['Hüllk. 2 → Tonhöhe: 100 % = 24 HT = 2 Oktaven. Der DECAY sagt, wie schnell es runtergeht.', 'Hüllk. 2 DECAY etwa 180 ms, KURVE 50 %, SUSTAIN 0, Menge Tonhöhe 100 %.'],
       sol: {mD: .18, mCurve: .5},
-      after: 'Profi-Trick: ein Echo (FX › SPUR) macht aus einem Laser eine ganze Salve.',
+      after: 'Profi-Trick: ein Echo (FX › SPUR) macht aus einem Laser eine ganze Salve. Ohne MOD geht es auch: OSZ › STIMME › Tonh.-Hk. +24 HT.',
       merk: 'Gleichmäßig in Halbtönen klingt sauber. Kurze Fahrt plus Echo = Laser.'},
     {bonus: true,
       start: () => va({o1w: 0, o2w: 0, o2lvl: .7, o2fine: 7, ftype: 0, cutoff: 2000, res: .2, kt: .7, fenv: 0, aA: .01, aD: .1, aS: 1, aR: .03, mA: 2, mD: .5, mS: 1, mR: .05, mCurve: .5, poly: 2},
@@ -19594,7 +19728,27 @@ const KSX = (() => {
       zones(C) { const T = KS2PH.riserT(); return [{ax: 'st', t0: T * .9, t1: T * 1.1, y0: C.ma * 24 * .9, y1: C.ma * 24 + .5}]; },
       tips: ['Hüllk. 2 ATTACK = wie lange der Riser steigt. 4 Takte = 16 Schläge.', () => 'Hüllk. 2 ATTACK auf ' + dec(KS2PH.riserT(), 1) + ' s, SUSTAIN 100 %, Menge Tonhöhe etwa +50 %.'],
       sol: () => ({mA: KS2PH.riserT()}),
-      merk: 'Länger als 10 s geht eine Hüllkurve nicht. Für 8 Takte: LFO Säge im TAKT 8/1, Start NOTE, auf Tonhöhe und Cutoff.'}]},
+      merk: 'In Sekunden geht eine Hüllkurve höchstens 10 s. Für 8 Takte: Hüllk. 2 im TAKT – der nächste Bonus.'},
+    {bonus: true,   // KS4 E4: Hüllk. 2 im TAKT – 8 Takte in jedem Tempo
+      start: () => va({o1w: 0, o2w: 0, o2lvl: .7, o2fine: 7, ftype: 0, cutoff: 2000, res: .2, kt: .7, fenv: 0, aA: .01, aD: .1, aS: 1, aR: .03, mA: 2, mD: .5, mS: 1, mR: .05, mCurve: .5, poly: 2},
+        'Riser 8 Takte', {rev: .2}, [{src: 'menv', dst: 'pitch', amt: .5}]),
+      page: ['env', 'mod'], rings: ['ks4tm|ks4tmq', 'ksMa|mA', 'menv:pitch'],
+      ab: [['FREI: 2 s', {}], ['TAKT: 8 Takte', {ksMa: 32}]],
+      ph: () => [[0, 7.4, 48, .8]], calc: () => ({gate: KS2PH.r8T() + .2, dur: KS2PH.r8T() + .6, note: 48}), graph: 'pitch',
+      task: () => 'Bonus 2: Ein Riser über 8 Takte – bei ' + Math.round(S.bpm) + ' BPM sind das ' + dec(KS2PH.r8T(), 1) + ' s, länger als eine Hüllkurve in Sekunden kann.',
+      check(C, P, snd) {
+        const a = snd ? getV(snd, 'menv:pitch') : 0, s = +P.mS || 0, b = +P.ksMa || 0, T = KS2PH.r8T(), at = b > 0 ? b * 60 / Math.max(20, S.bpm || 120) : +P.mA;
+        if (a < .25) return {ok: false, v: a, msg: '✗ Menge Tonhöhe ' + val('menv:pitch', a) + ' – zu wenig Weg (Ziel ≥ +25 % = 6 HT).'};
+        if (s < .9) return {ok: false, v: s, msg: '✗ Hüllk. 2 SUSTAIN ' + val('mS', s) + ' – oben fällt die Tonhöhe wieder (Ziel ≥ 90 %).'};
+        if (!(b > 0)) return {ok: false, v: at, msg: '✗ Hüllk. 2 läuft FREI: ATTACK ' + val('mA', +P.mA) + ' – in Sekunden höchstens 10 s. Schalte TAKT ein (HÜLLK. › MOD) und stell ATTACK auf 8/1.'};
+        if (Math.abs(at / T - 1) > .05) return {ok: false, v: at, msg: '✗ Hüllk. 2 ATTACK ' + syncLbl(b) + ' = ' + dec(at, 1) + ' s – 8 Takte sind 8/1 (' + dec(T, 1) + ' s).'};
+        return {ok: true, v: at, msg: '✓ Geschafft – ATTACK 8/1 im TAKT: der Riser steigt ' + dec(at, 1) + ' s (8 Takte bei ' + Math.round(S.bpm) + ' BPM) um ' + dec(a * 24, 0) + ' HT – in jedem Tempo bis zur Eins.'};
+      },
+      zones(C) { const T = KS2PH.r8T(); return [{ax: 'st', t0: T * .95, t1: T * 1.05, y0: C.ma * 24 * .9, y1: C.ma * 24 + .5}]; },
+      tips: ['HÜLLK. › MOD › TAKT: dann zählt ATTACK in Noten. 8/1 = 8 Takte.', 'TAKT an, Hüllk. 2 ATTACK auf 8/1, SUSTAIN 100 %, Menge Tonhöhe etwa +50 %.'],
+      sol: {ksMa: 32},
+      after: 'Profi-Trick: den Riser 1/8 vor der Eins enden lassen – die kurze Stille macht den Drop größer (Rezept „Riser“).',
+      merk: 'Im TAKT zählt die Hüllkurve in Noten: 8/1 endet in jedem Tempo genau auf der Eins.'}]},
     {id: 'L10', ch: 5, n: 'Treppen: Zufall mit Absicht', sub: 'S&H im Takt und in der Tonart', short: 'Treppen', tasks: [{
       start: () => va({o1w: 1, o1pw: .5, o2w: 3, o2oct: 1, o2lvl: .45, ftype: 1, cutoff: 1500, res: .3, kt: .6, fenv: 0, aA: .005, aD: .1, aS: 1, aR: .1,
         l1shape: 4, l1rate: 7, l1sync: 0, l1retrig: 0, l1fade: 0, kfSh1: 0, poly: 2}, 'Treppen', {rev: .15, dly: .3}, [{src: 'lfo1', dst: 'pitch', amt: 1}]),
@@ -19629,7 +19783,26 @@ const KSX = (() => {
       zones() { return []; },
       tips: ['S&H auf den Cutoff statt auf die Tonhöhe: jeder Schritt eine andere Farbe.', 'Resonanz 85–95 %, Menge Cutoff etwa +25 %.'],
       sol: {'lfo1:cutoff': .25, res: .9},
-      merk: 'S&H auf den Cutoff plus viel Resonanz = Blubbern. Über 100 % pfeift es.'}]},
+      merk: 'S&H auf den Cutoff plus viel Resonanz = Blubbern. Über 100 % pfeift es.'},
+    {bonus: true,   // KS4 E5: Raster ohne Song-Tonart – aus der Säge wird eine Treppe
+      start: () => va({o1w: 1, o1pw: .5, o2w: 3, o2oct: 1, o2lvl: .45, ftype: 1, cutoff: 1500, res: .3, kt: .6, fenv: 0, aA: .005, aD: .1, aS: 1, aR: .1,
+        l1shape: 2, l1rate: 1, l1sync: 4, l1retrig: 1, l1fade: 0, kfSh1: 0, poly: 2}, 'Treppe', {rev: .15, dly: 0}, [{src: 'lfo1', dst: 'pitch', amt: .5}]),
+      page: ['lfo', 'l1'], rings: ['ksR1|ksR1k|ksR1q', 'ksG1|ksR1|ksR1k|ksR1q', 'lfo1:pitch'],
+      ab: [['Säge: gleitet', {}], ['Raster: 8 Stufen', {ksR1: 8}]],
+      ph: () => [[0, Math.min(4, 4 * 60 / Math.max(20, S.bpm || 120)), 60, .8]], calc: {gate: 2.4, dur: 2.5, note: 60}, graph: 'stair',
+      task: 'Bonus 2: Mach aus der Säge eine Treppe aufwärts – ohne Song-Tonart.',
+      check(C, P, snd) {
+        const r = +P.ksR1 | 0, sh = P.l1shape | 0, a = Math.abs(snd ? getV(snd, 'lfo1:pitch') : 0);
+        if (sh === 4 || sh === 5) return {ok: false, v: null, msg: '✗ LFO 1 Form ' + LFO_SHAPE_NAME[sh] + ' – für die Treppe aufwärts: Säge.'};
+        if (a < .1) return {ok: false, v: a, msg: '✗ Menge Tonhöhe ±' + dec(a * 24, 1) + ' HT – zu wenig Weg (Ziel ≥ 10 %).'};
+        if (!r) return {ok: false, v: 0, msg: '✗ Raster ist aus – die Säge gleitet. LFO 1 › Raster: STUFEN, HALBTON oder QUINTE.'};
+        return {ok: true, v: r, msg: '✓ Geschafft – ' + (r >= 3 ? r + ' Stufen' : r === 1 ? 'Halbton-Treppe (' + Math.round(a * 48) + ' Stufen)' : 'Quinten und Oktaven') + ' über ±' + dec(a * 24, 0) + ' HT, ohne Tonart.'};
+      },
+      zones() { return []; },
+      tips: ['LFO 1 › Raster: STUFEN schneidet die Säge in gleiche Stufen. HALBTON und QUINTE rasten die Tonhöhe ein – ohne Song-Tonart.', 'LFO 1 › Raster: 8 Stufen.'],
+      sol: {ksR1: 8},
+      after: 'Glätten (LFO › Raster) macht die Stufen wieder weich – mit HALBTON wird daraus ein Lauf über die Töne dazwischen.',
+      merk: 'Raster macht aus jeder Bewegung Stufen: im Takt klingt es nach Absicht, in jedem Song.'}]},
   ];
 
   /* ---------- KS3: Kapitel 6 „Werkstatt“ – W1/W2 Schicht für Schicht und 19 Rezept-Karten (ohne Aufgabe, „info“) ----------
@@ -19641,7 +19814,7 @@ const KSX = (() => {
   const kc = x => +(x * MOD_K.cutoff).toFixed(4), rt = (src, dst, amt) => ({src, dst, amt});
   // Pegel-Eichung (dB auf den Klang-Pegel): Ziel −24 LUFS trocken über die Phrase der Karte (offline, Worklet, Spur-Ausgang); gemessen mit probe-ks3.mjs
   // Klänge mit Drive (FX): [dB auf den Klang-Pegel vor dem Drive, dB auf die Spur-Lautstärke danach] – so bleibt die Verzerrung wie gedacht
-  const LV = {W1: [-1.4, .1, -5.4, [-5.4, -6.8]], W2: [.5, -2.4, -2.8, [-2.8, -6.5]], R01: 7.5, R02: [4.5, -4.7], R03: [-3.2, -7.8], R04: -6.6, R05: 10.4, R06: -2, R07: -4.3, R08: 11.3,
+  const LV = {W1: [-1.4, .1, -5.4, [-5.4, -6.8]], W2: [.5, -2.4, -2.8, [-2.8, -7.8]], R01: 7.5, R02: [4.5, -4.7], R03: [-3.2, -7.8], R04: -6.6, R05: 9.6, R06: -2, R07: -4.3, R08: 11.3,
     R09: 7.8, R10: 2.7, R11: .8, R12: -12.4, R13: -2.4, R14: 6.6, R15: 2.6, R16: 6.5, R17: -5.6, R18: .3, R19: [0, -7.5]};
   const lvl = (s, d) => { const [a, b] = Array.isArray(d) ? d : [d, 0]; if (a) s.p.level = clamp((+s.p.level || .3) * Math.pow(10, a / 20), .001, 4);
     if (b) s.fx.vol = clamp((s.fx.vol == null ? .8 : +s.fx.vol) * Math.pow(10, b / 40), 0, 1); return s; };
@@ -19664,8 +19837,11 @@ const KSX = (() => {
   // (5,2 Okt. = Hüllk.-Menge 0,87); Amp-ATTACK 1,8 s. Schicht 2: VOKAL, Cutoff 5,06 kHz = u, Hüllk.-Menge −100 % = 72 HT bis a (79 Hz).
   const W2B = {mode: 1, poly: 1, o1w: 0, o1lvl: .8, o2w: 0, o2fine: 9, o2lvl: .8, subLvl: .3, subW: 0, subOct: 1, noise: .85, kfNc: 1, ftype: 0, cutoff: 120, res: .3, kt: 0, drive: .2,
     fvel: 0, ampVel: .3, fenv: .87, fA: 2.1, fD: .1, fS: 1, fR: 2.5, fCurve: .4, aA: 1.8, aCurve: .15, aD: .1, aS: 1, aR: 2};
+  // KS4 E6: der Körper aus dem Vorbild (zweites Filter): Filter 2 Tiefpass parallel zum Vokal, 120 Hz → 4,4 kHz mit der Filter-Hüllkurve (0,87 × 72 HT), Res. 0,35, 10 dB leiser
+  const W2K = {ksF2: 1, ksF2w: 1, ksF2c: 120, ksF2r: .35, ksF2m: .36, ksF2q: 0, ksF2e: .87};
   const W2S = k => lvl(va(Object.assign({}, W2B, k >= 1 ? {ftype: 6, cutoff: 5060, fenv: -1, res: .4, fA: 1.7, fCurve: 0} : {},
-    k >= 2 ? {o1semi: -3, o2semi: -3, mA: 1.1, mD: 1, mS: .3, mR: .5, mCurve: .5, l1shape: 0, l1rate: 28, l1sync: 0, l1retrig: 0} : {}), 'Monster-Swell',
+    k >= 2 ? {o1semi: -3, o2semi: -3, mA: 1.1, mD: 1, mS: .3, mR: .5, mCurve: .5, l1shape: 0, l1rate: 28, l1sync: 0, l1retrig: 0} : {},
+    k >= 3 ? W2K : {}), 'Monster-Swell',
     k >= 3 ? {rev: .2, drive: .3, chorus: {mode: 'I', mix: .5, rate: 1, depth: 1}} : {rev: 0}, k >= 2 ? [rt('menv', 'pitch', 4 / 24), rt('lfo1', 'amp', .35)] : []), LV.W2[k]);
   const WT = o => Object.assign({info: true, layer: true, check: infoChk, zones: () => []}, o);
   const W1PH = [[0, 2, 39, .8]], W1C = {gate: 2, dur: 3.6, note: 39}, W2PH = [[0, 2.1, 51, .8]], W2C = {gate: 2.1, dur: 4.2, note: 51};
@@ -19708,16 +19884,18 @@ const KSX = (() => {
         why: 'Anheben, Gipfel, Ausatmen – wie eine Stimme. 28 Hz auf die Lautstärke hört man als raue Kehle; unter 15 Hz wird es ein Propeller, über 35 Hz ein Ton.',
         nums: (C, P) => { const o = +P.o1semi || 0; return 'Tonhöhe ' + st1(o + C.st(0)) + ' → ' + st1(o + C.st(1.1)) + ' bei 1,1 s → ' + st1(o + C.st(2.05)) + ' am Notenende.'; }}),
       WT({n: 'Komplett: dicht und groß', start: () => W2S(3), page: ['fx', 'spur'], rings: ['fx.drive', 'fx.rev', 'fx.chorus.mode'], ph: W2PH, calc: W2C,
-        ab: [['Ohne Drive, Chorus, Hall', {'fx.drive': 0, 'fx.chorus.mode': 'off', 'fx.rev': 0}], ['Komplett', {}]],
-        task: 'Drive 30 %, Chorus I und Hall 20 %.',
-        why: 'Die Verzerrung macht es dicht und bissig, Chorus und Hall groß. Den Körper aus dem Vorbild (ein zweites Filter) baust du hier mit einer zweiten Spur.',
-        nums: (C, P, s) => 'Drive (FX) ' + val('fx.drive', getV(s, 'fx.drive')) + ' · Chorus ' + val('fx.chorus.mode', sndGet(s, 'fx.chorus.mode')) + ' · Hall ' + val('fx.rev', getV(s, 'fx.rev')) + '.'})]},
+        ab: [['Ohne Körper, Drive, Chorus, Hall', {ksF2: 0, 'fx.drive': 0, 'fx.chorus.mode': 'off', 'fx.rev': 0}], ['Komplett', {}]],
+        task: 'Der Körper: FILTER 2 Tiefpass parallel (120 Hz → 4,4 kHz, 10 dB leiser). Dazu Drive 30 %, Chorus I und Hall 20 %.',
+        why: 'Der Vokal ist der Mund, FILTER 2 die Brust darunter – wie im Vorbild zwei Filter in einem Klang. Die Verzerrung macht es dicht und bissig, Chorus und Hall groß.',
+        nums: (C, P, s) => 'Körper ' + ((P.ksF2 | 0) ? val('ksF2', +P.ksF2) + ' ' + hz(+P.ksF2c || 1000) + ' → ' + hz((+P.ksF2c || 1000) * Math.pow(2, (+P.ksF2e || 0) * 6)) + ' · ' : 'aus · ') + 'Drive (FX) ' + val('fx.drive', getV(s, 'fx.drive')) + ' · Chorus ' + val('fx.chorus.mode', sndGet(s, 'fx.chorus.mode')) + ' · Hall ' + val('fx.rev', getV(s, 'fx.rev')) + '.'})]},
   ];
   // Rezept-Karten R01–R19 (REZEPTBUCH, Abschnitt „Synquenzer“ und rezepte.py): Start = der richtige Klang; ab = [billig/Variante, richtig];
   // alt = eine zweite Schicht zum Laden („Lade: …“, Index in ab oder eigener Patch)
   const RT = o => Object.assign({info: true, check: infoChk, zones: () => []}, o);
   const rz = (id, n, sub, short, T) => ({id, ch: 6, kind: 'r', n, sub, short, tasks: [RT(T)]});
   const RS = (id, p, n, fx, mods) => lvl(va(p, n, fx, mods), LV[id]);
+  // KS4: Pegel der Filter-2-Schichten in einem Klang (Gischt 7 dB, Knall 8 dB unter dem Körper; gemessen mit probe-ks4lv.mjs) und der zweiten Spuren
+  const R05G = .32, R05A = -18, R09K = .15, R09A = 13.9;
   const ARP16 = () => [69, 72, 76, 79, 81, 79, 76, 72, 69, 72, 76, 79, 81, 79, 76, 72].map((n, k) => [k * .125, .1, n, .8]);
   const KSR = [
     rz('R01', 'Hubschrauber', 'Szene, Intro, Übergang · Säge-LFO 9 Hz', 'Hubschrauber', {
@@ -19756,14 +19934,16 @@ const KSX = (() => {
       task: 'Atmosphäre, Intro, Outro, Ruhe vor dem Sturm.',
       why: 'Wind ist Rauschen mit einer wandernden Tonhöhe: ein Bandpass mit Resonanz. Zwei langsame LFOs im krummen Verhältnis (0,11 : 0,37 Hz) machen die Böen unvorhersehbar – lauter und heller zugleich.',
       merk: 'man den Takt der Böen mitzählen kann – ein einziger LFO atmet wie eine Maschine.'}),
-    rz('R05', 'Meeresrauschen', 'Atmosphäre · Körper LP12 + Gischt HP12', 'Meer', {
-      start: () => RS('R05', {o1lvl: 0, noise: 1, kfNc: 1, ftype: 1, cutoff: 250, res: .15, kt: 0, fenv: .45, fvel: .5, fA: 2, fD: 3, fS: .1, fR: 2.5, fCurve: .3, aA: 1.8, aD: 3.5, aS: .15, aR: 2.5, poly: 6},
+    rz('R05', 'Meeresrauschen', 'Atmosphäre · Körper LP12 + Gischt FILTER 2', 'Meer', {
+      start: () => RS('R05', {o1lvl: 0, noise: 1, kfNc: 1, ftype: 1, cutoff: 250, res: .15, kt: 0, fenv: .45, fvel: .5, fA: 2, fD: 3, fS: .1, fR: 2.5, fCurve: .3, aA: 1.8, aD: 3.5, aS: .15, aR: 2.5, poly: 6,
+        ksF2: 2, ksF2w: 1, ksF2c: 20000, ksF2r: .1, ksF2m: R05G, ksF2q: 1, ksF2e: -.5, mA: 2.4, mD: 1.5, mS: 0, mR: 1.2, mCurve: .5},   // KS4 E6: Gischt = Filter 2 HP12 parallel, Hüllk. 2 öffnet 20 kHz → 2,5 kHz
         'Meer', {rev: .3}),
-      page: ['env', 'flt'], rings: ['fenv', 'fA', 'aA'], keys: ['ftype', 'cutoff', 'fenv', 'fA', 'aA'],
-      ab: [['Körper: LP12', {}], ['Gischt: HP12', {kfNc: 0, ftype: 5, cutoff: 2500, res: .1, fenv: 0, aA: 2.4, aD: 1.5, aS: 0, aR: 1.2, lvDb: -18.8}]], alt: ['Gischt', 1],
+      page: ['filter', 'f2'], rings: ['ksF2', 'ksF2e', 'ksF2m'], keys: ['ftype', 'cutoff', 'fenv', 'ksF2', 'ksF2q', 'mA'],
+      ab: [['Nur Körper: LP12', {ksF2: 0}], ['Körper + Gischt: FILTER 2', {}]],
+      alt: ['Gischt', {kfNc: 0, ftype: 5, cutoff: 2500, res: .1, fenv: 0, aA: 2.4, aD: 1.5, aS: 0, aR: 1.2, lvDb: R05A, ksF2: 0}],   // KS3: die Gischt als zweite Spur (geht weiter)
       ph: [[0, 3.2, 48, .9], [3.6, 2.6, 48, .7]], calc: {gate: 3.2, dur: 6, note: 48},
       task: 'Atmosphäre, Chillout, Ruhe. Jede Welle ist eine Note: 2–4 s, jede anders lang.',
-      why: 'Eine Welle baut sich auf (das Filter öffnet), bricht und rollt aus. Zwei Spuren: der Körper (Tiefpass) und die Gischt (Hochpass), die erst am Bruch kommt.',
+      why: 'Eine Welle baut sich auf (das Filter öffnet), bricht und rollt aus. Der Körper ist der Tiefpass, die Gischt FILTER 2 (Hochpass parallel): Hüllk. 2 öffnet ihn erst zum Bruch.',
       merk: 'alle Wellen gleich sind oder nur eine Schicht spielt – dann fehlt der Bruch.'}),
     rz('R06', 'Riser (Rauschen)', 'Aufbau vor dem Drop · BP24 fährt hoch', 'Riser', {
       start: () => RS('R06', {o1w: 0, o1uni: 5, uniDet: .5, o1lvl: .3, noise: 1, kfNc: 0, ftype: 2, cutoff: 300, res: .45, kt: 0, fenv: 0, aA: rsL(), aCurve: .2, aD: .1, aS: 1, aR: .01,
@@ -19797,10 +19977,11 @@ const KSX = (() => {
         'Impact-Sub', {rev: 0}, [rt('menv', 'pitch', 1)]),
       page: ['env', 'mod'], rings: ['menv:pitch', 'mD', 'aD'], keys: ['o1w', 'menv:pitch', 'mD', 'aD', 'fx.rev'], graph: 'pitch',
       ab: [['Billig: Sub ohne Fall', {'menv:pitch': 0}], ['Sub: fällt 2 Oktaven', {}]],
-      alt: ['Impact-Körper', {o1lvl: 0, noise: 1, kfNc: 0, cutoff: 150, res: .2, drive: .4, fenv: .7, fA: .001, fD: .25, fS: 0, fR: .1, fCurve: .7, aD: .4, 'menv:pitch': 0, 'fx.rev': .45, 'fx.drive': .3, lvDb: 15.1}],
+      alt: ['Impact-Körper', {o1lvl: 0, noise: 1, kfNc: 0, cutoff: 150, res: .2, drive: .4, fenv: .7, fA: .001, fD: .25, fS: 0, fR: .1, fCurve: .7, aD: .4, 'menv:pitch': 0, 'fx.rev': .45, 'fx.drive': .3, lvDb: R09A,
+        ksF2: 2, ksF2w: 1, ksF2c: 20000, ksF2r: .1, ksF2m: R09K, ksF2q: 1, ksF2e: -.6, mA: .001, mD: .02, mS: 0, mR: .02, mCurve: .7}],   // KS4 E6: + Knall (FILTER 2 HP parallel, Hüllk. 2 20 ms)
       ph: [[0, .5, 40, 1]], calc: {gate: .5, dur: 1.6, note: 40},
       task: 'Die Eins nach Riser oder Pause, Szenenwechsel. Mindestens 1/8 Pause davor.',
-      why: 'Schichten mit Aufgaben: der Sub (Sinus fällt 2 Oktaven in 0,25 s) gibt die Wucht, der Körper (Rauschen hell → dunkel, mit Hall) die Größe. Zwei Spuren: „Lade: Impact-Körper“ für die zweite.',
+      why: 'Schichten mit Aufgaben: der Sub (Sinus fällt 2 Oktaven in 0,25 s) gibt die Wucht, der Körper (Rauschen hell → dunkel, mit Hall) die Größe, der Knall darin (FILTER 2 Hochpass, 20 ms) den Biss. Zwei Spuren: „Lade: Impact-Körper“ für die zweite.',
       merk: 'Hall auf dem Sub liegt (die Bässe matschen) oder der Sub ohne Fall stumpf „wummt“.'}),
     rz('R10', 'Whoosh', 'Übergang, Bewegung · Rauschen auf und zu', 'Whoosh', {
       start: () => RS('R10', {o1lvl: 0, noise: 1, kfNc: 1, ftype: 3, cutoff: 400, res: .45, kt: 0, fenv: .4, fvel: 0, fA: .35, fD: .5, fS: 0, fR: .3, fCurve: .4, aA: .35, aD: .5, aS: 0, aR: .3, aCurve: .4,
@@ -25733,6 +25914,7 @@ function formNorm(f) { return FORM.norm(f); }
     for (const k in AN) { const [a, b, int] = AN[k]; let v = num(p && p[k], base[k] != null ? base[k] : AN_DEF[k] != null ? AN_DEF[k] : a); v = clamp(v, a, b); o[k] = int ? Math.round(v) : v; }
     for (const k of ['kfNc', 'kfRm', 'kfSh1', 'kfSh2']) if (!o[k]) delete o[k];   // KF12 (Regel 28): KF1-Werte nur, wenn ≠ 0 – fehlend = neutral; alte Klänge byte-gleich wie in der Basis
     for (const k of ['strDmp', 'strHel', 'strAnr']) { const v = p && p[k] != null ? +p[k] : NaN; if (isFinite(v)) o[k] = clamp(v, 0, 1); else if (o.o1w === 4 || o.o2w === 4 || o.o3w === 4) o[k] = ({strDmp: .4, strHel: .6, strAnr: 0})[k]; }   // KF2: Saite – nur Klänge mit Saite tragen die Werte (alte bleiben byte-gleich)
+    if (typeof G.ks4Norm === 'function') G.ks4Norm(p, o);   // KS4: Takt-Hüllkurven, LFO-Raster, Filter 2, Tonh.-Hk. (nur wenn ≠ neutral)
     return o;
   }
   // engine blocks (§5.1): p.wt {table, pos, scan, scanTime}, p.fm2 {ratio, index, modDecay, modSus} (legacy 2-op FM, WP3–WP6)
@@ -45683,6 +45865,7 @@ function fitOver(b) { return b.scrollHeight > b.clientHeight + 1; }
 function fitBody(b, full) {
   if (!b || !b.isConnected || !b.clientHeight) return;
   if (full) { if (FIT_LV.some(c => b.classList.contains(c))) b.classList.remove(...FIT_LV); if (b.classList.contains('qf1s')) b.classList.remove('qf1s', 'pan-y'); }   // QF1
+  if (full && typeof ks4Fit === 'function') ks4Fit(b);   // KS4: Zeilen nur bei Platz (sonst ein schmaler Chip) – Dichte-Stufe wie ohne KS4
   for (const c of FIT_LV) { if (b.classList.contains(c)) continue; if (!fitOver(b)) break; b.classList.add(c); }
   qf1Fit(b, full);   // QF1
 }
@@ -46296,6 +46479,7 @@ function subTabsFor(tab, eng) {
   if (tab === 'osc') return eng === 'analog' ? [['o1', 'OSZ 1'], ['o2', 'OSZ 2'], ['o3', 'OSZ 3'], ['mix', 'MIX'], ['voice', 'STIMME']]
     : eng === 'fm6' ? [['feld', 'FELD'], ['algo', 'DX'], ['op', 'OP ' + ((ED.fmOp | 0) + 1)], ['makro', 'MAKRO'], ['voice', 'STIMME']]      // §6.5 (WP7); V4b: FELD · DX (N4b-01)
     : [['eng', eng === 'wt' ? 'WT' : 'FM'], ['voice', 'STIMME']];
+  if (tab === 'filter' && eng === 'analog') return [['ctl', 'REGLER'], ['xy', 'XY'], ['f2', 'FILTER 2']];   // KS4 E6: + FILTER 2 (nur VA)
   if (tab === 'filter') return [['ctl', 'REGLER'], ['xy', 'XY']];
   // V0d (A.4b 5): FM = OPERATOREN · TONHÖHE · FILTER · MOD-HK, at fmAmp 1 LAUTST. (ADSR) in front (reached by a tap only)
   if (tab === 'env' && eng === 'fm6') { const p = S.tracks[R.selT].sound.p; const L_ = (l, s) => `<span class="ll">${l}</span><span class="ls">${s}</span>`;
@@ -46510,6 +46694,7 @@ function fillSynthTab(body, i) {
   const fmE = ED.tab === 'env' && S.tracks[i].sound.engine === 'fm6';
   const tab = ED.tab, sub = ED.sub[fmE ? 'envfm' : tab];
   pg.classList.add('pg-' + tab + (sub ? '-' + sub : ''));
+  if (tab === 'filter' && sub === 'f2') { ks4PageF2(pg, i); return; }   // KS4 E6: FILTER 2
   if (tab === 'osc') {
     if (sub === 'o1' || sub === 'o2' || sub === 'o3') pageOsc(pg, i, +sub[1]);
     else if (sub === 'mix') pageMix(pg, i);
@@ -46586,6 +46771,7 @@ function pageVoice(pg, i) {
   ED.refreshers.push(() => { m.update(); ks.forEach(x => x.update()); });
   const k2 = kRow(ks.slice(4)); k2.appendChild(rs);
   pg.append(r1, kRow(ks.slice(0, 4)), k2);
+  ks4PageVoice(pg, i);   // KS4 E7: Tonh.-Hk. und Fallzeit
 }
 const FHINT1 = 'Für Quietschen: Oszillatoren leiser, Drive nach dem Filter (FX)';
 const FHINT2 = 'Pfeifen: Resonanz > 100 %, Keytrack 100 %. Brutzeln: Drive. Dreck danach: FX → Drive.';
@@ -46625,6 +46811,7 @@ function pageEnv(pg, i, pre) {
   ED.refreshers.push(k => { if (!k || keys.includes(k)) { ed.refresh(); ks.forEach(x => x.update()); forms.update(); } });
   const r1 = el('div', 'pgrow segs rest'); r1.append(lgrp('Form', forms));
   pg.append(r1, ed.el, kRow(ks, 'k5'));
+  ks4PageEnv(pg, i, pre, ks, ed);   // KS4 E4: Zeit FREI │ TAKT
 }
 // §5.3 point 3 (P1): a long-press on an envelope lane opens the picker for that time parameter; v2 has no destination for
 // envelope times (§18), so it says so and offers the default value
@@ -46710,6 +46897,7 @@ function pageLfo(pg, i, n) {
   const r3 = el('div', 'pgrow segs rest'); r3.append(lgrp('Start', start), chips);
   pg.append(r1, r2, r3);
   kf1PageLfo(pg, i, n);                                           // KF1: S&H in der Tonart
+  ks4PageLfo(pg, i, n);   // KS4 E5: Raster, Stufen, Glätten
 }
 // phase of a native LFO at audio time t (FREI rate or TAKT division; the song-locked phase of FX.TempoLFO)
 function lfoPhase(P, n, t) {
@@ -57896,7 +58084,8 @@ const UI1_API = {
    Fortschritt in den Geräte-Einstellungen (uiPrefs 'ks'), kein neues Projektfeld. Keine Audiodateien, kein Netz.
    KS2: Lektionen L5–L10 (Kapitel 3–5) mit Messen am Spur-Ausgang (L6–L8); E1 = das Scope meldet Cutoff, Amp-Pegel, Tonhöhe und Alter
    der Fokus-Stimme (Worklet, nur bei offenem Scope; Haken in modScopeSync legt sie in MLIVE.ks).
-   KS3: Kapitel 6 „Werkstatt“ (Aufreißen, Monster-Swell Schicht für Schicht) und 19 Rezept-Karten – hier nur die Such-Einträge. */
+   KS3: Kapitel 6 „Werkstatt“ (Aufreißen, Monster-Swell Schicht für Schicht) und 19 Rezept-Karten – hier nur die Such-Einträge.
+   KS4: Engine-Wünsche E4–E7 im eigenen Block KS4-BEGIN gleich hinter diesem (Bedienung im Klang-Editor, Speichern, Guide). */
 var KS_L = null;                                                   // die offene Lektion; var: die Speicher-Haken dürfen sie vor dieser Zeile lesen
 const KSM = {ok: false, err: null, ms: 0};
 function ksLoad() {
@@ -57957,6 +58146,7 @@ function ksGuide(L) {
     ['Pad mit Atmen', 'LFO im Takt auf Cutoff und Pegel.', 'pad flaeche atmen teppich lfo'], ['Nasses Arpeggio', 'Bandpass und langer Raum über dem Bass.', 'nass arpeggio echo hall bandpass sequenz'],
     ['Monster-Brüllen', 'Tonhöhe fällt, Amp hält, Vokal.', 'monster bruellen tier growl vokal']].forEach(([n, d, w], i) => {
     const id = 'R' + String(i + 1).padStart(2, '0'); E('ks-' + id.toLowerCase(), 'Klangschule-Rezept: ' + n, d, 'rezept klang laden sounddesign ' + w, id); });
+  if (typeof ks4Guide === 'function') ks4Guide(L);   // KS4: Hüllkurve im Takt, LFO-Raster, Filter 2, Tonh.-Hk.
 }
 // Test-API (lädt den Block bei Bedarf)
 const KS_API = {
@@ -57965,6 +58155,277 @@ const KS_API = {
   x: () => (ksLoad() ? KSX.api : null),
 };
 /* KS-END */
+/* ===== KS4-BEGIN (Paket KS4: Engine-Wünsche E4–E7 der Klangschule; Xander: „Engine-Wünsche E4–E7 alle bauen“) =====
+   Vier neue Klang-Werte im VA (Worklet, Kern im Block KS4-BEGIN von sq-worklet-src). Jeder ist neutral, solange er fehlt: alte Klänge und
+   Projekte bleiben Zeichen für Zeichen gleich (Regel 28: ein KS4-Wert steht nur im Klang, wenn er ≠ neutral ist; SQStore normAnalog → ks4Norm).
+   E4 HÜLLK. › Zeit FREI │ TAKT: ATTACK, DECAY, RELEASE in Noten (1/32 … 8/1 = 8 Takte) im Song-Tempo; p.ksAa/ksAd/ksAr (Lautst.),
+      ksFa/ksFd/ksFr (Filter), ksMa/ksMd/ksMr (Hüllk. 2) in Schlägen. Die Sekunden-Werte bleiben daneben (gespiegelt, für FREI und Anzeigen).
+   E5 LFO › Raster AUS │ HALBTON │ QUINTE │ STUFEN, Stufen 3…16, Glätten: p.ksR1/ksR2 (1 Halbton, 2 Quinte + Oktave – beide auf die Tonhöhe,
+      ohne Song-Tonart; 3…16 = so viele gleiche Stufen des LFO-Werts, auf jedes Ziel: aus der Säge wird eine Treppe), p.ksG1/ksG2 (0…1).
+   E6 FILTER › FILTER 2: zweites Filter (12 dB, LP12 │ HP12 │ BP12 │ KERBE) in Reihe hinter Filter 1 oder parallel daneben, Cutoff, Resonanz,
+      Menge von Filt.-Hk. │ Hüllk. 2 │ LFO 1, Anteil: p.ksF2, ksF2w, ksF2c, ksF2r, ksF2e, ksF2q, ksF2m (alle sieben nur, wenn Filter 2 an ist).
+   E7 OSZ › STIMME › Tonh.-Hk.: eigener Regler ±48 HT, Form = Hüllk. 2 (dazu „Fallzeit“ = Hüllk. 2 DECAY auf derselben Zeile); p.ksPe.
+   Ohne Worklet (WT, Kompatibel-Weg) sind die Regler grau. Kein Lock (PL1: „gilt nur für den ganzen Klang“), keine Mod-Ziele, kein neuer Knopf. ===== */
+const KS4N = {ksAa: 0, ksAd: 0, ksAr: 0, ksFa: 0, ksFd: 0, ksFr: 0, ksMa: 0, ksMd: 0, ksMr: 0, ksR1: 0, ksR2: 0, ksG1: 0, ksG2: 0,
+  ksF2: 0, ksF2w: 0, ksF2c: 1000, ksF2r: .2, ksF2m: 1, ksF2q: 0, ksF2e: 0, ksPe: 0};   // = KS4_N im Worklet
+const KS4_ENV = {a: ['ksAa', 'ksAd', 'ksAr'], f: ['ksFa', 'ksFd', 'ksFr'], m: ['ksMa', 'ksMd', 'ksMr']}, KS4_SEC = {a: ['aA', 'aD', 'aR'], f: ['fA', 'fD', 'fR'], m: ['mA', 'mD', 'mR']};
+const KS4_T = [].concat(KS4_ENV.a, KS4_ENV.f, KS4_ENV.m), KS4_F2 = ['ksF2', 'ksF2w', 'ksF2c', 'ksF2r', 'ksF2m', 'ksF2q', 'ksF2e'];
+const KS4_ORD = KS4_T.concat(['ksR1', 'ksG1', 'ksR2', 'ksG2'], KS4_F2, ['ksPe']);   // = Reihenfolge von ks4Norm
+const KS4_FT = ['AUS', 'LP12', 'HP12', 'BP12', 'KERBE'], KS4_Q = ['Filt.-Hk.', 'Hüllk. 2', 'LFO 1'], KS4_R = ['aus', 'Halbton', 'Quinte + Oktave'];
+// (A) Regler-Beschreibungen (PD): Zeiten im Takt wie LFO TAKT (8/1 … 1/32, in Schlägen); Werte für clampParam / makeCtl
+pd(KS4_T.join(' '), 'A', {vals: LFO_SYNC, def: 1, fmt: 'sync'}); for (const k of KS4_T) PD[k].l = k.slice(-1).toUpperCase();
+pd('ksR1 ksR2', 'Raster', {vals: range(0, 16), def: 0}); pd('ksG1 ksG2', 'Glätten', {min: 0, max: 1, c: 'lin', def: 0, fmt: 'pct'});
+pd('ksF2', 'Filter 2', {vals: [0, 1, 2, 3, 4], def: 0}); pd('ksF2w', 'Weg', {vals: [0, 1], def: 0}); pd('ksF2q', 'Quelle', {vals: [0, 1, 2], def: 0});
+pd('ksF2c', 'Cutoff', {min: 20, max: 20000, c: 'exp', def: 1000, fmt: 'hz'}); pd('ksF2r', 'Resonanz', {min: 0, max: 1, c: 'lin', def: .2, fmt: 'pct'});
+pd('ksF2m', 'Anteil', {min: 0, max: 1, c: 'lin', def: 1, fmt: 'pct'}); pd('ksF2e', 'Menge', {min: -1, max: 1, c: 'bip', def: 0, fmt: 'bip'});
+pd('ksPe', 'Tonh.-Hk.', {min: -48, max: 48, c: 'bip', def: 0, fmt: 'semi'});
+
+/* ---------- (B) Speichern / Laden (SQStore normAnalog, Haken G.ks4Norm): nur gültige Werte ≠ neutral, feste Reihenfolge am Ende ---------- */
+// selbständig (keine Konstanten dieses Blocks): SQStore normalisiert schon Klänge, bevor das Hauptskript hier angekommen ist
+function ks4Norm(p, o) {
+  if (!p || typeof p !== 'object') return;
+  const n = (v, d) => (typeof v === 'number' && isFinite(v) ? v : d);
+  for (const k of ['ksAa', 'ksAd', 'ksAr', 'ksFa', 'ksFd', 'ksFr', 'ksMa', 'ksMd', 'ksMr']) { const v = n(p[k], 0); if (v > 0) o[k] = clamp(v, .0625, 64); }
+  for (const j of [1, 2]) { const r = Math.round(n(p['ksR' + j], 0)); if (r > 0) o['ksR' + j] = clamp(r, 1, 16); const g = n(p['ksG' + j], 0); if (g > 0) o['ksG' + j] = clamp(g, 0, 1); }
+  const t = Math.round(n(p.ksF2, 0));
+  if (t > 0) { o.ksF2 = clamp(t, 1, 4); o.ksF2w = n(p.ksF2w, 0) >= .5 ? 1 : 0; o.ksF2c = clamp(n(p.ksF2c, 1000), 20, 20000); o.ksF2r = clamp(n(p.ksF2r, .2), 0, 1);
+    o.ksF2m = clamp(n(p.ksF2m, 1), 0, 1); o.ksF2q = clamp(Math.round(n(p.ksF2q, 0)), 0, 2); o.ksF2e = clamp(n(p.ksF2e, 0), -1, 1); }
+  const e = n(p.ksPe, 0); if (e) o.ksPe = clamp(e, -48, 48);
+}
+// Werte lesen (fehlend = neutral) und schreiben (setP: Wert, Engine, ↶ über die Geste; danach fällt ein neutraler Wert wieder weg)
+const ks4Has = p => !!p && Object.keys(KS4N).some(k => k in p);
+function ks4G(i, k) { const s = sndOf(i), v = s && s.p ? s.p[k] : undefined; return typeof v === 'number' ? v : KS4N[k]; }
+function ks4Tidy(i) {
+  const s = sndOf(i); if (!s || !s.p) return; const p = s.p;
+  for (const k in KS4N) if (k in p && !KS4_F2.includes(k) && p[k] === KS4N[k]) delete p[k];
+  if (!(+p.ksF2 > 0)) for (const k of KS4_F2) delete p[k];
+  const v = {}; for (const k of KS4_ORD) if (k in p) { v[k] = p[k]; delete p[k]; } Object.assign(p, v);   // Reihenfolge wie ks4Norm (Laden): Speichern/Laden bitgleich
+}
+function ks4Set(i, k, v) { const r = setP(i, k, v); ks4Tidy(i); return r; }
+// Schlüssel weg (z. B. Zeit → FREI): die Engine bekommt den neutralen Wert, der Klang trägt ihn nicht
+function ks4Drop(i, keys) {
+  const s = sndOf(i); if (!s || !s.p) return; let ch = false;
+  for (const k of keys) if (k in s.p) { delete s.p[k]; ch = true; if (AU.synth[i]) wkSet(i, k, KS4N[k]); }
+  if (!ch) return; UI.sndVer++; UI.dirty.strip = true; markDirty(); if (R.editor === 'synth' && i === R.selT) edParamChanged(keys[0]);
+}
+const ks4Beats = sec => LFO_SYNC[syncIdx(Math.max(1e-3, sec) * Math.max(20, S.bpm || 120) / 60)];
+const ks4Sec = (k, beats) => clamp(beats * 60 / Math.max(20, S.bpm || 120), PD[k].min, PD[k].max);
+const ks4Inert = i => !trackOnWorklet(i);
+
+/* ---------- (C) E4 HÜLLK.: Zeit FREI │ TAKT (Einhänge-Zeile am Ende von pageEnv) ---------- */
+function ks4EnvOn(p, pre) { return KS4_ENV[pre].some(k => +p[k] > 0); }
+function ks4EnvMode(i, pre, on) {
+  const s = sndOf(i); if (!s) return; const K = KS4_ENV[pre], SEC = KS4_SEC[pre];
+  if (on === ks4EnvOn(s.p, pre)) return;
+  if (on) { K.forEach((k, n) => setP(i, k, ks4Beats(+s.p[SEC[n]] || PD[SEC[n]].def))); ks4Tidy(i); }
+  else { K.forEach((k, n) => { if (+s.p[k] > 0) setP(i, SEC[n], ks4Sec(SEC[n], +s.p[k])); }); ks4Drop(i, K); }
+  safeRebuild(buildSynthEd);
+}
+function ks4PageEnv(pg, i, pre, ks, ed) {
+  const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth' || !KS4_ENV[pre]) return;
+  const P = () => tr.sound.p, K = KS4_ENV[pre], SEC = KS4_SEC[pre], u = soundUndo(i), on = ks4EnvOn(P(), pre);
+  const nm = {a: 'Lautstärke', f: 'Filter', m: 'Hüllk. 2'}[pre];
+  // ein Schalter TAKT (wie SYNC 2→1 / Phasen-Reset) am Ende der Form-Zeile: hochkant passt er neben die Form-Chips, ohne dass sie umbrechen
+  // hochkant liegt er oben rechts in der Hüllkurven-Grafik (dort ist sie fast immer leer), quer am Ende der Form-Zeile – die Form-Chips
+  // bleiben in beiden Lagen, wie sie sind
+  const mk = (cls, key) => {
+    const tg = el('button', 'tgl rb ks4tt ' + cls, '<i class="led"></i><span>TAKT</span>');
+    tg.setAttribute('role', 'switch'); tg.dataset.key = key;
+    tg.title = 'TAKT: ATTACK, DECAY und RELEASE in Noten im Song-Tempo (bis 8 Takte) – ein Riser endet genau auf der Eins';
+    onTap(tg, () => { if (ks4Inert(i)) return; const o = !ks4EnvOn(P(), pre), before = soundSnapshot(i); ks4EnvMode(i, pre, o); commitSound(i, before, nm + ' Zeit ' + (o ? 'TAKT' : 'FREI')); lcdShow(nm + ' Zeit', o ? 'TAKT (Noten)' : 'FREI (Sekunden)'); });
+    return tg;
+  };
+  const tP = mk('ks4ttp', 'ks4t' + pre), tL = mk('ks4ttl', 'ks4t' + pre + 'q');
+  const tgu = () => { const o = ks4EnvOn(P(), pre), x = ks4Inert(i); for (const tg of [tP, tL]) { tg.classList.toggle('on', o); tg.setAttribute('aria-checked', String(o)); tg.classList.toggle('inert', x); tg.setAttribute('aria-disabled', String(x)); } };
+  if (ed && ed.el) { ed.el.classList.add('ks4ov'); ed.el.appendChild(tP); }
+  const r1 = pg.querySelector('.pgrow'); (r1 || pg).appendChild(tL);
+  tgu(); ED.refreshers.push(tgu);
+  if (!on) return;
+  // TAKT: die Regler A, D, R zeigen Noten (die Sekunden laufen gespiegelt mit); die Grafik zeigt die Form, gezogen wird an den Reglern
+  [0, 1, 3].forEach((j, n) => {
+    const key = K[n], sec = SEC[n];
+    const kn = makeCtl(PD[key], () => +P()[key] || ks4Beats(+P()[sec]), v => { setP(i, key, v); setP(i, sec, ks4Sec(sec, v)); ks4Tidy(i); },
+      {undo: u, label: ['A', 'D', 'R'][n], key, fmt: v => syncLbl(v), inert: () => ks4Inert(i)});
+    kn.dataset.key = key; kn.classList.add('ks4tk'); kn.title = nm + ' ' + ['ATTACK', 'DECAY', 'RELEASE'][n] + ' im Takt';
+    if (ks[j] && ks[j].parentNode) ks[j].replaceWith(kn); ED.refreshers.push(() => kn.update());
+  });
+  if (ed && ed.el) { ed.el.classList.add('ks4tke'); ed.el.title = 'TAKT: die Zeiten stellst du mit A, D, R in Noten'; }
+}
+
+/* ---------- (D) E5 LFO: ein Chip RASTER ▾ neben START (Einhänge-Zeile am Ende von pageLfo); Raster, Stufen und Glätten im Blatt ---------- */
+const KS4_RSTUF = [3, 4, 5, 6, 8, 12, 16], KS4_GL = [[0, 'AUS'], [.25, '25 %'], [.5, '50 %'], [1, '100 %']];
+const ks4RLbl = r => (r >= 3 ? r + ' STUFEN' : ['AUS', 'HALBTON', 'QUINTE'][r | 0]);
+// Text des Chips: RASTER AUS │ RASTER HALBTON │ RASTER 8 STUFEN │ … · GLATT │ GLÄTTEN 50 %
+function ks4RChip(r, g) { return (r ? (g > 0 ? ks4RLbl(r) + ' · GLATT' : 'RASTER ' + ks4RLbl(r)) : g > 0 ? 'GLÄTTEN ' + Math.round(g * 100) + ' %' : 'RASTER AUS') + ' ▾'; }
+// was das Raster gerade tut (oben im Blatt)
+function ks4RHint(i, n) {
+  const tr = S.tracks[i], p = tr.sound.p, r = +p['ksR' + n] | 0, g = +p['ksG' + n] || 0, sh = (p['l' + n + 'shape'] | 0) === 4, pit = (tr.sound.mods || []).some(m => m.src === 'lfo' + n && m.dst === 'pitch');
+  if (ks4Inert(i)) return 'Nur bei VA und FM.';
+  if (!r) return g > 0 ? 'Glätten: der LFO läuft weicher.' : 'Kein Raster: der LFO läuft frei.';
+  if (r >= 3) return r + ' gleiche Stufen – auf jedes Ziel.';
+  if (p['kfSh' + n] && sh) return '„S&H in der Tonart“ ist an und hat Vorrang.';
+  return pit ? (r === 1 ? 'Die Tonhöhe rastet auf Halbtöne.' : 'Die Tonhöhe rastet auf Quinte und Oktaven.') : 'Wirkt, wenn LFO ' + n + ' die Tonhöhe moduliert (MOD).';
+}
+function ks4RasterPop(i, n, btn) {
+  const tr = S.tracks[i], P = () => tr.sound.p, R_ = 'ksR' + n, G_ = 'ksG' + n;
+  const put = (k, v, l) => { const before = soundSnapshot(i); ks4Set(i, k, v); commitSound(i, before, 'LFO ' + n + ' ' + l); lcdShow('LFO ' + n + ' ' + l, k === G_ ? (v > 0 ? fmtVal('pct', v) : 'AUS') : ks4RLbl(v)); };
+  openPop(btn, p => {
+    const r = +P()[R_] | 0, g = +P()[G_] || 0, B = (v, l, on, a) => `<button class="rb${on ? ' on' : ''}" data-${a}="${v}">${esc(l)}</button>`;
+    p.innerHTML = `<h4>LFO ${n} · Raster</h4><p class="small ks4rh">${esc(ks4RHint(i, n))}</p><div class="plist ks4rp">` + [[0, 'Aus'], [1, 'Halbton'], [2, 'Quinte + Oktave']].map(([v, l]) => B(v, l, r === v, 'r')).join('') + KS4_RSTUF.map(v => B(v, v + ' Stufen', r === v, 'r')).join('') +
+      `</div><p class="small">Halbton / Quinte: die Tonhöhe dieses LFO rastet ein – ohne Song-Tonart. Stufen: aus dem LFO werden gleiche Stufen, auf jedes Ziel (Säge = Treppe).</p>` +
+      `<h4>Glätten</h4><div class="plist ks4rp">` + KS4_GL.map(([v, l]) => B(v, l, Math.abs(g - v) < .005, 'g')).join('') + `</div><p class="small">Glätten: die Stufen gleiten weich ineinander (100 % = über die ganze Stufe).</p>`;
+    guardTouch(p);
+    onTap(p, x => { closePop(); put(R_, +x.dataset.r, 'Raster'); }, 'button[data-r]');
+    onTap(p, x => { closePop(); put(G_, +x.dataset.g, 'Glätten'); }, 'button[data-g]');
+  }, {name: 'ks4raster'});
+}
+function ks4PageLfo(pg, i, n) {
+  const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth') return;
+  const P = () => tr.sound.p, R_ = 'ksR' + n, G_ = 'ksG' + n, x = () => ks4Inert(i);
+  // ein Chip ▾ (Raster, Stufen, Glätten im Blatt), je nach Platz an einer von drei Stellen – kein bestehender Regler rückt:
+  // hochkant eine flache Zeile unter „S&H Tonart“ (40 px), nur wenn sie ohne Dichte-Stufe passt (ks4Fit, ab 390 × 844); sonst ein
+  // schmaler Chip rechts in der Regler-Zeile (die LFO-Vorschau wird schmaler, die Dichte-Stufe bleibt wie ohne KS4); quer neben START
+  const mk = (cls, key) => {
+    const c = el('button', 'rb ks4rc ' + cls, ''); c.dataset.key = key;
+    c.title = 'Raster: die Tonhöhe dieses LFO rastet auf Halbtöne oder Quinte + Oktave (ohne Song-Tonart), oder der LFO läuft in gleichen Stufen (Säge = Treppe). Glätten macht die Stufen weich.';
+    onTap(c, () => { if (!x()) ks4RasterPop(i, n, c); }); return c;
+  };
+  const cP = mk('ks4rcp', R_), cK = mk('ks4rck', R_ + 'k'), cL = mk('ks4rcl', R_ + 'q'), hint = el('span', 'small ks4lh');
+  const upd = () => {
+    const p = P(), r = +p[R_] | 0, g = +p[G_] || 0, t = ks4RChip(r, g), z = x(), tp = (r ? ks4RLbl(r) : 'AUS') + (g > 0 ? ' · GLATT' : '') + ' ▾', h = ks4RHint(i, n);
+    const hk = '<span class="ks4rl">RASTER ▾</span><span>' + (r >= 3 ? r + ' ST.' : ['AUS', 'HALBT.', 'QUINTE'][r]) + '</span>' + (g > 0 ? '<span class="ks4rl">GLATT</span>' : '');
+    if (cP.textContent !== tp) cP.textContent = tp; if (cL.textContent !== t) cL.textContent = t; if (cK.innerHTML !== hk) cK.innerHTML = hk; if (hint.textContent !== h) hint.textContent = h;
+    for (const c of [cP, cK, cL]) { c.classList.toggle('on', r > 0 || g > 0); c.classList.toggle('inert', z); c.setAttribute('aria-disabled', String(z)); c.setAttribute('aria-label', 'LFO ' + n + ' Raster: ' + t.replace(' ▾', '') + ' – ' + h); }
+  };
+  const row = el('div', 'pgrow segs rest ks4lrow ks4opt'), g = lgrp('Raster', cP, 'ks4rg');
+  g.title = cP.title; row.append(g, hint); pg.appendChild(row);
+  const sg = pg.querySelector('.pgrow.segs:nth-child(3) .lgrp'), kr = pg.querySelector('.pgrow.lfok'); (sg || row).appendChild(cL); (kr || row).appendChild(cK);
+  upd(); ED.refreshers.push(upd);
+}
+
+/* ---------- (E) E6 FILTER › FILTER 2 (eigener Unter-Reiter, nur VA; Einhänge-Zeilen in subTabsFor und fillSynthTab) ---------- */
+function ks4F2Typ(i, v) {
+  const s = sndOf(i); if (!s) return;
+  if (v > 0 && !(+s.p.ksF2 > 0)) for (const k of ['ksF2w', 'ksF2c', 'ksF2r', 'ksF2m', 'ksF2q', 'ksF2e']) setP(i, k, KS4N[k]);
+  ks4Set(i, 'ksF2', v);
+  if (v === 0) ks4Drop(i, KS4_F2.slice(1));
+}
+function ks4PageF2(pg, i) {
+  const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth') return;
+  const P = () => tr.sound.p, u = soundUndo(i), off = () => ks4Inert(i) || !(+P().ksF2 > 0);
+  const typ = makeSeg(KS4_FT.map((l, k) => [k, l]), () => ks4G(i, 'ksF2') | 0, v => ks4F2Typ(i, v), 'ft ks4ft', {undo: u, label: 'Filter 2'});
+  typ.dataset.key = 'ksF2';
+  const weg = makeSeg([[0, 'REIHE'], [1, 'PARALLEL']], () => ks4G(i, 'ksF2w') | 0, v => ks4Set(i, 'ksF2w', v), 'ks4w', {undo: u, label: 'Filter 2 Weg'});
+  weg.dataset.key = 'ksF2w';
+  const q = makeSeg(KS4_Q.map((l, k) => [k, l.toUpperCase()]), () => ks4G(i, 'ksF2q') | 0, v => ks4Set(i, 'ksF2q', v), 'ks4q', {undo: u, label: 'Filter 2 Quelle'});
+  q.dataset.key = 'ksF2q';
+  const ks = ['ksF2c', 'ksF2r', 'ksF2e', 'ksF2m'].map(k => { const kn = makeCtl(PD[k], () => ks4G(i, k), v => ks4Set(i, k, v), {undo: u, label: PD[k].l, key: k, fmt: v => fmtVal(PD[k].fmt, v), inert: off}); kn.dataset.key = k; return kn; });
+  const info = el('div', 'fhint small on ks4f2i');
+  const upd = () => {
+    const p = P(), t = +p.ksF2 | 0, par = (+p.ksF2w | 0) === 1;
+    [weg, q].forEach(sg => { const z = off(); sg.classList.toggle('inert', z); sg.setAttribute('aria-disabled', String(z)); });
+    typ.classList.toggle('inert', ks4Inert(i));
+    const s = ks4Inert(i) ? 'Filter 2 klingt nur mit dem VA-Worklet.' : !t ? 'Filter 2 ist aus – der Klang wie bisher. Zum Beispiel: KERBE in Reihe für Phaser-Fahrten, LP parallel als Körper.'
+      : (par ? 'Parallel: bekommt dieselbe Mischung wie Filter 1, Anteil = seine Lautstärke' : 'In Reihe hinter Filter 1, Anteil = wie viel gefiltert wird')
+        + ' · Menge von ' + KS4_Q[+p.ksF2q | 0] + (Math.abs(+p.ksF2e || 0) > .004 ? ' (' + fmtVal('bip', +p.ksF2e) + ' = ' + Math.round(Math.abs(+p.ksF2e) * 72) + ' HT)' : '');
+    if (info.textContent !== s) info.textContent = s;
+  };
+  const r1 = el('div', 'pgrow segs rest'); r1.append(typ);
+  const r2 = el('div', 'pgrow segs rest ks4f2r'); r2.append(lgrp('Weg', weg), lgrp('Menge von', q));
+  pg.classList.add('ks4f2'); pg.append(r1, r2, kRow(ks, 'k4'), info);
+  upd(); ED.refreshers.push(() => { typ.update(); weg.update(); q.update(); ks.forEach(k => k.update()); upd(); });
+}
+
+/* ---------- (F) E7 OSZ › STIMME: Tonh.-Hk. (eigener Regler) und Fallzeit (= Hüllk. 2 DECAY) – Einhänge-Zeile am Ende von pageVoice ---------- */
+function ks4PageVoice(pg, i) {
+  const tr = S.tracks[i]; if (!tr || tr.kind !== 'synth') return;
+  const u = soundUndo(i), x = () => ks4Inert(i);
+  const pe = makeCtl(PD.ksPe, () => ks4G(i, 'ksPe'), v => ks4Set(i, 'ksPe', Math.round(v)), {undo: u, label: 'Tonh.-Hk.', key: 'ksPe', fmt: v => fmtVal('semi', v), inert: x, detents: [-24, -12, 0, 12, 24]});
+  pe.dataset.key = 'ksPe'; pe.title = 'Tonhöhen-Hüllkurve: die Tonhöhe springt beim Anschlag um so viele Halbtöne und fällt mit Hüllk. 2 zurück (Laser +24, Kick +36, Brüllen +5)';
+  const fz = makeCtl(PD.mD, () => sndGet(tr.sound, 'mD'), v => setP(i, 'mD', v), {undo: u, label: 'Fallzeit', key: 'ks4mD', fmt: v => fmtVal('s', v), inert: () => x() || +tr.sound.p.ksMd > 0});
+  fz.dataset.key = 'ks4mD'; fz.title = 'Fallzeit = Hüllk. 2 DECAY (HÜLLK. › MOD)';
+  const hint = el('span', 'small ks4ph');
+  const upd = () => { const t = x() ? 'nur bei VA und FM' : +tr.sound.p.ksMd > 0 ? 'Hüllk. 2 läuft im TAKT – Zeit unter HÜLLK. › MOD' : 'Form: Hüllk. 2 (HÜLLK. › MOD)'; if (hint.textContent !== t) hint.textContent = t; };
+  const row = el('div', 'pgrow ks4prow rest ks4opt'); row.append(pe, fz, hint); pg.appendChild(row);
+  // passt die Zeile nicht ohne Dichte-Stufe (ks4Fit, kleinere Schirme): ein Chip in der Zeile MODUS, das Blatt hat die Werte
+  const alt = el('button', 'rb ks4rc ks4pec', ''); alt.dataset.key = 'ksPek'; alt.title = pe.title;
+  onTap(alt, () => { if (!x()) ks4PePop(i, alt); });
+  const r1 = pg.querySelector('.pgrow.segs'); (r1 || row).appendChild(alt);
+  const ua = () => { const h = '<span class="ks4rl">TONH.-HK. ▾</span><span>' + esc(fmtVal('semi', ks4G(i, 'ksPe'))) + '</span>', z = x(); if (alt.innerHTML !== h) alt.innerHTML = h; alt.classList.toggle('on', !!ks4G(i, 'ksPe')); alt.classList.toggle('inert', z); alt.setAttribute('aria-disabled', String(z)); };
+  upd(); ua(); ED.refreshers.push(() => { pe.update(); fz.update(); upd(); ua(); });
+}
+// Blatt „Tonhöhen-Hüllkurve“ (Chip auf kleineren Schirmen): feste Werte in Halbtönen, Fallzeit steht bei HÜLLK. › MOD
+const KS4_PEV = [-24, -12, -5, 0, 5, 7, 12, 24, 36, 48];
+function ks4PePop(i, btn) {
+  const put = v => { const before = soundSnapshot(i); ks4Set(i, 'ksPe', v); commitSound(i, before, 'Tonh.-Hk.'); lcdShow('Tonh.-Hk.', fmtVal('semi', v)); };
+  openPop(btn, p => {
+    const c = ks4G(i, 'ksPe');
+    p.innerHTML = '<h4>Tonhöhen-Hüllkurve</h4><p class="small">Die Tonhöhe springt beim Anschlag um so viele Halbtöne und fällt mit Hüllk. 2 zurück: Laser +24, Kick +36, Brüllen +5. Fallzeit = Hüllk. 2 DECAY (HÜLLK. › MOD).</p><div class="plist ks4rp">' +
+      KS4_PEV.map(v => `<button class="rb${v === c ? ' on' : ''}" data-v="${v}">${esc(v ? fmtVal('semi', v) : 'AUS')}</button>`).join('') + '</div>';
+    guardTouch(p); onTap(p, b => { closePop(); put(+b.dataset.v); }, 'button[data-v]');
+  }, {name: 'ks4pe'});
+}
+// fitBody (Haken, nur beim vollen Neumessen, vor den Dichte-Stufen): Zeilen .ks4opt erscheinen nur, wenn die Seite mit ihnen ohne Dichte-Stufe
+// passt; sonst fallen sie weg (die Seite zeigt den schmalen Chip). So bleibt jede Seite in derselben Dichte-Stufe wie ohne KS4.
+function ks4Fit(b) {
+  const pg = b && b.querySelector('.pg'); if (!pg || !pg.querySelector('.ks4opt')) return;
+  pg.classList.remove('ks4tight');
+  if (b.scrollHeight > b.clientHeight + 1) pg.classList.add('ks4tight');
+}
+
+/* ---------- (G) Guide „Wo finde ich …?“ (aus ksGuide) ---------- */
+function ks4Guide(L) {
+  const G = ui1G, E = (id, n, w, d, s, go, q) => ({id, n, w, d, s, go, q});
+  const va = (tab, sub) => () => {   // TAKT und FILTER 2 gibt es nur im VA: die gewählte VA-Spur, sonst die erste
+    ui1Home(); const ok = j => { const tr = S.tracks[j]; return !!(tr && tr.kind === 'synth' && !tr.stimme && !percIs(tr) && tr.sound && engKey(tr.sound.engine) === 'analog'); };
+    const t = ok(R.selT) ? R.selT : trackOrder().find(ok); if (t == null || t < 0) { toast('Erst eine Spur auf VA stellen (Klang-Editor › Klangerzeugung ▾)'); return false; }
+    selectTrack(t); ED.tab = tab; ED.sub[tab] = sub; FXF.big = null; openEditor(); return true; };
+  L.push(
+    E('ks4t', 'Hüllkurve im Takt', 'Klang-Editor (VA) › HÜLLK. › Zeit TAKT', 'ATTACK, DECAY, RELEASE in Noten bis 8 Takte – ein Riser endet in jedem Tempo genau auf der Eins.', 'huellkurve takt noten riser 8 takte tempo attack lang sync zeit', va('env', 'mod'), '[data-key="ks4tm"], [data-key="ks4tmq"]'),
+    E('ks4r', 'LFO-Raster und Glätten', 'Klang-Editor (VA) › LFO › Raster', 'HALBTON, QUINTE oder STUFEN ohne Song-Tonart; Glätten macht die Stufen weich.', 'raster stufen treppe s&h sample hold glaetten weich halbton quinte computer blubbern', G.ed('lfo', 'l1'), '[data-key="ksR1"], [data-key="ksR1k"], [data-key="ksR1q"]'),
+    E('ks4f2', 'Filter 2 (Kerbfilter)', 'Klang-Editor (VA) › FILTER › FILTER 2', 'Zweites Filter: LP, HP, BP oder KERBE, in Reihe oder parallel – Phaser-Fahrt, Körper plus Gischt.', 'filter 2 zweites filter kerbfilter notch kerbe phaser parallel reihe koerper gischt', va('filter', 'f2'), '[data-key="ksF2"]'),
+    E('ks4pe', 'Tonhöhen-Hüllkurve', 'Klang-Editor (VA) › OSZ › STIMME › Tonh.-Hk.', 'Ein Regler für Laser, Kick und Brüllen: die Tonhöhe springt und fällt mit Hüllk. 2.', 'tonhoehen huellkurve pitch envelope laser kick bruellen fallen tonhoehe', G.ed('osc', 'voice'), '[data-key="ksPe"], [data-key="ksPek"]'));
+  return L;
+}
+
+/* ---------- (H) „Was ist anders?“: die neuen Werte zählen bei ihren Reitern; Darstellung ---------- */
+{ const o = WIA_TABS.osc, f = WIA_TABS.filter, e = WIA_TABS.env, l = WIA_TABS.lfo;
+  WIA_TABS.osc = k => o(k) || k === 'ksPe'; WIA_TABS.filter = k => f(k) || KS4_F2.includes(k); WIA_TABS.env = k => e(k) || KS4_T.includes(k); WIA_TABS.lfo = k => l(k) || /^ks[RG][12]$/.test(k); }
+{ const st = document.createElement('style'); st.id = 'ks4-css';
+  st.textContent = `
+.pg .tgl.ks4tt{flex:none;width:48px;min-width:48px;height:44px;padding:2px 0;gap:3px;flex-direction:column;justify-content:center;font-size:10px;letter-spacing:.02em}
+.pg .enved.ks4ov{position:relative}.pg .tgl.ks4ttp{position:absolute;top:6px;right:6px;z-index:2;background:var(--panel,#1c1f25)}
+.pg .tgl.ks4ttl{display:none}
+@media (orientation:landscape){.pg .tgl.ks4ttp{display:none}.pg .tgl.ks4ttl{display:inline-flex;height:38px;padding:0}}
+.pg .tgl.ks4tt.inert,.pg .ks4rc.inert,.pg.ks4f2 .seg.inert{opacity:.4}
+.pg .ks4tke{pointer-events:none}.pg .ks4tke>:not(.ks4tt){opacity:.6}.pg .ks4tke .ks4tt{pointer-events:auto}
+.pg .ks4rc{font:700 11px/1.1 var(--font-ui);letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;min-width:0}
+.pg .ks4lrow{flex-wrap:nowrap;align-items:center}.pg .ks4lrow .ks4rg{flex:0 1 auto;min-width:0}
+.pg .ks4rcp{display:inline-flex;align-items:center;height:40px;min-height:0;padding:0 12px}   /* 40 px: die Zeile passt bei 390 × 844 unter „S&H Tonart“ */
+.pg .ks4lrow .ks4lh{flex:1 1 auto;min-width:0;margin-left:10px;line-height:1.15;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.pg .ks4rcl{display:none;align-self:stretch;min-height:0;height:auto;margin-left:10px;padding:0 10px}   /* quer so hoch wie START: die Zeile wächst nicht */
+@media (orientation:landscape){.pg .ks4lrow{display:none}.pg .ks4rcl{display:inline-flex;align-items:center}}
+.pg .ks4rck{display:none;flex:0 0 52px;width:52px;flex-direction:column;align-items:center;justify-content:center;gap:2px;align-self:center;min-height:44px;padding:4px 2px;font-size:10px;letter-spacing:.02em}
+.pg .ks4rck .ks4rl{font-size:8.5px;letter-spacing:.04em;opacity:.75}.pg .ks4rck>span{max-width:100%;overflow:hidden;text-overflow:ellipsis}
+@media (orientation:portrait){.pg.ks4tight .ks4rck{display:inline-flex}}   /* kein Platz für die Zeile: der Chip in die Regler-Zeile */
+.pg.ks4tight .ks4opt{display:none}
+.pg .ks4pec{display:none;flex-direction:column;align-items:center;justify-content:center;gap:2px;align-self:stretch;min-height:0;margin-left:10px;padding:2px 8px;font-size:10px;letter-spacing:.02em}
+.pg .ks4pec .ks4rl{font-size:8.5px;letter-spacing:.04em;opacity:.75}.pg.ks4tight .ks4pec{display:inline-flex}
+.pg .ks4rc.on{border-color:var(--amber);color:var(--amber)}
+.pop .ks4rh{margin:0 0 6px}.pop .ks4rp{display:flex;flex-wrap:wrap;gap:6px}.pop .ks4rp button{min-height:44px;flex:1 1 auto}
+.pg.ks4f2 .ks4f2r{flex-wrap:wrap;gap:8px}.pg.ks4f2 .seg button{min-height:44px}
+.pg.ks4f2 .ks4f2i{line-height:1.25}
+@media (orientation:landscape){.pg.ks4f2{display:grid;grid-template-columns:max-content minmax(0,1fr);grid-template-rows:auto auto 1fr;gap:4px 14px;align-content:start}
+.pg.ks4f2>.pgrow:nth-child(1){grid-column:1;grid-row:1}.pg.ks4f2>.ks4f2r{grid-column:1;grid-row:2;flex-wrap:nowrap}
+.pg.ks4f2>.kn-row{grid-column:2;grid-row:1/3;align-self:center}.pg.ks4f2>.ks4f2i{grid-column:1/-1;grid-row:3}.pg.ks4f2 .seg.ks4ft button{min-width:58px}}
+.pg .ks4prow{display:flex;align-items:center;gap:8px;flex-wrap:nowrap}.pg .ks4prow .knob{flex:0 0 auto}.pg .ks4prow .ks4ph{flex:1 1 auto;min-width:0;line-height:1.2}
+@media (orientation:landscape){.pg .ks4prow .ks4ph{display:none}}
+`;
+  document.head.appendChild(st); }
+// Test-API (SYNQUENZER.ks.ks4): Schlüssel, neutral, Normalisieren, Lesen
+KS_API.ks4 = {keys: () => Object.keys(KS4N), neutral: () => Object.assign({}, KS4N), norm: p => { const o = {}; ks4Norm(p, o); return o; }, get: (i, k) => ks4G(i, k),
+  set: (i, k, v) => ks4Set(i, k, v), env: (i, pre, on) => ks4EnvMode(i, pre, !!on), f2: (i, v) => ks4F2Typ(i, v)};
+/* KS4-END */
 
 /* ---------- computer keyboard ---------- */
 function onKeyDown(e) {

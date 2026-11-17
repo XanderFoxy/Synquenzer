@@ -92,10 +92,10 @@ for (const [w, h, tag] of [[390, 844, 'hochkant'], [844, 390, 'quer']]) {
   // ---- E5: LFO 1 › Raster per Chip und Blatt ----
   await openPg(p, t, 'lfo', 'l1');
   const s1 = await SER(p);
-  ok(await nVis(p, '.ks4rc') === 1, tag + ' genau ein Raster-Chip sichtbar (' + (tag === 'hochkant' ? 'eigene Zeile' : 'neben START') + ')');
+  ok(await nVis(p, '.ks4rc') === 1, tag + ' genau ein Raster-Chip sichtbar (' + (tag === 'hochkant' ? 'flache Zeile unter S&H Tonart' : 'neben START') + ')');
   await tapVis(p, '.ks4rc'); await wait(p, 400);
-  const pop = await X(p, () => { const q = document.querySelector('.pop'); return q ? {r: q.querySelectorAll('button[data-r]').length, g: q.querySelectorAll('button[data-g]').length, h: q.querySelector('h4') && q.querySelector('h4').textContent} : null; });
-  ok(pop && pop.r === 10 && pop.g === 4, tag + ' Blatt „Raster“: Aus, Halbton, Quinte + Oktave, 7 Stufen-Werte; Glätten 4 Werte', pop);
+  const pop = await X(p, () => { const q = document.querySelector('.pop'); return q ? {r: q.querySelectorAll('button[data-r]').length, g: q.querySelectorAll('button[data-g]').length, h: q.querySelector('h4') && q.querySelector('h4').textContent, st: (q.querySelector('.ks4rh') || {}).textContent} : null; });
+  ok(pop && pop.r === 10 && pop.g === 4, tag + ' Blatt „Raster“: Aus, Halbton, Quinte + Oktave, 7 Stufen-Werte; Glätten 4 Werte; Zustand oben', pop);
   await tapVis(p, '.pop button[data-r="8"]'); await wait(p, 400);
   await tapVis(p, '.ks4rc'); await wait(p, 300); await tapVis(p, '.pop button[data-g="0.5"]'); await wait(p, 400);
   const e5 = await X(p, t => ({k: Object.fromEntries(Object.entries(S.tracks[t].sound.p).filter(([k]) => /^ks/.test(k))), chip: [...document.querySelectorAll('.ks4rc')].map(c => c.textContent), top: UNDO[UNDO.length - 1].label}), t);
@@ -167,6 +167,20 @@ for (const [w, h, tag] of [[390, 844, 'hochkant'], [844, 390, 'quer']]) {
   await p.close();
 }
 
+// ================= kleinere Schirme: Dichte-Stufe der Seiten wie vorher, Raster-Chip sichtbar =================
+{
+  const fitOf = async (f, w, h) => { const q = await page(f, w, h), o = {};
+    for (const [tab, sub] of [['lfo', 'l1'], ['env', 'mod'], ['osc', 'voice'], ['filter', 'ctl']]) { await openPg(q, await X(q, () => ui1SynthT(false)), tab, sub);
+      o[tab] = await X(q, () => { const bd = EL.synthSheet.querySelector('.sh-body'), c = [...EL.synthSheet.querySelectorAll('.ks4rc, .ks4tt')].filter(e => { const r = e.getBoundingClientRect(); return r.width > 2 && r.height > 2; }).map(e => e.dataset.key);
+        return [...bd.classList].filter(c => /^fit|qf1s/.test(c)).join(' ') + (c.length ? ' [' + c.join(',') + ']' : ''); }); }
+    await q.close(); return o; };
+  const res = {}, bad = [];
+  for (const [w, h] of [[375, 667], [360, 740], [414, 896], [320, 568]]) { const a = await fitOf(base, w, h), n = await fitOf(file, w, h); res[w + 'x' + h] = n;
+    for (const k in a) if (n[k].replace(/ \[.*$/, '') !== a[k]) bad.push(w + 'x' + h + ' ' + k + ': ' + a[k] + ' → ' + n[k]);
+    if (!/ksR1/.test(n.lfo)) bad.push(w + 'x' + h + ' kein Raster-Chip'); }
+  ok(!bad.length, 'kleinere Schirme (375×667, 360×740, 414×896, 320×568): Dichte-Stufe je Seite wie vorher, Raster-Chip und TAKT sichtbar', bad.length ? bad : res);
+}
+
 // ================= Daten, Engine, Lektionen, CPU (hochkant) =================
 const p = await page(file, 390, 844);
 // Regel 28 und Speichern/Laden
@@ -185,11 +199,14 @@ const d = await X(p, async () => {
   const before = soundSnapshot(t); for (const k in V) setP(t, k, V[k]); commitSound(t, before, 'test'); await new Promise(r => setTimeout(r, 300));
   const s1 = serialize(); applyProject(normalizeProject(projFromFile(JSON.parse(s1))), {}); await new Promise(r => setTimeout(r, 1200));
   const s2 = serialize(), got = Object.fromEntries(Object.entries(S.tracks[t].sound.p).filter(([k]) => /^ks/.test(k)));
-  out.rt = {same: s1 === s2, keys: JSON.stringify(got) === JSON.stringify(Object.fromEntries(Object.keys(KS4N).filter(k => k in V).map(k => [k, V[k]]))), got};
-  const dmp = await SYNQUENZER.k1Dump(t); out.live1 = dmp && KS.filter(k => dmp.P[k] !== (k in V ? V[k] : KS4N[k]));
+  out.rt = {same: s1 === s2, keys: JSON.stringify(got) === JSON.stringify(Object.fromEntries(KS4_ORD.filter(k => k in V).map(k => [k, V[k]]))), got};
+  ensureAudio(); selectTrack(t); openEditor();   // Audio an (wie nach dem ersten Fingertipp), dann entsteht die Engine der Spur
+  for (let k = 0; k < 40 && !AU.synth[t]; k++) { syncEngine(t, true); await new Promise(r => setTimeout(r, 150)); }
+  await new Promise(r => setTimeout(r, 400));
+  const dmp = await SYNQUENZER.k1Dump(t); out.live1 = dmp ? KS.filter(k => dmp.P[k] !== (k in V ? V[k] : KS4N[k])) : 'keine Engine';
   // ganzer Klang ohne KS4-Schlüssel → die laufende Engine bekommt die neutralen Werte
   applySound(t, deep(factorySound(INIT_IDS.analog))); await new Promise(r => setTimeout(r, 500));
-  const dm2 = await SYNQUENZER.k1Dump(t); out.live2 = dm2 && KS.filter(k => dm2.P[k] !== KS4N[k]);
+  const dm2 = await SYNQUENZER.k1Dump(t); out.live2 = dm2 ? KS.filter(k => dm2.P[k] !== KS4N[k]) : 'keine Engine'; closeEditor();
   out.t = t; return out;
 });
 ok(!d.fac.length, 'Regel 28: kein Werksklang (VA/FM, ' + d.nFac + ' Klänge) trägt KS4-Schlüssel', d.fac.slice(0, 5));
@@ -208,6 +225,7 @@ ok(Array.isArray(d.live2) && !d.live2.length, 'ganzer Klang ohne KS4-Schlüssel:
 }
 // Engine-Sonden E4–E7 (Offline, dasselbe Worklet)
 const e = await X(p, async () => {
+  { const el = document.getElementById('sq-worklet-src'); if (!el.dataset.ks4seed) { el.dataset.ks4seed = 1; el.textContent = 'Math.random = (() => { let s = 12345; return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; })();\n' + el.textContent; } }
   const base = o => { const b = factorySound(INIT_IDS.analog); return SQStore.normalizeSound({engine: 'analog', name: 'P', cat: 'eigene', p: Object.assign({}, b.p, {analog: 0, o2lvl: 0, o3lvl: 0, noise: 0, subLvl: 0, drive: 0, spread: 0, ftype: 0, cutoff: 20000, res: 0, fenv: 0, kt: 0}, o.p), mods: o.mods || [], fx: Object.assign({}, b.fx, {rev: 0, dly: 0, drive: 0})}); };
   const R = async (s, ev, o) => (await SYNQUENZER.mkRender(s, ev, Object.assign({sec: 2, seed: 1}, o || {}))).l;
   const dB = (x, y) => { let s = 0, r = 0; for (let i = 0; i < x.length; i++) { const d = x[i] - y[i]; s += d * d; r += y[i] * y[i]; } return r > 0 ? +(10 * Math.log10(Math.max(1e-30, s) / r)).toFixed(1) : null; };
@@ -222,9 +240,10 @@ const e = await X(p, async () => {
   const lfo = (o, mods) => base({p: Object.assign({o1w: 3, l1shape: 2, l1rate: 1, l1sync: 0, l1retrig: 1, aA: .001, aS: 1, aR: .01}, o), mods: mods || [{src: 'lfo1', dst: 'pitch', amt: .5}]});
   const ev2 = [[0, 'on', 60, .8], [1.9, 'off', 60]];
   const st = await R(lfo({ksR1: 4}), ev2); out.stufen = [.1, .35, .6, .85].map(t => ht(st, t, t + .08));
-  const hb = await R(lfo({ksR1: 1}), ev2); out.halb = [.05, .2, .33, .47, .61, .77, .9].map(t => ht(hb, t, t + .02));
+  const HT = [-10, -7, -4, -1, 3, 7, 10], tc = v => (v + 12.25) / 24;   // Säge −12 … +12 HT in 1 s: Stufe v liegt bei (v + 12 ± ½) / 24 s
+  const hb = await R(lfo({ksR1: 1}), ev2); out.halb = HT.map(v => ht(hb, tc(v) - .006, tc(v) + .006));
   const q5 = await R(lfo({ksR1: 2}), ev2); out.quinte = [.05, .2, .33, .47, .61, .77, .93].map(t => ht(q5, t, t + .02));
-  const fr = await R(lfo({}), ev2); out.frei = [.05, .2, .33, .47, .61, .77, .93].map(t => ht(fr, t, t + .02));
+  const fr = await R(lfo({}), ev2); out.frei = HT.map(v => ht(fr, tc(v) - .006, tc(v) + .006)); out.HT = HT;
   const jump = x => { let m = 0, prev = null; for (let t = .05; t < 1.8; t += .01) { const v = ht(x, t, t + .012); if (prev != null && isFinite(v) && isFinite(prev)) m = Math.max(m, Math.abs(v - prev)); prev = v; } return +m.toFixed(2); };
   out.sh = jump(await R(lfo({l1shape: 4, l1rate: 4}), ev2)); out.shG = jump(await R(lfo({l1shape: 4, l1rate: 4, ksG1: 1}), ev2));
   // S&H in der Tonart hat Vorrang vor dem Raster (gleicher Klang wie ohne Raster)
@@ -254,7 +273,7 @@ ok(e.e4a <= -90 && e.e4b <= -90 && e.e4f <= -90, 'E4: Zeiten in Noten = dieselbe
 ok(e.e7 <= -90 && e.e7b <= -90, 'E7: Tonh.-Hk. +24 HT = Route Hüllk. 2 → Tonhöhe 100 %, +48 HT = zwei Routen (bitgleich)', {e24: e.e7, e48: e.e7b});
 const lv = e.stufen.map(v => Math.round(v)), dist = new Set(lv).size;
 ok(dist === 4 && e.stufen.every((v, i) => i === 0 || v > e.stufen[i - 1] + 4), 'E5: 4 Stufen aus der Säge (4 Tonhöhen, steigend)', e.stufen);
-ok(e.halb.every(v => Math.abs(v - Math.round(v)) <= .12) && e.frei.some(v => Math.abs(v - Math.round(v)) > .2), 'E5: HALBTON rastet auf ganze Halbtöne (frei gleitet dazwischen)', {halb: e.halb, frei: e.frei});
+ok(e.halb.every((v, k) => Math.abs(v - e.HT[k]) <= .08) && e.frei.every((v, k) => Math.abs(v - e.HT[k] - .25) <= .08), 'E5: HALBTON rastet auf ganze Halbtöne (frei: ¼ HT daneben)', {halb: e.halb, frei: e.frei});
 ok(e.quinte.every(v => [-12, -5, 0, 7, 12].some(q => Math.abs(v - q) <= .15)), 'E5: QUINTE + OKTAVE: nur −12, −5, 0, +7, +12 HT', e.quinte);
 ok(e.shG < e.sh / 3, 'E5: Glätten 100 %: größter Sprung der S&H-Tonhöhe ' + e.sh + ' → ' + e.shG + ' HT', null);
 ok(e.kfShPrio <= -90, 'E5: „S&H in der Tonart“ hat Vorrang vor dem Raster (bitgleich)', e.kfShPrio);
@@ -295,6 +314,31 @@ ok(Math.abs(L.koerper + 10) <= 1.5 && Math.abs(L.gischt + 7) <= 1.5 && Math.abs(
 ok(!p._errs.length, 'Daten/Engine/Lektionen: keine Fehler in der Konsole', p._errs.slice(0, 4));
 await p.close();
 
+// ================= Golden-Render (Art K1/NS1): alle VA/FM-Werksklänge vorher/nachher bitgleich =================
+// je Fassung eine frische Seite; Zufall im Offline-Worklet fest (geseedete Math.random-Zeile vor sq-worklet-src, wie n5-k-golden / golden.mjs);
+// gerendert über das App-Worklet (mkRender, 2 s, Akkord + Einzelton), verglichen: FNV-1a über die Float32-Bytes je Kanal
+const GOLD = async f => {
+  const q = await page(f, 390, 844);
+  const r = await X(q, async () => {
+    const el = document.getElementById('sq-worklet-src'); el.textContent = 'Math.random = (() => { let s = 12345; return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; })();\n' + el.textContent;
+    const fnv = a => { const u = new Uint8Array(a.buffer, a.byteOffset, a.byteLength); let h = 0x811c9dc5; for (let i = 0; i < u.length; i++) { h ^= u[i]; h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(16); };
+    const ev = [[0, 'on', 48, .9], [0, 'on', 55, .8], [0, 'on', 64, .7], [1.0, 'off', 48], [1.0, 'off', 55], [1.0, 'off', 64], [1.1, 'on', 67, .8], [1.6, 'off', 67]], out = {};
+    for (const fa of FACTORY) if (fa.engine === 'analog' || fa.engine === 'fm6' || fa.engine === 'fm2') {
+      try { const x = await SYNQUENZER.mkRender(factorySound(fa.id), ev, {sec: 2, seed: 1}); let m = 0; for (const v of x.l) m = Math.max(m, Math.abs(v)); out[fa.id] = fnv(x.l) + '/' + fnv(x.r || x.l) + (m < 1e-4 ? ' still' : ''); }
+      catch (e) { out[fa.id] = 'ERR ' + String(e).slice(0, 60); }
+    }
+    return out;
+  });
+  await q.close(); return r;
+};
+{
+  const gb = await GOLD(base), gn = await GOLD(file), gn2 = await GOLD(file);
+  const ids = Object.keys(gb), diff = ids.filter(id => gb[id] !== gn[id]), ctl = ids.filter(id => gn[id] !== gn2[id]), bad = ids.filter(id => / still|ERR/.test(gb[id]));
+  ok(ids.length > 50 && !ctl.length, 'Golden: Kontrolle neu == neu (zwei Seiten, ' + ids.length + ' Klänge)', ctl.slice(0, 5));
+  ok(!bad.length, 'Golden: kein Render still oder mit Fehler', bad.slice(0, 5).map(id => id + ' ' + gb[id]));
+  ok(ids.length > 50 && !diff.length, 'Golden: ' + ids.length + ' VA/FM-Werksklänge vorher/nachher bitgleich (mkRender, 2 Kanäle)', diff.slice(0, 5).map(id => id + ' ' + gb[id] + ' → ' + gn[id]));
+}
+
 // ================= CPU: Offline-Render vorher / nachher =================
 const CPU = async f => {
   const q = await page(f, 390, 844);
@@ -307,15 +351,18 @@ const CPU = async f => {
     await tm(S0); const o = {s0: [], s1: [], s2: []};
     for (let i = 0; i < 5; i++) { o.s0.push(await tm(S0)); if (S1) o.s1.push(await tm(S1)); if (S2) o.s2.push(await tm(S2)); }
     const md = a => { const x = a.slice().sort((p, q) => p - q); return x.length ? +x[Math.floor(x.length / 2)].toFixed(1) : null; }, mn = a => (a.length ? +Math.min(...a).toFixed(1) : null);
-    return {s0: md(o.s0), s1: md(o.s1), s2: md(o.s2), s0min: mn(o.s0), s1min: mn(o.s1), s2min: mn(o.s2)};
+    return {s0: md(o.s0), s1: md(o.s1), s2: md(o.s2), s0min: mn(o.s0), s1min: mn(o.s1), s2min: mn(o.s2), all: o};
   });
   await q.close(); return r;
 };
-const cb = await CPU(base), cn = await CPU(file), cb2 = await CPU(base), cn2 = await CPU(file);
-const b0 = Math.min(cb.s0min, cb2.s0min), n0 = Math.min(cn.s0min, cn2.s0min), n1 = Math.min(cn.s1min, cn2.s1min), n2 = Math.min(cn.s2min, cn2.s2min);
-console.log('CPU (ms je 8 s Render, 6 Stimmen, Bestwert aus 10)', JSON.stringify({vorher: b0, nachher_ohneKS4: n0, filter2: n1, alles: n2, median: {vorher: [cb.s0, cb2.s0], nachher: [cn.s0, cn2.s0], f2: [cn.s1, cn2.s1], alles: [cn.s2, cn2.s2]}}));
-ok(n0 <= b0 * 1.08, 'CPU: Klang ohne KS4-Schlüssel kostet wie vorher (' + r1(n0) + ' / ' + r1(b0) + ' ms = ' + Math.round(100 * n0 / b0) + ' %)');
-ok(n1 <= n0 * 1.35 && n2 <= n0 * 1.5, 'CPU: mit FILTER 2 ' + Math.round(100 * n1 / n0) + ' %, mit allem (TAKT, Raster, Glätten, Kerbe, Tonh.-Hk.) ' + Math.round(100 * n2 / n0) + ' % des Klangs ohne', null);
+// abwechselnd vorher / nachher, je 3 Seiten à 5 Renders (der Rechner ist stark ausgelastet: Bestwert und Median beide)
+const RB = [], RN = []; for (let k = 0; k < 3; k++) { RB.push(await CPU(base)); RN.push(await CPU(file)); }
+const cat = (L, q) => [].concat(...L.map(r => r.all[q])), mdn = a => { const x = a.slice().sort((p, q) => p - q); return +x[Math.floor(x.length / 2)].toFixed(1); }, mnn = a => +Math.min(...a).toFixed(1);
+const b0 = mnn(cat(RB, 's0')), n0 = mnn(cat(RN, 's0')), n1 = mnn(cat(RN, 's1')), n2 = mnn(cat(RN, 's2'));
+const mb0 = mdn(cat(RB, 's0')), mn0 = mdn(cat(RN, 's0')), mn1 = mdn(cat(RN, 's1')), mn2 = mdn(cat(RN, 's2'));
+console.log('CPU (ms je 8 s Render, 6 Stimmen; Bestwert / Median aus je 15)', JSON.stringify({vorher: [b0, mb0], nachher_ohneKS4: [n0, mn0], filter2: [n1, mn1], alles: [n2, mn2]}));
+ok(n0 <= b0 * 1.08 || mn0 <= mb0 * 1.08, 'CPU: Klang ohne KS4-Schlüssel kostet wie vorher (Bestwert ' + Math.round(100 * n0 / b0) + ' %, Median ' + Math.round(100 * mn0 / mb0) + ' %)');
+ok((n1 <= n0 * 1.35 && n2 <= n0 * 1.5) || (mn1 <= mn0 * 1.35 && mn2 <= mn0 * 1.5), 'CPU: mit FILTER 2 ' + Math.round(100 * n1 / n0) + ' % / ' + Math.round(100 * mn1 / mn0) + ' %, mit allem (TAKT, Raster, Glätten, Kerbe, Tonh.-Hk.) ' + Math.round(100 * n2 / n0) + ' % / ' + Math.round(100 * mn2 / mn0) + ' % des Klangs ohne (Bestwert / Median)', null);
 
 console.log('\nKS4-Test: ' + pass + ' OK, ' + fail + ' FEHL');
 await b.close();

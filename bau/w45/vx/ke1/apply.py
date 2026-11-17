@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # KE1 „Klang erkennen“: basis.html (4.78.0) + 5 Haken (je eine neue Zeile, Kennung KE1) + Hauptblock (src/ke1-main.js hinter
-# /* LT2-END */) + stiller Block <script type="text/plain" id="sq-ke1-src"> (src/compose.js + src/ke1-core.js + src/ke1-ui.js) vor sq-md-src
+# /* LT2-END */) + stiller Block <script type="text/plain" id="sq-ke1-src"> (src/compose.js + src/ke1-core.js + src/ke1-ui.js, Kommentare per
+# src/strip.cjs entfernt) vor sq-md-src
 # -> index.html. Keine vorhandene Zeile wird geändert. Aufruf: python3 apply.py
 import sys, os, re
 D = os.path.dirname(os.path.abspath(__file__)); SRC = os.path.join(D, 'src')
@@ -14,6 +15,12 @@ def after(pattern, line):
 def before(pattern, line):
     i = find(pattern); L.insert(i, line)
 def rd(n): return open(os.path.join(SRC, n), encoding='utf-8').read().rstrip('\n')
+def rdk(n):   # stiller Block: ohne Kommentare (Auslieferung übernimmt text/plain-Blöcke bytegleich); src/strip.cjs prüft Syntaxbaum gleich
+    import subprocess
+    t = os.path.join(SRC, '.strip-' + n)
+    subprocess.run(['node', os.path.join(SRC, 'strip.cjs'), os.path.join(SRC, n), t], check=True, stdout=subprocess.DEVNULL,
+                   env=dict(os.environ, NODE_PATH='/opt/node-tools/node_modules'))
+    x = open(t, encoding='utf-8').read().rstrip('\n'); os.remove(t); return x
 # 1 Takes-Blatt: Knopf neben „Im Spektrum öffnen“
 after("    (ok ? spk1TkBtn() : '') +   // SPK1: Im Spektrum öffnen",
       "    (ok && typeof ke1TkBtn === 'function' ? ke1TkBtn(x) : '') +   // KE1: Klang erkennen")
@@ -34,7 +41,7 @@ i = find('/* LT2-END */')
 if L[i].strip() != '/* LT2-END */': sys.exit('LT2-END')
 L[i + 1:i + 1] = rd('ke1-main.js').split('\n')
 # stiller Block vor sq-md-src
-blk = '/* KE1-BEGIN (stiller Block sq-ke1-src: Worker-Quelltext, Kern, Blatt; erst beim ersten Tipp ausgewertet) */\n' + rd('compose.js') + '\n' + rd('ke1-core.js') + '\n' + rd('ke1-ui.js') + '\n/* KE1-END */'
+blk = '/* KE1-BEGIN (stiller Block sq-ke1-src: Worker-Quelltext, Kern, Blatt; erst beim ersten Tipp ausgewertet) */\n' + rdk('compose.js') + '\n' + rdk('ke1-core.js') + '\n' + rdk('ke1-ui.js') + '\n/* KE1-END */'
 if '</script' in blk.lower(): sys.exit('</script im Block')
 i = find('<script type="text/plain" id="sq-md-src">')
 L[i:i] = ['<script type="text/plain" id="sq-ke1-src">'] + blk.split('\n') + ['</script>']
