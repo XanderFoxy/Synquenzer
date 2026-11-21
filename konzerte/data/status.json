@@ -1,5 +1,5 @@
 {
- "stand": "2026-11-21T15:44:18.767Z",
+ "stand": "2026-11-21T19:12:42.342Z",
  "quellen": {
   "ticketmaster": {
    "ok": true,
@@ -13,7 +13,7 @@
    "treffer": 14,
    "fehler": [],
    "uebersprungen": null,
-   "ms": 12195
+   "ms": 12221
   },
   "seiten": {
    "ok": false,
@@ -22,32 +22,36 @@
     "Gothic meets Klassik: fetch failed"
    ],
    "uebersprungen": null,
-   "ms": 11412,
+   "ms": 11496,
    "geprueft": 3,
    "gesamt": 4
   },
   "musicbrainz": {
-   "ok": true,
-   "treffer": 8,
-   "fehler": [],
+   "ok": false,
+   "treffer": 4,
+   "fehler": [
+    "Alphaville: HTTP 503 musicbrainz.org",
+    "Depeche Mode: HTTP 503 musicbrainz.org"
+   ],
    "uebersprungen": null,
-   "ms": 27390
+   "ms": 72379
   },
   "mbevents": {
    "ok": false,
    "treffer": 0,
    "fehler": [
+    "The Human League: HTTP 503 musicbrainz.org",
     "The Frozen Autumn: HTTP 503 musicbrainz.org"
    ],
    "uebersprungen": null,
-   "ms": 70840
+   "ms": 70855
   },
   "deezer": {
    "ok": true,
-   "treffer": 3,
+   "treffer": 4,
    "fehler": [],
    "uebersprungen": null,
-   "ms": 2871
+   "ms": 2855
   }
  },
  "pushes": 0,
