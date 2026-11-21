@@ -1,19 +1,19 @@
 {
- "stand": "2026-11-20T20:12:28.103Z",
+ "stand": "2026-11-21T00:22:40.806Z",
  "quellen": {
   "ticketmaster": {
    "ok": true,
    "treffer": 0,
    "fehler": [],
    "uebersprungen": "kein TM_KEY gesetzt",
-   "ms": 0
+   "ms": 1
   },
   "eventim": {
    "ok": true,
    "treffer": 14,
    "fehler": [],
    "uebersprungen": null,
-   "ms": 12283
+   "ms": 12253
   },
   "seiten": {
    "ok": false,
@@ -22,34 +22,30 @@
     "Gothic meets Klassik: fetch failed"
    ],
    "uebersprungen": null,
-   "ms": 11125,
+   "ms": 11708,
    "geprueft": 3,
    "gesamt": 4
   },
   "musicbrainz": {
-   "ok": false,
+   "ok": true,
    "treffer": 8,
-   "fehler": [
-    "Plastic Autumn: HTTP 503 musicbrainz.org"
-   ],
+   "fehler": [],
    "uebersprungen": null,
-   "ms": 63146
+   "ms": 84452
   },
   "mbevents": {
-   "ok": false,
+   "ok": true,
    "treffer": 0,
-   "fehler": [
-    "Depeche Mode: HTTP 503 musicbrainz.org"
-   ],
+   "fehler": [],
    "uebersprungen": null,
-   "ms": 40438
+   "ms": 51330
   },
   "deezer": {
    "ok": true,
    "treffer": 3,
    "fehler": [],
    "uebersprungen": null,
-   "ms": 2475
+   "ms": 2994
   }
  },
  "pushes": 0,
