@@ -152,7 +152,7 @@ footer { margin-top: 30px; color: var(--tx2); font-size: 14px; }
    (url, muster mit einer Klammer, vor = Text davor; kopf: true = nur die ersten 16 KB holen).
    ===================================================================================================== */
 const APPS = [
-  { id: 'synq', gruppe: 'musik', name: 'Synquenzer', ikon: 'tasten', farbe: 265, link: '../', ver: '4.81.0',
+  { id: 'synq', gruppe: 'musik', name: 'Synquenzer', ikon: 'tasten', farbe: 265, link: '../', ver: '4.82.0',
     text: 'Die Musik-App: Clips einspielen, Szenen starten, Song bauen, singen, mischen und Video – bis 16 Spuren.',
     quelle: { url: '../version.json', muster: /"version"\s*:\s*"([^"]+)"/ },
     chips: [{ t: 'Wo finde ich was?', href: '#finden' }] },
@@ -162,6 +162,8 @@ const APPS = [
   { id: 'wall', gruppe: 'musik', name: 'The Wall – Ablage', ikon: 'ordner', farbe: 330, link: '../the-wall/', ver: 'Stand 22.11.2026',
     text: 'Zum Laden: Master, Cubasis-Projekte, Gesang, Einzelspuren, Noten, Notenvideo und Formant-Chor.',
     quelle: { url: '../the-wall/index.html', muster: /Stand (\d{1,2}\.\d{1,2}\.\d{4})/, vor: 'Stand ' } },
+  { id: 'werkstatt', gruppe: 'musik', name: 'Gesang-Werkstatt', ikon: 'mikro', farbe: 330, link: '../the-wall/werkstatt/', ver: 'v10',
+    text: 'The Wall: Hauptstimme mit Silben auf der Welle, v7 und v10 vergleichen, Stellen markieren und Notizen an Claude senden.' },
   { id: 'tonpost', gruppe: 'musik', name: 'Ton-Post', ikon: 'hoch', farbe: 25, link: '../ton-post/',
     text: 'Audio hochladen: Spuren und Mixdown sicher in deinen privaten Speicher schicken – für Claude.' },
   { id: 'messung', gruppe: 'musik', name: 'Messung', ikon: 'tacho', farbe: 170, link: '../messung/',
@@ -183,6 +185,10 @@ const APPS = [
   { id: 'ticke', gruppe: 'alltag', name: 'Wie ich ticke', ikon: 'kompass', farbe: 245, link: '../ticke/', ver: '0.1.0',
     text: 'Dich selbst besser verstehen – mit anerkannten Fragebögen und ehrlichen Grenzen, ohne Diagnose.',
     quelle: { url: '../ticke/kern.js', muster: /VERSION\s*=\s*'([^']+)'/, kopf: true } },
+
+  { id: 'tiktok', gruppe: 'alltag', name: 'TikTok-Ideenbuch', ikon: 'idee', farbe: 300, extern: true,
+    link: 'https://claude.ai/artifact/3NTW2KyXoKJxFLfRtNNmyN',
+    text: 'Unsinn-Logikfragen zum Vorlesen, Mischmaschine für neue Fragen und alle TikTok-Ideen – öffnet in Claude.' },
 
   { id: 'c2', gruppe: 'lernen', name: 'Feinschliff', ikon: 'buch', farbe: 220, link: '../c2/', ver: '0.6.0',
     text: 'Deutsch auf C2-Niveau in 10-Minuten-Runden: Hören, Lesen, Grammatik, Schreiben, Sprechen, Prüfung.',
@@ -264,7 +270,8 @@ const IKON = {
   hase: '<path d="M9.5 8.7C7.4 6.6 6.3 2.5 8.1 2s3.1 3.3 3.4 6.1M14.5 8.7c2.1-2.1 3.2-6.2 1.4-6.7s-3.1 3.3-3.4 6.1"/><circle cx="12" cy="14.6" r="6.4"/><circle class="voll" cx="9.6" cy="13.9" r="1.15"/><circle class="voll" cx="14.4" cy="13.9" r="1.15"/><path d="M11 17.3h2"/>',
   probe: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/><path d="M7.5 15h9"/>',
   buchse: '<rect x="3" y="7" width="18" height="10" rx="2.5"/><circle cx="8.5" cy="12" r="2"/><circle cx="15.5" cy="12" r="2"/>',
-  pfeil: '<path d="M4 12h15M14 7l5 5-5 5"/>'
+  pfeil: '<path d="M4 12h15M14 7l5 5-5 5"/>',
+  idee: '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/>'
 };
 
 const $ = (s, w = document) => w.querySelector(s);
