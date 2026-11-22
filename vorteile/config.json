@@ -438,6 +438,9 @@
       "merkworte": [],
       "merkThema": "xander-schnaeppchen-b5cbf4442aaa9734f3-merken",
       "erinnerungStunde": 7,
+      "erinnerungBisStunde": 12,
+      "_merkliste": "Merkliste mit Produkten (22.11.2026, Musiker: Benachrichtigung genau am Start-Tag morgens „Heute ab: …, bis …, Markt, Preis“ – nicht vorher, nicht jeden Tag): die Seite schickt neben den Haken auch gemerkte Produkte (worte: Produkt + Sorte, höchstens 12) an merkThema; der Radar liest sie wie merkworte immer als Stichwortseite, sucht sie in allen Angeboten der Döbelner Prospekte (auch ohne Rabatt) -> knaller.json merkTreffer (höchstens maxMerkTreffer). Push je Angebot einmal, nur zwischen erinnerungStunde und erinnerungBisStunde (Berlin), am Start-Tag; verpasst -> am nächsten Morgen, solange es gilt. Wort-Treffer, die vor dem Merken des Worts begannen (Uhrzeit), vergessene Produkte und Märkte ohne Filiale in der Nähe: kein Push. Treffer an Wortgrenzen („Eis“ = Stieleis/Eisriegel, nicht Rundreise/Gusseiserner).",
+      "maxMerkTreffer": 40,
       "marktguru": { "aktiv": true, "start": "https://www.marktguru.de/", "api": "https://api.marktguru.de/api/v1/offers/search", "plz": "04720", "limit": 48 },
       "maerkte": [
         { "id": "aldi-nord", "name": "Aldi Nord", "kaufda": "Aldi-Nord", "kaufdaOrt": "ALDI-Nord", "kaufdaId": 43, "haendler": ["Aldi Nord"] },

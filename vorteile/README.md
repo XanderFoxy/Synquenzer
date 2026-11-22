@@ -246,6 +246,33 @@ mitVergleich/prospekte`, `kurz.ab` zählt nur, was heute gilt, `kurz.kommt` das,
 `erinnerungStunde` (7), einmal je Angebot; Pushes allgemein nur für Einträge, die schon gelten (`plane`: `ab` in der Zukunft
 bleibt ungemeldet).
 
+**Merkliste mit Produkten (22.11.2026, Musiker: „Produkte auswählen und in eine Merkliste legen … am Start-Tag morgens ‚Heute
+ab: …, bis …, Markt, Preis' – nicht vorher, nicht jeden Tag“):** Die Seite schickt im ersten Teil der Merkliste auch die gemerkten
+Produkte `worte: [{ w, sorte, seit }]` (höchstens 12, streng gelesen: Buchstaben/Ziffern/`& ' . - + / ,`, `seit` nie nach der
+Nachricht). Ohne `worte` (ältere Seite) bleibt die letzte Liste in `zustand.knaller.merkWorte`, `worte: []` vergisst sie. Der
+Knaller liest die Merkliste jetzt VOR den Modulen und läuft sofort (Vorprüfung `faellig.mjs` und Lauf), wenn ein Produkt nach
+seinem letzten Lauf mit Produkten (`zustand.knaller.worteLauf`) gemerkt wurde – nicht während eines Neuversuchs und nicht bei
+kaufDA-Ruhe. Die Produkte sind wie die `merkworte` immer Stichwortseiten (vor den übrigen Begriffen, auch für marktguru); ein
+Treffer zählt in **allen** Angeboten der Döbelner Prospekte, auch ohne Vergleichspreis/Rabatt (aus einem anderen Prospekt nur mit
+marktguru-Bestätigung). Regel `wortPasst` (gleich auf der Seite, Test): alle Teile des Produkts im Titel/Info (Umlaute, Zeichen,
+Leerzeichen egal), aber an Wortgrenzen (Prüfer 22.11.2026: vorher traf „Eis“ „Rundreise“, „Gusseiserner“, „teilweise“, „Cola“
+„Chocolate“, „Tee“ „Beste Ernte“): ganzes Wort, auch mit Endung (Weine, Eier) oder über Leerzeichen („Jerry's“ = „Jerrys“),
+Wort-Ende = Grundwort (Stiel|eis, Likör|wein, Kartoffel|chips), Wort-Anfang nur mit Form-Teil (Eis|creme, Eis|riegel,
+Cola|kasten) oder ab 5 Buchstaben (Chips|frisch), mitten im Wort erst ab 6 Buchstaben; Wörter, die nur so enden (Aktions|preis,
+Milch|reis, Rund|reise, Wild|schwein), zählen nicht. Mit Sorte: eine der Sorten (Komma, „oder“, „/“) steht drin -> `sorte: 'ja'`, das Angebot nennt nur „versch.
+Sorten“/„sortiert“ -> `'pruefen'` (Push: „Sorte im Markt prüfen“), andere Sorte -> kein Treffer. Ergebnis: `knaller.json`
+`merkTreffer` (höchstens `maxMerkTreffer` 40, die nächsten zuerst, `wort`, `sorte`, `fern` = Markt ohne Filiale in der Nähe; noch
+gültige Treffer der letzten Datei bleiben wie der Pool), `merkWorte` und `status.knaller.kurz.merk` (die nächsten 6 Treffer und
+Haken für die Start-Kachel); Knaller-Angebote tragen `merkwort`. **Push:** nur zwischen `erinnerungStunde` und
+`erinnerungBisStunde` (7–12 Uhr Berlin), je Angebot genau einmal, am Start-Tag („Heute ab: Lorenz Crunchips“ / „bis Sa 28.11.,
+Aldi Nord, 0,99 € statt 1,99 € (−50 %)“; mehrere: je Zeile „• Heute ab: …, bis …, Markt, Preis“); ging der Start-Tag durch
+(Radar aus, Angebot erst später gefunden), am nächsten Morgen „Seit Mo 23.11.: …“, solange es gilt. Kein Push für Wort-Treffer,
+die schon vor dem Merken begannen (genaue Uhrzeit, nicht nur der Tag: Angebot ab Mo 00:00, Produkt Mo 13:00 gemerkt -> kein Push;
+es stand beim Merken auf der Seite unter „Heute“), für Produkte, die nicht mehr gemerkt sind (× auf der Seite: `merkRadar` vom
+letzten Knaller-Lauf zählt nur, solange das Wort in `merkWorte` bzw. den `merkworte` der config steht und das Angebot nach der
+Regel passt) und für ferne Märkte. Der Vermerk „erinnert“ bleibt, solange das Angebot noch gemerkt/gefunden ist und gilt (vorher
+nach 30 Tagen weg: Dauer-Angebote wie ein Puzzle 19.10.–24.12. kamen dann ein zweites Mal). Tests: `scan/test/merkliste.test.mjs`.
+
 Einträge in `aktuell.json` haben seit 16.11.2026 optional `bild` (https-Link: mydealz-RSS, marktguru aus den Schnäppchen-Daten).
 mydealz-Box-Tipps in `filme.json` bekommen `vorher`/`ersparnis`, wenn der Deal-Text („statt …“, UVP) oder die Deal-Seite
 (`nextBestPrice`, gemeinsames Budget der Deal-Seiten) einen Vergleichspreis nennt.

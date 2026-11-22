@@ -240,8 +240,9 @@ test('Merken: ntfy-Nachrichten lesen (neueste gewinnt), Erinnerung am ersten Gü
   assert.deepEqual(f.map(x => x.titel), ['Lorenz Crunchips']);
   const msg = erinnerungNachricht(f, cfg, { 'aldi-nord': 'Aldi Nord' });
   msg.message = msg.message.replace(/\u00a0/g, ' ');
-  assert.equal(msg.title, 'Gemerkt: Lorenz Crunchips – gilt jetzt');
-  assert.match(msg.message, /^• Lorenz Crunchips – Aldi Nord 0,99 € statt 1,99 € \(−50 %\), bis Sa 21\.11\.$/);
+  // 22.11.2026: „Heute ab: …, bis …, Markt, Preis“ (Start-Tag = heute, Mo 16.11.)
+  assert.equal(msg.title, 'Heute ab: Lorenz Crunchips');
+  assert.match(msg.message, /^bis Sa 21\.11\., Aldi Nord, 0,99 € statt 1,99 € \(−50 %\)$/);
   assert.equal(msg.click, 'https://xanderfoxy.github.io/Synquenzer/mein-vorteil/#woche');
   assert.equal(msg.topic, cfg.ntfy.topic);
   verbucheErinnerung(zustand, f, JETZT);
@@ -268,7 +269,8 @@ test('main.lauf: Merkliste vom ntfy-Thema, fällige Erinnerung als eigene Nachri
   const hole = abruf({ '/Doebeln/ALDI-Nord/p-r43': 'aldi-doebeln-1611.html', '/Angebote/Crunchips': 'stichwort-crunchips-1611.html', 'ntfy.sh/': merk });
   const r = await lauf({ cfg: c, wunschliste: {}, vorher: null, zustand: { gemeldet: {} }, holeText: hole, jetzt: JETZT, alle: true });
   assert.ok(r.erinnerung, 'Crunchips gemerkt und gilt heute');
-  assert.match(r.erinnerung.msg.message.replace(/\u00a0/g, ' '), /Lorenz Crunchips – Aldi Nord 0,99 € statt 1,99 € \(−50 %\)/);
+  assert.equal(r.erinnerung.msg.title, 'Heute ab: Lorenz Crunchips');
+  assert.match(r.erinnerung.msg.message.replace(/\u00a0/g, ' '), /^bis Sa 21\.11\., Aldi Nord, 0,99 € statt 1,99 € \(−50 %\)$/);
   assert.deepEqual(r.aktuell.status.knaller.merken, { neu: true, anzahl: 1 });
 });
 

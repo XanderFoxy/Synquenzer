@@ -35,9 +35,17 @@
 //    (andere Prospekt-ids als Döbeln), nur Aldi Nord hat einen Prospekt für alle. Ein solches Angebot zählt darum nur, wenn
 //    marktguru es für PLZ 04720 bestätigt (gleicher Markt, gleicher Preis, Marke/Produkt) -> bestaetigt 'marktguru', mit dem
 //    Starttag von dort (z. B. Lidl Pepsi Zero 0,99 statt 1,79 UVP ab Do 19.11.). Ohne Bestätigung bleibt es draußen.
+// Runde 22.11.2026 (Musiker: „Produkte auswählen und in eine Merkliste legen“): gemerkte Produkte der Seite
+// (zustand.knaller.merkWorte, lib/merken.mjs) werden wie die merkworte der config bei JEDEM Lauf als Stichwortseite gelesen
+// (vor den übrigen Begriffen) und in ALLEN Angeboten der Döbelner Prospekte gesucht – auch ohne Rabatt/Vergleichspreis,
+// auch aus einem anderen Prospekt mit marktguru-Bestätigung. Ergebnis: knaller.json merkTreffer (je Treffer wort, sorte
+// 'ja'/'pruefen', fern = Markt ohne Filiale in der Nähe) und zustand.knaller.merkRadar (für die Erinnerung am Start-Tag).
+// Noch gültige Treffer der letzten Datei bleiben wie der Pool stehen. status.knaller.kurz.merk = die nächsten Treffer und
+// gemerkten Angebote (Start-Kachel „Gemerkt: heute ab …“ ohne eigenen Abruf).
 import { leseKaufdaSeite, kaufdaZeit, kaufdaSlug } from '../lib/kaufda.mjs';
 import { norm, schluessel, round, parsePrice } from '../lib/text.mjs';
 import { berlinTag } from '../lib/ende.mjs';
+import { zustandWorte, wortPasst } from '../lib/merken.mjs';
 
 export const STANDARD = {
   basis: 'https://www.kaufda.de',
@@ -58,6 +66,7 @@ export const STANDARD = {
   maxStichwortSeiten: 20,
   stichwortLeerTage: 7, // 404 („keine Angebote zu …“) -> so lange nicht noch einmal fragen
   merkworte: [], // dauerhafte Wünsche (wie wunschliste.json): Treffer = gemerkt, Erinnerung am ersten Gültigkeitstag
+  maxMerkTreffer: 40, // Treffer der gemerkten Produkte in knaller.json (die nächsten zuerst)
   verlaufTage: 120, // Vergleichspreise aus früheren Läufen so lange merken
   marktguru: null, // { aktiv, start, api, plz, limit }: Starttag je Angebot (nur Gültigkeit, keine Preise)
 };
@@ -458,19 +467,24 @@ export default async function knaller({ holeText, cfg, jetzt = new Date(), zusta
 
   // --- Stichwortseiten: die übrigen Angebote der Döbelner Prospekte (die Händlerseite zeigt nur 16) ------------------------
   const merkworte = (Array.isArray(m.merkworte) ? m.merkworte : []).map(w => String(w || '').trim()).filter(Boolean);
+  // gemerkte Produkte der Seite (lib/merken.mjs) + merkworte der config: immer lesen, Treffer auch ohne Rabatt
+  const seitenWorte = zustandWorte(zustand);
+  if (seitenWorte.length) zk.worteLauf = new Date(jetztMs).toISOString(); else delete zk.worteLauf; // lib/merken.mjs wortNeu
+  const immer = [...new Set([...seitenWorte.map(x => x.w), ...merkworte])];
+  const wortListe = [...seitenWorte, ...merkworte.filter(w => !seitenWorte.some(x => !x.sorte && norm(x.w) === norm(w))).map(w => ({ w, sorte: '', seit: null }))];
   const mitProspekt = Object.values(prospekte).some(p => p.size);
   const sw = { gelesen: 0, leer: 0, fehler: 0, treffer: 0, begriffe: [] };
   const mgListe = [];
-  if (mitProspekt && (m.stichworte?.length || merkworte.length)) {
+  if (mitProspekt && (m.stichworte?.length || immer.length)) {
     const zeit = (zk.stichwortZeit ||= {});
     const leerBis = (zk.stichwortLeer ||= {});
     for (const [k, v] of Object.entries(leerBis)) if (!(Date.parse(v) > jetztMs)) delete leerBis[k];
-    const alle = [...new Set([...merkworte, ...(m.stichworte || [])].map(w => String(w).trim()).filter(Boolean))];
+    const alle = [...new Set([...immer, ...(m.stichworte || [])].map(w => String(w).trim()).filter(Boolean))];
     const offen = alle.filter(w => !leerBis[w]);
-    // Merkworte immer, sonst die am längsten nicht gelesenen zuerst
+    // gemerkte Produkte und Merkworte immer, sonst die am längsten nicht gelesenen zuerst
     const fremd = []; // Angebote aus anderen (Berliner) Prospekten desselben Markts – zählen nur mit marktguru-Bestätigung
-    const reihe = [...offen.filter(w => merkworte.includes(w)),
-      ...offen.filter(w => !merkworte.includes(w)).sort((a, b) => (Date.parse(zeit[a] || 0) || 0) - (Date.parse(zeit[b] || 0) || 0)).slice(0, m.maxStichwortSeiten)];
+    const reihe = [...offen.filter(w => immer.includes(w)),
+      ...offen.filter(w => !immer.includes(w)).sort((a, b) => (Date.parse(zeit[a] || 0) || 0) - (Date.parse(zeit[b] || 0) || 0)).slice(0, m.maxStichwortSeiten)];
     let mgKeys = null, mgAus = !m.marktguru?.aktiv;
     for (const w of reihe) {
       const url = `${basis}${String(m.stichwortPfad).replace('{slug}', kaufdaSlug(w))}`;
@@ -517,7 +531,8 @@ export default async function knaller({ holeText, cfg, jetzt = new Date(), zusta
     let bestaetigt = 0;
     for (const { mkId, o, w } of fremd) {
       const i = info[mkId];
-      const r = knallerAngebot(o, { markt: mkId, seite: i.link, region: i.region, jetztMs, opt: m });
+      // gemerktes Produkt: auch ohne Vergleichspreis (Merk-Treffer, nicht als Knaller – die brauchen weiter einen Rabatt)
+      const r = knallerAngebot(o, { markt: mkId, seite: i.link, region: i.region, jetztMs, opt: immer.includes(w) ? { ...m, ohneVergleich: true } : m });
       if (!r.angebot) continue;
       const a = r.angebot;
       const g = marktguruTreffer(a, mgListe);
@@ -532,7 +547,10 @@ export default async function knaller({ holeText, cfg, jetzt = new Date(), zusta
 
   // --- Sammeln über die Woche: noch gültige Angebote aus Döbelner Prospekten der letzten Datei bleiben ------------------
   let ausPool = 0;
-  for (const a of Array.isArray(vorherDatei?.angebote) ? vorherDatei.angebote : []) {
+  const vorherListe = [...(Array.isArray(vorherDatei?.angebote) ? vorherDatei.angebote : []), ...(Array.isArray(vorherDatei?.merkTreffer) ? vorherDatei.merkTreffer : [])];
+  for (const a0 of vorherListe) {
+    if (!a0 || typeof a0 !== 'object') continue;
+    const { wort: _w, sorte: _s, fern: _f, merkwort: _mw, ...a } = a0; // Treffer-Felder rechnet dieser Lauf neu
     if (!a || !a.markt || !prospekte[a.markt] || st.alt.includes(a.markt)) continue;
     if (a.gueltigBis && Date.parse(a.gueltigBis) < jetztMs) continue;
     // Prospekt nicht mehr genannt -> weg (von marktguru für Döbeln bestätigte bleiben bis zu ihrem Ende)
@@ -598,11 +616,37 @@ export default async function knaller({ holeText, cfg, jetzt = new Date(), zusta
     };
   }
   angebote.sort((a, b) => b.pct - a.pct || a.preis - b.preis);
-  // Merkworte (config): Treffer tragen „merkwort“ – die Seite zeigt sie als gemerkt, der Radar erinnert am ersten Tag
-  if (merkworte.length) {
-    const mw = merkworte.map(w => [w, norm(w)]);
-    for (const a of angebote) { const t = mw.find(([, n]) => n && norm(a.titel).includes(n)); if (t) a.merkwort = t[0].slice(0, 30); }
-    zk.merkRadar = angebote.filter(a => a.merkwort).slice(0, 30).map(a => ({ id: a.id, titel: a.titel, markt: a.markt, preis: a.preis, vorher: a.vorher, pct: a.pct, ab: a.gueltigAb, bis: a.gueltigBis }));
+  // Gemerkte Produkte (Seite) und Merkworte (config): Treffer in ALLEN Angeboten der Döbelner Prospekte, auch ohne Rabatt.
+  // Knaller tragen „merkwort“ (die Seite zeigt sie als gemerkt); merkTreffer = alle Treffer (die nächsten zuerst);
+  // zustand.knaller.merkRadar = dieselben knapp (Erinnerung am Start-Tag, lib/merken.mjs)
+  const merkTreffer = [];
+  if (wortListe.length) {
+    const gesehenT = new Set();
+    const fernM = new Set(maerkte.filter(x => maerkteOut[x.id]?.nah === false).map(x => x.id));
+    const kandidaten = Object.values(jeMarkt).flat().filter(a => a && !(a.gueltigBis && Date.parse(a.gueltigBis) < jetztMs));
+    for (const a of kandidaten) {
+      if (gesehenT.has(a.id)) continue;
+      const text = `${a.titel} ${a.info || ''}`;
+      let t = null, e = null;
+      for (const x of wortListe) { const p = wortPasst(text, x); if (p && (!t || (p.sorte === 'ja' && t.sorte !== 'ja'))) { t = p; e = x; } }
+      if (!t) continue;
+      gesehenT.add(a.id);
+      const { _marke, _bildDatei, ...rest } = a;
+      merkTreffer.push({ ...rest, wort: e.w.slice(0, 40), ...(t.sorte ? { sorte: t.sorte } : {}), ...(fernM.has(a.markt) ? { fern: true } : {}), _seit: e.seit });
+    }
+    const abMs = a => Date.parse(a.gueltigAb || '') || 0;
+    merkTreffer.sort((a, b) => abMs(a) - abMs(b) || (a.fern ? 1 : 0) - (b.fern ? 1 : 0) || (b.pct ?? -1) - (a.pct ?? -1) || a.preis - b.preis);
+    merkTreffer.splice(m.maxMerkTreffer ?? STANDARD.maxMerkTreffer);
+    const wortVon = new Map(merkTreffer.map(a => [a.id, a.wort]));
+    for (const a of angebote) if (wortVon.has(a.id)) a.merkwort = wortVon.get(a.id).slice(0, 30);
+    // sichtbar = seit wann die Seite das Angebot zeigen konnte (stand in knaller.json: angebote/merkTreffer) – für die Regel
+    // „lief schon beim Merken und stand auf der Seite -> kein Push“ (lib/merken.mjs); erst nach dem Merken gefunden -> Push
+    const altSichtbar = new Map((Array.isArray(zk.merkRadar) ? zk.merkRadar : []).filter(x => x && x.id && x.sichtbar).map(x => [x.id, x.sichtbar]));
+    const vorherIds = new Set(vorherListe.map(x => x && x.id).filter(Boolean));
+    const vorherAm = Date.parse(vorherDatei?.aktualisiert || '');
+    const sichtbar = id => altSichtbar.get(id) || new Date(vorherIds.has(id) && Number.isFinite(vorherAm) ? Math.min(vorherAm, jetztMs) : jetztMs).toISOString();
+    zk.merkRadar = merkTreffer.slice(0, 30).map(a => ({ id: a.id, titel: a.titel, markt: a.markt, preis: a.preis, vorher: a.vorher ?? null, pct: a.pct ?? null, ab: a.gueltigAb || null, bis: a.gueltigBis || null, wort: a.wort, ...(a.sorte ? { sorte: a.sorte } : {}), ...(a.fern ? { fern: true } : {}), ...(a._seit ? { seit: a._seit } : {}), sichtbar: sichtbar(a.id) }));
+    for (const a of merkTreffer) delete a._seit;
   } else delete zk.merkRadar;
   st.anzahl = angebote.length;
   st.fehler = fehler.slice(0, 10);
@@ -631,8 +675,20 @@ export default async function knaller({ holeText, cfg, jetzt = new Date(), zusta
   const kommt = Object.fromEntries(stufen.map(n => [n, kachelAngebote.filter(a => dieseWoche(a) && a.pct >= n).length]));
   const naechste = Object.fromEntries(stufen.map(n => [n, kachelAngebote.filter(a => spaeter(a) && !dieseWoche(a) && a.pct >= n).length]));
   const nameVon = id => maerkte.find(x => x.id === id)?.name || id;
+  // Gemerkt (Start-Kachel): Treffer der gemerkten Produkte + per Haken gemerkte Angebote, die gelten oder noch kommen – die
+  // nächsten zuerst, höchstens 6, nur Märkte in der Nähe (die Seite rechnet „heute ab“/„ab Fr“ selbst aus ab)
+  const merkKurz = [];
+  const frischK = new Map([...angebote, ...merkTreffer].map(a => [a.id, a]));
+  for (const x of [...(Array.isArray(zk.merken) ? zk.merken : []), ...merkTreffer]) {
+    const a = frischK.get(x.id) || { ...x, gueltigAb: x.ab ?? x.gueltigAb, gueltigBis: x.bis ?? x.gueltigBis };
+    if (!a || !a.titel || fern.includes(a.markt) || merkKurz.some(y => y.id === a.id)) continue;
+    if (a.gueltigBis && Date.parse(a.gueltigBis) <= jetztMs) continue;
+    merkKurz.push({ id: a.id, titel: a.titel, markt: nameVon(a.markt), preis: a.preis, ...(a.gueltigAb ? { ab: a.gueltigAb } : {}), ...(a.gueltigBis ? { bis: a.gueltigBis } : {}), ...(x.wort ? { wort: x.wort } : {}) });
+  }
+  merkKurz.sort((a, b) => (Date.parse(a.ab || '') || 0) - (Date.parse(b.ab || '') || 0));
   const kurz = {
     anzahl: kachelAngebote.length, ab, kommt, naechste, wocheBis, ...(fern.length ? { ohneFiliale: fern.map(nameVon) } : {}),
+    ...(merkKurz.length ? { merk: merkKurz.slice(0, 6) } : {}), // mit id: die Seite gleicht mit Haken/Auszug ab
     // erst was jetzt gilt, dann was ab Montag/Donnerstag kommt (mit „ab“, damit die Start-Kachel „ab Mo“ sagen kann)
     top: [...jetztGilt, ...kachelAngebote.filter(spaeter)].slice(0, 3).map(a => ({ titel: a.titel, markt: nameVon(a.markt), pct: a.pct, preis: a.preis, vorherArt: a.vorherArt, ...(a.abPreis ? { abPreis: true } : {}), ...(a.app ? { app: true } : {}), ...(spaeter(a) ? { ab: a.gueltigAb } : {}) })),
   };
@@ -646,8 +702,10 @@ export default async function knaller({ holeText, cfg, jetzt = new Date(), zusta
     stufen,
     maerkte: maerkteOut,
     angebote,
+    ...(merkTreffer.length ? { merkTreffer } : {}),
+    ...(seitenWorte.length ? { merkWorte: seitenWorte.map(x => ({ w: x.w, ...(x.sorte ? { sorte: x.sorte } : {}) })) } : {}),
     status: { kaufda: st },
-    hinweis: 'Prospekt-Ort je Markt in maerkte.<id>.ort (regional = nicht der Prospekt für Döbeln, dort prüfen). Rabatt mit Vergleichspreis, abgerundet: vorherArt streich = Streichpreis im Prospekt, uvp = unverbindliche Preisempfehlung des Herstellers, unbekannt = Art nicht angegeben, geschaetzt = kein Vergleichspreis im Prospekt, sondern derselbe Artikel im selben Markt aus einem früheren Prospekt (vorherQuelle). abPreis = „ab“-Preis (bis zu). app = nur mit App/Karte. prospekt = Prospekt-id bei kaufDA. gueltigAb später als heute = kommt noch (abQuelle text/marktguru, wochenende = Fr/Sa-Angebot). maerkte.<id>.gesamt = Angebote in den Prospekten laut kaufDA, gelesen = davon gesehen. bestaetigt marktguru = aus einem anderen Prospekt desselben Markts, von marktguru für PLZ 04720 mit gleichem Preis und Produktwort bestätigt. menge = Packungsgröße (geschaetzt nur bei gleicher Packung). Online-Prospekte (netto-online.de …) zählen nicht (status.kaufda.online). maerkte.<id>.filiale = nächste Filiale von Döbeln (kaufDA oder OpenStreetMap, quelle), nah = bis nahKm (false = keine Filiale in der Nähe: die Seite zeigt den Markt erst unter „weitere Märkte“, die Start-Kachel zählt ihn nicht).',
+    hinweis: 'Prospekt-Ort je Markt in maerkte.<id>.ort (regional = nicht der Prospekt für Döbeln, dort prüfen). Rabatt mit Vergleichspreis, abgerundet: vorherArt streich = Streichpreis im Prospekt, uvp = unverbindliche Preisempfehlung des Herstellers, unbekannt = Art nicht angegeben, geschaetzt = kein Vergleichspreis im Prospekt, sondern derselbe Artikel im selben Markt aus einem früheren Prospekt (vorherQuelle). abPreis = „ab“-Preis (bis zu). app = nur mit App/Karte. prospekt = Prospekt-id bei kaufDA. gueltigAb später als heute = kommt noch (abQuelle text/marktguru, wochenende = Fr/Sa-Angebot). maerkte.<id>.gesamt = Angebote in den Prospekten laut kaufDA, gelesen = davon gesehen. bestaetigt marktguru = aus einem anderen Prospekt desselben Markts, von marktguru für PLZ 04720 mit gleichem Preis und Produktwort bestätigt. menge = Packungsgröße (geschaetzt nur bei gleicher Packung). Online-Prospekte (netto-online.de …) zählen nicht (status.kaufda.online). maerkte.<id>.filiale = nächste Filiale von Döbeln (kaufDA oder OpenStreetMap, quelle), nah = bis nahKm (false = keine Filiale in der Nähe: die Seite zeigt den Markt erst unter „weitere Märkte“, die Start-Kachel zählt ihn nicht). merkTreffer = Angebote zu den gemerkten Produkten (merkWorte, von der Seite) und den merkworten der config, auch ohne Rabatt (vorher/pct dann null); wort = gemerktes Produkt, sorte ja = Sorte steht im Angebot, pruefen = nur „versch. Sorten“, fern = Markt ohne Filiale in der Nähe.',
   };
   return { eintraege: [], fehler, hinweise, datei, kurz, zahl: { n: angebote.length, wort: 'Angebote' } }; // Quellen-Liste: nicht „0 gefunden“
 }

@@ -8,7 +8,7 @@ import { readFile, appendFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { berlin, adventFenster } from './benachrichtigen.mjs';
-import { erinnerungFaellig } from './lib/merken.mjs';
+import { erinnerungFaellig, wortNeu } from './lib/merken.mjs';
 
 export const TOLERANZ_MS = 5 * 60e3; // ein Lauf darf bis zu 5 Min. früher kommen (Zeitpläne schwanken)
 // Scheitert das Senden der Zusammenfassung (ntfy weg), bleibt digestTag offen. Damit nicht jeder der vielen Starts einen
@@ -183,6 +183,8 @@ export function faelligkeit(cfg, zustand, jetzt = new Date()) {
   for (const [name, m] of Object.entries(cfg.module || {})) {
     if (!m || m.aktiv === false) continue;
     if (modulFaellig(m, lauf[name], jetztMs, nv[name])) module.push(name);
+    // 22.11.2026: neu gemerktes Produkt (Seite), noch nie gesucht -> Knaller gleich (wie main.lauf), außer kaufDA hat Ruhe verlangt
+    else if (name === 'knaller' && !hostRuheRest(zustand || {}, 'www.kaufda.de', jetztMs) && wortNeu(cfg, zustand || {}, jetztMs)) module.push(name);
     else naechstes[name] = new Date(naechsterLaufMs(m, lauf[name], nv[name])).toISOString();
   }
   const erstlauf = !zustand?.gemeldet;

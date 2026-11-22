@@ -27,7 +27,16 @@
    mein-vorteil-woche-standort, auf etwa 1 km gerundet) und wird nirgends hingeschickt (kein IP-Dienst). Dann lädt die Seite die
    Filial-Liste filialen.json (Radar, OpenStreetMap; Kopie im Ordner als Ersatz) und zeigt nur Märkte mit Filiale bis
    UMKREIS_KM um die Position. Beim nächsten Öffnen wird neu geortet, wenn der Browser die Freigabe schon hat (ohne Frage).
-   Die Prospekte bleiben die für Döbeln – liegt die Position weiter als WEIT_KM weg, steht das dabei. „Döbeln“ = vergessen. */
+   Die Prospekte bleiben die für Döbeln – liegt die Position weiter als WEIT_KM weg, steht das dabei. „Döbeln“ = vergessen.
+   Merkliste (Musiker 22.11.2026: „Produkte auswählen und in eine Merkliste legen … am Start-Tag morgens eine Benachrichtigung
+   ‚Heute ab: …, bis …, Markt, Preis' – nicht vorher, nicht jeden Tag … auf der Seite je Tag: Heute, Ab morgen, Ab Montag/Freitag“):
+   oben in der Liste immer sichtbar. Zwei Wege: Haken an einer Kachel (dieses Angebot) und „Produkt merken“ (Produkt + Sorte,
+   z. B. „Haribo XXL“ / „Goldbären“ – gilt für jedes künftige Angebot, auch ohne Rabatt). Produkte im localStorage
+   (mein-vorteil-woche-produkte, höchstens WORTE_MAX) und mit der Merkliste an das ntfy-Thema (worte im ersten Teil). Der Radar
+   sucht sie in allen Angeboten der Döbelner Prospekte (knaller.json merkTreffer) und schickt am Start-Tag zwischen 7 und 12 Uhr
+   einen Push (ntfy, wie alle Pushes – keine Web-Push-Anmeldung nötig). Die Seite zeigt Haken + Treffer nach Tagen: Heute ·
+   Ab morgen · Ab <Wochentag> <Datum>; sie sucht die Produkte auch selbst in den Knallern (falls der Radar ein neues Produkt
+   noch nicht kennt). Für die Start-Kachel ein kleiner Auszug im localStorage (mein-vorteil-woche-merk-kachel). */
 (function () {
   'use strict';
   const URL_STANDARD = 'https://raw.githubusercontent.com/XanderFoxy/Synquenzer/vorteile-daten/vorteile/data/knaller.json';
@@ -40,6 +49,9 @@
   const MERK_URL = 'https://ntfy.sh/xander-schnaeppchen-b5cbf4442aaa9734f3-merken';
   const MERK_NEU_STUNDEN = 6; // ntfy.sh hält Nachrichten 12 h – die Liste regelmäßig neu schicken
   const LANG_MS = 550; // lange drücken = merken
+  const PRODUKT_SPEICHER = 'mein-vorteil-woche-produkte'; // gemerkte Produkte { v: 1, liste: [{ w, sorte, seit }] }
+  const KACHEL_SPEICHER = 'mein-vorteil-woche-merk-kachel'; // Auszug für die Start-Kachel / „Heute wichtig“
+  const WORTE_MAX = 12; // wie MERK_WORTE_MAX im Radar (vorteile/scan/lib/merken.mjs)
   const ALT_STUNDEN = 36, HINWEIS_STUNDEN = 12;
   // Reihenfolge und Namen, falls die Datei keine Märkte nennt (gleich wie vorteile/config.json module.knaller.maerkte)
   // Märkte vor Ort (Xander 16.11.2026): Döbeln (kaufDA-Stadtmitte), Filial-Liste vom Radar, Kopie im Ordner als Ersatz
@@ -92,23 +104,25 @@
 
   // --- Daten tolerant lesen ------------------------------------------------------------------------------------------
   const liste = x => (Array.isArray(x) ? x : x && typeof x === 'object' ? [x] : []);
-  function angebotNorm(a, jetzt) {
+  // ohneRabatt: Treffer eines gemerkten Produkts (merkTreffer) – auch ohne Vergleichspreis, dann ohne Prozent und „statt“
+  function angebotNorm(a, jetzt, ohneRabatt = false) {
     if (!a || typeof a !== 'object') return null;
     const titel = typeof a.titel === 'string' ? a.titel.replace(/\s+/g, ' ').trim().slice(0, 120) : '';
-    const preis = zahl(a.preis), vorher = zahl(a.vorher);
+    const preis = zahl(a.preis);
+    let vorher = zahl(a.vorher);
     const markt = typeof a.markt === 'string' && /^[a-z0-9-]{1,30}$/.test(a.markt) ? a.markt : null;
     if (!titel || !markt || !(preis > 0)) return null;
     // ohne Vergleichspreis kein Rabatt – und ohne Rabatt kein Knaller (die Seite rechnet selbst nach, statt pct zu glauben)
-    if (!(vorher > preis)) return null;
-    const pct = Math.floor((1 - preis / vorher) * 100 + 1e-9); // abgerundet wie der Radar: nie mehr versprechen
-    if (!(pct > 0 && pct < 95)) return null;
+    let pct = vorher > preis ? Math.floor((1 - preis / vorher) * 100 + 1e-9) : null; // abgerundet wie der Radar: nie mehr versprechen
+    if (!(pct > 0 && pct < 95)) { if (!ohneRabatt) return null; pct = null; vorher = null; }
     const bis = zeitVon(a.gueltigBis), ab = zeitVon(a.gueltigAb);
     if (bis != null && bis < jetzt) return null; // abgelaufen
     return {
       id: String(a.id ?? `${markt}|${titel}|${preis}`).slice(0, 80), markt, titel, preis, vorher, pct,
+      start: ab, wort: typeof a.wort === 'string' ? a.wort.trim().slice(0, 40) : '', sorte: a.sorte === 'ja' || a.sorte === 'pruefen' ? a.sorte : '', fern: a.fern === true,
       info: typeof a.info === 'string' ? a.info.trim().slice(0, 120) : '',
       // streich = Streichpreis (Goldrahmen), uvp = Herstellerpreis; fehlt die Angabe -> 'unbekannt' (grau, ohne „UVP“)
-      art: a.vorherArt === 'streich' ? 'streich' : a.vorherArt === 'uvp' ? 'uvp' : a.vorherArt === 'geschaetzt' ? 'geschaetzt' : 'unbekannt',
+      art: pct == null ? 'ohne' : a.vorherArt === 'streich' ? 'streich' : a.vorherArt === 'uvp' ? 'uvp' : a.vorherArt === 'geschaetzt' ? 'geschaetzt' : 'unbekannt',
       vorherQuelle: typeof a.vorherQuelle === 'string' ? a.vorherQuelle.trim().slice(0, 60) : '',
       wochenende: a.wochenende === true, merkwort: typeof a.merkwort === 'string' ? a.merkwort.slice(0, 30) : '',
       abPreis: a.abPreis === true, app: a.app === true,
@@ -181,7 +195,10 @@
     const gesehen = new Set();
     const angebote = liste(d?.angebote).map(a => angebotNorm(a, jetzt)).filter(a => a && !gesehen.has(a.id) && gesehen.add(a.id))
       .sort((a, b) => b.pct - a.pct || a.preis - b.preis);
-    for (const a of angebote) if (!namen.has(a.markt)) namen.set(a.markt, a.markt);
+    // Treffer der gemerkten Produkte (Radar ab 22.11.2026), auch ohne Rabatt; die nächsten zuerst
+    const gesehenT = new Set();
+    const treffer = liste(d?.merkTreffer).map(a => angebotNorm(a, jetzt, true)).filter(a => a && !gesehenT.has(a.id) && gesehenT.add(a.id));
+    for (const a of [...angebote, ...treffer]) if (!namen.has(a.markt)) namen.set(a.markt, a.markt);
     // ort = Prospekt-Ort dieses Markts (Radar ab 16.11.2026: Döbeln, Chemnitz, Leipzig oder „bundesweit (Berlin)“)
     const maerkte = [...namen.entries()].map(([id, name]) => ({ id, name, link: sicher(m[id]?.link), alt: m[id]?.alt === true,
       ort: typeof m[id]?.ort === 'string' ? m[id].ort.trim().slice(0, 40) : '', keinMarkt: m[id]?.keinMarkt === true,
@@ -192,7 +209,7 @@
     return {
       aktualisiert: typeof d?.aktualisiert === 'string' ? d.aktualisiert : null,
       standort: typeof d?.standort === 'string' ? d.standort.slice(0, 30) : '', ort: typeof d?.ort === 'string' ? d.ort.slice(0, 30) : 'Döbeln',
-      angebote, maerkte, status,
+      angebote, treffer, maerkte, status,
     };
   }
 
@@ -205,6 +222,88 @@
     const wt = { Mo: 1, Di: 2, Mi: 3, Do: 4, Fr: 5, Sa: 6, So: 7 }[String(p.weekday).replace('.', '')] || 7;
     const roh = Date.UTC(Number(p.year), Number(p.month) - 1, Number(p.day) + 8 - wt); // nächster Montag, 00:00 UTC
     return roh - Number(teile(roh).hour) * 36e5; // 00:00 Berliner Zeit
+  }
+
+  // --- Produkte merken: dieselbe Regel wie der Radar (vorteile/scan/lib/merken.mjs merkWort/wortPasst, Test regeln) ------
+  const normT = s => String(s ?? '').toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
+    .replace(/é|è/g, 'e').replace(/&/g, ' und ').replace(/[^a-z0-9,.%€+]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const wortText = (v, max) => (typeof v === 'string' ? v.normalize('NFC').replace(/[^\p{L}\p{N} &'’.+\/,-]+/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, max).trim() : '');
+  function wortNorm(x) {
+    if (!x || typeof x !== 'object') return null;
+    const w = wortText(x.w, 40).replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
+    if (w.length < 2 || !/\p{L}/u.test(w) || !normT(w)) return null;
+    const sorte = wortText(x.sorte, 60);
+    const t = zeitVon(x.seit);
+    return { w, sorte: normT(sorte) ? sorte : '', seit: t != null ? new Date(t).toISOString() : null };
+  }
+  const wortSchluessel = x => `${normT(x.w)}|${normT(x.sorte || '')}`;
+  // an Wortgrenzen (Prüfer 22.11.2026: „Eis“ traf „Rundreise“, „Gusseiserner“, „teilweise“; „Cola“ „Chocolate“; „Tee“ „Beste
+  // Ernte“): ganzes Wort mit Endung, Wort-Ende (Stiel|eis), Wort-Anfang mit Form-Teil (Eis|riegel) oder ab 5 Buchstaben
+  const woerter = s => normT(s).split(/[^a-z0-9]+/).filter(Boolean);
+  const teileSpeicher = new Map();
+  const teileVon = s => {
+    const k = String(s ?? '');
+    if (!teileSpeicher.has(k)) { const t = woerter(k), lang = t.filter(x => x.length > 1); if (teileSpeicher.size >= 500) teileSpeicher.clear(); teileSpeicher.set(k, lang.length ? lang : t); }
+    return teileSpeicher.get(k);
+  };
+  const endungen = n => (n <= 2 ? ['er', 'ern'] : n <= 4 ? ['s', 'e', 'es'] : ['s', 'e', 'es', 'n', 'en', 'er', 'ern']);
+  const FORM = new Set(['creme', 'riegel', 'sorte', 'sorten', 'becher', 'torte', 'konfekt', 'dessert', 'mix', 'mischung', 'packung', 'pack', 'box', 'kasten', 'kiste', 'dose', 'dosen', 'flasche', 'flaschen', 'beutel', 'sandwich', 'waffel', 'waffeln']);
+  const FALSCH = ['preis', 'reis', 'reise', 'kreis', 'weis', 'gleis', 'greis', 'schwein', 'frottee', 'komitee', 'zentrum', 'spektrum', 'darum', 'warum', 'herum', 'origin'];
+  const falsch = (stamm, wort, x) => FALSCH.some(f => f.length > x.length && f.includes(x) && (stamm.endsWith(f) || wort.endsWith(f)) && !(f === 'reis' && stamm.endsWith('ereis')));
+  const textSpeicher = new Map(); // je Text einmal gerechnet (die Merkliste zeichnet oft neu)
+  function textWorte(text) {
+    const k = String(text ?? '');
+    let T = textSpeicher.get(k);
+    if (T) return T;
+    const w = woerter(k), anf = [];
+    let pos = 0;
+    for (const x of w) { anf.push(pos); pos += x.length; }
+    T = { w, anf, kette: w.join(''), grenze: new Set(anf), ende: new Set(anf.map((a, i) => a + w[i].length)) };
+    if (textSpeicher.size >= 2000) textSpeicher.clear();
+    textSpeicher.set(k, T);
+    return T;
+  }
+  function passtTeil(T, x) {
+    if (!x) return false;
+    const { grenze, ende } = T;
+    for (let i = T.kette.indexOf(x); i >= 0; i = T.kette.indexOf(x, i + 1)) {
+      const j = i + x.length;
+      let k = 0;
+      while (k + 1 < T.anf.length && T.anf[k + 1] <= i) k++;
+      const a = T.anf[k], wort = T.w[k];
+      if (j > a + wort.length) { if (grenze.has(i) && ende.has(j)) return true; continue; }
+      const vorn = wort.slice(0, i - a), hinten = wort.slice(j - a);
+      const endung = !hinten || endungen(x.length).includes(hinten);
+      if (!vorn && !hinten) return true;
+      if (!vorn && endung) { if (!falsch(x, wort, x)) return true; continue; }
+      if (!vorn) { if (x.length >= 5 || FORM.has(hinten)) return true; continue; }
+      if (endung) { if (x.length >= 3 && vorn.length >= 3 && !falsch(wort.slice(0, j - a), wort, x)) return true; continue; }
+      if (x.length >= 6) return true;
+    }
+    return false;
+  }
+  const SORTEN = /\b(sorten|sortiert|sortierung|versch|verschiedene|div|diverse|geschmacksrichtungen)\b/;
+  function wortPasst(text, e) {
+    const T = textWorte(text);
+    const teile = teileVon(e && e.w);
+    if (!T.kette || !teile.length || !teile.every(x => passtTeil(T, x))) return null;
+    const sorten = String(e.sorte || '').split(/,|\/|\boder\b/i).map(teileVon).filter(l => l.length);
+    if (!sorten.length) return { sorte: '' };
+    if (sorten.some(l => l.every(x => passtTeil(T, x)))) return { sorte: 'ja' };
+    return SORTEN.test(normT(text)) ? { sorte: 'pruefen' } : null;
+  }
+  const W = { liste: [], fehler: '' };
+  function produkteLaden() {
+    const d = lies(PRODUKT_SPEICHER, null);
+    const gesehen = new Set();
+    W.liste = (Array.isArray(d?.liste) ? d.liste : []).map(wortNorm).filter(x => x && !gesehen.has(wortSchluessel(x)) && gesehen.add(wortSchluessel(x))).slice(0, WORTE_MAX);
+  }
+  const produkteSichern = () => merk(PRODUKT_SPEICHER, { v: 1, liste: W.liste });
+  // bestes gemerktes Produkt für ein Angebot (Sorte „ja“ vor „prüfen“) -> { e, sorte } oder null
+  function produktFuer(a) {
+    let best = null;
+    for (const e of W.liste) { const p = wortPasst(`${a.titel} ${a.info || ''}`, e); if (p && (!best || (p.sorte === 'ja' && best.sorte !== 'ja'))) best = { e, sorte: p.sorte }; }
+    return best;
   }
 
   // --- Merken ------------------------------------------------------------------------------------------------------------
@@ -223,15 +322,17 @@
   // – der Radar nimmt den neuesten vollständigen Satz.
   const MERK_BYTES = 3500;
   const bytes = s => (typeof TextEncoder === 'function' ? new TextEncoder().encode(s).length : unescape(encodeURIComponent(s)).length);
-  function merkTeile(merken, satz) {
+  // worte (gemerkte Produkte, 22.11.2026) stehen nur im ersten Teil; ohne worte (alte Aufrufe) fehlt das Feld
+  function merkTeile(merken, satz, worte) {
+    const kopf = Array.isArray(worte) ? { worte } : {};
     const teile = [];
     let akt = [];
     for (const m of merken) {
-      if (akt.length && bytes(JSON.stringify({ v: 1, satz, teil: 99, von: 99, merken: [...akt, m] })) > MERK_BYTES) { teile.push(akt); akt = []; }
+      if (akt.length && bytes(JSON.stringify({ v: 1, satz, teil: 99, von: 99, merken: [...akt, m], ...(teile.length ? {} : kopf) })) > MERK_BYTES) { teile.push(akt); akt = []; }
       akt.push(m);
     }
     teile.push(akt); // leere Liste = eine Nachricht mit [] (alles vergessen)
-    return teile.map((l, i) => JSON.stringify({ v: 1, satz, teil: i + 1, von: teile.length, merken: l }));
+    return teile.map((l, i) => JSON.stringify({ v: 1, satz, teil: i + 1, von: teile.length, merken: l, ...(i ? {} : kopf) }));
   }
   function merkSenden(sofort) {
     clearTimeout(M.timer);
@@ -239,7 +340,8 @@
       const merken = M.liste.map(x => ({ id: x.id, titel: String(x.titel).slice(0, 90), markt: x.markt, preis: x.preis, vorher: x.vorher, pct: x.pct, ab: x.ab, bis: x.bis }));
       try {
         // einfache Anfrage (Text ohne eigene Kopfzeilen) – kein Preflight; alle Teile nacheinander, sonst gilt es als offen
-        for (const body of merkTeile(merken, Date.now().toString(36))) {
+        const worte = W.liste.map(x => ({ w: x.w, ...(x.sorte ? { sorte: x.sorte } : {}), ...(x.seit ? { seit: x.seit } : {}) }));
+        for (const body of merkTeile(merken, Date.now().toString(36), worte)) {
           const r = await fetch(MERK_URL, { method: 'POST', body });
           if (!r.ok) throw new Error(`HTTP ${r.status}`);
         }
@@ -253,15 +355,17 @@
   function merkUmschalten(id) {
     if (!S.n) return;
     // die angetippte Kachel bleibt, wo sie ist (oben kommt/geht die Gruppe „Gemerkt“)
-    const finde = () => [...(S.el?.querySelectorAll(`.wo-kachel[data-wo-id="${CSS_ESC(id)}"]`) || [])].find(k => !k.closest('ul')?.previousElementSibling?.matches?.('.wo-merkhinweis'));
+    const finde = () => [...(S.el?.querySelectorAll(`.wo-kachel[data-wo-id="${CSS_ESC(id)}"]`) || [])].find(k => !k.closest('.wo-merkliste'));
     const vorher = finde()?.getBoundingClientRect().top;
     const i = M.liste.findIndex(x => x.id === id);
     if (i >= 0) M.liste.splice(i, 1);
     else {
-      const a = S.n.angebote.find(x => x.id === id);
+      const a = S.n.angebote.find(x => x.id === id) || S.n.treffer.find(x => x.id === id);
       if (!a) return;
+      // ab = Start-Tag (auch wenn er schon war): die Merkliste sortiert nach Tagen, die Start-Kachel sagt „heute ab“
       M.liste.unshift({ id: a.id, titel: a.titel, markt: a.markt, preis: a.preis, vorher: a.vorher, pct: a.pct, art: a.art,
-        ab: a.ab != null ? new Date(a.ab).toISOString() : null, bis: a.bis != null ? new Date(a.bis).toISOString() : null, bild: a.bild || null, gemerkt: new Date().toISOString() });
+        ab: a.start != null ? new Date(a.start).toISOString() : null, bis: a.bis != null ? new Date(a.bis).toISOString() : null, bild: a.bild || null, gemerkt: new Date().toISOString(),
+        mname: marktName(a.markt) });
       M.liste = M.liste.slice(0, 60);
     }
     M.offen = true;
@@ -272,10 +376,33 @@
     merkSenden(false);
   }
   const CSS_ESC = s => (window.CSS && CSS.escape ? CSS.escape(s) : String(s).replace(/["\\]/g, '\\$&'));
+  function produktDazu(form) {
+    const e = wortNorm({ w: form.elements.w.value, sorte: form.elements.sorte.value, seit: new Date().toISOString() });
+    if (!e) { W.fehler = 'Bitte ein Produkt mit mindestens 2 Buchstaben eintragen.'; zeichne(); return; }
+    if (W.liste.some(x => wortSchluessel(x) === wortSchluessel(e))) { W.fehler = `„${e.w}“ ist schon gemerkt.`; zeichne(); return; }
+    if (W.liste.length >= WORTE_MAX) { W.fehler = `Höchstens ${WORTE_MAX} Produkte – erst eins vergessen (×).`; zeichne(); return; }
+    W.fehler = '';
+    W.liste.push(e);
+    produkteSichern();
+    form.elements.w.value = ''; form.elements.sorte.value = '';
+    M.offen = true; merkSichern();
+    zeichne();
+    merkSenden(false);
+  }
+  function produktWeg(i) {
+    if (!(i >= 0 && i < W.liste.length)) return;
+    W.liste.splice(i, 1);
+    W.fehler = '';
+    produkteSichern();
+    M.offen = true; merkSichern();
+    zeichne();
+    merkSenden(false);
+  }
   function merkHinweisHtml() {
     const t = M.offen ? (navigator.onLine === false ? 'Wird an den Radar gemeldet, sobald du wieder Netz hast.' : 'Wird an den Radar gemeldet …')
-      : 'Erinnerung per Push am ersten Gültigkeitstag ab 7 Uhr.';
-    return `<p class="wo-merkhinweis">${esc(t)}</p>`;
+      : 'Mitteilung am Start-Tag zwischen 7 und 12 Uhr: „Heute ab: …, bis …, Markt, Preis“ – einmal je Angebot, nicht vorher.';
+    const push = typeof document !== 'undefined' && document.getElementById('push') ? ' <button type="button" class="wo-textknopf" data-wo-push="1">Push einrichten</button>' : '';
+    return `<p class="wo-merkhinweis">${esc(t)}${push}</p>`;
   }
 
   // --- Zeichnen -----------------------------------------------------------------------------------------------------------
@@ -294,7 +421,8 @@
   function kachel(a) {
     const streich = a.art === 'streich';
     const geschaetzt = a.art === 'geschaetzt';
-    const plakette = `${a.abPreis ? 'bis ' : ''}${geschaetzt ? '≈ ' : ''}−${a.pct} %`;
+    const ohne = a.pct == null; // Treffer eines gemerkten Produkts ohne Vergleichspreis: kein Prozent, kein „statt“
+    const plakette = ohne ? '' : `${a.abPreis ? 'bis ' : ''}${geschaetzt ? '≈ ' : ''}−${a.pct} %`;
     const bild = a.bild
       ? `<img class="wo-bild" src="${esc(a.bild)}" alt="" width="160" height="160" loading="lazy" decoding="async" referrerpolicy="no-referrer">`
       : `<span class="wo-bild wo-ohnebild" aria-hidden="true">${esc(marktName(a.markt))}</span>`;
@@ -303,16 +431,43 @@
     if (a.abPreis) marken.push('<span class="wo-marke">ab-Preis</span>');
     if (a.ab) marken.push(`<span class="wo-marke wo-warm">ab ${esc(wtTag(a.ab))}</span>`);
     if (a.wochenende && a.ab) marken.push('<span class="wo-marke">Wochenende</span>');
+
     const fuss = [marktName(a.markt), a.bis != null ? bisText(a.bis) : ''].filter(Boolean).join(' · ');
-    const innen = `<span class="wo-bildfeld">${bild}<span class="wo-pct${streich ? '' : geschaetzt ? ' wo-geschaetzt' : ' wo-uvp'}">${esc(plakette)}</span></span>`
+    const innen = `<span class="wo-bildfeld">${bild}${ohne ? '' : `<span class="wo-pct${streich ? '' : geschaetzt ? ' wo-geschaetzt' : ' wo-uvp'}">${esc(plakette)}</span>`}</span>`
       + `<span class="wo-text"><span class="wo-preiszeile"><span class="wo-preis">${a.abPreis ? '<small>ab </small>' : ''}${esc(euro(a.preis))}</span></span>`
-      + `<span class="wo-statt">statt ${geschaetzt ? '~' : ''}<s>${esc(euro(a.vorher))}</s>${a.art === 'uvp' ? ' UVP' : geschaetzt ? ' geschätzt' : ''}</span>`
+      + (ohne ? '<span class="wo-statt">Angebotspreis</span>' : `<span class="wo-statt">statt ${geschaetzt ? '~' : ''}<s>${esc(euro(a.vorher))}</s>${a.art === 'uvp' ? ' UVP' : geschaetzt ? ' geschätzt' : ''}</span>`)
       + `<span class="wo-titel">${esc(a.titel)}</span>`
       + (a.info || a.bedingung ? `<span class="wo-info">${esc([a.bedingung, a.info].filter(Boolean).join(' · '))}</span>` : '')
       + (marken.length ? `<span class="wo-marken">${marken.join('')}</span>` : '')
       + `<span class="wo-fuss">${esc(fuss)}</span></span>`;
     const an = gemerkt(a.id);
     const klasse = `wo-kachel${streich ? ' wo-streich' : ''}${a.ab ? ' wo-kommt' : ''}${an ? ' wo-gemerkt' : ''}`;
+    const knopf = `<button type="button" class="wo-merk" data-wo-merk="${esc(a.id)}" aria-pressed="${an}" aria-label="${esc(`${an ? 'Gemerkt' : 'Merken'}: ${a.titel}`)}">${HAKEN}</button>`;
+    return a.link
+      ? `<li><a class="${klasse}" href="${esc(a.link)}" target="_blank" rel="noopener" data-wo-id="${esc(a.id)}" data-wo-markt="${esc(a.markt)}">${innen}</a>${knopf}</li>`
+      : `<li><div class="${klasse}" data-wo-id="${esc(a.id)}" data-wo-markt="${esc(a.markt)}">${innen}</div>${knopf}</li>`;
+  }
+  // Merkliste: eine kompakte Zeile je Angebot (Bild 64 px, Titel, Preis, Markt · bis, Marken) – wie ein Einkaufszettel je Tag;
+  // dieselben Klassen wie die Kachel (Haken, lange drücken, Bild-Ersatz funktionieren gleich)
+  function zeile(a) {
+    const ohne = a.pct == null, geschaetzt = a.art === 'geschaetzt';
+    const bild = a.bild
+      ? `<img class="wo-bild" src="${esc(a.bild)}" alt="" width="64" height="64" loading="lazy" decoding="async" referrerpolicy="no-referrer">`
+      : `<span class="wo-bild wo-ohnebild" aria-hidden="true">${esc(marktName(a.markt))}</span>`;
+    const marken = [];
+    if (a.ab == null && a.start != null && tagKey(a.start) === tagKey(Date.now())) marken.push('<span class="wo-marke wo-warm">ab heute</span>');
+    if (a.app) marken.push('<span class="wo-marke wo-warm">nur mit App/Karte</span>');
+    if (a.wort) marken.push(`<span class="wo-marke">gemerkt: ${esc(a.wort)}</span>`);
+    if (a.sorte === 'pruefen') marken.push('<span class="wo-marke wo-warm">Sorte im Markt prüfen</span>');
+    const preis = `<span class="wo-preis">${a.abPreis ? '<small>ab </small>' : ''}${esc(euro(a.preis))}</span>`
+      + (ohne ? ' <span class="wo-statt">Angebotspreis</span>'
+        : ` <span class="wo-statt">statt ${geschaetzt ? '~' : ''}<s>${esc(euro(a.vorher))}</s>${a.art === 'uvp' ? ' UVP' : ''}</span> <span class="wo-pct-text">${a.abPreis ? 'bis ' : ''}${geschaetzt ? '≈ ' : ''}−${a.pct} %</span>`);
+    const fuss = [marktName(a.markt), a.bis != null ? bisText(a.bis) : ''].filter(Boolean).join(' · ');
+    const innen = `<span class="wo-bildfeld">${bild}</span><span class="wo-text"><span class="wo-titel">${esc(a.titel)}</span>`
+      + `<span class="wo-preiszeile">${preis}</span><span class="wo-fuss">${esc(fuss)}</span>`
+      + (marken.length ? `<span class="wo-marken">${marken.join('')}</span>` : '') + '</span>';
+    const an = gemerkt(a.id);
+    const klasse = `wo-kachel wo-zeile${an ? ' wo-gemerkt' : ''}`;
     const knopf = `<button type="button" class="wo-merk" data-wo-merk="${esc(a.id)}" aria-pressed="${an}" aria-label="${esc(`${an ? 'Gemerkt' : 'Merken'}: ${a.titel}`)}">${HAKEN}</button>`;
     return a.link
       ? `<li><a class="${klasse}" href="${esc(a.link)}" target="_blank" rel="noopener" data-wo-id="${esc(a.id)}" data-wo-markt="${esc(a.markt)}">${innen}</a>${knopf}</li>`
@@ -344,24 +499,86 @@
     }
     return teile.join('');
   }
-  // gemerkte Angebote: oben, unabhängig von Stufe und Markt (frische Daten, sonst der gemerkte Stand)
+  // Merkliste (22.11.2026): per Haken gemerkte Angebote (frische Daten, sonst der gemerkte Stand) + Angebote zu den gemerkten
+  // Produkten (Radar-Treffer und eigene Suche in den Knallern) – unabhängig von Stufe und Markt; ferne Märkte nur bei Haken oder
+  // „weitere Märkte“. Jeder Eintrag mit start (Start-Tag, auch wenn er schon war).
   function gemerktListe() {
-    if (!M.liste.length || !S.n) return [];
+    if (!S.n || (!M.liste.length && !W.liste.length)) return [];
     const jetzt = Date.now();
-    return M.liste.map(x => S.n.angebote.find(a => a.id === x.id) || angebotNorm({ ...x, vorherArt: x.art, gueltigAb: x.ab, gueltigBis: x.bis, bild: x.bild }, jetzt)).filter(Boolean);
+    const out = [], ids = new Set();
+    for (const x of M.liste) {
+      const a = S.n.angebote.find(b => b.id === x.id) || S.n.treffer.find(b => b.id === x.id)
+        || angebotNorm({ ...x, vorherArt: x.art, gueltigAb: x.ab, gueltigBis: x.bis, bild: x.bild }, jetzt, true);
+      if (!a || ids.has(a.id)) continue;
+      ids.add(a.id);
+      const p = produktFuer(a);
+      out.push({ ...a, wort: p ? p.e.w : '', sorte: p ? p.sorte : '' });
+    }
+    if (W.liste.length) {
+      for (const a of [...S.n.treffer, ...S.n.angebote]) {
+        if (ids.has(a.id) || a.fern || (!S.weitere && !istNah(a.markt))) continue;
+        const p = produktFuer(a); // nur Produkte, die hier noch gemerkt sind (vergessen = weg, auch wenn der Radar noch nichts weiß)
+        if (!p) continue;
+        ids.add(a.id);
+        out.push({ ...a, wort: p.e.w, sorte: p.sorte });
+      }
+    }
+    return out;
+  }
+  const TAG_LANG = { Mo: 'Montag', Di: 'Dienstag', Mi: 'Mittwoch', Do: 'Donnerstag', Fr: 'Freitag', Sa: 'Samstag', So: 'Sonntag' };
+  // Gruppen je Tag: Heute (gilt jetzt; was heute beginnt zuerst) · Ab morgen · Ab <Wochentag> <Datum>
+  function tagGruppen(arr) {
+    const jetzt = Date.now(), heute = tagKey(jetzt), morgen = tagKey(jetzt + 864e5);
+    const g = new Map();
+    for (const a of arr) {
+      const spaeter = a.start != null && a.start > jetzt;
+      const k = spaeter ? tagKey(a.start) : 'heute';
+      if (!g.has(k)) {
+        const [wt, dat] = spaeter ? wtTag(a.start).split(' ') : [];
+        g.set(k, { k, t: spaeter ? a.start : -Infinity, titel: !spaeter ? 'Heute' : k === morgen ? 'Ab morgen' : `Ab ${TAG_LANG[wt] || wt} ${dat}`, unter: !spaeter ? wtTag(jetzt) : k === morgen ? wtTag(a.start) : '', l: [] });
+      }
+      g.get(k).l.push(a);
+    }
+    const neuHeute = a => a.start != null && tagKey(a.start) === heute;
+    for (const x of g.values()) x.l.sort((a, b) => (x.k === 'heute' ? (neuHeute(b) ? 1 : 0) - (neuHeute(a) ? 1 : 0) : 0) || (a.bis ?? Infinity) - (b.bis ?? Infinity) || (b.pct ?? -1) - (a.pct ?? -1));
+    return [...g.values()].sort((a, b) => a.t - b.t);
+  }
+  function wortChipsHtml() {
+    if (!W.liste.length) return '';
+    return `<ul class="wo-worte" aria-label="Gemerkte Produkte">${W.liste.map((x, i) => `<li><span class="wo-wort">${esc(x.w)}${x.sorte ? `<small> · ${esc(x.sorte)}</small>` : ''}</span><button type="button" class="wo-wort-weg" data-wo-wort-weg="${i}" aria-label="${esc(`${x.w}${x.sorte ? ` (${x.sorte})` : ''} vergessen`)}">×</button></li>`).join('')}</ul>`;
   }
   function gemerktHtml() {
     const arr = gemerktListe();
-    if (!arr.length) return '';
-    return `<h3 class="wo-gruppe" id="wo-g-gemerkt">Gemerkt <small>${arr.length}</small></h3>${merkHinweisHtml()}<ul class="wo-raster">${arr.map(kachel).join('')}</ul>`;
+    const gruppen = tagGruppen(arr);
+    const form = `<form class="wo-produkt" data-wo-produkt autocomplete="off" novalidate>`
+      + `<label class="wo-feld"><span class="wo-vh">Produkt</span><input name="w" type="text" maxlength="40" placeholder="Produkt merken, z. B. Crunchips" enterkeyhint="next" autocomplete="off" spellcheck="false"></label>`
+      + `<label class="wo-feld wo-feld-sorte"><span class="wo-vh">Sorte (freiwillig)</span><input name="sorte" type="text" maxlength="60" placeholder="Sorte (freiwillig)" enterkeyhint="done" autocomplete="off" spellcheck="false"></label>`
+      + `<button type="submit" class="wo-plus">Merken</button></form>`
+      + `<p class="wo-produkt-fehler" role="status"${W.fehler ? '' : ' hidden'}>${esc(W.fehler)}</p>`;
+    const tage = gruppen.map(x => `<h4 class="wo-tag" id="wo-tag-${esc(x.k)}">${esc(x.titel)}${x.unter ? ` <span class="wo-tag-dat">${esc(x.unter)}</span>` : ''} <small>${x.l.length}</small></h4><ul class="wo-mliste">${x.l.map(zeile).join('')}</ul>`).join('');
+    const leer = !arr.length ? `<p class="wo-merk-leer">${W.liste.length ? 'Gerade kein Angebot zu deinen Produkten – sobald eins im Prospekt steht, erscheint es hier am richtigen Tag.' : 'Haken an einer Kachel oder ein Produkt eintragen (z. B. eine Eissorte, Chips, Fruchtgummi XXL) – hier steht dann je Tag, was ab wann gilt.'}</p>` : '';
+    return `<section class="wo-merkliste" id="wo-g-gemerkt" aria-labelledby="wo-ml-h"><h3 class="wo-ml-kopf" id="wo-ml-h">Merkliste <small>${arr.length}</small></h3>${merkHinweisHtml()}${form}${wortChipsHtml()}${tage}${leer}</section>`;
   }
+  // Auszug für die Start-Kachel und „Heute wichtig“ (index.html liest ihn ohne knaller.json): die nächsten 6, nur was gilt/kommt
+  function kachelAuszug() {
+    if (!S.n) return;
+    const jetzt = Date.now();
+    const l = gemerktListe().filter(a => !(a.bis != null && a.bis <= jetzt)).sort((a, b) => (a.start ?? 0) - (b.start ?? 0)).slice(0, 6)
+      .map(a => ({ id: a.id, titel: a.titel.slice(0, 60), markt: marktName(a.markt), preis: a.preis, ...(a.start != null ? { ab: new Date(a.start).toISOString() } : {}), ...(a.bis != null ? { bis: new Date(a.bis).toISOString() } : {}), ...(a.wort ? { wort: a.wort } : {}) }));
+    const neu = JSON.stringify(l);
+    if (neu === letzterAuszug) return; // nur bei Änderung schreiben und die Startseite neu zeichnen lassen
+    letzterAuszug = neu;
+    merk(KACHEL_SPEICHER, { v: 1, t: new Date(jetzt).toISOString(), liste: l });
+    try { dispatchEvent(new Event('mein-vorteil-woche')); } catch {}
+  }
+  let letzterAuszug = null;
   // Sprung-Leiste: Gilt jetzt · Kommt diese Woche · Ab Montag · Gemerkt – mit Zählern, tippen = hinscrollen
   function sprungHtml() {
     const { jetzt, woche, naechste } = teileAuf(abStufe(nachMarkt(basis(), S.markt), S.stufe));
     const g = gemerktListe().length;
     if (!woche.length && !naechste.length && !g) return '';
     const b = (ziel, name, n, kl = '') => (n ? `<button type="button" class="wo-sprung${kl}" data-wo-sprung="${ziel}">${esc(name)}<span class="wo-n">${n}</span></button>` : '');
-    return `<div class="wo-spruenge" aria-label="Springen zu">${b('wo-g-jetzt', 'Gilt jetzt', jetzt.length)}${b('wo-g-kommt', 'Kommt diese Woche', woche.length, ' wo-sprung-kommt')}${b('wo-g-naechste', 'Ab Montag', naechste.length, ' wo-sprung-kommt')}${b('wo-g-gemerkt', 'Gemerkt', g)}</div>`;
+    return `<div class="wo-spruenge" aria-label="Springen zu">${b('wo-g-jetzt', 'Gilt jetzt', jetzt.length)}${b('wo-g-kommt', 'Kommt diese Woche', woche.length, ' wo-sprung-kommt')}${b('wo-g-naechste', 'Ab Montag', naechste.length, ' wo-sprung-kommt')}${b('wo-g-gemerkt', 'Merkliste', g)}</div>`;
   }
   function leerHtml() {
     const imMarkt = nachMarkt(basis(), S.markt);
@@ -475,10 +692,16 @@
     if (S.markt !== 'alle' && (!S.n.maerkte.some(m => m.id === S.markt) || (!S.weitere && !istNah(S.markt)))) S.markt = 'alle';
     const alt = el.querySelector('.wo-chips');
     const links = alt ? alt.scrollLeft : null;
+    // „Produkt merken“: Getipptes und Fokus überstehen das Neuzeichnen (neue Daten, Haken, Stufe)
+    const f0 = el.querySelector('[data-wo-produkt]');
+    const eingabe = f0 ? { w: f0.elements.w.value, sorte: f0.elements.sorte.value, fokus: f0.contains(document.activeElement) ? document.activeElement.name : null } : null;
     el.innerHTML = `<div class="wo">${standHtml()}${stufenHtml()}${ortHtml()}${maerkteHtml()}${sprungHtml()}`
       + `<div class="wo-liste" id="wo-liste" role="tabpanel">${listeHtml()}</div>${fussHtml()}</div>`;
     const leiste = el.querySelector('.wo-chips');
     if (links != null) leiste.scrollLeft = links; else zeigeChip(leiste, S.markt);
+    const f1 = el.querySelector('[data-wo-produkt]');
+    if (f1 && eingabe) { f1.elements.w.value = eingabe.w; f1.elements.sorte.value = eingabe.sorte; if (eingabe.fokus && f1.elements[eingabe.fokus]) f1.elements[eingabe.fokus].focus({ preventScroll: true }); }
+    kachelAuszug();
   }
   function zeigeChip(leiste, k) {
     const c = leiste.querySelector(`[data-wo-markt="${k}"]`);
@@ -630,12 +853,23 @@
       document.head.appendChild(s);
     }
     merkLaden();
+    produkteLaden();
     const alt = M.gesendet ? Date.now() - Date.parse(M.gesendet) : Infinity;
-    if (M.liste.length && (M.offen || !(alt < MERK_NEU_STUNDEN * 36e5))) merkSenden(true);
+    // offen = noch nicht angekommen (auch „alles vergessen“); sonst die Liste alle 6 h neu (ntfy hält 12 h)
+    if (M.offen || ((M.liste.length || W.liste.length) && !(alt < MERK_NEU_STUNDEN * 36e5))) merkSenden(true);
+    el.addEventListener('submit', ev => {
+      const f = ev.target.closest('[data-wo-produkt]');
+      if (!f) return;
+      ev.preventDefault();
+      produktDazu(f);
+    });
     addEventListener('online', () => { if (M.offen) merkSenden(true); });
     el.addEventListener('click', ev => {
       const mk = ev.target.closest('[data-wo-merk]');
       if (mk) { ev.preventDefault(); merkUmschalten(mk.dataset.woMerk); return; }
+      const ww = ev.target.closest('[data-wo-wort-weg]');
+      if (ww) { produktWeg(Number(ww.dataset.woWortWeg)); return; }
+      if (ev.target.closest('[data-wo-push]')) { document.getElementById('push')?.click(); return; }
       const sp = ev.target.closest('[data-wo-sprung]');
       if (sp) { document.getElementById(sp.dataset.woSprung)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
       if (S.lang && ev.target.closest('.wo-kachel')) { ev.preventDefault(); S.lang = false; return; } // lange gedrückt = gemerkt, nicht öffnen
@@ -782,8 +1016,51 @@
 }
 .wo-sprung.wo-sprung-kommt { border-style: dashed; border-color: var(--leise); }
 .wo-gruppe-text, .wo-merkhinweis { margin: -4px 4px 8px; font-size: 13px; color: var(--leise); }
+/* Merkliste (22.11.2026): oben in der Liste, Karte mit Rand in der Bereichsfarbe; Tage als Unterüberschriften */
+.wo-merkliste { margin: 14px 0 6px; padding: 2px 12px 10px; border: 1px solid var(--akzent-hell); border-radius: 16px; background: var(--flaeche, transparent); }
+.wo-ml-kopf { font-size: 17px; font-weight: 650; margin: 12px 0 8px; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.wo-ml-kopf small { font-size: 13px; font-weight: 400; color: var(--leise); }
+.wo-merkliste .wo-merkhinweis { margin: -4px 0 8px; }
+.wo-textknopf { min-height: 44px; margin: -14px 0; vertical-align: middle; padding: 0 2px; border: 0; background: none; color: var(--akzent); font: inherit; font-weight: 650; text-decoration: underline; cursor: pointer; }
+.wo-produkt { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 0; }
+.wo-feld { flex: 1 1 100%; min-width: 0; display: flex; }
+.wo-feld-sorte { flex: 1 1 140px; }
+.wo-feld input {
+  width: 100%; min-width: 0; min-height: 44px; box-sizing: border-box; padding: 0 12px; border-radius: 12px; border: 1px solid var(--linie);
+  background: var(--karte); color: var(--text); font: inherit; font-size: 16px; /* 16 px: iPhone zoomt nicht */
+}
+.wo-feld input::placeholder { color: var(--leise); }
+.wo-feld input:focus-visible { outline: 2px solid var(--akzent); outline-offset: 1px; }
+.wo-plus {
+  flex: 0 0 auto; min-height: 44px; min-width: 64px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--akzent); background: var(--akzent);
+  color: var(--akzent-text); font: inherit; font-weight: 700; cursor: pointer;
+}
+.wo-vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.wo-produkt-fehler { margin: 6px 2px 0; font-size: 13px; color: var(--warm); }
+.wo-worte { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; padding: 0; }
+.wo-worte li { display: inline-flex; align-items: center; min-height: 44px; border-radius: 999px; border: 1px solid var(--linie); background: var(--karte); padding-left: 12px; max-width: 100%; }
+.wo-wort { font-size: 14px; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.wo-wort small { font-weight: 400; color: var(--leise); }
+.wo-wort-weg { flex: none; width: 44px; height: 44px; border: 0; background: none; color: var(--leise); font: inherit; font-size: 20px; line-height: 1; cursor: pointer; border-radius: 999px; }
+.wo-tag { font-size: 15px; font-weight: 700; margin: 14px 0 8px; display: flex; gap: 6px; align-items: baseline; }
+.wo-tag small { margin-left: auto; font-size: 13px; font-weight: 400; color: var(--leise); }
+.wo-tag-dat { font-size: 13px; font-weight: 400; color: var(--leise); }
+.wo-merk-leer { margin: 10px 0 2px; font-size: 14px; color: var(--leise); }
+.wo-mliste { list-style: none; margin: 0 0 4px; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); }
+.wo-mliste > li { position: relative; min-width: 0; }
+.wo-kachel.wo-zeile { flex-direction: row; align-items: stretch; min-height: 76px; padding-right: 40px; }
+.wo-zeile .wo-bildfeld { width: 76px; flex: none; aspect-ratio: auto; }
+.wo-zeile .wo-bild { padding: 5px; }
+.wo-zeile .wo-ohnebild { font-size: 13px; padding: 6px; }
+.wo-zeile .wo-text { padding: 7px 8px 8px 10px; gap: 1px; justify-content: center; }
+.wo-zeile .wo-titel { margin: 0; font-size: 15px; -webkit-line-clamp: 2; }
+.wo-zeile .wo-preiszeile { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 6px; }
+.wo-zeile .wo-preis { font-size: 18px; }
+.wo-zeile .wo-pct-text { font-size: 13px; font-weight: 750; color: var(--akzent); white-space: nowrap; }
+.wo-zeile .wo-fuss { margin-top: 0; padding-top: 1px; }
+.wo-zeile .wo-marken { margin-top: 3px; }
 /* Sprung-Ziele: unter der festen Reiter-Leiste (--nav-h wie die Abschnitte der Startseite) */
-.wo-g-kommt, #wo-g-jetzt, #wo-g-gemerkt { scroll-margin-top: calc(var(--nav-h, 96px) + 8px); }
+.wo-g-kommt, #wo-g-jetzt, #wo-g-gemerkt, .wo-tag { scroll-margin-top: calc(var(--nav-h, 96px) + 8px); }
 a.wo-kachel:active { background: var(--flaeche); }
 .wo-bildfeld { position: relative; display: block; aspect-ratio: 1 / 1; background: #fbf7f1; overflow: hidden; flex: none; }
 /* absolut im festen Quadrat: ein Hochformat-Foto (Flasche) kann das Feld nicht aufdrücken, kein Sprung beim Nachladen */
@@ -825,6 +1102,6 @@ a.wo-kachel:active { background: var(--flaeche); }
     start, lade,
     get gestartet() { return !!S.el; },
     // für Tests (ohne Browser): reine Funktionen
-    _intern: { normalisiere, angebotNorm, lageVon, imGebiet, filialenNorm, kmZwischen, NAH_KM, UMKREIS_KM, wochenEnde, merkTeile, MERK_BYTES, kachel: a => kachel(a), fuss: (n, lagen) => { const vor = S.n, vorL = S.lagen; S.n = n; if (lagen) S.lagen = lagen; try { return fussHtml(); } finally { S.n = vor; S.lagen = vorL; } }, STUFEN, CSS: () => CSS },
+    _intern: { normalisiere, angebotNorm, lageVon, imGebiet, filialenNorm, kmZwischen, NAH_KM, UMKREIS_KM, wochenEnde, merkTeile, MERK_BYTES, wortNorm, wortPasst, tagGruppen, WORTE_MAX, kachel: a => kachel(a), fuss: (n, lagen) => { const vor = S.n, vorL = S.lagen; S.n = n; if (lagen) S.lagen = lagen; try { return fussHtml(); } finally { S.n = vor; S.lagen = vorL; } }, STUFEN, CSS: () => CSS },
   };
 })();

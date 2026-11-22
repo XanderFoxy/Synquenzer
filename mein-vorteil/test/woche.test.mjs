@@ -234,7 +234,7 @@ function produktBild(url) {
     + w.map((s, i) => `<text x="150" y="${150 + i * 40}" font-family="sans-serif" font-size="30" font-weight="700" fill="#fff" text-anchor="middle">${esc(s.slice(0, 11))}</text>`).join('') + '</svg>';
 }
 
-async function oeffne({ breite = 428, hoehe = 926, pfad = '/mein-vorteil/#woche', foto = false, speicher = null, kurz = true, knaller = KNALLER, bildVerzug = 0, jetzt = JETZT, snackBilder = false, geo = null, filialen = null } = {}) {
+async function oeffne({ breite = 428, hoehe = 926, pfad = '/mein-vorteil/#woche', foto = false, speicher = null, kurz = true, knaller = KNALLER, bildVerzug = 0, jetzt = JETZT, snackBilder = false, geo = null, filialen = null, kurzMerk = null } = {}) {
   const ctx = await browser.newContext({
     viewport: { width: breite, height: hoehe }, deviceScaleFactor: foto ? 2 : 1, isMobile: true, hasTouch: true,
     locale: 'de-DE', timezoneId: 'Europe/Berlin', colorScheme: 'dark', serviceWorkers: 'block',
@@ -260,7 +260,7 @@ async function oeffne({ breite = 428, hoehe = 926, pfad = '/mein-vorteil/#woche'
       d.status.knaller = { ok: true, anzahl: 0, kurz: { anzahl: 13, ab: { 20: 13, 30: 13, 40: 7, 50: 2 }, kommt: { 20: 2, 30: 2, 40: 1, 50: 0 }, naechste: { 20: 1, 30: 1, 40: 1, 50: 0 }, wocheBis: '2026-11-15T23:00:00.000Z', top: [
         { titel: 'Milka Schokolade 100 g', markt: 'Kaufland', pct: 54, preis: 0.69, vorherArt: 'streich', app: true },
         { titel: 'Kaffee Crema ganze Bohne 1 kg', markt: 'Aldi Nord', pct: 53, preis: 7.99, vorherArt: 'streich' },
-        { titel: 'Haribo Fruchtgummi', markt: 'Netto', pct: 45, preis: 0.66, vorherArt: 'uvp' }] } };
+        { titel: 'Haribo Fruchtgummi', markt: 'Netto', pct: 45, preis: 0.66, vorherArt: 'uvp' }], ...(kurzMerk ? { merk: kurzMerk } : {}) } };
       return route.fulfill({ status: 200, contentType: 'application/json', headers: kopf, body: JSON.stringify(d) });
     }
     return route.fulfill({ status: 200, contentType: 'application/json', headers: kopf, body: readFileSync(join(FIX, 'vertrag', DATEI[rest])) });
@@ -512,6 +512,10 @@ const KNALLER2 = { ...plain(KNALLER), stufen: [20, 30, 40, 50], minProzent: 20, 
   { id: 'kd:test-alt', markt: 'penny', titel: 'Abgelaufen (TESTWERT)', preis: 0.5, vorher: 1, vorherArt: 'streich', pct: 50, gueltigAb: '2026-11-01T23:00:00.000Z', gueltigBis: '2026-11-07T22:59:00.000Z' },
 ] };
 const gruppen = async page => (await page.locator('.wo-gruppe').allInnerTexts()).map(t => t.replace(/\s+/g, ' '));
+// Merkliste (22.11.2026): Kopf „Merkliste n“ und Tage („Heute Di 10.11. 1“, „Ab Donnerstag 12.11. 1“)
+const mlKopf = async page => (await page.locator('.wo-ml-kopf').innerText()).replace(/\s+/g, ' ');
+const mlTage = async page => (await page.locator('#wo-g-gemerkt .wo-tag').allInnerTexts()).map(t => t.replace(/\s+/g, ' '));
+const mlZahl = n => `/Merkliste ${n}$/.test(document.querySelector('.wo-ml-kopf')?.textContent.replace(/\\s+/g, ' ').trim() || '')`;
 async function ntfyMitschnitt(ctx) {
   const posts = [];
   await ctx.route('https://ntfy.sh/**', async route => {
@@ -556,7 +560,7 @@ test('Kommt diese Woche: eigene Gruppe gestrichelt mit „ab Do/Fr“, Sprung-Le
   await ctx.close();
 });
 
-test('Merken: Haken -> „Gemerkt“ oben, lokal gespeichert, Liste an den Radar (ntfy, einfache Anfrage); lange drücken = merken ohne Öffnen', { skip: ohnePw }, async () => {
+test('Merken: Haken -> Merkliste oben (nach Tagen), lokal gespeichert, Liste an den Radar (ntfy, einfache Anfrage); lange drücken = merken ohne Öffnen', { skip: ohnePw }, async () => {
   const { ctx, page, fehler } = await oeffne({ knaller: KNALLER2 });
   const posts = await ntfyMitschnitt(ctx);
   const neueSeiten = [];
@@ -566,11 +570,13 @@ test('Merken: Haken -> „Gemerkt“ oben, lokal gespeichert, Liste an den Radar
   assert.equal(await knopf.getAttribute('aria-pressed'), 'false');
   const b = await knopf.boundingBox();
   assert.ok(b.width >= 44 && b.height >= 44, `Haken ${b.width}×${b.height}`);
+  assert.equal(await mlKopf(page), 'Merkliste 0', 'Merkliste immer sichtbar, auch leer');
   await knopf.click();
-  await page.waitForFunction(() => document.getElementById('wo-g-gemerkt'));
+  await page.waitForFunction(mlZahl(1));
   assert.equal(await page.locator('#wo-g-kommt ~ .wo-raster li', { hasText: 'PEPSI' }).first().locator('.wo-merk').getAttribute('aria-pressed'), 'true');
-  assert.equal((await gruppen(page))[0], 'Gemerkt 1');
-  assert.deepEqual(await page.locator('#wo-g-gemerkt ~ .wo-raster').first().locator('.wo-titel').allInnerTexts(), ['PEPSI']);
+  assert.equal((await gruppen(page))[0], 'ab 50 % 2', 'Rabatt-Gruppen unverändert');
+  assert.deepEqual(await mlTage(page), ['Ab Donnerstag 12.11. 1']);
+  assert.deepEqual(await page.locator('#wo-g-gemerkt .wo-mliste').first().locator('.wo-titel').allInnerTexts(), ['PEPSI']);
   assert.equal(neueSeiten.length, 0, 'Haken öffnet kein kaufDA');
   // an den Radar: eine Nachricht mit der ganzen Liste (ohne eigene Kopfzeilen -> kein Preflight)
   await warteAuf(() => posts.length >= 1);
@@ -579,7 +585,8 @@ test('Merken: Haken -> „Gemerkt“ oben, lokal gespeichert, Liste an den Radar
   assert.match(posts[0].kopf, /^text\/plain/);
   const d = JSON.parse(posts[0].body);
   assert.deepEqual([d.v, d.merken.length, d.merken[0].id, d.merken[0].markt, d.merken[0].ab], [1, 1, 'kd:9b2b7a64-pepsi', 'lidl', '2026-11-11T23:00:00.000Z']);
-  await page.waitForFunction(() => /Erinnerung per Push am ersten Gültigkeitstag/.test(document.querySelector('.wo-merkhinweis')?.textContent || ''));
+  assert.deepEqual(d.worte, [], 'Produkte immer mit (leer = keine)');
+  await page.waitForFunction(() => /Mitteilung am Start-Tag zwischen 7 und 12 Uhr/.test(document.querySelector('.wo-merkhinweis')?.textContent || ''));
   // lange drücken (Maus wie Finger): Hack wird gemerkt, kein neuer Tab
   const hack = page.locator('#wo-g-kommt ~ .wo-raster .wo-kachel', { hasText: 'Rinderhack' }).first();
   const hb = await hack.boundingBox();
@@ -587,21 +594,22 @@ test('Merken: Haken -> „Gemerkt“ oben, lokal gespeichert, Liste an den Radar
   await page.mouse.down();
   await page.waitForTimeout(750);
   await page.mouse.up();
-  await page.waitForFunction(() => /Gemerkt 2/.test(document.getElementById('wo-g-gemerkt')?.textContent.replace(/\s+/g, ' ') || ''));
+  await page.waitForFunction(mlZahl(2));
   await page.waitForTimeout(300);
+  assert.deepEqual(await mlTage(page), ['Ab Donnerstag 12.11. 1', 'Ab Freitag 13.11. 1']);
   assert.equal(neueSeiten.length, 0, 'lange gedrückt öffnet nicht');
   await warteAuf(() => posts.length >= 2);
   assert.equal(JSON.parse(posts.at(-1).body).merken.length, 2);
-  // neu laden: gemerkt bleibt (localStorage), Sprung-Leiste zählt „Gemerkt 2“
+  // neu laden: gemerkt bleibt (localStorage), Sprung-Leiste zählt „Merkliste 2“
   await page.reload();
   await wocheDa(page);
-  assert.equal((await gruppen(page))[0], 'Gemerkt 2');
-  assert.match((await page.locator('.wo-sprung').allInnerTexts()).map(t => t.replace(/\s+/g, ' ')).join('|'), /Gemerkt 2/);
+  assert.equal(await mlKopf(page), 'Merkliste 2');
+  assert.match((await page.locator('.wo-sprung').allInnerTexts()).map(t => t.replace(/\s+/g, ' ')).join('|'), /Merkliste 2/);
   const lsl = await page.evaluate(() => JSON.parse(localStorage.getItem('mein-vorteil-woche-gemerkt')).liste.map(x => x.id));
   assert.deepEqual(lsl.sort(), ['kd:9b2b7a64-pepsi', 'kd:test-penny-we']);
-  // Haken in „Gemerkt“ nimmt es wieder heraus
-  await page.locator('#wo-g-gemerkt ~ .wo-raster').first().locator('li', { hasText: 'PEPSI' }).locator('.wo-merk').click();
-  await page.waitForFunction(() => /Gemerkt 1/.test(document.getElementById('wo-g-gemerkt')?.textContent.replace(/\s+/g, ' ') || ''));
+  // Haken in der Merkliste nimmt es wieder heraus
+  await page.locator('#wo-g-gemerkt .wo-mliste li', { hasText: 'PEPSI' }).locator('.wo-merk').click();
+  await page.waitForFunction(mlZahl(1));
   await warteAuf(() => posts.some(p => JSON.parse(p.body).merken.length === 1 && JSON.parse(p.body).merken[0].id === 'kd:test-penny-we'));
   assert.deepEqual(fehler, []);
   await ctx.close();
@@ -617,7 +625,7 @@ for (const [breite, hoehe, lage] of [[428, 926, 'hoch'], [926, 428, 'quer']]) {
     await page.waitForTimeout(900);
     await page.screenshot({ path: join(FOTOS, `${lage}-woche2-kommt.png`) });
     await page.locator('#wo-g-kommt ~ .wo-raster li', { hasText: 'PEPSI' }).first().locator('.wo-merk').click();
-    await page.waitForFunction(() => /Erinnerung per Push/.test(document.querySelector('.wo-merkhinweis')?.textContent || ''));
+    await page.waitForFunction(() => /Mitteilung am Start-Tag/.test(document.querySelector('.wo-merkhinweis')?.textContent || ''));
     await page.evaluate(() => scrollTo(0, 0));
     await page.waitForTimeout(400);
     await pruefeLayout(page, `${lage} Gemerkt`);
@@ -768,3 +776,157 @@ test('Märkte vor Ort: Standort abgelehnt -> Hinweis, es gilt Döbeln; Filial-Li
   assert.deepEqual(fehler, []);
   await ctx.close();
 });
+
+// --- Merkliste mit Produkten (Musiker 22.11.2026: „Produkte auswählen und in eine Merkliste legen … am Start-Tag morgens eine
+// Benachrichtigung ‚Heute ab: …, bis …, Markt, Preis' … auf der Seite je Tag: Heute, Ab morgen, Ab Montag/Freitag“).
+// Treffer des Radars (merkTreffer) sind TESTWERTE mit Feldern wie vom Radar; HARIBO XXL / LORENZ Crunchips XXL = echte Fixture.
+const KNALLER3 = { ...plain(KNALLER), merkTreffer: [
+  { id: 'kd:test-bj', markt: 'lidl', titel: "BEN & JERRY'S Eiscreme (TESTWERT)", info: 'Versch. Sorten, je 465 ml', preis: 3.33, vorher: null, vorherArt: null, pct: null, bild: null, link: 'https://www.kaufda.de/Doebeln/Lidl/p-r74', gueltigAb: '2026-11-12T23:00:00.000Z', gueltigBis: '2026-11-14T22:59:00.000Z', wort: "Ben & Jerry's", sorte: 'pruefen' },
+  { id: 'kd:test-chio', markt: 'netto', titel: 'Chio Tortillas (TESTWERT)', info: 'TESTWERT', preis: 1.11, vorher: 1.79, vorherArt: 'streich', pct: 37, bild: null, link: 'https://www.kaufda.de/Doebeln/Netto-Marken-Discount/p-r9', gueltigAb: '2026-11-10T23:00:00.000Z', gueltigBis: '2026-11-14T22:59:00.000Z', wort: 'Chio' },
+  { id: 'kd:test-alt-wort', markt: 'netto', titel: 'Vergessenes Produkt (TESTWERT)', preis: 1, vorher: null, pct: null, gueltigAb: '2026-11-08T23:00:00.000Z', gueltigBis: '2026-11-14T22:59:00.000Z', wort: 'Vergessen' },
+] };
+
+test('Merkliste: Produkt-Regel der Seite = Radar (merkWort/wortPasst), Teile mit Produkten ≤ 3500 Byte, Tage-Gruppen', async () => {
+  const I = modul()._intern;
+  const radar = await import(join(WURZEL, 'vorteile', 'scan', 'lib', 'merken.mjs'));
+  assert.equal(I.WORTE_MAX, radar.MERK_WORTE_MAX);
+  const eingaben = [{ w: '  Ben & Jerry’s  ', sorte: 'Cookie Dough, Chocolate Fudge Brownie' }, { w: '<b>Haribo</b> XXL', sorte: 'Goldbären' }, { w: 'x' }, { w: '12' }, { w: 'Crunchips', sorte: ' , ' }, { w: 'Ä'.repeat(50) }, { w: 'Milka, Oreo' }];
+  for (const e of eingaben) assert.deepEqual(plain(I.wortNorm(e)), radar.merkWort(e), JSON.stringify(e));
+  const texte = ["BEN & JERRY'S Eiscreme Versch. Sorten", 'Ben&Jerrys Cookie Dough', 'HARIBO XXL Versch. Sorten. Je 340/300 g', 'HARIBO Goldbären XXL', 'HARIBO Phantasia XXL', 'Lorenz Crunchips Paprika 175 g', 'Milka Oreo Tafel',
+    // Wortgrenzen (Prüfer 22.11.2026, echte Titel aus knaller.json vom 22.11. + ausgedachte Prospekt-Wörter)
+    'Magnum Stieleis tiefgekühlt, versch. Sorten', 'Mars Eisriegel Versch. Sorten', 'Tunesien Rundreise & Baden', 'CHEF CUISINE Gusseiserner Bräter Oval', 'Brita Wasserfilter-Kanne Leistungsstarke Ionentauscher',
+    'LUPILU Tischspiel Mini-Pool-Billard Teilweise inkl. Batterien', 'Coca Cola Eiswürfelmaker', 'Ehrmann High Protein Pudding Chocolate', 'Minutensteaks aus dem Schweinerücken', 'Beste Ernte Pfirsiche', 'Teelichte 100er Pack',
+    'Likörwein süß', 'Erdbeereis 1 l', 'Milchreis Schoko', 'Aktionspreis 1,99', 'Wildschwein-Gulasch', 'Bio-Eier Größe M', 'Bäckerei-Brötchen', 'funny-frisch Chipsfrisch', 'Magnum Vanilleeis'];
+  const proben = [...eingaben, { w: 'Eis' }, { w: 'Cola' }, { w: 'Wein' }, { w: 'Tee' }, { w: 'Ei' }, { w: 'Reis' }, { w: 'Chips frisch' }, { w: 'Magnum', sorte: 'Vanille' }];
+  for (const e of proben.map(x => radar.merkWort(x)).filter(Boolean)) for (const t of texte) assert.deepEqual(plain(I.wortPasst(t, e)), radar.wortPasst(t, e), `${e.w}/${e.sorte} in ${t}`);
+  // das Beispiel des Musikers: „Eis“ = Eiscreme, Magnum Stieleis, Mars Eisriegel …, nicht Reise/Bräter/Kanne/Billard/Eiswürfelmaker
+  assert.deepEqual(texte.filter(t => I.wortPasst(t, { w: 'Eis', sorte: '' })), ["BEN & JERRY'S Eiscreme Versch. Sorten", 'Magnum Stieleis tiefgekühlt, versch. Sorten', 'Mars Eisriegel Versch. Sorten', 'Erdbeereis 1 l', 'Magnum Vanilleeis']);
+  // 12 lange Produkte + 60 Angebote: Produkte nur im ersten Teil, jeder Teil ≤ 3500 Byte, Radar setzt alles wieder zusammen
+  const worte = Array.from({ length: 12 }, (_, i) => ({ w: `${String(i).padStart(2, '0')}${'ö'.repeat(38)}`, sorte: 'ü'.repeat(60), seit: '2026-11-22T10:00:00.000Z' }));
+  const lang = i => ({ id: `kd:${String(i).padStart(4, '0')}-6c21c979-269e-4bc0-b537-5bbb1a51b90e`, titel: `Lorenz Crunchips Paprika XXL Familienpackung Sorte ${i} – äöü – mit langem Namen bis 90 Zeichen`, markt: 'aldi-nord', preis: 0.99, vorher: 1.99, pct: 50, ab: '2026-11-15T23:00:00.000Z', bis: '2026-11-21T21:00:00.000Z' });
+  for (const n of [0, 1, 60]) {
+    const teile = I.merkTeile(Array.from({ length: n }, (_, i) => lang(i)), 'satz9', worte);
+    for (const t of teile) assert.ok(new TextEncoder().encode(t).length <= I.MERK_BYTES, `${n}: Teil ${new TextEncoder().encode(t).length} Byte`);
+    const d = teile.map(t => JSON.parse(t));
+    assert.equal(d[0].worte.length, 12);
+    assert.ok(d.slice(1).every(t => !('worte' in t)), 'Produkte nur im ersten Teil');
+    const ndjson = d.map((m, i) => JSON.stringify({ id: `n${i}`, time: 1795341600 + i, event: 'message', message: JSON.stringify(m) })).join('\n');
+    const r = radar.leseMerkNachrichten(ndjson);
+    assert.equal(r.liste.length, n);
+    assert.equal(r.worte.length, 12);
+  }
+  assert.equal(JSON.parse(I.merkTeile([], 's')[0]).worte, undefined, 'ohne Produkte-Angabe kein Feld (alte Aufrufe)');
+  // Tage: Heute (gilt jetzt) · Ab morgen · Ab Donnerstag 12.11. · Ab Montag 16.11. – Di 10.11. 12:00 Berlin
+  const echt = Date.now;
+  Date.now = () => Date.parse(JETZT);
+  try {
+    const a = (id, start) => ({ id, start: Date.parse(start), bis: Date.parse('2026-11-21T22:59:00Z'), pct: null });
+    const g = I.tagGruppen([a('mo', '2026-11-15T23:00:00Z'), a('jetzt', '2026-11-08T23:00:00Z'), a('do', '2026-11-11T23:00:00Z'), a('mi', '2026-11-10T23:00:00Z'), a('heute', '2026-11-09T23:00:00Z')]);
+    assert.deepEqual(plain(g.map(x => [x.titel, x.unter, x.l.map(y => y.id)])), [['Heute', 'Di 10.11.', ['heute', 'jetzt']], ['Ab morgen', 'Mi 11.11.', ['mi']], ['Ab Donnerstag 12.11.', '', ['do']], ['Ab Montag 16.11.', '', ['mo']]]);
+  } finally { Date.now = echt; }
+});
+
+test('Merkliste: Produkt merken -> Treffer nach Tagen (Heute · Ab morgen · Ab Freitag · Ab Montag), an den Radar, × vergisst', { skip: ohnePw }, async () => {
+  const { ctx, page, fehler } = await oeffne({ knaller: KNALLER3 });
+  const posts = await ntfyMitschnitt(ctx);
+  // leer: Merkliste mit Feld und Erklärung oben in der Liste
+  assert.equal(await mlKopf(page), 'Merkliste 0');
+  assert.match(nbsp(await page.locator('.wo-merk-leer').innerText()), /Produkt eintragen \(z\. B\. eine Eissorte, Chips, Fruchtgummi XXL\)/);
+  assert.ok(!(await page.locator('#wo-liste').innerText()).includes('Vergessenes Produkt'), 'Radar-Treffer ohne gemerktes Produkt nicht zeigen');
+  const feld = page.locator('[data-wo-produkt] input[name="w"]'), sorte = page.locator('[data-wo-produkt] input[name="sorte"]');
+  const dazu = async (w, s = '') => { await feld.tap(); await feld.fill(w); if (s) { await sorte.tap(); await sorte.fill(s); } await page.locator('.wo-plus').tap(); await page.waitForFunction(w => [...document.querySelectorAll('.wo-wort')].some(x => x.textContent.startsWith(w)), w); };
+  await dazu('Crunchips');
+  await dazu('Haribo XXL', 'Goldbären');
+  await dazu("Ben & Jerry's");
+  await dazu('Chio');
+  assert.deepEqual((await page.locator('.wo-wort').allInnerTexts()).map(t => t.replace(/\s+/g, ' ')), ['Crunchips', 'Haribo XXL · Goldbären', "Ben & Jerry's", 'Chio']);
+  assert.equal(await mlKopf(page), 'Merkliste 4');
+  // Heute: HARIBO XXL (Lidl, gilt seit So, „Versch. Sorten“ -> Sorte prüfen) · Ab morgen: Chio (Radar-Treffer) ·
+  // Ab Freitag: Ben & Jerry's (Radar-Treffer ohne Rabatt) · Ab Montag: LORENZ Crunchips XXL (eigene Suche in den Knallern)
+  assert.deepEqual(await mlTage(page), ['Heute Di 10.11. 1', 'Ab morgen Mi 11.11. 1', 'Ab Freitag 13.11. 1', 'Ab Montag 16.11. 1']);
+  const titel = await page.locator('#wo-g-gemerkt .wo-titel').allInnerTexts();
+  assert.deepEqual(titel.map(t => t.replace(/ \(TESTWERT\)/, '')), ['HARIBO XXL', 'Chio Tortillas', "BEN & JERRY'S Eiscreme", 'LORENZ Crunchips XXL']);
+  const haribo = page.locator('#wo-g-gemerkt .wo-kachel', { hasText: 'HARIBO XXL' });
+  assert.match(await haribo.locator('.wo-marken').innerText(), /gemerkt: Haribo XXL[\s\S]*Sorte im Markt prüfen/);
+  const bj = page.locator('#wo-g-gemerkt .wo-kachel', { hasText: 'JERRY' });
+  assert.equal(await bj.locator('.wo-pct').count(), 0, 'ohne Vergleichspreis keine Prozent-Plakette');
+  assert.equal(nbsp(await bj.locator('.wo-statt').innerText()), 'Angebotspreis');
+  assert.equal(nbsp(await bj.locator('.wo-preis').innerText()), '3,33 €');
+  // an den Radar: Produkte im ersten Teil (mit seit), Haken-Liste leer
+  await warteAuf(() => posts.some(p => (JSON.parse(p.body).worte || []).length === 4));
+  const d = JSON.parse(posts.at(-1).body);
+  assert.deepEqual(d.worte.map(x => [x.w, x.sorte || '']), [['Crunchips', ''], ['Haribo XXL', 'Goldbären'], ["Ben & Jerry's", ''], ['Chio', '']]);
+  assert.ok(d.worte.every(x => x.seit === new Date(JETZT).toISOString()), 'seit = jetzt');
+  assert.deepEqual(d.merken, []);
+  // doppelt -> Hinweis, kein zweiter Eintrag
+  await feld.fill('crunchips'); await page.locator('.wo-plus').tap();
+  await page.waitForFunction(() => /schon gemerkt/.test(document.querySelector('.wo-produkt-fehler')?.textContent || ''));
+  assert.equal(await page.locator('.wo-wort').count(), 4);
+  // Haken auf den Radar-Treffer (ohne Rabatt) geht auch – bleibt in der Merkliste
+  await bj.locator('xpath=..').locator('.wo-merk').tap();
+  await warteAuf(() => posts.some(p => JSON.parse(p.body).merken.some(x => x.id === 'kd:test-bj')));
+  // × vergisst Chio -> Tag „Ab morgen“ weg; neu laden: Produkte bleiben
+  await page.locator('[data-wo-wort-weg="3"]').tap();
+  await page.waitForFunction(mlZahl(3));
+  assert.deepEqual(await mlTage(page), ['Heute Di 10.11. 1', 'Ab Freitag 13.11. 1', 'Ab Montag 16.11. 1']);
+  await page.reload();
+  await wocheDa(page);
+  assert.deepEqual((await page.locator('.wo-wort').allInnerTexts()).map(t => t.replace(/\s+/g, ' ')), ['Crunchips', 'Haribo XXL · Goldbären', "Ben & Jerry's"]);
+  assert.equal(await mlKopf(page), 'Merkliste 3');
+  // Auszug für die Startseite
+  const aus = await page.evaluate(() => JSON.parse(localStorage.getItem('mein-vorteil-woche-merk-kachel')));
+  assert.deepEqual(aus.liste.map(x => [x.titel.replace(/ \(TESTWERT\)/, ''), x.markt]), [['HARIBO XXL', 'Lidl'], ["BEN & JERRY'S Eiscreme", 'Lidl'], ['LORENZ Crunchips XXL', 'Penny']]);
+  // Startseite: Woche-Kachel nennt die Merkliste, „Heute wichtig“ nur, was HEUTE beginnt (hier nichts: HARIBO lief schon)
+  await page.locator('.sprung a[data-ziel="start"]').click();
+  await page.waitForFunction(() => !document.getElementById('start').hidden);
+  assert.equal(nbsp(await page.locator('#kacheln a[data-sprung="woche"] .kw').innerText()), 'Gemerkt: HARIBO XXL · ab Fr BEN & JERRY\'S Eiscreme… (+1)');
+  assert.ok(!/Gemerkt – heute ab/.test(await page.locator('#wichtig').innerText()));
+  assert.deepEqual(fehler, []);
+  await ctx.close();
+});
+
+test('Startseite: „Heute ab“ aus dem Radar (kurz.merk) ohne knaller.json – vergessene Produkte und Haken zählen nicht', { skip: ohnePw }, async () => {
+  const kurzMerk = [
+    { id: 'kd:x-cr', titel: 'Lorenz Crunchips (TESTWERT)', markt: 'Aldi Nord', preis: 0.99, ab: '2026-11-09T23:00:00.000Z', bis: '2026-11-14T22:59:00.000Z', wort: 'Crunchips' },
+    { id: 'kd:x-bj', titel: "Ben & Jerry's (TESTWERT)", markt: 'Lidl', preis: 2.22, ab: '2026-11-12T23:00:00.000Z', bis: '2026-11-14T22:59:00.000Z', wort: "Ben & Jerry's" },
+    { id: 'kd:x-haken', titel: 'Pringles (TESTWERT)', markt: 'Kaufland', preis: 1.49, ab: '2026-11-10T23:00:00.000Z', bis: '2026-11-14T22:59:00.000Z' },
+  ];
+  let d = await oeffne({ pfad: '/mein-vorteil/', kurzMerk });
+  await d.page.waitForTimeout(200);
+  assert.ok(!d.z.abrufe.includes(PFAD) && !d.z.abrufe.includes('woche.js'), 'Startseite lädt dafür nichts nach');
+  assert.equal(nbsp(await d.page.locator('#kacheln a[data-sprung="woche"] .kw').innerText()), 'Gemerkt: heute ab Lorenz Crunchips (TESTW… · ab morgen Pringles (TESTWERT) (+1)');
+  assert.equal(nbsp((await d.page.locator('#wichtig li').first().innerText()).trim()), 'Gemerkt – heute ab: Lorenz Crunchips (TESTWERT) 0,99 € bei Aldi Nord');
+  await d.page.locator('#wichtig a[data-sprung="woche"]').click();
+  await wocheDa(d.page);
+  assert.equal(await d.page.locator('#ort-name').innerText(), 'Wochen-Knaller');
+  assert.deepEqual(d.fehler, []);
+  await d.ctx.close();
+  // auf diesem Gerät nur „Crunchips“ gemerkt, kein Haken: Ben & Jerry's und Pringles fallen weg
+  d = await oeffne({ pfad: '/mein-vorteil/', kurzMerk, speicher: { 'mein-vorteil-woche-produkte': JSON.stringify({ v: 1, liste: [{ w: 'Crunchips', sorte: '' }] }), 'mein-vorteil-woche-gemerkt': JSON.stringify({ v: 1, liste: [] }) } });
+  assert.equal(nbsp(await d.page.locator('#kacheln a[data-sprung="woche"] .kw').innerText()), 'Gemerkt heute ab: Lorenz Crunchips (TESTW…');
+  assert.deepEqual(d.fehler, []);
+  await d.ctx.close();
+});
+
+for (const [breite, hoehe, lage] of [[390, 844, 'hoch'], [844, 390, 'quer']]) {
+  test(`Merkliste ${breite}×${hoehe} (${lage}): Tippflächen ≥ 44 px, kein seitliches Scrollen, Eingabe ohne Zoom (16 px), Fotos`, { skip: ohnePw }, async () => {
+    const speicher = { 'mein-vorteil-woche-produkte': JSON.stringify({ v: 1, liste: [{ w: 'Crunchips', sorte: '', seit: '2026-11-09T10:00:00.000Z' }, { w: 'Haribo XXL', sorte: 'Goldbären, Color-Rado', seit: '2026-11-09T10:00:00.000Z' }, { w: "Ben & Jerry's", sorte: 'Cookie Dough', seit: '2026-11-09T10:00:00.000Z' }, { w: 'Chio', sorte: '', seit: '2026-11-09T10:00:00.000Z' }] }) };
+    const { ctx, page, fehler } = await oeffne({ breite, hoehe, foto: true, knaller: KNALLER3, speicher });
+    await ntfyMitschnitt(ctx);
+    await pruefeLayout(page, `${lage} Merkliste`);
+    const fs = await page.locator('[data-wo-produkt] input').evaluateAll(es => es.map(e => parseFloat(getComputedStyle(e).fontSize)));
+    assert.ok(fs.every(x => x >= 16), `Schrift im Feld ${fs}`);
+    const hoehen = await page.locator('[data-wo-produkt] input, .wo-plus, .wo-wort-weg').evaluateAll(es => es.map(e => Math.round(e.getBoundingClientRect().height)));
+    assert.ok(hoehen.every(h => h >= 44), `Höhen ${hoehen}`);
+    await page.locator('#wo-g-gemerkt').scrollIntoViewIfNeeded();
+    await page.screenshot({ path: join(FOTOS, `${lage}-merkliste.png`) });
+    await page.locator('#wo-g-gemerkt .wo-tag').last().scrollIntoViewIfNeeded();
+    await page.screenshot({ path: join(FOTOS, `${lage}-merkliste-tage.png`) });
+    await page.locator('.sprung a[data-ziel="start"]').click();
+    await page.waitForFunction(() => !document.getElementById('start').hidden);
+    await page.locator('#kacheln a[data-sprung="woche"]').scrollIntoViewIfNeeded();
+    await page.screenshot({ path: join(FOTOS, `${lage}-merkliste-start.png`) });
+    assert.deepEqual(fehler, []);
+    await ctx.close();
+  });
+}

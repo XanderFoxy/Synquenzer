@@ -30,7 +30,7 @@ import filialen from './module/filialen.mjs';
 import events from './module/events.mjs';
 import auftraege from './module/auftraege.mjs';
 import { FIXTURE_KARTE } from './test/fixtures/karte.mjs';
-import { holeMerkliste, faelligeErinnerungen, erinnerungNachricht, verbucheErinnerung } from './lib/merken.mjs';
+import { holeMerkliste, faelligeErinnerungen, erinnerungNachricht, verbucheErinnerung, wortNeu } from './lib/merken.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
 // filialen vor knaller: der Knaller nimmt die frische Filial-Liste (nächste Filiale je Markt von Döbeln, wenn kaufDA keine nennt)
@@ -101,6 +101,13 @@ export async function lauf({ cfg, wunschliste, filmListen = null, essenListen = 
   const status = {};
   const dateien = {};
   const neueModule = [];
+  // Gemerkte Wochen-Knaller und Produkte (lib/merken.mjs): Merkliste der Seite holen (ntfy-Thema) – jeder Lauf, VOR den Modulen
+  // (22.11.2026): ein neu gemerktes Produkt sucht der Knaller so schon in diesem Lauf, nicht erst im nächsten 6-h-Takt
+  const knallerAn = !!(cfg.module?.knaller && cfg.module.knaller.aktiv !== false);
+  let merkStatus = null;
+  if (knallerAn) {
+    try { merkStatus = await holeMerkliste({ holeText, cfg, zustand, jetzt: new Date(jetztMs) }); } catch (e) { merkStatus = { ok: false, fehler: String(e?.message || e).slice(0, 120) }; }
+  }
   for (const [name, fn] of Object.entries(MODULE)) {
     const m = cfg.module[name];
     // Prüfer R6 (Befund 1): gefundene Beiträge (keine Fundort-Links) von Hosts mit Nutzungsbedingungs-Verbot nicht aus dem
@@ -108,7 +115,8 @@ export async function lauf({ cfg, wunschliste, filmListen = null, essenListen = 
     const alt = (vorher?.kategorien?.[name] || []).filter(e => !(e?.extra?.gesuch && !e.extra.fundort && agbGrund(e.link, cfg.abruf?.agbVerbot || [])));
     if (!m || m.aktiv === false) { kategorien[name] = []; status[name] = { ok: true, aus: true }; continue; }
     const nv = zustand.neuversuch?.[name] || null;
-    const faellig = alle || modulFaellig(m, zustand.lauf[name], jetztMs, nv); // gleiche Regel wie die Vorprüfung im Workflow
+    // gleiche Regel wie die Vorprüfung im Workflow (faellig.mjs); Knaller auch, wenn ein gemerktes Produkt noch nie gesucht wurde
+    const faellig = alle || modulFaellig(m, zustand.lauf[name], jetztMs, nv) || (name === 'knaller' && !hostRuheRest(zustand, 'www.kaufda.de', jetztMs) && wortNeu(cfg, zustand, jetztMs));
     if (!faellig) {
       kategorien[name] = alt;
       status[name] = { ...(vorher?.status?.[name] || {}), uebersprungen: true };
@@ -186,15 +194,13 @@ export async function lauf({ cfg, wunschliste, filmListen = null, essenListen = 
       .sort((a, b) => (b.extra?.sortWert ?? b.wert) - (a.extra?.sortWert ?? a.wert))
       .slice(0, 40);
   }
-  // Gemerkte Wochen-Knaller (lib/merken.mjs): Merkliste der Seite holen (ntfy-Thema), fällige Erinnerungen planen – jeder Lauf,
-  // nicht nur, wenn das Modul knaller dran ist (Erinnerung „am ersten Gültigkeitstag morgens“)
+  // Fällige Erinnerungen an Gemerktes planen – jeder Lauf, nicht nur, wenn das Modul knaller dran ist (Erinnerung „am Start-Tag
+  // morgens“); frische Preise/Gültigkeit aus knaller.json (Knaller + Treffer der gemerkten Produkte)
   let erinnerung = null;
-  if (cfg.module?.knaller && cfg.module.knaller.aktiv !== false) {
-    let merkStatus = null;
-    try { merkStatus = await holeMerkliste({ holeText, cfg, zustand, jetzt: new Date(jetztMs) }); } catch (e) { merkStatus = { ok: false, fehler: String(e?.message || e).slice(0, 120) }; }
+  if (knallerAn) {
     if (merkStatus && status.knaller) status.knaller.merken = merkStatus;
     const kn = dateien.knaller || dateienVorher?.knaller || null;
-    const liste = faelligeErinnerungen({ zustand, cfg, jetzt: new Date(jetztMs), angebote: kn?.angebote || [] });
+    const liste = faelligeErinnerungen({ zustand, cfg, jetzt: new Date(jetztMs), angebote: [...(kn?.angebote || []), ...(Array.isArray(kn?.merkTreffer) ? kn.merkTreffer : [])] });
     const namen = Object.fromEntries((cfg.module.knaller.maerkte || []).map(m => [m.id, m.name]));
     if (liste.length) erinnerung = { liste, msg: erinnerungNachricht(liste, cfg, namen) };
   }

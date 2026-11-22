@@ -202,7 +202,7 @@ Die Daten kommen nur stündlich (Konzerte alle 3 h). Deshalb blendet die Seite s
   Ohne Netz bleibt er stehen (Stand-Zeile: „offline“). Ist nur eine Quelle gestört, steht „letzter Stand von
   17:35 Uhr – Quelle gerade gestört“ (auch oben im Reiter). Konzerte und Neuerscheinungen laden unabhängig.
 - `sw.js` (nur `/mein-vorteil/`): Seite erst aus dem Netz, nach 3 s oder ohne Netz die letzte Kopie; Daten von
-  `raw.githubusercontent.com` gehen nie durch den Worker. Cache-Stufe `mein-vorteil-11` (17.11.2026, Runde 9: Woche-Fuß).
+  `raw.githubusercontent.com` gehen nie durch den Worker. Cache-Stufe `mein-vorteil-13` (22.11.2026: Merkliste, Produkt-Treffer an Wortgrenzen).
 - „Quellen & Hinweise (Vorteile)“ (unter „Mehr“): je Bereich Zahl und Stand, darunter klein je Quelle die Regel aus
   `status.<bereich>.quellen` des Radars – „Schnittstelle“ (Programm-Schnittstelle trotz robots.txt, Xanders Entscheidung
   vom 16.11.2026, siehe `vorteile/README.md`) bzw. „gesperrt (Regeln)“ (robots.txt/Nutzungsbedingungen). Ältere Daten
@@ -245,6 +245,30 @@ Radar erinnert per Push am ersten Gültigkeitstag ab 7 Uhr. Fuß: „Gelesen: Al
 („Prospekte für Döbeln“ bzw. „Prospekte Döbeln/Chemnitz … ob es das in Döbeln gibt“) zählen nur die gezeigten Märkte
 (seit 17.11.2026): REWE mit Chemnitzer Prospekt und ohne Filiale bis 10 km ist ausgeblendet und macht den Fuß nicht mehr
 zu „Döbeln/Chemnitz“, auch „Gelesen: …“ nennt ihn dann nicht; mit „weitere Märkte“ steht er wieder dabei.
+
+**Merkliste (22.11.2026, Musiker: „Produkte auswählen und in einen Einkaufskorb/eine Merkliste legen … wenn ein gemerktes
+Produkt ab Montag oder ab Freitag im Angebot ist, am Start-Tag morgens eine Benachrichtigung ‚Heute ab: …, bis …, Markt,
+Preis' – nicht vorher, nicht jeden Tag … auf der Seite je Tag: Heute, Ab morgen, Ab Montag/Freitag“):** Den Haken gab es schon
+(16.11.), aber nur als Gruppe „Gemerkt“, die erst nach dem ersten Haken erschien. Jetzt steht oben in „Woche“ immer die
+**Merkliste**: Hinweis „Mitteilung am Start-Tag zwischen 7 und 12 Uhr …“ mit „Push einrichten“ (öffnet die Push-Hilfe), Feld
+**Produkt merken** + **Sorte (freiwillig)** (z. B. „Haribo XXL“ / „Goldbären, Color-Rado“; höchstens 12, Chips mit × zum
+Vergessen, `mein-vorteil-woche-produkte`), darunter alle gemerkten Angebote **nach Tagen**: „Heute Di 10.11.“ (was heute beginnt,
+zuerst, Marke „ab heute“), „Ab morgen Mi 11.11.“, „Ab Freitag 13.11.“, „Ab Montag 16.11.“ – als kompakte Zeile (Bild, Titel,
+Preis, statt/−%, Markt · bis, Marken „gemerkt: <Produkt>“, „Sorte im Markt prüfen“), Haken rechts. Quellen: Haken (dieses
+Angebot), Treffer des Radars für die Produkte (`knaller.json` `merkTreffer`, auch ohne Rabatt – dann „Angebotspreis“ statt
+„statt …“) und die eigene Suche der Seite in den Knallern (dieselbe Regel `wortPasst` wie der Radar, Test gegen
+`vorteile/scan/lib/merken.mjs`; seit 22.11. an Wortgrenzen: „Eis“ trifft „Magnum Stieleis“ und „Mars Eisriegel“, aber nicht
+mehr „Rundreise“, „Gusseiserner Bräter“, „Eiswürfelmaker“ oder „teilweise“). Vergessene Produkte zählen sofort nicht mehr, auch wenn der Radar sie noch nennt; ferne Märkte
+nur mit „weitere Märkte“. Die Produkte gehen mit der Merkliste an das ntfy-Thema (`worte` im ersten Teil, Teile ≤ 3500 Byte);
+„alles vergessen“ wird auch nach einem Netzausfall nachgeschickt. **Mitteilungen aufs iPhone:** über die App ntfy (Thema aus
+„Push einrichten“) – wie alle Pushes der Seite; das geht auch ohne Home-Bildschirm und ohne Web-Push-Anmeldung (Web-Push gäbe es
+auf dem iPhone erst ab iOS 16.4 und nur als Web-App vom Home-Bildschirm, und es bräuchte einen eigenen Sende-Dienst – der Radar
+schickt schon über ntfy). Der Radar erinnert je Angebot genau einmal am Start-Tag zwischen 7 und 12 Uhr (`vorteile/README.md`).
+**Startseite:** Die Woche-Kachel nennt in der Hinweiszeile die Merkliste („Gemerkt: heute ab Crunchips · ab Fr Ben & Jerry's“, ein Tag für alle: „Gemerkt ab morgen: A, B“);
+„Heute wichtig“ bekommt oben die Zeile „Gemerkt – heute ab: <Produkt> <Preis> bei <Markt>“, wenn ein gemerktes Angebot heute
+beginnt. Kein eigener Abruf: Auszug `mein-vorteil-woche-merk-kachel` (schreibt `woche.js`), die Haken und der Radar
+(`status.knaller.kurz.merk` in `aktuell.json`). Tests: `test/woche.test.mjs` (Regel = Radar, Teile, Tage, Produkt merken per
+Touch, Startseite, Layout 390 × 844 / 844 × 390).
 
 **Produktbilder (seit 16.11.2026):** Angebotskarten der eigenen Produkte zeigen `bild` (marktguru/mydealz, aus `current.json`)
 als 64-px-Bild links neben Kopf, Titel und Preis (die Karte wird dadurch nicht höher); „weitere Angebote“ und „Andere Snacks“

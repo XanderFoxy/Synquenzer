@@ -825,7 +825,7 @@ const NTFY_IMPORT = (() => {
     <li>In ntfy auf <b>+</b> tippen und dieses Thema eintragen (Server bleibt ntfy.sh):</li>
   </ol>
   <div class="thema"><code id="topic"></code><button id="kopieren" class="zweit" type="button">Kopieren</button></div>
-  <p>Angebote, Preisfehler, Vorteile, Auftritte, Remix-Contests, Konzerte und der Krypto-Wecker kommen alle über dieses eine Thema. Tippst du auf eine Nachricht, öffnet sich direkt das Angebot.</p>
+  <p>Angebote, Preisfehler, Vorteile, Auftritte, Remix-Contests, Konzerte und der Krypto-Wecker kommen alle über dieses eine Thema – auch die Merkliste aus „Woche“ (am Start-Tag morgens „Heute ab: …“). Tippst du auf eine Nachricht, öffnet sich direkt das Angebot.</p>
   <p class="klein">Als App auf den Home-Bildschirm: in Safari „Teilen“ → „Zum Home-Bildschirm“.</p>
   <div class="aktionen"><a id="abo" class="los" href="#" target="_blank" rel="noopener">In ntfy öffnen</a><button id="zu" class="zweit" type="button">Schließen</button></div>
 </dialog>
@@ -2377,7 +2377,8 @@ function wocheKachel() { // -> { z, w } wie kachelInhalt; höchstens 2 Zeilen
   const k = wocheKurz();
   const st = wocheStufe();
   const top = (Array.isArray(k?.top) ? k.top : []).filter(x => x && typeof x.titel === 'string' && zahl(x.pct) >= st && zahl(x.preis) > 0);
-  if (!top.length) return { z: [[`Wochen-Angebote ab ${st} %`, 'je Markt, mit Bild – tippen zum Öffnen']], w: k ? `gerade nichts ab ${st} %` : '' };
+  const mz = merkZeile(); // gemerkte Angebote/Produkte gehen in der Hinweiszeile vor
+  if (!top.length) return { z: [[`Wochen-Angebote ab ${st} %`, 'je Markt, mit Bild – tippen zum Öffnen']], w: mz || (k ? `gerade nichts ab ${st} %` : '') };
   // „ab“ = gilt erst ab Montag/Donnerstag (Radar status.knaller.kurz.top[].ab) – dann steht es dabei
   const z = top.slice(0, 2).map(x => [kurzTitel(x.titel, 44), `${x.abPreis ? 'bis ' : ''}${x.vorherArt === 'geschaetzt' ? '≈ ' : ''}−${Math.floor(zahl(x.pct))} % · ${euro(zahl(x.preis))} · ${String(x.markt || '').slice(0, 20)}${x.app ? ' · App' : ''}${zeit(x.ab) > Date.now() ? ' · ' + abText(x.ab) : ''}`, x.vorherArt === 'streich']);
   // Radar: kommt = beginnt noch diese Woche (bis So 24:00), naechste = ab Montag (Prüfer 16.11.: vorher stand beides als „diese
@@ -2388,9 +2389,55 @@ function wocheKachel() { // -> { z, w } wie kachelInhalt; höchstens 2 Zeilen
   // eine Zeile (die Kachel kürzt mit „…“): beides kurz, sonst wie bisher
   const w = k1 && k2 ? `+ ${kommt} diese Woche, ${naechste} ab Mo` : k1 ? `+ ${kommt} ${kommt === 1 ? 'kommt' : 'kommen'} diese Woche noch`
     : k2 ? `+ ${naechste} ${naechste === 1 ? 'kommt' : 'kommen'} ab Montag` : '';
-  return { z, w };
+  return { z, w: mz || w };
 }
-addEventListener('mein-vorteil-woche', () => zeichne()); // Stufe im Reiter geändert -> Kachel/Zahl neu
+addEventListener('mein-vorteil-woche', () => zeichne()); // Stufe/Merkliste im Reiter geändert -> Kachel/Zahl neu
+
+// --- Merkliste auf der Startseite (22.11.2026), ohne Abruf: Auszug von woche.js, Haken, Radar (kurz.merk); Vergessenes zählt nicht
+const MERK_MARKT = { 'aldi-nord': 'Aldi Nord', lidl: 'Lidl', kaufland: 'Kaufland', netto: 'Netto', penny: 'Penny', rewe: 'REWE', marktkauf: 'Marktkauf', edeka: 'EDEKA' };
+const merkNorm = s => String(s || '').toLowerCase().replace(/[^a-z0-9äöüß]+/g, '');
+function merkStart() {
+  const jetzt = Date.now();
+  const aus = lies('mein-vorteil-woche-merk-kachel', null);
+  const haken = lies('mein-vorteil-woche-gemerkt', null), worte = lies('mein-vorteil-woche-produkte', null);
+  const hakenIds = Array.isArray(haken?.liste) ? new Set(haken.liste.map(x => x && x.id)) : null;
+  const wortSet = Array.isArray(worte?.liste) ? new Set(worte.liste.map(x => merkNorm(x && x.w))) : null;
+  const roh = [
+    ...(Array.isArray(aus?.liste) ? aus.liste : []),
+    ...(Array.isArray(haken?.liste) ? haken.liste : []).map(x => x && { id: x.id, titel: x.titel, markt: x.mname || MERK_MARKT[x.markt] || x.markt, preis: x.preis, ab: x.ab, bis: x.bis }),
+    ...(Array.isArray(wocheKurz()?.merk) ? wocheKurz().merk : []).filter(x => x && (x.wort ? !wortSet || wortSet.has(merkNorm(x.wort)) : !hakenIds || hakenIds.has(x.id))),
+  ];
+  const out = [], gesehen = new Set();
+  for (const x of roh) {
+    if (!x || typeof x.titel !== 'string' || !(zahl(x.preis) > 0)) continue;
+    const k1 = x.id || '', k2 = `${x.titel}|${x.markt}`; // dasselbe Angebot aus zwei Quellen nur einmal
+    const b = zeit(x.bis);
+    if ((k1 && gesehen.has(k1)) || gesehen.has(k2) || (b != null && b <= jetzt)) continue;
+    if (k1) gesehen.add(k1);
+    gesehen.add(k2);
+    out.push({ titel: x.titel, markt: String(x.markt || '').slice(0, 20), preis: zahl(x.preis), ab: zeit(x.ab), bis: b });
+  }
+  return out.sort((a, b) => (a.ab ?? 0) - (b.ab ?? 0));
+}
+function merkWann(x) {
+  if (x.ab == null || x.ab <= Date.now()) return x.ab != null && tagSchluessel(x.ab) === heuteBerlin() ? 'heute ab' : 'jetzt';
+  const t = tag(x.ab);
+  return t === 'morgen' ? 'ab morgen' : `ab ${t.split(' ')[0]}`;
+}
+function merkZeile() { // „Gemerkt ab morgen: A, B (+2)“ / „Gemerkt: A · ab Fr B“ oder ''
+  const l = merkStart();
+  if (!l.length) return '';
+  const vorne = [...l.filter(x => merkWann(x) === 'heute ab'), ...l.filter(x => merkWann(x) !== 'heute ab')].slice(0, 2);
+  const teile = [];
+  for (const x of vorne) {
+    const w = merkWann(x), t = kurzTitel(x.titel, 24).replace(/\s+…$/, '…');
+    const g = teile.find(p => p.w === w);
+    if (g) g.t.push(t); else teile.push({ w, t: [t] });
+  }
+  const rest = l.length > 2 ? ` (+${l.length - 2})` : '';
+  if (teile.length === 1) return `Gemerkt${teile[0].w === 'jetzt' ? ':' : ` ${teile[0].w}:`} ${teile[0].t.join(', ')}${rest}`;
+  return `Gemerkt: ${teile.map(p => `${p.w === 'jetzt' ? '' : p.w + ' '}${p.t.join(', ')}`).join(' · ')}${rest}`;
+}
 
 // --- Ausflüge-Kachel (16.11.2026): aus status.events.kurz in aktuell.json (lädt die Startseite ohnehin) – kein eigener Abruf.
 function ausflugKurz() { const k = S.vorteile?.d?.status?.events?.kurz; return k && typeof k === 'object' ? k : null; }
@@ -2969,6 +3016,9 @@ let letzteEinteilung = null, letztePreisfehler = [];
 const kurzTitel = (s, n = 54) => { s = String(s || '').replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
 function wichtigZeilen() {
   const z = [];
+  // Merkliste: was HEUTE beginnt (wie der Push „Heute ab: …“)
+  const mh = merkStart().filter(x => merkWann(x) === 'heute ab');
+  if (mh.length) z.push({ ziel: 'woche', text: `Gemerkt – heute ab: ${kurzTitel(mh[0].titel, 34)} ${euro(mh[0].preis)} bei ${mh[0].markt}${mh.length > 1 ? ` (+${mh.length - 1})` : ''}` });
   // Krypto nur, wenn es etwas zu sagen gibt: ab +5 % oder ab −10 %
   for (const { c, e } of kryptoStand()) {
     if (!e) continue;
