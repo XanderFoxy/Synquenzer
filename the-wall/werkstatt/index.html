@@ -1,0 +1,1086 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex,nofollow">
+<title>Gesang-Werkstatt</title>
+<link rel="preload" href="daten/fassung-v10.json?22ae4610" as="fetch" crossorigin>
+<style>
+:root{--bg:#fbfaf7;--fg:#1d1c1a;--mut:#857f75;--lin:#e7e3db;--lin2:#cfc9be;--gold:#a87908;--goldfg:#fff;--hi:#f5e3ad;--bar:#fffdf8;--rot:#b03a2e;--welle:#5d6874;--warn:#b25d12;--blau:#2c69ad;--band1:#f4f1eb;--band2:#ebe7df;--bereich:rgba(168,121,8,.14);--ok:#2b7a4b;--karte:#fffdf8}
+@media (prefers-color-scheme:dark){:root{--bg:#141312;--fg:#eeeae2;--mut:#948f86;--lin:#2a2825;--lin2:#45413b;--gold:#e0b24a;--goldfg:#141312;--hi:#5a4a1f;--bar:#1d1c1a;--rot:#e0665a;--welle:#9ba7b3;--warn:#f0a050;--blau:#80b2ea;--band1:#1a1917;--band2:#23211e;--bereich:rgba(224,178,74,.17);--ok:#6fcf97;--karte:#1d1c1a}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+html,body{margin:0;background:var(--bg);color:var(--fg);overflow-x:hidden}
+body{font:16px/1.35 -apple-system,system-ui,"Segoe UI",sans-serif;padding:8px max(12px,env(safe-area-inset-right)) calc(96px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+h1{font-size:17px;margin:2px 0 1px;font-weight:650}
+.tipp{color:var(--mut);font-size:13px;margin:0 0 8px}
+#werk{min-width:0}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 0 6px;padding:0 0 2px;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;min-height:44px;padding:0 14px;border-radius:22px;border:1px solid var(--lin2);background:var(--bar);color:var(--fg);font:500 15px -apple-system,system-ui,sans-serif}
+.chip.an{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+#ueber{display:block;width:100%;height:40px;border-radius:8px;touch-action:none;margin:0 0 6px;background:var(--band1)}
+#buehne{position:relative;height:clamp(300px,44vh,440px);border-radius:10px;overflow:hidden;touch-action:none;border:1px solid var(--lin);background:var(--bg)}
+#buehne canvas{position:absolute;left:0;top:0;width:100%;height:100%}
+#laden{position:absolute;left:0;right:0;top:50%;text-align:center;color:var(--mut);font-size:14px;pointer-events:none}
+#steuer{min-width:0}
+.leiste{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px}
+button{font:500 15px -apple-system,system-ui,sans-serif;color:var(--fg);background:var(--bar);border:1px solid var(--lin2);border-radius:10px;min-height:44px;min-width:44px;padding:0 12px;touch-action:manipulation;cursor:pointer}
+button:disabled{opacity:.38;cursor:default}
+.rund{width:44px;padding:0;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+.rund svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+#bSpiel{background:var(--gold);color:var(--goldfg);border-color:var(--gold)}
+#bSpiel svg{fill:currentColor;stroke:none}
+.rund[aria-pressed=true]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.zeit{flex:1 1 64px;min-width:64px;font:600 16px/1.1 ui-monospace,Menlo,monospace;text-align:center;white-space:nowrap}
+.zeit small{display:block;font:12px/1.2 ui-monospace,Menlo,monospace;color:var(--mut)}
+.seg{display:inline-flex;border:1px solid var(--lin2);border-radius:10px;overflow:hidden;flex:0 0 auto;max-width:100%}
+.seg button{border:0;border-radius:0;border-left:1px solid var(--lin2);background:var(--bar);padding:0 11px;flex:1 1 auto}
+.seg button:first-child{border-left:0}
+.seg button[aria-pressed=true]{background:var(--fg);color:var(--bg)}
+.seg .lang{display:inline}.seg .kurz{display:none}
+#bereichsleiste{background:var(--band1);border:1px solid var(--lin);border-radius:10px;padding:4px 6px 4px 10px;scroll-margin-bottom:calc(84px + env(safe-area-inset-bottom))}
+#bereichsleiste[hidden]{display:none}
+#bereichText{flex:1 1 120px;font:600 14px ui-monospace,Menlo,monospace;min-width:0}
+#sende{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;align-items:center;gap:8px;background:var(--bar);border-top:1px solid var(--lin);padding:8px max(12px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+#sendeStatus{flex:1;font-size:13px;color:var(--mut);min-width:0;line-height:1.25}
+#sendeStatus.fehler{color:var(--rot)}#sendeStatus.gut{color:var(--ok)}
+#bSenden{background:var(--gold);color:var(--goldfg);border-color:var(--gold);font-weight:650;padding:0 18px}
+#listen{margin-top:14px}
+.tabs{display:flex;gap:6px;border-bottom:1px solid var(--lin);padding-bottom:6px}
+.tabs button{border:0;background:transparent;color:var(--mut);font-weight:600;padding:0 10px}
+.tabs button[aria-selected=true]{color:var(--fg);box-shadow:inset 0 -3px 0 var(--gold);border-radius:0}
+.tabs b{font-weight:600;color:var(--mut);font-size:13px;margin-left:3px}
+.liste{padding:6px 0 0}
+.liste[hidden]{display:none}
+.leer{color:var(--mut);font-size:14px;padding:10px 2px}
+.karte{border:1px solid var(--lin);background:var(--karte);border-radius:12px;padding:10px 12px;margin:8px 0}
+.karte .kopf{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;font-size:13px;color:var(--mut)}
+.karte .kopf b{color:var(--fg);font-weight:600;font-size:14px}
+.marke{font-size:11px;font-weight:650;border-radius:6px;padding:1px 6px;border:1px solid var(--lin2);color:var(--mut)}
+.marke.neu{border-color:var(--gold);color:var(--gold)}
+.marke.gesendet{border-color:var(--ok);color:var(--ok)}
+.karte .text{margin:6px 0 2px;font-size:15px;white-space:pre-wrap;word-wrap:break-word;-webkit-user-select:text;user-select:text}
+.antwort{margin:8px 0 2px;padding:6px 10px;border-left:3px solid var(--blau);background:var(--band1);border-radius:0 8px 8px 0;font-size:15px;white-space:pre-wrap;-webkit-user-select:text;user-select:text}
+.antwort small{display:block;color:var(--blau);font-weight:650;font-size:12px;margin-bottom:2px}
+.knoepfe{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.knoepfe button{min-height:44px;font-size:14px}
+.zeile{display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--lin);padding:4px 0}
+.zeile .wann{font:600 13px ui-monospace,Menlo,monospace;min-width:64px}
+.zeile .was{flex:1;font-size:15px;min-width:0}
+.hilfe{font-size:15px;padding-left:18px}.hilfe li{margin:6px 0}
+#schleier{position:fixed;inset:0;background:rgba(0,0,0,.28);z-index:40}
+#schleier[hidden]{display:none}
+#blatt{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--bar);border-top:1px solid var(--lin2);border-radius:16px 16px 0 0;padding:10px max(14px,env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));max-height:82vh;overflow-y:auto;box-shadow:0 -8px 30px rgba(0,0,0,.18)}
+#blatt[hidden]{display:none}
+#blatt h3{margin:2px 0 4px;font-size:17px}
+#blattInfo{font-size:13px;color:var(--mut);margin-bottom:8px}
+#bezuege{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+#bezuege button{font-size:14px;padding:0 10px;border-radius:22px}
+#bezuege button[aria-pressed=true]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+#notizText{width:100%;min-height:96px;font:16px/1.35 -apple-system,system-ui,sans-serif;background:var(--bg);color:var(--fg);border:1px solid var(--lin2);border-radius:10px;padding:8px;-webkit-user-select:text;user-select:text;resize:vertical}
+#blatt .knoepfe .rechts{margin-left:auto}
+#blattEnde{position:sticky;bottom:calc(-12px - env(safe-area-inset-bottom));background:var(--bar);margin:8px -4px calc(-12px - env(safe-area-inset-bottom));padding:6px 4px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--lin)}
+#blatt .haupt,#blatt #bSpeichern{background:var(--gold);color:var(--goldfg);border-color:var(--gold);font-weight:650}
+.griff{width:40px;height:5px;border-radius:3px;background:var(--lin2);margin:0 auto 8px}
+@media (orientation:landscape) and (max-height:560px){
+  body{padding-top:6px;padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+  #kopf{display:none}
+  #werk{display:grid;grid-template-columns:minmax(0,1fr) 188px;grid-template-rows:auto auto 1fr;column-gap:10px;grid-template-areas:"chips steuer" "ueber steuer" "buehne steuer"}
+  #chips{grid-area:chips;margin-bottom:4px}
+  #ueber{grid-area:ueber;height:28px;margin-bottom:4px}
+  #buehne{grid-area:buehne;height:max(180px,calc(100vh - 104px - env(safe-area-inset-bottom)));height:max(180px,calc(100dvh - 104px - env(safe-area-inset-bottom)))}
+  #steuer{grid-area:steuer;max-height:calc(100vh - 20px);max-height:calc(100dvh - 20px);overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:6px}
+  #steuer .leiste{margin-top:0;gap:4px}
+  #transport .zeit{flex:1 1 80px}
+  .seg{width:100%}.seg button{padding:0 4px}
+  .seg .lang{display:none}.seg .kurz{display:inline}
+  #bereichsleiste{padding:4px}
+  #bereichText{flex-basis:100%;font-size:13px}
+  #sende{position:sticky;bottom:0;margin-top:auto;flex-wrap:wrap;padding:4px 0 0;border:0;background:var(--bg);z-index:2}
+  #transport{order:0}#steuer.mitBereich #bereichsleiste{order:1}#schalter{order:2}#sende{order:3}
+  #notizText{min-height:56px}
+  #blattInfo{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #sendeStatus{flex-basis:100%;font-size:12px}
+  #bSenden{flex:1}
+}
+</style>
+</head>
+<body>
+<header id="kopf">
+  <h1>The Wall · Gesang-Werkstatt</h1>
+  <p class="tipp">Wischen schiebt, zwei Finger zoomen, lange drücken und ziehen wählt einen Bereich. Silbe antippen für eine Notiz.</p>
+</header>
+<main id="werk">
+  <nav id="chips" class="chips" aria-label="Abschnitte"></nav>
+  <canvas id="ueber" aria-label="Ganzes Lied, Ausschnitt verschieben"></canvas>
+  <div id="buehne" aria-label="Wellenform der Hauptstimme mit Silben"><canvas id="cb"></canvas><canvas id="co"></canvas><div id="laden">Wellenform lädt …</div></div>
+  <div id="steuer">
+    <div id="transport" class="leiste">
+      <button id="bSpiel" class="rund" aria-label="Abspielen"><svg viewBox="0 0 24 24"><path id="iSpiel" d="M7 4.5v15l12.5-7.5z"/></svg></button>
+      <button id="bSchleife" class="rund" aria-pressed="true" aria-label="Bereich wiederholen"><svg viewBox="0 0 24 24"><path d="M4 11V9a3 3 0 0 1 3-3h12m-3-3 3 3-3 3M20 13v2a3 3 0 0 1-3 3H5m3 3-3-3 3-3"/></svg></button>
+      <button id="bZurueck" class="rund" aria-label="Rückgängig" disabled><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+      <button id="bNotiz" class="rund" aria-label="Notiz an dieser Stelle"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/></svg></button>
+      <button id="bMinus" class="rund" aria-label="Verkleinern"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+      <div id="zeit" class="zeit" aria-live="off">T1.1<small>0:00,0</small></div>
+      <button id="bPlus" class="rund" aria-label="Vergrößern"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></svg></button>
+    </div>
+    <div id="schalter" class="leiste">
+      <div class="seg" id="segFassung" role="group" aria-label="Fassung"></div>
+      <div class="seg" id="segModus" role="group" aria-label="Was hören"><button data-m="haupt"><span class="lang">Gesang allein</span><span class="kurz">Gesang</span></button><button data-m="mix"><span class="lang">mit Musik</span><span class="kurz">Musik</span></button></div>
+      <div class="seg" id="segRaster" role="group" aria-label="Einrasten auf"><button data-r="1">Schlag</button><button data-r="2">1/8</button><button data-r="4">1/16</button></div>
+    </div>
+    <div id="bereichsleiste" class="leiste" hidden>
+      <span id="bereichText"></span>
+      <button id="bBereichNotiz">Notiz</button><button id="bBereichMerken">Merken</button><button id="bBereichTeil">Ganzer Teil</button>
+      <button id="bBereichWeg" class="rund" aria-label="Bereich aufheben"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <div id="sende">
+      <div id="sendeStatus" aria-live="polite"></div>
+      <button id="bKopie" hidden>Text kopieren</button>
+      <button id="bSenden">Senden</button>
+    </div>
+  </div>
+</main>
+<section id="listen">
+  <div class="tabs" role="tablist">
+    <button id="tabN" role="tab" aria-selected="true">Notizen<b id="anzN"></b></button>
+    <button id="tabA" role="tab" aria-selected="false">Geändert<b id="anzA"></b></button>
+    <button id="tabH" role="tab" aria-selected="false">Hilfe</button>
+  </div>
+  <div id="listeN" class="liste"></div>
+  <div id="listeA" class="liste" hidden></div>
+  <div id="listeH" class="liste" hidden>
+    <ul class="hilfe">
+      <li><b>Ansehen:</b> mit einem Finger wischen schiebt, zwei Finger zoomen, oder − und +. Oben das ganze Lied: antippen springt dorthin.</li>
+      <li><b>Abspielen:</b> Wellenform antippen setzt die Abspielstelle. Ist ein Bereich gewählt und Wiederholen an, läuft er in Schleife.</li>
+      <li><b>Bereich:</b> lange drücken und ziehen. An den goldenen Griffen oben kannst du ihn anpassen.</li>
+      <li><b>Silbe falsch zugeordnet?</b> Silbe anfassen und auf die richtige Kante schieben – sie rastet an erkannten Einsätzen ein.</li>
+      <li><b>Soll woanders hin?</b> Den runden Griff unter der Wellenform auf eine Taktlinie ziehen (Schlag, 1/8 oder 1/16). Das ist dein Ziel-Hinweis für mich.</li>
+      <li><b>Notiz:</b> Silbe antippen, dann Silbe, Wort, Zeile, Teil oder Bereich wählen. Orange mit Fragezeichen heißt: da bin ich mir unsicher.</li>
+      <li><b>Senden:</b> schickt alles Neue an Claude. Geht es nicht, bleibt alles hier gespeichert.</li>
+    </ul>
+  </div>
+</section>
+<div id="schleier" hidden></div>
+<div id="blatt" role="dialog" aria-modal="true" aria-labelledby="blattTitel" hidden>
+  <div class="griff"></div>
+  <h3 id="blattTitel">Notiz</h3>
+  <div id="blattInfo"></div>
+  <div id="bezuege" role="group" aria-label="Notiz zu"></div>
+  <textarea id="notizText" placeholder="Was soll anders sein?" rows="3"></textarea>
+  <div class="knoepfe" id="blattSilbe">
+    <button id="bHoeren">Ab hier hören</button>
+    <button id="bZuordnungWeg" hidden>Zuordnung zurück</button>
+    <button id="bZielWeg" hidden>Ziel löschen</button>
+  </div>
+  <div class="knoepfe" id="blattEnde">
+    <button id="bNotizWeg" hidden>Notiz löschen</button>
+    <button id="bAbbrechen" class="rechts">Abbrechen</button>
+    <button id="bSpeichern">Speichern</button>
+  </div>
+</div>
+<noscript>Diese Seite braucht JavaScript.</noscript>
+<script>
+'use strict';
+const LIED={"lied":"the-wall","titel":"The Wall","bpm":120.0,"takt":[4,4],"tpb":960,"takt1_s":0.0,"takt_s":2.0,"dauer_s":266.0,"abschnitte":[{"name":"Intro","kurz":"In","chip":"Intro","von_s":0.0,"bis_s":32.0,"takt_von":1,"zeilen":[],"akkorde":"Ebm – Gb – Db – Ab/C – Ebm – Gb – Db – Ab/C","auftakt_s":0.0},{"name":"Strophe 1","kurz":"S1","chip":"Strophe 1","von_s":32.0,"bis_s":64.0,"takt_von":17,"zeilen":[0,1,2,3],"akkorde":"","auftakt_s":31.525},{"name":"Refrain 1","kurz":"R1","chip":"Refrain 1","von_s":64.0,"bis_s":96.0,"takt_von":33,"zeilen":[4,5,6,7],"akkorde":"","auftakt_s":63.15},{"name":"Strophe 2","kurz":"S2","chip":"Strophe 2","von_s":96.0,"bis_s":128.0,"takt_von":49,"zeilen":[8,9,10,11],"akkorde":"","auftakt_s":95.527},{"name":"Refrain 2","kurz":"R2","chip":"Refrain 2","von_s":128.0,"bis_s":160.0,"takt_von":65,"zeilen":[12,13,14,15],"akkorde":"","auftakt_s":127.15},{"name":"Tag nach Refrain 2","kurz":"Tag","chip":"Tag","von_s":160.0,"bis_s":176.0,"takt_von":81,"zeilen":[16],"akkorde":"","auftakt_s":157.65},{"name":"Übergang","kurz":"Üb","chip":"Übergang","von_s":176.0,"bis_s":192.0,"takt_von":89,"zeilen":[],"akkorde":"Bbm – Gb – Ab – Bbsus4","auftakt_s":176.0},{"name":"Zwischenteil","kurz":"ZT","chip":"Zwischenteil","von_s":192.0,"bis_s":224.0,"takt_von":97,"zeilen":[17,18,19,20],"akkorde":"Ebm – Gb – Db – Ab/C – Ebm – Gb – Db – Ab/C","auftakt_s":191.15},{"name":"Refrain 3","kurz":"R3","chip":"Refrain 3","von_s":224.0,"bis_s":256.0,"takt_von":113,"zeilen":[21,22,23,24],"akkorde":"","auftakt_s":223.15},{"name":"Outro","kurz":"Out","chip":"Outro","von_s":256.0,"bis_s":null,"takt_von":129,"zeilen":[25],"akkorde":"","auftakt_s":253.65}],"zeilen":[{"abschnitt":1,"woerter":[0,1,2,3,4,5],"text":"Welcome to the fake zombies living"},{"abschnitt":1,"woerter":[6,7,8],"text":"for Gods sake"},{"abschnitt":1,"woerter":[9,10,11,12,13],"text":"In a world of Sheep"},{"abschnitt":1,"woerter":[14,15,16,17],"text":"Everything we Do believe"},{"abschnitt":2,"woerter":[18,19,20,21,22,23],"text":"We claim we know It all"},{"abschnitt":2,"woerter":[24,25,26,27,28,29,30],"text":"Can’t see Who is behind this wall."},{"abschnitt":2,"woerter":[31,32,33,34,35],"text":"Don’t wait, follow the light"},{"abschnitt":2,"woerter":[36,37,38,39,40],"text":"wake up open your eyes."},{"abschnitt":3,"woerter":[41,42,43,44,45],"text":"Why can’t we just feel"},{"abschnitt":3,"woerter":[46,47,48,49,50,51,52],"text":"there is so much more to see"},{"abschnitt":3,"woerter":[53,54,55],"text":"Are we hypnotised?"},{"abschnitt":3,"woerter":[56,57,58,59,60,61],"text":"What does it need to realise"},{"abschnitt":4,"woerter":[62,63,64,65,66,67],"text":"We claim we know It all"},{"abschnitt":4,"woerter":[68,69,70,71,72,73,74],"text":"Can’t see Who is behind this wall."},{"abschnitt":4,"woerter":[75,76,77,78,79],"text":"Don’t wait, follow the light"},{"abschnitt":4,"woerter":[80,81,82,83,84],"text":"wake up open your eyes."},{"abschnitt":5,"woerter":[85,86,87],"text":"open your eyes"},{"abschnitt":7,"woerter":[88,89,90,91,92,93],"text":"We claim we know it all"},{"abschnitt":7,"woerter":[94,95,96,97,98,99,100],"text":"Can’t see Who is behind this wall"},{"abschnitt":7,"woerter":[101,102,103,104,105],"text":"Don’t wait, Folge dem Licht"},{"abschnitt":7,"woerter":[106,107,108,109,110,111],"text":"Wach auf, siehst du mich nicht"},{"abschnitt":8,"woerter":[112,113,114,115,116,117],"text":"We claim we know It all"},{"abschnitt":8,"woerter":[118,119,120,121,122,123,124],"text":"Can’t see Who is behind this wall."},{"abschnitt":8,"woerter":[125,126,127,128,129],"text":"Don’t wait, follow the light"},{"abschnitt":8,"woerter":[130,131,132,133,134],"text":"wake up open your eyes."},{"abschnitt":9,"woerter":[135,136,137],"text":"open your eyes"}],"woerter":[{"text":"Welcome","zeile":0,"silben":[0,1]},{"text":"to","zeile":0,"silben":[2]},{"text":"the","zeile":0,"silben":[3]},{"text":"fake","zeile":0,"silben":[4]},{"text":"zombies","zeile":0,"silben":[5,6]},{"text":"living","zeile":0,"silben":[7,8]},{"text":"for","zeile":1,"silben":[9]},{"text":"Gods","zeile":1,"silben":[10]},{"text":"sake","zeile":1,"silben":[11]},{"text":"In","zeile":2,"silben":[12]},{"text":"a","zeile":2,"silben":[13]},{"text":"world","zeile":2,"silben":[14]},{"text":"of","zeile":2,"silben":[15]},{"text":"Sheep","zeile":2,"silben":[16]},{"text":"Everything","zeile":3,"silben":[17,18,19]},{"text":"we","zeile":3,"silben":[20]},{"text":"Do","zeile":3,"silben":[21]},{"text":"believe","zeile":3,"silben":[22,23]},{"text":"We","zeile":4,"silben":[24]},{"text":"claim","zeile":4,"silben":[25]},{"text":"we","zeile":4,"silben":[26]},{"text":"know","zeile":4,"silben":[27]},{"text":"It","zeile":4,"silben":[28]},{"text":"all","zeile":4,"silben":[29]},{"text":"Can’t","zeile":5,"silben":[30]},{"text":"see","zeile":5,"silben":[31]},{"text":"Who","zeile":5,"silben":[32]},{"text":"is","zeile":5,"silben":[33]},{"text":"behind","zeile":5,"silben":[34,35]},{"text":"this","zeile":5,"silben":[36]},{"text":"wall.","zeile":5,"silben":[37]},{"text":"Don’t","zeile":6,"silben":[38]},{"text":"wait,","zeile":6,"silben":[39]},{"text":"follow","zeile":6,"silben":[40,41]},{"text":"the","zeile":6,"silben":[42]},{"text":"light","zeile":6,"silben":[43]},{"text":"wake","zeile":7,"silben":[44]},{"text":"up","zeile":7,"silben":[45]},{"text":"open","zeile":7,"silben":[46,47]},{"text":"your","zeile":7,"silben":[48]},{"text":"eyes.","zeile":7,"silben":[49]},{"text":"Why","zeile":8,"silben":[50]},{"text":"can’t","zeile":8,"silben":[51]},{"text":"we","zeile":8,"silben":[52]},{"text":"just","zeile":8,"silben":[53]},{"text":"feel","zeile":8,"silben":[54]},{"text":"there","zeile":9,"silben":[55]},{"text":"is","zeile":9,"silben":[56]},{"text":"so","zeile":9,"silben":[57]},{"text":"much","zeile":9,"silben":[58]},{"text":"more","zeile":9,"silben":[59]},{"text":"to","zeile":9,"silben":[60]},{"text":"see","zeile":9,"silben":[61]},{"text":"Are","zeile":10,"silben":[62]},{"text":"we","zeile":10,"silben":[63]},{"text":"hypnotised?","zeile":10,"silben":[64,65,66]},{"text":"What","zeile":11,"silben":[67]},{"text":"does","zeile":11,"silben":[68]},{"text":"it","zeile":11,"silben":[69]},{"text":"need","zeile":11,"silben":[70]},{"text":"to","zeile":11,"silben":[71]},{"text":"realise","zeile":11,"silben":[72,73]},{"text":"We","zeile":12,"silben":[74]},{"text":"claim","zeile":12,"silben":[75]},{"text":"we","zeile":12,"silben":[76]},{"text":"know","zeile":12,"silben":[77]},{"text":"It","zeile":12,"silben":[78]},{"text":"all","zeile":12,"silben":[79]},{"text":"Can’t","zeile":13,"silben":[80]},{"text":"see","zeile":13,"silben":[81]},{"text":"Who","zeile":13,"silben":[82]},{"text":"is","zeile":13,"silben":[83]},{"text":"behind","zeile":13,"silben":[84,85]},{"text":"this","zeile":13,"silben":[86]},{"text":"wall.","zeile":13,"silben":[87]},{"text":"Don’t","zeile":14,"silben":[88]},{"text":"wait,","zeile":14,"silben":[89]},{"text":"follow","zeile":14,"silben":[90,91]},{"text":"the","zeile":14,"silben":[92]},{"text":"light","zeile":14,"silben":[93]},{"text":"wake","zeile":15,"silben":[94]},{"text":"up","zeile":15,"silben":[95]},{"text":"open","zeile":15,"silben":[96,97]},{"text":"your","zeile":15,"silben":[98]},{"text":"eyes.","zeile":15,"silben":[99]},{"text":"open","zeile":16,"silben":[100,101]},{"text":"your","zeile":16,"silben":[102]},{"text":"eyes","zeile":16,"silben":[103]},{"text":"We","zeile":17,"silben":[104]},{"text":"claim","zeile":17,"silben":[105]},{"text":"we","zeile":17,"silben":[106]},{"text":"know","zeile":17,"silben":[107]},{"text":"it","zeile":17,"silben":[108]},{"text":"all","zeile":17,"silben":[109]},{"text":"Can’t","zeile":18,"silben":[110]},{"text":"see","zeile":18,"silben":[111]},{"text":"Who","zeile":18,"silben":[112]},{"text":"is","zeile":18,"silben":[113]},{"text":"behind","zeile":18,"silben":[114,115]},{"text":"this","zeile":18,"silben":[116]},{"text":"wall","zeile":18,"silben":[117]},{"text":"Don’t","zeile":19,"silben":[118]},{"text":"wait,","zeile":19,"silben":[119]},{"text":"Folge","zeile":19,"silben":[120,121]},{"text":"dem","zeile":19,"silben":[122]},{"text":"Licht","zeile":19,"silben":[123]},{"text":"Wach","zeile":20,"silben":[124]},{"text":"auf,","zeile":20,"silben":[125]},{"text":"siehst","zeile":20,"silben":[126]},{"text":"du","zeile":20,"silben":[127]},{"text":"mich","zeile":20,"silben":[128]},{"text":"nicht","zeile":20,"silben":[129]},{"text":"We","zeile":21,"silben":[130]},{"text":"claim","zeile":21,"silben":[131]},{"text":"we","zeile":21,"silben":[132]},{"text":"know","zeile":21,"silben":[133]},{"text":"It","zeile":21,"silben":[134]},{"text":"all","zeile":21,"silben":[135]},{"text":"Can’t","zeile":22,"silben":[136]},{"text":"see","zeile":22,"silben":[137]},{"text":"Who","zeile":22,"silben":[138]},{"text":"is","zeile":22,"silben":[139]},{"text":"behind","zeile":22,"silben":[140,141]},{"text":"this","zeile":22,"silben":[142]},{"text":"wall.","zeile":22,"silben":[143]},{"text":"Don’t","zeile":23,"silben":[144]},{"text":"wait,","zeile":23,"silben":[145]},{"text":"follow","zeile":23,"silben":[146,147]},{"text":"the","zeile":23,"silben":[148]},{"text":"light","zeile":23,"silben":[149]},{"text":"wake","zeile":24,"silben":[150]},{"text":"up","zeile":24,"silben":[151]},{"text":"open","zeile":24,"silben":[152,153]},{"text":"your","zeile":24,"silben":[154]},{"text":"eyes.","zeile":24,"silben":[155]},{"text":"open","zeile":25,"silben":[156,157]},{"text":"your","zeile":25,"silben":[158]},{"text":"eyes","zeile":25,"silben":[159]}],"silben":[{"text":"Wel","wort":0,"zeile":0,"abschnitt":1,"art":"gesungen","wortende":false,"note":0,"ziel_s":31.875,"midi":53},{"text":"come","wort":0,"zeile":0,"abschnitt":1,"art":"gesungen","wortende":true,"note":1,"ziel_s":32.75,"midi":51},{"text":"to","wort":1,"zeile":0,"abschnitt":1,"art":"gesungen","wortende":true,"note":2,"ziel_s":34.125,"midi":49},{"text":"the","wort":2,"zeile":0,"abschnitt":1,"art":"gesungen","wortende":true,"note":3,"ziel_s":34.75,"midi":48},{"text":"fake","wort":3,"zeile":0,"abschnitt":1,"art":"gesungen","wortende":true,"note":4,"ziel_s":36.0,"midi":51},{"text":"zom","wort":4,"zeile":0,"abschnitt":1,"art":"gesungen","wortende":false,"note":5,"ziel_s":40.0,"midi":51},{"text":"bies","wort":4,"zeile":0,"abschnitt":1,"art":"gesungen","wortende":true,"note":6,"ziel_s":40.75,"midi":49},{"text":"li","wort":5,"zeile":0,"abschnitt":1,"art":"gesungen","wortende":false,"note":7,"ziel_s":42.0,"midi":48},{"text":"ving","wort":5,"zeile":0,"abschnitt":1,"art":"gesungen","wortende":true,"note":8,"ziel_s":42.75,"midi":49},{"text":"for","wort":6,"zeile":1,"abschnitt":1,"art":"gesungen","wortende":true,"note":9,"ziel_s":44.0,"midi":53},{"text":"Gods","wort":7,"zeile":1,"abschnitt":1,"art":"gesungen","wortende":true,"note":10,"ziel_s":44.75,"midi":54},{"text":"sake","wort":8,"zeile":1,"abschnitt":1,"art":"gesungen","wortende":true,"note":11,"ziel_s":46.0,"midi":53},{"text":"In","wort":9,"zeile":2,"abschnitt":1,"art":"gesungen","wortende":true,"note":12,"ziel_s":48.0,"midi":53},{"text":"a","wort":10,"zeile":2,"abschnitt":1,"art":"gesungen","wortende":true,"note":13,"ziel_s":48.75,"midi":53},{"text":"world","wort":11,"zeile":2,"abschnitt":1,"art":"gesungen","wortende":true,"note":14,"ziel_s":50.0,"midi":56},{"text":"of","wort":12,"zeile":2,"abschnitt":1,"art":"gesungen","wortende":true,"note":15,"ziel_s":50.75,"midi":58},{"text":"Sheep","wort":13,"zeile":2,"abschnitt":1,"art":"gesungen","wortende":true,"note":16,"ziel_s":52.0,"midi":49},{"text":"Eve","wort":14,"zeile":3,"abschnitt":1,"art":"gesungen","wortende":false,"note":17,"ziel_s":56.0,"midi":53},{"text":"ry","wort":14,"zeile":3,"abschnitt":1,"art":"gesungen","wortende":false,"note":18,"ziel_s":56.75,"midi":51},{"text":"thing","wort":14,"zeile":3,"abschnitt":1,"art":"gesungen","wortende":true,"note":19,"ziel_s":58.0,"midi":48},{"text":"we","wort":15,"zeile":3,"abschnitt":1,"art":"gesungen","wortende":true,"note":20,"ziel_s":58.75,"midi":49},{"text":"Do","wort":16,"zeile":3,"abschnitt":1,"art":"gesungen","wortende":true,"note":21,"ziel_s":60.0,"midi":53},{"text":"be","wort":17,"zeile":3,"abschnitt":1,"art":"gesungen","wortende":false,"note":22,"ziel_s":60.75,"midi":54},{"text":"lieve","wort":17,"zeile":3,"abschnitt":1,"art":"gesungen","wortende":true,"note":23,"ziel_s":62.0,"midi":53},{"text":"We","wort":18,"zeile":4,"abschnitt":2,"art":"gesungen","wortende":true,"note":24,"ziel_s":63.5,"midi":58},{"text":"claim","wort":19,"zeile":4,"abschnitt":2,"art":"gesungen","wortende":true,"note":25,"ziel_s":64.0,"midi":58},{"text":"we","wort":20,"zeile":4,"abschnitt":2,"art":"gesungen","wortende":true,"note":26,"ziel_s":66.0,"midi":58},{"text":"know","wort":21,"zeile":4,"abschnitt":2,"art":"gesungen","wortende":true,"note":27,"ziel_s":66.75,"midi":56},{"text":"It","wort":22,"zeile":4,"abschnitt":2,"art":"gesungen","wortende":true,"note":28,"ziel_s":67.5,"midi":54},{"text":"all","wort":23,"zeile":4,"abschnitt":2,"art":"gesungen","wortende":true,"note":29,"ziel_s":68.0,"midi":54},{"text":"Can’t","wort":24,"zeile":5,"abschnitt":2,"art":"gesungen","wortende":true,"note":30,"ziel_s":71.5,"midi":56},{"text":"see","wort":25,"zeile":5,"abschnitt":2,"art":"gesungen","wortende":true,"note":31,"ziel_s":72.0,"midi":56},{"text":"Who","wort":26,"zeile":5,"abschnitt":2,"art":"gesungen","wortende":true,"note":32,"ziel_s":74.0,"midi":58},{"text":"is","wort":27,"zeile":5,"abschnitt":2,"art":"gesungen","wortende":true,"note":33,"ziel_s":74.75,"midi":56},{"text":"be","wort":28,"zeile":5,"abschnitt":2,"art":"gesungen","wortende":false,"note":34,"ziel_s":75.5,"midi":53},{"text":"hind","wort":28,"zeile":5,"abschnitt":2,"art":"gesungen","wortende":true,"note":35,"ziel_s":76.0,"midi":56},{"text":"this","wort":29,"zeile":5,"abschnitt":2,"art":"gesungen","wortende":true,"note":36,"ziel_s":77.5,"midi":58},{"text":"wall","wort":30,"zeile":5,"abschnitt":2,"art":"gesungen","wortende":true,"note":37,"ziel_s":78.0,"midi":56},{"text":"Don’t","wort":31,"zeile":6,"abschnitt":2,"art":"gesungen","wortende":true,"note":38,"ziel_s":79.5,"midi":58},{"text":"wait","wort":32,"zeile":6,"abschnitt":2,"art":"gesungen","wortende":true,"note":39,"ziel_s":80.0,"midi":58},{"text":"fol","wort":33,"zeile":6,"abschnitt":2,"art":"gesungen","wortende":false,"note":40,"ziel_s":82.0,"midi":58},{"text":"low","wort":33,"zeile":6,"abschnitt":2,"art":"gesungen","wortende":true,"note":41,"ziel_s":82.75,"midi":56},{"text":"the","wort":34,"zeile":6,"abschnitt":2,"art":"gesungen","wortende":true,"note":42,"ziel_s":83.5,"midi":54},{"text":"light","wort":35,"zeile":6,"abschnitt":2,"art":"gesungen","wortende":true,"note":43,"ziel_s":84.0,"midi":54},{"text":"wake","wort":36,"zeile":7,"abschnitt":2,"art":"gesungen","wortende":true,"note":44,"ziel_s":87.5,"midi":56},{"text":"up","wort":37,"zeile":7,"abschnitt":2,"art":"gesungen","wortende":true,"note":45,"ziel_s":88.0,"midi":56},{"text":"o","wort":38,"zeile":7,"abschnitt":2,"art":"gesungen","wortende":false,"note":46,"ziel_s":90.0,"midi":58},{"text":"pen","wort":38,"zeile":7,"abschnitt":2,"art":"gesungen","wortende":true,"note":47,"ziel_s":90.75,"midi":56},{"text":"your","wort":39,"zeile":7,"abschnitt":2,"art":"gesungen","wortende":true,"note":48,"ziel_s":91.5,"midi":53},{"text":"eyes","wort":40,"zeile":7,"abschnitt":2,"art":"gesungen","wortende":true,"note":49,"ziel_s":92.0,"midi":56},{"text":"Why","wort":41,"zeile":8,"abschnitt":3,"art":"gesungen","wortende":true,"note":50,"ziel_s":95.877,"midi":53},{"text":"can’t","wort":42,"zeile":8,"abschnitt":3,"art":"gesungen","wortende":true,"note":51,"ziel_s":96.752,"midi":51},{"text":"we","wort":43,"zeile":8,"abschnitt":3,"art":"gesungen","wortende":true,"note":52,"ziel_s":98.127,"midi":49},{"text":"just","wort":44,"zeile":8,"abschnitt":3,"art":"gesungen","wortende":true,"note":53,"ziel_s":98.752,"midi":48},{"text":"feel","wort":45,"zeile":8,"abschnitt":3,"art":"gesungen","wortende":true,"note":54,"ziel_s":100.002,"midi":51},{"text":"there","wort":46,"zeile":9,"abschnitt":3,"art":"gesungen","wortende":true,"note":55,"ziel_s":104.002,"midi":51},{"text":"is","wort":47,"zeile":9,"abschnitt":3,"art":"gesungen","wortende":true,"note":56,"ziel_s":104.752,"midi":49},{"text":"so","wort":48,"zeile":9,"abschnitt":3,"art":"gesungen","wortende":true,"note":57,"ziel_s":106.002,"midi":48},{"text":"much","wort":49,"zeile":9,"abschnitt":3,"art":"gesungen","wortende":true,"note":58,"ziel_s":106.752,"midi":49},{"text":"more","wort":50,"zeile":9,"abschnitt":3,"art":"gesungen","wortende":true,"note":59,"ziel_s":108.002,"midi":53},{"text":"to","wort":51,"zeile":9,"abschnitt":3,"art":"gesungen","wortende":true,"note":60,"ziel_s":108.752,"midi":54},{"text":"see","wort":52,"zeile":9,"abschnitt":3,"art":"gesungen","wortende":true,"note":61,"ziel_s":110.002,"midi":53},{"text":"Are","wort":53,"zeile":10,"abschnitt":3,"art":"gesungen","wortende":true,"note":62,"ziel_s":112.002,"midi":53},{"text":"we","wort":54,"zeile":10,"abschnitt":3,"art":"gesungen","wortende":true,"note":63,"ziel_s":112.752,"midi":53},{"text":"hyp","wort":55,"zeile":10,"abschnitt":3,"art":"gesungen","wortende":false,"note":64,"ziel_s":114.002,"midi":56},{"text":"no","wort":55,"zeile":10,"abschnitt":3,"art":"gesungen","wortende":false,"note":65,"ziel_s":114.752,"midi":58},{"text":"tised","wort":55,"zeile":10,"abschnitt":3,"art":"gesungen","wortende":true,"note":66,"ziel_s":116.002,"midi":49},{"text":"What","wort":56,"zeile":11,"abschnitt":3,"art":"gesungen","wortende":true,"note":67,"ziel_s":120.002,"midi":53},{"text":"does","wort":57,"zeile":11,"abschnitt":3,"art":"gesungen","wortende":true,"note":68,"ziel_s":120.752,"midi":51},{"text":"it","wort":58,"zeile":11,"abschnitt":3,"art":"gesungen","wortende":true,"note":69,"ziel_s":122.002,"midi":48},{"text":"need","wort":59,"zeile":11,"abschnitt":3,"art":"gesungen","wortende":true,"note":70,"ziel_s":122.752,"midi":49},{"text":"to","wort":60,"zeile":11,"abschnitt":3,"art":"gesungen","wortende":true,"note":71,"ziel_s":124.002,"midi":53},{"text":"rea","wort":61,"zeile":11,"abschnitt":3,"art":"gesungen","wortende":false,"note":72,"ziel_s":124.752,"midi":54},{"text":"lise","wort":61,"zeile":11,"abschnitt":3,"art":"gesungen","wortende":true,"note":73,"ziel_s":126.002,"midi":53},{"text":"We","wort":62,"zeile":12,"abschnitt":4,"art":"gesungen","wortende":true,"note":74,"ziel_s":127.5,"midi":58},{"text":"claim","wort":63,"zeile":12,"abschnitt":4,"art":"gesungen","wortende":true,"note":75,"ziel_s":128.0,"midi":58},{"text":"we","wort":64,"zeile":12,"abschnitt":4,"art":"gesungen","wortende":true,"note":76,"ziel_s":130.0,"midi":58},{"text":"know","wort":65,"zeile":12,"abschnitt":4,"art":"gesungen","wortende":true,"note":77,"ziel_s":130.75,"midi":56},{"text":"It","wort":66,"zeile":12,"abschnitt":4,"art":"gesungen","wortende":true,"note":78,"ziel_s":131.5,"midi":54},{"text":"all","wort":67,"zeile":12,"abschnitt":4,"art":"gesungen","wortende":true,"note":79,"ziel_s":132.0,"midi":54},{"text":"Can’t","wort":68,"zeile":13,"abschnitt":4,"art":"gesungen","wortende":true,"note":80,"ziel_s":135.5,"midi":56},{"text":"see","wort":69,"zeile":13,"abschnitt":4,"art":"gesungen","wortende":true,"note":81,"ziel_s":136.0,"midi":56},{"text":"Who","wort":70,"zeile":13,"abschnitt":4,"art":"gesungen","wortende":true,"note":82,"ziel_s":138.0,"midi":58},{"text":"is","wort":71,"zeile":13,"abschnitt":4,"art":"gesungen","wortende":true,"note":83,"ziel_s":138.75,"midi":56},{"text":"be","wort":72,"zeile":13,"abschnitt":4,"art":"gesungen","wortende":false,"note":84,"ziel_s":139.5,"midi":53},{"text":"hind","wort":72,"zeile":13,"abschnitt":4,"art":"gesungen","wortende":true,"note":85,"ziel_s":140.0,"midi":56},{"text":"this","wort":73,"zeile":13,"abschnitt":4,"art":"gesungen","wortende":true,"note":86,"ziel_s":141.5,"midi":58},{"text":"wall","wort":74,"zeile":13,"abschnitt":4,"art":"gesungen","wortende":true,"note":87,"ziel_s":142.0,"midi":56},{"text":"Don’t","wort":75,"zeile":14,"abschnitt":4,"art":"gesungen","wortende":true,"note":88,"ziel_s":143.5,"midi":58},{"text":"wait","wort":76,"zeile":14,"abschnitt":4,"art":"gesungen","wortende":true,"note":89,"ziel_s":144.0,"midi":58},{"text":"fol","wort":77,"zeile":14,"abschnitt":4,"art":"gesungen","wortende":false,"note":90,"ziel_s":146.0,"midi":58},{"text":"low","wort":77,"zeile":14,"abschnitt":4,"art":"gesungen","wortende":true,"note":91,"ziel_s":146.75,"midi":56},{"text":"the","wort":78,"zeile":14,"abschnitt":4,"art":"gesungen","wortende":true,"note":92,"ziel_s":147.5,"midi":54},{"text":"light","wort":79,"zeile":14,"abschnitt":4,"art":"gesungen","wortende":true,"note":93,"ziel_s":148.0,"midi":54},{"text":"wake","wort":80,"zeile":15,"abschnitt":4,"art":"gesungen","wortende":true,"note":94,"ziel_s":151.5,"midi":56},{"text":"up","wort":81,"zeile":15,"abschnitt":4,"art":"gesungen","wortende":true,"note":95,"ziel_s":152.0,"midi":56},{"text":"o","wort":82,"zeile":15,"abschnitt":4,"art":"gesungen","wortende":false,"note":96,"ziel_s":154.0,"midi":58},{"text":"pen","wort":82,"zeile":15,"abschnitt":4,"art":"gesungen","wortende":true,"note":97,"ziel_s":154.75,"midi":56},{"text":"your","wort":83,"zeile":15,"abschnitt":4,"art":"gesungen","wortende":true,"note":98,"ziel_s":155.5,"midi":53},{"text":"eyes","wort":84,"zeile":15,"abschnitt":4,"art":"gesungen","wortende":true,"note":99,"ziel_s":156.0,"midi":56},{"text":"o","wort":85,"zeile":16,"abschnitt":5,"art":"gesungen","wortende":false,"note":100,"ziel_s":158.0,"midi":58},{"text":"pen","wort":85,"zeile":16,"abschnitt":5,"art":"gesungen","wortende":true,"note":101,"ziel_s":158.5,"midi":56},{"text":"your","wort":86,"zeile":16,"abschnitt":5,"art":"gesungen","wortende":true,"note":102,"ziel_s":159.0,"midi":58},{"text":"eyes","wort":87,"zeile":16,"abschnitt":5,"art":"gesungen","wortende":true,"note":103,"ziel_s":159.75,"midi":58},{"text":"We","wort":88,"zeile":17,"abschnitt":7,"art":"gesungen","wortende":true,"note":"Z24","ziel_s":191.5,"midi":58},{"text":"claim","wort":89,"zeile":17,"abschnitt":7,"art":"gesungen","wortende":true,"note":"Z25","ziel_s":192.0,"midi":58},{"text":"we","wort":90,"zeile":17,"abschnitt":7,"art":"gesprochen","wortende":true,"sprech":0},{"text":"know","wort":91,"zeile":17,"abschnitt":7,"art":"gesprochen","wortende":true,"sprech":0},{"text":"it","wort":92,"zeile":17,"abschnitt":7,"art":"gesprochen","wortende":true,"sprech":0},{"text":"all","wort":93,"zeile":17,"abschnitt":7,"art":"gesprochen","wortende":true,"sprech":0},{"text":"Can’t","wort":94,"zeile":18,"abschnitt":7,"art":"gesungen","wortende":true,"note":"Z30","ziel_s":199.5,"midi":56},{"text":"see","wort":95,"zeile":18,"abschnitt":7,"art":"gesungen","wortende":true,"note":"Z31","ziel_s":200.0,"midi":56},{"text":"Who","wort":96,"zeile":18,"abschnitt":7,"art":"gesprochen","wortende":true,"sprech":1},{"text":"is","wort":97,"zeile":18,"abschnitt":7,"art":"gesprochen","wortende":true,"sprech":1},{"text":"be","wort":98,"zeile":18,"abschnitt":7,"art":"gesprochen","wortende":false,"sprech":1},{"text":"hind","wort":98,"zeile":18,"abschnitt":7,"art":"gesprochen","wortende":true,"sprech":1},{"text":"this","wort":99,"zeile":18,"abschnitt":7,"art":"gesprochen","wortende":true,"sprech":1},{"text":"wall","wort":100,"zeile":18,"abschnitt":7,"art":"gesprochen","wortende":true,"sprech":1},{"text":"Don’t","wort":101,"zeile":19,"abschnitt":7,"art":"gesungen","wortende":true,"note":"Z38","ziel_s":207.5,"midi":58},{"text":"wait","wort":102,"zeile":19,"abschnitt":7,"art":"gesungen","wortende":true,"note":"Z39","ziel_s":208.0,"midi":58},{"text":"Fol","wort":103,"zeile":19,"abschnitt":7,"art":"gesprochen","wortende":false,"sprech":2},{"text":"ge","wort":103,"zeile":19,"abschnitt":7,"art":"gesprochen","wortende":true,"sprech":2},{"text":"dem","wort":104,"zeile":19,"abschnitt":7,"art":"gesprochen","wortende":true,"sprech":2},{"text":"Licht","wort":105,"zeile":19,"abschnitt":7,"art":"gesprochen","wortende":true,"sprech":2},{"text":"Wach","wort":106,"zeile":20,"abschnitt":7,"art":"gesungen","wortende":true,"note":"Z44","ziel_s":215.5,"midi":56},{"text":"auf","wort":107,"zeile":20,"abschnitt":7,"art":"gesungen","wortende":true,"note":"Z45","ziel_s":216.0,"midi":56},{"text":"siehst","wort":108,"zeile":20,"abschnitt":7,"art":"gesprochen","wortende":true,"sprech":3},{"text":"du","wort":109,"zeile":20,"abschnitt":7,"art":"gesprochen","wortende":true,"sprech":3},{"text":"mich","wort":110,"zeile":20,"abschnitt":7,"art":"gesprochen","wortende":true,"sprech":3},{"text":"nicht","wort":111,"zeile":20,"abschnitt":7,"art":"gesprochen","wortende":true,"sprech":3},{"text":"We","wort":112,"zeile":21,"abschnitt":8,"art":"gesungen","wortende":true,"note":104,"ziel_s":223.5,"midi":58},{"text":"claim","wort":113,"zeile":21,"abschnitt":8,"art":"gesungen","wortende":true,"note":105,"ziel_s":224.0,"midi":58},{"text":"we","wort":114,"zeile":21,"abschnitt":8,"art":"gesungen","wortende":true,"note":106,"ziel_s":226.0,"midi":58},{"text":"know","wort":115,"zeile":21,"abschnitt":8,"art":"gesungen","wortende":true,"note":107,"ziel_s":226.75,"midi":56},{"text":"It","wort":116,"zeile":21,"abschnitt":8,"art":"gesungen","wortende":true,"note":108,"ziel_s":227.5,"midi":54},{"text":"all","wort":117,"zeile":21,"abschnitt":8,"art":"gesungen","wortende":true,"note":109,"ziel_s":228.0,"midi":54},{"text":"Can’t","wort":118,"zeile":22,"abschnitt":8,"art":"gesungen","wortende":true,"note":110,"ziel_s":231.5,"midi":56},{"text":"see","wort":119,"zeile":22,"abschnitt":8,"art":"gesungen","wortende":true,"note":111,"ziel_s":232.0,"midi":56},{"text":"Who","wort":120,"zeile":22,"abschnitt":8,"art":"gesungen","wortende":true,"note":112,"ziel_s":234.0,"midi":58},{"text":"is","wort":121,"zeile":22,"abschnitt":8,"art":"gesungen","wortende":true,"note":113,"ziel_s":234.75,"midi":56},{"text":"be","wort":122,"zeile":22,"abschnitt":8,"art":"gesungen","wortende":false,"note":114,"ziel_s":235.5,"midi":53},{"text":"hind","wort":122,"zeile":22,"abschnitt":8,"art":"gesungen","wortende":true,"note":115,"ziel_s":236.0,"midi":56},{"text":"this","wort":123,"zeile":22,"abschnitt":8,"art":"gesungen","wortende":true,"note":116,"ziel_s":237.5,"midi":58},{"text":"wall","wort":124,"zeile":22,"abschnitt":8,"art":"gesungen","wortende":true,"note":117,"ziel_s":238.0,"midi":56},{"text":"Don’t","wort":125,"zeile":23,"abschnitt":8,"art":"gesungen","wortende":true,"note":118,"ziel_s":239.5,"midi":58},{"text":"wait","wort":126,"zeile":23,"abschnitt":8,"art":"gesungen","wortende":true,"note":119,"ziel_s":240.0,"midi":58},{"text":"fol","wort":127,"zeile":23,"abschnitt":8,"art":"gesungen","wortende":false,"note":120,"ziel_s":242.0,"midi":58},{"text":"low","wort":127,"zeile":23,"abschnitt":8,"art":"gesungen","wortende":true,"note":121,"ziel_s":242.75,"midi":56},{"text":"the","wort":128,"zeile":23,"abschnitt":8,"art":"gesungen","wortende":true,"note":122,"ziel_s":243.5,"midi":54},{"text":"light","wort":129,"zeile":23,"abschnitt":8,"art":"gesungen","wortende":true,"note":123,"ziel_s":244.0,"midi":54},{"text":"wake","wort":130,"zeile":24,"abschnitt":8,"art":"gesungen","wortende":true,"note":124,"ziel_s":247.5,"midi":56},{"text":"up","wort":131,"zeile":24,"abschnitt":8,"art":"gesungen","wortende":true,"note":125,"ziel_s":248.0,"midi":56},{"text":"o","wort":132,"zeile":24,"abschnitt":8,"art":"gesungen","wortende":false,"note":126,"ziel_s":250.0,"midi":58},{"text":"pen","wort":132,"zeile":24,"abschnitt":8,"art":"gesungen","wortende":true,"note":127,"ziel_s":250.75,"midi":56},{"text":"your","wort":133,"zeile":24,"abschnitt":8,"art":"gesungen","wortende":true,"note":128,"ziel_s":251.5,"midi":53},{"text":"eyes","wort":134,"zeile":24,"abschnitt":8,"art":"gesungen","wortende":true,"note":129,"ziel_s":252.0,"midi":56},{"text":"o","wort":135,"zeile":25,"abschnitt":9,"art":"gesungen","wortende":false,"note":130,"ziel_s":254.0,"midi":58},{"text":"pen","wort":135,"zeile":25,"abschnitt":9,"art":"gesungen","wortende":true,"note":131,"ziel_s":254.75,"midi":56},{"text":"your","wort":136,"zeile":25,"abschnitt":9,"art":"gesungen","wortende":true,"note":132,"ziel_s":255.5,"midi":61},{"text":"eyes","wort":137,"zeile":25,"abschnitt":9,"art":"gesungen","wortende":true,"note":133,"ziel_s":256.0,"midi":58}],"quellen":{"text":"sauber/AKKORDE-ZIEHEN.html + Zwischenteil aus mix-3/KORREKTUR.md","abschnitte":"Marker in sauber/the-wall-sauber.mid (Takt 1 = 0,0 s)","melodie":"mix-3/midi/gesang-spur3.mid (Refrain 2/3 Ziel = MIDI - 65 ms; Zwischenteil = Refrain 1 + 128 s)"},"fassungen":[{"id":"v7","name":"v7","haupt":"audio/haupt-v7.mp3","mix":"audio/mix-v7.mp3","daten":"daten/fassung-v7.json?c5340634","versatz_s":0.0,"dauer_s":266.0,"hinweis":"Club-Master v7"},{"id":"v10","name":"v10","haupt":"audio/haupt-v10.mp3","mix":"audio/mix-v10.mp3","daten":"daten/fassung-v10.json?22ae4610","versatz_s":0.0,"dauer_s":266.0,"hinweis":"Club-Master v10: Gesang gereinigt, Strophe 2 und Who neu, Hall kleiner"}],"gebaut":"2026-11-22 15:18","standard":"v10"};
+const $=id=>document.getElementById(id);
+const SPEICHER='tw-gesang-werkstatt-1';
+// Gleiche Supabase-Ablage wie die Akkord-Seite; Tabelle gesang_notiz (nur Einfügen für anon).
+const MELDUNG_URL='https://dbdnsryoivvezspgydpx.supabase.co/rest/v1/gesang_notiz';
+const MELDUNG_KEY='sb_publishable_6utuy3es2447DjAQvxdrUQ_F-6fE5_M';
+const TS=LIED.takt_s,TAKT=LIED.takt[0],SCHLAG=TS/TAKT,T1=LIED.takt1_s,DAUER=LIED.dauer_s;
+const SIL=LIED.silben,WOE=LIED.woerter,ZEI=LIED.zeilen,ABS=LIED.abschnitte,FASS=LIED.fassungen;
+const DMIN=1.0,DMAX=DAUER+4;
+const RASTERNAME={1:'Schlag',2:'1/8',4:'1/16'};
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const fass=id=>FASS.find(f=>f.id===id)||FASS[FASS.length-1];
+function esc(t){return String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+const jetzt=()=>new Date().toISOString();
+function mmss(t){t=Math.max(0,t);const m=Math.floor(t/60),s=t-m*60;return m+':'+(s<10?'0':'')+s.toFixed(1).replace('.',',')}
+function sek(t){return t.toFixed(3).replace('.',',')+' s'}
+function tpos(t){const b=Math.floor((t-T1)/SCHLAG+1e-6);const tk=Math.floor(b/TAKT);return 'T'+(tk+1)+'.'+(b-tk*TAKT+1)}
+function rasterName(t){const q=Math.round((t-T1)/SCHLAG*4);const tk=Math.floor(q/(4*TAKT));const r=q-tk*4*TAKT;return 'T'+(tk+1)+'.'+(Math.floor(r/4)+1)+['','e','+','a'][r%4]}
+function msText(ms){return (ms>0?'+':ms<0?'−':'±')+Math.abs(ms)+' ms'}
+function abschnittBei(t){let a=0;for(let i=0;i<ABS.length;i++)if(t>=ABS[i].von_s)a=i;return a}
+
+// ---------------- Zustand
+const Z={fid:LIED.standard,modus:'haupt',raster:2,t0:31,dur:9,pos:31.5,spielt:false,schleife:true,bereich:null,wahl:null,tab:'N'};
+const F={};
+let E={v:1,eintraege:[]},speicherOk=true,verlauf=[];
+try{
+  const s=localStorage.getItem(SPEICHER);
+  if(s){const d=JSON.parse(s);
+    if(d&&Array.isArray(d.eintraege))E=d;
+    const a=d&&d.ansicht;
+    if(a){if(FASS.some(f=>f.id===a.fid)&&a.standard===LIED.standard)Z.fid=a.fid; /* neue Standard-Fassung (z. B. v10) geht vor */
+      if(a.modus==='mix'||a.modus==='haupt')Z.modus=a.modus;if([1,2,4].includes(a.raster))Z.raster=a.raster;
+      if(isFinite(a.dur))Z.dur=clamp(a.dur,DMIN,DMAX);if(isFinite(a.t0))Z.t0=a.t0;if(isFinite(a.pos))Z.pos=clamp(a.pos,0,DAUER);if(a.tab)Z.tab=a.tab;
+      if(a.bereich&&isFinite(a.bereich.von)&&a.bereich.bis>a.bereich.von)Z.bereich={von:a.bereich.von,bis:a.bereich.bis}}}
+}catch(e){speicherOk=false}
+if(Z.modus==='mix'&&!fass(Z.fid).mix)Z.modus='haupt';
+let sichernUhr=0;
+function sichern(){
+  clearTimeout(sichernUhr);sichernUhr=0;
+  E.ansicht={standard:LIED.standard,fid:Z.fid,modus:Z.modus,raster:Z.raster,t0:Z.t0,dur:Z.dur,pos:Z.pos,tab:Z.tab,bereich:Z.bereich};
+  try{localStorage.setItem(SPEICHER,JSON.stringify(E));speicherOk=true}catch(e){speicherOk=false}
+}
+function sichernSpaeter(){if(!sichernUhr)sichernUhr=setTimeout(sichern,400)}
+
+// Korrekturen/Ziele schnell finden
+let KORR={},ZIEL={};
+function baueMaps(){
+  KORR={};ZIEL={};
+  for(const e of E.eintraege){
+    if(e.art==='zuordnung')(KORR[e.fassung]||(KORR[e.fassung]={}))[e.silbe]=e;
+    if(e.art==='ziel')(ZIEL[e.fassung]||(ZIEL[e.fassung]={}))[e.silbe]=e;
+  }
+  ordnung=null;
+}
+function sz(fid,i){
+  const d=F[fid];if(!d)return null;
+  const s=d.silben[i],k=KORR[fid]&&KORR[fid][i];
+  if(k)return{on:k.nach_s,pk:k.nach_spitze_s!=null?k.nach_spitze_s:k.nach_s+(s.peak_s-s.onset_s),korr:true,conf:s.confidence};
+  return{on:s.onset_s,pk:s.peak_s,korr:false,conf:s.confidence};
+}
+let ordnung=null;
+function silbenOrdnung(){
+  if(ordnung&&ordnung.fid===Z.fid)return ordnung.liste;
+  const l=SIL.map((_,i)=>i).filter(i=>sz(Z.fid,i)).sort((a,b)=>sz(Z.fid,a).on-sz(Z.fid,b).on);
+  ordnung={fid:Z.fid,liste:l};return l;
+}
+
+// ---------------- Einträge (Notizen, Zuordnungen, Ziele, Bereiche)
+function aendern(fn,meldung){
+  verlauf.push(JSON.stringify(E.eintraege));if(verlauf.length>60)verlauf.shift();
+  fn();nachAenderung();if(meldung)status(meldung);
+}
+function nachAenderung(){baueMaps();sichern();listen();sendeZustand();basisNeu();$('bZurueck').disabled=!verlauf.length}
+function upsert(finde,daten){
+  const e=E.eintraege.find(finde);
+  if(e){Object.assign(e,daten,{geaendert:jetzt(),gesendet:null});return e}
+  const n=Object.assign({id:uid(),erstellt:jetzt(),gesendet:null},daten);E.eintraege.push(n);return n;
+}
+function entferne(e){
+  E.eintraege=E.eintraege.filter(x=>x!==e);
+  if(e.gesendet)E.eintraege.push({id:uid(),art:'geloescht',fassung:e.fassung,ziel_id:e.id,ziel_art:e.art,erstellt:jetzt(),gesendet:null});
+}
+function silbeLabel(i){const s=SIL[i];const w=WOE[s.wort];return '„'+s.text+'“'+(w.silben.length>1?' ('+w.text.replace(/[.,?!]+$/,'')+')':'')}
+function zeileText(li){return ZEI[li].text}
+function zeileNr(li){const a=ABS[ZEI[li].abschnitt];return a.zeilen.indexOf(li)+1}
+function silbeOrt(i){const s=SIL[i];return ABS[s.abschnitt].name+', Zeile '+zeileNr(s.zeile)}
+
+// ---------------- Daten laden
+const ladend={};
+function ladeFassung(id){
+  if(F[id])return Promise.resolve(F[id]);
+  if(ladend[id])return ladend[id];
+  const f=fass(id);
+  return ladend[id]=fetch(f.daten).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(d=>{
+    const bin=atob(d.wellen.b64),n=bin.length,w=new Int8Array(n);
+    for(let i=0;i<n;i++){const c=bin.charCodeAt(i);w[i]=c>127?c-256:c}
+    d.w=w;d.wn=d.wellen.n;d.wr=d.wellen.rate;d.wellen.b64=null;
+    d.kt=Float64Array.from(d.kanten,k=>k[0]);
+    F[id]=d;ordnung=null;ueberStatisch=null;
+    return d;
+  }).catch(e=>{delete ladend[id];throw e});
+}
+let AEND=[],ANTW=[];
+function ladeListen(){
+  fetch('daten/aenderungen.json',{cache:'no-cache'}).then(r=>r.ok?r.json():[]).then(a=>{AEND=Array.isArray(a)?a:[];listen();ueberStatisch=null;basisNeu()}).catch(()=>{});
+  fetch('daten/antworten.json',{cache:'no-cache'}).then(r=>r.ok?r.json():[]).then(a=>{ANTW=Array.isArray(a)?a:[];listen();basisNeu()}).catch(()=>{});
+}
+
+// ---------------- Farben, Größen
+let FB={};
+function farben(){
+  const s=getComputedStyle(document.documentElement);
+  for(const k of ['bg','fg','mut','lin','lin2','gold','hi','welle','warn','blau','band1','band2','bereich','ok','rot'])FB[k]=s.getPropertyValue('--'+k).trim();
+  ueberStatisch=null;basisNeu();
+}
+const cb=$('cb'),co=$('co'),ue=$('ueber'),buehne=$('buehne');
+const cxB=cb.getContext('2d'),cxO=co.getContext('2d'),cxU=ue.getContext('2d');
+let W=1,H=1,DPR=1,UW=1,UH=1;const L={};
+function groesse(){
+  const r=buehne.getBoundingClientRect();
+  DPR=Math.min(2,window.devicePixelRatio||1);W=Math.max(1,r.width);H=Math.max(1,r.height);
+  for(const c of [cb,co]){c.width=Math.round(W*DPR);c.height=Math.round(H*DPR)}
+  const flach=H<300;
+  L.rul=flach?26:30;L.syl=flach?50:58;L.mark=flach?40:46;
+  L.yS=L.rul;L.yW=L.rul+L.syl;L.wav=Math.max(40,H-L.rul-L.syl-L.mark);L.yM=L.yW+L.wav;
+  const u=ue.getBoundingClientRect();UW=Math.max(1,u.width);UH=Math.max(1,u.height);
+  ue.width=Math.round(UW*DPR);ue.height=Math.round(UH*DPR);
+  ueberStatisch=null;clampView();basisNeu();
+}
+const xz=t=>(t-Z.t0)/Z.dur*W,tz=x=>Z.t0+x/W*Z.dur;
+function clampView(){
+  Z.dur=clamp(Z.dur,DMIN,DMAX);
+  if(Z.dur>=DAUER+2)Z.t0=(DAUER-Z.dur)/2;else Z.t0=clamp(Z.t0,-1,DAUER-Z.dur+1);
+}
+
+// ---------------- Zeichnen
+let basisDirty=true,ueberDirty=true,rafId=0,ueberStatisch=null;
+const MESS={basis:[],frames:0};
+function anfordern(){if(!rafId)rafId=requestAnimationFrame(frame)}
+function basisNeu(){basisDirty=true;ueberDirty=true;anfordern()}
+let sylBox=[],markBox=[],rulBox=[],punktBox=[];
+const breiten=new Map();
+function breite(c,t){let w=breiten.get(t);if(w==null){w=c.measureText(t).width;breiten.set(t,w)}return w}
+function suche(arr,t){let a=0,b=arr.length;while(a<b){const m=(a+b)>>1;if(arr[m]<t)a=m+1;else b=m}return a}
+
+function zeichneBasis(){
+  const t0=performance.now(),c=cxB;
+  c.setTransform(DPR,0,0,DPR,0,0);
+  c.fillStyle=FB.bg;c.fillRect(0,0,W,H);
+  c.fillStyle=FB.band1;c.fillRect(0,0,W,L.rul);c.fillRect(0,L.yM,W,L.mark);
+  // Abschnitte (oben im Lineal)
+  c.font='600 10.5px -apple-system,system-ui,sans-serif';c.textBaseline='middle';
+  for(let i=0;i<ABS.length;i++){
+    const a=ABS[i],b=i+1<ABS.length?ABS[i+1].von_s:DAUER;
+    const x0=xz(a.von_s),x1=xz(b);if(x1<0||x0>W)continue;
+    c.fillStyle=i%2?FB.band2:FB.band1;c.fillRect(x0,0,x1-x0,13);
+    const tw=breite(c,a.name),xs=Math.max(x0,0)+4;
+    if(xs+tw<x1-2){c.fillStyle=FB.mut;c.fillText(a.name,xs,7)}
+  }
+  // Bereich
+  if(Z.bereich){const a=xz(Z.bereich.von),b=xz(Z.bereich.bis);c.fillStyle=FB.bereich;c.fillRect(a,0,b-a,H)}
+  zeichneRaster(c);
+  // Änderungen dieser Fassung: Streifen unten im Lineal
+  c.fillStyle=FB.ok;
+  for(const a of AEND){if(a.ganz||a.fassung&&a.fassung!==Z.fid)continue;const x0=xz(a.zeit_s),x1=Math.max(x0+3,xz(a.bis_s||a.zeit_s));if(x1<0||x0>W)continue;c.globalAlpha=.55;c.fillRect(x0,L.rul-3,x1-x0,3);c.globalAlpha=1}
+  const d=F[Z.fid];
+  if(d){zeichneWelle(c,d);zeichneSilben(c,d)}
+  else{sylBox=[];markBox=[]}
+  zeichneRulMarken(c);
+  if(Z.bereich)zeichneGriffe(c);
+  c.strokeStyle=FB.lin;c.lineWidth=1;c.beginPath();c.moveTo(0,L.rul+.5);c.lineTo(W,L.rul+.5);c.moveTo(0,L.yM+.5);c.lineTo(W,L.yM+.5);c.stroke();
+  const dt=performance.now()-t0;MESS.basis.push(dt);if(MESS.basis.length>240)MESS.basis.shift();
+}
+function zeichneRaster(c){
+  const pxSchlag=SCHLAG/Z.dur*W,pxTakt=pxSchlag*TAKT;
+  let teil=1;if(pxSchlag/4>=11)teil=4;else if(pxSchlag/2>=11)teil=2;
+  let taktSchritt=1;while(pxTakt*taktSchritt<7)taktSchritt*=2;
+  let labelSchritt=1;while(pxTakt*labelSchritt<38)labelSchritt*=2;
+  const zeigSchlag=pxSchlag>=7,zeigLabelSchlag=pxSchlag>=50;
+  const step=zeigSchlag?SCHLAG/teil:TS*taktSchritt;
+  const k0=Math.floor((Z.t0-T1)/step)-1,k1=Math.ceil((Z.t0+Z.dur-T1)/step)+1;
+  c.font='600 11px ui-monospace,Menlo,monospace';c.textBaseline='alphabetic';
+  for(let k=k0;k<=k1;k++){
+    const t=T1+k*step;if(t<-0.001||t>DAUER+0.001)continue;
+    const x=Math.round(xz(t)*DPR)/DPR+.5/DPR;
+    const sch=Math.round((t-T1)/SCHLAG*teil);const imTakt=zeigSchlag?sch%(TAKT*teil)===0:true;
+    const imSchlag=zeigSchlag?sch%teil===0:true;
+    const takt=Math.floor((t-T1)/TS+1e-6)+1;
+    if(imTakt&&!zeigSchlag&&(takt-1)%taktSchritt)continue;
+    if(imTakt){c.fillStyle=FB.lin2;c.globalAlpha=1;c.fillRect(x-.5,13,1,H-13)}
+    else if(imSchlag){c.fillStyle=FB.lin2;c.globalAlpha=.55;c.fillRect(x-.5,L.rul-8,1,H-L.rul+8)}
+    else{c.fillStyle=FB.lin;c.globalAlpha=1;c.fillRect(x-.5,L.yS,1,H-L.yS)}
+    c.globalAlpha=1;
+    if(imTakt&&(takt-1)%labelSchritt===0){c.fillStyle=FB.fg;c.fillText('T'+takt,x+3,L.rul-6)}
+    else if(imSchlag&&!imTakt&&zeigLabelSchlag){const b=sch/teil;c.fillStyle=FB.mut;c.fillText('T'+takt+'.'+(((b%TAKT)+TAKT)%TAKT+1),x+3,L.rul-6)}
+  }
+  // Beim Ziehen eines Griffs: Raster zum Einrasten deutlicher
+  if(G&&G.art==='marke-zieht'){
+    const st=SCHLAG/Z.raster,a=Math.floor((Z.t0-T1)/st),b=Math.ceil((Z.t0+Z.dur-T1)/st);
+    if(b-a<400){c.fillStyle=FB.blau;c.globalAlpha=.35;for(let k=a;k<=b;k++){const x=xz(T1+k*st);c.fillRect(x-.5,L.yW,1,L.wav+L.mark)}c.globalAlpha=1}
+  }
+}
+function zeichneWelle(c,d){
+  const y0=L.yW,h=L.wav,yc=y0+h/2,amp=(h/2-3)/127,w=d.w,n=d.wn,R=d.wr;
+  c.fillStyle=FB.welle;
+  const cols=Math.round(W*DPR),cw=W/cols,dtc=Z.dur/cols,ppc=dtc*R;
+  c.beginPath();
+  if(ppc>=1){
+    for(let k=0;k<cols;k++){
+      const ta=Z.t0+k*dtc;let i0=Math.floor(ta*R),i1=Math.floor((ta+dtc)*R);if(i1<=i0)i1=i0+1;
+      if(i1<=0||i0>=n)continue;if(i0<0)i0=0;if(i1>n)i1=n;
+      let mn=127,mx=-127;for(let i=i0;i<i1;i++){const a=w[2*i],b=w[2*i+1];if(a<mn)mn=a;if(b>mx)mx=b}
+      const yt=yc-mx*amp,yb=yc-mn*amp;c.rect(k*cw,yt,cw,Math.max(yb-yt,1/DPR));
+    }
+  }else{
+    const i0=Math.max(0,Math.floor(Z.t0*R)-1),i1=Math.min(n-1,Math.ceil((Z.t0+Z.dur)*R)+1);
+    if(i1>i0){
+      for(let i=i0;i<=i1;i++){const x=xz((i+.5)/R),y=yc-Math.max(w[2*i+1],1)*amp;if(i===i0)c.moveTo(x,y);else c.lineTo(x,y)}
+      for(let i=i1;i>=i0;i--){c.lineTo(xz((i+.5)/R),yc-Math.min(w[2*i],-1)*amp)}
+      c.closePath();
+    }
+  }
+  c.fill();
+  c.fillStyle=FB.lin2;c.fillRect(0,yc,W,1/DPR);
+  // erkannte Kanten (Einrast-Punkte) als feine Striche
+  const pxs=W/Z.dur;
+  if(pxs>=35||(G&&G.art==='silbe-zieht')){
+    const kt=d.kt,a=suche(kt,Z.t0-.05),b=suche(kt,Z.t0+Z.dur+.05),lang=G&&G.art==='silbe-zieht';
+    c.fillStyle=lang?FB.gold:FB.mut;c.globalAlpha=lang?.5:.6;
+    for(let i=a;i<b;i++){const x=xz(kt[i]);c.fillRect(x-.5,y0,1,lang?h:6)}
+    c.globalAlpha=1;
+  }
+}
+function zeichneSilben(c,d){
+  sylBox=[];markBox=[];punktBox=[];
+  const liste=silbenOrdnung(),pxs=W/Z.dur;
+  const zeilenH=L.syl>=56?25:22,fs=L.syl>=56?15:14;
+  const fN=fs+'px -apple-system,system-ui,sans-serif',fK='italic '+fs+'px -apple-system,system-ui,sans-serif';
+  const ende=[-1e9,-1e9],xOff=-Z.t0/Z.dur*W;
+  const zielF=ZIEL[Z.fid]||{};
+  c.textBaseline='alphabetic';
+  for(const i of liste){
+    const s=SIL[i],z=sz(Z.fid,i),xa=z.on/Z.dur*W,x=xa+xOff;
+    const unsicher=!z.korr&&z.conf<.5,spr=s.art==='gesprochen';
+    const txt=s.text+(s.wortende?'':'-')+(unsicher?'?':'');
+    c.font=spr?fK:fN;const key=(spr?'k':'n')+fs+'|'+txt;let twr=breiten.get(key);if(twr==null){twr=c.measureText(txt).width;breiten.set(key,twr)}
+    let row=-1;if(xa>=ende[0]+5)row=0;else if(xa>=ende[1]+5)row=1;
+    if(row>=0)ende[row]=xa+twr+8;
+    if(x<-twr-20||x>W+20)continue;
+    const farbe=z.korr?FB.gold:unsicher?FB.warn:FB.fg;
+    // Einsatzlinie durch die Wellenform
+    c.strokeStyle=farbe;c.globalAlpha=z.korr?.9:unsicher?.75:.38;c.lineWidth=1;
+    if(unsicher&&!z.korr)c.setLineDash([3,3]);
+    const yTop=row>=0?L.yS+6+row*zeilenH+zeilenH-2:L.yW-4;
+    c.beginPath();c.moveTo(Math.round(x)+.5,yTop);c.lineTo(Math.round(x)+.5,L.yM+6);c.stroke();c.setLineDash([]);
+    c.globalAlpha=1;
+    // Spitze (Maximum der Transiente)
+    const xp=xz(z.pk);
+    if(pxs>=25){c.fillStyle=farbe;c.globalAlpha=.8;c.beginPath();c.moveTo(xp,L.yM-1);c.lineTo(xp-3.5,L.yM-7);c.lineTo(xp+3.5,L.yM-7);c.closePath();c.fill();c.globalAlpha=1}
+    if(row<0){c.fillStyle=farbe;c.beginPath();c.arc(x,L.yS+L.syl-8,2.2,0,7);c.fill();punktBox.push({i,x});continue}
+    const yb=L.yS+6+row*zeilenH;
+    if(Z.wahl===i){c.fillStyle=FB.hi;rund(c,x-3,yb,twr+8,zeilenH-2,6);c.fill()}
+    c.fillStyle=farbe;c.font=spr?fK:fN;c.fillText(txt,x+1,yb+zeilenH-8);
+    if(unsicher||z.korr){c.strokeStyle=farbe;c.lineWidth=1.2;if(unsicher)c.setLineDash([2,2]);c.beginPath();c.moveTo(x+1,yb+zeilenH-4.5);c.lineTo(x+1+twr,yb+zeilenH-4.5);c.stroke();c.setLineDash([])}
+    sylBox.push({i,x:x-4,y:yb,w:twr+10,h:zeilenH,row});
+    // Griff unten (für Ziel-Hinweis)
+    const yg=L.yM+15,zl=zielF[i];
+    c.beginPath();c.arc(x,yg,7.5,0,7);
+    if(zl){c.fillStyle=FB.blau;c.fill()}
+    else if(z.korr){c.fillStyle=FB.gold;c.fill()}
+    else{c.fillStyle=FB.bg;c.fill();c.strokeStyle=unsicher?FB.warn:FB.fg;c.globalAlpha=unsicher?1:.7;c.lineWidth=1.6;c.stroke();c.globalAlpha=1}
+    c.fillStyle=farbe;c.globalAlpha=.5;c.fillRect(Math.round(x),L.yM,1,yg-7.5-L.yM);c.globalAlpha=1;
+    markBox.push({i,x});
+  }
+  // Ziel-Hinweise: Pfeil von der Kante zur Taktlinie
+  for(const k in zielF){
+    const e=zielF[k],xa=xz(e.kante_s),xb=xz(e.ziel_s);
+    if(Math.max(xa,xb)<-60||Math.min(xa,xb)>W+60)continue;
+    c.strokeStyle=FB.blau;c.fillStyle=FB.blau;c.lineWidth=1.5;
+    c.setLineDash([4,3]);c.beginPath();c.moveTo(xb+.5,L.yW);c.lineTo(xb+.5,L.yM+L.mark);c.stroke();c.setLineDash([]);
+    const y=L.yM+L.mark-13;
+    c.beginPath();c.moveTo(xa,y);c.lineTo(xb,y);c.stroke();
+    const dir=xb>=xa?1:-1;c.beginPath();c.moveTo(xb,y);c.lineTo(xb-dir*6,y-4);c.lineTo(xb-dir*6,y+4);c.closePath();c.fill();
+    c.font='600 11px -apple-system,system-ui,sans-serif';
+    const lab=e.ziel_label+' '+msText(e.versatz_ms),lw=c.measureText(lab).width;
+    let lx=dir>0?xb+4:xb-4-lw;if(pxs<60)lx=xb+4;
+    c.fillText(lab,lx,L.yM+L.mark-2);
+  }
+}
+function rund(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
+function zeichneRulMarken(c){
+  rulBox=[];
+  for(const e of E.eintraege){
+    if(e.art!=='notiz'&&e.art!=='bereich')continue;
+    const x=xz(e.zeit_s);if(x<-8||x>W+8)continue;
+    c.fillStyle=FB.gold;c.beginPath();c.arc(x,7,4,0,7);c.fill();
+    rulBox.push({x,art:'eintrag',id:e.id});
+  }
+  for(const a of ANTW){
+    if(a.zeit_s==null)continue;const x=xz(a.zeit_s);if(x<-10||x>W+10)continue;
+    c.fillStyle=FB.blau;rund(c,x-6,1,12,9,3);c.fill();c.beginPath();c.moveTo(x-2,9.5);c.lineTo(x-4,13);c.lineTo(x+2,9.5);c.fill();
+    rulBox.push({x,art:'antwort',id:a.id});
+  }
+}
+function zeichneGriffe(c){
+  for(const k of ['von','bis']){
+    const x=xz(Z.bereich[k]);if(x<-20||x>W+20)continue;
+    c.fillStyle=FB.gold;c.fillRect(Math.round(x)-1,0,2,H);
+    rund(c,x-9,1,18,L.rul-2,5);c.fill();
+    c.fillStyle=FB.bg;c.fillRect(x-3,8,1.5,L.rul-16);c.fillRect(x+1.5,8,1.5,L.rul-16);
+  }
+}
+
+// Übersicht (ganzes Lied)
+function zeichneUeber(){
+  const c=cxU;c.setTransform(DPR,0,0,DPR,0,0);
+  if(!ueberStatisch){
+    const o=document.createElement('canvas');o.width=ue.width;o.height=ue.height;const k=o.getContext('2d');k.setTransform(DPR,0,0,DPR,0,0);
+    k.fillStyle=FB.band1;k.fillRect(0,0,UW,UH);
+    k.font='600 10px -apple-system,system-ui,sans-serif';k.textBaseline='top';
+    for(let i=0;i<ABS.length;i++){const a=ABS[i],b=i+1<ABS.length?ABS[i+1].von_s:DAUER,x0=a.von_s/DAUER*UW,x1=b/DAUER*UW;
+      k.fillStyle=i%2?FB.band2:FB.band1;k.fillRect(x0,0,x1-x0,UH);
+      if(k.measureText(a.kurz).width<x1-x0-4){k.fillStyle=FB.mut;k.fillText(a.kurz,x0+2,2)}}
+    const d=F[Z.fid];
+    if(d){const yc=UH*.6,amp=(UH*.38)/127,cols=Math.round(UW*DPR),cw=UW/cols;k.fillStyle=FB.welle;k.beginPath();
+      for(let q=0;q<cols;q++){const i0=Math.floor(q/cols*DAUER*d.wr),i1=Math.max(i0+1,Math.floor((q+1)/cols*DAUER*d.wr));let mx=0;
+        for(let i=i0;i<i1&&i<d.wn;i++){const a=-d.w[2*i],b=d.w[2*i+1];if(a>mx)mx=a;if(b>mx)mx=b}
+        if(mx>0)k.rect(q*cw,yc-mx*amp,cw,2*mx*amp)}
+      k.fill()}
+    for(const a of AEND){if(a.ganz||a.fassung&&a.fassung!==Z.fid)continue;const x=a.zeit_s/DAUER*UW;k.fillStyle=FB.ok;k.beginPath();k.moveTo(x,UH);k.lineTo(x-3.5,UH-6);k.lineTo(x+3.5,UH-6);k.closePath();k.fill()}
+    ueberStatisch=o;
+  }
+  c.clearRect(0,0,UW,UH);c.drawImage(ueberStatisch,0,0,UW,UH);
+  for(const e of E.eintraege){if(e.art!=='notiz'&&e.art!=='bereich')continue;const x=e.zeit_s/DAUER*UW;c.fillStyle=FB.gold;c.fillRect(x-1,UH-9,2,9)}
+  if(Z.bereich){c.fillStyle=FB.bereich;c.fillRect(Z.bereich.von/DAUER*UW,0,(Z.bereich.bis-Z.bereich.von)/DAUER*UW,UH)}
+  const a=Math.max(0,Z.t0)/DAUER*UW,b=Math.min(DAUER,Z.t0+Z.dur)/DAUER*UW;
+  c.strokeStyle=FB.gold;c.lineWidth=2;c.strokeRect(a+1,1,Math.max(3,b-a-2),UH-2);
+  const xp=Z.pos/DAUER*UW;c.fillStyle=FB.fg;c.fillRect(xp-.75,0,1.5,UH);
+}
+
+// Overlay: Abspielkopf + Geist beim Ziehen
+function pille(c,txt,x,y,farbe){
+  c.font='600 14px -apple-system,system-ui,sans-serif';const w=c.measureText(txt).width+18;
+  const xx=clamp(x-w/2,4,W-w-4),yy=clamp(y,2,H-30);
+  c.fillStyle=farbe;rund(c,xx,yy,w,28,8);c.fill();c.fillStyle='#fff';c.textBaseline='middle';c.fillText(txt,xx+9,yy+14.5);c.textBaseline='alphabetic';
+}
+function zeichneOben(){
+  const c=cxO;c.setTransform(DPR,0,0,DPR,0,0);c.clearRect(0,0,W,H);
+  const x=xz(Z.pos);
+  if(x>=-2&&x<=W+2){c.fillStyle=FB.rot;c.fillRect(x-.75,L.rul,1.5,H-L.rul);c.beginPath();c.moveTo(x-6,L.rul);c.lineTo(x+6,L.rul);c.lineTo(x,L.rul+8);c.closePath();c.fill()}
+  if(!G)return;
+  if(G.art==='silbe-zieht'&&G.ziel){
+    const xg=xz(G.ziel.on);c.fillStyle=FB.gold;c.fillRect(xg-1,L.rul,2,H-L.rul);
+    pille(c,'„'+SIL[G.i].text+'“ → '+rasterNameGrob(G.ziel.on)+(G.ziel.kante?'':' (frei)'),G.x,G.y-74,G.ziel.kante?FB.gold:FB.mut);
+  }else if(G.art==='marke-zieht'&&G.ziel!=null){
+    const xa=xz(G.kante),xb=xz(G.ziel),y=L.yM+15;
+    c.strokeStyle=FB.blau;c.lineWidth=2;c.beginPath();c.moveTo(xa,y);c.lineTo(xb,y);c.stroke();
+    c.fillStyle=FB.blau;c.fillRect(xb-1,L.rul,2,H-L.rul);c.beginPath();c.arc(xb,y,8,0,7);c.fill();
+    pille(c,'soll auf '+rasterName(G.ziel)+'  '+msText(Math.round((G.ziel-G.kante)*1000)),G.x,G.y-74,FB.blau);
+  }else if((G.art==='bereich'||G.art==='rand-zieht')&&Z.bereich){
+    pille(c,bereichName(Z.bereich),G.x,Math.min(G.y-74,L.yW),FB.gold);
+  }
+}
+function rasterNameGrob(t){return tpos(t)+' · '+sek(t)}
+function bereichName(b){return tpos(b.von)+' – '+tpos(b.bis)+' · '+(b.bis-b.von).toFixed(1).replace('.',',')+' s'}
+
+// ---------------- Hauptschleife
+let anker={t:-1,p:0},folgen=true,traeg=null,letzteZeit='';
+function frame(now){
+  rafId=0;let weiter=false;MESS.frames++;
+  if(Z.spielt){posAktualisieren(now);weiter=true}
+  if(traeg){traegSchritt(now);weiter=true}
+  if(G&&G.rand){Z.t0+=G.rand*Z.dur*.014;clampView();ziehNachfuehren();basisDirty=true;weiter=true}
+  if(basisDirty){basisDirty=false;zeichneBasis();chipsMarkieren()}
+  zeichneOben();
+  if(ueberDirty||Z.spielt){ueberDirty=false;zeichneUeber()}
+  zeitAnzeige();
+  if(weiter)anfordern();
+}
+function zeitAnzeige(){
+  const t=tpos(Z.pos)+'|'+mmss(Z.pos)+(Z.spielt&&aud().readyState<3?' lädt':'');
+  if(t===letzteZeit)return;letzteZeit=t;const [a,b]=t.split('|');$('zeit').innerHTML=esc(a)+'<small>'+esc(b)+'</small>';
+}
+function traegSchritt(now){
+  const dt=Math.min(40,now-traeg.last);traeg.last=now;
+  const vor=Z.t0;Z.t0+=traeg.v*dt;traeg.v*=Math.pow(.9935,dt);clampView();basisDirty=true;
+  if(Z.t0===vor||Math.abs(traeg.v)/Z.dur*W<.02)traeg=null;
+}
+
+// ---------------- Audio (HTMLAudioElement, Datei-Wechsel statt Lautstärke – iOS)
+const AUD={};
+function aud(fid=Z.fid,modus=Z.modus){
+  const k=fid+':'+modus;
+  if(!AUD[k]){
+    const f=fass(fid),a=new Audio();a.preload='metadata';a.src=modus==='mix'&&f.mix?f.mix:f.haupt;
+    a.addEventListener('ended',()=>{if(a===aud()){Z.spielt=false;spielKnopf();Z.pos=DAUER;anfordern()}});
+    a.addEventListener('pause',()=>{if(a===aud()&&Z.spielt&&!umschalten){Z.spielt=false;Z.pos=a.currentTime-vs();spielKnopf();anfordern()}});
+    a.addEventListener('error',()=>{if(a===aud())status('Audio fehlt oder lädt nicht ('+(modus==='mix'?'mit Musik':'Gesang')+').','fehler')});
+    AUD[k]=a;
+  }
+  return AUD[k];
+}
+const vs=()=>fass(Z.fid).versatz_s||0;
+let umschalten=false;
+function setzeZeit(a,t){
+  if(a.readyState>=1){try{a.currentTime=t}catch(e){}return}
+  a.addEventListener('loadedmetadata',()=>{try{a.currentTime=t}catch(e){}},{once:true});
+  try{a.currentTime=t}catch(e){}
+}
+let warte=null;   // laufender Sprung {a,t,seit}: solange nicht angekommen, Abspielkopf/Ansicht nicht nachfuehren
+function warteAuf(a,t){warte={a,t,seit:performance.now()}}
+function spieleAb(a,t){
+  warteAuf(a,t);
+  try{a.currentTime=t}catch(e){}
+  if(a.readyState<1){
+    a.muted=true;
+    a.addEventListener('loadedmetadata',()=>{try{a.currentTime=t}catch(e){}a.addEventListener('seeked',()=>{a.muted=false},{once:true});setTimeout(()=>{a.muted=false},700)},{once:true});
+  }
+  anker={t:-1,p:0};
+  const p=a.play();return p&&p.catch?p:Promise.resolve();
+}
+function posAktualisieren(now){
+  const a=aud();
+  if(warte){
+    if(warte.a!==a||a.paused&&!Z.spielt)warte=null;
+    else{
+      const weg=Math.abs(a.currentTime-warte.t);
+      if(a.readyState<1||a.seeking||weg>.35){
+        if(now-warte.seit<1800)return;
+        if(a.readyState>=2&&!a.seeking&&weg>.5)status('Der Server kann nicht springen – bitte die Seite über die Ablage öffnen.','fehler');
+      }
+      warte=null;
+    }
+  }
+  let t=a.currentTime-vs();
+  if(t!==anker.t){anker.t=t;anker.p=now}
+  else if(!a.paused&&a.readyState>=3)t=anker.t+Math.min(.25,(now-anker.p)/1000);
+  const b=Z.bereich;
+  if(Z.schleife&&b&&t>=b.bis&&t<b.bis+1.5){try{a.currentTime=b.von+vs()}catch(e){}t=b.von;anker={t:-1,p:now};MESS.schleifen=(MESS.schleifen||0)+1}
+  Z.pos=t;
+  if(folgen&&!G&&!traeg){const x=xz(t);if(x>W*.9||x<0){Z.t0=t-Z.dur*.1;clampView();basisDirty=true}}
+}
+async function spielen(){
+  if(Z.spielt){pause();return}
+  const b=Z.bereich;
+  if(Z.schleife&&b&&(Z.pos<b.von-.01||Z.pos>=b.bis-.02))Z.pos=b.von;
+  if(Z.pos>=DAUER-.05)Z.pos=0;
+  Z.spielt=true;folgen=true;spielKnopf();
+  const a=aud();
+  for(const k in AUD)if(AUD[k]!==a&&!AUD[k].paused)AUD[k].pause();
+  try{await spieleAb(a,Z.pos+vs())}catch(e){Z.spielt=false;spielKnopf();status('Abspielen ging nicht. Nochmal tippen.','fehler')}
+  zeigeZeit(Z.pos);anfordern();
+}
+function pause(){const a=aud();Z.spielt=false;a.pause();Z.pos=Math.max(0,a.currentTime-vs());spielKnopf();sichernSpaeter();anfordern()}
+function spielKnopf(){
+  $('iSpiel').setAttribute('d',Z.spielt?'M7 5h3.5v14H7zM13.5 5H17v14h-3.5z':'M7 4.5v15l12.5-7.5z');
+  $('bSpiel').setAttribute('aria-label',Z.spielt?'Pause':'Abspielen');
+}
+function wechsle(fid,modus){
+  if(fid===Z.fid&&modus===Z.modus)return;
+  const war=Z.spielt,alt=aud();
+  if(war){Z.pos=Math.max(0,alt.currentTime-vs());umschalten=true;alt.pause();umschalten=false}
+  const fidAlt=Z.fid;Z.fid=fid;Z.modus=modus;
+  if(fid!==fidAlt){ordnung=null;ueberStatisch=null;Z.wahl=null;$('laden').hidden=!!F[fid];ladeFassung(fid).then(()=>{$('laden').hidden=true;basisNeu()}).catch(()=>{$('laden').textContent='Daten für '+fid+' fehlen.'})}
+  const neu=aud();
+  if(war){spieleAb(neu,Z.pos+vs()).catch(()=>{Z.spielt=false;spielKnopf()})}
+  else setzeZeit(neu,Z.pos+vs());
+  schalterZeigen();basisNeu();sichernSpaeter();
+}
+function springe(t,ansicht){
+  Z.pos=clamp(t,0,DAUER);folgen=true;
+  if(Z.spielt){const a=aud();warteAuf(a,Z.pos+vs());try{a.currentTime=Z.pos+vs()}catch(e){}anker={t:-1,p:0}}
+  if(ansicht)zeigeZeit(Z.pos);
+  ueberDirty=true;anfordern();sichernSpaeter();
+}
+function zeigeZeit(t){const x=xz(t);if(x<W*.05||x>W*.92){Z.t0=t-Z.dur*.2;clampView();basisNeu()}}
+
+// ---------------- Gesten
+const P=new Map();let G=null;
+function lokal(e){const r=buehne.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
+function treffer(x,y){
+  const b=Z.bereich;
+  if(y<L.rul){
+    if(b)for(const k of ['von','bis'])if(Math.abs(x-xz(b[k]))<=22)return{art:'rand',kante:k};
+    let best=null,bd=17;for(const r of rulBox){const d=Math.abs(x-r.x);if(d<bd){bd=d;best=r}}
+    return best?{art:best.art,id:best.id}:null;
+  }
+  if(y<L.yW){
+    let best=null,bd=1e9;
+    for(const s of sylBox){const dx=x<s.x?s.x-x:x>s.x+s.w?x-s.x-s.w:0,dy=Math.abs(y-(s.y+s.h/2));const d=dx+(dy>s.h/2?(dy-s.h/2)*.5:0);if(d<bd){bd=d;best=s}}
+    if(best&&bd<=14)return{art:'silbe',i:best.i};
+    let bp=null,bdp=22;for(const q of punktBox){const d=Math.abs(x-q.x);if(d<bdp){bdp=d;bp=q}}
+    return bp?{art:'punkt',i:bp.i}:null;
+  }
+  if(y>=L.yM){let best=null,bd=23;for(const m of markBox){const d=Math.abs(x-m.x);if(d<bd){bd=d;best=m}}if(best)return{art:'marke',i:best.i}}
+  if(b)for(const k of ['von','bis'])if(Math.abs(x-xz(b[k]))<=12)return{art:'rand',kante:k};
+  return null;
+}
+function randFaktor(x){return x<36?-(36-x)/36:x>W-36?(x-W+36)/36:0}
+buehne.addEventListener('pointerdown',e=>{
+  if(e.button>0)return;
+  e.preventDefault();
+  try{buehne.setPointerCapture(e.pointerId)}catch(_){}
+  const p=lokal(e);P.set(e.pointerId,p);traeg=null;
+  if(P.size===2){
+    if(G&&G.lang)clearTimeout(G.lang);
+    if(G&&(G.art==='bereich'||G.art==='rand-zieht'))Z.bereich=G.vorher;
+    const [a,b]=[...P.values()];
+    G={art:'pinch',d0:Math.max(24,Math.hypot(a.x-b.x,a.y-b.y)),dur0:Z.dur,tA:tz((a.x+b.x)/2)};folgen=false;basisNeu();return;
+  }
+  if(P.size>2)return;
+  const h=treffer(p.x,p.y),now=performance.now();
+  G={art:'wartet',h,id:e.pointerId,x0:p.x,y0:p.y,x:p.x,y:p.y,t0v:Z.t0,spur:[[now,p.x]],lang:0};
+  if((!h||h.art==='punkt')&&p.y>=L.rul)G.lang=setTimeout(langDruck,430);
+});
+function langDruck(){
+  if(!G||G.art!=='wartet')return;
+  G.lang=0;G.art='bereich';G.vorher=Z.bereich?{...Z.bereich}:null;G.anker=clamp(tz(G.x0),0,DAUER);
+  Z.bereich={von:G.anker,bis:G.anker+.001};
+  try{navigator.vibrate&&navigator.vibrate(8)}catch(_){}
+  basisNeu();bereichsleiste();
+}
+buehne.addEventListener('pointermove',e=>{
+  if(!P.has(e.pointerId))return;
+  const p=lokal(e);P.set(e.pointerId,p);
+  if(!G)return;
+  if(G.art==='pinch'){
+    if(P.size<2)return;const [a,b]=[...P.values()];
+    const d=Math.max(24,Math.hypot(a.x-b.x,a.y-b.y)),mx=(a.x+b.x)/2;
+    Z.dur=clamp(G.dur0*G.d0/d,DMIN,DMAX);Z.t0=G.tA-mx/W*Z.dur;clampView();basisNeu();return;
+  }
+  if(e.pointerId!==G.id)return;
+  G.x=p.x;G.y=p.y;const now=performance.now();G.spur.push([now,p.x]);while(G.spur.length>2&&now-G.spur[0][0]>100)G.spur.shift();
+  if(G.art==='wartet'&&Math.hypot(p.x-G.x0,p.y-G.y0)>8){
+    if(G.lang){clearTimeout(G.lang);G.lang=0}
+    const h=G.h;
+    if(h&&h.art==='silbe')startSilbe();
+    else if(h&&h.art==='marke')startMarke();
+    else if(h&&h.art==='rand'){G.art='rand-zieht';G.vorher={...Z.bereich}}
+    else{G.art='schiebt';folgen=false}
+  }
+  ziehNachfuehren();
+});
+function ziehNachfuehren(){
+  if(!G)return;const x=G.x;
+  switch(G.art){
+    case 'schiebt':Z.t0=G.t0v-(x-G.x0)/W*Z.dur;clampView();basisNeu();break;
+    case 'bereich':{const t=clamp(tz(x),0,DAUER);Z.bereich={von:Math.min(G.anker,t),bis:Math.max(G.anker,t)+.001};G.rand=randFaktor(x);basisNeu();bereichsleiste();break}
+    case 'rand-zieht':{const t=clamp(tz(x),0,DAUER),b=Z.bereich;if(G.h.kante==='von')b.von=Math.min(t,b.bis-.05);else b.bis=Math.max(t,b.von+.05);G.rand=randFaktor(x);basisNeu();bereichsleiste();break}
+    case 'silbe-zieht':silbeZiehen();break;
+    case 'marke-zieht':markeZiehen();break;
+  }
+}
+function ende(e,abbruch){
+  if(!P.has(e.pointerId))return;
+  P.delete(e.pointerId);
+  if(!G)return;
+  if(G.art==='pinch'||G.art==='nichts'){if(P.size===0)G=null;else G={art:'nichts'};sichernSpaeter();anfordern();return}
+  if(e.pointerId!==G.id)return;
+  if(G.lang)clearTimeout(G.lang);
+  const g=G;G=null;
+  if(abbruch){if(g.art==='bereich'||g.art==='rand-zieht')Z.bereich=g.vorher;basisNeu();bereichsleiste();return}
+  switch(g.art){
+    case 'wartet':tippen(g);break;
+    case 'schiebt':{const s=g.spur,a=s[0],b=s[s.length-1],dt=b[0]-a[0];if(dt>0){const v=(b[1]-a[1])/dt;if(Math.abs(v)>.12)traeg={v:-v/W*Z.dur,last:performance.now()}}break}
+    case 'bereich':if(Z.bereich.bis-Z.bereich.von<.08)Z.bereich=g.vorher;else status('Bereich gewählt: '+bereichName(Z.bereich));G=null;bereichsleiste(true);break;
+    case 'rand-zieht':G=null;bereichsleiste(true);break;
+    case 'silbe-zieht':silbeAblegen(g);break;
+    case 'marke-zieht':markeAblegen(g);break;
+  }
+  basisNeu();sichernSpaeter();
+}
+buehne.addEventListener('pointerup',e=>ende(e,false));
+buehne.addEventListener('pointercancel',e=>ende(e,true));
+buehne.addEventListener('contextmenu',e=>e.preventDefault());
+// kein Geister-Klick nach dem Antippen (sonst schließt der Schleier das Blatt sofort wieder)
+buehne.addEventListener('touchend',e=>{if(e.cancelable)e.preventDefault()},{passive:false});
+document.addEventListener('gesturestart',e=>e.preventDefault());
+function tippen(g){
+  const h=g.h;
+  if(h&&(h.art==='silbe'||h.art==='marke')){Z.wahl=h.i;basisNeu();oeffneBlatt({art:'silbe',silbe:h.i});return}
+  if(h&&h.art==='punkt'){const z=sz(Z.fid,h.i);if(z){Z.dur=clamp(3,DMIN,DMAX);Z.t0=z.on-1.2;clampView();Z.wahl=h.i;folgen=false;basisNeu();sichernSpaeter();status('Silbe '+silbeLabel(h.i)+': näher gezoomt, jetzt antippen.')}return}
+  if(h&&h.art==='eintrag'){const e=E.eintraege.find(x=>x.id===h.id);if(e)oeffneEintrag(e);return}
+  if(h&&h.art==='antwort'){zeigeTab('N');const el=document.querySelector('[data-antwort="'+h.id+'"]');if(el)el.scrollIntoView({behavior:'smooth',block:'center'});return}
+  if(h&&h.art==='rand')return;
+  if(Z.wahl!=null){Z.wahl=null;basisNeu()}
+  springe(tz(g.x0));
+}
+// Silbe auf eine andere Kante schieben (Zuordnung korrigieren)
+function startSilbe(){const i=G.h.i,z=sz(Z.fid,i);G.art='silbe-zieht';G.i=i;G.alt=z.on;G.off=G.x0-xz(z.on);Z.wahl=i;silbeZiehen();basisNeu()}
+function silbeZiehen(){
+  const d=F[Z.fid],xl=G.x-G.off,s=d.silben[G.i];
+  let best=null,bd=24;
+  const a=suche(d.kt,tz(xl-26)),b=suche(d.kt,tz(xl+26));
+  for(let k=a;k<b;k++){const dx=Math.abs(xz(d.kt[k])-xl);if(dx<bd){bd=dx;best={on:d.kanten[k][0],pk:d.kanten[k][1],kante:true}}}
+  const dx0=Math.abs(xz(s.onset_s)-xl);if(dx0<=bd&&dx0<24)best={on:s.onset_s,pk:s.peak_s,kante:true};
+  G.ziel=best||{on:tz(xl),pk:tz(xl)+(s.peak_s-s.onset_s),kante:false};
+  G.rand=randFaktor(G.x);basisDirty=true;anfordern();
+}
+function silbeAblegen(g){
+  if(!g.ziel)return;
+  const i=g.i,s=F[Z.fid].silben[i],fid=Z.fid;
+  if(Math.abs(xz(g.ziel.on)-xz(g.alt))<2){status('Nicht verschoben.');return}
+  aendern(()=>{
+    const alt=E.eintraege.find(e=>e.art==='zuordnung'&&e.fassung===fid&&e.silbe===i);
+    if(Math.abs(g.ziel.on-s.onset_s)<.0015){if(alt)entferne(alt);return}
+    upsert(e=>e.art==='zuordnung'&&e.fassung===fid&&e.silbe===i,{art:'zuordnung',fassung:fid,silbe:i,text:SIL[i].text,wort:WOE[SIL[i].wort].text,
+      von_s:s.onset_s,nach_s:+g.ziel.on.toFixed(3),nach_spitze_s:+g.ziel.pk.toFixed(3),an_kante:g.ziel.kante,zeit_s:+g.ziel.on.toFixed(3)});
+  },'„'+SIL[i].text+'“ gehört jetzt zu '+rasterNameGrob(g.ziel.on)+'.');
+}
+// Griff auf eine Taktlinie ziehen (Ziel-Hinweis)
+function startMarke(){const i=G.h.i,z=sz(Z.fid,i);G.art='marke-zieht';G.i=i;G.kante=z.on;G.spitze=z.pk;G.off=G.x0-xz(z.on);Z.wahl=i;markeZiehen();basisNeu()}
+function markeZiehen(){
+  const tf=tz(G.x-G.off),st=SCHLAG/Z.raster;
+  G.ziel=clamp(T1+Math.round((tf-T1)/st)*st,0,DAUER);G.rand=randFaktor(G.x);anfordern();
+}
+function markeAblegen(g){
+  if(g.ziel==null||Math.hypot(g.x-g.x0,g.y-g.y0)<12){status('Kein Ziel gesetzt.');return}
+  const i=g.i,fid=Z.fid,ms=Math.round((g.ziel-g.kante)*1000);
+  aendern(()=>{upsert(e=>e.art==='ziel'&&e.fassung===fid&&e.silbe===i,{art:'ziel',fassung:fid,silbe:i,text:SIL[i].text,wort:WOE[SIL[i].wort].text,
+    kante_s:+g.kante.toFixed(3),spitze_s:+g.spitze.toFixed(3),ziel_s:+g.ziel.toFixed(4),ziel_label:rasterName(g.ziel),raster:RASTERNAME[Z.raster],
+    versatz_ms:ms,versatz_spitze_ms:Math.round((g.ziel-g.spitze)*1000),zeit_s:+g.kante.toFixed(3)})},
+    '„'+SIL[i].text+'“ soll auf '+rasterName(g.ziel)+' ('+msText(ms)+').');
+}
+
+// Übersicht: antippen/ziehen verschiebt den Ausschnitt
+let ueZug=null;
+ue.addEventListener('pointerdown',e=>{e.preventDefault();try{ue.setPointerCapture(e.pointerId)}catch(_){}ueZug=e.pointerId;ueSetze(e);traeg=null;folgen=false});
+ue.addEventListener('pointermove',e=>{if(ueZug===e.pointerId)ueSetze(e)});
+const ueEnde=e=>{if(ueZug===e.pointerId){ueZug=null;sichernSpaeter()}};
+ue.addEventListener('pointerup',ueEnde);ue.addEventListener('pointercancel',ueEnde);
+function ueSetze(e){const r=ue.getBoundingClientRect(),t=(e.clientX-r.left)/r.width*DAUER;Z.t0=t-Z.dur/2;clampView();basisNeu()}
+
+// ---------------- Bedienelemente
+function zoom(f){const t=(Z.pos>=Z.t0&&Z.pos<=Z.t0+Z.dur)?Z.pos:Z.t0+Z.dur/2,xa=xz(t)/W;Z.dur=clamp(Z.dur*f,DMIN,DMAX);Z.t0=t-xa*Z.dur;clampView();basisNeu();sichernSpaeter()}
+$('bMinus').onclick=()=>zoom(2);$('bPlus').onclick=()=>zoom(.5);
+$('bSpiel').onclick=spielen;
+$('bSchleife').onclick=()=>{Z.schleife=!Z.schleife;$('bSchleife').setAttribute('aria-pressed',Z.schleife);status(Z.schleife?'Bereich wird wiederholt.':'Wiederholen aus.')};
+$('bZurueck').onclick=()=>{if(!verlauf.length){status('Nichts zum Zurücknehmen.');return}E.eintraege=JSON.parse(verlauf.pop());nachAenderung();status('Zurückgenommen.')};
+$('bNotiz').onclick=()=>{
+  if(Z.bereich&&Z.pos>=Z.bereich.von-.05&&Z.pos<=Z.bereich.bis+.05)oeffneBlatt({art:'bereich'});
+  else oeffneBlatt({art:'stelle',zeit:Z.pos});
+};
+function chipsZeigen(){
+  $('chips').innerHTML=ABS.map((a,i)=>'<button class="chip" data-a="'+i+'">'+esc(a.chip)+'</button>').join('');
+}
+let chipAn=-1;
+function chipsMarkieren(){
+  const i=abschnittBei(Z.t0+Z.dur*.35);if(i===chipAn)return;chipAn=i;
+  for(const b of $('chips').children)b.classList.toggle('an',+b.dataset.a===i);
+}
+$('chips').addEventListener('click',e=>{
+  const b=e.target.closest('.chip');if(!b)return;const a=ABS[+b.dataset.a];
+  if(Z.dur>18||Z.dur<3)Z.dur=W>520?14:8;
+  Z.t0=a.auftakt_s-.4;clampView();springe(a.auftakt_s);basisNeu();
+});
+function schalterZeigen(){
+  $('segFassung').innerHTML=FASS.map(f=>'<button data-f="'+esc(f.id)+'" aria-pressed="'+(f.id===Z.fid)+'">'+esc(f.name)+'</button>').join('');
+  for(const b of $('segModus').children){b.setAttribute('aria-pressed',b.dataset.m===Z.modus);b.disabled=b.dataset.m==='mix'&&!fass(Z.fid).mix}
+  for(const b of $('segRaster').children)b.setAttribute('aria-pressed',+b.dataset.r===Z.raster);
+}
+$('segFassung').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const f=fass(b.dataset.f);wechsle(f.id,Z.modus==='mix'&&!f.mix?'haupt':Z.modus);status('Fassung '+f.name+'.')});
+$('segModus').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;wechsle(Z.fid,b.dataset.m)});
+$('segRaster').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;Z.raster=+b.dataset.r;schalterZeigen();sichernSpaeter();status('Griffe rasten auf '+RASTERNAME[Z.raster]+' ein.')});
+function bereichsleiste(zeigen){
+  const b=Z.bereich,l=$('bereichsleiste'),neu=!!b&&l.hidden;l.hidden=!b;
+  $('steuer').classList.toggle('mitBereich',!!b);
+  if(b)$('bereichText').textContent=bereichName(b);
+  if(b&&zeigen!==false&&(zeigen||neu)&&!G)leisteSichtbar();
+}
+function leisteSichtbar(){
+  // Die Leiste darf nicht unter der festen Senden-Leiste (hochkant) bzw. ausserhalb der Steuer-Spalte (quer) liegen.
+  requestAnimationFrame(()=>{try{
+    const l=$('bereichsleiste'),s=$('sende'),r=l.getBoundingClientRect();
+    if(getComputedStyle(s).position==='fixed'){
+      const oben=s.getBoundingClientRect().top-8;
+      if(r.bottom>oben)window.scrollBy({top:r.bottom-oben,behavior:'smooth'});
+    }else{
+      const st=$('steuer'),sr=st.getBoundingClientRect(),unten=s.getBoundingClientRect().top-6;
+      if(r.bottom>unten)st.scrollBy({top:r.bottom-unten,behavior:'smooth'});
+      else if(r.top<sr.top)st.scrollBy({top:r.top-sr.top-4,behavior:'smooth'});
+    }
+  }catch(e){}});
+}
+$('bBereichWeg').onclick=()=>{Z.bereich=null;bereichsleiste();basisNeu();sichernSpaeter()};
+$('bBereichTeil').onclick=()=>{
+  const t=Z.bereich?(Z.bereich.von+Z.bereich.bis)/2:Z.pos,a=ABS[abschnittBei(t)],i=ABS.indexOf(a);
+  const bis=i+1<ABS.length?ABS[i+1].von_s:DAUER;Z.bereich={von:a.auftakt_s,bis};
+  Z.dur=clamp((bis-a.auftakt_s)*1.08,DMIN,DMAX);Z.t0=a.auftakt_s-(bis-a.auftakt_s)*.04;clampView();bereichsleiste(true);springe(a.auftakt_s);basisNeu();status('Bereich: '+a.name+'.');
+};
+$('bBereichNotiz').onclick=()=>oeffneBlatt({art:'bereich'});
+$('bBereichMerken').onclick=()=>{
+  const b=Z.bereich;if(!b)return;
+  aendern(()=>upsert(e=>e.art==='bereich'&&Math.abs(e.von_s-b.von)<.01&&Math.abs(e.bis_s-b.bis)<.01,{art:'bereich',fassung:Z.fid,von_s:+b.von.toFixed(3),bis_s:+b.bis.toFixed(3),zeit_s:+b.von.toFixed(3),label:bereichName(b)}),'Bereich gemerkt.');
+};
+
+// ---------------- Notiz-Blatt
+let B=null,blattSeit=0;
+const BEZUG={silbe:'Silbe',wort:'Wort',zeile:'Zeile',abschnitt:'Teil',bereich:'Bereich',stelle:'Stelle'};
+function bezugDaten(bez){
+  const i=B.silbe,s=i!=null?SIL[i]:null;
+  switch(bez){
+    case 'silbe':{const z=sz(Z.fid,i);return{ref:{silbe:i},zeit_s:z?z.on:SIL[i].ziel_s,label:'Silbe '+silbeLabel(i)}}
+    case 'wort':{const w=WOE[s.wort],z=sz(Z.fid,w.silben[0]);return{ref:{wort:s.wort},zeit_s:z?z.on:0,label:'Wort „'+w.text.replace(/[.,?!]+$/,'')+'“'}}
+    case 'zeile':{const li=s.zeile,z=sz(Z.fid,WOE[ZEI[li].woerter[0]].silben[0]);return{ref:{zeile:li},zeit_s:z?z.on:0,label:ABS[ZEI[li].abschnitt].name+', Zeile '+zeileNr(li)+': „'+zeileText(li)+'“'}}
+    case 'abschnitt':{const a=B.abschnitt!=null?B.abschnitt:s.abschnitt;return{ref:{abschnitt:a},zeit_s:ABS[a].auftakt_s,label:'Teil '+ABS[a].name}}
+    case 'bereich':{const b=B.bereich||Z.bereich;return{ref:{von_s:+b.von.toFixed(3),bis_s:+b.bis.toFixed(3)},zeit_s:+b.von.toFixed(3),label:'Bereich '+bereichName(b)}}
+    case 'stelle':return{ref:{zeit_s:+B.zeit.toFixed(3)},zeit_s:+B.zeit.toFixed(3),label:'Stelle '+rasterNameGrob(B.zeit)};
+  }
+}
+function gleicheRef(a,b){return JSON.stringify(a)===JSON.stringify(b)}
+function oeffneBlatt(ctx){
+  B=Object.assign({},ctx);
+  if(B.art==='bereich'&&!B.bereich&&Z.bereich)B.bereich={...Z.bereich};
+  B.optionen=B.art==='silbe'?['silbe','wort','zeile','abschnitt'].concat(Z.bereich?['bereich']:[]):B.art==='bereich'?['bereich','abschnitt']:B.art==='abschnitt'?['abschnitt']:['stelle','abschnitt'];
+  if(B.art==='bereich'||B.art==='stelle')B.abschnitt=abschnittBei(B.art==='bereich'?B.bereich.von:B.zeit);
+  if(B.art==='abschnitt')B.abschnitt=B.abschnitt||0;
+  B.bezug=B.bezug||B.optionen[0];
+  blattBezug(B.bezug,true);
+  $('schleier').hidden=false;$('blatt').hidden=false;blattSeit=performance.now();
+}
+function blattBezug(bez,erst){
+  if(!erst)B.text=$('notizText').value;
+  B.bezug=bez;const d=bezugDaten(bez);B.daten=d;
+  const ex=E.eintraege.find(e=>e.art==='notiz'&&e.bezug===bez&&gleicheRef(e.ref,d.ref)&&(B.eintragId?e.id===B.eintragId:e.fassung===Z.fid));
+  B.vorhanden=ex||null;
+  $('bezuege').innerHTML=B.optionen.map(o=>'<button data-b="'+o+'" aria-pressed="'+(o===bez)+'">'+BEZUG[o]+'</button>').join('');
+  $('blattTitel').textContent=ex?'Notiz ändern':'Notiz';
+  let info=d.label;
+  if(B.art==='silbe'){const z=sz(Z.fid,B.silbe),s=SIL[B.silbe];
+    info+=' · '+silbeOrt(B.silbe)+'<br>Einsatz '+rasterNameGrob(z.on)+' · Spitze '+sek(z.pk)+' · '+(z.korr?'von dir zugeordnet':(s.art==='gesprochen'?'gesprochen, ':'')+'sicher '+Math.round(z.conf*100)+' %');
+    const zl=ZIEL[Z.fid]&&ZIEL[Z.fid][B.silbe];if(zl)info+='<br>Ziel: '+esc(zl.ziel_label)+' ('+msText(zl.versatz_ms)+')';
+    $('blattSilbe').hidden=false;$('bZuordnungWeg').hidden=!z.korr;$('bZielWeg').hidden=!zl;
+  }else $('blattSilbe').hidden=true;
+  $('blattInfo').innerHTML=info.split('<br>').map(esc).join('<br>');
+  $('notizText').value=ex?ex.text:(erst?'':B.text||'');
+  $('bNotizWeg').hidden=!ex;
+}
+$('bezuege').addEventListener('click',e=>{const b=e.target.closest('button');if(b)blattBezug(b.dataset.b,false)});
+function blattZu(){$('blatt').hidden=true;$('schleier').hidden=true;$('notizText').blur();B=null}
+$('schleier').onclick=()=>{if(performance.now()-blattSeit<450)return;if($('notizText').value.trim()&&!confirm('Notiz verwerfen?'))return;blattZu()};
+$('bAbbrechen').onclick=blattZu;
+$('bSpeichern').onclick=()=>{
+  const t=$('notizText').value.trim(),d=B.daten,bez=B.bezug,ex=B.vorhanden;
+  if(!t){if(ex){aendern(()=>entferne(ex),'Notiz gelöscht.')}blattZu();return}
+  aendern(()=>{
+    if(ex)Object.assign(ex,{text:t,geaendert:jetzt(),gesendet:null});
+    else E.eintraege.push({id:uid(),art:'notiz',fassung:Z.fid,bezug:bez,ref:d.ref,zeit_s:+d.zeit_s.toFixed(3),label:d.label,text:t,erstellt:jetzt(),gesendet:null});
+  },'Notiz gespeichert. Noch nicht gesendet.');
+  blattZu();
+};
+$('bNotizWeg').onclick=()=>{const ex=B.vorhanden;if(ex)aendern(()=>entferne(ex),'Notiz gelöscht.');blattZu()};
+$('bHoeren').onclick=()=>{const z=sz(Z.fid,B.silbe);blattZu();springe(Math.max(0,z.on-1.0),true);if(!Z.spielt)spielen()};
+$('bZuordnungWeg').onclick=()=>{const i=B.silbe,e=KORR[Z.fid]&&KORR[Z.fid][i];if(e)aendern(()=>entferne(e),'Zuordnung zurückgesetzt.');blattZu()};
+$('bZielWeg').onclick=()=>{const i=B.silbe,e=ZIEL[Z.fid]&&ZIEL[Z.fid][i];if(e)aendern(()=>entferne(e),'Ziel gelöscht.');blattZu()};
+function oeffneEintrag(e){
+  if(e.art==='notiz'){
+    const ctx=e.bezug==='bereich'?{art:'bereich',bereich:{von:e.ref.von_s,bis:e.ref.bis_s}}:e.bezug==='stelle'?{art:'stelle',zeit:e.ref.zeit_s}:e.bezug==='abschnitt'&&e.ref.abschnitt!=null&&e.ref.silbe==null?{art:'abschnitt',abschnitt:e.ref.abschnitt}:{art:'silbe',silbe:e.ref.silbe!=null?e.ref.silbe:e.ref.wort!=null?WOE[e.ref.wort].silben[0]:e.ref.zeile!=null?WOE[ZEI[e.ref.zeile].woerter[0]].silben[0]:null};
+    if(ctx.art==='silbe'&&ctx.silbe==null){ctx.art='abschnitt';ctx.abschnitt=e.ref.abschnitt}
+    ctx.bezug=e.bezug;ctx.eintragId=e.id;
+    springe(e.zeit_s,true);
+    if(ctx.art==='silbe'){Z.wahl=ctx.silbe;basisNeu()}
+    oeffneBlatt(ctx);
+    if(ctx.art==='abschnitt'){B.optionen=['abschnitt'];blattBezug('abschnitt',true)}
+  }else{springe(e.zeit_s,true)}
+}
+
+// ---------------- Listen
+function eintragText(e){
+  switch(e.art){
+    case 'notiz':return{kopf:e.label,text:e.text};
+    case 'zuordnung':return{kopf:'Zuordnung „'+e.text+'“',text:'Gehört zur Kante bei '+rasterNameGrob(e.nach_s)+' statt '+sek(e.von_s)+(e.an_kante?'':' (frei gesetzt)')+'.'};
+    case 'ziel':return{kopf:'Ziel „'+e.text+'“',text:'Kante '+sek(e.kante_s)+' soll auf '+e.ziel_label+' ('+msText(e.versatz_ms)+', Raster '+e.raster+').'};
+    case 'bereich':return{kopf:'Bereich '+(e.label||''),text:'Gemerkt.'};
+  }
+  return null;
+}
+function listen(){
+  const zeig=E.eintraege.filter(e=>e.art!=='geloescht').sort((a,b)=>a.zeit_s-b.zeit_s);
+  const antZu={};for(const a of ANTW)if(a.zu)(antZu[a.zu]||(antZu[a.zu]=[])).push(a);
+  let h='';
+  for(const e of zeig){
+    const t=eintragText(e);if(!t)continue;
+    h+='<div class="karte" data-id="'+esc(e.id)+'"><div class="kopf"><b>'+esc(tpos(e.zeit_s))+'</b><span>'+esc(t.kopf)+'</span>'+
+      (FASS.length>1?'<span class="marke">'+esc(e.fassung)+'</span>':'')+
+      '<span class="marke '+(e.gesendet?'gesendet':'neu')+'">'+(e.gesendet?'gesendet':'neu')+'</span></div>'+
+      '<div class="text">'+esc(t.text)+'</div>';
+    for(const a of antZu[e.id]||[])h+='<div class="antwort" data-antwort="'+esc(a.id)+'"><small>Claude'+(a.datum?' · '+esc(a.datum):'')+'</small>'+esc(a.text)+'</div>';
+    h+='<div class="knoepfe"><button data-tu="hin">Hin</button>'+(e.art==='notiz'?'<button data-tu="aendern">Ändern</button>':'')+'<button data-tu="weg">Löschen</button></div></div>';
+  }
+  const ids=new Set(E.eintraege.map(e=>e.id));
+  const frei=ANTW.filter(a=>!a.zu||!ids.has(a.zu)).sort((a,b)=>(a.zeit_s||0)-(b.zeit_s||0));
+  for(const a of frei){
+    h+='<div class="karte" data-antwort="'+esc(a.id)+'"><div class="kopf"><b>'+esc(a.zeit_s!=null?tpos(a.zeit_s):'')+'</b><span>'+esc(a.ort||'Deine Notiz')+'</span>'+(a.fassung&&FASS.length>1?'<span class="marke">'+esc(a.fassung)+'</span>':'')+'</div>'+
+      (a.frage?'<div class="text">'+esc(a.frage)+'</div>':'')+'<div class="antwort"><small>Claude'+(a.datum?' · '+esc(a.datum):'')+'</small>'+esc(a.text)+'</div>'+
+      (a.zeit_s!=null?'<div class="knoepfe"><button data-hin="'+a.zeit_s+'">Hin</button></div>':'')+'</div>';
+  }
+  $('listeN').innerHTML=h||'<p class="leer">Noch keine Notizen. Silbe antippen oder lange drücken für einen Bereich.</p>';
+  $('anzN').textContent=zeig.length?' '+zeig.length:'';
+  const ae=AEND.slice().sort((a,b)=>(a.fassung===Z.fid?0:1)-(b.fassung===Z.fid?0:1)||(a.ganz?1:0)-(b.ganz?1:0)||a.zeit_s-b.zeit_s);
+  $('listeA').innerHTML=ae.length?ae.map(a=>'<div class="zeile">'+(a.ganz?'<span class="wann">ganzes<br>Lied</span>':'<button data-hin="'+a.zeit_s+'"'+(a.bis_s?' data-bis="'+a.bis_s+'"':'')+'>Hin</button><span class="wann">'+esc(tpos(a.zeit_s))+'<br><small>'+esc(mmss(a.zeit_s))+'</small></span>')+'<span class="was">'+esc(a.was)+(a.fassung&&FASS.length>1?' <span class="marke">'+esc(a.fassung)+'</span>':'')+'</span></div>').join(''):'<p class="leer">Noch keine Liste der Änderungen.</p>';
+  $('anzA').textContent=ae.length?' '+ae.length:'';
+}
+$('listeN').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.hin!=null){springe(+b.dataset.hin,true);buehne.scrollIntoView({behavior:'smooth',block:'center'});return}
+  const k=b.closest('.karte'),en=k&&E.eintraege.find(x=>x.id===k.dataset.id);if(!en)return;
+  if(b.dataset.tu==='hin'){springe(en.zeit_s,true);if(en.art!=='notiz'&&en.silbe!=null){Z.wahl=en.silbe;basisNeu()}buehne.scrollIntoView({behavior:'smooth',block:'center'})}
+  else if(b.dataset.tu==='aendern')oeffneEintrag(en);
+  else if(b.dataset.tu==='weg')aendern(()=>entferne(en),'Gelöscht. Mit Rückgängig zurückholen.');
+});
+$('listeA').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b||b.dataset.hin==null)return;
+  const t=+b.dataset.hin;
+  if(b.dataset.bis){const bis=+b.dataset.bis;Z.bereich={von:t,bis};bereichsleiste(true);if(bis-t>Z.dur*.9){Z.dur=clamp((bis-t)*1.1,DMIN,DMAX)}}
+  Z.t0=t-Z.dur*.15;clampView();springe(t);basisNeu();buehne.scrollIntoView({behavior:'smooth',block:'center'});
+});
+function zeigeTab(t){Z.tab=t;for(const [k,id] of [['N','tabN'],['A','tabA'],['H','tabH']]){$(id).setAttribute('aria-selected',k===t);$('liste'+k).hidden=k!==t}sichernSpaeter()}
+$('tabN').onclick=()=>zeigeTab('N');$('tabA').onclick=()=>zeigeTab('A');$('tabH').onclick=()=>zeigeTab('H');
+
+// ---------------- Status + Senden
+let statusUhr=0;
+function status(t,art){
+  const s=$('sendeStatus');s.textContent=t;s.className=art||'';
+  clearTimeout(statusUhr);if(art!=='fehler')statusUhr=setTimeout(sendeZustand,3500);
+}
+function offen(){return E.eintraege.filter(e=>!e.gesendet)}
+function sendeZustand(){
+  clearTimeout(statusUhr);
+  const n=offen().length,s=$('sendeStatus');s.className='';
+  s.textContent=!speicherOk?'Achtung: Entwurf kann hier nicht gespeichert werden.':n?n+(n===1?' Eintrag':' Einträge')+' noch nicht gesendet.':E.eintraege.length?'Alles gesendet.':'Noch nichts zu senden.';
+  if(!speicherOk)s.className='fehler';
+  $('bSenden').textContent=n?'Senden ('+n+')':'Senden';
+}
+function textFassung(liste){
+  return liste.map(e=>{const t=eintragText(e);if(!t)return '['+e.fassung+'] gelöscht: '+e.ziel_art+' '+e.ziel_id;return '['+e.fassung+'] '+tpos(e.zeit_s)+' · '+t.kopf+': '+t.text}).join('\n');
+}
+function bauZeilen(liste,stempel){
+  const nach={};for(const e of liste)(nach[e.fassung]||(nach[e.fassung]=[])).push(e);
+  const geraet={breite:innerWidth,hoehe:innerHeight,dpr:window.devicePixelRatio||1,quer:innerWidth>innerHeight};
+  return Object.keys(nach).map(fid=>{const es=nach[fid];return{lied:LIED.lied,fassung:fid,daten:{seite:'gesang-werkstatt',seite_stand:LIED.gebaut,gesendet_um:stempel,geraet,
+    notizen:es.filter(e=>e.art==='notiz'),korrekturen:es.filter(e=>e.art==='zuordnung'),hinweise:es.filter(e=>e.art==='ziel'),
+    bereiche:es.filter(e=>e.art==='bereich').concat(Z.bereich?[{art:'aktueller_bereich',von_s:+Z.bereich.von.toFixed(3),bis_s:+Z.bereich.bis.toFixed(3),label:bereichName(Z.bereich)}]:[]),
+    geloescht:es.filter(e=>e.art==='geloescht'),text:textFassung(es)}}});
+}
+let unterwegs=null;
+async function senden(){
+  if(unterwegs)return;
+  const liste=offen();
+  if(!liste.length){status('Alles schon gesendet.');return}
+  const stempel=jetzt(),schnapp=new Map(liste.map(e=>[e.id,JSON.stringify(e)]));
+  const body=JSON.stringify(bauZeilen(liste,stempel));
+  sichern();
+  $('bSenden').disabled=true;status('Wird gesendet …');
+  unterwegs=(async()=>{
+    if(navigator.onLine===false)return{ok:false,grund:'kein Netz'};
+    const ab=new AbortController(),uhr=setTimeout(()=>ab.abort(),10000);
+    try{
+      const r=await fetch(MELDUNG_URL,{method:'POST',signal:ab.signal,headers:{apikey:MELDUNG_KEY,Authorization:'Bearer '+MELDUNG_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},body});
+      return r.ok?{ok:true}:{ok:false,grund:'Fehler '+r.status};
+    }catch(e){return{ok:false,grund:e.name==='AbortError'?'keine Antwort':'kein Netz'}}
+    finally{clearTimeout(uhr)}
+  })();
+  const erg=await unterwegs;unterwegs=null;$('bSenden').disabled=false;
+  if(erg.ok){
+    const weg=new Set();
+    for(const e of E.eintraege)if(schnapp.get(e.id)===JSON.stringify(e)){if(e.art==='geloescht')weg.add(e.id);else e.gesendet=stempel}
+    E.eintraege=E.eintraege.filter(e=>!weg.has(e.id));
+    sichern();listen();sendeZustand();$('bKopie').hidden=true;
+    status('Angekommen. '+liste.length+(liste.length===1?' Eintrag':' Einträge')+' an Claude gesendet.','gut');
+  }else{
+    status('Senden ging nicht ('+erg.grund+'). Alles bleibt hier gespeichert – später nochmal tippen oder Text kopieren.','fehler');
+    $('bKopie').hidden=false;
+  }
+}
+$('bSenden').onclick=senden;
+$('bKopie').onclick=async()=>{
+  const t='The Wall – Gesang-Werkstatt\n'+textFassung(offen().length?offen():E.eintraege);
+  let ok=false;try{await navigator.clipboard.writeText(t);ok=true}catch(e){}
+  if(!ok){const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{ok=document.execCommand('copy')}catch(e){}ta.remove()}
+  status(ok?'Text kopiert. Bitte an Claude schicken.':'Kopieren ging nicht.',ok?'gut':'fehler');
+};
+
+// ---------------- Start
+addEventListener('pagehide',sichern);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)sichern()});
+addEventListener('keydown',e=>{if(e.code==='Space'&&!/TEXTAREA|INPUT|BUTTON/.test(document.activeElement.tagName)){e.preventDefault();spielen()}});
+try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',farben)}catch(e){}
+chipsZeigen();schalterZeigen();spielKnopf();$('bSchleife').setAttribute('aria-pressed',Z.schleife);bereichsleiste(false);
+baueMaps();farben();groesse();listen();sendeZustand();zeigeTab(Z.tab);
+new ResizeObserver(()=>groesse()).observe(buehne);
+addEventListener('resize',()=>groesse());
+ladeFassung(Z.fid).then(()=>{$('laden').hidden=true;basisNeu();performance.mark('welle-gezeichnet')}).catch(()=>{$('laden').textContent='Wellenform konnte nicht laden.'});
+ladeListen();
+window.__ws={Z,F,get E(){return E},MESS,LIED,aud,sz,silben:()=>sylBox,marken:()=>markBox,xz,tz,L:()=>L};
+</script>
+</body>
+</html>
