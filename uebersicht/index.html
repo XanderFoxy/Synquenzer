@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f6f4fb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#13111c" media="(prefers-color-scheme: dark)">
+<title>Alle Apps</title>
+<meta name="description" content="Alle Apps und Seiten an einem Ort – mit Version, kurzer Erklärung und den Wegen im Synquenzer.">
+<meta name="apple-mobile-web-app-title" content="Alle Apps">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='2' width='13' height='13' rx='3' fill='%238b5cf6'/%3E%3Crect x='17' y='2' width='13' height='13' rx='3' fill='%2306b6d4'/%3E%3Crect x='2' y='17' width='13' height='13' rx='3' fill='%23f97316'/%3E%3Crect x='17' y='17' width='13' height='13' rx='3' fill='%2322c55e'/%3E%3C/svg%3E">
+<style>
+/* Übersicht – eine Datei, kein Framework. Farben als Tokens; dunkel über prefers-color-scheme oder den Knopf oben (data-theme). */
+:root {
+  --bg: #f6f4fb; --fl: #ffffff; --tx: #1d1a29; --tx2: #57526b; --rand: #e2ddef; --akz: #6a45dc; --akz-tx: #ffffff;
+  --neu: #0f7a43; --neu-bg: #dcf5e6; --alt-bg: #ecebf2; --schatten: 0 1px 2px rgb(30 20 60 / 6%), 0 6px 18px rgb(30 20 60 / 7%);
+  /* Kachel-Farben: Farbton kommt je App aus --h */
+  --kbS: 90%; --kbL: 97%; --krS: 60%; --krL: 87%; --kiS: 68%; --kiL: 47%; --kvS: 75%; --kvL: 90%; --kvtS: 55%; --kvtL: 27%;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #13111c; --fl: #1d1a29; --tx: #f1eff8; --tx2: #b1abc6; --rand: #322c47; --akz: #a78bfa; --akz-tx: #160f2a;
+    --neu: #7ee2a8; --neu-bg: #173826; --alt-bg: #2a263a; --schatten: none;
+    --kbS: 26%; --kbL: 14%; --krS: 32%; --krL: 27%; --kiS: 58%; --kiL: 52%; --kvS: 38%; --kvL: 25%; --kvtS: 85%; --kvtL: 86%;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #13111c; --fl: #1d1a29; --tx: #f1eff8; --tx2: #b1abc6; --rand: #322c47; --akz: #a78bfa; --akz-tx: #160f2a;
+  --neu: #7ee2a8; --neu-bg: #173826; --alt-bg: #2a263a; --schatten: none;
+  --kbS: 26%; --kbL: 14%; --krS: 32%; --krL: 27%; --kiS: 58%; --kiL: 52%; --kvS: 38%; --kvL: 25%; --kvtS: 85%; --kvtL: 86%;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--tx);
+  font: 17px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+}
+.seite { max-width: 1120px; margin: 0 auto; }
+a { color: inherit; }
+button, input { font: inherit; color: inherit; }
+
+/* Kopf */
+.kopf { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+h1 { margin: 4px 0 0; font-size: 34px; line-height: 1.1; letter-spacing: -.02em; font-weight: 800; }
+.regenbogen { height: 6px; width: 120px; border-radius: 3px; margin: 10px 0 8px;
+  background: linear-gradient(90deg, #8b5cf6, #06b6d4, #22c55e, #f59e0b, #f43f5e); }
+.unter { margin: 0 0 14px; color: var(--tx2); }
+#thema { flex: none; min-height: 44px; min-width: 44px; padding: 0 14px; border-radius: 22px; border: 1px solid var(--rand);
+  background: var(--fl); font-size: 15px; font-weight: 600; cursor: pointer; }
+.suche { position: relative; margin-bottom: 12px; }
+.suche input { width: 100%; min-height: 48px; padding: 0 16px 0 44px; border-radius: 14px; border: 1px solid var(--rand);
+  background: var(--fl); font-size: 17px; outline: none; -webkit-appearance: none; appearance: none; }
+.suche input:focus { border-color: var(--akz); box-shadow: 0 0 0 3px color-mix(in srgb, var(--akz) 25%, transparent); }
+.suche svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; stroke: var(--tx2); fill: none; stroke-width: 2; pointer-events: none; }
+.sprung { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 6px; padding: 0; list-style: none; }
+.sprung a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 22px; text-decoration: none;
+  background: var(--fl); border: 1px solid var(--rand); font-size: 15px; font-weight: 600; }
+
+/* Gruppen */
+section { margin-top: 26px; scroll-margin-top: 12px; }
+h2 { margin: 0 0 4px; font-size: 22px; letter-spacing: -.01em; }
+.hinweis { margin: 0 0 12px; color: var(--tx2); font-size: 15px; }
+.raster { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 680px) { .raster { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 1040px) { .raster { grid-template-columns: 1fr 1fr 1fr; } }
+
+/* Kachel: die ganze Fläche ist der Link (a.haupt::after), Chips liegen darüber */
+.kachel { position: relative; display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 14px; align-items: start;
+  min-height: 112px; padding: 16px; border-radius: 20px;
+  background: hsl(var(--h) var(--kbS) var(--kbL)); border: 1px solid hsl(var(--h) var(--krS) var(--krL)); box-shadow: var(--schatten);
+  transition: transform .12s ease; }
+.kachel:active { transform: scale(.985); }
+.ikon { width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; background: hsl(var(--h) var(--kiS) var(--kiL)); }
+.ikon svg { width: 30px; height: 30px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ikon svg .voll { fill: #fff; stroke: none; }
+.kopfzeile { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.kachel h3 { margin: 0; font-size: 20px; line-height: 1.25; font-weight: 750; overflow-wrap: anywhere; }
+.haupt { text-decoration: none; }
+.haupt::after { content: ""; position: absolute; inset: 0; border-radius: 20px; }
+.haupt:focus-visible { outline: none; }
+.haupt:focus-visible::after { outline: 3px solid var(--akz); outline-offset: 2px; }
+.extern { font-size: 15px; color: var(--tx2); font-weight: 600; }
+.ver { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums;
+  background: hsl(var(--h) var(--kvS) var(--kvL)); color: hsl(var(--h) var(--kvtS) var(--kvtL)); white-space: nowrap; }
+.kachel p { margin: 6px 0 0; font-size: 16px; color: var(--tx2); }
+.chips { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.chips a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border-radius: 12px; text-decoration: none;
+  font-size: 15px; font-weight: 600; background: var(--fl); border: 1px solid hsl(var(--h) var(--krS) var(--krL)); }
+.chips a:active { transform: scale(.97); }
+
+/* Wege im Synquenzer */
+.wege { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 900px) { .wege { grid-template-columns: 1fr 1fr; } }
+.weg { padding: 16px; border-radius: 18px; background: var(--fl); border: 1px solid var(--rand); box-shadow: var(--schatten); min-width: 0; }
+.weg h3 { margin: 0 0 10px; font-size: 18px; line-height: 1.3; }
+.zeile { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 8px; }
+.wann { flex: none; font-size: 12px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; padding: 3px 8px; border-radius: 8px;
+  background: var(--alt-bg); color: var(--tx2); }
+.wann.neu { background: var(--neu-bg); color: var(--neu); }
+.pfad { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 0; margin: 0; padding: 0; list-style: none; min-width: 0; }
+.pfad li { display: inline-flex; align-items: center; min-width: 0; }
+.pfad li + li::before { content: "›"; padding: 0 7px; color: var(--tx2); font-weight: 700; }
+.taste { display: inline-block; padding: 4px 10px; border-radius: 9px; font-size: 15px; font-weight: 650; line-height: 1.3;
+  background: var(--bg); border: 1px solid var(--rand); overflow-wrap: anywhere; }
+.zeile.neu .taste { border-color: color-mix(in srgb, var(--neu) 45%, var(--rand)); }
+.notiz { margin: 10px 0 0; font-size: 15px; color: var(--tx2); }
+
+/* Werkstatt */
+details.werk { margin-top: 26px; border-radius: 18px; border: 1px dashed var(--rand); padding: 0 16px; }
+details.werk > summary { list-style: none; cursor: pointer; min-height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  font-size: 20px; font-weight: 750; }
+details.werk > summary::-webkit-details-marker { display: none; }
+details.werk > summary::after { content: "▾"; font-size: 18px; color: var(--tx2); transition: transform .15s; }
+details.werk[open] > summary::after { transform: rotate(180deg); }
+details.werk .innen { padding-bottom: 16px; }
+.leer { display: none; margin-top: 20px; color: var(--tx2); }
+footer { margin-top: 30px; color: var(--tx2); font-size: 14px; }
+[hidden] { display: none !important; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="seite">
+<header>
+  <div class="kopf">
+    <h1>Alle Apps</h1>
+    <button id="thema" type="button" aria-label="Hell oder dunkel">Auto</button>
+  </div>
+  <div class="regenbogen" aria-hidden="true"></div>
+  <p class="unter">Alles an einem Ort – antippen und los.</p>
+  <div class="suche">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+    <input id="suche" type="search" placeholder="Suchen, z. B. Chor, Fotos, Cubasis" aria-label="Apps und Wege durchsuchen" autocomplete="off">
+  </div>
+  <nav aria-label="Abschnitte"><ul class="sprung" id="sprung"></ul></nav>
+</header>
+<main id="inhalt"></main>
+<p class="leer" id="leer">Nichts gefunden.</p>
+<footer>Stand der Liste: 22.11.2026 · Die Versionen liest die Seite beim Öffnen frisch aus den Apps.</footer>
+</div>
+<script>
+/* =====================================================================================================
+   NEUE APP ERGÄNZEN: einen Eintrag in APPS anlegen (gruppe, name, link, text; farbe = Farbton 0–360).
+   ver = Version, wie sie zuletzt bekannt war; quelle = Datei der App, aus der die Seite die Version frisch liest
+   (url, muster mit einer Klammer, vor = Text davor; kopf: true = nur die ersten 16 KB holen).
+   ===================================================================================================== */
+const APPS = [
+  { id: 'synq', gruppe: 'musik', name: 'Synquenzer', ikon: 'tasten', farbe: 265, link: '../', ver: '4.81.0',
+    text: 'Die Musik-App: Clips einspielen, Szenen starten, Song bauen, singen, mischen und Video – bis 16 Spuren.',
+    quelle: { url: '../version.json', muster: /"version"\s*:\s*"([^"]+)"/ },
+    chips: [{ t: 'Wo finde ich was?', href: '#finden' }] },
+  { id: 'mischpult', gruppe: 'musik', name: 'Mischpult', ikon: 'regler', farbe: 200, link: '../mischpult/', ver: '0.2',
+    text: 'Spuren aus der DAW mischen und mastern, eine fertige Datei auf Lautheit prüfen, Album mit gleichem Klang.',
+    quelle: { url: '../mischpult/index.html', muster: /id="version">Version ([\d.]+)/ } },
+  { id: 'wall', gruppe: 'musik', name: 'The Wall – Ablage', ikon: 'ordner', farbe: 330, link: '../the-wall/', ver: 'Stand 22.11.2026',
+    text: 'Zum Laden: Master, Cubasis-Projekte, Gesang, Einzelspuren, Noten, Notenvideo und Formant-Chor.',
+    quelle: { url: '../the-wall/index.html', muster: /Stand (\d{1,2}\.\d{1,2}\.\d{4})/, vor: 'Stand ' } },
+  { id: 'tonpost', gruppe: 'musik', name: 'Ton-Post', ikon: 'hoch', farbe: 25, link: '../ton-post/',
+    text: 'Audio hochladen: Spuren und Mixdown sicher in deinen privaten Speicher schicken – für Claude.' },
+  { id: 'messung', gruppe: 'musik', name: 'Messung', ikon: 'tacho', farbe: 170, link: '../messung/',
+    text: 'Misst in 60 Sekunden, wie viele Synquenzer-Spuren dein iPhone ohne Aussetzer schafft (8, 16, 24).' },
+  { id: 'gesang', gruppe: 'musik', name: 'Gesang-Vorschau', ikon: 'mikro', farbe: 295, link: '../vorschau-gesang/', ver: '4.23.0',
+    text: 'Ältere Testfassung des Synquenzers mit Gesang und Songtext – nur zum Vergleichen.' },
+
+  { id: 'mv', gruppe: 'alltag', name: 'Mein Vorteil', ikon: 'preis', farbe: 140, link: '../mein-vorteil/', ver: 'Fassung 11',
+    text: 'Deals, Wochenangebote, Preisfehler, Filme, Konzerte, Auftritte und Spartricks auf einer Seite – mit Push.',
+    quelle: { url: '../mein-vorteil/sw.js', muster: /'mein-vorteil-(\d+)'/, vor: 'Fassung ' },
+    chips: [{ t: 'Deals', href: '../mein-vorteil/#deals' }, { t: 'Woche', href: '../mein-vorteil/#woche' },
+            { t: 'Filme', href: '../mein-vorteil/#filme' }, { t: 'Konzerte', href: '../mein-vorteil/#konzerte' }] },
+  { id: 'atem', gruppe: 'alltag', name: 'Atem', ikon: 'wind', farbe: 188, link: '../atem/', ver: '0.2.2',
+    text: 'Ruhige Atemübungen und Meditationen mit Ansage – alles bleibt auf deinem Gerät.',
+    quelle: { url: '../atem/app.js', muster: /VERSION\s*=\s*'([^']+)'/, kopf: true } },
+  { id: 'foto', gruppe: 'alltag', name: 'Bildwerk', ikon: 'kamera', farbe: 12, link: '../foto/', ver: '0.5.0',
+    text: 'Fotos bearbeiten auf dem Gerät: Auto, Regler, Looks, Retusche, Zuschnitt – auch mehrere auf einmal.',
+    quelle: { url: '../foto/typen.js', muster: /VERSION\s*=\s*'([^']+)'/, kopf: true } },
+  { id: 'ticke', gruppe: 'alltag', name: 'Wie ich ticke', ikon: 'kompass', farbe: 245, link: '../ticke/', ver: '0.1.0',
+    text: 'Dich selbst besser verstehen – mit anerkannten Fragebögen und ehrlichen Grenzen, ohne Diagnose.',
+    quelle: { url: '../ticke/kern.js', muster: /VERSION\s*=\s*'([^']+)'/, kopf: true } },
+
+  { id: 'c2', gruppe: 'lernen', name: 'Feinschliff', ikon: 'buch', farbe: 220, link: '../c2/', ver: '0.6.0',
+    text: 'Deutsch auf C2-Niveau in 10-Minuten-Runden: Hören, Lesen, Grammatik, Schreiben, Sprechen, Prüfung.',
+    quelle: { url: '../c2/sw.js', muster: /VERSION\s*=\s*'([^']+)'/ } },
+  { id: 'dmx', gruppe: 'lernen', name: 'Deutsch mit Xander', ikon: 'sprech', farbe: 350, extern: true,
+    link: 'https://xanderfoxy.github.io/Deutsch-Mit-Xander/', ver: 'Fassung 888',
+    text: 'Deutsch lernen: Grammatik üben, Vokabeln lernen und Deutschland entdecken – locker und kostenlos.',
+    quelle: { url: '/Deutsch-Mit-Xander/fassung.json', muster: /"fassung"\s*:\s*"([^"]+)"/, vor: 'Fassung ' } },
+  { id: 'kb', gruppe: 'lernen', name: 'Kaninchenbau', ikon: 'hase', farbe: 150, link: '../kaninchenbau/', ver: '0.1.0',
+    text: 'Lernen, was dich interessiert: Startfragen, Stufen von Einsteiger bis Profi, Querverbindungen und echte Quellen.',
+    quelle: { url: '../kaninchenbau/app.js', muster: /VERSION\s*=\s*'([^']+)'/, kopf: true } },
+
+  { id: 'probe-g9', gruppe: 'werkstatt', name: 'Geräte-Probe', ikon: 'probe', farbe: 35, link: '../probe-g9/',
+    text: 'Knöpfe antippen: Ist ein Tick zu spüren, und bleibt die Tastatur offen?' },
+  { id: 'probe-if', gruppe: 'werkstatt', name: 'Probe Audio-Interface', ikon: 'buchse', farbe: 205, link: '../probe-interface/',
+    text: 'Bleibt der Ton auf dem AG06? Varianten nacheinander testen.',
+    chips: [{ t: 'Ausgang 2', href: '../probe-interface/v2.html' }, { t: 'Ausgang 3', href: '../probe-interface/v3.html' },
+            { t: 'Ausgang 4', href: '../probe-interface/v4.html' }] },
+  { id: 'alt', gruppe: 'werkstatt', name: 'Alte Adressen', ikon: 'pfeil', farbe: 140, link: '../mein-vorteil/',
+    text: 'Diese alten Links führen automatisch zu Mein Vorteil.',
+    chips: [{ t: 'Schnäppchen', href: '../schnaeppchen/' }, { t: 'Vorteile', href: '../vorteile/' }, { t: 'Konzerte', href: '../konzerte/' }] }
+];
+
+/* Wege im Synquenzer (geprüft in 4.81.0; „ab 4.83“ = neuer Weg mit dem Import-Blatt) */
+const WEGE = [
+  { titel: 'DAW-Projekt öffnen (Cubasis, .cbp)',
+    bisher: ['≡ Menü', 'Projekt', 'Export', 'Audio/MIDI importieren', '.cbp wählen'],
+    neu: ['≡ Menü', 'Projekt', 'Import', 'DAW-Projekt öffnen (.cbp)'],
+    notiz: 'Die .cbp liegt in der Dateien-App im Cubasis-Ordner, im Ordner mit dem Projektnamen. Sie wird ein neues Projekt, dein offenes bleibt unter Projekte. Ab 4.83 geht auch die ZIP, die Cubasis beim Teilen macht.' },
+  { titel: 'Micrologue-Klänge mit dem ganzen Projekt übernehmen',
+    bisher: ['DAW-Projekt öffnen (oben)', 'Klang', 'Klänge aus der DAW übernehmen', 'Passt – öffnen'],
+    notiz: 'Ist vorgewählt, wenn das Projekt Micrologue-Spuren hat: jede Spur bekommt Klang, Echo und EQ wie in der DAW.' },
+  { titel: 'Einen Micrologue-Klang auf eine Spur holen',
+    bisher: ['Synth-Spur wählen', 'KLANG', 'Klang-Namen oben antippen', 'Aus DAW-Datei', '.cbp wählen', 'Spur antippen'],
+    neu: ['≡ Menü', 'Projekt', 'Import', 'Klang aus DAW-Datei'],
+    notiz: 'Danach stellt „↳ EQ wie in der DAW“ den Spur-EQ ein. Eingebaute Klänge im selben Stil heißen „Retro-…“ (z. B. Retro-Lead Hell).' },
+  { titel: 'Gesang aus Cubasis holen',
+    bisher: ['≡ Menü', 'Projekt', 'Export', 'Gesang aus deiner DAW holen'],
+    neu: ['≡ Menü', 'Projekt', 'Import', 'Gesang aus deiner DAW holen'],
+    notiz: 'Anleitung in 6 Schritten: Gesang trocken als WAV aus der DAW, hier als Gesang laden, Chor erzeugen, als Einzelstücke zurück.' },
+  { titel: 'Singen, Takes und Chor',
+    bisher: ['über der Tastatur', 'SINGEN'],
+    notiz: 'In jedem Gesang-Blatt steht oben dieselbe Leiste: Mikrofon · Takes · Chor – aufnehmen, auswählen, bearbeiten, Chor.' },
+  { titel: 'Video',
+    bisher: ['≡ Menü', 'Projekt', 'Video'],
+    notiz: '9:16 hochkant oder 16:9 quer, mit Ton. Nach „Video erstellen“ zeigt ▶ im Bild das Video vor dem Teilen.' },
+  { titel: 'Spektral',
+    bisher: ['≡ Menü', 'Analyse', 'Spektral …'],
+    notiz: 'Oder direkt aus einem Take: Takes-Blatt › Im Spektrum öffnen.' },
+  { titel: 'Mischen und Mastern',
+    bisher: ['≡ Menü', 'Mix', 'Mix & Master …'],
+    notiz: 'Quer gehalten auch oben über MIX. Schritte: 1 Messen · 2 Mischen · 3 Mastern.' },
+  { titel: 'Alles andere',
+    bisher: ['≡ Menü', 'Wo finde ich …?', 'Suchwort eintippen'],
+    notiz: 'Zum Beispiel „Chor“, „Video“ oder „DAW“ – der Treffer zeigt den Weg und „Zeig es mir“ führt hin.' }
+];
+
+const GRUPPEN = [
+  { id: 'musik', titel: 'Musik', hinweis: 'Der Synquenzer und alles rund um deine Songs.' },
+  { id: 'finden', titel: 'Im Synquenzer finden', hinweis: 'Wo was ist (Stand 4.81). Grün „ab 4.83“: so geht es mit dem neuen Import-Knopf.' },
+  { id: 'alltag', titel: 'Alltag', hinweis: 'Sparen, durchatmen, Fotos, dich selbst verstehen.' },
+  { id: 'lernen', titel: 'Lernen', hinweis: 'Deutsch von locker bis C2 – und Wissen zu dem, was dich interessiert.' },
+  { id: 'werkstatt', titel: 'Werkstatt', hinweis: 'Proben und Tests – meist nur einmal gebraucht.' }
+];
+
+const IKON = {
+  tasten: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 5v8.5M12 5v8.5M16 5v8.5"/>',
+  regler: '<path d="M6 4v16M12 4v16M18 4v16"/><rect class="voll" x="3.5" y="12.5" width="5" height="3.5" rx="1"/><rect class="voll" x="9.5" y="6.5" width="5" height="3.5" rx="1"/><rect class="voll" x="15.5" y="10" width="5" height="3.5" rx="1"/>',
+  ordner: '<path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H9l2 2h7.5A2.5 2.5 0 0 1 21 9.5v7a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 16.5z"/><path d="M12 10.5v5.5M9.5 13.5 12 16l2.5-2.5"/>',
+  hoch: '<path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M4 14v3.5A2.5 2.5 0 0 0 6.5 20h11a2.5 2.5 0 0 0 2.5-2.5V14"/>',
+  tacho: '<path d="M4 17a8 8 0 1 1 16 0"/><path d="M12 17l4-5"/><circle class="voll" cx="12" cy="17" r="1.8"/>',
+  mikro: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/>',
+  preis: '<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle class="voll" cx="7.5" cy="7.5" r="1.6"/>',
+  wind: '<path d="M3 9h10.5A3 3 0 1 0 10.5 6"/><path d="M3 14h14.5a3 3 0 1 1-3 3"/>',
+  kamera: '<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/>',
+  kompass: '<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5 13.5 13.5 8.5 15.5 10.5 10.5z"/>',
+  buch: '<path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19M9 7.5h6"/>',
+  sprech: '<path d="M4 5h16v11H9.5L4 20z"/><path d="M8 9h8M8 12.5h5"/>',
+  hase: '<path d="M9.5 8.7C7.4 6.6 6.3 2.5 8.1 2s3.1 3.3 3.4 6.1M14.5 8.7c2.1-2.1 3.2-6.2 1.4-6.7s-3.1 3.3-3.4 6.1"/><circle cx="12" cy="14.6" r="6.4"/><circle class="voll" cx="9.6" cy="13.9" r="1.15"/><circle class="voll" cx="14.4" cy="13.9" r="1.15"/><path d="M11 17.3h2"/>',
+  probe: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/><path d="M7.5 15h9"/>',
+  buchse: '<rect x="3" y="7" width="18" height="10" rx="2.5"/><circle cx="8.5" cy="12" r="2"/><circle cx="15.5" cy="12" r="2"/>',
+  pfeil: '<path d="M4 12h15M14 7l5 5-5 5"/>'
+};
+
+const $ = (s, w = document) => w.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const norm = s => String(s).toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss');
+// Andere Schreibweisen, die die Suche auch findet (nur im Suchtext, nicht sichtbar): „QBasis“, „Q-Basis“, „Q Basis“ = Cubasis
+const SYNONYME = { cubasis: 'qbasis kubasis' };
+const suchText = s => { let t = norm(s); for (const w in SYNONYME) if (t.includes(w)) t += ' ' + SYNONYME[w]; return t; };
+const suchWorte = s => norm(s).replace(/\bq[\s\-\u2010-\u2013]+(?=b|$)/g, 'q').trim().split(/\s+/).filter(Boolean);
+
+function kachel(a) {
+  const chips = (a.chips || []).map(c => `<a href="${esc(c.href)}">${esc(c.t)}</a>`).join('');
+  const such = suchText([a.name, a.text, (a.chips || []).map(c => c.t).join(' '), a.gruppe].join(' '));
+  return `<article class="kachel" style="--h:${a.farbe}" data-such="${esc(such)}">
+    <div class="ikon" aria-hidden="true"><svg viewBox="0 0 24 24">${IKON[a.ikon] || ''}</svg></div>
+    <div>
+      <div class="kopfzeile"><h3><a class="haupt" href="${esc(a.link)}">${esc(a.name)}</a>${a.extern ? ' <span class="extern" aria-label="eigene Seite">↗</span>' : ''}</h3>${a.ver ? `<span class="ver" data-ver="${a.id}">${esc(a.ver)}</span>` : ''}</div>
+      <p>${esc(a.text)}</p>${chips ? `<div class="chips">${chips}</div>` : ''}
+    </div>
+  </article>`;
+}
+function pfad(schritte) { return `<ol class="pfad">${schritte.map(s => `<li><span class="taste">${esc(s)}</span></li>`).join('')}</ol>`; }
+function weg(w) {
+  const such = suchText([w.titel, w.notiz, w.bisher.join(' '), (w.neu || []).join(' ')].join(' '));
+  return `<div class="weg" data-such="${esc(such)}"><h3>${esc(w.titel)}</h3>
+    <div class="zeile">${w.neu ? '<span class="wann">bisher</span>' : ''}${pfad(w.bisher)}</div>
+    ${w.neu ? `<div class="zeile neu"><span class="wann neu">ab 4.83</span>${pfad(w.neu)}</div>` : ''}
+    ${w.notiz ? `<p class="notiz">${esc(w.notiz)}</p>` : ''}</div>`;
+}
+
+let html = '';
+for (const g of GRUPPEN) {
+  const innen = g.id === 'finden' ? `<div class="wege">${WEGE.map(weg).join('')}</div>`
+    : `<div class="raster">${APPS.filter(a => a.gruppe === g.id).map(kachel).join('')}</div>`;
+  if (g.id === 'werkstatt') html += `<details class="werk gruppe" id="${g.id}"><summary>${esc(g.titel)}</summary><div class="innen"><p class="hinweis">${esc(g.hinweis)}</p>${innen}</div></details>`;
+  else html += `<section class="gruppe" id="${g.id}"><h2>${esc(g.titel)}</h2><p class="hinweis">${esc(g.hinweis)}</p>${innen}</section>`;
+}
+$('#inhalt').innerHTML = html;
+$('#sprung').innerHTML = GRUPPEN.map(g => `<li><a href="#${g.id}">${esc(g.titel)}</a></li>`).join('');
+
+// Sprung zur Werkstatt klappt sie auf
+const werk = $('#werkstatt');
+const oeffneWerk = () => { if (location.hash === '#werkstatt' && werk) werk.open = true; };
+addEventListener('hashchange', oeffneWerk); oeffneWerk();
+$('#sprung').addEventListener('click', e => { const a = e.target.closest('a'); if (a && a.getAttribute('href') === '#werkstatt' && werk) werk.open = true; });
+
+// Suche: blendet Kacheln und Wege aus, die das Wort nicht enthalten
+const eingabe = $('#suche');
+eingabe.addEventListener('input', () => {
+  const w = suchWorte(eingabe.value);
+  let treffer = 0;
+  document.querySelectorAll('[data-such]').forEach(el => { const ok = w.every(x => el.dataset.such.includes(x)); el.hidden = !ok; if (ok) treffer++; });
+  document.querySelectorAll('.gruppe').forEach(g => { g.hidden = !g.querySelector('[data-such]:not([hidden])'); });
+  if (werk && w.length && !werk.hidden) werk.open = true;
+  $('#leer').style.display = treffer ? 'none' : 'block';
+});
+
+// Hell / Dunkel: Auto → Hell → Dunkel (pro Gerät gemerkt)
+const THEMEN = ['auto', 'light', 'dark'], NAME = { auto: 'Auto', light: 'Hell', dark: 'Dunkel' };
+let thema = 'auto';
+try { thema = localStorage.getItem('uebersicht.thema') || 'auto'; } catch (e) {}
+const setzeThema = t => {
+  thema = THEMEN.includes(t) ? t : 'auto';
+  if (thema === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', thema);
+  $('#thema').textContent = NAME[thema];
+};
+setzeThema(thema);
+$('#thema').addEventListener('click', () => { setzeThema(THEMEN[(THEMEN.indexOf(thema) + 1) % 3]); try { localStorage.setItem('uebersicht.thema', thema); } catch (e) {} });
+
+// Versionen frisch aus den Apps lesen – erst nach dem Zeichnen, klein (kopf: nur die ersten 16 KB), Fehler = bekannte Version bleibt
+async function liesVersion(a) {
+  const q = a.quelle, el = document.querySelector(`[data-ver="${a.id}"]`);
+  if (!q || !el) return;
+  try {
+    const r = await fetch(q.url, { cache: 'no-cache', headers: q.kopf ? { Range: 'bytes=0-16383' } : {} });
+    if (!r.ok) return;
+    const m = (await r.text()).match(q.muster);
+    if (m) { const v = (q.vor || '') + m[1]; el.textContent = v; el.title = 'frisch gelesen'; el.dataset.frisch = '1'; }
+  } catch (e) { /* offline oder gesperrt: bekannte Version bleibt stehen */ }
+}
+const spaeter = window.requestIdleCallback || (f => setTimeout(f, 300));
+spaeter(() => APPS.forEach(liesVersion), { timeout: 1500 });
+</script>
+</body>
+</html>
