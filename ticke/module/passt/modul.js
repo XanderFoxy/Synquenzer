@@ -26,7 +26,7 @@ const hatEtwas = (R) => !!(R.eingaben.bigfive || R.eingaben.riasec || R.eingaben
 // ---------- Bausteine ----------
 const u16Html = (R) => R.u16 ? `<p class="hinweis">${esc(U16)}</p>` : '';
 const merkHtml = () => S.einwilligung() ? '' :
-  `<div class="hinweis gelb pa-merk"><p><b>Nur für jetzt:</b> Deine Ergebnisse sind nicht gemerkt und nach dem Schließen weg.</p><button type="button" class="knopf klein" data-aktion="merken">${sym('schloss')} Auf diesem Gerät merken</button></div>`;
+  `<div class="hinweis gelb pa-merk"><p><b>Nur für jetzt:</b> Deine Ergebnisse sind nicht gemerkt und beim Neuladen oder Schließen weg.</p><button type="button" class="knopf klein" data-aktion="merken">${sym('schloss')} Auf diesem Gerät merken</button></div>`;
 function weilHtml(a) { return a.sicher === 'alle' ? `<p class="pa-weil">Gilt für alle – unabhängig von deinem Profil.</p>` : `<p class="pa-weil">Weil: ${esc(a.weil)}</p>`; }
 function aussageHtml(a, { ohneWeil = false } = {}) {
   return `<li class="pa-aussage">${a.titel ? `<p class="pa-titel">${esc(a.titel)}</p>` : ''}

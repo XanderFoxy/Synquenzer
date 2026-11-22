@@ -58,7 +58,7 @@ function nameVon(id, text) {
 
 // ---------- Bausteine ----------
 const merkHtml = () => S.einwilligung() ? '' :
-  `<div class="hinweis gelb tr-merk"><p><b>Nur für jetzt:</b> Dein Fortschritt ist nicht gemerkt und nach dem Schließen weg.</p><button type="button" class="knopf klein" data-aktion="merken">${sym('schloss')} Auf diesem Gerät merken</button></div>`;
+  `<div class="hinweis gelb tr-merk"><p><b>Nur für jetzt:</b> Dein Fortschritt ist nicht gemerkt und beim Neuladen oder Schließen weg.</p><button type="button" class="knopf klein" data-aktion="merken">${sym('schloss')} Auf diesem Gerät merken</button></div>`;
 const stufeHtml = (s) => `<span class="tr-stufe tr-stufe-${esc(s)}">${esc(ui.STUFEN_NAME[s] || 'Idee')}</span>`;
 const fussHtml = () => `<p class="klein leise tr-grenze">Übungen für den Alltag – keine Behandlung, keine Diagnose.</p>${ui.fuss()}`;
 function zeileUebung(u, tage, von = '') {
@@ -234,7 +234,7 @@ function uebung(ctx, id) {
       : `<input class="feld" id="tr-f-${f.k}" data-feld="${f.k}" type="text" autocomplete="off" enterkeyhint="next" placeholder="${esc(f.platz || '')}" value="${esc(e[f.k] || '')}">`}`).join('')}</div>
       ${w.vorlage ? `<p class="klein leise">Dein Satz:</p><p class="tr-satz">${esc(P.fuelle(w.vorlage, e))}</p><button type="button" class="knopf zweit klein" data-tr="kopieren">${sym('kopieren')} Satz kopieren</button>` : ''}
       ${w.plan ? `<button type="button" class="knopf haupt voll" data-tr="plan" data-fokus="plan">${sym('sichern')} Als Plan speichern</button><p class="klein leise">Pläne findest du unter „Deine Pläne“. Dort hakst du sie jeden Tag ab.</p>` : ''}
-      <p class="klein leise">Was du hier schreibst, wird mit „Geschafft“ gemerkt – nur auf diesem Gerät.${S.einwilligung() ? '' : ' Ohne „Merken“ ist es nach dem Schließen weg.'}</p>`;
+      <p class="klein leise">Was du hier schreibst, wird mit „Geschafft“ gemerkt – nur auf diesem Gerät.${S.einwilligung() ? '' : ' Ohne „Merken“ ist es beim Neuladen oder Schließen weg.'}</p>`;
   };
   const mmss = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
   const timerHtml = () => `<div class="karte weich tr-timer"><p class="tr-uhr" aria-hidden="true" data-uhr>${mmss(T.rest)}</p>${ui.fortschritt(1 - T.rest / T.gesamt, 'Verstrichene Zeit')}

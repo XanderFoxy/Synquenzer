@@ -26,7 +26,8 @@ const PFADE = {
   loeschen: '<path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13"/>',
   schliessen: '<path d="M6 6l12 12M18 6L6 18"/>',
   schloss: '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>',
-  herz: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>'
+  herz: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
+  spiel: '<rect x="2.5" y="5" width="8" height="14" rx="2.2"/><rect x="13.5" y="5" width="8" height="14" rx="2.2"/><path d="M6.5 10.5v3M17.5 10.5v3"/>'
 };
 export function sym(name, klasse = '') {
   return `<svg class="sym ${klasse}" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${PFADE[name] || PFADE.info}</svg>`;
@@ -96,7 +97,7 @@ export function hilfeKarte({ titel = 'Wenn es dir gerade nicht gut geht', text =
     <p class="klein leise">Bei akuter Gefahr: 112.</p></section>`;
 }
 // Hinweis „Nur für jetzt“ mit Merken-Knopf (leer, wenn schon gemerkt wird). an = kern.speicher.einwilligung().
-export function merkHinweis(an, text = 'Deine Antworten sind nicht gemerkt und nach dem Schließen weg.') {
+export function merkHinweis(an, text = 'Deine Antworten sind nicht gemerkt und beim Neuladen oder Schließen weg.') {
   return an ? '' : `<div class="hinweis gelb" data-merk-hinweis><p><b>Nur für jetzt:</b> ${esc(text)}</p><button type="button" class="knopf klein" data-aktion="merken">${sym('schloss')} Auf diesem Gerät merken</button></div>`;
 }
 export function fuss() {

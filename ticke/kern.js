@@ -6,7 +6,7 @@ import * as seiten from './seiten.js';
 import { mass } from './mass.js';
 import * as WEG from './weg.js';
 
-export const VERSION = '0.1.0';
+export const VERSION = '0.2.1';
 export const FORMAT = 1;                      // Format der gespeicherten Daten (ARCH.md §3); höher → MIGRATIONEN
 const P = 'ticke.v1.';                        // einziger Präfix in localStorage (Ursprung teilen sich alle Synquenzer-Apps!)
 const TEST = /[?&]test=1/.test(location.search);
@@ -130,7 +130,7 @@ function wendeEinstAn() { const e = einst(), s = Number(e.schrift) || 1; documen
 
 // ---------- Navigation ----------
 export const NAV = [['start', 'Start'], ['fragen', 'Fragen'], ['profil', 'Profil'], ['passt', 'Was passt'], ['training', 'Training'], ['text', 'Text']];
-const TITEL = { start: 'Wie ich ticke', einstieg: 'Für mich', los: 'Start-Fragebogen', fragen: 'Fragen', profil: 'Profil', passt: 'Was passt zu mir', training: 'Training', text: 'Text-Spiegel', einstellungen: 'Einstellungen', muster: 'Muster' };
+const TITEL = { start: 'Wie ich ticke', einstieg: 'Für mich', los: 'Start-Fragebogen', fragen: 'Fragen', profil: 'Profil', passt: 'Was passt zu mir', training: 'Training', text: 'Text-Spiegel', einstellungen: 'Einstellungen', muster: 'Muster', spiel: 'Entweder – oder' };
 const KERN_ROUTEN = ['start', 'einstieg', 'los', 'fragen', 'einstellungen', 'muster'];
 function leseRoute(hash = location.hash) {
   let h = hash.replace(/^#/, ''); try { h = decodeURIComponent(h); } catch {}
@@ -161,7 +161,7 @@ async function zeige() {
   aufraeumen = null; zurueckZiel = null;
   const top = r.pfad[0], wer = besitzer(r.pfad);
   wegLeiste(r);
-  const navTop = top === 'los' ? 'fragen' : top;   // Start-Fragebogen gehört zu „Fragen“
+  const navTop = top === 'los' || top === 'spiel' ? 'fragen' : top;   // Start-Fragebogen und Spiel gehören zu „Fragen“
   document.querySelectorAll('#leiste a').forEach((a) => { if (a.dataset.r === navTop) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
   const zg = document.getElementById('zu-einst'); if (zg) { if (top === 'einstellungen') zg.setAttribute('aria-current', 'page'); else zg.removeAttribute('aria-current'); }
   const ist = NAV.some(([id]) => id === top) && r.pfad.length === 1;
@@ -279,7 +279,7 @@ async function frageEinwilligung() {
   if (EINW) { ui.meldung('Wird schon auf diesem Gerät gemerkt.'); return true; }
   const w = await ui.blatt(`<p>Dann legt die App deine Antworten und Ergebnisse im Speicher dieses Browsers ab – <b>nur hier auf dem Gerät</b>, nichts geht ins Netz.</p>
     <p>Du kannst alles jederzeit als Datei sichern oder mit einem Knopf löschen (Einstellungen).</p>
-    <p class="klein leise">Ohne Merken ist alles weg, sobald du die Seite schließt. Tipp fürs iPhone: Leg die App auf den Home-Bildschirm – sonst kann Safari gespeicherte Daten nach einigen Tagen ohne Besuch löschen.</p>
+    <p class="klein leise">Ohne Merken ist alles weg, sobald du die Seite neu lädst oder schließt (Safari lädt Seiten im Hintergrund manchmal von selbst neu). Tipp fürs iPhone: Leg die App auf den Home-Bildschirm – sonst kann Safari gespeicherte Daten nach einigen Tagen ohne Besuch löschen.</p>
     <div class="stapel"><button type="button" class="knopf haupt gross" data-w="ja">Ja, auf diesem Gerät merken</button><button type="button" class="knopf zweit" data-w="nein">Nein, nur für jetzt</button></div>`, { titel: 'Auf diesem Gerät merken?' });
   if (w === 'ja') { speicher.setzeEinwilligung(true); ui.meldung('Gemerkt – nur auf diesem Gerät.'); return true; }
   return false;

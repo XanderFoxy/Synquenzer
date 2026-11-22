@@ -45,6 +45,7 @@ function start({ el, kern }) {
       <p class="lead">Versteh dich selbst besser – mit anerkannten Fragebögen und ehrlich in den Grenzen.</p>
       <a class="knopf haupt gross voll" href="#einstieg">Für mich starten</a>
       <p class="leise klein mitte">Etwa 15 Minuten für alles, gern in Etappen. Deine Antworten bleiben auf diesem Gerät.</p>
+      <a class="kachel spiel-kachel" href="#spiel">${sym('spiel')}<b>Oder erst spielen: Entweder – oder</b><span>Schnelle Wahlen, Kopfnüsse, Punkte – etwa 4 Minuten</span></a>
       <div class="karte">${kannHtml}</div>
       <div class="karte weich">${marken}</div>
       <p class="leise klein mitte">Live mit Gästen: kommt später.</p>${fuss()}`;
@@ -56,6 +57,7 @@ function start({ el, kern }) {
     ${merkHinweis(kern)}
     ${heuteKarte(kern)}
     <ul class="kacheln">
+      <li class="breit"><a class="kachel spiel-kachel" href="#spiel">${sym('spiel')}<b>Entweder – oder</b><span>Das Spiel: schnelle Wahlen, Kopfnüsse, Profil mit Wahrscheinlichkeiten</span></a></li>
       <li><a class="kachel" href="#profil">${sym('profil')}<b>Profil</b><span>Deine Bereiche auf einen Blick</span></a></li>
       <li><a class="kachel" href="#passt">${sym('passt')}<b>Was passt zu mir</b><span>Stärken, Arbeitsweise, Wachstum</span></a></li>
       <li><a class="kachel" href="#training">${sym('training')}<b>Training</b><span>Kleine Übungen für heute</span></a></li>
@@ -143,7 +145,7 @@ function los({ el, kern }) {
         ${fortschritt(1, 'Start-Fragebogen')}
         <a class="knopf haupt gross voll" href="#profil">${sym('profil')} Weiter: Deine Profil-Karte</a>
         <ol class="zeilen los-teile" aria-label="Die vier Teile">${T.map(zeile).join('')}</ol>
-        ${merkHinweis(kern, 'Deine Ergebnisse sind nicht gemerkt und nach dem Schließen weg.')}${fuss()}`;
+        ${merkHinweis(kern, 'Deine Ergebnisse sind nicht gemerkt und beim Neuladen oder Schließen weg.')}${fuss()}`;
       return;
     }
     el.innerHTML = `<h2>Start-Fragebogen</h2>
@@ -155,7 +157,7 @@ function los({ el, kern }) {
       <ol class="zeilen los-teile" aria-label="Die vier Teile">${T.map(zeile).join('')}</ol>
       ${!n.pflicht && st.begonnen ? `<p class="mitte"><button type="button" class="link" data-los="auslassen">„${esc(n.titel)}“ auslassen</button></p>` : ''}
       <p class="leise klein">Antworte, wie du <b>meistens</b> bist – nicht, wie du gern wärst. Es gibt kein Richtig oder Falsch. Die Reihenfolge ist fest, damit spätere Wiederholungen vergleichbar bleiben. Pause geht jederzeit.</p>
-      ${merkHinweis(kern, kern.speicher.einwilligung() ? '' : 'Dein Stand bleibt nur, solange dieses Fenster offen ist.')}${fuss()}`;
+      ${merkHinweis(kern, kern.speicher.einwilligung() ? '' : 'Dein Stand ist beim Neuladen oder Schließen weg.')}${fuss()}`;
   };
   male();
   const klick = (ev) => {
@@ -186,7 +188,7 @@ function einstieg({ el, kern }) {
       <p>Nur auf diesem Gerät, nichts geht ins Netz. Löschen geht jederzeit mit einem Knopf.</p>
       <div class="stapel"><button type="button" class="knopf haupt gross" data-los="ja">${sym('schloss')} Ja, auf diesem Gerät merken</button>
       <button type="button" class="knopf zweit" data-los="nein">Nein, nur für jetzt</button></div>
-      <p class="leise klein">Ohne Merken ist alles weg, sobald du die Seite schließt.</p>${fuss()}`;
+      <p class="leise klein">Ohne Merken ist alles weg, sobald du die Seite neu lädst oder schließt.</p>${fuss()}`;
   };
   male();
   const klick = (e) => {
@@ -210,6 +212,7 @@ function fragen({ el, kern }) {
     <ol class="zeilen">${F.map((f) => { const r = erg[f.ergebnis];
       return `<li><a class="zeile" href="#${esc(f.route)}"><span><b>${esc(f.titel)}</b><small>${esc(f.kurz || '')}</small></span><span class="rechts">${r ? sym('haken') + ' ' + esc(datum(r.zeit)) : esc(f.dauer || '')}${sym('weiter')}</span></a></li>`; }).join('')}</ol>
     <p class="leise klein">Die Reihenfolge ist fest, damit spätere Wiederholungen vergleichbar bleiben. Pausen sind jederzeit möglich.</p>
+    <a class="karte akzent" href="#spiel">${sym('spiel')}<span><b>Entweder – oder</b><br><span class="klein leise">Das Spiel: immer zwei Aussagen, eine Wahl – mit Kopfnüssen, etwa 4 Minuten</span></span><span class="rechts">${sym('weiter')}</span></a>
     ${merkHinweis(kern)}
     <a class="knopf zweit voll" href="#profil">Zum Profil</a>${fuss()}`;
 }
@@ -223,7 +226,7 @@ function einstellungen({ el, kern }) {
     el.innerHTML = `<h2>Einstellungen</h2>
       <h3>Deine Daten</h3>
       <div class="karte">
-        <div class="schalter"><label for="einw"><b>Auf diesem Gerät merken</b><br><span class="leise klein">${an ? 'An: Antworten und Ergebnisse bleiben in diesem Browser.' : 'Aus: Alles ist nach dem Schließen weg.'}</span></label><input type="checkbox" role="switch" id="einw" ${an ? 'checked' : ''}></div>
+        <div class="schalter"><label for="einw"><b>Auf diesem Gerät merken</b><br><span class="leise klein">${an ? 'An: Antworten und Ergebnisse bleiben in diesem Browser.' : 'Aus: Alles ist beim Neuladen oder Schließen weg.'}</span></label><input type="checkbox" role="switch" id="einw" ${an ? 'checked' : ''}></div>
         <p class="leise klein">${n} ${n === 1 ? 'Ergebnis' : 'Ergebnisse'} · etwa ${kb} KB · Nichts wird gesendet. Die Sicherungs-Datei enthält auch deine Texte aus dem Text-Spiegel – bewahre sie gut auf.</p>
         <div class="stapel">
           <button type="button" class="knopf" id="export">${sym('sichern')} Als Datei sichern</button>
@@ -267,7 +270,7 @@ function einstellungen({ el, kern }) {
   const wechsel = async (ev) => {
     if (ev.target.id !== 'einw') return;
     if (ev.target.checked) { S.setzeEinwilligung(true); meldung('Gemerkt – nur auf diesem Gerät.'); }
-    else if (await bestaetige({ titel: 'Nicht mehr merken?', text: 'Die gespeicherte Kopie wird vom Gerät gelöscht. Bis du die Seite schließt, bleibt alles noch da.', ja: 'Vom Gerät löschen' })) { S.setzeEinwilligung(false); meldung('Vom Gerät gelöscht.'); }
+    else if (await bestaetige({ titel: 'Nicht mehr merken?', text: 'Die gespeicherte Kopie wird vom Gerät gelöscht. Bis du die Seite neu lädst oder schließt, bleibt alles noch da.', ja: 'Vom Gerät löschen' })) { S.setzeEinwilligung(false); meldung('Vom Gerät gelöscht.'); }
     male();
   };
   el.addEventListener('click', klick); el.addEventListener('change', wechsel);

@@ -46,5 +46,11 @@ export const MODULE = [
     datei: './module/training/modul.js', quellen: './module/training/quellen.js',
     routen: ['training'],             // training · training/gruppe/<id> · training/uebung/<id> · training/herausforderung/<i> · training/wachsen · training/plaene · training/woche · training/erinnerung
     fragen: []                        // bewusst leer: Training ist kein Fragebogen (eigene Kachel auf der Startseite)
+  },
+  {
+    id: 'spiel', name: 'Entweder – oder',
+    datei: './module/spiel/modul.js', quellen: './module/spiel/quellen.js',
+    routen: ['spiel'],                // spiel · spiel/runde · spiel/ergebnis · spiel/so
+    fragen: []                        // bewusst leer: eigenes Spiel (Kachel auf der Startseite, Karte in „Fragen“), nicht Teil des Start-Fragebogens
   }
 ];

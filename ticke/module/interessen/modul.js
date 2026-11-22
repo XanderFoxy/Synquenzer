@@ -12,7 +12,7 @@ const lies = (k, std) => S.lies('interessen', k, std);
 const schreib = (k, v) => S.schreib('interessen', k, v);
 const jung = () => kern.einst().alter === 'u16';
 const merk = () => S.einwilligung() ? '' :
-  `<div class="hinweis gelb" data-ia-merk><p><b>Nur für jetzt:</b> Dein Ergebnis ist nicht gemerkt und nach dem Schließen weg.</p><button type="button" class="knopf klein" data-aktion="merken">${sym('schloss')} Auf diesem Gerät merken</button></div>`;
+  `<div class="hinweis gelb" data-ia-merk><p><b>Nur für jetzt:</b> Dein Ergebnis ist nicht gemerkt und beim Neuladen oder Schließen weg.</p><button type="button" class="knopf klein" data-aktion="merken">${sym('schloss')} Auf diesem Gerät merken</button></div>`;
 const nichtHeisst = (punkte) => `<div class="karte weich"><h3>Was das nicht heißt</h3><ul>${punkte.join('')}</ul></div>`;
 const li = (t) => `<li>${t}</li>`;
 

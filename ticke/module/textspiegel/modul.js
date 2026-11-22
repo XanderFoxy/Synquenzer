@@ -20,7 +20,7 @@ const zahl = (x) => String(x).replace('.', ',');
 const SITZ = { namen: '', claude: null, antwort: '', blind: null };     // nur Arbeitsspeicher dieser Sitzung, nie gespeichert
 
 const merk = () => S.einwilligung() ? '' :
-  `<div class="hinweis gelb" data-ts-merk><p><b>Nur für jetzt:</b> Deine Texte sind nicht gemerkt und nach dem Schließen weg.</p><button type="button" class="knopf klein" data-aktion="merken">${sym('schloss')} Auf diesem Gerät merken</button></div>`;
+  `<div class="hinweis gelb" data-ts-merk><p><b>Nur für jetzt:</b> Deine Texte sind nicht gemerkt und beim Neuladen oder Schließen weg.</p><button type="button" class="knopf klein" data-aktion="merken">${sym('schloss')} Auf diesem Gerät merken</button></div>`;
 function binde(el, aktionen = {}, extra = []) {
   const klick = (e) => { const b = e.target.closest('[data-ts]'); if (b && el.contains(b) && aktionen[b.dataset.ts]) { e.preventDefault(); aktionen[b.dataset.ts](b, e); } };
   el.addEventListener('click', klick);
