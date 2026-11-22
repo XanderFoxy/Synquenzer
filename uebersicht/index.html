@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#f6f4fb" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#13111c" media="(prefers-color-scheme: dark)">
 <title>Alle Apps</title>
-<meta name="description" content="Alle Apps und Seiten an einem Ort – mit Version, kurzer Erklärung und den Wegen im Synquenzer.">
+<meta name="description" content="Alle Apps an einem Ort – was neu ist, Woche für Woche.">
 <meta name="apple-mobile-web-app-title" content="Alle Apps">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='2' width='13' height='13' rx='3' fill='%238b5cf6'/%3E%3Crect x='17' y='2' width='13' height='13' rx='3' fill='%2306b6d4'/%3E%3Crect x='2' y='17' width='13' height='13' rx='3' fill='%23f97316'/%3E%3Crect x='17' y='17' width='13' height='13' rx='3' fill='%2322c55e'/%3E%3C/svg%3E">
@@ -17,6 +17,7 @@
 :root {
   --bg: #f6f4fb; --fl: #ffffff; --tx: #1d1a29; --tx2: #57526b; --rand: #e2ddef; --akz: #6a45dc; --akz-tx: #ffffff;
   --neu: #0f7a43; --neu-bg: #dcf5e6; --alt-bg: #ecebf2; --schatten: 0 1px 2px rgb(30 20 60 / 6%), 0 6px 18px rgb(30 20 60 / 7%);
+  --bra-bg: #fff3d1; --bra-rand: #e9b942; --bra-tx: #4f3500; --bra-akz: #b77900;
   /* Kachel-Farben: Farbton kommt je App aus --h */
   --kbS: 90%; --kbL: 97%; --krS: 60%; --krL: 87%; --kiS: 68%; --kiL: 47%; --kvS: 75%; --kvL: 90%; --kvtS: 55%; --kvtL: 27%;
   color-scheme: light;
@@ -25,6 +26,7 @@
   :root:not([data-theme="light"]) {
     --bg: #13111c; --fl: #1d1a29; --tx: #f1eff8; --tx2: #b1abc6; --rand: #322c47; --akz: #a78bfa; --akz-tx: #160f2a;
     --neu: #7ee2a8; --neu-bg: #173826; --alt-bg: #2a263a; --schatten: none;
+    --bra-bg: #30250c; --bra-rand: #75581a; --bra-tx: #ffdf9a; --bra-akz: #f5b83d;
     --kbS: 26%; --kbL: 14%; --krS: 32%; --krL: 27%; --kiS: 58%; --kiL: 52%; --kvS: 38%; --kvL: 25%; --kvtS: 85%; --kvtL: 86%;
     color-scheme: dark;
   }
@@ -32,6 +34,7 @@
 :root[data-theme="dark"] {
   --bg: #13111c; --fl: #1d1a29; --tx: #f1eff8; --tx2: #b1abc6; --rand: #322c47; --akz: #a78bfa; --akz-tx: #160f2a;
   --neu: #7ee2a8; --neu-bg: #173826; --alt-bg: #2a263a; --schatten: none;
+  --bra-bg: #30250c; --bra-rand: #75581a; --bra-tx: #ffdf9a; --bra-akz: #f5b83d;
   --kbS: 26%; --kbL: 14%; --krS: 32%; --krL: 27%; --kiS: 58%; --kiL: 52%; --kvS: 38%; --kvL: 25%; --kvtS: 85%; --kvtL: 86%;
   color-scheme: dark;
 }
@@ -45,6 +48,7 @@ body {
 .seite { max-width: 1120px; margin: 0 auto; }
 a { color: inherit; }
 button, input { font: inherit; color: inherit; }
+button { cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 
 /* Kopf */
 .kopf { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -53,33 +57,61 @@ h1 { margin: 4px 0 0; font-size: 34px; line-height: 1.1; letter-spacing: -.02em;
   background: linear-gradient(90deg, #8b5cf6, #06b6d4, #22c55e, #f59e0b, #f43f5e); }
 .unter { margin: 0 0 14px; color: var(--tx2); }
 #thema { flex: none; min-height: 44px; min-width: 44px; padding: 0 14px; border-radius: 22px; border: 1px solid var(--rand);
-  background: var(--fl); font-size: 15px; font-weight: 600; cursor: pointer; }
-.suche { position: relative; margin-bottom: 12px; }
+  background: var(--fl); font-size: 15px; font-weight: 600; }
+.suche { position: relative; margin-bottom: 14px; }
 .suche input { width: 100%; min-height: 48px; padding: 0 16px 0 44px; border-radius: 14px; border: 1px solid var(--rand);
   background: var(--fl); font-size: 17px; outline: none; -webkit-appearance: none; appearance: none; }
 .suche input:focus { border-color: var(--akz); box-shadow: 0 0 0 3px color-mix(in srgb, var(--akz) 25%, transparent); }
 .suche svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; stroke: var(--tx2); fill: none; stroke-width: 2; pointer-events: none; }
-.sprung { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 6px; padding: 0; list-style: none; }
-.sprung a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 22px; text-decoration: none;
-  background: var(--fl); border: 1px solid var(--rand); font-size: 15px; font-weight: 600; }
 
-/* Gruppen */
-section { margin-top: 26px; scroll-margin-top: 12px; }
-h2 { margin: 0 0 4px; font-size: 22px; letter-spacing: -.01em; }
-.hinweis { margin: 0 0 12px; color: var(--tx2); font-size: 15px; }
-.raster { display: grid; grid-template-columns: 1fr; gap: 12px; }
+/* „Brauche ich von dir“ – gut sichtbar, nur wenn etwas aussteht */
+.brauche { margin: 0 0 16px; padding: 12px 14px 4px; border-radius: 18px; background: var(--bra-bg); border: 1px solid var(--bra-rand); color: var(--bra-tx); }
+.brauche h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 2px; font-size: 19px; line-height: 1.25; }
+.brauche h2 svg { flex: none; width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; }
+.brauche h2 svg .voll { fill: currentColor; stroke: none; }
+.brauche ul { list-style: none; margin: 0; padding: 0; }
+.brauche li + li { border-top: 1px solid color-mix(in srgb, var(--bra-rand) 55%, transparent); }
+.brauche a { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 10px; min-height: 52px; padding: 7px 0; text-decoration: none; }
+.brauche .b-app { grid-column: 1; justify-self: start; font-size: 13px; font-weight: 800; padding: 1px 8px; border-radius: 8px;
+  background: hsl(var(--h) var(--kvS) var(--kvL)); color: hsl(var(--h) var(--kvtS) var(--kvtL)); }
+.brauche .b-tx { grid-column: 1; font-size: 16px; font-weight: 600; line-height: 1.3; }
+.brauche .pf { grid-column: 2; grid-row: 1 / span 2; font-size: 22px; font-weight: 700; opacity: .75; }
+
+/* Umschalter: Nach Woche / Nach App, darunter die Wochen oder die Apps */
+.steuer { scroll-margin-top: 8px; }
+.umschalter { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 16px; background: var(--alt-bg); }
+.umschalter button { min-height: 44px; border: 0; border-radius: 12px; background: transparent; font-size: 16px; font-weight: 700; color: var(--tx2); }
+.umschalter button[aria-pressed="true"] { background: var(--fl); color: var(--tx); box-shadow: 0 1px 3px rgb(0 0 0 / 14%); }
+.wochen { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+@media (min-width: 680px) { .wochen { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+.wo { min-height: 58px; padding: 6px 4px; border-radius: 14px; border: 1px solid var(--rand); background: var(--fl);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; text-align: center; min-width: 0; }
+.wo b { font-size: 15px; line-height: 1.2; font-weight: 750; hyphens: auto; -webkit-hyphens: auto; overflow-wrap: anywhere; }
+.wo small { font-size: 13px; color: var(--tx2); font-variant-numeric: tabular-nums; }
+.wo[aria-pressed="true"], .aw[aria-pressed="true"] { background: var(--akz); border-color: var(--akz); color: var(--akz-tx); }
+.wo[aria-pressed="true"] small { color: inherit; opacity: .85; }
+.wo:active, .aw:active, .blaettern button:active, .chips a:active { transform: scale(.97); }
+.appwahl { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.aw { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border-radius: 22px; border: 1px solid var(--rand);
+  background: var(--fl); font-size: 15px; font-weight: 650; }
+.aw i { flex: none; width: 10px; height: 10px; border-radius: 50%; background: hsl(var(--h) var(--kiS) var(--kiL)); }
+.aw[aria-pressed="true"] i { background: currentColor; }
+.info { margin: 12px 2px 10px; font-size: 15px; color: var(--tx2); }
+
+/* Raster und Kacheln: die ganze Kachel ist der Link zur App (a.haupt::after), Knöpfe liegen darüber */
+.raster { display: grid; grid-template-columns: 1fr; gap: 12px; align-items: start; }
 @media (min-width: 680px) { .raster { grid-template-columns: 1fr 1fr; } }
 @media (min-width: 1040px) { .raster { grid-template-columns: 1fr 1fr 1fr; } }
-
-/* Kachel: die ganze Fläche ist der Link (a.haupt::after), Chips liegen darüber */
-.kachel { position: relative; display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 14px; align-items: start;
-  min-height: 112px; padding: 16px; border-radius: 20px;
+.kachel { position: relative; display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 0 14px; align-items: center; align-content: start;
+  min-height: 88px; padding: 16px; border-radius: 20px; scroll-margin-top: 12px;
   background: hsl(var(--h) var(--kbS) var(--kbL)); border: 1px solid hsl(var(--h) var(--krS) var(--krL)); box-shadow: var(--schatten);
   transition: transform .12s ease; }
 .kachel:active { transform: scale(.985); }
 .ikon { width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; background: hsl(var(--h) var(--kiS) var(--kiL)); }
 .ikon svg { width: 30px; height: 30px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .ikon svg .voll { fill: #fff; stroke: none; }
+.rumpf { min-width: 0; }
+.unten { grid-column: 1 / -1; min-width: 0; margin-top: 4px; }
 .kopfzeile { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
 .kachel h3 { margin: 0; font-size: 20px; line-height: 1.25; font-weight: 750; overflow-wrap: anywhere; }
 .haupt { text-decoration: none; }
@@ -89,13 +121,65 @@ h2 { margin: 0 0 4px; font-size: 22px; letter-spacing: -.01em; }
 .extern { font-size: 15px; color: var(--tx2); font-weight: 600; }
 .ver { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums;
   background: hsl(var(--h) var(--kvS) var(--kvL)); color: hsl(var(--h) var(--kvtS) var(--kvtL)); white-space: nowrap; }
+.ver.alt { background: var(--alt-bg); color: var(--tx2); }
 .kachel p { margin: 6px 0 0; font-size: 16px; color: var(--tx2); }
+.etikett { display: block; margin: 10px 0 2px; font-size: 12px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--tx2); }
+.punkte { margin: 0; padding-left: 20px; font-size: 16px; line-height: 1.4; }
+.punkte li { margin: 3px 0; overflow-wrap: anywhere; }
+.punkte li::marker { color: hsl(var(--h) var(--kiS) var(--kiL)); }
+.punkte.leise { color: var(--tx2); font-size: 15px; }
+.punkte li.mehr { list-style: none; font-size: 14px; color: var(--tx2); }
+.bra { margin-top: 12px; padding: 6px 12px 8px; border-radius: 12px; background: var(--bra-bg); border: 1px solid var(--bra-rand); color: var(--bra-tx); }
+.bra .etikett { margin-top: 4px; color: inherit; }
+.bra .punkte li::marker { color: var(--bra-akz); }
+.tag { display: inline-block; margin-right: 6px; padding: 0 6px; border-radius: 6px; font-size: 12px; font-weight: 800; vertical-align: 1px;
+  background: var(--alt-bg); color: var(--tx2); }
 .chips { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .chips a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border-radius: 12px; text-decoration: none;
   font-size: 15px; font-weight: 600; background: var(--fl); border: 1px solid hsl(var(--h) var(--krS) var(--krL)); }
-.chips a:active { transform: scale(.97); }
+.ohne { margin-top: 16px; }
+.ohne p { margin: 0; font-size: 15px; color: var(--tx2); }
+.ohne .chips { margin-top: 6px; }
+.blaettern { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
+.blaettern button { min-height: 48px; padding: 0 10px; border-radius: 14px; border: 1px solid var(--rand); background: var(--fl); font-size: 15px; font-weight: 700; }
+.blaettern button:disabled { visibility: hidden; }
 
-/* Wege im Synquenzer */
+/* Ansicht je App: Kopf-Kachel, „Jetzt“ und der Strang Woche für Woche */
+.app-ansicht { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; scroll-margin-top: 12px; }
+@media (min-width: 860px) { .app-ansicht { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } .app-ansicht > .kachel { grid-column: 1 / -1; } }
+.tafel { min-width: 0; padding: 14px 16px 16px; border-radius: 18px; background: var(--fl); border: 1px solid var(--rand); box-shadow: var(--schatten); }
+.tafel h3 { margin: 0; font-size: 18px; }
+.tafel > .etikett:first-of-type { margin-top: 6px; }
+.strang { list-style: none; margin: 10px 0 0; padding: 0; }
+.strang > li { position: relative; padding: 0 0 14px 24px; }
+.strang > li::before { content: ""; position: absolute; left: 6px; top: 10px; bottom: -4px; width: 2px; background: var(--rand); }
+.strang > li:last-child { padding-bottom: 0; }
+.strang > li:last-child::before { display: none; }
+.strang > li::after { content: ""; position: absolute; left: 1px; top: 5px; width: 12px; height: 12px; border-radius: 50%;
+  background: hsl(var(--h) var(--kiS) var(--kiL)); box-shadow: 0 0 0 3px var(--fl); }
+.s-kopf { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin-bottom: 2px; }
+.s-kopf b { font-size: 16px; }
+.s-kopf .datum { font-size: 14px; color: var(--tx2); font-variant-numeric: tabular-nums; }
+.leer-text { margin: 8px 0 0; color: var(--tx2); font-size: 15px; }
+
+/* Werkzeuge */
+.werkzeuge { margin-top: 28px; }
+h2 { margin: 0 0 4px; font-size: 22px; letter-spacing: -.01em; }
+.hinweis { margin: 0 0 10px; color: var(--tx2); font-size: 15px; }
+.wz { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 12px; border-radius: 16px; border: 1px solid var(--rand); background: var(--fl); }
+.wz + .wz { margin-top: 8px; }
+.wz a { flex: none; display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border-radius: 12px; font-weight: 700; text-decoration: none;
+  background: hsl(var(--h) var(--kbS) var(--kbL)); border: 1px solid hsl(var(--h) var(--krS) var(--krL)); }
+.wz span { flex: 1 1 200px; min-width: 0; color: var(--tx2); font-size: 15px; }
+
+/* Wege im Synquenzer (zugeklappt) */
+details.werk { margin-top: 26px; border-radius: 18px; border: 1px dashed var(--rand); padding: 0 16px; scroll-margin-top: 12px; }
+details.werk > summary { list-style: none; cursor: pointer; min-height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  font-size: 18px; font-weight: 750; }
+details.werk > summary::-webkit-details-marker { display: none; }
+details.werk > summary::after { content: "▾"; font-size: 18px; color: var(--tx2); transition: transform .15s; }
+details.werk[open] > summary::after { transform: rotate(180deg); }
+details.werk .innen { padding-bottom: 16px; }
 .wege { display: grid; grid-template-columns: 1fr; gap: 12px; }
 @media (min-width: 900px) { .wege { grid-template-columns: 1fr 1fr; } }
 .weg { padding: 16px; border-radius: 18px; background: var(--fl); border: 1px solid var(--rand); box-shadow: var(--schatten); min-width: 0; }
@@ -111,19 +195,11 @@ h2 { margin: 0 0 4px; font-size: 22px; letter-spacing: -.01em; }
   background: var(--bg); border: 1px solid var(--rand); overflow-wrap: anywhere; }
 .zeile.neu .taste { border-color: color-mix(in srgb, var(--neu) 45%, var(--rand)); }
 .notiz { margin: 10px 0 0; font-size: 15px; color: var(--tx2); }
-
-/* Werkstatt */
-details.werk { margin-top: 26px; border-radius: 18px; border: 1px dashed var(--rand); padding: 0 16px; }
-details.werk > summary { list-style: none; cursor: pointer; min-height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  font-size: 20px; font-weight: 750; }
-details.werk > summary::-webkit-details-marker { display: none; }
-details.werk > summary::after { content: "▾"; font-size: 18px; color: var(--tx2); transition: transform .15s; }
-details.werk[open] > summary::after { transform: rotate(180deg); }
-details.werk .innen { padding-bottom: 16px; }
 .leer { display: none; margin-top: 20px; color: var(--tx2); }
 footer { margin-top: 30px; color: var(--tx2); font-size: 14px; }
 [hidden] { display: none !important; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+.adr{display:block;font-size:.78em;opacity:.62;margin:.1em 0 .2em;user-select:all;-webkit-user-select:all;word-break:break-all}
 </style>
 </head>
 <body>
@@ -134,98 +210,78 @@ footer { margin-top: 30px; color: var(--tx2); font-size: 14px; }
     <button id="thema" type="button" aria-label="Hell oder dunkel">Auto</button>
   </div>
   <div class="regenbogen" aria-hidden="true"></div>
-  <p class="unter">Alles an einem Ort – antippen und los.</p>
+  <p class="unter">Antippen und los – darunter steht, was neu ist.</p>
   <div class="suche">
     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
-    <input id="suche" type="search" placeholder="Suchen, z. B. Chor, Fotos, Cubasis" aria-label="Apps und Wege durchsuchen" autocomplete="off">
+    <input id="suche" type="search" placeholder="Suchen, z. B. Chor, Fotos, Video" aria-label="Apps und Neuigkeiten durchsuchen" autocomplete="off">
   </div>
-  <nav aria-label="Abschnitte"><ul class="sprung" id="sprung"></ul></nav>
 </header>
+<section class="brauche" id="brauche" hidden></section>
+<nav class="steuer" id="steuer" aria-label="Ansicht">
+  <div class="umschalter">
+    <button type="button" id="um-woche" aria-pressed="true">Nach Woche</button>
+    <button type="button" id="um-app" aria-pressed="false">Nach App</button>
+  </div>
+  <div class="wochen" id="wochen"></div>
+  <div class="appwahl" id="appwahl" hidden></div>
+</nav>
 <main id="inhalt"></main>
 <p class="leer" id="leer">Nichts gefunden.</p>
-<footer>Stand der Liste: 22.11.2026 · Die Versionen liest die Seite beim Öffnen frisch aus den Apps.</footer>
+<section class="werkzeuge" id="werkzeuge"></section>
+<details class="werk" id="finden"><summary>Wo finde ich was im Synquenzer?</summary><div class="innen" id="wege-innen"></div></details>
+<footer id="fuss">Die Versionen liest die Seite beim Öffnen frisch aus den Apps.</footer>
 </div>
+<!-- Daten: Kopie von apps.json + verlauf.json. Nicht von Hand ändern – nach jeder Änderung an den beiden Dateien: python3 einbetten.py -->
+<script id="daten" type="application/json">{"apps":{"stand":"2026-11-22","haupt":[{"id":"synq","name":"Synquenzer","link":"../","version":"4.82.0","kurz":"Die Musik-App: Clips, Szenen, Song, Gesang, Mischen und Video – bis 16 Spuren.","ausprobieren":["Im Vorzähler singen: Der Auftakt bleibt drin, der Clip startet trotzdem auf der 1.","Gesang ausrichten ohne Stottern – Tonhöhe einrasten: Aus, Weich oder Hart.","Im Gesang-Editor stehen Bereinigen und Chor jetzt direkt oben.","Chorstimmen einzeln anhören (S) oder stumm schalten (M)."],"in_arbeit":["4.83 im Test: Arp auf jeder Synth-Spur, Klangschule, Klang erkennen, DAW-Projekt öffnen, Video mit richtigem Ton.","Danach 4.84: Gesang-Auftakt im Loop mit Fähnchen, dazu leichtere Bedienung.","Geplant: eigene Ansicht für die Synth-Klänge aus der DAW.","Geplant: Song als DAW-Projekt speichern."],"brauche":["Fotos deiner Effekt-Listen in der DAW – damit ich die Synth-Klänge mit allen Effekten genau ausmessen kann.","Eine kleine DAW-Datei (.cbp) mit einer Automations-Kurve – damit ich Songs als DAW-Projekt speichern kann."]},{"id":"mischpult","name":"Mischpult","link":"../mischpult/","version":"0.2","kurz":"Spuren mischen und mastern, fertige Datei auf Lautheit prüfen.","ausprobieren":["Messwerte an mich schicken – ohne Ton."],"in_arbeit":[],"brauche":[]},{"id":"wall","name":"The Wall – Ablage","link":"../the-wall/","version":"v10","kurz":"Alles zum Song: Master, Projekte, Gesang, Noten, Video – mit der Gesang-Werkstatt.","ausprobieren":["v10 anhören: Gesang bearbeitet, mit Vergleich v7 gegen v10.","Gesang-Werkstatt (in der Ablage bei v10): Silben auf der Welle, Stellen markieren, Notiz an mich schicken.","Projekt v8: ein ZIP mit Master-Presets und Bass-Hörprobe."],"in_arbeit":["v11: deine eigene zweite Stimme nach vorn, keine schiefen Reibungen, Gesang offener.","Werkstatt 2: Schichten übereinander wie Zwiebelschalen, Silben hörbar ziehen."],"brauche":["Ein Preset aus deinem Master-Effekt: Presets › Save › Share › an die Ton-Post."]},{"id":"mv","name":"Mein Vorteil","link":"../mein-vorteil/","version":"Fassung 13","kurz":"Deals, Wochenangebote, Filme, Konzerte und Spartricks auf einer Seite – mit Push.","ausprobieren":["Produkte merken: deine Merkliste.","Angebote nach Tag sortiert.","Push genau am ersten Tag eines Angebots."],"in_arbeit":[],"brauche":[]},{"id":"atem","name":"Atem","link":"../atem/","version":"0.2.2","kurz":"Ruhige Atemübungen und Meditationen mit Ansage – alles bleibt auf deinem Gerät.","ausprobieren":["Die Figur hat jetzt Hände aus Glas.","Bei kurzen Atemstößen bleibt das Bild ruhig.","Die Namen an der Figur springen nicht mehr."],"in_arbeit":[],"brauche":["Kurze Antwort: Soll das Einzählen 3-2-1 bleiben?"]},{"id":"foto","name":"Bildwerk","link":"../foto/","version":"0.5.0","kurz":"Fotos bearbeiten auf dem Gerät – auch mehrere auf einmal.","ausprobieren":["Große Fotos brauchen weniger Speicher.","Öffnet ohne Warten."],"in_arbeit":[],"brauche":[]},{"id":"ticke","name":"Wie ich ticke","link":"../ticke/","version":"0.2.1","kurz":"Dich selbst besser verstehen – mit Fragebögen und Spiel, ehrlich und ohne Diagnose.","ausprobieren":["Neues Spiel „Entweder-oder“ – mit Kontrollfragen, ob du aufmerksam antwortest.","Dein Profil sagt ehrlich, wie sicher es ist."],"in_arbeit":[],"brauche":[]},{"id":"tiktok","name":"TikTok-Ideenbuch","link":"https://claude.ai/artifact/3NTW2KyXoKJxFLfRtNNmyN","version":"","kurz":"Unsinn-Fragen zum Vorlesen und alle Video-Ideen an einem Ort – eigene Seite.","ausprobieren":["Mischmaschine: neue Unsinn-Fragen mischen und groß zeigen.","Eigene Ideen speichern, Favoriten markieren, suchen."],"in_arbeit":["Neue Ideen aus dem Chat trage ich laufend ein."],"brauche":[]},{"id":"c2","name":"Feinschliff","link":"../c2/","version":"0.6.0","kurz":"Deutsch auf C2-Niveau in 10-Minuten-Runden: Hören, Lesen, Grammatik, Schreiben, Sprechen.","ausprobieren":["176 Übungen auf C1- und C2-Niveau.","Zwei neue Lesetexte.","Auswählen statt Eintippen."],"in_arbeit":["Die nächste Runde kommt, sobald neue Wünsche da sind."],"brauche":[]},{"id":"dmx","name":"Deutsch mit Xander","link":"https://xanderfoxy.github.io/Deutsch-Mit-Xander/","version":"Fassung 888","kurz":"Deutsch lernen: Grammatik üben, Wörter lernen und Deutschland entdecken.","ausprobieren":["Übungen öffnen beim ersten Mal schneller."],"in_arbeit":[],"brauche":[]},{"id":"kb","name":"Kaninchenbau","link":"../kaninchenbau/","version":"0.1.0","kurz":"Lernen, was dich interessiert – von Einsteiger bis Profi, mit echten Quellen.","ausprobieren":["Startfragen: Was interessiert dich?","4 Gebiete mit je 3 Stufen – Einsteiger, Fortgeschritten, Profi.","Ein Baum zeigt, wie die Themen zusammenhängen."],"in_arbeit":["0.2: Antworten korrigieren, Fortschritt in Prozent, Karte."],"brauche":[]}],"werkzeuge":[{"id":"tonpost","name":"Ton-Post","link":"../ton-post/","wofuer":"Dateien sicher an mich schicken – gerade für das Master-Preset von The Wall."}]},"verlauf":{"stand":"2026-11-22","hinweis":"Je App und Woche (Montag bis Sonntag), neueste Woche zuerst. Version = Stand am Ende der Woche. Nur belegte Änderungen (Git-Verlauf und Änderungslisten).","apps":{"synq":{"name":"Synquenzer","wochen":[{"von":"2026-11-16","bis":"2026-11-22","version":"4.82.0","neu":["Gesang startet auf der 1 – was du im Vorzähler singst, bleibt drin","Gesang quantisieren ohne Stottern, Bereinigen und Chor mit einem Tipp","DAW-Projekt öffnen: Spuren, Klänge und Drums kommen gleich mit","Bis 16 Spuren live","Chor als Einzelstücke für deine DAW"]},{"von":"2026-11-09","bis":"2026-11-15","version":"4.75.0","neu":["Gesang reinigen: Plopps, Klicks, Brummen und Atmer weg","Neue Spektral-Seite: Lied in Drums, Bass und Rest zerlegen, Noten finden","Gesang bearbeiten wie Noten – Silben sitzen auf dem Taktstrich","Audio und MIDI laden: Tempo, Takt und Songteile werden erkannt","Drum-Spur in Einzelspuren, Songteil transponieren"]},{"von":"2026-11-02","bis":"2026-11-08","version":"4.54.0","neu":["Begleiter: eine Band spielt live zu deinen Akkorden","JAM: FILL-Taste und Leiste mit Stottern, Filter und Blende","Remix: deine Noten in vielen Stilen, mit passendem Rhythmus und Klang","Mix und Master auf Knopfdruck","Video-Vorschau beim Komponieren, Video mit Ton auf dem Handy"]},{"von":"2026-10-26","bis":"2026-11-01","version":"4.41.0","neu":["Neuer Drum-Synth mit Editor, Programmen und Kits","Video aus dem Song – mit Ton, zeigt die echte App","Chor auf Knopfdruck, Songtext wird von selbst erkannt","Gesangsspur: einsingen, Takes, Overdub, säubern","Analog-Synth mit Arpeggiator, Vocoder und 128 Klängen"]},{"von":"2026-10-19","bis":"2026-10-25","version":"4.9.0","neu":["Neuer Analog-Synth mit eigenem Bedienfeld","Songteile an jeden Taktstrich ziehen","Eine Skala: schiefe Töne rücken in die Tonart","Singen wird zu Noten","8 Spuren und 8 Szenen, online speichern und zu zweit an Songs arbeiten"]},{"von":"2026-10-12","bis":"2026-10-18","version":"3.11.1","neu":["FM-Synth mit 6 Operatoren und eigenem FM-Feld","Drum-Synth mit 7 Kits und Song-Modus","Noten-Editor und Drum-Schrittraster","Rückgängig, und Projekte speichern sich selbst","Erste Fassung: Clip-Matrix, Transponieren mit der Tastatur"]}]},"wall":{"name":"The Wall – Ablage","wochen":[{"von":"2026-11-16","bis":"2026-11-22","version":"v10","neu":["Gesang-Werkstatt: Silben auf der Welle, v7 und v10 vergleichen, Stellen markieren","v10: Gesang gereinigt, Strophe 2 neu, Hall kleiner","DAW-Projekt v8 in einer Datei, Master-Varianten zum Durchschalten","DAW-Projekt v7 mit trockenen Spuren und Terzstimmen","Alles zum Laden: Master, Gesang, Einzelspuren, Noten, Notenvideo"]}]},"mischpult":{"name":"Mischpult","wochen":[{"von":"2026-11-16","bis":"2026-11-22","version":"0.2","neu":["Neue App: Spuren aus der DAW mischen und mastern – auf dem Gerät","Mischrezept zum Nachbauen in der DAW","Messwerte zum Auswerten schicken – ohne Ton","Kalibrier-Modus"]}]},"tonpost":{"name":"Ton-Post","wochen":[{"von":"2026-11-16","bis":"2026-11-22","version":"Stand 16.11.2026","neu":["Neue App: Spuren und Mixdown sicher hochladen","Privater Speicher – nach dem Abholen gelöscht"]}]},"mv":{"name":"Mein Vorteil","wochen":[{"von":"2026-11-16","bis":"2026-11-22","version":"Fassung 13","neu":["Merkliste für Produkte – Erinnerung genau am ersten Angebotstag","Neuer Reiter Woche: die stärksten Prospekt-Angebote je Markt, mit Bild","Nur Märkte in deiner Nähe","Filme für 3,99 € mit Filtern: Genre, Jahrzehnt, Schauspieler","Neu: Ausflüge und Aktionen, Nebenverdienst, Lokale mit Öffnungszeiten"]},{"von":"2026-11-09","bis":"2026-11-15","version":"Fassung 3","neu":["Neuer Reiter Spartricks: 96 Tipps und ein Tipp des Tages","Neuer Reiter Essen: Aktionstage, Gratis-Essen, Abhol-Pizza, All-you-can-eat","Filme: für 3,99 €, Action und Thriller, Comedy – ohne Horror","Serien und Film-Boxen im Angebot","Deutschunterricht: Leute, die Hilfe mit Deutsch suchen"]},{"von":"2026-11-02","bis":"2026-11-08","version":"Fassung 2","neu":["Neu: Filme und Serien im Angebot","Remix-Wettbewerbe und Aufrufe für Auftritte","Stellen für Deutschunterricht","Konzerte mit nächstem Termin – nur echte Auftritte","Neues dunkles Aussehen mit Hilfe beim Bewerben"]},{"von":"2026-10-26","bis":"2026-11-01","version":"Fassung 1","neu":["Eine Seite für Angebote, Preisfehler, Vorteile und Konzerte","Jedes Angebot mit Preisvergleich: jetzt, regulär, üblich, Tiefstpreis","Preisfehler mit vorher und jetzt","Abgelaufenes verschwindet von selbst","Ehrliche Packungsgrößen und Preis pro Stück"]}]},"atem":{"name":"Atem","wochen":[{"von":"2026-11-16","bis":"2026-11-22","version":"0.2.2","neu":["Gläserner Mensch mit leuchtender Lunge zeigt den Atem","Meditationen mit Stimme: Deutsch, Englisch, Arabisch, Italienisch","Leise Klang-Signale zum Mitzählen","Ziele, Fortschritt und Erinnerung","Übungen kurz, normal oder lang – auch mit eigener Musik"]},{"von":"2026-11-09","bis":"2026-11-15","version":"0.1.2","neu":["Neue App: Atemübungen mit Figur zum Mitmachen","Training mit Anzeige der Runde","Aussagen mit geprüften Studien belegt"]}]},"foto":{"name":"Bildwerk","wochen":[{"von":"2026-11-16","bis":"2026-11-22","version":"0.5.0","neu":["Große Fotos öffnen ohne Warten","Braucht weniger Speicher"]},{"von":"2026-11-09","bis":"2026-11-15","version":"0.4.0","neu":["Neue App: Fotos auf dem Gerät bearbeiten – Auto, Regler, Looks, Retusche, Zuschnitt","Mehrere Fotos auf einmal","Looks sauberer: kein Lichtrand, weniger Rauschen","Look „Intensiv“, Gesicht auffrischen auch bei mehreren Personen"]}]},"ticke":{"name":"Wie ich ticke","wochen":[{"von":"2026-11-16","bis":"2026-11-22","version":"0.2.1","neu":["Neues Spiel Entweder-oder – mit Kontroll- und Fangfragen","Profil zeigt auch seine Grenzen","Neue App: Fragebögen zu Persönlichkeit, Interessen und Tagesrhythmus","Text-Spiegel, „Was passt zu mir“ und Training"]}]},"c2":{"name":"Feinschliff","wochen":[{"von":"2026-11-16","bis":"2026-11-22","version":"0.6.0","neu":["176 Übungen jetzt auf C1/C2-Niveau, zwei neue Lesetexte","Keine Eintipp-Übungen mehr: nur Auswählen, Sortieren, Zuordnen","Wünsche und Fehler direkt aus der App schicken","Üben ohne Internet, Stand als Datei sichern","Neue App: Grammatik, Hören, Lesen, Wortschatz, Quiz und Prüfung"]}]},"kb":{"name":"Kaninchenbau","wochen":[{"von":"2026-11-16","bis":"2026-11-22","version":"0.1.0","neu":["Neue App: zwei bunte Knöpfe finden heraus, was dich interessiert","12 Wissens-Äste, Stufen von Einsteiger bis Profi","Möhren als Belohnung","Baum mit Querverbindungen und echten Quellen"]}]},"dmx":{"name":"Deutsch mit Xander","wochen":[{"von":"2026-11-09","bis":"2026-11-15","version":"Fassung 888","neu":["Übungen öffnen beim ersten Mal schneller"]},{"von":"2026-11-02","bis":"2026-11-08","version":"Fassung 887","neu":["Livestream und Chat ohne Hänger, auch wenn viele schreiben","Klassenzimmer betreten geht flüssiger","Profilfotos laden nur einmal"]},{"von":"2026-10-26","bis":"2026-11-01","version":"Fassung 886","neu":["Seite startet schneller – zuerst aus dem Speicher","„Über mich“ und offene Räume sofort da","Wissen lädt im langsamen Netz viel schneller"]},{"von":"2026-10-19","bis":"2026-10-25","version":"Fassung 885","neu":["Wenn der Server bremst, bleibt die Seite ruhig und du bleibst angemeldet","Nach einer Sperre ist dein Profil schnell wieder da"]},{"von":"2026-10-12","bis":"2026-10-18","version":"Fassung 884","neu":["Ton im Chat kommt nach einem Verbindungsabbruch wieder","Diktat ist hörbar","Im Klassenzimmer sehen alle dasselbe"]},{"von":"2026-10-05","bis":"2026-10-11","version":"Fassung 883","neu":["Schönere Zoo-Tiere","Die große Glocke in der Stadt klingt klar und klingt aus","Aussprache-Prüfung bei z, s und sch genauer","Tafel: Ordner und Schieber für Bilder"]},{"von":"2026-09-28","bis":"2026-10-04","version":"Fassung 881","neu":["Erste Tier-Szene: Tiere der Savanne","Städte wieder mit ihren echten Spezialitäten","Ruhigerer Start, Übungen laden erst beim Öffnen"]}]}}}}</script>
 <script>
 /* =====================================================================================================
-   NEUE APP ERGÄNZEN: einen Eintrag in APPS anlegen (gruppe, name, link, text; farbe = Farbton 0–360).
-   ver = Version, wie sie zuletzt bekannt war; quelle = Datei der App, aus der die Seite die Version frisch liest
-   (url, muster mit einer Klammer, vor = Text davor; kopf: true = nur die ersten 16 KB holen).
+   PFLEGE (ausführlich in PFLEGE.md):
+   - Version einer App: hier in APPS bei ver: '…' (wie bisher; die Seite liest sie beim Öffnen ohnehin frisch nach).
+   - Texte (kurz, ausprobieren, in_arbeit, brauche) in apps.json, Verlauf je Woche in verlauf.json,
+     danach python3 einbetten.py – das prüft die Daten und schreibt sie oben in <script id="daten">.
+   - quelle = Datei der App, aus der die Seite die Version frisch liest (url, muster mit einer Klammer, vor = Text davor;
+     kopf: true = nur die ersten 16 KB holen).
    ===================================================================================================== */
 const APPS = [
-  { id: 'synq', gruppe: 'musik', name: 'Synquenzer', ikon: 'tasten', farbe: 265, link: '../', ver: '4.82.0',
-    text: 'Die Musik-App: Clips einspielen, Szenen starten, Song bauen, singen, mischen und Video – bis 16 Spuren.',
-    quelle: { url: '../version.json', muster: /"version"\s*:\s*"([^"]+)"/ },
-    chips: [{ t: 'Wo finde ich was?', href: '#finden' }] },
-  { id: 'mischpult', gruppe: 'musik', name: 'Mischpult', ikon: 'regler', farbe: 200, link: '../mischpult/', ver: '0.2',
-    text: 'Spuren aus der DAW mischen und mastern, eine fertige Datei auf Lautheit prüfen, Album mit gleichem Klang.',
+  { id: 'synq', adr: 'synquenzer.pages.dev', name: 'Synquenzer', ikon: 'tasten', farbe: 265, link: '../', ver: '4.82.0',
+    quelle: { url: '../version.json', muster: /"version"\s*:\s*"([^"]+)"/ } },
+  { id: 'mischpult', adr: 'mischpult.pages.dev', name: 'Mischpult', ikon: 'regler', farbe: 200, link: '../mischpult/', ver: '0.2',
     quelle: { url: '../mischpult/index.html', muster: /id="version">Version ([\d.]+)/ } },
-  { id: 'wall', gruppe: 'musik', name: 'The Wall – Ablage', ikon: 'ordner', farbe: 330, link: '../the-wall/', ver: 'Stand 22.11.2026',
-    text: 'Zum Laden: Master, Cubasis-Projekte, Gesang, Einzelspuren, Noten, Notenvideo und Formant-Chor.',
-    quelle: { url: '../the-wall/index.html', muster: /Stand (\d{1,2}\.\d{1,2}\.\d{4})/, vor: 'Stand ' } },
-  { id: 'werkstatt', gruppe: 'musik', name: 'Gesang-Werkstatt', ikon: 'mikro', farbe: 330, link: '../the-wall/werkstatt/', ver: 'v10',
-    text: 'The Wall: Hauptstimme mit Silben auf der Welle, v7 und v10 vergleichen, Stellen markieren und Notizen an Claude senden.' },
-  { id: 'tonpost', gruppe: 'musik', name: 'Ton-Post', ikon: 'hoch', farbe: 25, link: '../ton-post/',
-    text: 'Audio hochladen: Spuren und Mixdown sicher in deinen privaten Speicher schicken – für Claude.' },
-  { id: 'messung', gruppe: 'musik', name: 'Messung', ikon: 'tacho', farbe: 170, link: '../messung/',
-    text: 'Misst in 60 Sekunden, wie viele Synquenzer-Spuren dein iPhone ohne Aussetzer schafft (8, 16, 24).' },
-  { id: 'gesang', gruppe: 'musik', name: 'Gesang-Vorschau', ikon: 'mikro', farbe: 295, link: '../vorschau-gesang/', ver: '4.23.0',
-    text: 'Ältere Testfassung des Synquenzers mit Gesang und Songtext – nur zum Vergleichen.' },
-
-  { id: 'mv', gruppe: 'alltag', name: 'Mein Vorteil', ikon: 'preis', farbe: 140, link: '../mein-vorteil/', ver: 'Fassung 11',
-    text: 'Deals, Wochenangebote, Preisfehler, Filme, Konzerte, Auftritte und Spartricks auf einer Seite – mit Push.',
-    quelle: { url: '../mein-vorteil/sw.js', muster: /'mein-vorteil-(\d+)'/, vor: 'Fassung ' },
-    chips: [{ t: 'Deals', href: '../mein-vorteil/#deals' }, { t: 'Woche', href: '../mein-vorteil/#woche' },
-            { t: 'Filme', href: '../mein-vorteil/#filme' }, { t: 'Konzerte', href: '../mein-vorteil/#konzerte' }] },
-  { id: 'atem', gruppe: 'alltag', name: 'Atem', ikon: 'wind', farbe: 188, link: '../atem/', ver: '0.2.2',
-    text: 'Ruhige Atemübungen und Meditationen mit Ansage – alles bleibt auf deinem Gerät.',
+  { id: 'wall', adr: 'the-wall-song.pages.dev', name: 'The Wall – Ablage', chip: 'The Wall', ikon: 'ordner', farbe: 330, link: '../the-wall/', ver: 'v10' },
+  { id: 'mv', adr: 'mein-vorteil.pages.dev', name: 'Mein Vorteil', ikon: 'preis', farbe: 140, link: '../mein-vorteil/', ver: 'Fassung 13',
+    quelle: { url: '../mein-vorteil/sw.js', muster: /'mein-vorteil-(\d+)'/, vor: 'Fassung ' } },
+  { id: 'atem', adr: 'atem-app.pages.dev', name: 'Atem', ikon: 'wind', farbe: 188, link: '../atem/', ver: '0.2.2',
     quelle: { url: '../atem/app.js', muster: /VERSION\s*=\s*'([^']+)'/, kopf: true } },
-  { id: 'foto', gruppe: 'alltag', name: 'Bildwerk', ikon: 'kamera', farbe: 12, link: '../foto/', ver: '0.5.0',
-    text: 'Fotos bearbeiten auf dem Gerät: Auto, Regler, Looks, Retusche, Zuschnitt – auch mehrere auf einmal.',
+  { id: 'foto', adr: 'bildwerk-app.pages.dev', name: 'Bildwerk', ikon: 'kamera', farbe: 12, link: '../foto/', ver: '0.5.0',
     quelle: { url: '../foto/typen.js', muster: /VERSION\s*=\s*'([^']+)'/, kopf: true } },
-  { id: 'ticke', gruppe: 'alltag', name: 'Wie ich ticke', ikon: 'kompass', farbe: 245, link: '../ticke/', ver: '0.1.0',
-    text: 'Dich selbst besser verstehen – mit anerkannten Fragebögen und ehrlichen Grenzen, ohne Diagnose.',
+  { id: 'ticke', adr: 'wie-ich-ticke.pages.dev', name: 'Wie ich ticke', ikon: 'kompass', farbe: 245, link: '../ticke/', ver: '0.2.1',
     quelle: { url: '../ticke/kern.js', muster: /VERSION\s*=\s*'([^']+)'/, kopf: true } },
-
-  { id: 'tiktok', gruppe: 'alltag', name: 'TikTok-Ideenbuch', ikon: 'idee', farbe: 300, extern: true,
-    link: 'https://claude.ai/artifact/3NTW2KyXoKJxFLfRtNNmyN',
-    text: 'Unsinn-Logikfragen zum Vorlesen, Mischmaschine für neue Fragen und alle TikTok-Ideen – öffnet in Claude.' },
-
-  { id: 'c2', gruppe: 'lernen', name: 'Feinschliff', ikon: 'buch', farbe: 220, link: '../c2/', ver: '0.6.0',
-    text: 'Deutsch auf C2-Niveau in 10-Minuten-Runden: Hören, Lesen, Grammatik, Schreiben, Sprechen, Prüfung.',
+  { id: 'tiktok', adr: 'tiktok-ideenbuch.pages.dev', name: 'TikTok-Ideenbuch', chip: 'TikTok-Ideen', ikon: 'idee', farbe: 300, extern: true,
+    link: 'https://claude.ai/artifact/3NTW2KyXoKJxFLfRtNNmyN' },
+  { id: 'c2', adr: 'feinschliff-app.pages.dev', name: 'Feinschliff', ikon: 'buch', farbe: 220, link: '../c2/', ver: '0.6.0',
     quelle: { url: '../c2/sw.js', muster: /VERSION\s*=\s*'([^']+)'/ } },
-  { id: 'dmx', gruppe: 'lernen', name: 'Deutsch mit Xander', ikon: 'sprech', farbe: 350, extern: true,
-    link: 'https://xanderfoxy.github.io/Deutsch-Mit-Xander/', ver: 'Fassung 888',
-    text: 'Deutsch lernen: Grammatik üben, Vokabeln lernen und Deutschland entdecken – locker und kostenlos.',
+  { id: 'dmx', adr: 'deutsch-mit-xander.pages.dev', name: 'Deutsch mit Xander', ikon: 'sprech', farbe: 350, extern: true, link: 'https://xanderfoxy.github.io/Deutsch-Mit-Xander/', ver: 'Fassung 888',
     quelle: { url: '/Deutsch-Mit-Xander/fassung.json', muster: /"fassung"\s*:\s*"([^"]+)"/, vor: 'Fassung ' } },
-  { id: 'kb', gruppe: 'lernen', name: 'Kaninchenbau', ikon: 'hase', farbe: 150, link: '../kaninchenbau/', ver: '0.1.0',
-    text: 'Lernen, was dich interessiert: Startfragen, Stufen von Einsteiger bis Profi, Querverbindungen und echte Quellen.',
-    quelle: { url: '../kaninchenbau/app.js', muster: /VERSION\s*=\s*'([^']+)'/, kopf: true } },
-
-  { id: 'probe-g9', gruppe: 'werkstatt', name: 'Geräte-Probe', ikon: 'probe', farbe: 35, link: '../probe-g9/',
-    text: 'Knöpfe antippen: Ist ein Tick zu spüren, und bleibt die Tastatur offen?' },
-  { id: 'probe-if', gruppe: 'werkstatt', name: 'Probe Audio-Interface', ikon: 'buchse', farbe: 205, link: '../probe-interface/',
-    text: 'Bleibt der Ton auf dem AG06? Varianten nacheinander testen.',
-    chips: [{ t: 'Ausgang 2', href: '../probe-interface/v2.html' }, { t: 'Ausgang 3', href: '../probe-interface/v3.html' },
-            { t: 'Ausgang 4', href: '../probe-interface/v4.html' }] },
-  { id: 'alt', gruppe: 'werkstatt', name: 'Alte Adressen', ikon: 'pfeil', farbe: 140, link: '../mein-vorteil/',
-    text: 'Diese alten Links führen automatisch zu Mein Vorteil.',
-    chips: [{ t: 'Schnäppchen', href: '../schnaeppchen/' }, { t: 'Vorteile', href: '../vorteile/' }, { t: 'Konzerte', href: '../konzerte/' }] }
+  { id: 'kb', adr: 'kaninchenbau.pages.dev', name: 'Kaninchenbau', ikon: 'hase', farbe: 150, link: '../kaninchenbau/', ver: '0.1.0',
+    quelle: { url: '../kaninchenbau/app.js', muster: /VERSION\s*=\s*'([^']+)'/, kopf: true } }
 ];
+const WERKZEUG_FARBE = { tonpost: 25 };
 
-/* Wege im Synquenzer (geprüft in 4.81.0; „ab 4.83“ = neuer Weg mit dem Import-Blatt) */
+/* Wege im Synquenzer (geprüft in 4.81.0; „ab 4.83“ = neuer Weg mit dem Import-Blatt). WEGE_ZEIGEN = false blendet den Block aus. */
+const WEGE_ZEIGEN = true;
 const WEGE = [
-  { titel: 'DAW-Projekt öffnen (Cubasis, .cbp)',
+  { titel: 'DAW-Projekt öffnen (.cbp)',
     bisher: ['≡ Menü', 'Projekt', 'Export', 'Audio/MIDI importieren', '.cbp wählen'],
     neu: ['≡ Menü', 'Projekt', 'Import', 'DAW-Projekt öffnen (.cbp)'],
-    notiz: 'Die .cbp liegt in der Dateien-App im Cubasis-Ordner, im Ordner mit dem Projektnamen. Sie wird ein neues Projekt, dein offenes bleibt unter Projekte. Ab 4.83 geht auch die ZIP, die Cubasis beim Teilen macht.' },
-  { titel: 'Micrologue-Klänge mit dem ganzen Projekt übernehmen',
+    notiz: 'Die .cbp liegt in der Dateien-App im Ordner deiner DAW, im Ordner mit dem Projektnamen. Sie wird ein neues Projekt, dein offenes bleibt unter Projekte. Ab 4.83 geht auch die ZIP, die die DAW beim Teilen macht.' },
+  { titel: 'Synth-Klänge mit dem ganzen Projekt übernehmen',
     bisher: ['DAW-Projekt öffnen (oben)', 'Klang', 'Klänge aus der DAW übernehmen', 'Passt – öffnen'],
-    notiz: 'Ist vorgewählt, wenn das Projekt Micrologue-Spuren hat: jede Spur bekommt Klang, Echo und EQ wie in der DAW.' },
-  { titel: 'Einen Micrologue-Klang auf eine Spur holen',
+    notiz: 'Ist vorgewählt, wenn das Projekt Synth-Spuren aus der DAW hat: jede Spur bekommt Klang, Echo und EQ wie in der DAW.' },
+  { titel: 'Einen Synth-Klang aus der DAW auf eine Spur holen',
     bisher: ['Synth-Spur wählen', 'KLANG', 'Klang-Namen oben antippen', 'Aus DAW-Datei', '.cbp wählen', 'Spur antippen'],
     neu: ['≡ Menü', 'Projekt', 'Import', 'Klang aus DAW-Datei'],
     notiz: 'Danach stellt „↳ EQ wie in der DAW“ den Spur-EQ ein. Eingebaute Klänge im selben Stil heißen „Retro-…“ (z. B. Retro-Lead Hell).' },
-  { titel: 'Gesang aus Cubasis holen',
+  { titel: 'Gesang aus der DAW holen',
     bisher: ['≡ Menü', 'Projekt', 'Export', 'Gesang aus deiner DAW holen'],
     neu: ['≡ Menü', 'Projekt', 'Import', 'Gesang aus deiner DAW holen'],
     notiz: 'Anleitung in 6 Schritten: Gesang trocken als WAV aus der DAW, hier als Gesang laden, Chor erzeugen, als Einzelstücke zurück.' },
@@ -246,21 +302,10 @@ const WEGE = [
     notiz: 'Zum Beispiel „Chor“, „Video“ oder „DAW“ – der Treffer zeigt den Weg und „Zeig es mir“ führt hin.' }
 ];
 
-const GRUPPEN = [
-  { id: 'musik', titel: 'Musik', hinweis: 'Der Synquenzer und alles rund um deine Songs.' },
-  { id: 'finden', titel: 'Im Synquenzer finden', hinweis: 'Wo was ist (Stand 4.81). Grün „ab 4.83“: so geht es mit dem neuen Import-Knopf.' },
-  { id: 'alltag', titel: 'Alltag', hinweis: 'Sparen, durchatmen, Fotos, dich selbst verstehen.' },
-  { id: 'lernen', titel: 'Lernen', hinweis: 'Deutsch von locker bis C2 – und Wissen zu dem, was dich interessiert.' },
-  { id: 'werkstatt', titel: 'Werkstatt', hinweis: 'Proben und Tests – meist nur einmal gebraucht.' }
-];
-
 const IKON = {
   tasten: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 5v8.5M12 5v8.5M16 5v8.5"/>',
   regler: '<path d="M6 4v16M12 4v16M18 4v16"/><rect class="voll" x="3.5" y="12.5" width="5" height="3.5" rx="1"/><rect class="voll" x="9.5" y="6.5" width="5" height="3.5" rx="1"/><rect class="voll" x="15.5" y="10" width="5" height="3.5" rx="1"/>',
   ordner: '<path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H9l2 2h7.5A2.5 2.5 0 0 1 21 9.5v7a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 16.5z"/><path d="M12 10.5v5.5M9.5 13.5 12 16l2.5-2.5"/>',
-  hoch: '<path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M4 14v3.5A2.5 2.5 0 0 0 6.5 20h11a2.5 2.5 0 0 0 2.5-2.5V14"/>',
-  tacho: '<path d="M4 17a8 8 0 1 1 16 0"/><path d="M12 17l4-5"/><circle class="voll" cx="12" cy="17" r="1.8"/>',
-  mikro: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/>',
   preis: '<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle class="voll" cx="7.5" cy="7.5" r="1.6"/>',
   wind: '<path d="M3 9h10.5A3 3 0 1 0 10.5 6"/><path d="M3 14h14.5a3 3 0 1 1-3 3"/>',
   kamera: '<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/>',
@@ -268,66 +313,223 @@ const IKON = {
   buch: '<path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19M9 7.5h6"/>',
   sprech: '<path d="M4 5h16v11H9.5L4 20z"/><path d="M8 9h8M8 12.5h5"/>',
   hase: '<path d="M9.5 8.7C7.4 6.6 6.3 2.5 8.1 2s3.1 3.3 3.4 6.1M14.5 8.7c2.1-2.1 3.2-6.2 1.4-6.7s-3.1 3.3-3.4 6.1"/><circle cx="12" cy="14.6" r="6.4"/><circle class="voll" cx="9.6" cy="13.9" r="1.15"/><circle class="voll" cx="14.4" cy="13.9" r="1.15"/><path d="M11 17.3h2"/>',
-  probe: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/><path d="M7.5 15h9"/>',
-  buchse: '<rect x="3" y="7" width="18" height="10" rx="2.5"/><circle cx="8.5" cy="12" r="2"/><circle cx="15.5" cy="12" r="2"/>',
-  pfeil: '<path d="M4 12h15M14 7l5 5-5 5"/>',
   idee: '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/>'
 };
 
 const $ = (s, w = document) => w.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const norm = s => String(s).toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss');
-// Andere Schreibweisen, die die Suche auch findet (nur im Suchtext, nicht sichtbar): „QBasis“, „Q-Basis“, „Q Basis“ = Cubasis
-const SYNONYME = { cubasis: 'qbasis kubasis' };
+// Andere Schreibweisen, die die Suche auch findet (nur im Suchtext, nicht sichtbar): „QBasis“, „Q-Basis“, „Q Basis“ = DAW
+const SYNONYME = { daw: 'cubasis qbasis kubasis', cubasis: 'qbasis kubasis daw' };
 const suchText = s => { let t = norm(s); for (const w in SYNONYME) if (t.includes(w)) t += ' ' + SYNONYME[w]; return t; };
-const suchWorte = s => norm(s).replace(/\bq[\s\-\u2010-\u2013]+(?=b|$)/g, 'q').trim().split(/\s+/).filter(Boolean);
+const suchWorte = s => norm(s).replace(/\bq[\s\-‐-–]+(?=b|$)/g, 'q').trim().split(/\s+/).filter(Boolean);
 
-function kachel(a) {
-  const chips = (a.chips || []).map(c => `<a href="${esc(c.href)}">${esc(c.t)}</a>`).join('');
-  const such = suchText([a.name, a.text, (a.chips || []).map(c => c.t).join(' '), a.gruppe].join(' '));
-  return `<article class="kachel" style="--h:${a.farbe}" data-such="${esc(such)}">
-    <div class="ikon" aria-hidden="true"><svg viewBox="0 0 24 24">${IKON[a.ikon] || ''}</svg></div>
-    <div>
-      <div class="kopfzeile"><h3><a class="haupt" href="${esc(a.link)}">${esc(a.name)}</a>${a.extern ? ' <span class="extern" aria-label="eigene Seite">↗</span>' : ''}</h3>${a.ver ? `<span class="ver" data-ver="${a.id}">${esc(a.ver)}</span>` : ''}</div>
-      <p>${esc(a.text)}</p>${chips ? `<div class="chips">${chips}</div>` : ''}
-    </div>
+/* ---------- Daten zusammenführen ---------- */
+let DATEN = {};
+try { DATEN = JSON.parse($('#daten').textContent) || {}; } catch (e) { DATEN = {}; }
+const TEXTE = (DATEN.apps && DATEN.apps.haupt) || [];
+const VERLAUF = (DATEN.verlauf && DATEN.verlauf.apps) || {};
+const LISTE = APPS.map(a => {
+  const t = TEXTE.find(x => x.id === a.id) || {};
+  return { ...t, ...a, ver: a.ver || t.version || '' };
+}).concat(TEXTE.filter(t => !APPS.some(a => a.id === t.id)).map(t => ({ ikon: 'idee', farbe: 250, ...t, ver: t.version || '' })));
+const WERKZEUGE = ((DATEN.apps && DATEN.apps.werkzeuge) || []).map(w => ({ farbe: WERKZEUG_FARBE[w.id] ?? 25, ...w }));
+const liste = (x, n) => (Array.isArray(x) ? x : []).slice(0, n);
+
+/* ---------- Wochen (Montag bis Sonntag). Namen rechnet die Seite aus dem heutigen Datum. ---------- */
+const TAG = 864e5;
+const tagNr = iso => { const [y, m, d] = String(iso).split('-').map(Number); return Date.UTC(y, m - 1, d) / TAG; };
+const isoVon = nr => new Date(nr * TAG).toISOString().slice(0, 10);
+const jetzt = new Date();
+const wtag = (jetzt.getDay() + 6) % 7; // 0 = Montag … 6 = Sonntag
+const montagHeute = Date.UTC(jetzt.getFullYear(), jetzt.getMonth(), jetzt.getDate()) / TAG - wtag;
+const tm = iso => { const [, m, d] = String(iso).split('-').map(Number); return [d, m]; };
+const spanne = (von, bis) => { const [d1, m1] = tm(von), [d2, m2] = tm(bis || isoVon(tagNr(von) + 6)); return m1 === m2 ? `${d1}.–${d2}.${m2}.` : `${d1}.${m1}.–${d2}.${m2}.`; };
+const relName = von => {
+  const i = Math.max(0, Math.round((montagHeute - tagNr(von)) / 7));
+  return i === 0 ? (wtag >= 5 ? 'Dieses Wochenende' : 'Diese Woche') : i === 1 ? 'Voriges' : i === 2 ? 'Vorvoriges' : `Vor ${i} Wochen`;
+};
+const EINZELN = 5; // so viele Wochen bekommen einen eigenen Knopf, alles davor steht unter „Älter“
+const sichtbar = new Set(LISTE.map(a => a.id));
+const alleVon = [...new Set(Object.entries(VERLAUF).filter(([id]) => sichtbar.has(id))
+  .flatMap(([, a]) => (a.wochen || []).map(w => w.von)))].sort().reverse();
+const WOCHEN = alleVon.slice(0, EINZELN).map(von => ({ key: von, von: [von], name: relName(von), datum: spanne(von) }));
+if (alleVon.length > EINZELN) {
+  const rest = alleVon.slice(EINZELN), [d, m] = tm(isoVon(tagNr(rest[0]) + 6));
+  WOCHEN.push({ key: 'aelter', von: rest, name: 'Älter', datum: `bis ${d}.${m}.` });
+}
+const eintraege = (id, w) => ((VERLAUF[id] && VERLAUF[id].wochen) || []).filter(x => w.von.includes(x.von));
+const ersteWoche = id => ((VERLAUF[id] && VERLAUF[id].wochen) || []).map(x => x.von).sort()[0] || null;
+
+/* ---------- Bausteine ---------- */
+const FRISCH = {}; // frisch gelesene Versionen
+const verBadge = a => a.ver ? `<span class="ver" data-ver="${esc(a.id)}"${FRISCH[a.id] ? ' data-frisch="1" title="frisch gelesen"' : ''}>${esc(FRISCH[a.id] || a.ver)}</span>` : '';
+const punkte = (arr, klasse = '', mehr = '') => `<ul class="punkte${klasse ? ' ' + klasse : ''}">${arr.map(p => `<li>${esc(p)}</li>`).join('')}${mehr ? `<li class="mehr">${esc(mehr)}</li>` : ''}</ul>`;
+const block = (titel, arr, klasse, mehr) => `<span class="etikett">${esc(titel)}</span>${punkte(arr, klasse, mehr)}`;
+const braucheBlock = a => a.brauche && a.brauche.length ? `<div class="bra">${block('Brauche ich von dir', a.brauche)}</div>` : '';
+const zuApp = a => `<a href="#app=${esc(a.id)}" data-spring=".app-ansicht">Alle Wochen ›</a>`;
+const appLink = a => `<a href="${esc(a.link)}" style="--h:${a.farbe}">${esc(a.name)}${a.extern ? '&nbsp;↗' : ''}</a>`;
+// Kopf: Symbol + Name + Version (+ kurzer Text daneben); darunter in voller Breite die Listen und Knöpfe
+function kachel(a, badge, innen, fuss = '', kurz = '') {
+  const unten = innen + (fuss ? `<div class="chips">${fuss}</div>` : '');
+  return `<article class="kachel" style="--h:${a.farbe}" id="k-${esc(a.id)}">
+    <div class="ikon" aria-hidden="true"><svg viewBox="0 0 24 24">${IKON[a.ikon] || IKON.idee}</svg></div>
+    <div class="rumpf">
+      <div class="kopfzeile"><h3><a class="haupt" href="${esc(a.link)}">${esc(a.name)}</a>${a.extern ? ' <span class="extern" aria-label="eigene Seite">↗</span>' : ''}</h3>${badge}</div>
+      ${a.adr ? `<small class="adr">${esc(a.adr)}</small>` : ''}
+      ${kurz ? `<p>${esc(kurz)}</p>` : ''}
+    </div>${unten ? `<div class="unten">${unten}</div>` : ''}
   </article>`;
 }
-function pfad(schritte) { return `<ol class="pfad">${schritte.map(s => `<li><span class="taste">${esc(s)}</span></li>`).join('')}</ol>`; }
-function weg(w) {
-  const such = suchText([w.titel, w.notiz, w.bisher.join(' '), (w.neu || []).join(' ')].join(' '));
-  return `<div class="weg" data-such="${esc(such)}"><h3>${esc(w.titel)}</h3>
-    <div class="zeile">${w.neu ? '<span class="wann">bisher</span>' : ''}${pfad(w.bisher)}</div>
-    ${w.neu ? `<div class="zeile neu"><span class="wann neu">ab 4.83</span>${pfad(w.neu)}</div>` : ''}
-    ${w.notiz ? `<p class="notiz">${esc(w.notiz)}</p>` : ''}</div>`;
+
+/* ---------- Ansicht „Nach Woche“ ---------- */
+function karteWoche(a, e, erste) {
+  if (erste) {
+    // Neueste Woche: was er jetzt ausprobieren kann, woran gerade gearbeitet wird, und was ich brauche
+    const basis = liste(a.ausprobieren, 4).length ? liste(a.ausprobieren, 4) : liste(e[0].neu, 5);
+    // Ist die App in dieser Woche neu dazugekommen, steht das oben (Punkt „Neue App: …“ aus verlauf.json)
+    const neuApp = e.flatMap(x => liste(x.neu, 9)).find(p => /^Neue App\b/.test(p));
+    const probier = neuApp && !basis.includes(neuApp) ? [neuApp, ...basis].slice(0, 5) : basis;
+    const arbeit = liste(a.in_arbeit, 9), mehr = arbeit.length > 2 ? `+ ${arbeit.length - 2} weitere unter „Alle Wochen“` : '';
+    return kachel(a, verBadge(a), block('Neu – probier aus', probier) + (arbeit.length ? block('In Arbeit', arbeit.slice(0, 2), 'leise', mehr) : '') + braucheBlock(a), zuApp(a));
+  }
+  if (e.length === 1) return kachel(a, e[0].version ? `<span class="ver alt">damals ${esc(e[0].version)}</span>` : '', block('Neu', liste(e[0].neu, 9)), zuApp(a));
+  return kachel(a, '', e.map(x => block(`${spanne(x.von, x.bis)}${x.version ? ' · ' + x.version : ''}`, liste(x.neu, 9))).join(''), zuApp(a));
+}
+function zeichneWoche() {
+  const i = Math.max(0, WOCHEN.findIndex(x => x.key === zustand.woche)), w = WOCHEN[i];
+  if (!w) return '<p class="leer-text">Noch kein Verlauf eingetragen.</p>';
+  const mit = [], ohne = [];
+  for (const a of LISTE) {
+    const e = eintraege(a.id, w), seit = ersteWoche(a.id);
+    if (e.length) mit.push([a, e]);
+    else if (seit ? seit < w.von[w.von.length - 1] : i === 0) ohne.push([a, e]); // nur Apps, die es da schon gab
+  }
+  const vor = WOCHEN[i - 1], nach = WOCHEN[i + 1];
+  return `<p class="info">${esc(w.name)} · ${esc(w.datum)} · ${mit.length ? `Neues in ${mit.length} ${mit.length === 1 ? 'App' : 'Apps'}` : 'nichts Neues'}</p>
+    <div class="raster">${mit.map(([a, e]) => karteWoche(a, e, i === 0)).join('')}</div>
+    ${ohne.length ? `<div class="ohne"><p>In dieser Woche ohne Neues:</p><div class="chips">${ohne.map(([a]) => appLink(a)).join('')}</div></div>` : ''}
+    <div class="blaettern">
+      <button type="button" data-geh="${vor ? 'woche=' + vor.key : ''}"${vor ? '' : ' disabled'}>‹ Neuere Woche</button>
+      <button type="button" data-geh="${nach ? 'woche=' + nach.key : ''}"${nach ? '' : ' disabled'}>Frühere Woche ›</button>
+    </div>`;
 }
 
-let html = '';
-for (const g of GRUPPEN) {
-  const innen = g.id === 'finden' ? `<div class="wege">${WEGE.map(weg).join('')}</div>`
-    : `<div class="raster">${APPS.filter(a => a.gruppe === g.id).map(kachel).join('')}</div>`;
-  if (g.id === 'werkstatt') html += `<details class="werk gruppe" id="${g.id}"><summary>${esc(g.titel)}</summary><div class="innen"><p class="hinweis">${esc(g.hinweis)}</p>${innen}</div></details>`;
-  else html += `<section class="gruppe" id="${g.id}"><h2>${esc(g.titel)}</h2><p class="hinweis">${esc(g.hinweis)}</p>${innen}</section>`;
+/* ---------- Ansicht „Nach App“: alle Wochen untereinander ---------- */
+function zeichneApp() {
+  const i = Math.max(0, LISTE.findIndex(x => x.id === zustand.app)), a = LISTE[i];
+  const wochen = (VERLAUF[a.id] && VERLAUF[a.id].wochen) || [];
+  const jetztTeil = (liste(a.ausprobieren, 9).length ? block('Probier aus', liste(a.ausprobieren, 9)) : '')
+    + (liste(a.in_arbeit, 9).length ? block('In Arbeit', liste(a.in_arbeit, 9), 'leise') : '') + braucheBlock(a);
+  const strang = wochen.length ? `<ol class="strang">${wochen.map(w => `<li>
+      <div class="s-kopf"><b>${esc(relName(w.von))}</b><span class="datum">${esc(spanne(w.von, w.bis))}</span>${w.version ? `<span class="ver">${esc(w.version)}</span>` : ''}</div>
+      ${punkte(liste(w.neu, 9))}</li>`).join('')}</ol>` : '<p class="leer-text">Für diese App gibt es noch keinen Verlauf.</p>';
+  const vor = LISTE[i - 1], nach = LISTE[i + 1];
+  return `<div class="app-ansicht" style="--h:${a.farbe}">
+      ${kachel(a, verBadge(a), '', '', a.kurz)}
+      ${jetztTeil ? `<section class="tafel"><h3>Jetzt</h3>${jetztTeil}</section>` : ''}
+      <section class="tafel"><h3>Woche für Woche</h3>${strang}</section>
+    </div>
+    <div class="blaettern">
+      <button type="button" data-geh="${vor ? 'app=' + vor.id : ''}" data-spring=".app-ansicht"${vor ? '' : ' disabled'}>‹ ${esc(vor ? vor.chip || vor.name : '')}</button>
+      <button type="button" data-geh="${nach ? 'app=' + nach.id : ''}" data-spring=".app-ansicht"${nach ? '' : ' disabled'}>${esc(nach ? nach.chip || nach.name : '')} ›</button>
+    </div>`;
 }
-$('#inhalt').innerHTML = html;
-$('#sprung').innerHTML = GRUPPEN.map(g => `<li><a href="#${g.id}">${esc(g.titel)}</a></li>`).join('');
 
-// Sprung zur Werkstatt klappt sie auf
-const werk = $('#werkstatt');
-const oeffneWerk = () => { if (location.hash === '#werkstatt' && werk) werk.open = true; };
-addEventListener('hashchange', oeffneWerk); oeffneWerk();
-$('#sprung').addEventListener('click', e => { const a = e.target.closest('a'); if (a && a.getAttribute('href') === '#werkstatt' && werk) werk.open = true; });
+/* ---------- Suche: Treffer aus allen Apps und allen Wochen ---------- */
+function zeichneSuche(worte) {
+  let karten = '';
+  for (const a of LISTE) {
+    const nameTreffer = worte.every(w => suchText(a.name).includes(w));
+    const zeilen = [];
+    if (!nameTreffer) {
+      const pruefe = (tag, t) => { const s = suchText(a.name + ' ' + t); if (worte.every(w => s.includes(w))) zeilen.push([tag, t]); };
+      if (a.kurz) pruefe('', a.kurz);
+      liste(a.ausprobieren, 99).forEach(t => pruefe('Probier aus', t));
+      liste(a.in_arbeit, 99).forEach(t => pruefe('In Arbeit', t));
+      liste(a.brauche, 99).forEach(t => pruefe('Brauche ich', t));
+      ((VERLAUF[a.id] && VERLAUF[a.id].wochen) || []).forEach(w => liste(w.neu, 99).forEach(t => pruefe(spanne(w.von, w.bis), t)));
+    }
+    if (nameTreffer || zeilen.length) karten += kachel(a, verBadge(a), nameTreffer ? ''
+      : `<ul class="punkte">${zeilen.map(([tag, t]) => `<li>${tag ? `<span class="tag">${esc(tag)}</span>` : ''}${esc(t)}</li>`).join('')}</ul>`, zuApp(a), nameTreffer ? a.kurz : '');
+  }
+  return karten ? `<div class="raster">${karten}</div>` : '';
+}
 
-// Suche: blendet Kacheln und Wege aus, die das Wort nicht enthalten
+/* ---------- Zeichnen ---------- */
+let zustand = { ansicht: 'woche', woche: WOCHEN[0] && WOCHEN[0].key, app: LISTE[0].id };
+let springen = null;
+function ausHash() {
+  const h = decodeURIComponent(location.hash.slice(1)); let m;
+  if ((m = h.match(/^app=([\w-]+)$/)) && LISTE.some(a => a.id === m[1])) { zustand.ansicht = 'app'; zustand.app = m[1]; }
+  else if (h === 'app') zustand.ansicht = 'app';
+  else if ((m = h.match(/^woche=([\w-]+)$/)) && WOCHEN.some(w => w.key === m[1])) { zustand.ansicht = 'woche'; zustand.woche = m[1]; }
+  else if (h === 'finden') { const f = $('#finden'); if (f && !f.hidden) { f.open = true; springen = '#finden'; } }
+  else { zustand.ansicht = 'woche'; zustand.woche = WOCHEN[0] && WOCHEN[0].key; }
+}
 const eingabe = $('#suche');
-eingabe.addEventListener('input', () => {
-  const w = suchWorte(eingabe.value);
-  let treffer = 0;
-  document.querySelectorAll('[data-such]').forEach(el => { const ok = w.every(x => el.dataset.such.includes(x)); el.hidden = !ok; if (ok) treffer++; });
-  document.querySelectorAll('.gruppe').forEach(g => { g.hidden = !g.querySelector('[data-such]:not([hidden])'); });
-  if (werk && w.length && !werk.hidden) werk.open = true;
-  $('#leer').style.display = treffer ? 'none' : 'block';
+function zeichne() {
+  const worte = suchWorte(eingabe.value), sucht = worte.length > 0;
+  $('#steuer').hidden = sucht;
+  $('#brauche').hidden = sucht || !offen.length;
+  $('#um-woche').setAttribute('aria-pressed', zustand.ansicht === 'woche');
+  $('#um-app').setAttribute('aria-pressed', zustand.ansicht === 'app');
+  $('#wochen').hidden = zustand.ansicht !== 'woche';
+  $('#appwahl').hidden = zustand.ansicht !== 'app';
+  $('#wochen').querySelectorAll('.wo').forEach(b => b.setAttribute('aria-pressed', b.dataset.w === zustand.woche));
+  $('#appwahl').querySelectorAll('.aw').forEach(b => b.setAttribute('aria-pressed', b.dataset.a === zustand.app));
+  const html = sucht ? zeichneSuche(worte) : zustand.ansicht === 'app' ? zeichneApp() : zeichneWoche();
+  $('#inhalt').innerHTML = html;
+  // Werkzeuge und Wege: bei der Suche nur, was passt
+  let treffer = !!html;
+  document.querySelectorAll('[data-such]').forEach(el => { const ok = !sucht || worte.every(x => el.dataset.such.includes(x)); el.hidden = !ok; if (ok && sucht) treffer = true; });
+  const wz = $('#werkzeuge'); wz.hidden = !wz.querySelector('[data-such]:not([hidden])');
+  const f = $('#finden'); if (WEGE_ZEIGEN) { f.hidden = !f.querySelector('[data-such]:not([hidden])'); if (sucht && !f.hidden) f.open = true; }
+  $('#leer').style.display = sucht && !treffer ? 'block' : 'none';
+  // Nach dem Umschalten: Ziel sichtbar machen (Umschalter nicht aus dem Blick verlieren)
+  const ziel = springen && $(springen), mitte = !!springen && springen.includes('.bra'); springen = null;
+  if (ziel) ziel.scrollIntoView({ block: mitte ? 'center' : 'start' });
+  else if (!sucht && $('#steuer').getBoundingClientRect().top < 0) $('#steuer').scrollIntoView({ block: 'start' });
+}
+
+/* ---------- Einmal aufbauen: Brauche-Kasten, Knöpfe, Werkzeuge, Wege, Fuß ---------- */
+const offen = LISTE.flatMap(a => liste(a.brauche, 9).map(t => [a, t]));
+if (offen.length) {
+  $('#brauche').innerHTML = `<h2><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.2v6"/><circle class="voll" cx="12" cy="16.7" r="1.3"/></svg>Brauche ich von dir</h2>
+    <ul>${offen.map(([a, t]) => `<li><a href="#app=${esc(a.id)}" data-spring=".app-ansicht .bra" style="--h:${a.farbe}"><span class="b-app">${esc(a.chip || a.name)}</span><span class="b-tx">${esc(t.split(' – ')[0])}</span><span class="pf" aria-hidden="true">›</span></a></li>`).join('')}</ul>`;
+}
+$('#wochen').innerHTML = WOCHEN.map(w => `<button type="button" class="wo" data-w="${esc(w.key)}" aria-pressed="false"><b>${esc(w.name)}</b><small>${esc(w.datum)}</small></button>`).join('');
+$('#appwahl').innerHTML = LISTE.map(a => `<button type="button" class="aw" data-a="${esc(a.id)}" aria-pressed="false" style="--h:${a.farbe}"><i></i>${esc(a.chip || a.name)}</button>`).join('');
+$('#werkzeuge').innerHTML = WERKZEUGE.length ? `<h2>Werkzeuge</h2><p class="hinweis">Nur nötig, wenn ich darum bitte.</p>`
+  + WERKZEUGE.map(w => `<div class="wz" style="--h:${w.farbe}" data-such="${esc(suchText(w.name + ' ' + (w.wofuer || '')))}"><a href="${esc(w.link)}">${esc(w.name)}</a><span>${esc(w.wofuer || '')}</span></div>`).join('') : '';
+if (WEGE_ZEIGEN) {
+  const pfad = s => `<ol class="pfad">${s.map(x => `<li><span class="taste">${esc(x)}</span></li>`).join('')}</ol>`;
+  $('#wege-innen').innerHTML = `<p class="hinweis">Steht auch in der App unter ≡ Menü › Wo finde ich …? Grün „ab 4.83“: der Weg mit dem neuen Import-Knopf.</p><div class="wege">`
+    + WEGE.map(w => `<div class="weg" data-such="${esc(suchText([w.titel, w.notiz, w.bisher.join(' '), (w.neu || []).join(' ')].join(' ')))}"><h3>${esc(w.titel)}</h3>
+      <div class="zeile">${w.neu ? '<span class="wann">bisher</span>' : ''}${pfad(w.bisher)}</div>
+      ${w.neu ? `<div class="zeile neu"><span class="wann neu">ab 4.83</span>${pfad(w.neu)}</div>` : ''}
+      ${w.notiz ? `<p class="notiz">${esc(w.notiz)}</p>` : ''}</div>`).join('') + '</div>';
+} else $('#finden').remove();
+{
+  const stand = [DATEN.apps && DATEN.apps.stand, DATEN.verlauf && DATEN.verlauf.stand].filter(Boolean).sort().pop();
+  if (stand) { const [d, m] = tm(stand); $('#fuss').textContent = `Stand: ${d}.${m}.${stand.slice(0, 4)} · Die Versionen liest die Seite beim Öffnen frisch aus den Apps.`; }
+}
+
+/* ---------- Bedienung ---------- */
+// Sofort neu zeichnen und den Schritt nur im Verlauf merken (Zurück-Geste geht über hashchange)
+const geh = h => { eingabe.value = ''; if (location.hash.slice(1) !== h) history.pushState(null, '', '#' + h); ausHash(); zeichne(); };
+document.addEventListener('click', e => {
+  const s = e.target.closest('[data-spring]'); if (s) springen = s.dataset.spring;
+  const l = e.target.closest('a[href^="#"]'); if (l) { e.preventDefault(); geh(l.getAttribute('href').slice(1)); }
+  const b = e.target.closest('button[data-geh]'); if (b && b.dataset.geh) geh(b.dataset.geh);
+  const w = e.target.closest('.wo'); if (w) geh('woche=' + w.dataset.w);
+  const a = e.target.closest('.aw'); if (a) geh('app=' + a.dataset.a);
 });
+$('#um-woche').addEventListener('click', () => geh('woche=' + zustand.woche));
+$('#um-app').addEventListener('click', () => geh('app=' + zustand.app));
+addEventListener('hashchange', () => { ausHash(); zeichne(); });
+eingabe.addEventListener('input', zeichne);
+ausHash(); zeichne();
 
 // Hell / Dunkel: Auto → Hell → Dunkel (pro Gerät gemerkt)
 const THEMEN = ['auto', 'light', 'dark'], NAME = { auto: 'Auto', light: 'Hell', dark: 'Dunkel' };
@@ -343,17 +545,19 @@ $('#thema').addEventListener('click', () => { setzeThema(THEMEN[(THEMEN.indexOf(
 
 // Versionen frisch aus den Apps lesen – erst nach dem Zeichnen, klein (kopf: nur die ersten 16 KB), Fehler = bekannte Version bleibt
 async function liesVersion(a) {
-  const q = a.quelle, el = document.querySelector(`[data-ver="${a.id}"]`);
-  if (!q || !el) return;
+  const q = a.quelle;
+  if (!q) return;
   try {
     const r = await fetch(q.url, { cache: 'no-cache', headers: q.kopf ? { Range: 'bytes=0-16383' } : {} });
     if (!r.ok) return;
     const m = (await r.text()).match(q.muster);
-    if (m) { const v = (q.vor || '') + m[1]; el.textContent = v; el.title = 'frisch gelesen'; el.dataset.frisch = '1'; }
+    if (!m) return;
+    FRISCH[a.id] = (q.vor || '') + m[1];
+    document.querySelectorAll(`[data-ver="${a.id}"]`).forEach(el => { el.textContent = FRISCH[a.id]; el.title = 'frisch gelesen'; el.dataset.frisch = '1'; });
   } catch (e) { /* offline oder gesperrt: bekannte Version bleibt stehen */ }
 }
 const spaeter = window.requestIdleCallback || (f => setTimeout(f, 300));
-spaeter(() => APPS.forEach(liesVersion), { timeout: 1500 });
+spaeter(() => LISTE.forEach(liesVersion), { timeout: 1500 });
 </script>
 </body>
 </html>
