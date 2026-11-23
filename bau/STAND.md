@@ -1,4 +1,4 @@
-# Stand 23.11.15:52 UTC
+# Stand 23.11.15:54 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -80,6 +80,8 @@ Gebaut (bitgleich):
 1. Tiefband (`magsLo`, spk3DspMake): Rand-Rahmen des vorigen Streifens werden übernommen (gleiche FFT-Paare, Prüfung Signal-Objekt, Fenster, N/R/K, cen je Rahmen, Versatz gerade). Speicher kopiert vor der Rückgabe (lowSplit4 ändert Y in place), 2 Einträge je Schlüssel, Freigabe im finally von zerlegen.
 2. zPrep-Quantisierung ohne log10: Tabelle über float32-Bits (Exponent + 6 Mantissen-Bits), je Zelle höchstens eine Schwelle (per Binärsuche mit der alten Formel gefunden), nahe der Schwelle (±2,5e-4 relativ) und Sonderwerte genau gerechnet.
 ## zrl3
-# ZRL3 – Stand: in Arbeit
-Ansatz: Zwischenspeicher je Phasen-Vocoder-Abschnitt in spk6 `synth` (Schluessel = Hash ueber genaue Eingaben: Signal-Bits, rr/fv je Rahmen, N/H/sr/fmt, Laenge, Rand). Gleiche Eingaben -> gleiche Bits; nur geaenderte Abschnitte rechnen.
-Bau: python3 apply.py <eingang> <ausgang> (block.js). Kern-Test: test/test-zrl3.mjs (folgt).
+# ZRL3 auf 4.86.0 – Stand: fertig (kleiner Schnitt, ehrlich begrenzt)
+Eingang rel-4860 (a7515b98…). Bau: `python3 apply.py <eingang> <ausgang>` (Block `block.js`, 1 Haken `/*ZRL3*/`).
+Ansatz: In spk6 `synth` laeuft der Phasen-Vocoder je Abschnitt (regs) ueber `zrl3Pv`. Schluessel je Abschnitt = Hash (2×32 bit, FNV + Murmur)
+ueber die genauen Eingaben: Signal-Bits [s0−N, e0+N), rr/fv je Rahmen (wie pv sie liest), N/H/sr/fmt, Laenge, Rand-Ueberhang.
+Ein Abschnitt haengt nur von diesen Eingaben ab (lp/sp/fresh werden am Abschnitt-Anfang neu gesetzt) → gleicher Schluessel = gleiche Bits.
