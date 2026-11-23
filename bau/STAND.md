@@ -1,4 +1,4 @@
-# Stand 23.11.18:14 UTC
+# Stand 23.11.18:16 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -66,10 +66,11 @@ Block `block.js` (/* DSE-BEGIN/-END */ direkt hinter `Object.assign(SYNQUENZER,{
 - apply.py geschrieben (3 Haken), jetzt Test.
 - 13:05 FERTIG: Sonde nachher 24/24 OK (hoch+quer), Pflichtprüfungen ok. Ausgang: ausgang.html (md5 ffc7f9a61c3ee41c671ff55ba2124d13).
 ## farb
-# FARB – Stand
-- apply.py + block.css fertig (CSS-Block FARB-BEGIN/-END direkt nach der Alias-Zeile --t9..--t24 im Haupt-Stil). Ausgang index.html.
-- Kern-Test farb-test.cjs: ALLE OK (16 Spuren, Matrix/Song/Video/Auswahl, Kontrast, 1-8 bitgleich, keine Fehler).
-- Offen: Fotos, Pflicht-Pruefung, CHANGES/KURZ.
+# FARB – Stand: fertig
+
+Bau: `apply.py <eingang> <ausgang>` (md5 4.88.0 = 695af0504463a6385e21dc94e55b00c9) fügt `block.css` (Marker FARB-BEGIN/-END) direkt
+nach der Alias-Zeile `:root{--t9:var(--t1);…;--t24a:var(--t8a)}` im Haupt-Stil ein. Der spätere `:root`-Block gewinnt; nur
+`--t9…--t16` und `--t9a…--t16a` werden neu gesetzt, `--t17…--t24` bleiben (= 1–8, MAX_T ist 16). Anker: Ende der Alias-Zeile
 ## fok4
 # FOK4 – Stand: fertig (gebaut, gemessen; Grenzen unten)
 Ausgang `index.html` md5 496e9d9d146f8bd7d48c2e61f0e04caf (Eingang 4.88.0 695af0504463a6385e21dc94e55b00c9).
@@ -149,9 +150,11 @@ je version.json {"version":"4.87.0"}; Ergebnis tests/kern.out „ERGEBNIS bitgle
 erkennen a/b/a, tests/ke1-*.json), rauch.js `<port> b` (tests/rauch-b.out), tests/doppelt.out.
 
 ## perf5
-# PERF5 – Stand (in Arbeit)
-Bau: `python3 apply.py <eingang> <ausgang>` (≈ 6 s), Hilfsdateien block.js (Kopf aus PERF4 block.js + PERF5-Teil), acorn.js.
-block_head.js/block_tail.js = Quellen von block.js (cat block_head.js block_tail.js > block.js).
+# PERF5 – Stand (fertig)
+Kern-Test-Datei: **kern-test.cjs** – `node kern-test.cjs <port> [<server-ordner>]` (Standard-Ordner: ./srv). Im Server-Ordner
+a/index.html = vorher, b/index.html = nachher, je version.json {"version":"4.88.0"}; Server z. B. `cd srv && python3 -m http.server <port>`.
+Gegen eine andere Fassung: die andere Datei als b/index.html (oder a/) hineinlegen und neu laufen lassen. Ergebnis tests/kern.out,
+Schluss-Zeile „ERGEBNIS bitgleich“. Prüft: 12 Werksklänge bitgleich (FNV je Kanal, Kontrolle a/a), Worklet-Vorlagen laden (MIC_WK,
 ## spkv
 # SPKV auf 4.87.0 – Stand: fertig (gebaut, gemessen; Grenzen unten)
 Ausgang `index.html` md5 81347f5bb25e53205c248fa1e4b6eaeb (Eingang 280c5b0b6a9ed1f8ac77868fb8d5d38f). Bau: `python3 apply.py <eingang> <ausgang>`
@@ -165,7 +168,11 @@ apply.py ersetzt den ganzen SPKV-Block (`alt.js`, 1 Treffer, liegt in spk1DspMak
 gleicher Funktionsname spkvFix, kein neuer Top-Level-Name). `SPKV2_DEV=1` baut eine Dev-Fassung mit Debug-Haken (nur für test/dev-spkv2.mjs, Hauptfaden).
 
 ## szn
-# SZN – Stand: apply.py/block.js/block.css gebaut, Test folgt
+# SZN – Stand (fertig)
+Bau: `python3 apply.py <eingang> <ausgang>` (Eingang 4.88.0 md5 695af0504463a6385e21dc94e55b00c9, Ausgang hier `index.html`, md5 7c866eb7b57260fed5029e15e4ac2a3d).
+Drei Anker, je genau 1×:
+- CSS `block.css` (/* SZN-BEGIN/-END */) direkt nach `.scn .sc:empty{display:none}` (Regel der Akkord-Zeile im Szenen-Kopf).
+- JS `block.js` (/* SZN-BEGIN/-END */: `sznName`, `sznHead`) direkt vor `function buildGrid(){`.
 ## ton1
 # TON1 – Stand (fertig)
 - Ausgang: index.html = python3 apply.py ../rel-4850/index.html index.html (md5 125767aed0f89918371d0729d07a6f82).

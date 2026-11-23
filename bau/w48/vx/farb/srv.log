@@ -26,3 +26,6 @@ Serving HTTP on 127.0.0.1 port 9044 (http://127.0.0.1:9044/) ...
 127.0.0.1 - - [23/Nov/2026 18:13:16] "GET /neu/index.html HTTP/1.1" 200 -
 127.0.0.1 - - [23/Nov/2026 18:13:50] "GET /alt/index.html HTTP/1.1" 200 -
 127.0.0.1 - - [23/Nov/2026 18:13:54] "GET /alt/version.json?t=1795457634750 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 18:14:26] "GET /neu/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 18:14:30] "GET /neu/version.json?t=1795457670690 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 18:15:35] "GET /neu/index.html HTTP/1.1" 200 -

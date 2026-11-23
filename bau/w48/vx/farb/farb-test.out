@@ -1,0 +1,17 @@
+OK     16. Spur per Tipp auf "＋ Spur" angelegt (beide Fassungen)  {"alt":16,"neu":16}
+OK     Vergleichsfassung zeigt das alte Verhalten (9-16 = 1-8)  ["rgb(76, 201, 240)","rgb(139, 156, 255)","rgb(45, 212, 191)","rgb(251, 113, 133)","rgb(232, 121, 249)","rgb(163, 230, 53)","rgb(74, 222, 128)","rgb(196, 161, 255)"]
+OK     Spuren 1-8: Farben bitgleich zur Vergleichsfassung
+OK     Ausgangsprojekt ohne Bedienung unveraendert (Kopf/Feld/Video 1-6)  {"nt":6}
+OK     16 Farben paarweise verschieden  ["rgb(76, 201, 240)","rgb(139, 156, 255)","rgb(45, 212, 191)","rgb(251, 113, 133)","rgb(232, 121, 249)","rgb(163, 230, 53)","rgb(74, 222, 128)","rgb(196, 161, 255)","rgb(252, 120, 45)","rgb(75, 238, 253)","rgb(246, 147, 207)","rgb(140, 236, 184)","rgb(254, 200, 126)","rgb(58, 160, 255)","rgb(253, 159, 148)","rgb(238, 219, 46)"]
+OK     Abstand (OKLab) jeder neuen Farbe >= 0,07 zu allen anderen (1-8 untereinander: 0.083)  {"min":0.076,"paar":"2-14"}
+OK     Kontrast 9-16 auf Hintergrund >= 6,5:1 (1-8 min 7.17)  [7.23,13.74,9.18,13.61,12.66,7.03,9.71,13.61]
+OK     Kontrast 9-16 auf Gehaeuse >= 6:1  [6.72,12.77,8.54,12.65,11.77,6.54,9.03,12.65]
+OK     Dunkle Schrift auf Farbflaeche 9-16 >= 6:1  [7.13,13.55,9.06,13.42,12.49,6.94,9.58,13.43]
+OK     Matrix: Kopf-Balken 1-16 = Spurfarbe
+OK     Matrix: Felder --tc/--ta 1-16 = Spurfarbe
+OK     Video-Farben 1-16 = Spurfarbe  ["rgb(76, 201, 240)","rgb(139, 156, 255)","rgb(45, 212, 191)","rgb(251, 113, 133)","rgb(232, 121, 249)","rgb(163, 230, 53)","rgb(74, 222, 128)","rgb(196, 161, 255)","rgb(252, 120, 45)","rgb(75, 238, 253)","rgb(246, 147, 207)","rgb(140, 236, 184)","rgb(254, 200, 126)","rgb(58, 160, 255)","rgb(253, 159, 148)","rgb(238, 219, 46)"]
+OK     Song: SV.cols 1-16 = Spurfarbe
+OK     Song: sichtbare Spur-Leiste = Spurfarbe  5
+OK     Tipp auf Spur 14: Auswahl zeigt Farbe 14 (neu) bzw. Farbe 6 (alt)  {"neu":{"app":"rgb(58, 160, 255)","dot":"rgb(58, 160, 255)"},"alt":{"app":"rgb(163, 230, 53)","dot":"rgb(163, 230, 53)"}}
+OK     Keine Seitenfehler / console.error  {"alt":[],"neu":[]}
+ALLE OK

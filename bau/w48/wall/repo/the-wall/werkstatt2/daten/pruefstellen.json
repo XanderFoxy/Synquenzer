@@ -1,0 +1,175 @@
+{
+ "stand": "2026-11-23",
+ "quelle": "Messung v11 (Ende) gegen deine Aufnahme (gereinigt auf Ende-Zeit) – werkzeug/pruef_*.py, nur lokal gerechnet",
+ "schwere": {
+  "3": "deutlich",
+  "2": "mittel",
+  "1": "leicht"
+ },
+ "stellen": [
+  {
+   "id": "p01",
+   "zeit_s": 219.15,
+   "bis_s": 220.1,
+   "art": "Silbe fehlt?",
+   "schwere": 3,
+   "titel": "Sprechstelle: Anfang von „siehst“",
+   "was": "v11 setzt erst bei 3:39,85 mit einem kräftigen s ein. Davor (3:39,2–3:39,8) lag in deiner Aufnahme ein gehaltener Ton (um 178 Hz), der mit „Open your eyes“ entfernt wurde. Laut Silbenkarte war das schon der Anfang von „siehst“. Bitte A/B hören: Ist „siehst“ ganz da, oder ist das s noch ein Rest von „eyes“?",
+   "mass": {
+    "v11_bis_3_39_8_db": -77,
+    "aufnahme_db": -40
+   },
+   "silbe": 126
+  },
+  {
+   "id": "p02",
+   "zeit_s": 40.1,
+   "bis_s": 40.75,
+   "art": "Tonhöhe",
+   "schwere": 3,
+   "titel": "„zombies“: Tonkorrektur um 2 Halbtöne",
+   "was": "Die Korrektur hebt „zombies“ um etwa 2 Halbtöne (Spitze 3,1) und fällt bei 0:40,70 in 40 ms gut einen Halbton zurück. Falscher Zielton? Klingt es gequetscht?",
+   "mass": {
+    "median_ct": 203,
+    "max_ct": 313
+   },
+   "silbe": 6
+  },
+  {
+   "id": "p03",
+   "zeit_s": 220.2,
+   "bis_s": 221.4,
+   "art": "Loch",
+   "schwere": 2,
+   "titel": "Sprechstelle: Lücken zwischen den Wörtern",
+   "was": "Zwischen „du“, „mich“ und nach „nicht“ ist v11 bis 27 dB leiser als deine Aufnahme – dort lag das gesungene „Open your eyes“ darunter (gewollt entfernt). Prüfen, ob „nicht“ mit seinem t ganz da ist (3:41,2–3:41,4).",
+   "mass": {
+    "min_db": -27
+   },
+   "silbe": 128
+  },
+  {
+   "id": "p04",
+   "zeit_s": 110.8,
+   "bis_s": 110.95,
+   "art": "abgeschnitten",
+   "schwere": 2,
+   "titel": "„see“ endet hart",
+   "was": "Der Ausklang von „see“ bricht bei 1:50,89 in 10 ms auf völlige Stille ab. In deiner Aufnahme klingt er noch etwa 0,1 s aus.",
+   "mass": {
+    "sprung_db": -42
+   },
+   "silbe": null
+  },
+  {
+   "id": "p05",
+   "zeit_s": 83.49,
+   "bis_s": 83.51,
+   "art": "Klick",
+   "schwere": 2,
+   "titel": "Knackser bei „the“ (Refrain 1)",
+   "was": "Kurze Höhen-Spitze am Anfang von „the“ in „follow the light“, 16 dB über dem, was deine Aufnahme an der Stelle hat.",
+   "mass": {
+    "ueber_db": 16,
+    "hf_dbfs": -28
+   },
+   "silbe": 42
+  },
+  {
+   "id": "p06",
+   "zeit_s": 138.05,
+   "bis_s": 138.6,
+   "art": "Tonhöhe",
+   "schwere": 2,
+   "titel": "„Who“ (Refrain 2) stark hochgezogen",
+   "was": "Der Einsatz von „Who“ wird um bis zu 3,3 Halbtöne hochgezogen (gewollt seit v10: erreicht den Ton schneller), „is“ danach noch um 1,5. Klingt es natürlich?",
+   "mass": {
+    "max_ct": 333
+   },
+   "silbe": 82
+  },
+  {
+   "id": "p07",
+   "zeit_s": 120.85,
+   "bis_s": 121.35,
+   "art": "Tonhöhe",
+   "schwere": 2,
+   "titel": "„does“: 0,4 s um 2 Halbtöne korrigiert",
+   "was": "„does“ in „What does it need“ wird 0,4 s lang um 1,7–2 Halbtöne nach oben gezogen.",
+   "mass": {
+    "median_ct": 185,
+    "max_ct": 198
+   },
+   "silbe": 68
+  },
+  {
+   "id": "p08",
+   "zeit_s": 82.4,
+   "bis_s": 82.58,
+   "art": "Tonhöhe",
+   "schwere": 2,
+   "titel": "„follow“ (Refrain 1) hochgezogen",
+   "was": "„follow“ wird kurz um 1,6–1,8 Halbtöne nach oben korrigiert.",
+   "mass": {
+    "median_ct": 163,
+    "max_ct": 184
+   },
+   "silbe": 41
+  },
+  {
+   "id": "p09",
+   "zeit_s": 242.3,
+   "bis_s": 244.15,
+   "art": "Tonhöhe",
+   "schwere": 2,
+   "titel": "„follow the light“ (Refrain 3)",
+   "was": "„follow“ wird um 1,2–1,8 Halbtöne nach oben korrigiert; bei „light“ (4:03,9) wackelt die Korrektur in 0,15 s von +0,7 auf −0,3 Halbtöne und zurück.",
+   "mass": {
+    "max_ct": 177,
+    "wackeln_ct": 100
+   },
+   "silbe": 148
+  },
+  {
+   "id": "p10",
+   "zeit_s": 109.6,
+   "bis_s": 109.82,
+   "art": "Nachbildung",
+   "schwere": 1,
+   "titel": "„see“: verlängertes s",
+   "was": "Das s von „see“ ist seit v10 um 0,2 s verlängert (nachgebildet). Der kleine Lautstärke-Buckel deiner Aufnahme (1:49,66–1:49,71) fehlt, v11 bleibt flach. Klingt das s natürlich?",
+   "mass": {
+    "db": -11
+   },
+   "silbe": 61
+  },
+  {
+   "id": "p11",
+   "zeit_s": 76.74,
+   "bis_s": 76.75,
+   "art": "Klick",
+   "schwere": 1,
+   "titel": "Leiser Knackser vor „wall“ (Refrain 1)",
+   "was": "Leiser Knackser in der Pause zwischen „this“ und „wall“, etwa −43 dB.",
+   "mass": {
+    "ueber_db": 16,
+    "hf_dbfs": -43
+   },
+   "silbe": null
+  },
+  {
+   "id": "p12",
+   "zeit_s": 52.475,
+   "bis_s": 52.485,
+   "art": "Klick",
+   "schwere": 1,
+   "titel": "Leiser Knackser nach „Sheep“ (Strophe 1)",
+   "was": "Leiser Knackser in der Pause nach „Sheep“, etwa −45 dB.",
+   "mass": {
+    "ueber_db": 19,
+    "hf_dbfs": -45
+   },
+   "silbe": 16
+  }
+ ]
+}

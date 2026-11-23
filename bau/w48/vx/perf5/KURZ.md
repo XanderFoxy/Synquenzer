@@ -1,0 +1,1 @@
+PERF5: Worklet-Vorlagen im Hauptprogramm + CSS-Vorlagen der stillen Blöcke verdichtet (allgemeiner Umformer, zuletzt anwenden) – roh -14,6 KB, gzip -5,6 KB, CSSOM/Screenshots/12 Werksklänge gleich, 0 Fehler.
