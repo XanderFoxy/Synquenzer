@@ -43,9 +43,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     const out = { errs };
     // Fall Z: Zerlegen (Rechnung im Worker vor der Messung), danach Hauptfaden wie spk1Zerl
     const r = await p.evaluate(async () => { const U = __spk.page.ui(); const r = await spk1Call('zerlegen', { doc: SPK1.doc }); window.__zr = r; return r.meta.layers.length; });
-    await mark(); await p.evaluate(() => { const U = __spk.page.ui(); spk1Got(U, window.__zr); U.tintOn = true; spk1TintLoad(U); });
+    await p.evaluate(() => { window.__pres = []; LT2S.onPres = U => { const gl = U.gl.gl, px = new Uint8Array(U.cw * U.ch * 4); gl.readPixels(0, 0, U.cw, U.ch, gl.RGBA, gl.UNSIGNED_BYTE, px); let h = 0x811c9dc5; for (let i = 0; i < px.length; i++) { h ^= px[i]; h = Math.imul(h, 16777619) >>> 0; } window.__pres.push(h.toString(16)); }; }); await mark(); await p.evaluate(() => { const U = __spk.page.ui(); spk1Got(U, window.__zr); U.tintOn = true; spk1TintLoad(U); });
     await p.waitForFunction(() => { const U = __spk.page.ui(); return U.tint && U.tint.ids.length === U.meta.layers.length; }, null, { timeout: 60000 }); await ruhe();
-    out.Z = Object.assign(await lt(), { layers: r, hash: await img() });
+    out.Z = Object.assign(await lt(), { layers: r, pres: await p.evaluate(() => window.__pres.slice()), lt3: await p.evaluate(() => ({ seq: LT2S.nSeq, step: LT2S.nStep, lt3: typeof LT3 === 'object' ? { n: LT3.n, g: LT3.g.map(Math.round) } : null })), hash: await img() });
     // Fall F: Fokus Nur Rest bis genau fertig
     await mark(); await p.evaluate(() => __fokus1.mode('rest')); await ruhe();
     out.F = Object.assign(await lt(), { hash: await img(), info: await p.evaluate(() => { const f = __fokus1.info(); return { n: f.n, tex: f.tex, ap: f.ap }; }) });
@@ -65,6 +65,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   for (let i = 0; i < RUNS; i++) for (const w of (i % 2 ? names.slice().reverse() : names)) { const load = fs.readFileSync('/proc/loadavg', 'utf8').split(' ')[0]; const o = await lauf(w); o.last = +load; res[w].push(o); console.log(w, i, JSON.stringify(o)); }
   if (names.length === 2) { let ok = true; for (const f of ['Z', 'F', 'A', 'G', 'S']) for (let i = 0; i < RUNS; i++) { const g = res.A[i][f].hash === res.B[i][f].hash; if (!g) ok = false; console.log('Bild', f, i, g ? 'gleich' : 'VERSCHIEDEN', res.A[i][f].hash, res.B[i][f].hash); }
     for (const f of ['Z', 'F', 'A', 'G', 'S']) console.log('HochladenImBild', f, 'A', res.A.map(o => o[f].gl.inF).join(' '), '| B', res.B.map(o => o[f].gl.inF).join(' '));
+    for (const w of names) console.log('Zerlegen-Stueckweise', w, JSON.stringify(res[w].map(o => o.Z.lt3)), 'Praesentiert', JSON.stringify(res[w].map(o => o.Z.pres)), 'Vollbild', JSON.stringify(res[w].map(o => o.Z.hash)), res[w].every(o => o.Z.pres.every(h => h === o.Z.hash)) ? 'PRAES OK' : 'PRAES FEHLER');
     for (const f of ['Z', 'F', 'A', 'G', 'S']) console.log('LongTasks', f, 'A', res.A.map(o => o[f].n + '/' + o[f].max).join(' '), '| B', res.B.map(o => o[f].n + '/' + o[f].max).join(' '));
     console.log('FOK4', JSON.stringify(res.A.map(o => o.fok4)));
     console.log('Fehler', JSON.stringify(res.A.map(o => o.errs)), JSON.stringify(res.B.map(o => o.errs))); console.log(ok ? 'BILD OK' : 'BILD FEHLER'); }
