@@ -1,4 +1,4 @@
-# Stand 23.11.17:53 UTC
+# Stand 23.11.17:55 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -75,6 +75,9 @@ Kern-Test: `node test/fok4-test.cjs <neu.html> <basis.html> [RUNS]` (A = neu, B 
 - Plan: (A) ges3Onset nach segment in vsNotesOf: Einsatz-Noten auf die echte Onset-Probe (A.x). (B) ges3Echt in detectMarks: 'onset'-Marken in durchgehend stimmhaftem Vokal ohne Tonhöhen-Sprung, ohne tiefes Pegel-Tal und ohne Klangfarben-Wechsel fallen weg – nur für Takes ab GES3_AB (neu).
 - Gebaut: apply.py + on-block.js + mk-block.js; Kern-Test kern-test.cjs (A: Fehler 4,1→1,5 ms, Lage-Streuung 9→0,4 ms; B: Fehlmarken 44→3, Treffer 18/18). Nächstes: GES2-Test, Pflicht, Laden.
 - FERTIG. Ausgang index.html (md5 siehe apply-Ausgabe, zuletzt 2ea13a3af2cf74b7c5db7a97aa39a555). Bau: python3 apply.py <eingang 4.87.0> <ausgang> (on-block.js, mk-block.js).
+## ges4
+# GES4 Stand
+- Start 17:5x. Eingang 4.88.0 (695af…). Plan: Konsonant-Anlauf in ges3Onset genauer + Vibrato-Glätten vor Stufensuche (VSD.segment).
 ## imp4
 # IMP4 – Stand (fertig)
 Bau: `python3 apply.py <eingang> <ausgang>` (Eingang md5 a7515b98…, bitgleich wiederholbar; Ausgang hier `index.html`, md5 4e8506a9d44f95f4a1f6b67ff093e27c).

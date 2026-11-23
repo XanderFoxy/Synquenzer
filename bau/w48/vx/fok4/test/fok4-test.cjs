@@ -34,12 +34,12 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       window.__gt = { img: 0, sub: 0, mip: 0, nImg: 0, nSub: 0, nMip: 0, px: 0 };
     });
     await p.waitForFunction(() => { const i = __spk.page.info(); return i && !i.nodoc && i.chunks > 0 && !__spk.page.ui().specQ; }, null, { timeout: 300000 }); await p.waitForTimeout(1500);
-    await p.evaluate(() => { const gl = __spk.page.ui().gl.gl, G = window.__gt;
-      for (const [k, nk, f] of [['img', 'nImg', 'texImage2D'], ['sub', 'nSub', 'texSubImage2D'], ['mip', 'nMip', 'generateMipmap']]) { const o = gl[f].bind(gl); gl[f] = function () { const t = performance.now(); const r = o.apply(null, arguments); G[k] += performance.now() - t; G[nk]++; return r; }; } });
+    await p.evaluate(() => { const gl = __spk.page.ui().gl.gl, G = window.__gt; G.inF = 0; G.fr = 0; window.__inF = false; const sf = spk1Frame; spk1Frame = function (U) { window.__inF = true; G.fr++; try { return sf(U); } finally { window.__inF = false; } };
+      for (const [k, nk, f] of [['img', 'nImg', 'texImage2D'], ['sub', 'nSub', 'texSubImage2D'], ['mip', 'nMip', 'generateMipmap']]) { const o = gl[f].bind(gl); gl[f] = function () { const t = performance.now(); const r = o.apply(null, arguments); G[k] += performance.now() - t; G[nk]++; if (window.__inF) G.inF++; return r; }; } });
     const ruhe = async () => { await p.waitForFunction(() => { const U = __spk.page.ui(), f = __fokus1.info(); return !U.busy && __fokus1.idle() && (f.mode === 'alles' || f.tex >= f.n); }, null, { timeout: 120000 }); await p.waitForTimeout(1500); };
-    const img = () => p.evaluate(() => { const u = __spk.page.ui(); u.dg = true; spk1Frame(u); const gl = u.gl.gl, px = new Uint8Array(u.cw * u.ch * 4); gl.readPixels(0, 0, u.cw, u.ch, gl.RGBA, gl.UNSIGNED_BYTE, px); let h = 0x811c9dc5; for (let i = 0; i < px.length; i++) { h ^= px[i]; h = Math.imul(h, 16777619) >>> 0; } return h.toString(16); });
+    const img = () => p.evaluate(() => { const u = __spk.page.ui(); const lo = typeof LT2S === 'object' ? LT2S.on : null; if (lo !== null) LT2S.on = false; u.dg = true; spk1Frame(u); if (lo !== null) LT2S.on = lo; const gl = u.gl.gl, px = new Uint8Array(u.cw * u.ch * 4); gl.readPixels(0, 0, u.cw, u.ch, gl.RGBA, gl.UNSIGNED_BYTE, px); let h = 0x811c9dc5; for (let i = 0; i < px.length; i++) { h ^= px[i]; h = Math.imul(h, 16777619) >>> 0; } return h.toString(16); });
     const mark = () => p.evaluate(() => { window.__t0 = performance.now(); const G = window.__gt; for (const k in G) G[k] = 0; });
-    const lt = () => p.evaluate(() => { const L = window.__lt.filter(e => e.t >= window.__t0 - 1 && e.d > 50); const G = window.__gt; return { n: L.length, max: Math.round(Math.max(0, ...L.map(e => e.d))), sum: Math.round(L.reduce((a, e) => a + e.d, 0)), gl: { img: +G.img.toFixed(1), nImg: G.nImg, sub: +G.sub.toFixed(1), nSub: G.nSub, mip: +G.mip.toFixed(1), nMip: G.nMip } }; });
+    const lt = () => p.evaluate(() => { const L = window.__lt.filter(e => e.t >= window.__t0 - 1 && e.d > 50); const G = window.__gt; return { n: L.length, max: Math.round(Math.max(0, ...L.map(e => e.d))), sum: Math.round(L.reduce((a, e) => a + e.d, 0)), gl: { inF: G.inF, fr: G.fr, img: +G.img.toFixed(1), nImg: G.nImg, sub: +G.sub.toFixed(1), nSub: G.nSub, mip: +G.mip.toFixed(1), nMip: G.nMip } }; });
     const out = { errs };
     // Fall Z: Zerlegen (Rechnung im Worker vor der Messung), danach Hauptfaden wie spk1Zerl
     const r = await p.evaluate(async () => { const U = __spk.page.ui(); const r = await spk1Call('zerlegen', { doc: SPK1.doc }); window.__zr = r; return r.meta.layers.length; });
@@ -61,6 +61,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   const res = {}; for (const w of names) res[w] = [];
   for (let i = 0; i < RUNS; i++) for (const w of (i % 2 ? names.slice().reverse() : names)) { const load = fs.readFileSync('/proc/loadavg', 'utf8').split(' ')[0]; const o = await lauf(w); o.last = +load; res[w].push(o); console.log(w, i, JSON.stringify(o)); }
   if (names.length === 2) { let ok = true; for (const f of ['Z', 'F', 'A', 'G']) for (let i = 0; i < RUNS; i++) { const g = res.A[i][f].hash === res.B[i][f].hash; if (!g) ok = false; console.log('Bild', f, i, g ? 'gleich' : 'VERSCHIEDEN', res.A[i][f].hash, res.B[i][f].hash); }
+    for (const f of ['Z', 'F', 'A', 'G']) console.log('HochladenImBild', f, 'A', res.A.map(o => o[f].gl.inF).join(' '), '| B', res.B.map(o => o[f].gl.inF).join(' '));
     for (const f of ['Z', 'F', 'A', 'G']) console.log('LongTasks', f, 'A', res.A.map(o => o[f].n + '/' + o[f].max).join(' '), '| B', res.B.map(o => o[f].n + '/' + o[f].max).join(' '));
     console.log('Fehler', JSON.stringify(res.A.map(o => o.errs)), JSON.stringify(res.B.map(o => o.errs))); console.log(ok ? 'BILD OK' : 'BILD FEHLER'); }
   fs.writeFileSync(path.join(__dirname, 'fok4-test.json'), JSON.stringify(res, null, 1));
