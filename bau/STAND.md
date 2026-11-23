@@ -1,4 +1,4 @@
-# Stand 23.11.16:17 UTC
+# Stand 23.11.16:19 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -79,6 +79,10 @@ als Naechstes: nichts – bereit zur Uebernahme
   2. tkLoad: ton2Load = tkPcm + gemerkte Analyse (<take>:lv1 im Audio-Speicher, ArrayBuffer: Kopf-JSON + Float32-Hüllkurve nur in Begrenzer-Abschnitten) gleichzeitig.
 ## trp2
 - 16:14 apply.py + block.js gebaut (2 Haken: clipNoteFor, Takt-Planung), Test folgt
+## Aufbau (Ausgang index.html md5 d33e9f1ed7baa69e92d7db5d729a65c4, Eingang a7515b98… = 4.86.0)
+- Block TRP2-BEGIN…TRP2-END vor `function trp1Live` (neue Namen: trp2NoteFor, trp2Tick, trp2Re) + 3 Haken `/*TRP2*/`:
+  1. clipNoteFor (1. Zeile): bei ▶ SONG in einem Stufen-Teil sucht trp2NoteFor die Clip-Note, deren outPitch (mit trp1Pre) = gespielte Note (sonst null → alter Weg).
+  2. Takt-Planung vor `kf1Plan`: trp2Tick ruft an jeder Stufen-Grenze im Fenster applyCarrierChange({time}) → gehaltene Clip-Noten neu stimmen (wie XP.due bei Rückungen), nach dem Einplanen der Noten.
 ## vl3
 fertig: VL3 gebaut + Kern-Test 10/10 grün, KURZ.md + CHANGES.md geschrieben (Ausgang md5 9bb6ee81)
 als Nächstes: nichts – bereit zur Übergabe
@@ -88,6 +92,9 @@ als Nächstes: nichts – bereit zur Übergabe
 - Plan: (1) Klicks in lauten tiefen Vokalen: puls-synchroner Vergleich in clickScan.test; (2) Plopps messen; (3) Raumton nur wenn Zeit.
 - 20 min: Test-Gerüst w/ (gen.mjs synth. Gesang, kt.mjs Klick-Test) fertig; Basis: Treffer 76–80/80, Fehlalarme sauberer tiefer Take A2: 3 (letzter Stimmlippen-Puls am Notenende). block.js Entwurf.
 - FERTIG (Endfassung md5 a40c87ea50c3b8dcdbb75647e1e72158 = out.html aus apply.py):
+## vox3
+# VOX3 Stand
+- Start 16:2x: Eingang 4.86.0 (md5 a7515b98…). Plan: (1) Test-Gerüst w/pt.mjs (Plopps) + w/rt.mjs (Raumton-Farbe), synthetisch; (2) Plopp-Erkennung/-Reparatur; (3) Raumton-Farbe.
 ## werkzeug
 # STAND werkzeug (Grundlage)
 - [ ] pflicht.py
