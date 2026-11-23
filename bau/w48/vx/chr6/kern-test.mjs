@@ -91,12 +91,14 @@ function peak(E, lo, hi) {
   let bf = lo, bv = -1; for (let f = lo; f <= hi; f += 2) { const v = E(f); if (v > bv) { bv = v; bf = f; } }
   return bf;
 }
+// Formant-Lage: Leistungs-Schwerpunkt der Teiltöne im Band ±5 Halbtöne um den (bekannten) Formanten – Ausgabe gegen Ideal
+// auf demselben Teilton-Raster (robust, keine Gipfel-Verwechslung); Zusatz: LPC-Gipfel im Band ±4 Halbtöne
 function formants(amps, f0, v, fm = 1) {
-  const E = lpcEnv(amps, f0), [F1, F2] = VOW[v].map(z => z[0] * fm);
-  const b1 = [Math.max(150, F1 * 0.6), Math.min(F1 * 1.5, (F1 + F2) / 2)], b2 = [Math.max((F1 + F2) / 2, F2 * 0.7), F2 * 1.35];
-  return [peak(E, ...b1), peak(E, ...b2)];
+  const E = lpcEnv(amps, f0), FF = VOW[v].slice(0, 2).map(z => z[0] * fm);
+  const cen = FF.map(F => { let s = 0, sf = 0; amps.forEach((A, i) => { const f = (i + 1) * f0; if (f >= F / 1.335 && f <= F * 1.335) { s += A * A; sf += A * A * f; } }); return s > 0 ? sf / s : F; });
+  const lpc = FF.map(F => peak(E, F / 1.26, F * 1.26));
+  return { cen, lpc };
 }
-
 function runCase(v, f0, st, fm) {
   const S = synth(v, f0);
   const n = S.x.length, nf = Math.floor(n / (HOP * SR));
@@ -113,9 +115,10 @@ function runCase(v, f0, st, fm) {
   // Hüllen-Fehler dB (leistungsgewichtet)
   let sw = 0, se = 0; out.forEach((A, i) => { const w = ideal[i] ** 2, d = 20 * Math.log10((A + 1e-9) / ideal[i]); sw += w; se += w * d * d; });
   const fo = formants(out, ft, v, fm || 1), fi = formants(ideal, ft, v, fm || 1);
-  const d1 = Math.abs(fo[0] / fi[0] - 1) * 100, d2 = Math.abs(fo[1] / fi[1] - 1) * 100;
+  const d1 = Math.abs(fo.cen[0] / fi.cen[0] - 1) * 100, d2 = Math.abs(fo.cen[1] / fi.cen[1] - 1) * 100;
+  const L = (Math.abs(fo.lpc[0] / fi.lpc[0] - 1) + Math.abs(fo.lpc[1] / fi.lpc[1] - 1)) * 50;
   const ct = pitchCt(y, ft, t0, t1);
-  return { v, f0, st, fm: fm || 1, dB: Math.sqrt(se / sw), F1: d1, F2: d2, F: (d1 + d2) / 2, ct, fo, fi };
+  return { v, f0, st, fm: fm || 1, dB: Math.sqrt(se / sw), F1: d1, F2: d2, F: (d1 + d2) / 2, L, ct, fo, fi };
 }
 
 const SHIFTS = [-12, -7, -4, 4, 7, 12], F0S = [110, 196], V = Object.keys(VOW);
@@ -127,16 +130,16 @@ for (const st of [-12, 12]) for (const v of V) { res.push(runCase(v, 196, st, 1.
 const avg = a => a.reduce((s, z) => s + z, 0) / a.length;
 const plain = res.filter(z => z.fm === 1);
 console.log('Fassung:', file);
-console.log('Verschiebung | Formant % (F1/F2) | Hülle dB | Ton ct (max |·|)');
+console.log('Verschiebung | Formant % (F1/F2) | LPC-Formant % | Hülle dB | Ton ct (max |·|)');
 for (const st of SHIFTS) {
   const g = plain.filter(z => z.st === st);
-  console.log(`${st > 0 ? '+' : ''}${st} | ${avg(g.map(z => z.F)).toFixed(2)} (${avg(g.map(z => z.F1)).toFixed(2)}/${avg(g.map(z => z.F2)).toFixed(2)}) | ${avg(g.map(z => z.dB)).toFixed(2)} | ${Math.max(...g.map(z => Math.abs(z.ct))).toFixed(1)}`);
+  console.log(`${st > 0 ? '+' : ''}${st} | ${avg(g.map(z => z.F)).toFixed(2)} (${avg(g.map(z => z.F1)).toFixed(2)}/${avg(g.map(z => z.F2)).toFixed(2)}) | ${avg(g.map(z => z.L)).toFixed(2)} | ${avg(g.map(z => z.dB)).toFixed(2)} | ${Math.max(...g.map(z => Math.abs(z.ct))).toFixed(1)}`);
 }
 for (const v of V) { const g = plain.filter(z => z.v === v); console.log(`Vokal ${v}: Formant ${avg(g.map(z => z.F)).toFixed(2)} % · Hülle ${avg(g.map(z => z.dB)).toFixed(2)} dB`); }
 const big = plain.filter(z => Math.abs(z.st) >= 7), echt = res.filter(z => z.fm !== 1);
 const sum = {
   formantPct: +avg(plain.map(z => z.F)).toFixed(3), formantPctGross: +avg(big.map(z => z.F)).toFixed(3),
-  formantPctMax: +Math.max(...plain.map(z => z.F)).toFixed(2), huelleDb: +avg(plain.map(z => z.dB)).toFixed(3),
+  formantPctMax: +Math.max(...plain.map(z => z.F)).toFixed(2), lpcFormantPct: +avg(plain.map(z => z.L)).toFixed(3), huelleDb: +avg(plain.map(z => z.dB)).toFixed(3),
   echtFormantPct: +avg(echt.map(z => z.F)).toFixed(3), echtHuelleDb: +avg(echt.map(z => z.dB)).toFixed(3),
   tonMaxCt: +Math.max(...res.map(z => Math.abs(z.ct))).toFixed(2), faelle: res.length, sek: +((Date.now() - t0) / 1000).toFixed(1),
 };

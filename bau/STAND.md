@@ -1,4 +1,4 @@
-# Stand 23.11.17:37 UTC
+# Stand 23.11.17:39 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -16,6 +16,12 @@
 - Eingang 4.88.0 (md5 695af0504463a6385e21dc94e55b00c9), Chor-Weg = g6pDspMake → renderMulti → setS (Hüllen-Abtastung der neuen Teiltöne).
 - Kern-Test: kern-test.mjs (synthetische Vokale, ±4/7/12 HT). Vorher: Formant 4,23 % (−12: 6,41 · −7: 6,36 · −4: 5,43 · +4: 4,62 · +7: 2,54 · +12: 0), Hülle 2,83 dB, Ton 0 ct.
 - In Arbeit: Interpolation der Log-Hülle zwischen Teiltönen (linear → kubisch) testen (var/*.mjs).
+## cmd3
+# CMD3 – Stand (in Arbeit)
+Bau: `python3 apply.py <eingang 4.88.0 md5 695af050…> <ausgang>` → hier `index.html`.
+Block `block.js` (/* CMD3-BEGIN/-END */ nach IMP4-END), 7 Haken `/* CMD3 */`: normTrack (Feld `ech`), applyTrackParams (Send umlegen),
+applyEcho (Tempo), echoKill (Stopp), xlaProject (eigenes Echo je Spur setzen), imp4Rep (Bericht: Status + ok-Zeile).
+Befund: (a) Doppelschläge und (c) Bericht sind schon in 4.88 (Paket IMP4). Neu ist (b) Echo je Spur.
 ## drum1
 # DRUM1 – Stand
 - Kern-Test-Datei: **kern.mjs** (Browser, 428×926 Touch: Lied laden → Zerlegen schnell → Drum-Ebene → Kit-Erkennung; Lieder songs.mjs,

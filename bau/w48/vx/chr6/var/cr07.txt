@@ -1,14 +1,14 @@
 Fassung: ../rel-4880/index.html
-Verschiebung | Formant % (F1/F2) | Hülle dB | Ton ct (max |·|)
--12 | 4.84 (6.16/3.52) | 3.02 | 0.0
--7 | 5.32 (5.22/5.42) | 3.37 | 0.0
--4 | 5.38 (7.51/3.25) | 2.99 | 0.0
-+4 | 4.17 (2.55/5.79) | 3.21 | 0.0
-+7 | 1.77 (2.58/0.95) | 2.52 | 0.0
-+12 | 0.00 (0.00/0.00) | 0.00 | 0.0
-Vokal a: Formant 3.28 % · Hülle 2.05 dB
-Vokal e: Formant 2.40 % · Hülle 1.85 dB
-Vokal i: Formant 7.21 % · Hülle 3.73 dB
-Vokal o: Formant 2.20 % · Hülle 1.49 dB
-Vokal u: Formant 2.80 % · Hülle 3.48 dB
-Gesamt: {"formantPct":3.58,"formantPctGross":2.981,"formantPctMax":22.42,"huelleDb":2.519,"echtFormantPct":2.557,"echtHuelleDb":2.166,"tonMaxCt":0,"faelle":80,"sek":42.6}
+Verschiebung | Formant % (F1/F2) | LPC-Formant % | Hülle dB | Ton ct (max |·|)
+-12 | 2.94 (3.40/2.47) | 5.28 | 3.02 | 0.0
+-7 | 2.98 (3.92/2.05) | 4.53 | 3.37 | 0.0
+-4 | 1.89 (2.63/1.15) | 4.97 | 2.99 | 0.0
++4 | 1.00 (0.92/1.08) | 1.55 | 3.21 | 0.0
++7 | 1.07 (1.20/0.95) | 3.84 | 2.52 | 0.0
++12 | 0.00 (0.00/0.00) | 0.00 | 0.00 | 0.0
+Vokal a: Formant 2.16 % · Hülle 2.05 dB
+Vokal e: Formant 1.25 % · Hülle 1.85 dB
+Vokal i: Formant 0.87 % · Hülle 3.73 dB
+Vokal o: Formant 2.02 % · Hülle 1.49 dB
+Vokal u: Formant 1.94 % · Hülle 3.48 dB
+Gesamt: {"formantPct":1.647,"formantPctGross":1.749,"formantPctMax":7.3,"lpcFormantPct":3.361,"huelleDb":2.519,"echtFormantPct":1.583,"echtHuelleDb":2.166,"tonMaxCt":0,"faelle":80,"sek":43.8}
