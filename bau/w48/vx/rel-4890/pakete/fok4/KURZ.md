@@ -1,0 +1,1 @@
+FOK4: Spektral-Fokus lädt neue Stücke im Hintergrund (texSubImage2D nur geänderte Spalten, Zaun) – 0 statt 22 Hochladevorgänge im Bild, Bildzeit −40 %, Endbild gleich; Long Tasks unter Last nicht messbar weniger.

@@ -1,0 +1,1 @@
+- SPKV2: Spektral-Verfeinern Bass/Drums: Bass-Anschläge als Kick 13/24 → 4/24, Bass-Noten 23 → 27/30 (nach Verfeinern Drums 19 → 27/30), Sinus-Bass 2 → 19/30.
