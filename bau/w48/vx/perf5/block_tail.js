@@ -99,7 +99,7 @@ function templates(text, isBlock) {
 const S = inp.scripts, sources = S.map(x => x.text);
 const N = collectNeedles(sources);
 const TP = S.map(x => templates(x.text, x.block));
-const names = new Set(); for (const L of TP) for (const t of L) if (t.name) names.add(t.name);
+const names = new Set(); for (let si = 0; si < S.length; si++) for (const t of TP[si]) if (t.name && !(t.art === 'css' && S[si].block)) names.add(t.name);
 const NW = names.size ? collectNeedles(sources, names) : {of: () => ({strs: [], regs: []}), scopes: 0};
 const same = (Nd, a, b) => Nd.strs.every(n => count(a, n) === count(b, n)) && Nd.regs.every(r => { const x = rmatch(a, r.re), y = rmatch(b, r.re); return x.length === y.length && x.every((q, k) => q.v === y[k].v); });
 const out = {texts: [], bericht: {skripte: N.nScripts, nichtZerlegbar: N.bad, namen: [...names], vorlagenZugriffe: NW.scopes || 0, vorlagen: [], skripteGeaendert: []}};
@@ -120,7 +120,9 @@ for (let si = 0; si < S.length; si++) {
   if (!L.length) { out.texts.push(text); continue; }
   let t = '', p = 0; const rep = new Map();
   for (const w of L) {
-    const Nd = w.name ? NW.of(w.name) : {strs: [], regs: []};
+    // Worklet-Namen (eindeutig, z. B. ST_WK): Zugriffe aus allen Skripten; CSS-Namen in Blöcken (oft nur „css“, der Name kommt
+    // in vielen fremden Funktionen vor): Zugriffe nur aus demselben Block – dort ist die Vorlage deklariert und wird benutzt.
+    const Nd = !w.name ? {strs: [], regs: []} : w.art === 'css' && block ? collectNeedles([text], new Set([w.name])).of(w.name) : NW.of(w.name);
     let neu = w.raw, info = {id: id + ':' + (w.name || '?') + '@' + w.start, art: w.art, vorher: w.raw.length};
     try {
       if (w.art === 'wk') { const r = doBlock(info.id, w.raw, Nd); neu = r.text; Object.assign(info, {suchTexte: r.info.suchTexte, geschuetzteZeilen: r.info.geschuetzteZeilen}); }

@@ -1,0 +1,4 @@
+Serving HTTP on 127.0.0.1 port 8983 (http://127.0.0.1:8983/) ...
+127.0.0.1 - - [23/Nov/2026 18:09:54] "GET /a/version.json HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 18:09:59] "GET /a/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 18:10:03] "GET /a/version.json?t=1795457403647 HTTP/1.1" 200 -

@@ -1,4 +1,4 @@
-# Stand 23.11.18:08 UTC
+# Stand 23.11.18:10 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -147,6 +147,10 @@ Kern-Test-Datei: **kern-test.cjs** (`node kern-test.cjs <port>`; Server-Ordner m
 je version.json {"version":"4.87.0"}; Ergebnis tests/kern.out „ERGEBNIS bitgleich“). Dazu ke1-test.cjs (voller Zustand Klang
 erkennen a/b/a, tests/ke1-*.json), rauch.js `<port> b` (tests/rauch-b.out), tests/doppelt.out.
 
+## perf5
+# PERF5 – Stand (in Arbeit)
+Bau: `python3 apply.py <eingang> <ausgang>` (≈ 6 s), Hilfsdateien block.js (Kopf aus PERF4 block.js + PERF5-Teil), acorn.js.
+block_head.js/block_tail.js = Quellen von block.js (cat block_head.js block_tail.js > block.js).
 ## spkv
 # SPKV auf 4.87.0 – Stand: fertig (gebaut, gemessen; Grenzen unten)
 Ausgang `index.html` md5 81347f5bb25e53205c248fa1e4b6eaeb (Eingang 280c5b0b6a9ed1f8ac77868fb8d5d38f). Bau: `python3 apply.py <eingang> <ausgang>`

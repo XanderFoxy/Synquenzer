@@ -4,3 +4,11 @@ Serving HTTP on 127.0.0.1 port 9042 (http://127.0.0.1:9042/) ...
 127.0.0.1 - - [23/Nov/2026 18:07:24] "GET /neu/index.html HTTP/1.1" 200 -
 127.0.0.1 - - [23/Nov/2026 18:07:49] "GET /neu/index.html HTTP/1.1" 200 -
 127.0.0.1 - - [23/Nov/2026 18:07:52] "GET /neu/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 18:09:33] "GET /basis/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 18:09:36] "GET /neu/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 18:09:38] "GET /basis/version.json?t=1795457378286 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 18:09:41] "GET /neu/version.json?t=1795457381080 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 18:09:46] "GET /basis/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 18:09:48] "GET /neu/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 18:09:50] "GET /basis/version.json?t=1795457390515 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 18:09:52] "GET /neu/version.json?t=1795457392804 HTTP/1.1" 200 -
