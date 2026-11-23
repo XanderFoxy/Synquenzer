@@ -1,4 +1,8 @@
-# The Wall v12 – Begleitstimmen rendern (rubberband R3, formanterhaltend, Pitchmaps aus noten_v12.py)
+# The Wall v12 – Begleitstimmen rendern
+#   Ober-/Unterstimme: feste Versionen (+3/+4/+5, -3/-4 HT) mit rubberband R2 + Formanterhalt (offline, sampelgenau),
+#                      dann je Lead-Ton per Maske (12-ms-Blenden) die passende Version
+#   Gegengesang/Doppel: kleine Korrekturen je Ton, rubberband R3 ohne Formant (beste Klangtreue), Pitchmap (Zeiten +81 ms ausgeglichen)
+# (R3 + Formant macht an manchen Stellen den Klang dumpf: Obertöne -7/-20 dB statt -2/-10 dB, gemessen bei 64,4 s)
 import numpy as np, soundfile as sf, subprocess, os
 from scipy.signal import correlate, butter, sosfiltfilt
 W = '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/wall-v12/'
@@ -36,7 +40,7 @@ def rb(src_name, x, out_name, args):
     fi = ST + src_name + '.wav'
     if not os.path.exists(fi): sf.write(fi, x.astype(np.float32), SR, subtype='FLOAT')
     fo = ST + out_name + '_roh.wav'
-    subprocess.run(['rubberband', '-3', '-F'] + args + [fi, fo], check=True, capture_output=True)
+    subprocess.run(['rubberband'] + args + [fi, fo], check=True, capture_output=True)
     y, _ = sf.read(fo, dtype='float64')
     y, lag = ausrichten(x, y)
     sf.write(ST + out_name + '.wav', y.astype(np.float32), SR, subtype='FLOAT')
@@ -50,10 +54,13 @@ if __name__ == '__main__':
     gegen = lade_wav('projekt7/Gegengesang-eigen-7.wav')
     doppel = lade_wav('projekt7/Doppel-4-trocken-v7.wav')
     P = B + 'plan/'
-    rb('lead', lead, 'ober', ['--pitchmap', P + 'ober.txt'])
-    rb('lead', lead, 'ober_adt', ['-p', '0.08', '--pitchmap', P + 'ober.txt'])
-    rb('lead', lead, 'unter', ['--pitchmap', P + 'unter.txt'])
-    g = rb('gegen', gegen, 'gegen_t', ['--pitchmap', P + 'gegen.txt'])
-    rb('gegen_t_src', g, 'gegen_adtL', ['-p', '0.08'])
-    rb('gegen_t_src', g, 'gegen_adtR', ['-p', '-0.08'])
-    rb('doppel', doppel, 'doppel_t', ['--pitchmap', P + 'doppel.txt'])
+    # Ober/Unter: Versionen
+    for iv in (3, 4, 5):
+        rb('lead', lead, 'lead_p%d' % iv, ['-2', '-F', '-p', str(iv)])
+        rb('lead', lead, 'lead_p%d_adt' % iv, ['-2', '-F', '-p', '%.2f' % (iv + 0.08)])
+    for iv in (3, 4):
+        rb('lead', lead, 'lead_m%d' % iv, ['-2', '-F', '-p', str(-iv)])
+    g = rb('gegen', gegen, 'gegen_t', ['-3', '--pitchmap', P + 'gegen.txt'])
+    rb('gegen_t_src', g, 'gegen_adtL', ['-3', '-p', '0.08'])
+    rb('gegen_t_src', g, 'gegen_adtR', ['-3', '-p', '-0.08'])
+    rb('doppel', doppel, 'doppel_t', ['-3', '--pitchmap', P + 'doppel.txt'])

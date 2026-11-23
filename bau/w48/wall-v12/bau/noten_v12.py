@@ -260,11 +260,14 @@ doppel_pm = zeitlinie([n for n in d_noten if n['ok']], 'shift', 0.0)
 doppel_gate = maske([n for n in d_noten if n['ok']], 'shift', hand=0.07)
 
 # ---------- schreiben ----------
-def pm_schreiben(name, pts):
-    with open(OUT + name, 'w') as f:
-        for t, v in pts: f.write('%d %.4f\n' % (int(round(t * SR)), v))
+VORLAUF = 0.081   # rubberband R3 setzt Pitchmap-Wechsel 81 ms zu früh um (gemessen, konstant) -> ausgleichen
 
-pm_schreiben('ober.txt', ober_pm); pm_schreiben('unter.txt', unter_pm)
+
+def pm_schreiben(name, pts, vorlauf=VORLAUF):
+    with open(OUT + name, 'w') as f:
+        for k, (t, v) in enumerate(pts): f.write('%d %.4f\n' % (0 if k == 0 else int(round((t + vorlauf) * SR)), v))
+
+pm_schreiben('ober.txt', ober_pm, 0.0); pm_schreiben('unter.txt', unter_pm, 0.0)   # Zeitlinien (Versionen + Masken)
 pm_schreiben('gegen.txt', gegen_pm); pm_schreiben('doppel.txt', doppel_pm)
 ivz = {}
 for n in lead_noten:

@@ -1,0 +1,108 @@
+{
+ "A": [
+  {
+   "errs": [],
+   "Z": {
+    "lf": [],
+    "n": 1,
+    "max": 79,
+    "sum": 79,
+    "gl": {
+     "inF": 0,
+     "fr": 2,
+     "img": 0.2,
+     "nImg": 2,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 0
+    },
+    "layers": 3,
+    "ev": [
+     "layers 3+4.6",
+     "got 4.8",
+     "tintcall 4.9",
+     "rafgap -2876+2885",
+     "frame 9+0.8",
+     "tex 148+0.5",
+     "tex 148+0.1",
+     "gldraw 154+0.8",
+     "frame 154+0.9",
+     "rafgap 154+81"
+    ],
+    "lts": [
+     "153+79"
+    ],
+    "lt2s": {
+     "slow": true,
+     "cost": 80.79999999888241,
+     "nSeq": 0,
+     "nFull": 9
+    }
+   },
+   "fok4": {
+    "nNew": 0,
+    "nSub": 0,
+    "nSame": 0,
+    "nCol": 0,
+    "nWait": 0,
+    "nDrop": 0,
+    "err": "",
+    "on": true
+   },
+   "last": 0.73
+  },
+  {
+   "errs": [],
+   "Z": {
+    "lf": [],
+    "n": 1,
+    "max": 52,
+    "sum": 52,
+    "gl": {
+     "inF": 0,
+     "fr": 2,
+     "img": 0.3,
+     "nImg": 2,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 0
+    },
+    "layers": 3,
+    "ev": [
+     "layers 2+4.0",
+     "got 4.1",
+     "tintcall 4.2",
+     "rafgap -3026+3041",
+     "frame 16+0.2",
+     "tex 125+0.3",
+     "tex 126+0.1",
+     "gldraw 132+0.4",
+     "frame 132+0.5",
+     "rafgap 132+54"
+    ],
+    "lts": [
+     "132+52"
+    ],
+    "lt2s": {
+     "slow": true,
+     "cost": 53.80000000074506,
+     "nSeq": 0,
+     "nFull": 9
+    }
+   },
+   "fok4": {
+    "nNew": 0,
+    "nSub": 0,
+    "nSame": 0,
+    "nCol": 0,
+    "nWait": 0,
+    "nDrop": 0,
+    "err": "",
+    "on": true
+   },
+   "last": 0.78
+  }
+ ]
+}
