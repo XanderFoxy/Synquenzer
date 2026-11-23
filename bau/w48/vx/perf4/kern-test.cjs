@@ -54,8 +54,9 @@ async function run(br, dir) {
     for (let i = 0; i < n; i++) { const f = 220; ph += f / sr; const env = Math.min(1, i / 480) * Math.exp(-i / (sr * 0.9)); x[i] = 0.5 * env * (2 * (ph % 1) - 1); }
     const ok = SYNQUENZER.ke1.open({pcm: x, sr, name: 'Probe'});
     let st = null; for (let k = 0; k < 120; k++) { await new Promise(z => setTimeout(z, 250)); st = SYNQUENZER.ke1.state(); if (st && (st.done || st.result || st.err || (st.phase && /fertig|done|ready|res/i.test(String(st.phase))))) break; }
-    const s = st ? JSON.stringify(st).slice(0, 300) : null; try { SYNQUENZER.ke1.close(); } catch (e) {}
-    return {ok: !!ok, info: SYNQUENZER.ke1.info(), state: s}; } catch (e) { return {err: String(e)}; } });
+    const full = st ? JSON.stringify(st, (k, v) => /^(ms|wMs|took|t0|t1|at|ts)$/.test(k) && typeof v === 'number' ? 0 : v) : ''; let h = 0x811c9dc5; for (let i = 0; i < full.length; i++) { h ^= full.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+    const s = {len: full.length, h: h.toString(16), kopf: full.slice(0, 160)}; try { SYNQUENZER.ke1.close(); } catch (e) {}
+    const inf = SYNQUENZER.ke1.info(); return {ok: !!ok, geladen: inf.loaded, err: inf.err, state: s}; } catch (e) { return {err: String(e)}; } });
   await sleep(400);
   // (4) MS-Platte
   r.platte = await pg.evaluate(async () => { try {

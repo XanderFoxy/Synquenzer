@@ -1,4 +1,4 @@
-# Stand 23.11.17:01 UTC
+# Stand 23.11.17:03 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -54,9 +54,11 @@ Blöcke: `xla-block.js` (/* IMP4-XLA-BEGIN/-END */ im Import-Kern sq-xla-src, vo
 Haken (je eine Stelle, Kommentar `/* IMP4 */`): notesIn → `imp4Stack` (nur Drums), toProject → Bericht-Zeile „DRUMS: n Schläge gleichzeitig …“ in `al.merged`,
 xlaHtml → `res.report.tracks.map(r=>imp4Rep(c,res,r))` vor dem vorhandenen Zeilen-Template.
 ## impd
-# IMPD – Stand (in Arbeit)
-Bau: `python3 apply.py <eingang 4.87.0> <ausgang>`; Block `block.js` (IMPD-BEGIN/-END vor `async function nx1ImpStretch`), Haken in nx1ImpStretch (`impdWarp`, /*IMPD*/).
-Kern-Test-Datei: `impd-test.cjs` (node impd-test.cjs <port>, Server-Wurzel srv/ mit basis/ und neu/).
+# IMPD – Stand (fertig)
+Bau: `python3 apply.py <eingang> <ausgang>` (Eingang 4.87.0 md5 280c5b0b6a9ed1f8ac77868fb8d5d38f, Ausgang hier `index.html`, md5 3bdc49820caa74b8caf8902f4e01c4eb).
+Block `block.js` (/* IMPD-BEGIN/-END */ direkt vor `async function nx1ImpStretch`), ein Haken mit `/*IMPD*/` in nx1ImpStretch:
+`const W=await impdWarp(c,q,src)` – Anker `W.src`/`W.dst` statt `src`/`src.map(t=>t*q)`.
+
 ## imps
 # IMPS – Stand (fertig)
 Bau: `python3 apply.py <eingang> <ausgang>` (Eingang md5 a7515b98…, Ausgang hier `index.html`, md5 74e7f025a65581cc38f5ea7a9ef8d53d).
