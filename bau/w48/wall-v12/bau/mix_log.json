@@ -59,22 +59,24 @@
   "max": 1.0
  },
  "clipper": {
-  "anteil_prozent": 1.592,
-  "max_db": 5.317
+  "vorlimiter_anteil_ueber_1dB": 0.957,
+  "vorlimiter_max_db": 4.061,
+  "anteil_prozent": 1.521,
+  "max_db": 1.434
  },
  "master": {
   "decke_dbtp": -1.55,
-  "gain_db": -0.03,
+  "gain_db": 0.02,
   "lufs": -10.0,
-  "tp_48k": -1.55,
-  "tp_mp3": -1.08,
-  "limiter_gr_p95": 0.59,
-  "limiter_gr_p99": 0.73,
-  "limiter_gr_max": 1.26,
-  "limiter_gr_anteil_ueber_0_5dB": 7.84
+  "tp_48k": -1.54,
+  "tp_mp3": -1.07,
+  "limiter_gr_p95": 0.56,
+  "limiter_gr_p99": 0.64,
+  "limiter_gr_max": 1.14,
+  "limiter_gr_anteil_ueber_0_5dB": 7.23
  },
  "wav44": {
   "lufs": -10.0,
-  "tp": -1.36
+  "tp": -1.42
  }
 }
