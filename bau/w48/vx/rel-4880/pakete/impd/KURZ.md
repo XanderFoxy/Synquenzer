@@ -1,0 +1,1 @@
+IMPD: Import-Dehnen bei vorhandenem Projekt-Audio setzt die Anker auf die echten Schläge (auch Tempo-Lauf) – Einsätze 120er-Raster vorher bis 14,6 ms (fest 112) / 102 ms (Lauf), nachher ≤ 0,8 ms, Tonhöhe 440 Hz gleich; leeres Projekt / Nutzer-Tempo / Gesang bitgleich.
