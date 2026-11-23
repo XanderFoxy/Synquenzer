@@ -14,7 +14,9 @@ const acorn = require(path.join(__dirname, 'acorn.js'));
 const [IN, OUT] = process.argv.slice(2);
 const inp = JSON.parse(fs.readFileSync(IN, 'utf8'));
 const LT = /[\n\r\u2028\u2029]/;
-const die = m => { console.error('PERF4 ABBRUCH: ' + m); process.exit(1); };
+class Stop extends Error {}
+const die = m => { throw new Stop(m); };
+const stop = m => { console.error('PERF4 ABBRUCH: ' + m); process.exit(1); };
 
 function parse(text, sourceType, extra) {
   const toks = [], coms = [];
@@ -31,49 +33,64 @@ function astKey(ast) {
 
 // ---- Such-Texte der App sammeln: Funktionen (oder oberste Anweisung), die einen Block-Namen als Zeichenkette nennen ----
 const ID_RE = /^sq-[\w-]+-src$/;
-function collectNeedles(sources) {
-  const strs = new Set(), res = new Map();
+const PARSED = new Map();
+function parsedOf(src) { if (!PARSED.has(src)) PARSED.set(src, tryParse(src)); return PARSED.get(src); }
+function collectNeedles(sources, names) {
   const isFn = n => n && (n.type === 'FunctionDeclaration' || n.type === 'FunctionExpression' || n.type === 'ArrowFunctionExpression');
-  const scopes = new Set();
-  function walk(n, fnStack, top) {
+  const scopes = new Map();
+  function walk(n, fnStack, top, pk) {
     if (!n || typeof n.type !== 'string') return;
-    if (n.type === 'Literal' && typeof n.value === 'string' && ID_RE.test(n.value)) scopes.add(fnStack.length ? fnStack[fnStack.length - 1] : top);
+    const hit = names ? (n.type === 'Identifier' && names.has(n.name) && pk !== 'id' ? n.name : null) : (n.type === 'Literal' && typeof n.value === 'string' && ID_RE.test(n.value) ? n.value : null);
+    if (hit) { const sc = fnStack.length ? fnStack[fnStack.length - 1] : top; if (!scopes.has(sc)) scopes.set(sc, new Set()); scopes.get(sc).add(hit); }
     const push = isFn(n);
     if (push) fnStack.push(n);
     for (const k in n) {
       if (k === 'type' || k === 'start' || k === 'end') continue;
       const v = n[k];
-      if (Array.isArray(v)) { for (const c of v) if (c && typeof c.type === 'string') walk(c, fnStack, top); }
-      else if (v && typeof v.type === 'string') walk(v, fnStack, top);
+      if (Array.isArray(v)) { for (const c of v) if (c && typeof c.type === 'string') walk(c, fnStack, top, k); }
+      else if (v && typeof v.type === 'string') walk(v, fnStack, top, k);
     }
     if (push) fnStack.pop();
   }
-  function lits(n) {
+  function lits(n, strs, res) {
     if (!n || typeof n.type !== 'string') return;
     if (n.type === 'Literal') {
       if (n.regex) res.set('/' + n.regex.pattern + '/' + n.regex.flags, n.regex);
-      else if (typeof n.value === 'string' && n.value.length >= 4 && !ID_RE.test(n.value) && /\S/.test(n.value)) strs.add(n.value);
+      else if (typeof n.value === 'string' && n.value.length >= 4 && n.value.length <= 400 && !ID_RE.test(n.value) && /\S/.test(n.value)) strs.add(n.value);
     }
-    if (n.type === 'TemplateLiteral' && n.expressions.length === 0) { const v = n.quasis[0].value.cooked; if (v && v.length >= 4 && /\S/.test(v)) strs.add(v); }
+    if (n.type === 'TemplateLiteral' && n.expressions.length === 0) { const v = n.quasis[0].value.cooked; if (v && v.length >= 4 && v.length <= 400 && /\S/.test(v)) strs.add(v); }
     for (const k in n) {
       if (k === 'type' || k === 'start' || k === 'end') continue;
       const v = n[k];
-      if (Array.isArray(v)) { for (const c of v) if (c && typeof c.type === 'string') lits(c); }
-      else if (v && typeof v.type === 'string') lits(v);
+      if (Array.isArray(v)) { for (const c of v) if (c && typeof c.type === 'string') lits(c, strs, res); }
+      else if (v && typeof v.type === 'string') lits(v, strs, res);
     }
   }
   let nScripts = 0, bad = 0;
   for (const src of sources) {
-    const p = tryParse(src); if (!p) { bad++; continue; } nScripts++;
+    const p = parsedOf(src); if (!p) { bad++; continue; } nScripts++;
     for (const st of p.ast.body) walk(st, [], st);
   }
-  for (const s of scopes) lits(s);
-  const regs = [];
-  for (const [key, r] of res) {
-    let fl = r.flags.replace(/[gy]/g, '') + 'g';
-    try { regs.push({key, re: new RegExp(r.pattern, fl)}); } catch (e) { /* Merkmal unbekannt: nicht nachrechenbar */ }
+  // je Ziel (Block-ID bzw. Vorlagen-Name) nur die Such-Texte der Stellen, die dieses Ziel nennen
+  const per = new Map();
+  for (const [sc, ids] of scopes) {
+    const st = new Set(), rs = new Map(); lits(sc, st, rs);
+    for (const id of ids) {
+      if (!per.has(id)) per.set(id, {strs: new Set(), res: new Map()});
+      const P = per.get(id); for (const x of st) P.strs.add(x); for (const [k, r] of rs) P.res.set(k, r);
+    }
   }
-  return {strs: [...strs], regs, nScripts, bad, scopes: scopes.size};
+  const by = {};
+  for (const [id, P] of per) {
+    const regs = [];
+    for (const [key, r] of P.res) {
+      const fl = r.flags.replace(/[gy]/g, '') + 'g';
+      try { regs.push({key, re: new RegExp(r.pattern, fl)}); } catch (e) { /* Merkmal unbekannt: nicht nachrechenbar */ }
+    }
+    by[id] = {strs: [...P.strs], regs};
+  }
+  const of = id => by[id] || {strs: [], regs: []};
+  return {of, nScripts, bad, scopes: scopes.size, ziele: Object.keys(by).length};
 }
 
 // ---- ein Block ----
@@ -169,10 +186,54 @@ function doBlock(id, text, N) {
     zeilen: [ls.length, lineStarts(B.s).length], geschuetzteZeilen: prot.size, suchTexte: sN.length, suchRegex: sR.length, runden: rounds}};
 }
 
-const N = collectNeedles(Object.values(inp.blocks).concat(inp.main));
-const out = {blocks: {}, bericht: {skripte: N.nScripts, nichtZerlegbar: N.bad, zugriffsStellen: N.scopes, suchTexte: N.strs.length, suchRegex: N.regs.length, bloecke: []}};
-for (const [id, text] of Object.entries(inp.blocks)) {
-  const r = doBlock(id, text, N);
+// ---- Worklet-Vorlagen in den Blöcken: const NAME = `…registerProcessor…` (ohne ${, ohne \) – Inhalt wie ein Block verdichtet ----
+function worklets(text) {
+  const P = parsedOf(text); if (!P) return [];
+  const T = P.toks, r = [];
+  for (let i = 3; i + 1 < T.length; i++) {
+    const k = T[i];
+    if (k.type !== acorn.tokTypes.template || T[i - 1].type !== acorn.tokTypes.backQuote || T[i + 1].type !== acorn.tokTypes.backQuote) continue;
+    if (T[i - 2].type !== acorn.tokTypes.eq || T[i - 3].type !== acorn.tokTypes.name) continue;
+    const raw = text.slice(k.start, k.end);
+    if (raw.length < 2000 || raw.includes('\\') || raw.includes('${') || raw.includes('`') || !raw.includes('registerProcessor')) continue;
+    r.push({name: T[i - 3].value, start: k.start, end: k.end, raw});
+  }
+  return r;
+}
+const sources = Object.values(inp.blocks).concat(inp.main);
+const N = collectNeedles(sources);
+const W = {}; const names = new Set();
+for (const [id, text] of Object.entries(inp.blocks)) { W[id] = worklets(text); for (const w of W[id]) names.add(w.name); }
+const NW = names.size ? collectNeedles(sources, names) : {of: () => ({strs: [], regs: []}), scopes: 0};
+const out = {blocks: {}, bericht: {skripte: N.nScripts, nichtZerlegbar: N.bad, zugriffsStellen: N.scopes, ziele: N.ziele,
+  vorlagenZugriffe: NW.scopes || 0, bloecke: [], vorlagen: []}};
+const sameNeedles = (id, a, b) => N.of(id).strs.every(n => count(a, n) === count(b, n)) && N.of(id).regs.every(r => { const x = rmatch(a, r.re), y = rmatch(b, r.re); return x.length === y.length && x.every((q, k) => q.v === y[k].v); });
+for (const [id, text0] of Object.entries(inp.blocks)) {
+  let text = text0;
+  // Stufe A: Worklet-Vorlagen
+  const ws = W[id].filter(w => names.has(w.name) && [...Object.values(W)].flat().filter(v => v.name === w.name).length === 1);
+  if (ws.length) {
+    let t = '', p = 0; const done = [];
+    for (const w of ws) {
+      let neu = w.raw, info;
+      try { const r = doBlock(id + ':' + w.name, w.raw, NW.of(w.name)); neu = r.text; info = r.info; }
+      catch (e) { if (!(e instanceof Stop)) throw e; info = {id: id + ':' + w.name, unberuehrt: e.message}; }
+      if (neu.includes('\\') || neu.includes('`') || neu.includes('${')) { neu = w.raw; info = {id: id + ':' + w.name, unberuehrt: 'Zeichen für Vorlage ungeeignet'}; }
+      t += text.slice(p, w.start) + neu; p = w.end; done.push({w, neu}); out.bericht.vorlagen.push(info);
+    }
+    t += text.slice(p);
+    // äußere Prüfung: gleiche Token, nur die Vorlagen-Inhalte anders; Block-Such-Texte unverändert
+    const A = parsedOf(text), Bp = tryParse(t);
+    let ok = !!Bp && Bp.toks.length === A.toks.length && sameNeedles(id, text, t);
+    if (ok) { const rep = new Map(done.map(d => [d.w.start, d.neu]));
+      for (let i = 0; i < A.toks.length && ok; i++) { const a = A.toks[i], b = Bp.toks[i]; const want = rep.has(a.start) ? rep.get(a.start) : text.slice(a.start, a.end);
+        if (a.type !== b.type || t.slice(b.start, b.end) !== want) ok = false; } }
+    if (ok) text = t; else out.bericht.vorlagen.push({id, zurueck: 'äußere Prüfung', zerlegt: !!Bp, needles: N.of(id).strs.filter(n => count(text, n) !== count(t, n)).slice(0, 5)});
+  }
+  // Stufe B: der Block selbst
+  let r; try { r = doBlock(id, text, N.of(id)); } catch (e) { if (e instanceof Stop) stop(e.message); throw e; }
+  if (text !== text0 && !sameNeedles(id, text0, r.text)) stop(id + ': Such-Texte nach Stufe A+B verschieden');
+  r.info.vorher = text0.length;
   out.blocks[id] = r.text; out.bericht.bloecke.push(r.info);
 }
 fs.writeFileSync(OUT, JSON.stringify(out));

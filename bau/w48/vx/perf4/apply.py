@@ -75,6 +75,8 @@ def main():
         fail('Ausgang: Skript-Grenzen verschieden')
     if s[:spans[0][1]] != o[:spans[0][1]]:
         fail('Ausgang: Kopf verändert')
+    for line in res['bericht'].get('vorlagen', []):
+        print(json.dumps(line, ensure_ascii=False))
     for line in res['bericht']['bloecke']:
         print(json.dumps(line, ensure_ascii=False))
     print('roh %d -> %d (%+d)' % (len(raw), len(o.encode('utf-8')), len(o.encode('utf-8')) - len(raw)))
