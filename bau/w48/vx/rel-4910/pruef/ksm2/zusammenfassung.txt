@@ -1,0 +1,20 @@
+== /tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/neu/rel-4910/pruef/ksm2/kern-ksm2.out
+neu wt ohne 3491710883dc05cd stabil False err None hoerbar(9) {'ksAa': -6.7, 'ksAd': -23.4, 'ksAr': -11.3, 'ksFa': -9.8, 'ksFd': -22.2, 'ksFr': -39.7, 'ksMa': 2.8, 'ksMd': 3.3, 'ksPe': -0.6} routen gleich False
+neu mk ohne 7266bd777266bd77 stabil True err None hoerbar(6) {'ksAa': -5.4, 'ksAd': -25.6, 'ksAr': -13.8, 'ksFa': 1, 'ksFd': -31.3, 'ksFr': -24.9} routen gleich True
+neu bm ohne 5c624375c62437 stabil True err None hoerbar(7) {'ksAa': 0.6, 'ksAd': -17.1, 'ksAr': -10.7, 'ksFa': -4, 'ksFd': -18, 'ksFr': -41.9, 'ksPe': 3.5} routen gleich True
+neu errs []
+basis wt ohne a6e862a8eecd0502 stabil False err None hoerbar(0) {} routen gleich False
+basis mk ohne 7266bd777266bd77 stabil True err None hoerbar(0) {} routen gleich True
+basis bm ohne 5c624375c62437 stabil True err None hoerbar(1) {'ksF2e': 0} routen gleich True
+basis errs []
+ohne-Hash neu==basis: {'wt': False, 'mk': True, 'bm': True}
+== /tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/neu/ksm2/kern-ksm2.out
+neu wt ohne a6e862a8eecd0502 stabil False err None hoerbar(9) {'ksAa': -6.7, 'ksAd': -23.4, 'ksAr': -11.3, 'ksFa': -9.8, 'ksFd': -22.2, 'ksFr': -39.7, 'ksMa': 2.8, 'ksMd': 3.3, 'ksPe': -0.6} routen gleich False
+neu mk ohne 7266bd777266bd77 stabil True err None hoerbar(6) {'ksAa': -5.4, 'ksAd': -25.6, 'ksAr': -13.8, 'ksFa': 1, 'ksFd': -31.3, 'ksFr': -24.9} routen gleich True
+neu bm ohne 5c624375c62437 stabil True err None hoerbar(7) {'ksAa': 0.6, 'ksAd': -17.1, 'ksAr': -10.7, 'ksFa': -4, 'ksFd': -18, 'ksFr': -41.9, 'ksPe': 3.5} routen gleich True
+neu errs []
+basis wt ohne a6e862a8eecd0502 stabil True err None hoerbar(0) {} routen gleich False
+basis mk ohne 7266bd777266bd77 stabil True err None hoerbar(0) {} routen gleich True
+basis bm ohne 5c624375c62437 stabil True err None hoerbar(0) {} routen gleich True
+basis errs []
+ohne-Hash neu==basis: {'wt': True, 'mk': True, 'bm': True}

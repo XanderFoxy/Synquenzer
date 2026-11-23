@@ -1,0 +1,437 @@
+ke1 Unterschiede vorher/nachher: [".paintMs=22.299999997019768|8.800000000745058",".msgs=25|20",".tm.paint=22.3|8.8",".tm.prog=0.2|0.3",".tm.progN=17|13",".tm.msg=22.3|8.8",".tm.start=3.8|3.3",".tm.open=7.3|5.2",".res.ms2=4365|3267",".res.s1.msNetto=342|277",".res.msEngine=135|63"] | Kontrolle vorher/vorher: [".paintMs=22.299999997019768|16",".msgs=25|20",".tm.paint=22.3|16",".tm.progN=17|13",".tm.msg=22.3|16",".tm.start=3.8|5.8",".tm.open=7.3|5",".res.ms2=4365|3268",".res.s1.msNetto=342|283",".res.msEngine=135|55"]
+{
+ "vorher": {
+  "version": "4.90.0",
+  "mk": [
+   {
+    "id": "f-moog-bass",
+    "engine": "analog",
+    "h": [
+     "f7fc3fe5",
+     "f7fc3fe5"
+    ],
+    "rms": 0.070095
+   },
+   {
+    "id": "f-dx-tines",
+    "engine": "fm6",
+    "h": [
+     "714a4b42",
+     "50039b3c"
+    ],
+    "rms": 0.09326
+   },
+   {
+    "id": "f-wt-vokal",
+    "engine": "wt",
+    "h": [
+     "5fc8afd3",
+     "30795235"
+    ],
+    "rms": 0.054171
+   },
+   {
+    "id": "f-init-am",
+    "engine": "mk",
+    "h": [
+     "b101be32",
+     "b101be32"
+    ],
+    "rms": 0.119206
+   },
+   {
+    "id": "f-init-bm",
+    "engine": "bm",
+    "h": [
+     "f3453f6d",
+     "431d2fd7"
+    ],
+    "rms": 0.119004
+   },
+   {
+    "id": "f-sub-bass",
+    "engine": "analog",
+    "h": [
+     "f2fb8688",
+     "f2fb8688"
+    ],
+    "rms": 0.089535
+   },
+   {
+    "id": "f-acid-303",
+    "engine": "analog",
+    "h": [
+     "417c0121",
+     "417c0121"
+    ],
+    "rms": 0.051766
+   },
+   {
+    "id": "f-synthpop-bass",
+    "engine": "analog",
+    "h": [
+     "902cb14f",
+     "902cb14f"
+    ],
+    "rms": 0.083796
+   },
+   {
+    "id": "f-gummi-bass",
+    "engine": "analog",
+    "h": [
+     "528e55a9",
+     "528e55a9"
+    ],
+    "rms": 0.069522
+   },
+   {
+    "id": "f-mini-lead",
+    "engine": "analog",
+    "h": [
+     "10bce6ff",
+     "10bce6ff"
+    ],
+    "rms": 0.080361
+   },
+   {
+    "id": "f-sync-lead",
+    "engine": "analog",
+    "h": [
+     "fe5322f0",
+     "fe5322f0"
+    ],
+    "rms": 0.080642
+   },
+   {
+    "id": "f-supersaw-hymne",
+    "engine": "analog",
+    "h": [
+     "ffd9fd3d",
+     "3e0cac39"
+    ],
+    "rms": 0.068543
+   }
+  ],
+  "lk": true,
+  "mkw": null,
+  "fmx": "ALGS,scaleOL,scaleVel,scaleRate,scaleLevel,LVL_PER_SEC,egHoldSec ALGS 32",
+  "ks": {
+   "ok": true,
+   "geladen": true,
+   "err": null,
+   "sichtbar": 35
+  },
+  "ke1": {
+   "ok": true,
+   "geladen": true,
+   "err": null,
+   "state": {
+    "len": 5814,
+    "h": "9743f75",
+    "kopf": "{\"busy\":false,\"err\":null,\"wait\":false,\"reopened\":0,\"reo\":false,\"src\":true,\"pl\":null,\"notes\":[{\"a\":0,\"b\":1.15,\"end\":1.15,\"f0\":220.14,\"m\":57.01,\"dur\":1.15,\"db\":0,"
+   }
+  },
+  "platte": {
+   "id": "f-init-am",
+   "t": 0,
+   "geladen": true,
+   "err": null,
+   "plattenTeile": 407,
+   "ms2000": true
+  },
+  "ndp": {
+   "ok": true,
+   "da": true,
+   "sichtbar": true,
+   "teile": 210
+  },
+  "wk": {
+   "MIC_WK": "ok",
+   "ST_WK": "ok",
+   "MIXA": "ok"
+  },
+  "errs": []
+ },
+ "nachher": {
+  "version": "4.91.0",
+  "mk": [
+   {
+    "id": "f-moog-bass",
+    "engine": "analog",
+    "h": [
+     "f7fc3fe5",
+     "f7fc3fe5"
+    ],
+    "rms": 0.070095
+   },
+   {
+    "id": "f-dx-tines",
+    "engine": "fm6",
+    "h": [
+     "714a4b42",
+     "50039b3c"
+    ],
+    "rms": 0.09326
+   },
+   {
+    "id": "f-wt-vokal",
+    "engine": "wt",
+    "h": [
+     "5fc8afd3",
+     "30795235"
+    ],
+    "rms": 0.054171
+   },
+   {
+    "id": "f-init-am",
+    "engine": "mk",
+    "h": [
+     "b101be32",
+     "b101be32"
+    ],
+    "rms": 0.119206
+   },
+   {
+    "id": "f-init-bm",
+    "engine": "bm",
+    "h": [
+     "f3453f6d",
+     "431d2fd7"
+    ],
+    "rms": 0.119004
+   },
+   {
+    "id": "f-sub-bass",
+    "engine": "analog",
+    "h": [
+     "f2fb8688",
+     "f2fb8688"
+    ],
+    "rms": 0.089535
+   },
+   {
+    "id": "f-acid-303",
+    "engine": "analog",
+    "h": [
+     "417c0121",
+     "417c0121"
+    ],
+    "rms": 0.051766
+   },
+   {
+    "id": "f-synthpop-bass",
+    "engine": "analog",
+    "h": [
+     "902cb14f",
+     "902cb14f"
+    ],
+    "rms": 0.083796
+   },
+   {
+    "id": "f-gummi-bass",
+    "engine": "analog",
+    "h": [
+     "528e55a9",
+     "528e55a9"
+    ],
+    "rms": 0.069522
+   },
+   {
+    "id": "f-mini-lead",
+    "engine": "analog",
+    "h": [
+     "10bce6ff",
+     "10bce6ff"
+    ],
+    "rms": 0.080361
+   },
+   {
+    "id": "f-sync-lead",
+    "engine": "analog",
+    "h": [
+     "fe5322f0",
+     "fe5322f0"
+    ],
+    "rms": 0.080642
+   },
+   {
+    "id": "f-supersaw-hymne",
+    "engine": "analog",
+    "h": [
+     "ffd9fd3d",
+     "3e0cac39"
+    ],
+    "rms": 0.068543
+   }
+  ],
+  "lk": true,
+  "mkw": null,
+  "fmx": "ALGS,scaleOL,scaleVel,scaleRate,scaleLevel,LVL_PER_SEC,egHoldSec ALGS 32",
+  "ks": {
+   "ok": true,
+   "geladen": true,
+   "err": null,
+   "sichtbar": 35
+  },
+  "ke1": {
+   "ok": true,
+   "geladen": true,
+   "err": null,
+   "state": {
+    "len": 5810,
+    "h": "6330b4fc",
+    "kopf": "{\"busy\":false,\"err\":null,\"wait\":false,\"reopened\":0,\"reo\":false,\"src\":true,\"pl\":null,\"notes\":[{\"a\":0,\"b\":1.15,\"end\":1.15,\"f0\":220.14,\"m\":57.01,\"dur\":1.15,\"db\":0,"
+   }
+  },
+  "platte": {
+   "id": "f-init-am",
+   "t": 0,
+   "geladen": true,
+   "err": null,
+   "plattenTeile": 407,
+   "ms2000": true
+  },
+  "ndp": {
+   "ok": true,
+   "da": true,
+   "sichtbar": true,
+   "teile": 210
+  },
+  "wk": {
+   "MIC_WK": "ok",
+   "ST_WK": "ok",
+   "MIXA": "ok"
+  },
+  "errs": []
+ },
+ "vorher2": {
+  "mk": [
+   {
+    "id": "f-moog-bass",
+    "engine": "analog",
+    "h": [
+     "f7fc3fe5",
+     "f7fc3fe5"
+    ],
+    "rms": 0.070095
+   },
+   {
+    "id": "f-dx-tines",
+    "engine": "fm6",
+    "h": [
+     "714a4b42",
+     "50039b3c"
+    ],
+    "rms": 0.09326
+   },
+   {
+    "id": "f-wt-vokal",
+    "engine": "wt",
+    "h": [
+     "5fc8afd3",
+     "30795235"
+    ],
+    "rms": 0.054171
+   },
+   {
+    "id": "f-init-am",
+    "engine": "mk",
+    "h": [
+     "b101be32",
+     "b101be32"
+    ],
+    "rms": 0.119206
+   },
+   {
+    "id": "f-init-bm",
+    "engine": "bm",
+    "h": [
+     "f3453f6d",
+     "431d2fd7"
+    ],
+    "rms": 0.119004
+   },
+   {
+    "id": "f-sub-bass",
+    "engine": "analog",
+    "h": [
+     "f2fb8688",
+     "f2fb8688"
+    ],
+    "rms": 0.089535
+   },
+   {
+    "id": "f-acid-303",
+    "engine": "analog",
+    "h": [
+     "417c0121",
+     "417c0121"
+    ],
+    "rms": 0.051766
+   },
+   {
+    "id": "f-synthpop-bass",
+    "engine": "analog",
+    "h": [
+     "902cb14f",
+     "902cb14f"
+    ],
+    "rms": 0.083796
+   },
+   {
+    "id": "f-gummi-bass",
+    "engine": "analog",
+    "h": [
+     "528e55a9",
+     "528e55a9"
+    ],
+    "rms": 0.069522
+   },
+   {
+    "id": "f-mini-lead",
+    "engine": "analog",
+    "h": [
+     "10bce6ff",
+     "10bce6ff"
+    ],
+    "rms": 0.080361
+   },
+   {
+    "id": "f-sync-lead",
+    "engine": "analog",
+    "h": [
+     "fe5322f0",
+     "fe5322f0"
+    ],
+    "rms": 0.080642
+   },
+   {
+    "id": "f-supersaw-hymne",
+    "engine": "analog",
+    "h": [
+     "ffd9fd3d",
+     "3e0cac39"
+    ],
+    "rms": 0.068543
+   }
+  ],
+  "errs": []
+ }
+}
+CSS-Vorlagen: [{"id":"sq-arp1-src","vorher":2910,"nachher":2910,"regeln":31,"gleich":true},{"id":"sq-form-src","vorher":2105,"nachher":2105,"regeln":23,"gleich":true},{"id":"sq-ndp-src","vorher":13522,"nachher":13522,"regeln":122,"gleich":true},{"id":"sq-mk-src","vorher":15979,"nachher":15979,"regeln":155,"gleich":true},{"id":"sq-bm-src","vorher":4586,"nachher":4586,"regeln":45,"gleich":true},{"id":"sq-ks-src","vorher":5491,"nachher":5491,"regeln":64,"gleich":true}]
+OK CSSOM vorher == nachher (6 CSS-Vorlagen, 440 Regeln, 44593 -> 44593 Zeichen)
+OK Worklet-Vorlagen laden vorher {"MIC_WK":"ok","ST_WK":"ok","MIXA":"ok"} | nachher {"MIC_WK":"ok","ST_WK":"ok","MIXA":"ok"}
+OK ms-Platte Screenshot pixelgleich (Kontrolle vorher==vorher: true)
+OK ndp-Platte Screenshot pixelgleich (Kontrolle vorher==vorher: true)
+OK Kontrolle vorher == vorher
+OK Render nicht still: 12 Werksklänge (analog/fm6/wt/mk/bm)
+OK vorher == nachher bitgleich (12 Werksklänge, je 2 Kanäle)
+OK lk vorher true | nachher true
+OK mkw vorher null | nachher null
+OK fmx vorher "ALGS,scaleOL,scaleVel,scaleRate,scaleLevel,LVL_PER_SEC,egHoldSec ALGS 32" | nachher "ALGS,scaleOL,scaleVel,scaleRate,scaleLevel,LVL_PER_SEC,egHoldSec ALGS 32"
+OK ks vorher {"ok":true,"geladen":true,"err":null,"sichtbar":35} | nachher {"ok":true,"geladen":true,"err":null,"sichtbar":35}
+ANDERS ke1 vorher {"ok":true,"geladen":true,"err":null,"state":{"len":5814,"h":"9743f75","kopf":"{\"busy\":false,\"err\":null,\"wait\":false,\"reopened\":0,\"reo\":false,\"src\":true,\"pl\":null,\"notes\":[{\"a\":0,\"b\":1.15,\"end\":1.15,\"f0\":220.14,\"m\":57.01,\"dur\":1.15,\"db\":0,"}} | nachher {"ok":true,"geladen":true,"err":null,"state":{"len":5810,"h":"6330b4fc","kopf":"{\"busy\":false,\"err\":null,\"wait\":false,\"reopened\":0,\"reo\":false,\"src\":true,\"pl\":null,\"notes\":[{\"a\":0,\"b\":1.15,\"end\":1.15,\"f0\":220.14,\"m\":57.01,\"dur\":1.15,\"db\":0,"}}
+OK platte vorher {"id":"f-init-am","t":0,"geladen":true,"err":null,"plattenTeile":407,"ms2000":true} | nachher {"id":"f-init-am","t":0,"geladen":true,"err":null,"plattenTeile":407,"ms2000":true}
+OK ndp vorher {"ok":true,"da":true,"sichtbar":true,"teile":210} | nachher {"ok":true,"da":true,"sichtbar":true,"teile":210}
+OK Konsole/Seitenfehler []
+ERGEBNIS bitgleich
