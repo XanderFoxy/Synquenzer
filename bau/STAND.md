@@ -1,4 +1,4 @@
-# Stand 23.11.12:55 UTC
+# Stand 23.11.12:58 UTC
 ## ent1a
 # ENT1A Stand
 - Start: Analyse Arp/Stopp. stop() kehrt bei !R.playing früh zurück -> arpEndAll fehlt (Verdacht).
@@ -20,6 +20,8 @@
 ## ent1d
 # ENT1D Stand
 - 12:55 Start: Kopf „Klang erkennen" untersuchen (✕, ↶, Synth-Reiter, hochkant/quer).
+- 13:00 Sonde vorher: ✕/Kopf/Reiter sichtbar, ≥44 px, keine Überlappung; ↶ nach Übernehmen sichtbar. Mängel: ✕ 6 px (hoch) bzw. 25 px (quer) anders als in den übrigen Blättern; langer Name 2 Zeilen.
+- apply.py geschrieben (3 Haken), jetzt Test.
 ## kmp1
 fertig: KMP1 gebaut und getestet (index.html md5 b4943476ff3b5bc6951d20cbf9d37914, apply.py, block.js, kern.js, hoch.png, quer.png, KURZ.md, CHANGES.md)
 als Nächstes: nichts – bereit zur Übernahme
