@@ -23,11 +23,12 @@
 // export function umbenennen(id, name), loeschen(id)
 // export async function bereit()    → wartet, bis alle Speicher-Vorgänge erledigt sind
 // export function info()            → {anzahl, max, imSpeicherMB, idb}
+// export function speicherBudget(mb) → Obergrenze für Audio im Speicher ändern (Standard 320 MB)
 
 import { spitzen as spitzenRechnen } from './io.js';
 
 export const MAX = 20;
-const BUDGET_BYTES = 320 * 1024 * 1024;   // so viel Audio bleibt höchstens im Speicher (iOS-sicher)
+let BUDGET_BYTES = 320 * 1024 * 1024;     // so viel Audio bleibt höchstens im Speicher (iOS-sicher)
 const SPITZEN_PRO_SEK = 100;
 const DB_NAME = 'werkstatt3-verlauf', DB_VER = 1;
 
@@ -264,6 +265,8 @@ export async function wiederherstellen() {
   melden();
   return liste();
 }
+
+export function speicherBudget(mb) { BUDGET_BYTES = Math.max(1, mb) * 1048576; auslagern(); }
 
 export function bereit() { return kette.then(() => true); }
 
