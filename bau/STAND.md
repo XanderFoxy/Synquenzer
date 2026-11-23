@@ -1,4 +1,4 @@
-# Stand 23.11.15:04 UTC
+# Stand 23.11.15:06 UTC
 ## ent1a
 # ENT1A Stand
 - Start: Analyse Arp/Stopp. stop() kehrt bei !R.playing früh zurück -> arpEndAll fehlt (Verdacht).
@@ -29,6 +29,12 @@ als Nächstes: nichts – bereit zur Übernahme
 ## mlg3
 fertig: MLG3 gebaut und getestet (index.html, apply.py, block.js, kern.js, quer.js, KURZ.md, CHANGES.md)
 als Naechstes: nichts – bereit zur Uebernahme
+## ton1
+# TON1 – Stand
+- Ziel: erster Ton nach Laden nicht still (Takes/Klangkorn), Nachfüttern im Worklet.
+- Befund bisher: Audio-Clips (Original/Stimme) steigen nach dem Laden schon versetzt mit 5-ms-Blende ein (tkPlace joined);
+  Klangkorn-Worklet übernimmt Quelle für gehaltene Stimmen, aber Hüllkurve startet neu ab 0 und Stimmen, die vor Ankunft losgelassen wurden, bleiben still.
+- Nächster Schritt: Sonde (Reload + sofort ▶, Pegel 0–300 ms).
 ## vl3
 fertig: VL3 gebaut + Kern-Test 10/10 grün, KURZ.md + CHANGES.md geschrieben (Ausgang md5 9bb6ee81)
 als Nächstes: nichts – bereit zur Übergabe
