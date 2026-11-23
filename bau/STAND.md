@@ -1,7 +1,7 @@
-# Stand 23.11.12:19 UTC
+# Stand 23.11.12:21 UTC
 ## kmp1
-fertig: Ordner angelegt
-als Nächstes: Code finden (MKK/Kompakt)
+fertig: block.js + apply.py, index.html gebaut
+als Nächstes: Kern-Test im Browser (kern.js), Pflicht-Prüfung
 ## mlg3
 fertig: MLG3 gebaut und getestet (index.html, apply.py, block.js, kern.js, quer.js, KURZ.md, CHANGES.md)
 als Naechstes: nichts – bereit zur Uebernahme
