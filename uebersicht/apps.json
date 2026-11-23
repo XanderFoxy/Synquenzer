@@ -5,19 +5,18 @@
    "id": "synq",
    "name": "Synquenzer",
    "link": "../",
-   "version": "4.82.0",
+   "version": "4.83.0",
    "kurz": "Die Musik-App: Clips, Szenen, Song, Gesang, Mischen und Video – bis 16 Spuren.",
    "ausprobieren": [
-    "Im Vorzähler singen: Der Auftakt bleibt drin, der Clip startet trotzdem auf der 1.",
-    "Gesang ausrichten ohne Stottern – Tonhöhe einrasten: Aus, Weich oder Hart.",
-    "Im Gesang-Editor stehen Bereinigen und Chor jetzt direkt oben.",
-    "Chorstimmen einzeln anhören (S) oder stumm schalten (M)."
+    "Klang-Editor › STIMME: „ARP AN“ – Arpeggiator auf jeder Synth-Spur.",
+    "≡ › Klangschule: Lektion starten, „Hör mal“ antippen.",
+    "Takes-Blatt › „Klang erkennen“: die App baut deinen Ton nach.",
+    "Menü › Import › „DAW-Projekt öffnen (.cbp)“."
    ],
    "in_arbeit": [
-    "4.83 im Test: Arp auf jeder Synth-Spur, Klangschule, Klang erkennen, DAW-Projekt öffnen, Video mit richtigem Ton.",
-    "Danach 4.84: Gesang-Auftakt im Loop mit Fähnchen, dazu leichtere Bedienung.",
+    "4.84 im Test: Gesang-Auftakt im Loop mit Fähnchen, dazu leichtere Bedienung.",
     "Geplant: eigene Ansicht für die Synth-Klänge aus der DAW.",
-    "Geplant: Song als DAW-Projekt speichern."
+    "Geplant: eigene Platte für die Kompakt-Sammlung."
    ],
    "brauche": [
     "Fotos deiner Effekt-Listen in der DAW – damit ich die Synth-Klänge mit allen Effekten genau ausmessen kann.",
@@ -40,16 +39,15 @@
    "id": "wall",
    "name": "The Wall – Ablage",
    "link": "../the-wall/",
-   "version": "v10",
+   "version": "v11",
    "kurz": "Alles zum Song: Master, Projekte, Gesang, Noten, Video – mit der Gesang-Werkstatt.",
    "ausprobieren": [
-    "v10 anhören: Gesang bearbeitet, mit Vergleich v7 gegen v10.",
-    "Gesang-Werkstatt (in der Ablage bei v10): Silben auf der Welle, Stellen markieren, Notiz an mich schicken.",
-    "Projekt v8: ein ZIP mit Master-Presets und Bass-Hörprobe."
+    "Ganz oben: alle Fassungen v5 bis v11 nacheinander anhören.",
+    "Vergleich v10/v11 hören: offener, weniger Pumpen, Terzen nach Akkord.",
+    "Gesang-Werkstatt 2: Silben ziehen und hören, Änderungen senden."
    ],
    "in_arbeit": [
-    "v11: deine eigene zweite Stimme nach vorn, keine schiefen Reibungen, Gesang offener.",
-    "Werkstatt 2: Schichten übereinander wie Zwiebelschalen, Silben hörbar ziehen."
+    "Master-Presets aus deinem Beispiel-Preset, sobald es da ist."
    ],
    "brauche": [
     "Ein Preset aus deinem Master-Effekt: Presets › Save › Share › an die Ton-Post."
@@ -176,16 +174,14 @@
    "id": "kb",
    "name": "Kaninchenbau",
    "link": "../kaninchenbau/",
-   "version": "0.1.0",
+   "version": "0.2.1",
    "kurz": "Lernen, was dich interessiert – von Einsteiger bis Profi, mit echten Quellen.",
    "ausprobieren": [
-    "Startfragen: Was interessiert dich?",
-    "4 Gebiete mit je 3 Stufen – Einsteiger, Fortgeschritten, Profi.",
-    "Ein Baum zeigt, wie die Themen zusammenhängen."
+    "Eine kurze Runde (5, 8 oder 12 Fragen) beantworten.",
+    "Falsch getippt? ↶ oder „Ändern“.",
+    "Prozent ansehen, dann „Defragmentieren“ in der Karte."
    ],
-   "in_arbeit": [
-    "0.2: Antworten korrigieren, Fortschritt in Prozent, Karte."
-   ],
+   "in_arbeit": [],
    "brauche": []
   }
  ],
