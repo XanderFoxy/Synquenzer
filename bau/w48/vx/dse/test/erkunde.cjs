@@ -1,0 +1,11 @@
+const {chromium}=require('playwright');
+const port=require('fs').readFileSync(__dirname+'/../port.txt','utf8').trim(),wer=process.argv[2]||'basis',out=process.argv[3]||__dirname+'/x.png',W=+(process.argv[4]||428),H=+(process.argv[5]||926);
+(async()=>{const b=await chromium.launch({args:['--autoplay-policy=no-user-gesture-required']});
+const ctx=await b.newContext({viewport:{width:W,height:H},hasTouch:true,isMobile:true,deviceScaleFactor:2});const p=await ctx.newPage();const errs=[];
+p.on('pageerror',e=>errs.push(String(e)));p.on('console',m=>{if(m.type()==='error'&&!/abspann-logo|Failed to load/.test(m.text()))errs.push(m.text());});
+await p.goto('http://127.0.0.1:'+port+'/'+wer+'/index.html');await p.waitForFunction(()=>window.SYNQUENZER,null,{timeout:90000});await p.waitForTimeout(1500);
+const r=await p.evaluate(async()=>{const W=ms=>new Promise(r=>setTimeout(r,ms));const sp=SYNQUENZER.mtx3.split();const j=sp.find(x=>S.tracks[x].dvx.v==='hatC');
+let s=S.tracks[j].clips.findIndex(c=>c);MTX3B.view='steps';openRoll(j,s);await W(800);
+const q=x=>{const e=document.querySelector(x);if(!e)return null;const r=e.getBoundingClientRect();return [r.left|0,r.top|0,r.width|0,r.height|0];};
+return {j,s,sp,len:S.tracks[j].clips[s].len,notes:S.tracks[j].clips[s].notes.length,acts:q('.mtx3bd .lacts'),bar:q('.mtx3bd .lbar')||q('.rhead .lbar'),head:q('#rollSheet .rhead')||q('.rhead'),lab:q('.m3bpad'),labsw:(()=>{const e=document.querySelector('.m3bpad');return e?[e.scrollWidth,e.clientWidth,e.textContent]:null})(),bars:[...document.querySelectorAll('.lbar > *')].map(e=>{const r=e.getBoundingClientRect();return e.className+':'+(r.left|0)+'-'+(r.right|0)}),heads:[...document.querySelectorAll('.rhead > *')].map(e=>{const r=e.getBoundingClientRect();return e.className+':'+(r.left|0)+'-'+(r.right|0)+'/'+(r.top|0)})};});
+console.log(JSON.stringify(r,null,0));await p.screenshot({path:out});console.log('errs',errs);await b.close();})();

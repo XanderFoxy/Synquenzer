@@ -55,14 +55,18 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     // Fall G: Nur Gefundenes
     await mark(); await p.evaluate(() => __fokus1.mode('gef')); await ruhe();
     out.G = Object.assign(await lt(), { hash: await img() });
+    // Fall S: schnelles Hin und Her waehrend des Hochladens (Rest -> Gefundenes -> Rest, dabei Ansicht verschieben) -> Endbild wie Basis
+    await mark(); await p.evaluate(async () => { const U = __spk.page.ui(), w = ms => new Promise(r => setTimeout(r, ms)); __fokus1.mode('rest'); await w(120); __fokus1.mode('gef'); await w(60); U.v.t0 += 3; spk1Clamp(U); spk1Dirty(U, 'all'); await w(40); __fokus1.mode('rest'); await w(30); U.v.t0 -= 3; spk1Clamp(U); spk1Dirty(U, 'all'); }); await ruhe();
+    out.S = Object.assign(await lt(), { hash: await img() });
     out.fok4 = await p.evaluate(() => typeof FOK4 === 'object' ? { nNew: FOK4.nNew, nSub: FOK4.nSub, nSame: FOK4.nSame, nCol: FOK4.nCol, nWait: FOK4.nWait, nDrop: FOK4.nDrop, err: FOK4.err, on: FOK4.on } : null);
     await ctx.close(); return out;
   }
   const res = {}; for (const w of names) res[w] = [];
   for (let i = 0; i < RUNS; i++) for (const w of (i % 2 ? names.slice().reverse() : names)) { const load = fs.readFileSync('/proc/loadavg', 'utf8').split(' ')[0]; const o = await lauf(w); o.last = +load; res[w].push(o); console.log(w, i, JSON.stringify(o)); }
-  if (names.length === 2) { let ok = true; for (const f of ['Z', 'F', 'A', 'G']) for (let i = 0; i < RUNS; i++) { const g = res.A[i][f].hash === res.B[i][f].hash; if (!g) ok = false; console.log('Bild', f, i, g ? 'gleich' : 'VERSCHIEDEN', res.A[i][f].hash, res.B[i][f].hash); }
-    for (const f of ['Z', 'F', 'A', 'G']) console.log('HochladenImBild', f, 'A', res.A.map(o => o[f].gl.inF).join(' '), '| B', res.B.map(o => o[f].gl.inF).join(' '));
-    for (const f of ['Z', 'F', 'A', 'G']) console.log('LongTasks', f, 'A', res.A.map(o => o[f].n + '/' + o[f].max).join(' '), '| B', res.B.map(o => o[f].n + '/' + o[f].max).join(' '));
+  if (names.length === 2) { let ok = true; for (const f of ['Z', 'F', 'A', 'G', 'S']) for (let i = 0; i < RUNS; i++) { const g = res.A[i][f].hash === res.B[i][f].hash; if (!g) ok = false; console.log('Bild', f, i, g ? 'gleich' : 'VERSCHIEDEN', res.A[i][f].hash, res.B[i][f].hash); }
+    for (const f of ['Z', 'F', 'A', 'G', 'S']) console.log('HochladenImBild', f, 'A', res.A.map(o => o[f].gl.inF).join(' '), '| B', res.B.map(o => o[f].gl.inF).join(' '));
+    for (const f of ['Z', 'F', 'A', 'G', 'S']) console.log('LongTasks', f, 'A', res.A.map(o => o[f].n + '/' + o[f].max).join(' '), '| B', res.B.map(o => o[f].n + '/' + o[f].max).join(' '));
+    console.log('FOK4', JSON.stringify(res.A.map(o => o.fok4)));
     console.log('Fehler', JSON.stringify(res.A.map(o => o.errs)), JSON.stringify(res.B.map(o => o.errs))); console.log(ok ? 'BILD OK' : 'BILD FEHLER'); }
   fs.writeFileSync(path.join(__dirname, 'fok4-test.json'), JSON.stringify(res, null, 1));
   await b.close(); srv.kill(); fs.rmSync(dir, { recursive: true, force: true });

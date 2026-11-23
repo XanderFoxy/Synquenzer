@@ -4,7 +4,7 @@ import json, subprocess, sys, os
 import numpy as np
 W = os.path.dirname(os.path.abspath(__file__)) + '/..'
 R = W + '/repo/the-wall'
-OUT = W + '/werkzeug/roh'
+OUT = W + '/roh'   # ausserhalb von werkzeug/ (wird nicht gesichert)
 SR = 48000
 DAUER = 266.0
 

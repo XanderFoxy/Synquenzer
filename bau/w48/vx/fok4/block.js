@@ -50,7 +50,7 @@ const P=FOK4;P.tm=0;if(!P.f)return;
 try{
 const gl=P.G.gl;let ok=true;
 if(P.fs&&!gl.isContextLost())ok=gl.getSyncParameter(P.fs,gl.SYNC_STATUS)===gl.SIGNALED;
-if(!ok&&++P.w<80){P.tm=setTimeout(fok4Poll,P.w<8?2:6);return;}
+if(!ok&&++P.w<16){P.tm=setTimeout(fok4Poll,P.w<6?2:5);return;}
 if(!ok)P.nWait++;
 }catch(e){P.err=String((e&&e.message)||e).slice(0,200);}
 fok4Fin();
