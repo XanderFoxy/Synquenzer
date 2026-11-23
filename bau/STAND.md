@@ -1,4 +1,4 @@
-# Stand 23.11.15:54 UTC
+# Stand 23.11.15:57 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -80,8 +80,8 @@ Gebaut (bitgleich):
 1. Tiefband (`magsLo`, spk3DspMake): Rand-Rahmen des vorigen Streifens werden übernommen (gleiche FFT-Paare, Prüfung Signal-Objekt, Fenster, N/R/K, cen je Rahmen, Versatz gerade). Speicher kopiert vor der Rückgabe (lowSplit4 ändert Y in place), 2 Einträge je Schlüssel, Freigabe im finally von zerlegen.
 2. zPrep-Quantisierung ohne log10: Tabelle über float32-Bits (Exponent + 6 Mantissen-Bits), je Zelle höchstens eine Schwelle (per Binärsuche mit der alten Formel gefunden), nahe der Schwelle (±2,5e-4 relativ) und Sonderwerte genau gerechnet.
 ## zrl3
-# ZRL3 auf 4.86.0 – Stand: fertig (kleiner Schnitt, ehrlich begrenzt)
-Eingang rel-4860 (a7515b98…). Bau: `python3 apply.py <eingang> <ausgang>` (Block `block.js`, 1 Haken `/*ZRL3*/`).
-Ansatz: In spk6 `synth` laeuft der Phasen-Vocoder je Abschnitt (regs) ueber `zrl3Pv`. Schluessel je Abschnitt = Hash (2×32 bit, FNV + Murmur)
-ueber die genauen Eingaben: Signal-Bits [s0−N, e0+N), rr/fv je Rahmen (wie pv sie liest), N/H/sr/fmt, Laenge, Rand-Ueberhang.
-Ein Abschnitt haengt nur von diesen Eingaben ab (lp/sp/fresh werden am Abschnitt-Anfang neu gesetzt) → gleicher Schluessel = gleiche Bits.
+# ZRL3 auf 4.86.0 – Stand: fertig (Kern gebaut und gemessen; Grenzen unten)
+Ausgang `index.html` md5 f0a4ae8ced20e9fa72efc8dc57e89f76 (Eingang a7515b98…). Bau: `python3 apply.py <eingang> <ausgang>` (Block `block.js`, 1 Haken `/*ZRL3*/`).
+**Kern-Test-Datei: `test/test-zrl3.mjs`** (`node test-zrl3.mjs <neu.html> <basis.html>`, SEK=40 RUNDEN=2). Ausgaben: `test/test-zrl3.out` (40 s, 2 Runden),
+`test/test-zrl3-final20.out` (Endfassung, 20 s). Der 40-s-Lauf lief auf der Vorfassung mit 48 MB Speichergrenze; einziger Unterschied zur Endfassung ist die
+Grenze (32 MB), die nicht auf die Bits wirkt. Die Endfassung ist mit 20 s nachgeprüft.
