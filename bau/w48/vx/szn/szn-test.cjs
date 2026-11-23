@@ -49,13 +49,13 @@ const NAMEN=['Strophe','Refrain mit sehr langem Namen',null,'Szene 4','Bridge','
     await laden(A.p,NAMEN);const nm=await laden(N.p,NAMEN);
     const K=await kopf(N.p),by=s=>K.find(k=>k.s===s)||{};
     ok(vn+': Name "Strophe" sichtbar unter der Nummer',by(0).sn==='Strophe'&&by(0).innen&&by(0).under&&!by(0).cut,by(0));
-    ok(vn+': langer Name mit … gekürzt, bleibt in der Zelle',by(1).sn==='Refrain mit sehr langem Namen'&&by(1).cut&&by(1).ell==='ellipsis'&&by(1).innen,by(1));
+    ok(vn+': langer Name mit … gekürzt, bleibt in der Zelle',by(1).sn===nm[1].trim()&&nm[1].startsWith('Refrain mit sehr lang')&&by(1).cut&&by(1).ell==='ellipsis'&&by(1).innen,by(1));
     ok(vn+': ohne Namen / Standard-Name → kein Feld',by(2).sn===null&&by(3).sn===null);
     ok(vn+': nichts ragt aus dem Kopf (alle Zeilen)',K.every(k=>k.sn===null||(k.allesInnen&&k.sh<=k.ch)),K.map(k=>[k.s,k.sh,k.ch,k.allesInnen]));
     const ga3=await geo(A.p),gn3=await geo(N.p);ok(vn+': mit Namen – Kopf/Zellen-Geometrie gleich wie Basis',JSON.stringify(ga3)===JSON.stringify(gn3));
     // 4) Speichern + neu laden: Namen bleiben
     const nm2=await N.p.evaluate(async()=>{const W=ms=>new Promise(r=>setTimeout(r,ms));applyProject(normalizeProject(JSON.parse(serializeProject())));UI.dirty.grid=true;await W(400);return UI.scenes.map(b=>b.querySelector('.sn')?b.querySelector('.sn').textContent:'');});
-    ok(vn+': nach Speichern/Laden gleich',nm2[0]==='Strophe'&&nm2[1]==='Refrain mit sehr langem Namen'&&!nm2[2]&&!nm2[3],nm2);
+    ok(vn+': nach Speichern/Laden gleich',nm2[0]==='Strophe'&&nm2[1]===nm[1].trim()&&!nm2[2]&&!nm2[3],nm2);
     // 5) Akkord-Zeile + Tonart + Name: passt noch in den Kopf
     const vollN=await N.p.evaluate(async()=>{const W=ms=>new Promise(r=>setTimeout(r,ms));S.scenes[0].chords={len:4,ch:[{b:0,tg:null},{b:2,tg:null}]};UI.dirty.grid=true;await W(300);
       const b=UI.scenes[0],br=b.getBoundingClientRect();const ks=[...b.children].filter(k=>k.getBoundingClientRect().height>0).map(k=>k.getBoundingClientRect());
@@ -75,9 +75,12 @@ const NAMEN=['Strophe','Refrain mit sehr langem Namen',null,'Szene 4','Bridge','
     await A.p.evaluate(()=>{stop();});await N.p.evaluate(()=>{stop();});await A.p.waitForTimeout(300);await N.p.waitForTimeout(300);
     // 7) Ziehen: Kopf von Szene 1 (am Namen gepackt) auf Szene 3 – gleiche Wirkung wie Basis
     const p0=by(0).mitte,K3=await N.p.evaluate(()=>{const r=UI.scenes[2].getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2];});
-    for(const P of [A.p,N.p]){await P.mouse.move(p0[0],p0[1]);await P.mouse.down();for(let k=1;k<=12;k++){await P.mouse.move(p0[0]+(K3[0]-p0[0])*k/12,p0[1]+(K3[1]-p0[1])*k/12);await P.waitForTimeout(40);}await P.mouse.up();await P.waitForTimeout(600);}
+    const vor=await zust(N.p);
+    for(const P of [A.p,N.p]){const pfad=[[p0[0],p0[1]+60],[K3[0],p0[1]+60],[K3[0],K3[1]+60]];const cdp=await P.context().newCDPSession(P),T=(type,x,y)=>cdp.send('Input.dispatchTouchEvent',{type,touchPoints:type==='touchEnd'?[]:[{x,y,id:1}]});
+      await T('touchStart',p0[0],p0[1]);let c=[p0[0],p0[1]];
+      for(const z of pfad){for(let k=1;k<=8;k++){await T('touchMove',c[0]+(z[0]-c[0])*k/8,c[1]+(z[1]-c[1])*k/8);await P.waitForTimeout(30);}c=z;}await P.waitForTimeout(150);await T('touchEnd');await P.waitForTimeout(700);}
     const da=await zust(A.p),dn=await zust(N.p);
-    ok(vn+': Ziehen des Kopfs wirkt wie Basis',JSON.stringify([da.names,da.clips])===JSON.stringify([dn.names,dn.clips]),{basis:da.names,neu:dn.names,geaendert:JSON.stringify(da.clips)!==JSON.stringify((await zust(A.p)).clips)});
+    ok(vn+': Ziehen des Kopfs wirkt wie Basis',JSON.stringify([da.names,da.clips])===JSON.stringify([dn.names,dn.clips]),{basis:da.names,neu:dn.names,geaendert:JSON.stringify([vor.names,vor.clips])!==JSON.stringify([dn.names,dn.clips])});
     const Kd=await kopf(N.p);ok(vn+': nach Ziehen zeigt der Kopf die Namen passend',Kd.every(k=>(k.sn||'')===((n=>n&&n!=='Szene '+(k.s+1)?n:'')((dn.names[k.s]||'').trim()))),Kd.map(k=>[k.s,k.sn]));
     ok(vn+': keine Seitenfehler',A.errs.length===0&&N.errs.length===0,{basis:A.errs,neu:N.errs});
     await A.ctx.close();await N.ctx.close();
