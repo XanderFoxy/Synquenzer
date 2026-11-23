@@ -51,7 +51,7 @@ if len(musik) < N: musik = np.concatenate([musik, np.zeros((N - len(musik), 2))]
 
 # ===================== Lead =====================
 # v11-Silbenangleichung, Reinigung, „open your eyes“-Entfernung sind schon in ende enthalten.
-L = hp(lead, 80.0, 2)
+L = hp(lead, 110.0, 2)
 LEAD_EQ = json.load(open(P + 'lead_eq.json')) if os.path.exists(P + 'lead_eq.json') else []
 L = eq(L, [('peak', 320.0, 1.0, -1.5), ('peak', 3400.0, 0.9, 1.0)] + [tuple(b_) for b_ in LEAD_EQ])
 akt = rms_db(L, 50)
@@ -218,29 +218,35 @@ def lufs_teile(x, rng): return meter.integrated_loudness(np.concatenate([x[int(a
 g_vox = lufs_teile(v11bus, STROPHEN) - lufs_teile(vox, STROPHEN)
 LOG['gesang_angleich_db'] = round(g_vox, 2)
 vox *= undb(g_vox)
-# Spitzen der Gesangssumme (Crest ≤ 11 dB über aktivem Pegel)
+# Spitzen der Gesangssumme (Crest ≤ 9 dB über aktivem Pegel)
 va = rms_db(vox, 50) > np.percentile(rms_db(vox, 50), 99.5) - 30
-vox, grv = limiter(vox, 10 * np.log10(np.mean(vox[va] ** 2) * 2) + 11.0, 1.5, 60.0)
+vox, grv = limiter(vox, 10 * np.log10(np.mean(vox[va] ** 2) * 2) + 9.0, 1.5, 60.0)
 LOG['gesang_bus_spitzen_gr_p99'] = round(float(np.percentile(grv[va], 99)), 2)
 LOG['gesang_lufs'] = {nm: round(lufs_teile(vox, [r]), 1) for nm, r in dict(S1=(32, 64), R1=(64, 96), S2=(96, 128), R2=(128, 160), ZT=(192, 224), R3=(224, 256)).items()}
 LOG['v11bus_lufs'] = {nm: round(lufs_teile(v11bus, [r]), 1) for nm, r in dict(S1=(32, 64), R1=(64, 96), S2=(96, 128), R2=(128, 160), ZT=(192, 224), R3=(224, 256)).items()}
 sf.write(STEMS + 'gesang_summe.wav', vox.astype(np.float32), SR, subtype='FLOAT')
 
-# Musik: im Refrain sanft bis −0,7 dB unter den Gesang (v11: −0,8…−1,1 dB)
+# Musik: im Refrain sanft bis −1,3 dB unter den Gesang (v11: −0,8…−1,1 dB)
 vs = rms_db(vox, 50)
-md_ = glaetten(np.clip((vs - (np.percentile(vs, 90) - 12)) / 12, 0, 1) * 0.9, 50.0, 400.0, 0.9)
+md_ = glaetten(np.clip((vs - (np.percentile(vs, 90) - 12)) / 12, 0, 1) * 1.3, 50.0, 400.0, 1.3)
 musik_d = musik * undb(-md_)[:, None]
 
 mix = musik_d + vox
 ziel = -10.0; g = 0.0
+def master(x):
+    """Zwei Stufen: schnell (Transienten, bis −0,6 dBTP), dann ruhig (−1,5 dBTP)."""
+    y, g1 = limiter(x, -0.6, 1.5, 200.0)
+    y, g2 = limiter(y, -1.5, 5.0, 25.0)
+    return y, g1 + g2
 for it in range(4):
-    y, grl = limiter(mix * undb(g), -1.5)
+    y, grl = master(mix * undb(g))
     lu = meter.integrated_loudness(y)
     g += ziel - lu
-y, grl = limiter(mix * undb(g), -1.5)
+y, grl = master(mix * undb(g))
 lu = meter.integrated_loudness(y)
+LOG['musik_duck_db'] = dict(median_refrain=round(float(np.median(np.concatenate([md_[int(a * SR):int(b_ * SR)] for a, b_ in R123]))), 2), max=round(float(md_.max()), 2))
 LOG['master'] = dict(gain_db=round(g, 2), lufs=round(lu, 2), tp_48k=round(true_peak(y), 2),
-                     limiter_gr_p99=round(float(np.percentile(grl, 99)), 2), limiter_gr_max=round(float(grl.max()), 2),
+                     limiter_gr_p95=round(float(np.percentile(grl, 95)), 2), limiter_gr_p99=round(float(np.percentile(grl, 99)), 2), limiter_gr_max=round(float(grl.max()), 2),
                      limiter_gr_anteil_ueber_0_5dB=round(float(np.mean(grl > 0.5) * 100), 2))
 np.save(B + 'master_v12_48k.npy', y.astype(np.float32))
 

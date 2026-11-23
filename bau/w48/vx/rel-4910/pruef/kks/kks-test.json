@@ -1,0 +1,404 @@
+{
+ "basis": {
+  "errs": [],
+  "t": 6,
+  "ed": {
+   "subs": [
+    "WT",
+    "STIMME"
+   ],
+   "tabs": [
+    "WT",
+    "FILTER",
+    "HÜLLK.",
+    "LFO",
+    "MOD",
+    "FX"
+   ],
+   "txt": "TABELLE Digital Vokal Glas Orgel POSITION 30 % SCAN ±0 % SCAN-ZEIT 800 ms GLIDE 0 ms KLANG-PEGEL −10,5 dB Wavetable: vier Wellenformen einer Tabelle, Position wählt dazwischen, Scan fährt beim Anschlag in Scan-Zeit weiter.",
+   "knobs": 5,
+   "kks": false
+  },
+  "lay": {
+   "n": 5,
+   "out": [],
+   "small": [],
+   "ov": [],
+   "cut": [],
+   "vis": 5,
+   "body": {
+    "h": 454,
+    "sh": 454,
+    "ch": 454
+   }
+  },
+  "hSame": true,
+  "va": {
+   "subs": [
+    "OSZ 1",
+    "OSZ 2",
+    "OSZ 3",
+    "MIX",
+    "STIMME"
+   ],
+   "tabs": [
+    "OSZ",
+    "FILTER",
+    "HÜLLK.",
+    "LFO",
+    "MOD",
+    "FX"
+   ],
+   "txt": "WELLE ⟋ Säge ⊓ Puls ∧ Dreieck ∿ Sinus Saite FUSSLAGE 32' 16' 8' 4' 2' 8' 0 HT 0 ct = Grundton HT 0 HT FEIN 0 ct ANTEIL 100 % PW 50 % UNISON 1×",
+   "knobs": 8,
+   "kks": false
+  },
+  "wt": {
+   "subs": [
+    "WT",
+    "STIMME"
+   ],
+   "tabs": [
+    "WT",
+    "FILTER",
+    "HÜLLK.",
+    "LFO",
+    "MOD",
+    "FX"
+   ],
+   "txt": "TABELLE Digital Vokal Glas Orgel POSITION 30 % SCAN +30 % SCAN-ZEIT 800 ms GLIDE 0 ms KLANG-PEGEL −10,0 dB Wavetable: vier Wellenformen einer Tabelle, Position wählt dazwischen, Scan fährt beim Anschlag in Scan-Zeit weiter.",
+   "knobs": 5,
+   "kks": false
+  },
+  "edQ": {
+   "subs": [
+    "WT",
+    "STIMME"
+   ],
+   "tabs": [
+    "WT",
+    "FILTER",
+    "HÜLLK.",
+    "LFO",
+    "MOD",
+    "FX"
+   ],
+   "txt": "TABELLE Digital Vokal Glas Orgel POSITION 30 % SCAN ±0 % SCAN-ZEIT 800 ms GLIDE 0 ms KLANG-PEGEL −10,5 dB Wavetable: vier Wellenformen einer Tabelle, Position wählt dazwischen, Scan fährt beim Anschlag in Scan-Zeit weiter.",
+   "knobs": 5,
+   "kks": false
+  },
+  "layQ": {
+   "n": 5,
+   "out": [],
+   "small": [],
+   "ov": [],
+   "cut": [],
+   "vis": 5,
+   "body": {
+    "h": 199,
+    "sh": 199,
+    "ch": 199
+   }
+  },
+  "spk-hoch": {
+   "vor": {
+    "n": 7,
+    "ab": null,
+    "ov": [],
+    "small": [],
+    "cut": [],
+    "ly": 180,
+    "mn": 446
+   },
+   "sel": 1,
+   "nach": {
+    "n": 7,
+    "ab": null,
+    "ov": [],
+    "small": [],
+    "cut": [],
+    "ly": 180,
+    "mn": 446
+   }
+  },
+  "spk-quer": {
+   "vor": {
+    "n": 6,
+    "ab": null,
+    "ov": [],
+    "small": [],
+    "cut": [],
+    "ly": 284,
+    "mn": 292
+   },
+   "sel": 1,
+   "nach": {
+    "n": 6,
+    "ab": null,
+    "ov": [],
+    "small": [],
+    "cut": [],
+    "ly": 284,
+    "mn": 292
+   }
+  }
+ },
+ "neu": {
+  "errs": [],
+  "t": 6,
+  "ed": {
+   "subs": [
+    "KORN",
+    "STIMME"
+   ],
+   "tabs": [
+    "WT",
+    "FILTER",
+    "HÜLLK.",
+    "LFO",
+    "MOD",
+    "FX"
+   ],
+   "txt": "MODUS Körnchen Schleife POSITION 30 % BEWEGUNG steht KORNGRÖSSE 80 ms DICHTE 4× KORNFORM weich 30 % STREU ORT 10 % STREU TON 0 Ht BREITE 50 % LAUTST. 70 % CUTOFF 20 kHz RESONANZ 10 % A 20 ms D 300 ms S 80 % R 400 ms Klangkorn: kurze Körner aus der Quelle, Position wählt die Stelle. Schleife = eingefrorenes Spektrum (Korn-Regler ruhen).",
+   "knobs": 15,
+   "kks": true
+  },
+  "lay": {
+   "n": 15,
+   "out": [],
+   "small": [],
+   "ov": [],
+   "cut": [],
+   "vis": 15,
+   "body": {
+    "h": 454,
+    "sh": 454,
+    "ch": 454
+   }
+  },
+  "hSame": true,
+  "h1": {
+   "take": "02u3rq8i02",
+   "f0": 220,
+   "art": "korn",
+   "pos": 0.3,
+   "bew": 0,
+   "gs": 0.4301769032570436,
+   "dc": 4,
+   "spo": 0.1,
+   "spt": 0,
+   "form": 0.3,
+   "a": 0.02,
+   "d": 0.3,
+   "s": 0.8,
+   "r": 0.4,
+   "fc": 1,
+   "q": 0.1,
+   "br": 0.9300000000000004,
+   "vol": 0.7,
+   "poly": 8
+  },
+  "txt1": [
+   "93 %",
+   "430 ms"
+  ],
+  "cmp": {
+   "br": [
+    0.5,
+    0.9300000000000004
+   ],
+   "gs": [
+    0.08,
+    0.4301769032570436
+   ],
+   "side": [
+    0.1438,
+    0.3633
+   ],
+   "rms": [
+    0.0391,
+    0.0391
+   ],
+   "specDist": 0.125,
+   "kind": "worklet"
+  },
+  "live": {
+   "vor": {
+    "br": 0.5,
+    "gs": 0.08,
+    "v": 1
+   },
+   "nach": {
+    "br": 0.9300000000000004,
+    "gs": 0.4301769032570436,
+    "v": 1
+   }
+  },
+  "frz": {
+   "art": "frz",
+   "inert": [
+    "kks.gs",
+    "kks.dc",
+    "kks.form",
+    "kks.spt"
+   ]
+  },
+  "frzDist": 0.35,
+  "undo": true,
+  "va": {
+   "subs": [
+    "OSZ 1",
+    "OSZ 2",
+    "OSZ 3",
+    "MIX",
+    "STIMME"
+   ],
+   "tabs": [
+    "OSZ",
+    "FILTER",
+    "HÜLLK.",
+    "LFO",
+    "MOD",
+    "FX"
+   ],
+   "txt": "WELLE ⟋ Säge ⊓ Puls ∧ Dreieck ∿ Sinus Saite FUSSLAGE 32' 16' 8' 4' 2' 8' 0 HT 0 ct = Grundton HT 0 HT FEIN 0 ct ANTEIL 100 % PW 50 % UNISON 1×",
+   "knobs": 8,
+   "kks": false
+  },
+  "wt": {
+   "subs": [
+    "WT",
+    "STIMME"
+   ],
+   "tabs": [
+    "WT",
+    "FILTER",
+    "HÜLLK.",
+    "LFO",
+    "MOD",
+    "FX"
+   ],
+   "txt": "TABELLE Digital Vokal Glas Orgel POSITION 30 % SCAN +30 % SCAN-ZEIT 800 ms GLIDE 0 ms KLANG-PEGEL −10,0 dB Wavetable: vier Wellenformen einer Tabelle, Position wählt dazwischen, Scan fährt beim Anschlag in Scan-Zeit weiter.",
+   "knobs": 5,
+   "kks": false
+  },
+  "edQ": {
+   "subs": [
+    "KORN",
+    "STIMME"
+   ],
+   "tabs": [
+    "WT",
+    "FILTER",
+    "HÜLLK.",
+    "LFO",
+    "MOD",
+    "FX"
+   ],
+   "txt": "MODUS Körnchen Schleife POSITION 30 % BEWEGUNG steht KORNGRÖSSE 80 ms DICHTE 4× KORNFORM weich 30 % STREU ORT 10 % STREU TON 0 Ht BREITE 50 % LAUTST. 70 % CUTOFF 20 kHz RESONANZ 10 % A 20 ms D 300 ms S 80 % R 400 ms Klangkorn: kurze Körner aus der Quelle, Position wählt die Stelle. Schleife = eingefrorenes Spektrum (Korn-Regler ruhen).",
+   "knobs": 15,
+   "kks": true
+  },
+  "layQ": {
+   "n": 15,
+   "out": [],
+   "small": [],
+   "ov": [],
+   "cut": [],
+   "vis": 15,
+   "body": {
+    "h": 199,
+    "sh": 199,
+    "ch": 199
+   }
+  },
+  "spk-hoch": {
+   "vor": {
+    "n": 8,
+    "ab": {
+     "x": 6,
+     "y": 750,
+     "w": 416,
+     "h": 44,
+     "inAc": true,
+     "inVp": true,
+     "dis": true,
+     "cut": false
+    },
+    "ov": [],
+    "small": [],
+    "cut": [],
+    "ly": 129,
+    "mn": 446
+   },
+   "sel": 1,
+   "nach": {
+    "n": 8,
+    "ab": {
+     "x": 6,
+     "y": 750,
+     "w": 416,
+     "h": 44,
+     "inAc": true,
+     "inVp": true,
+     "dis": false,
+     "cut": false
+    },
+    "ov": [],
+    "small": [],
+    "cut": [],
+    "ly": 129,
+    "mn": 446
+   },
+   "als": {
+    "dd": true,
+    "src": true,
+    "mode": "korn"
+   }
+  },
+  "spk-quer": {
+   "vor": {
+    "n": 7,
+    "ab": {
+     "x": 667,
+     "y": 382,
+     "w": 255,
+     "h": 44,
+     "inAc": true,
+     "inVp": true,
+     "dis": true,
+     "cut": false
+    },
+    "ov": [],
+    "small": [],
+    "cut": [],
+    "ly": 236,
+    "mn": 292
+   },
+   "sel": 1,
+   "nach": {
+    "n": 7,
+    "ab": {
+     "x": 667,
+     "y": 382,
+     "w": 255,
+     "h": 44,
+     "inAc": true,
+     "inVp": true,
+     "dis": false,
+     "cut": false
+    },
+    "ov": [],
+    "small": [],
+    "cut": [],
+    "ly": 236,
+    "mn": 292
+   },
+   "als": {
+    "dd": true,
+    "src": true,
+    "mode": "korn"
+   }
+  }
+ }
+}
