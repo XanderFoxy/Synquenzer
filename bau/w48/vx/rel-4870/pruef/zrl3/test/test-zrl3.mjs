@@ -7,8 +7,8 @@ import { spawn } from 'node:child_process'; import fs from 'node:fs'; import pat
 const { chromium } = createRequire(import.meta.url)('playwright');
 const E = process.env, SEK = +(E.SEK || 40), RUNDEN = +(E.RUNDEN || 2);
 const dir = fs.mkdtempSync(path.join(path.dirname(new URL(import.meta.url).pathname), 'srv-'));
-fs.copyFileSync(path.resolve(process.argv[2]), path.join(dir, 'A.html')); fs.copyFileSync(path.resolve(process.argv[3]), path.join(dir, 'B.html'));
-fs.writeFileSync(path.join(dir, 'version.json'), '{"version":"4.86.0"}');
+fs.mkdirSync(path.join(dir,'A')); fs.mkdirSync(path.join(dir,'B')); fs.copyFileSync(path.resolve(process.argv[2]), path.join(dir, 'A', 'index.html')); fs.copyFileSync(path.resolve(process.argv[3]), path.join(dir, 'B', 'index.html')); fs.writeFileSync(path.join(dir, 'A', 'version.json'), '{"version":"4.87.0"}'); fs.writeFileSync(path.join(dir, 'B', 'version.json'), '{"version":"4.86.0"}');
+fs.writeFileSync(path.join(dir, 'version.json'), '{"version":"4.87.0"}');
 const port = 8870 + Math.floor(Math.random() * 30);
 const srv = spawn('python3', ['-m', 'http.server', String(port), '--bind', '127.0.0.1'], {cwd: dir, stdio: 'ignore'});
 for (let i = 0; i < 50; i++) { try { const r = await fetch('http://127.0.0.1:' + port + '/version.json'); if (r.ok) break; } catch (e) {} await new Promise(r => setTimeout(r, 200)); }
@@ -17,7 +17,7 @@ const b = await chromium.launch();
 async function lauf(which) {
   const ctx = await b.newContext({viewport: {width: 428, height: 926}, hasTouch: true, isMobile: true}); const p = await ctx.newPage(); const errs = [];
   p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errs.push(m.text()); });
-  await p.goto(base + '/' + which + '.html'); await p.waitForFunction(() => typeof spk1Call === 'function' && window.__spk, null, {timeout: 90000}); await p.waitForTimeout(500);
+  await p.goto(base + '/' + which + '/index.html'); await p.waitForFunction(() => typeof spk1Call === 'function' && window.__spk, null, {timeout: 90000}); await p.waitForTimeout(500);
   const r = await p.evaluate(async sek => {
     const sr = 44100, n = sek * sr, L = new Float32Array(n), mel = [60, 62, 64, 65, 67, 69, 67, 65, 64, 62];
     const hz = m => 440 * Math.pow(2, (m - 69) / 12), fo = f => 1 / (1 + ((f - 700) / 180) ** 2) + 0.7 / (1 + ((f - 1200) / 220) ** 2);

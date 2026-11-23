@@ -7,7 +7,7 @@ import { SONGS as S0 } from './songs.mjs'; import { LIEDER as LP } from './liede
 const SONGS = Object.assign({}, S0, {hart});
 for (const [k, f] of Object.entries(LP)) SONGS[k] = () => { const L = f(); L.truth = Object.assign({}, L.truth, {hat: L.truth.hatC.concat(L.truth.hatO)}); return L; };
 const file = path.resolve(process.argv[2]), here = path.dirname(new URL(import.meta.url).pathname);
-const sd = fs.mkdtempSync(path.join(here, 'srv-')); fs.copyFileSync(file, path.join(sd, 'index.html')); fs.writeFileSync(path.join(sd, 'version.json'), '{"version":"4.86.0"}');
+const sd = fs.mkdtempSync(path.join(here, 'srv-')); fs.copyFileSync(file, path.join(sd, 'index.html')); fs.writeFileSync(path.join(sd, 'version.json'), '{"version":"4.87.0"}');
 const port = 8870 + Math.floor(Math.random() * 30), py = spawn('python3', ['-m', 'http.server', String(port), '--bind', '127.0.0.1'], {cwd: sd, stdio: 'ignore'});
 await new Promise(r => setTimeout(r, 700)); const url = 'http://127.0.0.1:' + port + '/index.html';
 const b = await chromium.launch(), DUMP = process.env.DUMP, tot = {}; let errsAll = 0;

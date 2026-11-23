@@ -1,0 +1,5 @@
+cd /tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/neu/rel-4870/pruef
+(cd zrl3/test && SEK=20 RUNDEN=1 timeout 900 node test-zrl3.mjs /tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/neu/rel-4870/index.html /tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/neu/rel-4860/index.html > z-4870.out 2> z-4870.err); echo zrl3 >> laneB.log
+(cd alt/zrl2 && RUNDEN=1 timeout 900 node test-zr.mjs /tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/neu/rel-4870/index.html /tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/neu/rel-4860/index.html > zr-4870.out 2> zr-4870.err); echo zrl2 >> laneB.log
+(cd alt/lt2 && REPS=1 OUT=lt2-4870.json timeout 900 node lt2-d-test.mjs /tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/neu/rel-4870/index.html /tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/neu/rel-4860/index.html > lt2.out 2> lt2.err); echo lt2 >> laneB.log
+echo DONE >> laneB.log
