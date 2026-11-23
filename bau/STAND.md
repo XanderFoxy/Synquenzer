@@ -1,4 +1,4 @@
-# Stand 23.11.12:53 UTC
+# Stand 23.11.12:55 UTC
 ## ent1a
 # ENT1A Stand
 - Start: Analyse Arp/Stopp. stop() kehrt bei !R.playing früh zurück -> arpEndAll fehlt (Verdacht).
@@ -12,11 +12,14 @@
 - Rückgängig über kind 'set' (Haken in settingApply zeichnet Video neu und setzt Gerät-Vorschlag)
 - Neues Projekt übernimmt Gerät-Vorschlag; Beschriftung Chip: "· dieses Projekt"
 ## ent1c
-# STAND ENT1C
-- [x] Ordner + Server-Kopie (srv/ = 4.84.0 unverändert)
-- [ ] Sonde vorher (Chips Video-Spur, 16×1 Takt, hoch/quer)
-- [ ] apply.py
-- [ ] Sonde nachher
+# STAND ENT1C – FERTIG
+- [x] Sonde vorher: Überlappung 0, Text gekürzt ok; Tippziel 26 px (hoch) / 22 px (quer) → zu klein
+- [x] apply.py: Video-Spur auf Touch (pointer:coarse) 40 px hoch, Schrift 11 px; Computer unverändert 20/24 px
+- [x] Sonde nachher: 12/12 OK (Tippziel 42 px, Überlappung 0, keine Fehler)
+- [x] CHANGES.md, KURZ.md
+## ent1d
+# ENT1D Stand
+- 12:55 Start: Kopf „Klang erkennen" untersuchen (✕, ↶, Synth-Reiter, hochkant/quer).
 ## kmp1
 fertig: KMP1 gebaut und getestet (index.html md5 b4943476ff3b5bc6951d20cbf9d37914, apply.py, block.js, kern.js, hoch.png, quer.png, KURZ.md, CHANGES.md)
 als Nächstes: nichts – bereit zur Übernahme
