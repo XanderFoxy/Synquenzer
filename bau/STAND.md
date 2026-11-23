@@ -1,4 +1,4 @@
-# Stand 23.11.15:50 UTC
+# Stand 23.11.15:52 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -53,6 +53,11 @@ als Naechstes: nichts – bereit zur Uebernahme
 - 9 Haken (/*TON1*/) + Block TON1-BEGIN/-END vor spk7TrE. Worklet-Kern: wartende Stimmen laufen weiter (Hüllkurve, Wartezeit),
   bei Ankunft Einstieg an der richtigen Stelle + 5-ms-Blende; Vorab-Quelle (ohne Spektren) wird bei der vollen Quelle übernommen.
   Hauptfaden: ton1Got (PCM gelesen → sofort an wartende Engines), ton1Pre (Engine wartet, PCM schon da → sofort füttern).
+## ton2
+# TON2 – Stand (in Arbeit)
+- Ausgang: index.html = python3 apply.py ../rel-4860/index.html index.html
+- 4 Haken (/*TON2*/) + Block TON2-BEGIN/-END vor tkLoad: tkPcm liest Stücke parallel (max 6), tkLoad liest gemerkte Lautheits-Analyse (<take>:lv1 im Audio-Speicher) mit, vpFinish merkt neu gerechnete Analyse.
+- Kern-Test: sonde.js (Browser, Reload + sofort ▶, Original-Spur 3 min)
 ## vl3
 fertig: VL3 gebaut + Kern-Test 10/10 grün, KURZ.md + CHANGES.md geschrieben (Ausgang md5 9bb6ee81)
 als Nächstes: nichts – bereit zur Übergabe
@@ -74,3 +79,7 @@ Ausgang `index.html` md5 cbdf7b2e629b5d3306eb03e1c5890a20 (Eingang 9c7f63cf…).
 Gebaut (bitgleich):
 1. Tiefband (`magsLo`, spk3DspMake): Rand-Rahmen des vorigen Streifens werden übernommen (gleiche FFT-Paare, Prüfung Signal-Objekt, Fenster, N/R/K, cen je Rahmen, Versatz gerade). Speicher kopiert vor der Rückgabe (lowSplit4 ändert Y in place), 2 Einträge je Schlüssel, Freigabe im finally von zerlegen.
 2. zPrep-Quantisierung ohne log10: Tabelle über float32-Bits (Exponent + 6 Mantissen-Bits), je Zelle höchstens eine Schwelle (per Binärsuche mit der alten Formel gefunden), nahe der Schwelle (±2,5e-4 relativ) und Sonderwerte genau gerechnet.
+## zrl3
+# ZRL3 – Stand: in Arbeit
+Ansatz: Zwischenspeicher je Phasen-Vocoder-Abschnitt in spk6 `synth` (Schluessel = Hash ueber genaue Eingaben: Signal-Bits, rr/fv je Rahmen, N/H/sr/fmt, Laenge, Rand). Gleiche Eingaben -> gleiche Bits; nur geaenderte Abschnitte rechnen.
+Bau: python3 apply.py <eingang> <ausgang> (block.js). Kern-Test: test/test-zrl3.mjs (folgt).
