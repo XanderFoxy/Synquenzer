@@ -1,4 +1,4 @@
-# Stand 23.11.16:09 UTC
+# Stand 23.11.16:11 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -42,11 +42,11 @@
 - apply.py + seg-block.js gebaut (Block GES2-SEG in vsDspMake vor segment, 1 Haken vor minF). Kern-Test 17/18 -> 18/18 (Noten 56 -> 53, Soll 53).
 - Anlauf lagefest / Konsonant über stimmhafte Rahmen: nicht angefasst (VX3 macht Letzteres schon bis 3 Rahmen).
 ## ke2
-# KE2 Stand
-- Start: Eingang 4.86.0 (md5 a7515b98…) geprüft. KE1-Kern liegt im stillen Block sq-ke1-src (ohne Kommentare). Eichung per CAL (logistisch) gibt es schon.
-- Plan: Node-Prüfstand (Kern aus der Datei, Testtöne mit renderH der App-Engine) -> Welle vorher/nachher + ECE vorher/nachher; dann Welle aus dem Anschlag in analyse(); dann CAL nachschärfen.
-- 33 min: Kern-Test w/kt.mjs (Node, Kern aus der Datei, Töne per renderH). Vorher (Saat 20261118, 48 Töne): Welle 25/48, ECE 0,112.
-  Anschlag-Merkmale (gerade/ungerade Teiltöne + Krümmung, filterfest) Gewicht 6: Stufe-1-Welle Eichsaat 30/60 -> 33/60. Läuft: Endlauf nach + Eichlauf für CAL.
+# KE2 Stand (FERTIG, kleiner geliefert als bestellt)
+- Eingang 4.86.0 (md5 a7515b980ddc423e84f9d5cdf8f132a6). Ausgang `out.html` = `python3 apply.py <eingang> <ausgang>` (md5 851db9d4df97e9ec25438604d6dd730b).
+- Änderung: EINE Zeile im stillen Block sq-ke1-src: `const CAL = /*KE2*/ {...}` – nur die Gewichte `mk` (Engine 3) neu (aus `cal.json`), `va`/`fm` unverändert.
+  Ansicht, Texte, Erkennung (Welle, Filter, Suche) bitgleich; nur die angezeigten Gewissheits-Werte/Wörter der Engine-3-Karte ändern sich.
+- Kern-Test: `w/kt.mjs` (Node; Kern direkt aus der HTML über `w/kern.mjs`, Testtöne per renderH der App-Engine 3, Mikro-Simulation; Vorlagen `w/tpl.json` aus `w/tpl.cjs`),
 ## kmp1
 fertig: KMP1 gebaut und getestet (index.html md5 b4943476ff3b5bc6951d20cbf9d37914, apply.py, block.js, kern.js, hoch.png, quer.png, KURZ.md, CHANGES.md)
 als Nächstes: nichts – bereit zur Übernahme
