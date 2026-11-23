@@ -1,2 +1,14 @@
 Serving HTTP on 127.0.0.1 port 8962 (http://127.0.0.1:8962/) ...
 127.0.0.1 - - [23/Nov/2026 16:41:02] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:43:09] "GET /basis/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:43:13] "GET /basis/version.json?t=1795452193763 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:43:23] "GET /basis/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:43:28] "GET /basis/version.json?t=1795452208297 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:43:38] "GET /basis/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:43:42] "GET /basis/version.json?t=1795452222556 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:43:51] "GET /neu/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:43:56] "GET /neu/version.json?t=1795452236076 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:44:04] "GET /neu/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:44:08] "GET /neu/version.json?t=1795452248642 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:44:17] "GET /neu/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:44:21] "GET /neu/version.json?t=1795452261596 HTTP/1.1" 200 -

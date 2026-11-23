@@ -19,3 +19,33 @@ Serving HTTP on 127.0.0.1 port 8960 (http://127.0.0.1:8960/) ...
 127.0.0.1 - - [23/Nov/2026 16:42:31] "GET /index.html HTTP/1.1" 200 -
 127.0.0.1 - - [23/Nov/2026 16:42:36] "GET /index.html HTTP/1.1" 200 -
 127.0.0.1 - - [23/Nov/2026 16:42:40] "GET /version.json?t=1795452160649 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:42:48] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:42:51] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:42:54] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:42:58] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:43:05] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:43:10] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:43:13] code 404, message File not found
+127.0.0.1 - - [23/Nov/2026 16:43:13] "GET /medien/abspann-logo.mp4 HTTP/1.1" 404 -
+127.0.0.1 - - [23/Nov/2026 16:43:13] code 404, message File not found
+127.0.0.1 - - [23/Nov/2026 16:43:13] "GET /medien/abspann-logo.mov HTTP/1.1" 404 -
+127.0.0.1 - - [23/Nov/2026 16:43:15] "GET /version.json?t=1795452195272 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:43:21] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:43:24] code 404, message File not found
+127.0.0.1 - - [23/Nov/2026 16:43:24] "GET /medien/abspann-logo.mp4 HTTP/1.1" 404 -
+127.0.0.1 - - [23/Nov/2026 16:43:24] code 404, message File not found
+127.0.0.1 - - [23/Nov/2026 16:43:24] "GET /medien/abspann-logo.mov HTTP/1.1" 404 -
+127.0.0.1 - - [23/Nov/2026 16:43:26] "GET /version.json?t=1795452206487 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:43:27] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:43:31] "GET /version.json?t=1795452211674 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:43:46] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:43:50] "GET /version.json?t=1795452230731 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:44:05] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:44:09] "GET /version.json?t=1795452249766 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:44:12] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:44:16] "GET /version.json?t=1795452256926 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:44:19] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:44:24] "GET /version.json?t=1795452264322 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:44:30] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:44:34] "GET /version.json?t=1795452274664 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 16:44:48] "GET /index.html HTTP/1.1" 200 -
