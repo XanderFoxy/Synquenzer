@@ -33,7 +33,7 @@ s.textContent='.lfopv .ksmg line{stroke:rgba(255,255,255,.13);stroke-width:1;vec
 const g=document.createElementNS('http://www.w3.org/2000/svg','g');g.setAttribute('class','ksmg');svg.insertBefore(g,svg.firstChild);
 let sig=null;
 const draw=()=>{
-const t=S.tracks[i];if(!t||!t.sound||!t.sound.p||!g.isConnected)return;
+const t=S.tracks[i];if(!t||!t.sound||!t.sound.p)return;
 const p=t.sound.p,sy=+p['l'+n+'sync']||0,r=(+p['ksR'+n])|0,s=sy+'|'+r;if(s===sig)return;sig=s;
 let h='';
 if(sy>0){const st=sy>=1?(sy>8?4:1):sy,dx=60*st/sy;for(let x=dx;x<119.5;x+=dx)h+='<line x1="'+x.toFixed(2)+'" y1="0" x2="'+x.toFixed(2)+'" y2="56"/>';}

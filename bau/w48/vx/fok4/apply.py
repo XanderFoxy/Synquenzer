@@ -18,6 +18,8 @@ A2="else if(up<upMax){f.tex=U.gl.tex(f.w,f.R,'r',f.data,true);up++;use=f;}"
 rep(A2,"else if(up<upMax){if(typeof fok4Up==='function'&&fok4Up(U,f))use=f.old&&f.old.tex?f.old:o;else{f.tex=U.gl.tex(f.w,f.R,'r',f.data,true);up++;use=f;}}/*FOK4*/")
 A3="if(F.mode==='rest'||F.run||more||up)U.tintOn=false;"
 rep(A3,"if(F.mode==='rest'||F.run||more||up||(typeof fok4W==='function'&&fok4W(U)))U.tintOn=false;/*FOK4*/")
+A4="S.chunks[c.k]=nc;S.hop=c.hop;S.key=c.key;got++;"
+rep(A4,A4+"if(typeof fok4Next==='function')fok4Next(U);/*FOK4*/")
 for k in ('FOK4-BEGIN','FOK4-END'):
     if s.count(k)!=1:sys.exit('Marker '+k)
 tmp=dst+'.tmp';open(tmp,'w',encoding='utf-8').write(s);os.replace(tmp,dst)

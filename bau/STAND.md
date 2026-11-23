@@ -1,4 +1,4 @@
-# Stand 23.11.17:59 UTC
+# Stand 23.11.18:02 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -79,6 +79,7 @@ Zwischenstand: index.html md5 22ab2c830720f2b66264382eea08eb61 (Zaun-Wartegrenze
 ## ges4
 # GES4 Stand
 - Start 17:5x. Eingang 4.88.0 (695af…). Plan: Konsonant-Anlauf in ges3Onset genauer + Vibrato-Glätten vor Stufensuche (VSD.segment).
+- 18:3x: apply.py + block.js (Vibrato-Tal + Gleit-Lücke, nur o.ges4) + kons-block.js (ges4Kons). Kern-Test kern-test.cjs läuft (A/B/C).
 ## imp4
 # IMP4 – Stand (fertig)
 Bau: `python3 apply.py <eingang> <ausgang>` (Eingang md5 a7515b98…, bitgleich wiederholbar; Ausgang hier `index.html`, md5 4e8506a9d44f95f4a1f6b67ff093e27c).

@@ -60,7 +60,7 @@ const ENG=async()=>{
         return o;});
       // Tab LFO per Tipp oeffnen, falls noetig
       const tabs=await p.$$eval('button',bs=>bs.filter(b=>/^LFO\s*1?$/.test(b.textContent.trim())&&b.offsetParent).map(b=>b.textContent.trim()));R.ui.tabs=tabs;
-      await p.evaluate(()=>{const i=0;setP(i,'l1sync',1);ks4Set(i,'ksR1',8);edRefresh&&edRefresh();});await p.waitForTimeout(400);
+      await p.evaluate(()=>{const i=0;setP(i,'l1sync',4);ks4Set(i,'ksR1',8);safeRebuild(buildSynthEd);});await p.waitForTimeout(400);
       R.ui.linien=await p.evaluate(()=>{const pv=document.querySelector('.lfopv');return pv&&pv.querySelector('.ksmg')?pv.querySelectorAll('.ksmg line').length:null;});
       const pvBox=await p.evaluate(()=>{const pv=document.querySelector('.lfopv');if(!pv)return null;pv.scrollIntoView({block:'center'});const r=pv.getBoundingClientRect();return{x:r.x,y:r.y,w:r.width,h:r.height};});
       R.ui.pvBox=pvBox;

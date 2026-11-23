@@ -3,3 +3,9 @@ Serving HTTP on 0.0.0.0 port 9043 (http://0.0.0.0:9043/) ...
 127.0.0.1 - - [23/Nov/2026 17:56:13] "GET /basis/index.html HTTP/1.1" 200 -
 127.0.0.1 - - [23/Nov/2026 17:58:38] "GET /neu/index.html HTTP/1.1" 200 -
 127.0.0.1 - - [23/Nov/2026 17:58:41] "GET /neu/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 18:00:51] "GET /neu/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 18:00:55] "GET /neu/version.json?t=1795456855815 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 18:01:49] "GET /neu/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 18:01:52] "GET /neu/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 18:01:55] "GET /basis/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 18:02:00] "GET /basis/version.json?t=1795456920763 HTTP/1.1" 200 -

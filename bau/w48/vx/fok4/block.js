@@ -1,12 +1,23 @@
-// FOK4-BEGIN – Spektral-Fokus: neue Stück-Bilder nicht mehr im Bild-Takt hochladen. Das Hochladen (bei gleicher Stück-Größe nur die geänderten
-// Spalten per texSubImage2D in die vorhandene Textur, sonst neue Textur) läuft in einer eigenen Aufgabe nach dem Bild, mit Zaun (fenceSync);
-// erst wenn die Grafik fertig ist, kommt das nächste Bild mit dem neuen Stück. So wartet kein Bild mehr auf Hochladen + Mipmaps. Endbild gleich.
+// FOK4-BEGIN – Spektral-Fokus: neue Stück-Bilder nicht mehr im Bild-Takt hochladen. Sobald ein Stück vom Kern kommt (und sichtbar ist), lädt eine
+// eigene Aufgabe es hoch – bei gleicher Stück-Größe nur die geänderten Spalten per texSubImage2D in die vorhandene Textur, sonst neue Textur –
+// mit Zaun (fenceSync), eins nach dem anderen; das Bild nimmt nur fertige Texturen. So wartet kein Bild auf Hochladen + Mipmaps. Endbild gleich.
 const FOK4={on:true,f:null,U:null,G:null,T:null,fs:null,sub:false,w:0,hit:false,tm:0,cont:new WeakMap(),nNew:0,nSub:0,nSame:0,nCol:0,nWait:0,nDrop:0,err:''};
 function fok4Up(U,f){
 const P=FOK4;if(!P.on||!U.gl||!U.f1||!f||!f.data)return false;
 P.hit=true;
-if(!P.f){P.f=f;P.U=U;P.G=U.gl;clearTimeout(P.tm);P.tm=setTimeout(fok4Go,0);}
+if(!P.f)fok4Start(U,f);
 return true;
+}
+function fok4Start(U,f){const P=FOK4;P.f=f;P.U=U;P.G=U.gl;clearTimeout(P.tm);P.tm=setTimeout(fok4Go,0);}
+function fok4Next(U){
+const P=FOK4;if(!P.on||P.f||!U||!U.gl||!SPK1.open||!U.meta)return;
+const F=U.f1,S=F&&F.set,O=U.spec;if(!S||!O||!O.hop||F.mode==='alles'||S.doc!==SPK1.doc||S.N!==O.N||S.mode!==F.mode||F.glRef!==U.gl)return;
+const v=U.v,hs=O.hop/U.meta.sr;
+for(let k=0;k<S.chunks.length;k++){
+const f=S.chunks[k],o=O.chunks[k];if(!f||f.tex||!f.data||(o&&o.w!==f.w))continue;
+const xa=((f.x0-0.5)*hs-v.t0)*v.pps,xb=((f.x0+f.w-0.5)*hs-v.t0)*v.pps;if(xb<0||xa>U.W)continue;
+fok4Start(U,f);return;
+}
 }
 function fok4W(U){const h=FOK4.hit;FOK4.hit=false;return h&&!!FOK4.f;}
 function fok4Live(P){const U=P.U,F=U&&U.f1,S=F&&F.set;return!!(SPK1.open&&U.gl&&U.gl===P.G&&F.glRef===U.gl&&S&&S.chunks.includes(P.f));}
@@ -65,6 +76,6 @@ else if(!P.sub){try{P.G.gl.deleteTexture(T);}catch(e){}P.nDrop++;}
 }
 }catch(e){P.err=String((e&&e.message)||e).slice(0,200);}
 P.f=P.U=P.G=P.T=null;P.sub=false;
-if(U&&SPK1.open)spk1Dirty(U,'g');
+if(U&&SPK1.open){try{fok4Next(U);}catch(e){P.err=String((e&&e.message)||e).slice(0,200);}if(!P.f&&!(U.f1&&U.f1.dt))spk1Dirty(U,'g');}
 }
 // FOK4-END
