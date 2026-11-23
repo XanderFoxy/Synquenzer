@@ -82,7 +82,7 @@ G = hp(G, 120.0, 2)
 G, _ = expander(G, -50.0, 12.0, 2.0)
 G = eq(G, [('peak', 250.0, 1.0, -1.5), ('peak', 2800.0, 1.0, 1.0)])
 actg = rms_db(G, 50) > np.percentile(rms_db(G, 50), 99.5) - 30
-thrg = np.percentile(rms_db(G, 10)[actg], 50) - 1.0
+thrg = np.percentile(rms_db(G, 10)[actg], 50) - 5.0
 G, grg = kompressor(G, thrg, 2.0, 20.0, 150.0, knee=4.0)
 G, _ = entzischer(G, 5500.0, np.percentile(rms_db(hp_zp(G, 5500.0), 3.0)[actg], 85), 4.0, 0.6)
 LOG['gegen_gr_median'] = round(float(np.median(grg[actg])), 2)
@@ -124,7 +124,7 @@ UN = zusammensetzen(P + 'unter.txt', {-3.0: lade('lead_m3'), -4.0: lade('lead_m4
 UN = verz(UN, 9.0)
 
 # ===================== Pegel (gegen Lead, aktive Frames, R1–R3) =====================
-ZIEL = dict(G=-5.0, GA_L=-12.0, GA_R=-12.0, D=-10.0, OB_L=-14.0, OB_R=-14.0, UN=-16.0)
+ZIEL = dict(G=-5.5, GA_L=-15.0, GA_R=-15.0, D=-11.0, OB_L=-15.5, OB_R=-15.5, UN=-18.0)   # Chor ohne Doppel zusammen ≈ −4 dB
 SP = dict(G=G, GA_L=GA_L, GA_R=GA_R, D=D, OB_L=OB_L, OB_R=OB_R, UN=UN)
 FADER = {}
 for k, x in SP.items():
@@ -138,9 +138,9 @@ LOG['pegel_rel_lead_nachher'] = {k: round(pegel_rel(SP[k], L), 1) for k in SP}
 chor = pan(SP['OB_L'], -0.6) + pan(SP['OB_R'], 0.6) + pan(SP['UN'], 0.0)
 chor = hp(chor, 190.0, 2)
 chor = eq(chor, [('peak', 3000.0, 1.0, -2.5), ('highshelf', 10000.0, 0.7, -1.0)])
-chor, _ = entzischer(chor, 5000.0, np.percentile(rms_db(hp_zp(chor.mean(1), 5000.0), 3.0)[rms_db(chor, 50) > -60], 70), 7.0, 0.8)
+chor, _ = entzischer(chor, 5000.0, np.percentile(rms_db(hp_zp(chor, 5000.0), 3.0)[rms_db(chor, 50) > -60], 70), 7.0, 0.8)
 actc = rms_db(chor, 50) > np.percentile(rms_db(chor, 50), 99.5) - 25
-thrc = np.percentile(rms_db(chor, 10)[actc], 50) - 4.0
+thrc = np.percentile(rms_db(chor, 10)[actc], 50) - 6.0
 chor, grc = kompressor(chor, thrc, 3.5, 15.0, 150.0, knee=4.0)
 LOG['chorbus_gr_median'] = round(float(np.median(grc[actc])), 2)
 chor = chor * undb(np.median(grc[actc]) * 0.7)          # Make-up (teilweise)
@@ -169,25 +169,26 @@ dk = glaetten(np.clip((lead_env - (np.percentile(lead_env[act], 50) - 10)) / 10,
 h_lead *= undb(-dk)[:, None]; h_dop *= undb(-dk)[:, None]
 
 
-def hall_ziel(src_dry, h, ziel_db, ranges=R123):
-    e_d = np.mean([np.mean(src_dry[int(a * SR):int(b_ * SR)] ** 2) for a, b_ in ranges])
-    e_h = np.mean([np.mean(h[int(a * SR):int(b_ * SR)] ** 2) for a, b_ in ranges])
+def hall_ziel(dry_st, wet_st, ziel_db, ranges=R123):
+    """Hall/Direkt-Verhältnis (Energie, beide Stereo) über die Refrains auf ziel_db setzen."""
+    e_d = np.mean([np.mean(dry_st[int(a * SR):int(b_ * SR)] ** 2) for a, b_ in ranges])
+    e_h = np.mean([np.mean(wet_st[int(a * SR):int(b_ * SR)] ** 2) for a, b_ in ranges])
     return undb(ziel_db - 10 * np.log10(e_h / e_d))
 
 
-g_hl = hall_ziel(L, h_lead.sum(1) / np.sqrt(2), -11.0)
+g_hl = hall_ziel(lead_st, h_lead, -11.0)
 h_lead *= g_hl; h_dop *= g_hl
 # Chor/Gegengesang-Hall (gemeinsam): Chor −7 dB, Gegengesang −8 dB
 h_ch = hall(chor.mean(1), ir_chor, 400.0, 6000.0)
 h_ge = hall(entzischer(gegen.mean(1), 5000.0, -45, 6.0)[0], ir_chor, 400.0, 6000.0)
-h_ch *= hall_ziel(chor.mean(1) * np.sqrt(2), h_ch.sum(1) / np.sqrt(2), -7.0)
-h_ge *= hall_ziel(gegen.mean(1) * np.sqrt(2), h_ge.sum(1) / np.sqrt(2), -8.0)
+h_ch *= hall_ziel(chor, h_ch, -7.0)
+h_ge *= hall_ziel(gegen, h_ge, -8.0)
 # Delay Lead: Viertel 500 ms, ducked (Echos v. a. an Zeilenenden), Sprechstelle ohne Delay
 dl_send = L * (1 - maske([(SPRACHE[0] - 0.1, SPRACHE[1])], N, 0.1))
 dly = echo(dl_send, 0.5, 0.18, 6, 300.0, 5000.0)
 dd = glaetten(np.clip((lead_env - (np.percentile(lead_env[act], 50) - 15)) / 10, 0, 1) * 10.0, 10.0, 250.0, 10.0)
 dly *= undb(-dd)[:, None]
-dly *= hall_ziel(L, dly.sum(1) / np.sqrt(2), -24.0)
+dly *= hall_ziel(lead_st, dly, -24.0)
 
 # Stelle „Siehst du mich nicht“: alle Begleitstimmen sind dort stumm (Masken); Hall-Fahnen von davor ausblenden
 fahne_weg = 1 - maske([(SPRACHE[0] - 0.15, SPRACHE[1] + 0.2)], N, 0.3)

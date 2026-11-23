@@ -1,0 +1,863 @@
+{
+ "neu": {
+  "eng": {
+   "wt": {
+    "lock": {
+     "ksAa": {
+      "lk": null,
+      "lkP": {
+       "aA": 0.5357142857142857
+      },
+      "dB": -6.7,
+      "gleich": false
+     },
+     "ksAd": {
+      "lk": null,
+      "lkP": {
+       "aD": 0.13392857142857142
+      },
+      "dB": -23.4,
+      "gleich": false
+     },
+     "ksAr": {
+      "lk": null,
+      "lkP": {
+       "aR": 1.0714285714285714
+      },
+      "dB": -11.3,
+      "gleich": false
+     },
+     "ksFa": {
+      "lk": null,
+      "lkP": {
+       "fA": 0.5357142857142857
+      },
+      "dB": -9.8,
+      "gleich": false
+     },
+     "ksFd": {
+      "lk": null,
+      "lkP": {
+       "fD": 0.13392857142857142
+      },
+      "dB": -22.2,
+      "gleich": false
+     },
+     "ksFr": {
+      "lk": null,
+      "lkP": {
+       "fR": 1.0714285714285714
+      },
+      "dB": -39.7,
+      "gleich": false
+     },
+     "ksMa": {
+      "lk": null,
+      "lkP": {
+       "ksm2Ma": 0.5357142857142857,
+       "ksm2Pe": 12
+      },
+      "dB": 2.8,
+      "gleich": false
+     },
+     "ksMd": {
+      "lk": null,
+      "lkP": {
+       "ksm2Md": 1.0714285714285714,
+       "ksm2Pe": 12
+      },
+      "dB": 3.3,
+      "gleich": false
+     },
+     "ksMr": {
+      "lk": null,
+      "lkP": {
+       "ksm2Mr": 1.0714285714285714,
+       "ksm2Pe": 12
+      },
+      "dB": -101.7,
+      "gleich": true
+     },
+     "ksPe": {
+      "lk": null,
+      "lkP": {
+       "ksm2Pe": 12
+      },
+      "dB": -0.6,
+      "gleich": false
+     },
+     "ksR1": {
+      "lk": null,
+      "lkP": null,
+      "dB": -91.4,
+      "gleich": false
+     },
+     "ksG1": {
+      "lk": null,
+      "lkP": null,
+      "dB": -90.6,
+      "gleich": false
+     },
+     "ksR2": {
+      "lk": null,
+      "lkP": null,
+      "dB": -99.1,
+      "gleich": false
+     },
+     "ksG2": {
+      "lk": null,
+      "lkP": null,
+      "dB": -102,
+      "gleich": false
+     },
+     "ksF2c": {
+      "lk": null,
+      "lkP": null,
+      "dB": -86.1,
+      "gleich": false
+     },
+     "ksF2r": {
+      "lk": null,
+      "lkP": null,
+      "dB": -94.7,
+      "gleich": false
+     },
+     "ksF2e": {
+      "lk": null,
+      "lkP": null,
+      "dB": -106.1,
+      "gleich": true
+     },
+     "ksF2m": {
+      "lk": null,
+      "lkP": null,
+      "dB": -97.1,
+      "gleich": false
+     }
+    },
+    "route": {
+     "pe": {
+      "gleich": true
+     },
+     "f2cut": {
+      "gleich": true
+     },
+     "ras1": {
+      "gleich": false
+     },
+     "takt": {
+      "gleich": false
+     }
+    },
+    "ohne": "a6e862a8eecd0502",
+    "stabil": false
+   },
+   "mk": {
+    "lock": {
+     "ksAa": {
+      "lk": [
+       27,
+       85,
+       73,
+       85
+      ],
+      "lkP": null,
+      "dB": -5.4,
+      "gleich": false
+     },
+     "ksAd": {
+      "lk": [
+       28,
+       59,
+       74,
+       59
+      ],
+      "lkP": null,
+      "dB": -25.6,
+      "gleich": false
+     },
+     "ksAr": {
+      "lk": [
+       30,
+       89,
+       76,
+       89
+      ],
+      "lkP": null,
+      "dB": -13.8,
+      "gleich": false
+     },
+     "ksFa": {
+      "lk": [
+       22,
+       85,
+       68,
+       85
+      ],
+      "lkP": null,
+      "dB": 1,
+      "gleich": false
+     },
+     "ksFd": {
+      "lk": [
+       23,
+       59,
+       69,
+       59
+      ],
+      "lkP": null,
+      "dB": -31.3,
+      "gleich": false
+     },
+     "ksFr": {
+      "lk": [
+       25,
+       89,
+       71,
+       89
+      ],
+      "lkP": null,
+      "dB": -24.9,
+      "gleich": false
+     },
+     "ksMa": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksMd": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksMr": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksPe": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksR1": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksG1": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksR2": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksG2": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksF2c": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksF2r": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksF2e": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksF2m": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     }
+    },
+    "route": {
+     "pe": {
+      "gleich": true
+     },
+     "f2cut": {
+      "gleich": true
+     },
+     "ras1": {
+      "gleich": true
+     },
+     "takt": {
+      "gleich": true
+     }
+    },
+    "ohne": "7266bd777266bd77",
+    "stabil": true
+   },
+   "bm": {
+    "lock": {
+     "ksAa": {
+      "lk": [
+       -7746,
+       0.5357142857142857
+      ],
+      "lkP": null,
+      "dB": 0.6,
+      "gleich": false
+     },
+     "ksAd": {
+      "lk": [
+       -7747,
+       0.13392857142857142
+      ],
+      "lkP": null,
+      "dB": -17.1,
+      "gleich": false
+     },
+     "ksAr": {
+      "lk": [
+       -7748,
+       1.0714285714285714
+      ],
+      "lkP": null,
+      "dB": -10.7,
+      "gleich": false
+     },
+     "ksFa": {
+      "lk": [
+       -7752,
+       0.5357142857142857
+      ],
+      "lkP": null,
+      "dB": -4,
+      "gleich": false
+     },
+     "ksFd": {
+      "lk": [
+       -7753,
+       0.13392857142857142
+      ],
+      "lkP": null,
+      "dB": -18,
+      "gleich": false
+     },
+     "ksFr": {
+      "lk": [
+       -7754,
+       1.0714285714285714
+      ],
+      "lkP": null,
+      "dB": -41.9,
+      "gleich": false
+     },
+     "ksMa": {
+      "lk": [
+       -7745,
+       12
+      ],
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksMd": {
+      "lk": [
+       -7745,
+       12
+      ],
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksMr": {
+      "lk": [
+       -7745,
+       12
+      ],
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksPe": {
+      "lk": [
+       -7745,
+       12
+      ],
+      "lkP": null,
+      "dB": 3.5,
+      "gleich": false
+     },
+     "ksR1": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksG1": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksR2": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksG2": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksF2c": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksF2r": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksF2e": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksF2m": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     }
+    },
+    "route": {
+     "pe": {
+      "gleich": true
+     },
+     "f2cut": {
+      "gleich": true
+     },
+     "ras1": {
+      "gleich": true
+     },
+     "takt": {
+      "gleich": true
+     }
+    },
+    "ohne": "5c624375c62437",
+    "stabil": true
+   }
+  },
+  "errs": []
+ },
+ "basis": {
+  "eng": {
+   "wt": {
+    "lock": {
+     "ksAa": {
+      "lk": null,
+      "lkP": null,
+      "dB": -99.3,
+      "gleich": false
+     },
+     "ksAd": {
+      "lk": null,
+      "lkP": null,
+      "dB": -86,
+      "gleich": false
+     },
+     "ksAr": {
+      "lk": null,
+      "lkP": null,
+      "dB": -96.7,
+      "gleich": false
+     },
+     "ksFa": {
+      "lk": null,
+      "lkP": null,
+      "dB": -114.4,
+      "gleich": true
+     },
+     "ksFd": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksFr": {
+      "lk": null,
+      "lkP": null,
+      "dB": -94.6,
+      "gleich": false
+     },
+     "ksMa": {
+      "lk": null,
+      "lkP": null,
+      "dB": -98.5,
+      "gleich": false
+     },
+     "ksMd": {
+      "lk": null,
+      "lkP": null,
+      "dB": -98.9,
+      "gleich": false
+     },
+     "ksMr": {
+      "lk": null,
+      "lkP": null,
+      "dB": -90.4,
+      "gleich": false
+     },
+     "ksPe": {
+      "lk": null,
+      "lkP": null,
+      "dB": -94.8,
+      "gleich": false
+     },
+     "ksR1": {
+      "lk": null,
+      "lkP": null,
+      "dB": -100.4,
+      "gleich": false
+     },
+     "ksG1": {
+      "lk": null,
+      "lkP": null,
+      "dB": -95.2,
+      "gleich": false
+     },
+     "ksR2": {
+      "lk": null,
+      "lkP": null,
+      "dB": -89.9,
+      "gleich": false
+     },
+     "ksG2": {
+      "lk": null,
+      "lkP": null,
+      "dB": -91.2,
+      "gleich": false
+     },
+     "ksF2c": {
+      "lk": null,
+      "lkP": null,
+      "dB": -120.3,
+      "gleich": true
+     },
+     "ksF2r": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksF2e": {
+      "lk": null,
+      "lkP": null,
+      "dB": -92.7,
+      "gleich": false
+     },
+     "ksF2m": {
+      "lk": null,
+      "lkP": null,
+      "dB": -97.2,
+      "gleich": false
+     }
+    },
+    "route": {
+     "pe": {
+      "gleich": false
+     },
+     "f2cut": {
+      "gleich": false
+     },
+     "ras1": {
+      "gleich": false
+     },
+     "takt": {
+      "gleich": false
+     }
+    },
+    "ohne": "a6e862a8eecd0502",
+    "stabil": true
+   },
+   "mk": {
+    "lock": {
+     "ksAa": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksAd": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksAr": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksFa": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksFd": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksFr": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksMa": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksMd": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksMr": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksPe": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksR1": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksG1": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksR2": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksG2": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksF2c": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksF2r": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksF2e": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksF2m": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     }
+    },
+    "route": {
+     "pe": {
+      "gleich": true
+     },
+     "f2cut": {
+      "gleich": true
+     },
+     "ras1": {
+      "gleich": true
+     },
+     "takt": {
+      "gleich": true
+     }
+    },
+    "ohne": "7266bd777266bd77",
+    "stabil": true
+   },
+   "bm": {
+    "lock": {
+     "ksAa": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksAd": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksAr": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksFa": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksFd": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksFr": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksMa": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksMd": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksMr": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksPe": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksR1": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksG1": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksR2": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksG2": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksF2c": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksF2r": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksF2e": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     },
+     "ksF2m": {
+      "lk": null,
+      "lkP": null,
+      "dB": -300,
+      "gleich": true
+     }
+    },
+    "route": {
+     "pe": {
+      "gleich": true
+     },
+     "f2cut": {
+      "gleich": true
+     },
+     "ras1": {
+      "gleich": true
+     },
+     "takt": {
+      "gleich": true
+     }
+    },
+    "ohne": "5c624375c62437",
+    "stabil": true
+   }
+  },
+  "errs": []
+ }
+}

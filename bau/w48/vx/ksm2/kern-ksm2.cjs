@@ -1,5 +1,6 @@
 // KSM2 Kern-Test. Aufruf: node kern-ksm2.cjs <neu.html> [basis.html]  (eigener Temp-Server, Port 9300-9399 zufaellig, version.json 4.90.0)
 // Je Engine (WT nativ, MS-Platte, Bit Mask) je Ziel: Lock ueber den echten Weg lkNoteX -> Kern, Offline-Render -> Unterschied in dB;
+// WT (nativer Kern): Hash ueber auf 1e-5 gerundete Werte (nativer Release-Schluss schwankt im Offline-Render um <1e-9), Stimmen-Pan-Zaehler je Render auf 0.
 // ohne Lock Render-Hash neu == basis. Routen: ehrlich ausgelassen (Kern hat dafuer keinen Weg) - Test prueft, dass sie nichts aendern.
 const {chromium}=require('playwright');const fs=require('fs');const path=require('path');const {spawn}=require('child_process');
 const here=__dirname,files=process.argv.slice(2).map(f=>path.resolve(f));const names=['neu','basis'].slice(0,files.length);
@@ -18,8 +19,8 @@ const ENG=async()=>{
   const R={
     wt:async(snd,lx)=>{const oc=new OfflineAudioContext(2,Math.round(sec*sr),sr),save=AU.ctx,sink=oc.createGain();sink.connect(oc.destination);
       const prev=tr.sound;tr.sound=snd;AU.ctx=oc;let v=null,err=null;const mr=Math.random;let z=12345;Math.random=()=>{z=(Math.imul(z,1103515245)+12345)>>>0;return z/4294967296;};
-      try{v=spawnVoice(0,48,.8,.02,{src:'preview',sound:snd,chain:{trackIn:sink},noGlide:true,lkP:lx&&lx.lkP||undefined});if(v)v.release(.9);}catch(e){err=String(e);}
-      Math.random=mr;AU.ctx=save;tr.sound=prev;const b=await oc.startRendering();const l=b.getChannelData(0),r=b.getChannelData(1);return{h:fnv(l)+fnv(r),l,err};},
+      try{for(const x of VOICES.slice())if(x.track===0)try{cleanupVoice(x);}catch(e){}AU.tracks[0].panIdx=0;v=spawnVoice(0,48,.8,.02,{src:'preview',sound:snd,chain:{trackIn:sink},noGlide:true,lkP:lx&&lx.lkP||undefined});if(v)v.release(.9);}catch(e){err=String(e);}
+      Math.random=mr;AU.ctx=save;tr.sound=prev;const b=await oc.startRendering();try{if(v)cleanupVoice(v);}catch(e){}const l=b.getChannelData(0),r=b.getChannelData(1);const q=x=>{const o=new Int32Array(x.length);for(let i=0;i<x.length;i++)o[i]=Math.round(x[i]*1e5);return o;};return{h:fnv(q(l))+fnv(q(r)),l,err};},
     mk:async(snd,lx)=>{const oc=new OfflineAudioContext(2,Math.round(sec*sr),sr);await oc.audioWorklet.addModule('data:application/javascript;base64,'+btoa(wsrc));
       const E=SynthHost.track(oc,oc.destination,wkFlat(snd),wkMods(snd),null,snd.p.mk);E.node.port.postMessage({mkSeed:1});E.mkWheel({mw0:+snd.p.mw||0,reset:true});try{mkwFeed(E,snd);}catch(e){}
       E.tempo(120,null);E.on(1,48,.8,.02,null,0,lx&&lx.lk||null);E.off(1,.9);E.flush();await new Promise(r=>setTimeout(r,30));const b=await oc.startRendering();
