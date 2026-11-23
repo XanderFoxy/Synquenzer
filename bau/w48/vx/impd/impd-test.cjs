@@ -66,7 +66,9 @@ async function imp(p, file, kind, wahl) {
     let h = 2166136261; if (buf) { const y = buf.getChannelData(0); for (let i = 0; i < y.length; i++) { h ^= (Math.round(y[i] * 32767) & 0xffff); h = Math.imul(h, 16777619) >>> 0; } }
     const sx = c.sx && c.sx.pcm, k = sx ? sx.length / c.x.length : 1;
     const on = (y, sc, sr) => { const o = []; let last = -1e9; for (let i = 0; i < y.length; i++) if (Math.abs(y[i]) * sc > .2) { if (i - last > .15 * sr) o.push(i); last = i; } return o; };
-    const pitch = (y, sc, sr, ons) => { const f = ons.map(i => { let z = 0; const a = i + Math.round(.02 * sr), b = i + Math.round(.12 * sr); for (let j = a + 2; j < b && j < y.length; j++) if ((y[j] - y[j - 1] >= 0) !== (y[j - 1] - y[j - 2] >= 0)) z++; return z / 2 / .1; }).sort((p, q) => p - q); return f.length ? f[f.length >> 1] : null; };
+    const pitch = (y, sc, sr, ons) => { const f = ons.map(i => { const a = i + Math.round(.03 * sr), N = Math.round(.1 * sr); if (a + N > y.length) return null; let bf = 0, bv = -1;
+      for (let f = 400; f <= 480; f += .25) { let re = 0, im = 0; const w = 2 * Math.PI * f / sr; for (let m = 0; m < N; m++) { const v = y[a + m] * (.5 - .5 * Math.cos(2 * Math.PI * m / N)); re += v * Math.cos(w * m); im += v * Math.sin(w * m); } const p = re * re + im * im; if (p > bv) { bv = p; bf = f; } }
+      return bf; }).filter(v => v != null).sort((p, q) => p - q); return f.length ? f[f.length >> 1] : null; };
     const dev = (ons, sr, t1, st) => ons.map(i => { let d = ((i / sr - t1) % st + st) % st; if (d > st / 2) d -= st; return d * 1000; });
     const st = s => { const a = s.map(Math.abs); return a.length ? {n: a.length, max: +Math.max(...a).toFixed(2), mittel: +(a.reduce((p, q) => p + q, 0) / a.length).toFixed(2)} : null; };
     const R = {bpm: c.bpm, rbpm: c.r.bpm, t1: c.t1, projekt: S.bpm, frage: c.r.frage, stabil: c.r.stabil, gedehnt: !!sx, q: sx ? +(c.bpm / S.bpm).toFixed(5) : 1, hash: h, takeLen: buf && buf.length, placed: !!res, impd: window.__impd ? __impd.last() : null, nx1: window.__nx1 ? __nx1.st().imp : null};

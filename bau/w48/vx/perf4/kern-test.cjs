@@ -58,7 +58,7 @@ async function run(br, dir) {
     return {ok: !!ok, info: SYNQUENZER.ke1.info(), state: s}; } catch (e) { return {err: String(e)}; } });
   await sleep(400);
   // (4) MS-Platte
-  r.mk = await pg.evaluate(async () => { try {
+  r.platte = await pg.evaluate(async () => { try {
     let id = null; for (const [k, f] of FACTORY_BY_ID) if (f && f.engine === 'mk') { id = k; break; }
     const t = S.tracks.findIndex(x => x.kind === 'synth'); selectTrack(t);
     const rec = FACTORY_BY_ID.get(id); const snd = typeof soundCopy === 'function' ? soundCopy(rec) : SQStore.soundFromFactory(rec);
@@ -81,7 +81,7 @@ async function run(br, dir) {
   console.log((laut ? 'OK ' : 'FEHLER ') + 'Render nicht still: ' + a1.mk.length + ' Werksklänge (' + [...new Set(a1.mk.map(m => m.engine))].join('/') + ')');
   console.log((gleich ? 'OK ' : 'FEHLER ') + 'vorher == nachher bitgleich (12 Werksklänge, je 2 Kanäle)');
   const same = k => JSON.stringify(a1[k]) === JSON.stringify(b1[k]);
-  for (const k of ['lk', 'mkw', 'fmx', 'ks', 'ke1', 'mk']) console.log((same(k) ? 'OK ' : 'ANDERS ') + k + ' vorher ' + JSON.stringify(a1[k]) + ' | nachher ' + JSON.stringify(b1[k]));
+  for (const k of ['lk', 'mkw', 'fmx', 'ks', 'ke1', 'platte']) console.log((same(k) ? 'OK ' : 'ANDERS ') + k + ' vorher ' + JSON.stringify(a1[k]) + ' | nachher ' + JSON.stringify(b1[k]));
   const fe = [...a1.errs, ...b1.errs, ...a2.errs]; console.log((fe.length ? 'FEHLER ' : 'OK ') + 'Konsole/Seitenfehler ' + JSON.stringify(fe.slice(0, 6)));
   console.log(kontrolle && laut && gleich && !fe.length ? 'ERGEBNIS bitgleich' : 'ERGEBNIS NICHT bitgleich');
 })().catch(e => { console.error(e); process.exit(1); });
