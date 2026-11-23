@@ -1,4 +1,4 @@
-# Stand 23.11.17:51 UTC
+# Stand 23.11.17:53 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -6,9 +6,11 @@
 - (a) echt: 3/4+6/8 alt 1. Note 67 (falsch), neu 60; 4/4 gleich
 - (b) echt: alt 0 Stimmen nach Arp aus (Taste/Clip), neu 3/3; (e) echt: alt 4/33 falsch, neu 0/33
 ## arpg
-# ARPG – Stand (Zwischenstand)
-- apply.py + block.js fertig, Bau ok (Eingang 4.88.0 md5 695af050…). Pflicht-grep + doppelt.js ok.
-- Offen: Browser-Test (arpg-test.cjs), Fotos.
+# ARPG – Stand (fertig)
+Arp-Gate (Spur-Arp, Blatt „Arp · Spur“) 5–200 %; > 100 % = Legato (Noten überlappen). MS-Platte/Bit Mask unverändert (Grenze dort 100).
+
+## Bau
+`python3 apply.py <eingang 4.88.0, md5 695af050…> <ausgang>` → index.html (md5 siehe Ausgabe). Anker je 1×:
 ## bm1
 # BM1 – Stand (fertig)
 - Ausgang: index.html = python3 apply.py ../rel-4860/index.html index.html (md5 e9f11848d2050250ff5fa59723e314b5).
@@ -128,9 +130,11 @@ Ausgang `index.html` md5 81347f5bb25e53205c248fa1e4b6eaeb (Eingang 280c5b0b6a9ed
 1 Haken `/*SPKV*/` nach `refineEst(...)` in verfeinern). Diff zur Basis: 1 Zeile ersetzt + Block.
 
 ## spkv2
-# SPKV2 auf 4.88.0 – Stand: in Arbeit
-Bau: `python3 apply.py <eingang> <ausgang>` (ersetzt den SPKV-Block alt.js durch block.js). Dev: `SPKV2_DEV=1` (Debug-Haken, nur Hauptfaden).
-Kern-Test: test/kern-spkv2.mjs (RASTER=1 / ohne / SINUS=1), Basis-Zahlen test/base-*.out.
+# SPKV2 auf 4.88.0 – Stand: fertig (gebaut, gemessen; Grenzen unten)
+Ausgang `index.html` md5 2b2ae4e36cd18528b270f499a3465ae3 (Eingang 695af0504463a6385e21dc94e55b00c9). Bau: `python3 apply.py <eingang> <ausgang>`.
+apply.py ersetzt den ganzen SPKV-Block (`alt.js`, 1 Treffer, liegt in spk1DspMake → Worker) durch `block.js` (SPKV2-BEGIN/-END,
+gleicher Funktionsname spkvFix, kein neuer Top-Level-Name). `SPKV2_DEV=1` baut eine Dev-Fassung mit Debug-Haken (nur für test/dev-spkv2.mjs, Hauptfaden).
+
 ## ton1
 # TON1 – Stand (fertig)
 - Ausgang: index.html = python3 apply.py ../rel-4850/index.html index.html (md5 125767aed0f89918371d0729d07a6f82).

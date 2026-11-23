@@ -1,5 +1,5 @@
 /* SPKV2-BEGIN (ersetzt SPKV) Verfeinern Bass/Drums: Kick über Anschläge im Takt-Raster, Bass-Anschläge mit Tonverlauf nicht als Kick, Grundton-Lage, Sinus-Bass, Drums nach Bass gleich geteilt */
-const spkvO={on:1,N:8192,fa:27,fb:300,fT:300,fK:200,kLen:0.22,dg:0.035,alt:1,sin:1,sub:1,dr:1,ref:1,wk:1,dbg:null};
+const spkvO={on:1,N:8192,fa:27,fb:300,fT:300,fK:200,kLen:0.22,dg:0.035,alt:1,sin:1,sub:1,dr:1,ref:1,wk:1,r2:1,dbg:null};
 function spkvFix(d,ziel,box,E){
 if(!spkvO.on||(ziel!=='bass'&&ziel!=='drums')||!d||!d.mid)return null;
 const sr=d.meta.sr,N=d.meta.base.N,hop=d.meta.base.hop,NB=N/2+1,df=sr/N,N8=spkvO.N,d8=sr/N8,K8=Math.min(N8/2+1,Math.ceil(1300/d8)+3);
@@ -69,7 +69,7 @@ for(let i=2;i<n-1;i++){
 if(!(flux[i]>=flux[i-1]&&flux[i]>=flux[i+1]))continue;
 const L=useG?lvl(i):3,thr=[3,4,5,8][L];if(flux[i]<thr)continue;
 const tonal=bF[i]>0&&bF[Math.min(n-1,i+2)]>0&&sgA[Math.min(n-1,i+2)]===sgA[i];
-const rq=[0.3,0.38,0.45,0.55][L],r=Math.max(resid(i),resid(Math.min(n-1,i+1)));
+const rq=spkvO.r2?[0.55,0.55,0.58,0.6][L]:[0.3,0.38,0.45,0.55][L],r=spkvO.r2?resid(Math.min(n-1,i+2)):Math.max(resid(i),resid(Math.min(n-1,i+1)));/* SPKV2: Rest 2 Rahmen nach dem Anschlag (Kick klingt nach, Einschwing-Streuung des Basses nicht) */
 if(tonal&&r<rq){for(let j=Math.max(0,i-1);j<=Math.min(n-1,i+3);j++)aT[j]=1;continue;}
 if(!tonal&&lo[i]<emax*1e-3)continue;
 if(spkvO.sub){let sf=-99,sx=0;for(let j=i;j<=Math.min(n-1,i+1);j++){sf=Math.max(sf,ls[j]-Math.max(ls[j-1],ls[j-2]));sx=Math.max(sx,es[j]);}if(sf<3||sx<esx*3e-3)continue;}

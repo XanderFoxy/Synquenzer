@@ -3,9 +3,9 @@
   {
    "errs": [],
    "Z": {
-    "n": 0,
-    "max": 0,
-    "sum": 0,
+    "n": 1,
+    "max": 55,
+    "sum": 55,
     "gl": {
      "img": 0.3,
      "nImg": 2,
@@ -14,71 +14,21 @@
      "mip": 0,
      "nMip": 0
     },
-    "tr": [
-     "99ms tid2028 ThreadControllerImpl::RunTask:99 | HandlePostMessage:99",
-     "99ms tid2028 HandlePostMessage:99",
-     "46ms tid1988 ThreadControllerImpl::RunTask:46 | ProxyMain::BeginMainFrame:46 | Commit:46 | LayerTreeHost::DoUpdateLayers:45 | GLES2::ReadPixels:44 | ImplementationBase::WaitForCmd:43 | CommandBufferHelper::Finish:43 | CommandBufferProxyImpl::WaitForGetOffset:43",
-     "46ms tid1988 ProxyMain::BeginMainFrame:46 | Commit:46 | LayerTreeHost::DoUpdateLayers:45 | GLES2::ReadPixels:44 | ImplementationBase::WaitForCmd:43 | CommandBufferHelper::Finish:43 | CommandBufferProxyImpl::WaitForGetOffset:43",
-     "42ms tid1985 ThreadControllerImpl::RunTask:42 | Scheduler::RunTask:42 | GpuChannel::ExecuteDeferredRequest:42 | GPUTask:42 | WebGL:42 | CommandBuffer::Flush:42 | CommandBufferStub::OnAsyncFlush:42 | CommandBufferService:PutChanged:42",
-     "42ms tid1985 Scheduler::RunTask:42 | GpuChannel::ExecuteDeferredRequest:42 | GPUTask:42 | WebGL:42 | CommandBuffer::Flush:42 | CommandBufferStub::OnAsyncFlush:42 | CommandBufferService:PutChanged:42"
-    ],
     "layers": 3,
     "hash": "ddf507e3"
    },
    "F": {
-    "n": 1,
-    "max": 62,
-    "sum": 62,
+    "n": 3,
+    "max": 61,
+    "sum": 165,
     "gl": {
-     "img": 2.2,
-     "nImg": 11,
-     "sub": 0,
-     "nSub": 0,
-     "mip": 0.2,
+     "img": 1.2,
+     "nImg": 6,
+     "sub": 1.1,
+     "nSub": 5,
+     "mip": 0,
      "nMip": 11
     },
-    "tr": [
-     "108ms tid2028 ThreadControllerImpl::RunTask:108 | SimpleWatcher::OnHandleReady:108 | Receive mojo message:108 | MinorGC:4 | V8.GC_SCAVENGER:4 | V8.GC_SCAVENGER_SCAVENGE:4 | V8.GC_SCAVENGER_SCAVENGE_PARALLEL_PHASE:3",
-     "108ms tid2028 SimpleWatcher::OnHandleReady:108 | Receive mojo message:108 | MinorGC:4 | V8.GC_SCAVENGER:4 | V8.GC_SCAVENGER_SCAVENGE:4 | V8.GC_SCAVENGER_SCAVENGE_PARALLEL_PHASE:3",
-     "65ms tid2028 ThreadControllerImpl::RunTask:65 | SimpleWatcher::OnHandleReady:65 | Receive mojo message:65",
-     "65ms tid2028 SimpleWatcher::OnHandleReady:65 | Receive mojo message:65",
-     "84ms tid2028 ThreadControllerImpl::RunTask:84 | SimpleWatcher::OnHandleReady:84 | Receive mojo message:84",
-     "84ms tid2028 SimpleWatcher::OnHandleReady:84 | Receive mojo message:84",
-     "51ms tid2028 ThreadControllerImpl::RunTask:51 | SimpleWatcher::OnHandleReady:51 | Receive mojo message:51",
-     "51ms tid2028 SimpleWatcher::OnHandleReady:51 | Receive mojo message:51",
-     "62ms tid2028 ThreadControllerImpl::RunTask:62 | SimpleWatcher::OnHandleReady:62 | Receive mojo message:62",
-     "62ms tid2028 SimpleWatcher::OnHandleReady:62 | Receive mojo message:62",
-     "55ms tid2028 ThreadControllerImpl::RunTask:55 | TimerFire:55 | MinorGC:9 | V8.GC_SCAVENGER:8 | V8.GC_SCAVENGER_SCAVENGE:8 | V8.GC_SCAVENGER_SCAVENGE_FINALIZE:8",
-     "55ms tid2028 TimerFire:55 | MinorGC:9 | V8.GC_SCAVENGER:8 | V8.GC_SCAVENGER_SCAVENGE:8 | V8.GC_SCAVENGER_SCAVENGE_FINALIZE:8",
-     "69ms tid2028 ThreadControllerImpl::RunTask:68 | SimpleWatcher::OnHandleReady:68 | Receive mojo message:68",
-     "68ms tid2028 SimpleWatcher::OnHandleReady:68 | Receive mojo message:68",
-     "70ms tid2028 ThreadControllerImpl::RunTask:70 | TimerFire:70",
-     "70ms tid2028 TimerFire:70",
-     "96ms tid2028 ThreadControllerImpl::RunTask:96 | TimerFire:96",
-     "96ms tid2028 TimerFire:96",
-     "52ms tid2028 ThreadControllerImpl::RunTask:52 | TimerFire:52",
-     "52ms tid2028 TimerFire:52",
-     "171ms tid2028 ThreadControllerImpl::RunTask:171 | SimpleWatcher::OnHandleReady:171 | Receive mojo message:171",
-     "171ms tid2028 SimpleWatcher::OnHandleReady:171 | Receive mojo message:171",
-     "71ms tid2028 ThreadControllerImpl::RunTask:71 | TimerFire:71",
-     "71ms tid2028 TimerFire:71",
-     "183ms tid2028 ThreadControllerImpl::RunTask:183 | SimpleWatcher::OnHandleReady:183 | Receive mojo message:183 | MajorGC:5 | V8.GC_MARK_COMPACTOR:5",
-     "183ms tid2028 SimpleWatcher::OnHandleReady:183 | Receive mojo message:183 | MajorGC:5 | V8.GC_MARK_COMPACTOR:5",
-     "53ms tid2028 ThreadControllerImpl::RunTask:53 | TimerFire:53",
-     "53ms tid2028 TimerFire:53",
-     "169ms tid2028 ThreadControllerImpl::RunTask:169 | SimpleWatcher::OnHandleReady:169 | Receive mojo message:169",
-     "169ms tid2028 SimpleWatcher::OnHandleReady:169 | Receive mojo message:169",
-     "63ms tid1988 ThreadControllerImpl::RunTask:63 | ProxyMain::BeginMainFrame:63 | Commit:60 | LayerTreeHost::DoUpdateLayers:54 | GLES2::ReadPixels:53 | ImplementationBase::WaitForCmd:53 | CommandBufferHelper::Finish:53 | CommandBufferProxyImpl::WaitForGetOffset:49 | ProxyMain::BeginMainFrame::commit:5 | CommandBufferHelper::Flush:4 | CommandBufferProxyImpl::Flush:4",
-     "63ms tid1988 ProxyMain::BeginMainFrame:63 | Commit:60 | LayerTreeHost::DoUpdateLayers:54 | GLES2::ReadPixels:53 | ImplementationBase::WaitForCmd:53 | CommandBufferHelper::Finish:53 | CommandBufferProxyImpl::WaitForGetOffset:49 | ProxyMain::BeginMainFrame::commit:5 | CommandBufferHelper::Flush:4 | CommandBufferProxyImpl::Flush:4",
-     "52ms tid1985 ThreadControllerImpl::RunTask:52 | Scheduler::RunTask:52 | GpuChannel::ExecuteDeferredRequest:52 | GPUTask:52 | WebGL:52 | CommandBuffer::Flush:52 | CommandBufferStub::OnAsyncFlush:52 | CommandBufferService:PutChanged:52",
-     "52ms tid1985 Scheduler::RunTask:52 | GpuChannel::ExecuteDeferredRequest:52 | GPUTask:52 | WebGL:52 | CommandBuffer::Flush:52 | CommandBufferStub::OnAsyncFlush:52 | CommandBufferService:PutChanged:52",
-     "164ms tid2028 ThreadControllerImpl::RunTask:164 | SimpleWatcher::OnHandleReady:164 | Receive mojo message:164",
-     "164ms tid2028 SimpleWatcher::OnHandleReady:164 | Receive mojo message:164",
-     "49ms tid1988 ThreadControllerImpl::RunTask:49 | ProxyMain::BeginMainFrame:49 | Commit:48 | LayerTreeHost::DoUpdateLayers:41 | GLES2::ReadPixels:40 | ImplementationBase::WaitForCmd:39 | CommandBufferHelper::Finish:39 | CommandBufferProxyImpl::WaitForGetOffset:39 | ProxyMain::BeginMainFrame::commit:5",
-     "49ms tid1988 ProxyMain::BeginMainFrame:49 | Commit:48 | LayerTreeHost::DoUpdateLayers:41 | GLES2::ReadPixels:40 | ImplementationBase::WaitForCmd:39 | CommandBufferHelper::Finish:39 | CommandBufferProxyImpl::WaitForGetOffset:39 | ProxyMain::BeginMainFrame::commit:5",
-     "48ms tid2028 ThreadControllerImpl::RunTask:48 | TimerFire:48",
-     "48ms tid2028 TimerFire:48"
-    ],
     "hash": "63217d30",
     "info": {
      "n": 6,
@@ -102,33 +52,384 @@
    },
    "G": {
     "n": 1,
-    "max": 60,
-    "sum": 60,
+    "max": 83,
+    "sum": 83,
     "gl": {
-     "img": 1.1,
+     "img": 1.4,
+     "nImg": 6,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0.1,
+     "nMip": 6
+    },
+    "hash": "f6f5d4"
+   },
+   "fok4": {
+    "nNew": 12,
+    "nSub": 5,
+    "nSame": 0,
+    "nCol": 5120,
+    "nWait": 0,
+    "nDrop": 0,
+    "err": "",
+    "on": true
+   },
+   "last": 4.81
+  },
+  {
+   "errs": [],
+   "Z": {
+    "n": 1,
+    "max": 52,
+    "sum": 52,
+    "gl": {
+     "img": 0.3,
+     "nImg": 2,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 0
+    },
+    "layers": 3,
+    "hash": "ddf507e3"
+   },
+   "F": {
+    "n": 1,
+    "max": 51,
+    "sum": 51,
+    "gl": {
+     "img": 1.5,
+     "nImg": 6,
+     "sub": 3.5,
+     "nSub": 5,
+     "mip": 0,
+     "nMip": 11
+    },
+    "hash": "63217d30",
+    "info": {
+     "n": 6,
+     "tex": 6,
+     "ap": 0
+    }
+   },
+   "A": {
+    "n": 0,
+    "max": 0,
+    "sum": 0,
+    "gl": {
+     "img": 0,
+     "nImg": 1,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 0
+    },
+    "hash": "ddf507e3"
+   },
+   "G": {
+    "n": 2,
+    "max": 58,
+    "sum": 113,
+    "gl": {
+     "img": 1.3,
      "nImg": 7,
      "sub": 0,
      "nSub": 0,
      "mip": 0,
      "nMip": 6
     },
-    "tr": [
-     "102ms tid2028 ThreadControllerImpl::RunTask:102 | SimpleWatcher::OnHandleReady:102 | Receive mojo message:102",
-     "102ms tid2028 SimpleWatcher::OnHandleReady:102 | Receive mojo message:102",
-     "75ms tid2028 ThreadControllerImpl::RunTask:75 | SimpleWatcher::OnHandleReady:75 | Receive mojo message:75",
-     "75ms tid2028 SimpleWatcher::OnHandleReady:75 | Receive mojo message:75",
-     "106ms tid2028 ThreadControllerImpl::RunTask:106 | SimpleWatcher::OnHandleReady:106 | Receive mojo message:106 | V8.GC_HEAP_EXTERNAL_PROLOGUE:5 | FunctionCall:4(t.oncomplete)",
-     "106ms tid2028 SimpleWatcher::OnHandleReady:106 | Receive mojo message:106 | V8.GC_HEAP_EXTERNAL_PROLOGUE:5 | FunctionCall:4(t.oncomplete)",
-     "48ms tid1988 ThreadControllerImpl::RunTask:48 | ProxyMain::BeginMainFrame:48 | Commit:47 | LayerTreeHost::DoUpdateLayers:42 | GLES2::ReadPixels:41 | ImplementationBase::WaitForCmd:40 | CommandBufferHelper::Finish:40 | CommandBufferProxyImpl::WaitForGetOffset:40 | ProxyMain::BeginMainFrame::commit:4",
-     "48ms tid1988 ProxyMain::BeginMainFrame:48 | Commit:47 | LayerTreeHost::DoUpdateLayers:42 | GLES2::ReadPixels:41 | ImplementationBase::WaitForCmd:40 | CommandBufferHelper::Finish:40 | CommandBufferProxyImpl::WaitForGetOffset:40 | ProxyMain::BeginMainFrame::commit:4",
-     "60ms tid1988 ThreadControllerImpl::RunTask:60 | ProxyMain::BeginMainFrame:60 | Commit:52 | LayerTreeHost::DoUpdateLayers:40 | GLES2::ReadPixels:38 | ImplementationBase::WaitForCmd:38 | CommandBufferHelper::Finish:38 | CommandBufferProxyImpl::WaitForGetOffset:34 | PrePaint:7 | CommandBufferHelper::Flush:4 | CommandBufferProxyImpl::Flush:4",
-     "60ms tid1988 ProxyMain::BeginMainFrame:60 | Commit:52 | LayerTreeHost::DoUpdateLayers:40 | GLES2::ReadPixels:38 | ImplementationBase::WaitForCmd:38 | CommandBufferHelper::Finish:38 | CommandBufferProxyImpl::WaitForGetOffset:34 | PrePaint:7 | CommandBufferHelper::Flush:4 | CommandBufferProxyImpl::Flush:4",
-     "59ms tid2028 ThreadControllerImpl::RunTask:59 | SimpleWatcher::OnHandleReady:59 | Receive mojo message:59",
-     "59ms tid2028 SimpleWatcher::OnHandleReady:59 | Receive mojo message:59"
-    ],
     "hash": "f6f5d4"
    },
-   "last": 1.67
+   "fok4": {
+    "nNew": 12,
+    "nSub": 5,
+    "nSame": 0,
+    "nCol": 5120,
+    "nWait": 0,
+    "nDrop": 0,
+    "err": "",
+    "on": true
+   },
+   "last": 5.32
+  },
+  {
+   "errs": [],
+   "Z": {
+    "n": 1,
+    "max": 137,
+    "sum": 137,
+    "gl": {
+     "img": 0.6,
+     "nImg": 2,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 0
+    },
+    "layers": 3,
+    "hash": "ddf507e3"
+   },
+   "F": {
+    "n": 17,
+    "max": 624,
+    "sum": 3090,
+    "gl": {
+     "img": 5.5,
+     "nImg": 6,
+     "sub": 1.2,
+     "nSub": 5,
+     "mip": 0,
+     "nMip": 11
+    },
+    "hash": "63217d30",
+    "info": {
+     "n": 6,
+     "tex": 6,
+     "ap": 0
+    }
+   },
+   "A": {
+    "n": 1,
+    "max": 155,
+    "sum": 155,
+    "gl": {
+     "img": 0,
+     "nImg": 1,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 0
+    },
+    "hash": "ddf507e3"
+   },
+   "G": {
+    "n": 0,
+    "max": 0,
+    "sum": 0,
+    "gl": {
+     "img": 1.7,
+     "nImg": 7,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 6
+    },
+    "hash": "f6f5d4"
+   },
+   "fok4": {
+    "nNew": 12,
+    "nSub": 5,
+    "nSame": 0,
+    "nCol": 5120,
+    "nWait": 0,
+    "nDrop": 0,
+    "err": "",
+    "on": true
+   },
+   "last": 5.04
+  }
+ ],
+ "B": [
+  {
+   "errs": [],
+   "Z": {
+    "n": 1,
+    "max": 70,
+    "sum": 70,
+    "gl": {
+     "img": 0.2,
+     "nImg": 2,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 0
+    },
+    "layers": 3,
+    "hash": "ddf507e3"
+   },
+   "F": {
+    "n": 7,
+    "max": 128,
+    "sum": 658,
+    "gl": {
+     "img": 2.3,
+     "nImg": 11,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0.3,
+     "nMip": 11
+    },
+    "hash": "63217d30",
+    "info": {
+     "n": 6,
+     "tex": 6,
+     "ap": 0
+    }
+   },
+   "A": {
+    "n": 0,
+    "max": 0,
+    "sum": 0,
+    "gl": {
+     "img": 0,
+     "nImg": 1,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 0
+    },
+    "hash": "ddf507e3"
+   },
+   "G": {
+    "n": 7,
+    "max": 133,
+    "sum": 678,
+    "gl": {
+     "img": 1.4,
+     "nImg": 7,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 6
+    },
+    "hash": "f6f5d4"
+   },
+   "fok4": null,
+   "last": 5.76
+  },
+  {
+   "errs": [],
+   "Z": {
+    "n": 1,
+    "max": 100,
+    "sum": 100,
+    "gl": {
+     "img": 0.2,
+     "nImg": 2,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 0
+    },
+    "layers": 3,
+    "hash": "ddf507e3"
+   },
+   "F": {
+    "n": 0,
+    "max": 0,
+    "sum": 0,
+    "gl": {
+     "img": 2.3,
+     "nImg": 11,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 11
+    },
+    "hash": "63217d30",
+    "info": {
+     "n": 6,
+     "tex": 6,
+     "ap": 0
+    }
+   },
+   "A": {
+    "n": 0,
+    "max": 0,
+    "sum": 0,
+    "gl": {
+     "img": 0,
+     "nImg": 1,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 0
+    },
+    "hash": "ddf507e3"
+   },
+   "G": {
+    "n": 0,
+    "max": 0,
+    "sum": 0,
+    "gl": {
+     "img": 1.1,
+     "nImg": 6,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 6
+    },
+    "hash": "7860d0c5"
+   },
+   "fok4": null,
+   "last": 5.83
+  },
+  {
+   "errs": [],
+   "Z": {
+    "n": 1,
+    "max": 56,
+    "sum": 56,
+    "gl": {
+     "img": 0.4,
+     "nImg": 2,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 0
+    },
+    "layers": 3,
+    "hash": "ddf507e3"
+   },
+   "F": {
+    "n": 0,
+    "max": 0,
+    "sum": 0,
+    "gl": {
+     "img": 2,
+     "nImg": 11,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 11
+    },
+    "hash": "63217d30",
+    "info": {
+     "n": 6,
+     "tex": 6,
+     "ap": 0
+    }
+   },
+   "A": {
+    "n": 0,
+    "max": 0,
+    "sum": 0,
+    "gl": {
+     "img": 0,
+     "nImg": 1,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 0
+    },
+    "hash": "ddf507e3"
+   },
+   "G": {
+    "n": 0,
+    "max": 0,
+    "sum": 0,
+    "gl": {
+     "img": 1.1,
+     "nImg": 6,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 6
+    },
+    "hash": "7860d0c5"
+   },
+   "fok4": null,
+   "last": 7.59
   }
  ]
 }

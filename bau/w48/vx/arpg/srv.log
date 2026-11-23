@@ -30,3 +30,5 @@ Serving HTTP on 127.0.0.1 port 9054 (http://127.0.0.1:9054/) ...
 127.0.0.1 - - [23/Nov/2026 17:50:46] "GET /alt/index.html HTTP/1.1" 200 -
 127.0.0.1 - - [23/Nov/2026 17:50:50] "GET /neu/index.html HTTP/1.1" 200 -
 127.0.0.1 - - [23/Nov/2026 17:50:54] "GET /neu/version.json?t=1795456254772 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 17:51:02] "GET /neu/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 17:51:06] "GET /neu/version.json?t=1795456266660 HTTP/1.1" 200 -

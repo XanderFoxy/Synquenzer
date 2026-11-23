@@ -16,3 +16,13 @@ OK     C1 hochkant: 2× Tipp › von 95 % → 105 %, Anzeige „105 %“ + „Le
 OK     C2 hochkant: weiter › endet bei 200 %, Text nicht abgeschnitten  {"g2":200,"t2":{"b":"200 %","s":"Legato","cutB":false,"cutS":false}}
 OK     C3 hochkant: 10× ‹ → 150 %  {"g3":150,"t3":{"b":"150 %","s":"Legato","cutB":false,"cutS":false}}
 OK     C4 hochkant: 10× ‹ → 100 % „gebunden“ wie bisher  {"g4":100,"t4":{"b":"100 %","s":"gebunden","cutB":false,"cutS":false}}
+OK     C5 hochkant: Gate-Zeile im Blatt, Tasten ≥ 32 px, ‹ › bündig mit Swing, nichts läuft über  {"inPop":true,"inView":true,"minBtn":44,"over":false,"cols":[85,295,85,295]}
+OK     C6 hochkant: ein ↶ nimmt die schnellen Gate-Tipps zurück (zurück auf 95 %)  {"g":95,"n":2}
+OK     C1 quer: 2× Tipp › von 95 % → 105 %, Anzeige „105 %“ + „Legato“  {"g1":105,"t1":{"b":"105 %","s":"Legato","cutB":false,"cutS":false}}
+OK     C2 quer: weiter › endet bei 200 %, Text nicht abgeschnitten  {"g2":200,"t2":{"b":"200 %","s":"Legato","cutB":false,"cutS":false}}
+OK     C3 quer: 10× ‹ → 150 %  {"g3":150,"t3":{"b":"150 %","s":"Legato","cutB":false,"cutS":false}}
+OK     C4 quer: 10× ‹ → 100 % „gebunden“ wie bisher  {"g4":100,"t4":{"b":"100 %","s":"gebunden","cutB":false,"cutS":false}}
+OK     C5 quer: Gate-Zeile im Blatt, Tasten ≥ 32 px, ‹ › bündig mit Swing, nichts läuft über  {"inPop":true,"inView":true,"minBtn":44,"over":false,"cols":[320,558,320,558]}
+OK     C6 quer: ein ↶ nimmt die schnellen Gate-Tipps zurück (zurück auf 95 %)  {"g":95,"n":2}
+OK     Z Keine Seitenfehler / console.error  []
+ALLES OK
