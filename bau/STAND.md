@@ -1,4 +1,4 @@
-# Stand 23.11.13:36 UTC
+# Stand 23.11.13:38 UTC
 ## ent1a
 # ENT1A Stand
 - Start: Analyse Arp/Stopp. stop() kehrt bei !R.playing früh zurück -> arpEndAll fehlt (Verdacht).
