@@ -1,0 +1,1 @@
+TRP2: Stufen-Teil (trs) – Song-Aufnahme rechnet die Stufen zurück (12/12→0/12 falsch), gehaltene Noten an der Teil-Grenze neu gestimmt (2/2→0/2), Teil-Änderung nach Konsolidieren behält trs (118/339→0/339 Noten anders).

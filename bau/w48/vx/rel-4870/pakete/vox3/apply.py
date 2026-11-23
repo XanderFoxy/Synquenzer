@@ -3,7 +3,7 @@
 import sys,hashlib,os
 src,dst=sys.argv[1],sys.argv[2]
 raw=open(src,'rb').read()
-if hashlib.md5(raw).hexdigest() not in ('a7515b980ddc423e84f9d5cdf8f132a6',):sys.exit('falscher Eingang (md5)')
+if hashlib.md5(raw).hexdigest() not in ('a7515b980ddc423e84f9d5cdf8f132a6', '2339ab88996787807e139f754ff96046',):sys.exit('falscher Eingang (md5)')
 s=raw.decode('utf-8')
 blk=open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'block.js'),encoding='utf-8').read().strip('\n')
 def rep(a,b,n=1):

@@ -3,7 +3,7 @@
 # Aufruf: apply.py <eingang> <ausgang>
 import sys, os, hashlib, tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
-OK_MD5 = {'a7515b980ddc423e84f9d5cdf8f132a6'}
+OK_MD5 = {'a7515b980ddc423e84f9d5cdf8f132a6', '7ca09efba33c227407e9fe806481c812'}
 src, dst = sys.argv[1], sys.argv[2]
 raw = open(src, 'rb').read()
 md5 = hashlib.md5(raw).hexdigest()

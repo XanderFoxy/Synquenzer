@@ -1,0 +1,1 @@
+IMP4: zwei gleichzeitige DAW-Schläge auf dasselbe Pad werden ein lauterer Schlag (Clap −4,1 → −0,3 dB zur DAW), Import-Bericht beschreibt den übernommenen Klang samt EQ/Echo; Echo je Spur gibt die Engine nicht her.

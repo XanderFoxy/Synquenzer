@@ -1,0 +1,1 @@
+IMPS: digitale Stille vorn beim Audio-Import wird vor der Analyse abgeschnitten und beim Auftakt nicht mitgezählt – 0/137 ms/1,3 s Stille geben bei 48 kHz probengleiche Takt-Lage, Teile und Gesang-Stücke (vorher bis 1 Takt verschoben); 44,1 kHz: 0,3 ms Rest.

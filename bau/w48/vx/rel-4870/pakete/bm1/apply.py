@@ -3,7 +3,7 @@
 # python3 apply.py <eingang> <ausgang>
 import hashlib, os, sys
 
-ERLAUBT = ['a7515b980ddc423e84f9d5cdf8f132a6']
+ERLAUBT = ['a7515b980ddc423e84f9d5cdf8f132a6', '6e5721c094ab713fcd3b3114519cd836']
 HIER = os.path.dirname(os.path.abspath(__file__))
 
 

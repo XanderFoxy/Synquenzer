@@ -1,0 +1,11 @@
+# VOX3 Stand
+- Start 16:2x: Eingang 4.86.0 (md5 a7515b98…). Plan: (1) Test-Gerüst w/pt.mjs (Plopps) + w/rt.mjs (Raumton-Farbe), synthetisch; (2) Plopp-Erkennung/-Reparatur; (3) Raumton-Farbe.
+- 16:3x: block.js+apply.py v1 (Plopps 2. Durchgang, Raumton-Farbverlauf). Plopp-Test w/pt.mjs: 90/120 -> 107/120, fehl 0, sauber 0. Offen: tiefe Takes A/A2.
+- 16:4x: v2 (Dominanz-Regel für tiefe Stimmen): 113/120, fehl 0, sauber 0.
+- 16:5x: Raumton-Test w/rt.mjs: Farbfehler Mittel 2,05 -> 1,27 dB, max 4,25 -> 2,44, beide Enden <=2 dB 8/20 -> 13/20.
+- FERTIG (Endfassung md5 f6047d5386f421eebd474cfe2a7bae64 = out.html aus apply.py):
+  - Block VOX3-BEGIN/END vor plopFind (in vr1Make): vo3Weak (2. Plopp-Durchgang, nur zusätzliche Funde, alte Funde unverändert; Schalter {p3:0} = alt), vo3Col (Farbverlauf für Lücken >= 0,5 s, nur wenn Farbe davor/danach >= 1,5 dB abweicht; Schalter Raumton {rc:0} = alt).
+  - 4 Haken /*VOX3*/: plopFind-Rückgabe, room: let mg (vo3c), nach Band-Median (vo3Col), Synthese (vo3m statt mg).
+  - Kern-Test-Dateien: w/pt.mjs (Plopps, Kern), w/rt.mjs (Raumton-Farbe), w/fa.mjs (Fehlalarme saubere Takes), w/pdbg.mjs (Diagnose). Aufruf: node w/pt.mjs <index.html>.
+  - Pflicht: MS 2000 1x, "  live: true," 1x, Sperrwörter 0, doppelt.js neu [], Browser 428x926 + 926x428 errors [].
+  - Offen (ehrlich): leise Plopps bei sehr tiefer Stimme noch 7/10 je Take (Grundton liegt fast im Plopp-Band); nur synthetisch geprüft (keine echten Takes).
