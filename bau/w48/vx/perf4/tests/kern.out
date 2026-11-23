@@ -1,0 +1,408 @@
+{
+ "vorher": {
+  "version": "4.87.0",
+  "mk": [
+   {
+    "id": "f-moog-bass",
+    "engine": "analog",
+    "h": [
+     "f7fc3fe5",
+     "f7fc3fe5"
+    ],
+    "rms": 0.070095
+   },
+   {
+    "id": "f-dx-tines",
+    "engine": "fm6",
+    "h": [
+     "714a4b42",
+     "50039b3c"
+    ],
+    "rms": 0.09326
+   },
+   {
+    "id": "f-wt-vokal",
+    "engine": "wt",
+    "h": [
+     "5fc8afd3",
+     "30795235"
+    ],
+    "rms": 0.054171
+   },
+   {
+    "id": "f-init-am",
+    "engine": "mk",
+    "h": [
+     "b101be32",
+     "b101be32"
+    ],
+    "rms": 0.119206
+   },
+   {
+    "id": "f-init-bm",
+    "engine": "bm",
+    "h": [
+     "f3453f6d",
+     "431d2fd7"
+    ],
+    "rms": 0.119004
+   },
+   {
+    "id": "f-sub-bass",
+    "engine": "analog",
+    "h": [
+     "f2fb8688",
+     "f2fb8688"
+    ],
+    "rms": 0.089535
+   },
+   {
+    "id": "f-acid-303",
+    "engine": "analog",
+    "h": [
+     "417c0121",
+     "417c0121"
+    ],
+    "rms": 0.051766
+   },
+   {
+    "id": "f-synthpop-bass",
+    "engine": "analog",
+    "h": [
+     "902cb14f",
+     "902cb14f"
+    ],
+    "rms": 0.083796
+   },
+   {
+    "id": "f-gummi-bass",
+    "engine": "analog",
+    "h": [
+     "528e55a9",
+     "528e55a9"
+    ],
+    "rms": 0.069522
+   },
+   {
+    "id": "f-mini-lead",
+    "engine": "analog",
+    "h": [
+     "10bce6ff",
+     "10bce6ff"
+    ],
+    "rms": 0.080361
+   },
+   {
+    "id": "f-sync-lead",
+    "engine": "analog",
+    "h": [
+     "fe5322f0",
+     "fe5322f0"
+    ],
+    "rms": 0.080642
+   },
+   {
+    "id": "f-supersaw-hymne",
+    "engine": "analog",
+    "h": [
+     "ffd9fd3d",
+     "3e0cac39"
+    ],
+    "rms": 0.068543
+   }
+  ],
+  "lk": true,
+  "mkw": null,
+  "fmx": "ALGS,scaleOL,scaleVel,scaleRate,scaleLevel,LVL_PER_SEC,egHoldSec ALGS 32",
+  "ks": {
+   "ok": true,
+   "geladen": true,
+   "err": null,
+   "sichtbar": 35
+  },
+  "ke1": {
+   "ok": true,
+   "geladen": true,
+   "err": null,
+   "state": {
+    "len": 5793,
+    "h": "29a7fbea",
+    "kopf": "{\"busy\":false,\"err\":null,\"wait\":false,\"reopened\":0,\"reo\":false,\"src\":true,\"pl\":null,\"notes\":[{\"a\":0,\"b\":1.15,\"end\":1.15,\"f0\":220.14,\"m\":57.01,\"dur\":1.15,\"db\":0,"
+   }
+  },
+  "platte": {
+   "id": "f-init-am",
+   "t": 0,
+   "geladen": true,
+   "err": null,
+   "plattenTeile": 407,
+   "ms2000": true
+  },
+  "errs": []
+ },
+ "nachher": {
+  "version": "4.87.0",
+  "mk": [
+   {
+    "id": "f-moog-bass",
+    "engine": "analog",
+    "h": [
+     "f7fc3fe5",
+     "f7fc3fe5"
+    ],
+    "rms": 0.070095
+   },
+   {
+    "id": "f-dx-tines",
+    "engine": "fm6",
+    "h": [
+     "714a4b42",
+     "50039b3c"
+    ],
+    "rms": 0.09326
+   },
+   {
+    "id": "f-wt-vokal",
+    "engine": "wt",
+    "h": [
+     "5fc8afd3",
+     "30795235"
+    ],
+    "rms": 0.054171
+   },
+   {
+    "id": "f-init-am",
+    "engine": "mk",
+    "h": [
+     "b101be32",
+     "b101be32"
+    ],
+    "rms": 0.119206
+   },
+   {
+    "id": "f-init-bm",
+    "engine": "bm",
+    "h": [
+     "f3453f6d",
+     "431d2fd7"
+    ],
+    "rms": 0.119004
+   },
+   {
+    "id": "f-sub-bass",
+    "engine": "analog",
+    "h": [
+     "f2fb8688",
+     "f2fb8688"
+    ],
+    "rms": 0.089535
+   },
+   {
+    "id": "f-acid-303",
+    "engine": "analog",
+    "h": [
+     "417c0121",
+     "417c0121"
+    ],
+    "rms": 0.051766
+   },
+   {
+    "id": "f-synthpop-bass",
+    "engine": "analog",
+    "h": [
+     "902cb14f",
+     "902cb14f"
+    ],
+    "rms": 0.083796
+   },
+   {
+    "id": "f-gummi-bass",
+    "engine": "analog",
+    "h": [
+     "528e55a9",
+     "528e55a9"
+    ],
+    "rms": 0.069522
+   },
+   {
+    "id": "f-mini-lead",
+    "engine": "analog",
+    "h": [
+     "10bce6ff",
+     "10bce6ff"
+    ],
+    "rms": 0.080361
+   },
+   {
+    "id": "f-sync-lead",
+    "engine": "analog",
+    "h": [
+     "fe5322f0",
+     "fe5322f0"
+    ],
+    "rms": 0.080642
+   },
+   {
+    "id": "f-supersaw-hymne",
+    "engine": "analog",
+    "h": [
+     "ffd9fd3d",
+     "3e0cac39"
+    ],
+    "rms": 0.068543
+   }
+  ],
+  "lk": true,
+  "mkw": null,
+  "fmx": "ALGS,scaleOL,scaleVel,scaleRate,scaleLevel,LVL_PER_SEC,egHoldSec ALGS 32",
+  "ks": {
+   "ok": true,
+   "geladen": true,
+   "err": null,
+   "sichtbar": 35
+  },
+  "ke1": {
+   "ok": true,
+   "geladen": true,
+   "err": null,
+   "state": {
+    "len": 5813,
+    "h": "41152cc",
+    "kopf": "{\"busy\":false,\"err\":null,\"wait\":false,\"reopened\":0,\"reo\":false,\"src\":true,\"pl\":null,\"notes\":[{\"a\":0,\"b\":1.15,\"end\":1.15,\"f0\":220.14,\"m\":57.01,\"dur\":1.15,\"db\":0,"
+   }
+  },
+  "platte": {
+   "id": "f-init-am",
+   "t": 0,
+   "geladen": true,
+   "err": null,
+   "plattenTeile": 407,
+   "ms2000": true
+  },
+  "errs": []
+ },
+ "vorher2": {
+  "mk": [
+   {
+    "id": "f-moog-bass",
+    "engine": "analog",
+    "h": [
+     "f7fc3fe5",
+     "f7fc3fe5"
+    ],
+    "rms": 0.070095
+   },
+   {
+    "id": "f-dx-tines",
+    "engine": "fm6",
+    "h": [
+     "714a4b42",
+     "50039b3c"
+    ],
+    "rms": 0.09326
+   },
+   {
+    "id": "f-wt-vokal",
+    "engine": "wt",
+    "h": [
+     "5fc8afd3",
+     "30795235"
+    ],
+    "rms": 0.054171
+   },
+   {
+    "id": "f-init-am",
+    "engine": "mk",
+    "h": [
+     "b101be32",
+     "b101be32"
+    ],
+    "rms": 0.119206
+   },
+   {
+    "id": "f-init-bm",
+    "engine": "bm",
+    "h": [
+     "f3453f6d",
+     "431d2fd7"
+    ],
+    "rms": 0.119004
+   },
+   {
+    "id": "f-sub-bass",
+    "engine": "analog",
+    "h": [
+     "f2fb8688",
+     "f2fb8688"
+    ],
+    "rms": 0.089535
+   },
+   {
+    "id": "f-acid-303",
+    "engine": "analog",
+    "h": [
+     "417c0121",
+     "417c0121"
+    ],
+    "rms": 0.051766
+   },
+   {
+    "id": "f-synthpop-bass",
+    "engine": "analog",
+    "h": [
+     "902cb14f",
+     "902cb14f"
+    ],
+    "rms": 0.083796
+   },
+   {
+    "id": "f-gummi-bass",
+    "engine": "analog",
+    "h": [
+     "528e55a9",
+     "528e55a9"
+    ],
+    "rms": 0.069522
+   },
+   {
+    "id": "f-mini-lead",
+    "engine": "analog",
+    "h": [
+     "10bce6ff",
+     "10bce6ff"
+    ],
+    "rms": 0.080361
+   },
+   {
+    "id": "f-sync-lead",
+    "engine": "analog",
+    "h": [
+     "fe5322f0",
+     "fe5322f0"
+    ],
+    "rms": 0.080642
+   },
+   {
+    "id": "f-supersaw-hymne",
+    "engine": "analog",
+    "h": [
+     "ffd9fd3d",
+     "3e0cac39"
+    ],
+    "rms": 0.068543
+   }
+  ],
+  "errs": []
+ }
+}
+OK Kontrolle vorher == vorher
+OK Render nicht still: 12 Werksklänge (analog/fm6/wt/mk/bm)
+OK vorher == nachher bitgleich (12 Werksklänge, je 2 Kanäle)
+OK lk vorher true | nachher true
+OK mkw vorher null | nachher null
+OK fmx vorher "ALGS,scaleOL,scaleVel,scaleRate,scaleLevel,LVL_PER_SEC,egHoldSec ALGS 32" | nachher "ALGS,scaleOL,scaleVel,scaleRate,scaleLevel,LVL_PER_SEC,egHoldSec ALGS 32"
+OK ks vorher {"ok":true,"geladen":true,"err":null,"sichtbar":35} | nachher {"ok":true,"geladen":true,"err":null,"sichtbar":35}
+ANDERS ke1 vorher {"ok":true,"geladen":true,"err":null,"state":{"len":5793,"h":"29a7fbea","kopf":"{\"busy\":false,\"err\":null,\"wait\":false,\"reopened\":0,\"reo\":false,\"src\":true,\"pl\":null,\"notes\":[{\"a\":0,\"b\":1.15,\"end\":1.15,\"f0\":220.14,\"m\":57.01,\"dur\":1.15,\"db\":0,"}} | nachher {"ok":true,"geladen":true,"err":null,"state":{"len":5813,"h":"41152cc","kopf":"{\"busy\":false,\"err\":null,\"wait\":false,\"reopened\":0,\"reo\":false,\"src\":true,\"pl\":null,\"notes\":[{\"a\":0,\"b\":1.15,\"end\":1.15,\"f0\":220.14,\"m\":57.01,\"dur\":1.15,\"db\":0,"}}
+OK platte vorher {"id":"f-init-am","t":0,"geladen":true,"err":null,"plattenTeile":407,"ms2000":true} | nachher {"id":"f-init-am","t":0,"geladen":true,"err":null,"plattenTeile":407,"ms2000":true}
+OK Konsole/Seitenfehler []
+ERGEBNIS bitgleich

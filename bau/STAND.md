@@ -1,4 +1,4 @@
-# Stand 23.11.17:03 UTC
+# Stand 23.11.17:05 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -84,10 +84,11 @@ als Nächstes: nichts – bereit zur Übernahme
 fertig: MLG3 gebaut und getestet (index.html, apply.py, block.js, kern.js, quer.js, KURZ.md, CHANGES.md)
 als Naechstes: nichts – bereit zur Uebernahme
 ## perf4
-# PERF4 – Stand
-- apply.py + block.js (+ acorn.js 8.18.0 Kopie) gebaut; Lauf OK: roh 7 419 782 -> 7 288 396 (-131 386), gzip -6 2 549 282 -> 2 514 608.
-- Kern-Test-Datei: kern-test.cjs (node kern-test.cjs <port>, Server srv/a = vorher, srv/b = nachher).
-- Offen: Kern-Test laufen lassen, Rauchtest.
+# PERF4 – Stand (fertig)
+Kern-Test-Datei: **kern-test.cjs** (`node kern-test.cjs <port>`; Server-Ordner mit a/index.html = vorher, b/index.html = nachher,
+je version.json {"version":"4.87.0"}; Ergebnis tests/kern.out „ERGEBNIS bitgleich“). Dazu ke1-test.cjs (voller Zustand Klang
+erkennen a/b/a, tests/ke1-*.json), rauch.js `<port> b` (tests/rauch-b.out), tests/doppelt.out.
+
 ## ton1
 # TON1 – Stand (fertig)
 - Ausgang: index.html = python3 apply.py ../rel-4850/index.html index.html (md5 125767aed0f89918371d0729d07a6f82).
