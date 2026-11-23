@@ -1,0 +1,1 @@
+TPFL: Drei Kern-Tests auf 4.90 nachgezogen (DAW-Import-Bericht „eigenes Echo“, Arp-Gate-Datei ohne Versionsnummer, Drum-Lock hörbar über die HH-Spur allein). Die App ist unverändert (geaendert=false). Ergebnis: 9/9, 27/27 und 3×23/23. Die Gegenprobe ohne Lock ist rot.

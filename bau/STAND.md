@@ -1,4 +1,4 @@
-# Stand 23.11.19:19 UTC
+# Stand 23.11.19:21 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -197,6 +197,12 @@ Drei Anker, je genau 1×:
 - 4 Haken (/*TON2*/) + Block TON2-BEGIN/-END vor tkLoad:
   1. tkPcm: Stücke mit Vorab-Fenster (TON2_W=6) parallel anfordern, weiter in Reihenfolge einsetzen (gilt für alle Leser von tkPcm).
   2. tkLoad: ton2Load = tkPcm + gemerkte Analyse (<take>:lv1 im Audio-Speicher, ArrayBuffer: Kopf-JSON + Float32-Hüllkurve nur in Begrenzer-Abschnitten) gleichzeitig.
+## tpfl
+# TPFL – Stand (fertig, nur Tests)
+Kein App-Code geändert, kein apply.py: Die App bleibt 4.90.0 (md5 a23eefd7ac3f52251e5bc881f1de4628). Pflicht für 4.90 siehe `pflicht.out`: „MS 2000“ 1×, „  live: true,“ 1×, verbotene Zahlen 0×.
+Geänderte Testdateien (Original je `*.bak` daneben):
+- `../imp4/imp4-test.cjs` (T6 neuer Bericht-Text; Aufruf jetzt `node imp4-test.cjs <port> [basis-ordner] [neu-ordner]`)
+- `../arpg/arpg-test.cjs` (A2 ohne `appVersion`)
 ## trp2
 - 16:14 apply.py + block.js gebaut (2 Haken: clipNoteFor, Takt-Planung), Test folgt
 ## Aufbau (Ausgang index.html md5 d33e9f1ed7baa69e92d7db5d729a65c4, Eingang a7515b98… = 4.86.0)
