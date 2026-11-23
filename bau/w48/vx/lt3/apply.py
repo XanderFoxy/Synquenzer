@@ -17,7 +17,7 @@ rep("// LT2-END\n","// LT2-END\n"+blk+"\n")
 rep("}else if(P.on&&P.slow&&S.nl>0&&S.all&&S.key===P.lastKey&&S.sig!==P.lastSig&&(P.lastNl===0||t-P.lastT>=120)){",
     "}else if(P.on&&S.nl>0&&S.all&&S.key===P.lastKey&&S.sig!==P.lastSig&&(P.lastNl===0||t-P.lastT>=120)&&(P.slow||(typeof lt3Slow==='function'&&lt3Slow(P)))){/*LT3*/")
 rep("P.n=Math.min(6,Math.max(2,Math.ceil(P.cost/20)));","P.n=Math.min(6,Math.max(2,Math.ceil((P.cost||(typeof lt3Est==='function'?lt3Est():0))/20)));/*LT3*/")
-rep("if(S.nl>0)lt2sMeasure(t);}","if(S.nl>0)lt2sMeasure(t);else if(S.all&&typeof lt3Measure==='function')lt3Measure(t);}/*LT3*/")
+rep("if(S.nl>0)lt2sMeasure(t);}","if(S.nl>0)lt2sMeasure(t);else if(typeof lt3Measure==='function')lt3Measure(t);}/*LT3*/")
 for k in ('LT3-BEGIN','LT3-END'):
     if s.count(k)!=1:sys.exit('Marker '+k)
 tmp=dst+'.tmp';open(tmp,'w',encoding='utf-8').write(s);os.replace(tmp,dst)
