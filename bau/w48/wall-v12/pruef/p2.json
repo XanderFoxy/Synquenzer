@@ -1,0 +1,97 @@
+{
+ "stem_len_s": {
+  "lead": 266.0,
+  "gegengesang": 266.0,
+  "chor": 266.0,
+  "doppel": 266.0,
+  "hall": 266.0,
+  "gesang_summe": 266.0
+ },
+ "summe_vs_gesang_summe_db": -3.2,
+ "refrain_lufs": {
+  "lead": -23.0,
+  "gegengesang": -28.1,
+  "chor": -39.1,
+  "doppel": -34.5,
+  "hall": -31.8,
+  "gesang_summe": -11.1
+ },
+ "refrain_rel_lead_LU": {
+  "lead": 0.0,
+  "gegengesang": -5.1,
+  "chor": -16.1,
+  "doppel": -11.6,
+  "hall": -8.8,
+  "gesang_summe": 11.9
+ },
+ "refrain_chor+gegen_rel_lead_LU": -4.8,
+ "refrain_chor+gegen+doppel_rel_lead_LU": -4.0,
+ "refrain_rms_rel_lead_wenn_lead_singt_db": {
+  "gegengesang": -4.5,
+  "chor": -15.4,
+  "doppel": -11.3,
+  "hall": -8.6,
+  "chor+gegen": -4.2
+ },
+ "strophe_rms_dbfs": {
+  "lead": -28.8,
+  "gegengesang": -200.0,
+  "chor": -200.0,
+  "doppel": -62.6,
+  "hall": -43.1,
+  "gesang_summe": -18.5
+ },
+ "sprechstelle_rms_dbfs": {
+  "lead": -31.1,
+  "gegengesang": -200.0,
+  "chor": -200.0,
+  "doppel": -200.0,
+  "hall": -51.0,
+  "gesang_summe": -20.9
+ },
+ "sprechstelle": {
+  "haupt_roh_v7": {
+   "open_your_217_9_219_2_dbfs": -23.1,
+   "sprache_219_8_221_3_dbfs": -21.8,
+   "wach_auf_215_4_216_dbfs": -19.2,
+   "kamm_eyes_db": -3.3,
+   "kamm_eyes_vorher_db": -5.5
+  },
+  "v10_bus": {
+   "open_your_217_9_219_2_dbfs": -45.9,
+   "sprache_219_8_221_3_dbfs": -16.1,
+   "wach_auf_215_4_216_dbfs": -14.8,
+   "kamm_eyes_db": -3.5,
+   "kamm_eyes_vorher_db": -7.3
+  },
+  "v11_bus": {
+   "open_your_217_9_219_2_dbfs": -44.1,
+   "sprache_219_8_221_3_dbfs": -18.6,
+   "wach_auf_215_4_216_dbfs": -15.2,
+   "kamm_eyes_db": -11.3,
+   "kamm_eyes_vorher_db": -9.9
+  },
+  "v12_bus": {
+   "open_your_217_9_219_2_dbfs": -50.4,
+   "sprache_219_8_221_3_dbfs": -17.2,
+   "wach_auf_215_4_216_dbfs": -14.0,
+   "kamm_eyes_db": -12.1,
+   "kamm_eyes_vorher_db": -9.0
+  },
+  "v12_lead_stem": {
+   "open_your_217_9_219_2_dbfs": -128.9,
+   "sprache_219_8_221_3_dbfs": -27.1,
+   "wach_auf_215_4_216_dbfs": -25.5,
+   "kamm_eyes_db": -12.2,
+   "kamm_eyes_vorher_db": -22.4
+  },
+  "v12_gesang_summe": {
+   "open_your_217_9_219_2_dbfs": -64.3,
+   "sprache_219_8_221_3_dbfs": -16.9,
+   "wach_auf_215_4_216_dbfs": -13.8,
+   "kamm_eyes_db": -12.1,
+   "kamm_eyes_vorher_db": -1.4
+  }
+ },
+ "kamm_referenz_R1_eyes_v12_bus": -7.4
+}
