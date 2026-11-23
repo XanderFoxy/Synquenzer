@@ -1,0 +1,10 @@
+Serving HTTP on 127.0.0.1 port 9391 (http://127.0.0.1:9391/) ...
+127.0.0.1 - - [23/Nov/2026 19:08:05] "GET /v490/version.json HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 19:08:29] "GET /basis/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 19:08:29] "GET /a488/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 19:08:31] "GET /v490/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 19:08:33] "GET /basis/version.json?t=1795460913663 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 19:08:33] "GET /a488/version.json?t=1795460913703 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 19:08:36] "GET /v490/version.json?t=1795460916235 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 19:08:46] "GET /neu/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 19:08:51] "GET /neu/version.json?t=1795460931273 HTTP/1.1" 200 -
