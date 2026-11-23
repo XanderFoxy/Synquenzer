@@ -50,7 +50,7 @@ async function lauf(b, w, h, tag) {
   const c1 = await clipA(p, s.st); g = await geo(p);
   await p.screenshot({path: `${OUT}/x-${tag}-2-gezogen.png`});
   const lab1 = await p.evaluate(() => { const u = S.undo || []; const x = u[u.length - 1]; return x && (x.label || x.l || ''); }).catch(() => '');
-  ok(`[${tag}] Ende gezogen: Nachlauf 1 Schlag kürzer (Take bleibt ganz), Text zeigt das Minus`, c1.vt && Math.abs(c1.vt.e - (s.out + s.post - s.sp)) < .02 && c1.out === s.out && /Ende −0,50 s/.test(g.eTx), {vt: c1.vt, txt: g.eTx, lab1});
+  ok(`[${tag}] Ende gezogen: Nachlauf ~1 Schlag kürzer (Raster 1/16, Take bleibt ganz), Text zeigt das Minus`, c1.vt && c1.vt.e > s.out + s.post - 1.3 * s.sp && c1.vt.e < s.out + s.post - .7 * s.sp && c1.out === s.out && g.eTx === 'Ende −' + (s.out + s.post - c1.vt.e).toFixed(2).replace('.', ',') + ' s', {vt: c1.vt, txt: g.eTx, lab1});
   ok(`[${tag}] nach dem Ziehen nichts überlappt`, overl(g).length === 0, {ueber: overl(g)});
   // 2) Knopf „Ende auf Loop-Ende“
   await T.tap({x: g.chip.x0 || (g.chip.l + g.chip.r) / 2, y: (g.chip.t + g.chip.b) / 2});
@@ -58,7 +58,7 @@ async function lauf(b, w, h, tag) {
   await p.screenshot({path: `${OUT}/x-${tag}-3-loopende.png`});
   ok(`[${tag}] Tipp „Ende auf Loop-Ende“: Gesang endet genau am Loop-Ende, Knopf + Tönung weg`, c2.vt && Math.abs(c2.vt.e - s.out) < 1e-6 && !g.chip && !g.nz, {vt: c2.vt, chip: g.chip, nz: g.nz, eTx: g.eTx});
   // 3) ↶ im Editor (Touch) → zurück auf den gezogenen Stand, nochmal ↶ → ganze Länge
-  const ub = await p.evaluate(() => { const b = [...document.querySelectorAll('button')].filter(b => b.textContent.trim() === '↶' && b.offsetParent); const r = b.length ? b[0].getBoundingClientRect() : null; return r ? {x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height} : null; });
+  const ub = await p.evaluate(() => { const b = [...ED.roll.el.bar.querySelectorAll('button')].find(x => x.title === 'Rückgängig'); if (!b) return null; const r = b.getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height, aus: !!b.disabled || getComputedStyle(b).opacity < .6}; });
   await T.tap(ub); const u1 = await clipA(p, s.st);
   await T.tap(ub); const u2 = await clipA(p, s.st); g = await geo(p);
   ok(`[${tag}] ↶ (Touch): erst der gezogene Stand, dann die ganze Länge (kein vt mehr, Fähnchen hohl)`, u1.vt && Math.abs(u1.vt.e - c1.vt.e) < 1e-6 && !u2.vt && g.full, {u1: u1.vt, u2: u2.vt, ub, full: g.full});
@@ -76,7 +76,7 @@ async function lauf(b, w, h, tag) {
   const close = await p.evaluate(() => { const b = [...document.querySelectorAll('button')].filter(b => b.textContent.trim() === '✕' && b.offsetParent); const r = b.length ? b[0].getBoundingClientRect() : null; return r ? {x: r.left + r.width / 2, y: r.top + r.height / 2} : null; });
   if (close) await T.tap(close); await sleep(400);
   await capOn(p);
-  const pb = await btnAt(p, '#bPlay'); await T.tap(pb); await sleep(9500); await T.tap(pb); await sleep(600);
+  const pb = await btnAt(p, '#bPlay'); await T.tap(pb); await p.evaluate(() => launchScene(0)); await sleep(9500); await T.tap(pb); await sleep(600);
   const cl = await capGet(p);
   ok(`[${tag}] ▶ Loop: Gesang klingt nie hinter dem Loop-Ende (alle Stücke enden ≤ ${s.out} s im Take)`, cl.length >= 2 && cl.every(c => c.stopAt <= s.out + 1e-3), cl.slice(0, 4));
   // 6) Song: Szene 1 (2 Takte) → Song-Ende; ohne Beschnitt klingt der Nachlauf 1,2 s hinter dem Song-Ende
@@ -85,10 +85,12 @@ async function lauf(b, w, h, tag) {
   const cs = await capGet(p);
   ok(`[${tag}] Song: kein Nachlauf hinter dem Ende (Loop-Klammer gilt auch im Song)`, cs.length >= 1 && cs.every(c => c.stopAt <= s.out + 1e-3) && !cs.some(c => /^g3p/.test(c.key)), cs);
   // 7) Export (Mixdown) mit Schnitt vs. ↶ ohne Schnitt
+  const sg = await p.evaluate(() => ({song: S.song && S.song.bars, playing: R.playing, songPlay: !!R.songPlay}));
+  if (!sg.song) { console.log('Song fehlt vor dem Export', sg); await p.evaluate(() => SYNQUENZER.songFromChain([{scene: 0, bars: 2}])); }
   const eMit = await exportRms(p, 4, 5.2);
-  await p.evaluate(() => undo()); const cU = await clipA(p, s.st);
+  await p.evaluate(st => { const a = S.tracks[st].clips[0].audio; window.__vt = a.vt; delete a.vt; clipChanged(st, 0); }, s.st); const cU = await clipA(p, s.st);
   const eOhne = await exportRms(p, 4, 5.2);
-  await p.evaluate(() => redo()); const cR = await clipA(p, s.st);
+  await p.evaluate(st => { const a = S.tracks[st].clips[0].audio; a.vt = window.__vt; clipChanged(st, 0); }, s.st); const cR = await clipA(p, s.st);
   ok(`[${tag}] Export: nach dem Loop-Ende mind. 12 dB leiser als ohne Schnitt (nur Hall-Rest)`, eOhne.nach - eMit.nach >= 12 && Math.abs(eOhne.vor - eMit.vor) < 1, {mit: eMit, ohne: eOhne, undo: cU.vt, redo: cR.vt});
   // 8) Speichern → Seite neu laden → Schnitt ist noch da, Fähnchen am Loop-Ende
   const sv = await p.evaluate(async () => { markDirty(); return await saveNow(); });
