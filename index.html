@@ -11426,7 +11426,7 @@ else if(m.t==='pong'){const f=E.pings.get(m.id);if(f){E.pings.delete(m.id);f(tru
 };
 const q=()=>{if(!E.fq){E.fq=true;queueMicrotask(E.flush);}};
 E.flush=()=>{E.fq=false;if(E.ons.length){post({t:'on',list:E.ons});E.ons=[];}if(E.offs.length){post({t:'off',list:E.offs});E.offs=[];}};
-E.on=(id,n,v,at,from,d,lk)=>{E.notes.set(id,n);E.at0.set(id,at);const o={n,v,at,d:d||0,id};if(lk)bm1On(o,lk);E.ons.push(o);q();};
+E.on=(id,n,v,at,from,d,lk)=>{E.notes.set(id,n);E.at0.set(id,at);const o={n,v,at,d:d||0,id};if(lk){bm1On(o,lk);ksm2Bm(o,lk);}E.ons.push(o);q();};
 E.off=(id,at)=>{const n=E.notes.get(id);if(n==null)return;E.offs.push({n,at,id});q();};
 E.fastOff=(id,at,tau)=>{const n=E.notes.get(id);if(n==null)return;E.offs.push({n,at,id,tau:tau||.004});q();};
 E.kill=id=>{
@@ -11929,6 +11929,13 @@ this.dlyOff=new Uint8Array(2);this.panAlt=1;this.lastP=-1e9;
 this.keys=[];
 }
 }
+function ksm2X(T){return T>0?15*Math.log(T/.002)/Math.log(7500):0;}
+function ksm2Kx(x){const pe=typeof x.pe==='number'&&x.pe===x.pe&&Math.abs(x.pe)<=48?x.pe:null,ta=Array.isArray(x.ta)&&x.ta.length===3?x.ta:null,tf=Array.isArray(x.tf)&&x.tf.length===3?x.tf:null;return pe===null&&!ta&&!tf?null:{pe,ta,tf};}
+function ksm2E(v,P){
+if(v.kE&&v.kEP===P)return v.kE;
+const x=v.kx,f=(E,t)=>{if(!t)return E;const o=Object.assign({},E);if(t[0]>0)o.a=ksm2X(t[0]);if(t[1]>0)o.d=ksm2X(t[1]);if(t[2]>0)o.r=ksm2X(t[2]);return o;};
+v.kE=[f(P.o1.e,x.ta),f(P.o2.e,x.ta),f(P.n.e,x.ta),f(P.f.e,x.tf)];v.kEP=P;return v.kE;
+}
 class BmProc extends AudioWorkletProcessor{
 constructor(opt){
 super();
@@ -11977,7 +11984,7 @@ case'prog':{const k=m.ab==='b'?1:0;this.P[k]=m.p?this.prog(m.p):(k?null:this.pro
 case'set':this.set(m.ab,String(m.k||''),m.v);break;
 case'ly':this.ly=fill(lyInit(),m.p);this.lyNew();break;
 case'gl':this.gl=fill(glInit(),m.p);break;
-case'on':for(const x of m.list||[]){const at=num(x.at,0);if(at<now-1/this.sr)this.late++;this.q.push({k:1,at,n:num(x.n,60),v:num(x.v,.8),d:x.d|0,id:x.id==null?-1:x.id,fq:typeof x.fc==='number'&&Math.abs(x.fc)<=96?Math.pow(2,x.fc/12):1});}this.sortQ();break;
+case'on':for(const x of m.list||[]){const at=num(x.at,0);if(at<now-1/this.sr)this.late++;this.q.push({k:1,at,n:num(x.n,60),v:num(x.v,.8),d:x.d|0,id:x.id==null?-1:x.id,fq:typeof x.fc==='number'&&Math.abs(x.fc)<=96?Math.pow(2,x.fc/12):1,kx:ksm2Kx(x)});}this.sortQ();break;
 case'off':for(const x of m.list||[]){
 if(x.kill&&x.id!=null&&x.id>=0){let j=0,hit=false;for(let i=0;i<this.q.length;i++){const e=this.q[i];if(e.id===x.id&&(e.k===1||e.k===2||e.k===3)){if(e.k===1)hit=true;continue;}this.q[j++]=e;}this.q.length=j;if(hit)continue;}
 this.q.push({k:2,at:num(x.at,0),n:num(x.n,60),id:x.id==null?-1:x.id,tau:num(x.tau,0),kill:x.kill?1:0});}this.sortQ();break;
@@ -12105,7 +12112,7 @@ g.Z.set(v.Z);g.D.set(v.D);g.I.set(v.I);g.C.set(v.C);g.hb.set(v.hb);g.hp=v.hp;g.e
 }
 newVoice(v,e,pg,n){
 const P=this.P[pg]||this.P[0],D=P.__d;
-v.on=true;v.ghost=false;v.gate=true;v.id=e.id;v.key=e.n;v.n=n;v.vel=e.v;v.pg=pg;v.ord=++this.ord;v.kill=0;v.fq=e.fq||1;
+v.on=true;v.ghost=false;v.gate=true;v.id=e.id;v.key=e.n;v.n=n;v.vel=e.v;v.pg=pg;v.ord=++this.ord;v.kill=0;v.fq=e.fq||1;v.kx=e.kx||null;v.kE=null;
 v.velC=velCurve(this.gl.vc,e.v);
 v.Z[2]=(Math.imul(this.seed^(++this.noteCnt),0x9e3779b1)>>>0)||1;
 v.u1=clamp(Math.round(P.o1.m),0,511);v.u2=clamp(Math.round(P.o2.m),0,511);v.xw1=v.xw2=0;
@@ -12122,10 +12129,10 @@ for(let i=0;i<8;i+=2){const t=s[i];if(t<0||!s[i+1])continue;const u=amtU(s[i+1])
 if(t===TI.vol)v.vVol*=Math.max(0,1-Math.abs(u)*(1-vv));else if(t===TI.feg)v.vFeg*=1+u*(vv-1);
 else if(t===TI.peg)v.vPeg*=1+u*(vv-1);else if(t===TI.atk)v.vAtk*=Math.pow(2,-4*u*vv);else v.vm[t]+=u*vv*TD_[t];}
 }
-deltas(v,P){v.H[0]=0;v.ds1=P.o1.ds;v.ds2=P.o2.ds;v.dm1=P.o1.ds;v.dm2=P.o2.ds;v.H[1]=Math.sign(P.pe.ds)*48*Math.pow(Math.abs(P.pe.ds)/63,2)*v.vPeg;v.dpT=0;}
+deltas(v,P){v.H[0]=0;v.ds1=P.o1.ds;v.ds2=P.o2.ds;v.dm1=P.o1.ds;v.dm2=P.o2.ds;v.H[1]=Math.sign(P.pe.ds)*48*Math.pow(Math.abs(P.pe.ds)/63,2)*v.vPeg;if(v.kx&&v.kx.pe!==null)v.H[1]=v.kx.pe*v.vPeg;v.dpT=0;}
 glideFrom(v,from){const P=this.P[v.pg]||this.P[0];v.H[2]=P.g.po>0&&from>-1e8?from-this.keyPitch(v.n):0;}
 heldIdx(S,e){for(let i=0;i<S.keys.length;i++){const k=S.keys[i];if(e.id>=0?k.id===e.id:k.n===e.n)return i;}return-1;}
-takeKey(v,e){v.fq=e.fq||1;v.id=e.id;v.key=e.n;v.n=e.n;v.vel=e.v;v.velC=velCurve(this.gl.vc,e.v);v.gate=true;v.susHeld=false;v.endSent=false;v.ord=++this.ord;this.velRoutes(v,this.P[v.pg]||this.P[0]);}
+takeKey(v,e){v.fq=e.fq||1;v.kx=e.kx||null;v.kE=null;v.id=e.id;v.key=e.n;v.n=e.n;v.vel=e.v;v.velC=velCurve(this.gl.vc,e.v);v.gate=true;v.susHeld=false;v.endSent=false;v.ord=++this.ord;this.velRoutes(v,this.P[v.pg]||this.P[0]);}
 voiceOn(e){
 const two=!!this.P[1],md=this.ly.md,d=e.d&3;
 if(two&&(d===3||(d===0&&md==='lay'))){this.voiceOnPg(e,0);this.voiceOnPg(e,1);}
@@ -12323,8 +12330,8 @@ if(S.es[0]===0&&S.es[1]===0&&S.es[2]===0&&!v.gate)v.paraRel=true;
 v.eq[0]=g1;v.eq[1]=g2;v.eq[2]=g3;v.eq[3]=gf;
 }else{
 const q=v.eq;this.tq[4]=tsc;this.tq[5]=v.vAtk;
-this.envStep(v.es,v.el,v.et,0,P.o1.e,q);this.envStep(v.es,v.el,v.et,1,P.o2.e,q);
-this.envStep(v.es,v.el,v.et,2,P.n.e,q);this.envStep(v.es,v.el,v.et,3,P.f.e,q);
+const ksm2k=v.kx&&(v.kx.ta||v.kx.tf)?ksm2E(v,P):null;this.envStep(v.es,v.el,v.et,0,ksm2k?ksm2k[0]:P.o1.e,q);this.envStep(v.es,v.el,v.et,1,ksm2k?ksm2k[1]:P.o2.e,q);
+this.envStep(v.es,v.el,v.et,2,ksm2k?ksm2k[2]:P.n.e,q);this.envStep(v.es,v.el,v.et,3,ksm2k?ksm2k[3]:P.f.e,q);
 g1=q[0];g2=q[1];g3=q[2];gf=q[3];
 }
 this.maskD(v,P.__d,0);this.maskD(v,P.__d,1);v.H[0]+=dt;v.dm1=this.tq[0]|0;v.dm2=this.tq[1]|0;
@@ -30031,7 +30038,7 @@ const LOGO_SVG='<svg role="img" aria-label="One Day in Rome" shape-rendering="ge
 
 
 
-const VERSION = '4.90.0';
+const VERSION = '4.91.0';
 const clamp=(v,a,b)=>(v<a?a:v>b?b:v);
 const isNum=v=>typeof v==='number'&&Number.isFinite(v);
 const deep=o=>(o==null?o:JSON.parse(JSON.stringify(o)));
@@ -32677,12 +32684,64 @@ if(!lk||!lk.length)return;
 for(let j=0;j+1<lk.length;j+=2)if(lk[j]===BM1_WI){const s=+lk[j+1];if(isFinite(s)&&s)o.fc=s;}
 }
 /* BM1-END */
+/* KSM2-BEGIN: Klangschule-Locks auch fuer Wavetable, MS-Platte und Bit Mask - dort, wo der Kern den Parameter hat.
+   WT (nativer Kern): TAKT-Zeiten Amp-/Filter-Hk. A/D/R als Sekunden beim Anschlag; Tonh.-Hk. als eigene Tonhoehen-Kurve je Stimme
+   (faellt mit Hk. 2 zurueck, Hk.-2-TAKT-Locks gelten dafuer). MS-Platte: TAKT-Zeiten Amp-Hk. -> EG2, Filter-Hk. -> EG1 (A/D/R, beide Timbres).
+   Bit Mask: Tonh.-Hk. -> Start der Tonhoehen-Hk.; TAKT-Zeiten Amp-Hk. -> Osz.-/Rausch-Hk., Filter-Hk. -> Filter-Hk.
+   Nicht im Kern (ausgelassen): Filter 2 und LFO-Raster (alle drei), Hk.-2-TAKT und Tonh.-Hk. bei MS-Platte, Hk.-2-TAKT bei Bit Mask,
+   Routen auf die neuen Ziele (WT rechnet Modulation nur spurweit, MS-Platte und Bit Mask haben eigene Mod-Matrizen). Ohne Lock: alter Weg. */
+const KSM2_BPE=-7745,KSM2_BTA=-7746,KSM2_BTF=-7752;
+function ksm2Eng(snd){const g=snd&&snd.engine;return g==='wt'||g==='mk'||g==='bm';}
+function ksm2Sec(b){b=+b;if(!(b>0))return 0;b=Math.min(64,Math.max(.0625,b));return b*60/Math.max(20,S.bpm||120);}
+function ksm2Put(snd,e,x,out,nat){
+const j=-9000-e.ksm,g=snd.engine;
+if(g==='wt'){
+if(j<6){const s=ksm2Sec(x);if(!s)return false;nat[['aA','aD','aR','fA','fD','fR'][j]]=s;return true;}
+if(j<9){const s=ksm2Sec(x);if(!s)return false;nat['ksm2M'+'adr'[j-6]]=s;return true;}
+if(j===17&&x){nat.ksm2Pe=clamp(x,-48,48);return true;}
+return false;
+}
+if(g==='mk'){
+if(j>=6)return false;const s=ksm2Sec(x);if(!s)return false;
+const k=j%3,y=Math.round(clamp(k===0?127/15*Math.log2(s/.0005):127/13*Math.log2(s/.002),0,127));
+for(let tm=0;tm<2;tm++){const q=LKT['mk.t.'+tm+'.'+(j<3?'e2':'e1')+'.'+'adr'[k]];if(q&&lkVoiceOk(q,snd)&&out.length<32)out.push(q.wi,y);}
+return false;
+}
+if(g==='bm'&&out.length<32){
+if(j===17){out.push(KSM2_BPE,clamp(x,-48,48));return false;}
+if(j<6){const s=ksm2Sec(x);if(s)out.push((j<3?KSM2_BTA:KSM2_BTF)-(j%3),s);}
+}
+return false;
+}
+function ksm2Bm(o,lk){
+for(let j=0;j+1<lk.length;j+=2){const m=lk[j],x=+lk[j+1];if(!isFinite(x))continue;
+if(m===KSM2_BPE)o.pe=x;
+else if(m<=KSM2_BTA&&m>KSM2_BTA-3)(o.ta||(o.ta=[0,0,0]))[KSM2_BTA-m]=x;
+else if(m<=KSM2_BTF&&m>KSM2_BTF-3)(o.tf||(o.tf=[0,0,0]))[KSM2_BTF-m]=x;}
+}
+function ksm2NatPe(v,PL,src,nodes,srcs,starts,t0){
+try{
+const pe=+PL.ksm2Pe;if(!pe)return;
+const n=(k,d)=>{const x=+PL[k];return PL[k]!=null&&x===x?x:d;};
+const E={a:n('ksm2Ma',n('mA',.001)),d:n('ksm2Md',n('mD',.5)),s:clamp(n('mS',0),0,1),r:n('ksm2Mr',n('mR',.5)),c:PL.mCurve==null? .5:+PL.mCurve};
+const k=constSrc(0),pk=pe*100;
+for(const s of src.srcs)if(s&&s.detune)k.out.connect(s.detune);
+srcs.push(k.node);nodes.push(k.node);if(k.extra)nodes.push(k.extra);starts.push([k.node,0]);
+envStart(k.offset,t0,E,pk,0);
+v.ksm2Pe=k;
+v.release=function(t,f){
+if(!this.dead&&!f&&t<this.relT){const tt=Math.max(t,t0);try{const y=envValueAt(tt,t0,E,pk,0);k.offset.cancelScheduledValues(tt);k.offset.setValueAtTime(y,tt);k.offset.setTargetAtTime(0,tt,Math.max(E.r,.005)/3);}catch(e){}}
+return Object.getPrototypeOf(this).release.call(this,t,f);
+};
+}catch(e){logErr(e);}
+}
+/* KSM2-END */
 function lkNoteX(i,clip,nt,rb){
 const tr=S.tracks[i],snd=tr&&tr.sound;if(!snd||!snd.p)return null;
 const v=nt&&nt.lk&&nt.lk.v,wk=isWkEngine(snd.engine)||snd.engine==='mk',out=[],nat={},lkv={};
 let nN=0,nV=0;
 if(v)for(const p in v){
-const e=LKT[p];if(!e||e.cls==='s'||e.cls==='r'||!lkFamOk(e,snd))continue;
+const e=LKT[p];if(e&&e.ksm!=null&&ksm2Eng(snd)){const x=lkFromN(e,v[p]);if(typeof x!=='number'||!isFinite(x))continue;const o0=out.length,r=ksm2Put(snd,e,x,out,nat);if(r)nN++;if(r||out.length>o0||snd.engine==='wt'){lkv[p]=v[p];nV++;}continue;}if(!e||e.cls==='s'||e.cls==='r'||!lkFamOk(e,snd))continue;
 const x=lkFromN(e,v[p]);if(typeof x!=='number'||!isFinite(x))continue;
 lkv[p]=v[p];nV++;
 if(wk&&e.ksm!=null){if(out.length<32&&(snd.engine==='analog'||snd.engine==='fm6'))out.push(e.ksm,x);}else if(wk&&lkVoiceOk(e,snd)){if(out.length<32)out.push(e.wi,x);}
@@ -34855,7 +34914,7 @@ const N=o.chain||(!o.sound||o.sound===tr.sound?A:null);
 if(N){try{N.lfoPitch.connect(cv.offset);v.tapP=N.lfoPitch;}catch(e){}}
 const solo=eng==='fm6'&&UI.fmSolo&&UI.fmSolo.t===i&&snd===tr.sound;
 const src=NativeVoice.source(c,solo?Object.assign({},PL,{fm6:fmSoloPatch(P.fm6,UI.fmSolo.k)}):PL,eng,out,vel,cv.out,{t0,noise:AU.noise,get waves(){return AU.waves;}});
-nodes.push(...src.nodes);srcs.push(...src.srcs);starts.push(...src.starts);
+nodes.push(...src.nodes);srcs.push(...src.srcs);starts.push(...src.starts);if(PL.ksm2Pe)ksm2NatPe(v,PL,src,nodes,srcs,starts,t0);
 
 if(eng==='fm6'){v.dx=src.dx||null;v.dxRT=src.rt||.05;v.dxEnd=Infinity;if(!(P.fmAmp>=1))v.aenv={a:.0012,d:.05,s:1,r:Math.max(.05,v.dxRT)};}
 if(eng==='analog'){v.aenv.c=PL.aCurve==null? .5:+PL.aCurve;v.fenv.c=PL.fCurve==null? .5:+PL.fCurve;}
@@ -109416,16 +109475,24 @@ S=lt2sSig(U,G);
 if(P.run){
 if(P.on&&S.sig===P.sig&&G===P.G&&t-P.tStep<400){lt2sStep(U,G,S,t);return true;}
 lt2sStop();P.nAbort++;
-}else if(P.on&&P.slow&&S.nl>0&&S.all&&S.key===P.lastKey&&S.sig!==P.lastSig&&(P.lastNl===0||t-P.lastT>=120)){
-P.run=true;P.G=G;P.sig=S.sig;P.i=0;P.n=Math.min(6,Math.max(2,Math.ceil(P.cost/20)));P.nSeq++;
+}else if(P.on&&S.nl>0&&S.all&&S.key===P.lastKey&&S.sig!==P.lastSig&&(P.lastNl===0||t-P.lastT>=120)&&(P.slow||(typeof lt3Slow==='function'&&lt3Slow(P)))){/*LT3*/
+P.run=true;P.G=G;P.sig=S.sig;P.i=0;P.n=Math.min(6,Math.max(2,Math.ceil((P.cost||(typeof lt3Est==='function'?lt3Est():0))/20)));/*LT3*/P.nSeq++;
 lt2sStep(U,G,S,t);return true;
 }
 }catch(e){P.err=String((e&&e.message)||e).slice(0,200);P.on=false;try{lt2sStop();}catch(e2){}P.inner=false;S=null;}
-if(S){P.lastKey=S.key;P.lastSig=S.sig;P.lastNl=S.nl;if(S.nl>0)lt2sMeasure(t);}else{P.lastKey=P.lastSig='';P.lastNl=0;}
+if(S){P.lastKey=S.key;P.lastSig=S.sig;P.lastNl=S.nl;if(S.nl>0)lt2sMeasure(t);else if(typeof lt3Measure==='function')lt3Measure(t);}/*LT3*/else{P.lastKey=P.lastSig='';P.lastNl=0;}
 P.lastT=t;P.nFull++;
 return false;
 }
 // LT2-END
+// LT3-BEGIN – Spektral: das erste Bild mit Ebenen-Farben (z. B. gleich nach dem Zerlegen) wird wie bei LT2S stückweise vorgezeichnet und erst fertig
+// gezeigt, wenn es noch kein gemessenes Farben-Bild gibt, das Gerät aber schon ohne Farben den Bildtakt verpasst (mindestens 2 der letzten 4 Bilder
+// ohne Farben > 19 ms Abstand; Farben kosten etwa das 3,5-Fache). Sonst wie bisher. Endbild gleich. LT3.on = false schaltet es ab.
+const LT3={on:true,g:[],mq:0,k:3.5,lim:19,n:0};
+function lt3Measure(t){const Q=LT3;if(Q.mq)return;Q.mq=1;requestAnimationFrame(()=>{Q.mq=0;Q.g.push(performance.now()-t);if(Q.g.length>4)Q.g.shift();});}
+function lt3Slow(P){const Q=LT3;if(!Q.on||P.cost)return false;if(Q.g.filter(x=>x>Q.lim).length>=2){Q.n++;return true;}return false;}
+function lt3Est(){return LT3.g.length?LT3.k*Math.max(...LT3.g):0;}
+// LT3-END
 function spk1CpuDraw(U){
 const cv=U.gcv,W=cv.width,H=cv.height,x=U.c2;if(!x||!W||!H)return;
 if(!U.img||U.img.width!==W||U.img.height!==H)U.img=x.createImageData(W,H);
