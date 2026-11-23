@@ -136,6 +136,7 @@ button:disabled{opacity:.38;cursor:default}
   #zugLeiste2 .seg,#hoerLeiste .seg{width:auto;flex:1 1 0;min-width:0}
   #zugLeiste2 .seg button,#hoerLeiste .seg button{white-space:normal;line-height:1.1;padding:0 2px;flex:1 1 0;min-width:44px}
   #bEinrasten,#bAB{flex:0 0 auto;padding:0 8px}
+  #hoerLeiste .seg button{flex:1 1 auto}   /* Prüfung: „gereinigt“ wurde quer abgeschnitten */
   .titel{display:none}
   .schicht{padding:0 7px;font-size:13px}
   .zw .zHoer{padding:0 7px 0 5px;font-size:13px}.zw .zAug{min-width:32px;width:32px}
@@ -607,7 +608,9 @@ function zeichneUeber(){
 const ZW_ORD=['original','gereinigt','timing','ende'],ZW_FARBE={original:'c-orig',gereinigt:'c-rein',timing:'c-tim',ende:'welle'},ZW_NAME={original:'Original',gereinigt:'gereinigt',timing:'Timing',ende:'v11'};
 function zwSichtbar(){return ZW_ORD.filter(k=>k==='ende'?(Z.sch.ende||Z.sch.neu)&&SCH.ende:Z.sch[k]&&SCH[k])}
 function lanes(){const v=zwSichtbar(),n=v.length,s=Z.staffel,o={};if(!n)return o;const u=L.wav/n;
-  v.forEach((k,i)=>{o[k]={yc:L.yW+L.wav/2+s*(i-(n-1)/2)*u,half:(L.wav/2-4)*(1-s)+(u/2-3)*s,i,n}});return o}
+  v.forEach((k,i)=>{const yc=L.yW+L.wav/2+s*(i-(n-1)/2)*u,half=(L.wav/2-4)*(1-s)+(u/2-3)*s;
+    // Prüfung: Oberkante der eigenen Spur – bei mittlerer Staffelung zwischen eigener Mitte und Nachbar, damit Name und Strich bei der richtigen Welle stehen
+    o[k]={yc,half,top:yc-Math.max(s*u/2,(half+3)*Math.max(0,1-2*s)),i,n}});return o}
 // Hülle je 10 ms in dB (aus den Spitzenwerten), ±20 ms Maximum
 function envDb(k){const s=SCH[k];if(!s)return null;if(s.db)return s.db;const n=s.n,d=new Float32Array(n),m=new Float32Array(n);
   for(let i=0;i<n;i++){const a=Math.max(-s.w[2*i],s.w[2*i+1],1);d[i]=40*Math.log10(a/127)}
@@ -624,10 +627,10 @@ function zeichneZwiebel(c,LN){const v=Object.keys(LN).sort((a,b)=>LN[a].i-LN[b].
     for(let s=0;s<cols;s++){const ta=Z.t0+s*dtc,tb=ta+dtc;let i0=Math.floor(ta*rate),i1=Math.ceil(tb*rate);if(i1<=0||i0>=I.length)continue;i0=Math.max(0,i0);i1=Math.min(I.length,Math.max(i1,i0+1));
       let mx=0;for(let i=i0;i<i1;i++)if(I[i]>mx)mx=I[i];if(!mx||!mm(k,ta,tb,MM))continue;bk[mx>170?2:mx>85?1:0].push(s*cw,ln.yc-MM[1]*amp,Math.max(MM[1]-MM[0],1)*amp)}
     for(let st=0;st<3;st++){const a=bk[st];if(!a.length)continue;c.fillStyle=farbe;c.globalAlpha=[.35,.6,.85][st];c.beginPath();for(let j=0;j<a.length;j+=3)c.rect(a[j],a[j+1],cw,a[j+2]);c.fill();
-      c.globalAlpha=[.5,.75,1][st];c.beginPath();for(let j=0;j<a.length;j+=3)c.rect(a[j],ln.yc-ln.half-3,cw,3);c.fill()}
+      c.globalAlpha=[.5,.75,1][st];c.beginPath();for(let j=0;j<a.length;j+=3)c.rect(a[j],ln.top,cw,3);c.fill()}
     c.globalAlpha=1}
   if(Z.staffel>=.5&&v.length>1){c.font='600 10px -apple-system,system-ui,sans-serif';c.textBaseline='middle';
-    for(const k of v){const ln=LN[k],t=ZW_NAME[k],w=breite(c,t)+6,y=ln.yc-ln.half+6;c.fillStyle=FB.bg;c.globalAlpha=.8;c.fillRect(2,y-6,w,12);c.globalAlpha=1;c.fillStyle=k==='ende'?FB.fg:FB[ZW_FARBE[k]];c.fillText(t,5,y)}}}
+    for(const k of v){const ln=LN[k],t=ZW_NAME[k],w=breite(c,t)+6,y=ln.top+9;c.fillStyle=FB.bg;c.globalAlpha=.8;c.fillRect(2,y-6,w,12);c.globalAlpha=1;c.fillStyle=k==='ende'?FB.fg:FB[ZW_FARBE[k]];c.fillText(t,5,y)}}}
 function laneBei(y){const LN=lanes();let best=null,bd=1e9;for(const k in LN){const l=LN[k],d=Math.abs(y-l.yc);if(d<bd){bd=d;best=k}}if(!best)return null;
   return best==='ende'?(Z.sch.neu&&Object.keys(ZG.d).length?'neu':'v10'):best}
 // Oberleiste: nur die Streifen löschen, die im letzten Bild bemalt wurden (spart Pixel beim Abspielen)
