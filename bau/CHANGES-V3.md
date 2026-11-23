@@ -1,3 +1,11 @@
+## 4.88.0 — Import genau im Takt, Bass und Drums sauberer getrennt, Gesang sitzt genauer, schnellerer Download · 23.11.2026
+
+- **Audio-Import passt sich genauer ans Projekt-Tempo an:** Hat das Projekt schon Audio und die neue Datei ein anderes Tempo, wird sie wie bisher auf das Projekt-Tempo gedehnt (Tonhöhe bleibt) – jetzt aber an den echten Schlägen der Datei ausgerichtet. Die Einsätze liegen damit auf höchstens 1 ms genau auf dem Raster (vorher bis 15 ms, bei leicht schwankendem Tempo bis 100 ms). Leeres Projekt oder selbst gewähltes Tempo: alles wie bisher.
+- **Spektral „Verfeinern“ trennt Bass und Drums besser:** Der Kick wird über seine Anschläge im Takt-Raster erkannt, ein Bass-Anschlag mit folgendem Ton zählt nicht mehr als Kick, und der Bass-Grundton wird auf die richtige Oktave geprüft. Ohne Verfeinern klingt alles genau wie vorher.
+- **Gesang sitzt genauer:** Bei Gesang→Noten beginnt eine Note dort, wo die Stimme wirklich einsetzt (mittlerer Fehler 4,1 → 1,5 ms, immer an derselben Stelle). Im Gesang-Editor setzt die Marken-Suche bei neuen Aufnahmen keine Marken mehr mitten in einen gehaltenen Vokal; ältere Aufnahmen behalten ihre Marken.
+- **Schnellerer Download:** Die erst bei Bedarf geladenen Programmteile werden ohne Kommentare und Einrückung ausgeliefert – die App ist trotz der neuen Funktionen rund 120 KB kleiner als 4.87.0 (gepackt rund 30 KB). Aussehen, Bedienung und Klang bleiben genau gleich.
+- Gespeicherte Projekte laden und klingen wie vorher.
+
 ## 4.87.0 — Original-Spur sofort, Drums aus dem Lied, Transponieren je Teil, Import ohne Verschieben · 23.11.2026
 
 - **Original-Spur klingt beim ersten ▶ fast sofort:** Audio-Clips der Original-Spur (z. B. ein 3-min-Lied) setzen nach dem Öffnen eines Projekts jetzt nach rund 0,1 s ein statt nach 0,3–0,5 s – weich eingeblendet, Klang genau gleich.
