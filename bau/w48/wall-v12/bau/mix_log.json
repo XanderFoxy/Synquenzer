@@ -57,5 +57,24 @@
  "musik_duck_db": {
   "median_refrain": 0.84,
   "max": 1.0
+ },
+ "clipper": {
+  "anteil_prozent": 1.592,
+  "max_db": 5.317
+ },
+ "master": {
+  "decke_dbtp": -1.55,
+  "gain_db": -0.03,
+  "lufs": -10.0,
+  "tp_48k": -1.55,
+  "tp_mp3": -1.08,
+  "limiter_gr_p95": 0.59,
+  "limiter_gr_p99": 0.73,
+  "limiter_gr_max": 1.26,
+  "limiter_gr_anteil_ueber_0_5dB": 7.84
+ },
+ "wav44": {
+  "lufs": -10.0,
+  "tp": -1.36
  }
 }
