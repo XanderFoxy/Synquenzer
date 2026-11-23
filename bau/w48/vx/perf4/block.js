@@ -13,7 +13,7 @@ const fs = require('fs'), path = require('path');
 const acorn = require(path.join(__dirname, 'acorn.js'));
 const [IN, OUT] = process.argv.slice(2);
 const inp = JSON.parse(fs.readFileSync(IN, 'utf8'));
-const LT = /[\n\r  ]/;
+const LT = /[\n\r\u2028\u2029]/;
 const die = m => { console.error('PERF4 ABBRUCH: ' + m); process.exit(1); };
 
 function parse(text, sourceType, extra) {
@@ -90,7 +90,7 @@ function needSpace(a, b, aTok) {
   if (x === '?' && y === '.') return true;
   return false;
 }
-function lineStarts(text) { const a = [0]; for (let i = 0; i < text.length; i++) { const c = text[i]; if (c === '\n' || c === ' ' || c === ' ' || (c === '\r' && text[i + 1] !== '\n')) a.push(i + 1); } return a; }
+function lineStarts(text) { const a = [0]; for (let i = 0; i < text.length; i++) { const c = text[i]; if (c === '\n' || c === '\u2028' || c === '\u2029' || (c === '\r' && text[i + 1] !== '\n')) a.push(i + 1); } return a; }
 function lineOf(ls, pos) { let lo = 0, hi = ls.length - 1; while (lo < hi) { const m = (lo + hi + 1) >> 1; if (ls[m] <= pos) lo = m; else hi = m - 1; } return lo; }
 
 function build(text, P, prot, ls) {
@@ -129,7 +129,7 @@ function doBlock(id, text, N) {
     let g = '', p = gs;
     while (ci < coms.length && coms[ci].start < ge) { const c = coms[ci]; if (c.start < gs) die(id + ': Kommentar überlappt Token'); g += text.slice(p, c.start); p = c.end; ci++; }
     g += text.slice(p, ge);
-    if (/\S/.test(g.replace(/[\s﻿   ]/g, ''))) die(id + ': Zwischenraum mit Inhalt bei ' + gs);
+    if (/\S/.test(g.replace(/[\s\uFEFF\u00A0\u2028\u2029]/g, ''))) die(id + ': Zwischenraum mit Inhalt bei ' + gs);
   }
   const ls = lineStarts(text), prot = new Set();
   // vorher: Such-Texte / Regex auf dem Original
@@ -149,6 +149,7 @@ function doBlock(id, text, N) {
         for (const q of m) for (let l = lineOf(ls, q.a); l <= lineOf(ls, q.b - 1); l++) prot.add(l);
         for (const q of m1) { const x = origPos(B.map, q.a), y = origPos(B.map, q.b - 1); for (let l = lineOf(ls, x); l <= lineOf(ls, y); l++) prot.add(l); } }
     }
+    if (process.env.PERF4_DEBUG && bad) console.error(id, "Runde", rounds, [...prot].slice(0, 20), sN.filter(n => count(text, n) !== count(B.s, n)).map(n => n.slice(0, 60)), sR.filter(x => rmatch(B.s, x.r.re).length !== x.m.length).map(x => x.r.key));
     if (!bad) break;
     if (rounds > 12) die(id + ': Such-Texte nach 12 Runden nicht gleich');
   }

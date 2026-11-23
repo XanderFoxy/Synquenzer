@@ -1,4 +1,4 @@
-# Stand 23.11.16:52 UTC
+# Stand 23.11.16:55 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -53,6 +53,10 @@ Bau: `python3 apply.py <eingang> <ausgang>` (Eingang md5 a7515b98…, bitgleich 
 Blöcke: `xla-block.js` (/* IMP4-XLA-BEGIN/-END */ im Import-Kern sq-xla-src, vor toProject), `block.js` (/* IMP4-BEGIN/-END */ im Hauptskript nach `window.MLG2=…`).
 Haken (je eine Stelle, Kommentar `/* IMP4 */`): notesIn → `imp4Stack` (nur Drums), toProject → Bericht-Zeile „DRUMS: n Schläge gleichzeitig …“ in `al.merged`,
 xlaHtml → `res.report.tracks.map(r=>imp4Rep(c,res,r))` vor dem vorhandenen Zeilen-Template.
+## impd
+# IMPD – Stand (in Arbeit)
+Bau: `python3 apply.py <eingang 4.87.0> <ausgang>`; Block `block.js` (IMPD-BEGIN/-END vor `async function nx1ImpStretch`), Haken in nx1ImpStretch (`impdWarp`, /*IMPD*/).
+Kern-Test-Datei: `impd-test.cjs` (node impd-test.cjs <port>, Server-Wurzel srv/ mit basis/ und neu/).
 ## imps
 # IMPS – Stand (fertig)
 Bau: `python3 apply.py <eingang> <ausgang>` (Eingang md5 a7515b98…, Ausgang hier `index.html`, md5 74e7f025a65581cc38f5ea7a9ef8d53d).
@@ -77,6 +81,10 @@ als Nächstes: nichts – bereit zur Übernahme
 ## mlg3
 fertig: MLG3 gebaut und getestet (index.html, apply.py, block.js, kern.js, quer.js, KURZ.md, CHANGES.md)
 als Naechstes: nichts – bereit zur Uebernahme
+## perf4
+# PERF4 – Stand
+- apply.py + block.js (+ acorn.js 8.18.0 Kopie) gebaut; erster Lauf OK: roh 7 419 782 -> 7 323 921 (-95 861).
+- Offen: gzip messen, Kern-Test (12 Werksklänge bitgleich), Rauchtest, Klangschule, Klang erkennen, MS-Platte.
 ## ton1
 # TON1 – Stand (fertig)
 - Ausgang: index.html = python3 apply.py ../rel-4850/index.html index.html (md5 125767aed0f89918371d0729d07a6f82).
