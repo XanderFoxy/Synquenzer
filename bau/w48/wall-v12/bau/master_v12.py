@@ -12,8 +12,11 @@ CLIP = {}
 
 
 def master(x, decke):
-    """Weicher Clipper (4x, Knie ab −3 dBFS) für kurze Spitzen, dann Limiter schnell und ruhig (Decke dBTP)."""
-    y, CLIP['anteil_prozent'], CLIP['max_db'] = softclip(x, -3.0, -0.8)
+    """1) schneller Vor-Limiter nur für die seltenen großen Überhänge (Gesang- + Bass-Spitze gleichzeitig, bis +4 dB),
+    2) weicher Clipper (4x, Knie ab −3 dBFS) für kurze Spitzen (max. ≈1,5 dB), 3) Limiter schnell und ruhig (Decke dBTP)."""
+    y, g0 = limiter(x, 0.5, 1.5, 200.0)
+    CLIP['vorlimiter_anteil_ueber_1dB'] = float(np.mean(g0 > 1) * 100); CLIP['vorlimiter_max_db'] = float(g0.max())
+    y, CLIP['anteil_prozent'], CLIP['max_db'] = softclip(y, -3.0, -0.8)
     y, g1 = limiter(y, decke + 0.9, 1.5, 200.0)
     y, g2 = limiter(y, decke, 5.0, 25.0)
     return y, g1 + g2
@@ -27,7 +30,7 @@ def mp3_tp(y):
     return true_peak(np.frombuffer(b, dtype=np.float32).reshape(-1, 2).astype(np.float64))
 
 
-decke = -1.5; g = 0.0
+decke = -1.55; g = 0.0
 for runde in range(4):
     for it in range(4):
         y, grl = master(mix * undb(g), decke)
