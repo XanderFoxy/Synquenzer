@@ -1,4 +1,8 @@
 {
+ "lead_spitzen_gr": {
+  "anteil_ueber_1dB": 5.5,
+  "max": 6.6
+ },
  "lead_gr": {
   "median_singen": 1.97,
   "p95": 4.04,
@@ -9,13 +13,13 @@
  },
  "gegen_gr_median": 3.09,
  "fader_db": {
-  "G": -8.0,
-  "GA_L": -17.6,
-  "GA_R": -17.6,
-  "D": -7.8,
-  "OB_L": -16.7,
-  "OB_R": -16.5,
-  "UN": -18.7
+  "G": -8.2,
+  "GA_L": -17.8,
+  "GA_R": -17.8,
+  "D": -8.1,
+  "OB_L": -16.9,
+  "OB_R": -16.8,
+  "UN": -18.9
  },
  "pegel_rel_lead_nachher": {
   "G": -5.5,
@@ -27,13 +31,30 @@
   "UN": -18.0
  },
  "chorbus_gr_median": 5.24,
- "gesang_angleich_db": 11.73,
+ "gesang_angleich_db": 11.54,
+ "gesang_bus_spitzen_gr_p99": 0.43,
+ "gesang_lufs": {
+  "S1": -13.9,
+  "R1": -11.1,
+  "S2": -14.4,
+  "R2": -11.0,
+  "ZT": -13.8,
+  "R3": -10.9
+ },
+ "v11bus_lufs": {
+  "S1": -14.1,
+  "R1": -11.9,
+  "S2": -14.3,
+  "R2": -11.7,
+  "ZT": -13.4,
+  "R3": -11.5
+ },
  "master": {
-  "gain_db": 1.39,
-  "lufs": -10.16,
+  "gain_db": 1.33,
+  "lufs": -10.15,
   "tp_48k": -1.5,
-  "limiter_gr_p99": 5.92,
-  "limiter_gr_max": 8.96,
-  "limiter_gr_anteil_ueber_0_5dB": 57.43
+  "limiter_gr_p99": 5.08,
+  "limiter_gr_max": 6.98,
+  "limiter_gr_anteil_ueber_0_5dB": 54.74
  }
 }

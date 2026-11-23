@@ -105,14 +105,25 @@ async function knobTo(p, T, sel, want, dir) { // Regler per Touch ziehen, bis ar
     pl = await p.evaluate(() => __play(3));
     const lt = await p.evaluate(j => { const t0 = Math.min(...__hits.map(h => h.t)), spb = 60 / S.bpm; return __hits.filter(h => h.tr === j).map(h => [Math.round((h.t - t0) / spb / .25) % 12, h.tune]); }, j);
     ok('Lock in der Wiedergabe: Schritt 1 mit Tune, Schritt 5 ohne', lt.length > 4 && lt.every(([g, tu]) => g === 0 ? tu === st.lk[0] : tu === 0), lt.slice(0, 6));
-    // Offline-Render: mit Lock vs. ohne (↶)
+    // Offline-Render: mit Lock vs. ohne (↶).
+    // TPFL: Das alte Maß (Abstand im Gesamtmix Kick + HH, Grenze −30 dB) lag selbst bei 4.88/4.90 nur knapp darüber (−28 … −31 dB): Die zwei
+    // Kick-Schläge tragen fast die ganze Energie, die HH-Klänge (Rauschen) ändern sich von Lauf zu Lauf. Jetzt zählt der Abstand der HH-Spur
+    // allein (DRUMS-Kick für diese Renders stumm): mit ↔ ohne Lock > −15 dB (Lock hörbar), mit ↔ mit < −60 dB (gleich). Gesamtmix nur zur Info.
     const rd = await p.evaluate(async j => {
       SYNQUENZER.songFromChain([{scene: 0, bars: 2}]); ensureAudio(); drumBufs(); const MR = Math.random; Math.random = () => .3125;
       const R_ = async () => { VV.cancel = false; const r = await vvRenderAudio({range: {a: 0, b: S.song.bars, sel: false}}); return Float32Array.from(r.ch[0]); };
-      try { const A = await R_(); const keep = S.tracks[j].clips[0].notes.map(n => n.lk); S.tracks[j].clips[0].notes.forEach(n => delete n.lk); afterClipEdit(j, 0, true); const B = await R_(); S.tracks[j].clips[0].notes.forEach((n, k) => { if (keep[k]) n.lk = keep[k]; }); afterClipEdit(j, 0, true); const C = await R_();
-        const db = (X, Y) => { let e = 0, d = 0; for (let k = 0; k < Math.min(X.length, Y.length); k++) { e += X[k] * X[k]; d += (X[k] - Y[k]) ** 2; } return +(10 * Math.log10((d + 1e-30) / (e + 1e-30))).toFixed(1); };
-        return {mitOhne: db(A, B), mitMit: db(A, C), peak: Math.max(...A.slice(0, 48000).map(Math.abs)).toFixed(3)}; } finally { Math.random = MR; } }, j);
-    ok('Render: Lock hörbar (mit ↔ ohne deutlich anders, mit ↔ mit gleich)', rd.mitOhne > -30 && rd.mitMit < -60, rd);
+      const lane = S.tracks[j].clips[0], kc = S.tracks[DRUM_T].clips[0], kn = kc.notes;
+      const ohne = async () => { const keep = lane.notes.map(n => n.lk); lane.notes.forEach(n => delete n.lk); afterClipEdit(j, 0, true);   // Render ohne Lock, danach Lock zurück
+        try { return await R_(); } finally { lane.notes.forEach((n, k) => { if (keep[k]) n.lk = keep[k]; }); afterClipEdit(j, 0, true); } };
+      const db = (X, Y) => { let e = 0, d = 0; for (let k = 0; k < Math.min(X.length, Y.length); k++) { e += X[k] * X[k]; d += (X[k] - Y[k]) ** 2; } return +(10 * Math.log10((d + 1e-30) / (e + 1e-30))).toFixed(1); };
+      const en = X => { let e = 0; for (const x of X) e += x * x; return e; };
+      try {
+        const A = await R_(), B = await ohne(), C = await R_();                       // Gesamtmix: Kick (DRUMS) + HH ZU (Einzelspur)
+        kc.notes = []; afterClipEdit(DRUM_T, 0); let H, HB, HC;
+        try { H = await R_(); HB = await ohne(); HC = await R_(); } finally { kc.notes = kn; afterClipEdit(DRUM_T, 0); }   // HH-Spur allein
+        return {hhMitOhne: db(H, HB), hhMitMit: db(H, HC), mitOhne: db(A, B), mitMit: db(A, C), hhAnteil: +(10 * Math.log10((en(H) + 1e-30) / (en(A) + 1e-30))).toFixed(1),
+          hhPeak: Math.max(...H.slice(0, 48000).map(Math.abs)).toFixed(3), peak: Math.max(...A.slice(0, 48000).map(Math.abs)).toFixed(3)}; } finally { Math.random = MR; } }, j);
+    ok('Render: Lock hörbar (HH-Spur allein: mit ↔ ohne deutlich anders > −15 dB, mit ↔ mit gleich; Gesamtmix mit ↔ mit gleich)', rd.hhMitOhne > -15 && rd.hhMitMit < -60 && rd.mitMit < -60, rd);
     ok('keine Seitenfehler (neu, hochkant)', errs.length === 0, errs.slice(0, 3));
     await ctx.close();
   }
