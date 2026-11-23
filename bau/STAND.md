@@ -1,4 +1,4 @@
-# Stand 23.11.12:21 UTC
+# Stand 23.11.12:23 UTC
 ## kmp1
 fertig: block.js + apply.py, index.html gebaut
 als Nächstes: Kern-Test im Browser (kern.js), Pflicht-Prüfung
