@@ -2,7 +2,7 @@ OK     T1 Basis: Klangkorn-Klang zeigt die Wavetable-Seite (Ausgangslage)  ["WT"
 OK     T2 neu: Klangkorn-Klang zeigt Seite KORN mit 15 Reglern + Modus  {"subs":["KORN","STIMME"],"knobs":15}
 OK     T3 Öffnen ändert den Klang nicht (p.wt.h gleich)
 OK     T4 hochkant: im Bild, ≥ 32 px, keine Überlappung, nichts abgeschnitten  {"n":15,"out":[],"small":[],"ov":[],"cut":[],"vis":15,"body":{"h":454,"sh":454,"ch":454}}
-FEHLER T5 quer: im Bild, ≥ 32 px, keine Überlappung, nichts abgeschnitten  {"n":15,"out":[],"small":[["Körnchen",68,28],["Schleife",61,28]],"ov":[],"cut":[],"vis":15,"body":{"h":199,"sh":199,"ch":199}}
+OK     T5 quer: im Bild, ≥ 32 px, keine Überlappung, nichts abgeschnitten  {"n":15,"out":[],"small":[],"ov":[],"cut":[],"vis":15,"body":{"h":199,"sh":199,"ch":199}}
 OK     T6 Touch-Ziehen Breite + Korngröße ändert die Werte (Anzeige folgt)  {"cmp":[[0.5,0.9300000000000004],[0.08,0.4301769032570436]],"txt":["93 %","430 ms"]}
 OK     T7 Render-Vergleich: Klang ändert sich (Seitenanteil Breite, Spektrum Korngröße)  {"br":[0.5,0.9300000000000004],"gs":[0.08,0.4301769032570436],"side":[0.1438,0.3633],"rms":[0.0391,0.0391],"specDist":0.125,"kind":"worklet"}
 OK     T8 live: gehaltener Ton – Spur-Engine bekommt die neuen Werte  {"vor":{"br":0.5,"gs":0.08,"v":1},"nach":{"br":0.9300000000000004,"gs":0.4301769032570436,"v":1}}
@@ -13,4 +13,4 @@ OK     T12 spk-hoch: Tipp „Als Klangkorn“ holt die Quelle, Blatt offen  {"dd
 OK     T11 spk-quer: Basis ohne Knopf, neu Knopf als eigene Zeile im Aktionsfeld, sauber  {"basis":{"ly":284,"mn":292},"neu":{"n":7,"ab":{"x":667,"y":382,"w":255,"h":44,"inAc":true,"inVp":true,"dis":false,"cut":false},"ov":[],"small":[],"cut":[],"ly":236,"mn":292}}
 OK     T12 spk-quer: Tipp „Als Klangkorn“ holt die Quelle, Blatt offen  {"dd":true,"src":true,"mode":"korn"}
 OK     T13 keine Seitenfehler/console.error  [[],[]]
-FEHLER 1
+ALLE OK

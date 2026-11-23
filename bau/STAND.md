@@ -1,4 +1,4 @@
-# Stand 23.11.17:43 UTC
+# Stand 23.11.17:45 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -120,6 +120,10 @@ Ausgang `index.html` md5 81347f5bb25e53205c248fa1e4b6eaeb (Eingang 280c5b0b6a9ed
 (Block `block.js` mit SPKV-BEGIN/-END direkt vor `async function verfeinern` in spk1DspMake → läuft im Worker, kein neuer Top-Level-Name;
 1 Haken `/*SPKV*/` nach `refineEst(...)` in verfeinern). Diff zur Basis: 1 Zeile ersetzt + Block.
 
+## spkv2
+# SPKV2 auf 4.88.0 – Stand: in Arbeit
+Bau: `python3 apply.py <eingang> <ausgang>` (ersetzt den SPKV-Block alt.js durch block.js). Dev: `SPKV2_DEV=1` (Debug-Haken, nur Hauptfaden).
+Kern-Test: test/kern-spkv2.mjs (RASTER=1 / ohne / SINUS=1), Basis-Zahlen test/base-*.out.
 ## ton1
 # TON1 – Stand (fertig)
 - Ausgang: index.html = python3 apply.py ../rel-4850/index.html index.html (md5 125767aed0f89918371d0729d07a6f82).

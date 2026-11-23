@@ -22,8 +22,15 @@ function kksKnob(i,k){
 const[l,c]=KKS_D[k],r=SPK7_RG[k],f=SPK7_SL.find(q=>q[0]===k)[3];
 return makeCtl({p:'kks.'+k,l,min:r[0],max:r[1],c,def:SPK7_DEF[k]},()=>kksGet(i,k),v=>kksSet(i,k,v),{undo:soundUndo(i),key:'kks.'+k,fmt:f,label:l});
 }
+function kksCss(){
+if(document.getElementById('kks-css'))return;
+const st=document.createElement('style');st.id='kks-css';
+st.textContent='@media (orientation:landscape){.kks-pg>.pgrow.segs{order:1;flex:0 0 auto;width:auto;align-self:center;margin:0 8px}.kks-pg>.note{order:2;flex:1 1 200px;min-width:0;align-self:center}.kks-pg .seg button{min-height:32px}}';
+document.head.appendChild(st);
+}
 function kksPage(pg,i){
 if(!kksIs(i))return false;
+kksCss();
 const art=makeSeg([['korn','Körnchen'],['frz','Schleife']],()=>kksGet(i,'art'),v=>{kksSet(i,'art',v);vis();},null,{undo:soundUndo(i),label:'Modus'});
 art.dataset.key='kks.art';
 const kk={};for(const k in KKS_D)kk[k]=kksKnob(i,k);

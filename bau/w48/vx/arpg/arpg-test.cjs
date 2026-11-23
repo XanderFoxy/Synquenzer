@@ -2,7 +2,7 @@
 // Server-Wurzel = srv/ (alt/index.html = 4.88.0, neu/index.html = ARPG). Pfade relativ zur Server-Wurzel.
 const {chromium} = require('playwright'), path = require('path');
 const port = process.argv[2], ALT = process.argv[3] || 'alt/index.html', NEU = process.argv[4] || 'neu/index.html', here = __dirname;
-let fail = 0; const ok = (n, c, x) => { console.log((c ? 'OK     ' : 'FEHLER ') + n + (x !== undefined ? '  ' + JSON.stringify(x) : '')); if (!c) fail++; };
+let fail = 0; const ok = (c, n, x) => { console.log((c ? 'OK     ' : 'FEHLER ') + n + (x !== undefined ? '  ' + JSON.stringify(x) : '')); if (!c) fail++; };
 const errs = [];
 let b;
 async function page(f, w, h) {
@@ -11,6 +11,7 @@ async function page(f, w, h) {
   await p.goto('http://127.0.0.1:' + port + '/' + f); await p.waitForFunction(() => window.SYNQUENZER && SYNQUENZER.version, null, {timeout: 90000}); await p.waitForTimeout(1500);
   return p;
 }
+const MN = "function midiNotes(bytes) {\n  const u = Uint8Array.from(bytes); let o = 14; const ppq = (u[12] << 8) | u[13], out = [];\n  while (o < u.length) {\n    const len = (u[o + 4] << 24) | (u[o + 5] << 16) | (u[o + 6] << 8) | u[o + 7]; let q = o + 8; const end = q + len; let tk = 0, rs = 0; const open = new Map();\n    while (q < end) {\n      let d = 0, c; do { c = u[q++]; d = (d << 7) | (c & 127); } while (c & 128); tk += d;\n      let st = u[q]; if (st & 128) q++; else st = rs;\n      if (st === 0xFF) { q++; let l = 0; do { c = u[q++]; l = (l << 7) | (c & 127); } while (c & 128); q += l; continue; }\n      rs = st; const hi = st & 0xF0, ch = st & 15;\n      if (hi === 0x90 || hi === 0x80) { const p = u[q++], v = u[q++]; const k = ch + ':' + p;\n        if (hi === 0x90 && v > 0) { const n = {ch, t: tk / ppq, p, v}; out.push(n); const L = open.get(k) || []; L.push(n); open.set(k, L); }\n        else { const L = open.get(k); const n = L && L.shift(); if (n) n.d = tk / ppq - n.t; } }\n      else if (hi === 0xC0 || hi === 0xD0) q += 1; else q += 2;\n    }\n    o = end;\n  }\n  return out.sort((x, y) => x.t - y.t || x.p - y.p);\n}";
 const H = `const wait = ms => new Promise(r => setTimeout(r, ms));
   const host = async () => { ensureAudio(); for (let k = 0; k < 100 && SynthHost.state !== 'ready' && SynthHost.state !== 'failed'; k++) await wait(100); return SynthHost.state; };
   const va = () => S.tracks.findIndex(t => t.kind === 'synth' && t.sound.engine === 'analog');
@@ -21,26 +22,9 @@ const H = `const wait = ms => new Promise(r => setTimeout(r, ms));
   const ch0 = s => { const B = s.buf; if (!B) return null; if (B.getChannelData) return B.getChannelData(0); if (Array.isArray(B)) return B[0]; return B; };
   const click = x => { let m = 0, pk = 0; for (let k = 2; k < x.length; k++) { const d = Math.abs(x[k] - 2 * x[k - 1] + x[k - 2]); if (d > m) m = d; const a = Math.abs(x[k]); if (a > pk) pk = a; } return {d2: m, pk, nan: x.some(v => !isFinite(v))}; };
   const hsh = x => { let h = 0x811c9dc5; if (!x) return 0; for (let k = 0; k < x.length; k += 7) { h ^= Math.round(x[k] * 1e7) | 0; h = Math.imul(h, 16777619) >>> 0; } return h; };
-  const mapP = (i, n) => mapOut(i, S.tracks[i].clips[0].key, n, Infinity);`;
+  const mapP = (i, n) => mapOut(i, S.tracks[i].clips[0].key, n, Infinity);
+  ${MN}`;
 const run = (p, fn, arg) => p.evaluate('(async () => { ' + H + ' return (' + fn.toString() + ')(' + JSON.stringify(arg == null ? null : arg) + '); })()');
-function midiNotes(bytes) {
-  const u = Uint8Array.from(bytes); let o = 14; const ppq = (u[12] << 8) | u[13], out = [];
-  while (o < u.length) {
-    const len = (u[o + 4] << 24) | (u[o + 5] << 16) | (u[o + 6] << 8) | u[o + 7]; let q = o + 8; const end = q + len; let tk = 0, rs = 0; const open = new Map();
-    while (q < end) {
-      let d = 0, c; do { c = u[q++]; d = (d << 7) | (c & 127); } while (c & 128); tk += d;
-      let st = u[q]; if (st & 128) q++; else st = rs;
-      if (st === 0xFF) { q++; let l = 0; do { c = u[q++]; l = (l << 7) | (c & 127); } while (c & 128); q += l; continue; }
-      rs = st; const hi = st & 0xF0, ch = st & 15;
-      if (hi === 0x90 || hi === 0x80) { const p = u[q++], v = u[q++]; const k = ch + ':' + p;
-        if (hi === 0x90 && v > 0) { const n = {ch, t: tk / ppq, p, v}; out.push(n); const L = open.get(k) || []; L.push(n); open.set(k, L); }
-        else { const L = open.get(k); const n = L && L.shift(); if (n) n.d = tk / ppq - n.t; } }
-      else if (hi === 0xC0 || hi === 0xD0) q += 1; else q += 2;
-    }
-    o = end;
-  }
-  return out.sort((x, y) => x.t - y.t || x.p - y.p);
-}
 // A: Gate <= 100 – dieselben Zahlen in 4.88 und ARPG (Render-Protokoll, reine Rechnung, Festschreiben, MIDI, Audio-Prüfsumme, Datei)
 const caseA = async () => {
   await host(); const i = va(), out = {}; applySound(i, factorySound(INIT_IDS.analog)); S.settings.swing = 0; S.bpm = 120;
@@ -94,7 +78,8 @@ const caseB = async () => {
     const keys = Object.keys(ra).filter(k => k.includes('/'));
     const diff = keys.filter(k => JSON.stringify(ra[k]) !== JSON.stringify(rn[k]));
     ok(diff.length === 0, 'A1 Gate 5/30/80/100 % (Auf, Oktave+Swing, Akkord; Akkord- und Achtel-Clip): Render-Protokoll, Rechnung, Festschreiben, MIDI, Audio-Prüfsumme bitgleich zu 4.88 – ' + keys.length + ' Fälle, ' + keys.reduce((s, k) => s + ra[k].log.length, 0) + ' Noten', diff.slice(0, 3));
-    ok(ra.datei === rn.datei, 'A2 Projektdatei mit Gate 100 % bytegleich zu 4.88');
+    const dd = (() => { const x = ra.datei, y = rn.datei; if (x === y) return null; let k = 0; while (x[k] === y[k]) k++; return [x.slice(k - 60, k + 60), y.slice(k - 60, k + 60)]; })();
+    ok(ra.datei === rn.datei, 'A2 Projektdatei mit Gate 100 % bytegleich zu 4.88', dd);
     ok(JSON.stringify(ra.norm) === JSON.stringify(rn.norm), 'A3 Bereinigen alter Werte (100, 5, 3, leer, 80.4) wie 4.88', rn.norm.map(x => x.g));
     ok(ra['akkord/auf/80'].au !== 0 && ra['akkord/auf/80'].au === rn['akkord/auf/80'].au, 'A4 Audio Gate 80 % gleiche Prüfsumme', [ra['akkord/auf/80'].au, rn['akkord/auf/80'].au]);
     await pa.close();
