@@ -199,7 +199,7 @@ const et=vtrTxt('Ende',(G.nE-eB)*G.sp,'−');if(o._et.textContent!==et)o._et.tex
 o._et.classList.toggle('r',xe-o._et.offsetWidth-10<0);
 /* Nachlauf hinter der Loop-Klammer: getönt, mit einem Tipp aufs Loop-Ende begrenzbar */
 const ov=vtrOver(G,eB);o._n.hidden=!ov;if(ov){o._n.style.left=xb+'px';o._n.style.width=Math.max(0,xe-xb)+'px';}
-const cOn=ov&&!d&&xb>=24&&xb<=cM.offsetWidth+1;o._c.hidden=!cOn;
+const cOn=ov&&!d&&xb>=0&&xb<=cM.offsetWidth+1;o._c.hidden=!cOn;
 if(cOn){const cw=o._c.offsetWidth||140;o._c.style.left=clamp(xb-6-cw,4,Math.max(4,cM.offsetWidth-cw-4))+'px';}
 if(G.post>.003){
 const k=[x.a.take,x.a.in,x.a.out,G.post,G.sp].join(':');if(VTR.envK!==k&&vtrEnv(o,x,G))VTR.envK=k;
