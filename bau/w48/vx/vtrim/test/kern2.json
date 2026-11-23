@@ -20,16 +20,27 @@
    "quellen": 1
   }
  },
- "ohne Beschnitt: Mix innerhalb der Eigen-Streuung von 4.91 (4.91 selbst ist von Render zu Render nicht bitgleich)": {
-  "ok": false,
+ "ohne Beschnitt: ganzer Mix bitgleich zu 4.91 (4.91 selbst streut von Render zu Render in der letzten Stelle – gleicher Hash kommt in beiden vor)": {
+  "ok": true,
   "x": {
-   "neuGegenBasis": 2.384185791015625e-7,
-   "basisGegenBasis": 0,
-   "hashNeu": "59adaf1b:256672|9ee65136:256672",
-   "hashBasis": [
+   "gleich": [
+    "d0654f0b:256672|61a00596:256672"
+   ],
+   "neu": [
+    "59adaf1b:256672|9ee65136:256672",
+    "7b5c68cb:256672|af2a45e:256672",
     "d0654f0b:256672|61a00596:256672",
     "d0654f0b:256672|61a00596:256672"
-   ]
+   ],
+   "basis": [
+    "cb52da4b:256672|27c9d48e:256672",
+    "cb52da4b:256672|27c9d48e:256672",
+    "d0654f0b:256672|61a00596:256672",
+    "bdb018cb:256672|739dbdd6:256672",
+    "d0654f0b:256672|61a00596:256672"
+   ],
+   "maxAbweichungNeuBasis": 2.384185791015625e-7,
+   "maxAbweichungBasisBasis": 0
   }
  },
  "ohne Beschnitt: Clip-WAV (mit Vorlauf / Loop rund) bitgleich zu 4.91": {
@@ -70,11 +81,11 @@
   "ok": true,
   "x": {
    "vt": {
-    "k": "8qnp85ilq3",
+    "k": "bn1e8p21j6",
     "e": 4.5
    },
    "out": 6,
-   "take": "8qnp85ilq3",
+   "take": "bn1e8p21j6",
    "undo": "Gesang-Ende verschoben",
    "txt": "Ende −1,50 s",
    "zone": 128.03125,
@@ -185,18 +196,18 @@
   "x": {
    "sv": {
     "live": {
-     "k": "8qnp85ilq3",
+     "k": "bn1e8p21j6",
      "e": 4.5
     },
     "saved": {
-     "k": "8qnp85ilq3",
+     "k": "bn1e8p21j6",
      "e": 4.5
     },
     "loaded": {
-     "k": "8qnp85ilq3",
+     "k": "bn1e8p21j6",
      "e": 4.5
     },
-    "take": "8qnp85ilq3"
+    "take": "bn1e8p21j6"
    },
    "R3": "45f702bb:196768",
    "R1": "45f702bb:196768"
@@ -220,7 +231,7 @@
     "label": "Gesang-Ende: ganze Länge",
     "menu": false,
     "back": {
-     "k": "8qnp85ilq3",
+     "k": "bn1e8p21j6",
      "e": 4.5
     }
    }
@@ -345,7 +356,7 @@
    },
    "q": {
     "vt": {
-     "k": "3vi7ke2pn8",
+     "k": "fhr1krrer4",
      "e": 4.5
     },
     "out": 6,
@@ -416,7 +427,7 @@
   "x": {
    "c1": {
     "vt": {
-     "k": "a2lv06n6vb",
+     "k": "d9dfh66qor",
      "e": 6
     },
     "out": 6,

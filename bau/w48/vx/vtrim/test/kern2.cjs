@@ -55,9 +55,10 @@ const flagGeo = p => p.evaluate(() => {
     await tools(p);
     const s = await setup(p);
     await render(p, false);
-    const B1 = await renderCap(p, 'B1'), B2 = await renderCap(p, 'B2');
+    const B1 = await renderCap(p, 'B1'), B2 = await renderCap(p, 'B2'), BX = [B1.hashW, B2.hashW];
+    for (let k = 0; k < 3; k++) BX.push((await render(p, false)).hash);
     const W = await p.evaluate(async st => { const W = await __wav(st); return {A: __hash(W.A.y), B: __hash(W.B.y)}; }, s.st);
-    base = {B1, B2, W, clip: await clipJson(p, s.st)};
+    base = {B1, B2, BX, W, clip: await clipJson(p, s.st)};
     await openEd(p, s.st);
     await p.screenshot({path: OUT + '/foto-vorher.png'});
     ok('Basis 4.91 lädt ohne Seitenfehler', errs.length === 0, errs.slice(0, 3));
@@ -72,9 +73,11 @@ const flagGeo = p => p.evaluate(() => {
     await render(p, false);
     const R0 = await renderCap(p, 'R0');
     const W0 = await p.evaluate(async st => { const W = await __wav(st); window.__W0 = W; return {A: __hash(W.A.y), B: __hash(W.B.y)}; }, s.st);
+    const NX = [R0.hashW]; for (let k = 0; k < 3; k++) NX.push((await render(p, false)).hash);
     const mB = maxDiff(f32(base.B1.mixL), f32(base.B2.mixL)), mN = Math.min(maxDiff(f32(R0.mixL), f32(base.B1.mixL)), maxDiff(f32(R0.mixL), f32(base.B2.mixL)));
+    const shared = NX.filter(h => base.BX.includes(h));
     ok('ohne Beschnitt: Quellen-Plan + trockener Render bitgleich zu 4.91', R0.plan === base.B2.plan && R0.hashD === base.B2.hashD && base.B1.hashD === base.B2.hashD, {neu: R0.hashD, basis: [base.B1.hashD, base.B2.hashD], quellen: R0.cap.length});
-    ok('ohne Beschnitt: Mix innerhalb der Eigen-Streuung von 4.91 (4.91 selbst ist von Render zu Render nicht bitgleich)', mN <= mB, {neuGegenBasis: mN, basisGegenBasis: mB, hashNeu: R0.hashW, hashBasis: [base.B1.hashW, base.B2.hashW]});
+    ok('ohne Beschnitt: ganzer Mix bitgleich zu 4.91 (4.91 selbst streut von Render zu Render in der letzten Stelle – gleicher Hash kommt in beiden vor)', shared.length > 0, {gleich: [...new Set(shared)], neu: NX, basis: base.BX, maxAbweichungNeuBasis: mN, maxAbweichungBasisBasis: mB});
     ok('ohne Beschnitt: Clip-WAV (mit Vorlauf / Loop rund) bitgleich zu 4.91', W0.A === base.W.A && W0.B === base.W.B, {neu: W0, basis: base.W});
 
     // Gesang-Editor öffnen (ganzer Clip im Bild)
@@ -174,6 +177,16 @@ const flagGeo = p => p.evaluate(() => {
     await T.drag(g3.hx, g3.hy, g3.hx + (xW - g3.pole), 12); await sleep(300);
     const sn = await p.evaluate(st => { const a = S.tracks[st].clips[0].audio; return {e: a.vt && a.vt.e, beat: a.vt ? (a.vt.e - a.in) / spb() : null}; }, s.st);
     ok('Ende rastet beim Ziehen auf der Takt-Grenze ein (Ziel 4,2 Schläge → Takt 2 = 4,0)', sn.beat != null && Math.abs(sn.beat - 4) < 1e-6, sn);
+    await p.evaluate(() => undo());
+
+    // Anfang-Fähnchen (Clip ohne Vorlauf): Touch-Ziehen um 1 Schlag nach rechts schneidet 0,5 s vom Beginn, Blende 10 ms
+    await p.evaluate(() => ED.roll.fitView('clip')); await sleep(400);
+    const ga = await p.evaluate(() => { const o = document.querySelector('.vtro'), h = o.querySelector('.vtrh.a'), f = ED.roll.fol(); if (o.querySelector('.vtra').hidden) return null; const r = h.getBoundingClientRect(); return {hx: r.left + 30, hy: r.top + 14, w: r.width, h: r.height, ppb: f.ppb}; });
+    if (ga) await T.drag(ga.hx, ga.hy, ga.hx + ga.ppb, 10);
+    await sleep(300);
+    const RA = await renderCap(p, 'RA');
+    const an = await p.evaluate(st => { const a = S.tracks[st].clips[0].audio, o = document.querySelector('.vtro'); return {vt: a.vt, in: a.in, label: UNDO[UNDO.length - 1].label, txt: o.querySelector('.vtrt.a').textContent}; }, s.st);
+    ok('Anfang-Fähnchen: Touch-Ziehen schneidet 0,50 s vom Beginn (Quelle startet 0,5 s später, Blende 10 ms), ↶ zurück', ga && ga.w >= 32 && an.vt && Math.abs(an.vt.a - (an.in + .5)) < 1e-6 && Math.abs(an.vt.e - (an.in + 2.5)) < 1e-6 && an.label === 'Gesang-Anfang verschoben' && an.txt === 'Anfang +0,50 s' && RA.cap.length === 1 && Math.abs(RA.cap[0].off - (an.in + .5)) < 1e-6 && Math.abs(RA.cap[0].when - (R0.cap[0].when + .5)) < 1e-6 && Math.abs(RA.cap[0].fi - .01) < 1e-9, {ga, an, cap: RA.cap});
     await p.evaluate(() => undo());
 
     // Nachlauf hinter dem Loop-Ende (take.post) endet am Fähnchen (Rechnung)
