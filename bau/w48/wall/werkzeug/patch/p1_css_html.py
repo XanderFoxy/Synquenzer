@@ -42,10 +42,12 @@ R.append((""".schicht{display:inline-flex;align-items:center;gap:6px;min-height:
 .zeile.pz{align-items:flex-start;padding:8px 0}
 .zeile.pz .wann{padding-top:12px}
 #bVorher{font-size:13.5px;padding:0 9px;flex:0 0 auto}"""))
+R.append((".tabs{display:flex;gap:6px;border-bottom:1px solid var(--lin);padding-bottom:6px;overflow-x:auto}",
+          ".tabs{display:flex;gap:2px 6px;flex-wrap:wrap;border-bottom:1px solid var(--lin);padding-bottom:6px;overflow-x:auto}"))
 R.append(("""  .schicht{padding:0 7px;font-size:13px}""",
           """  .schicht{padding:0 7px;font-size:13px}
   .zw .zHoer{padding:0 7px 0 5px;font-size:13px}.zw .zAug{min-width:32px;width:32px}
-  #fassung{order:0;margin:0 0 2px;flex-wrap:wrap;padding:2px 4px}#masterZeit{display:none}#lMaster{padding:0 8px;font-size:13px}
+  #fassung{order:0;margin:0 0 2px;flex-wrap:nowrap;padding:2px 4px}#fassung .seg{width:auto;flex:0 0 auto}#fassung .seg button{min-width:44px;padding:0 6px}#masterZeit{display:none}#lMaster{padding:0 8px;font-size:13px}
   #staffelLeiste{order:6}#staffelWert{display:none}"""))
 R.append(("#transport{order:1}#zugLeiste{order:2}#zugLeiste2{order:3}#hoerLeiste{order:4}#schichtLeiste{order:5}#tonLeiste{order:6}#bereichsleiste{order:7}#sende{order:8}",
           "#transport{order:1}#zugLeiste{order:2}#zugLeiste2{order:3}#hoerLeiste{order:4}#schichtLeiste{order:5}#tonLeiste{order:7}#bereichsleiste{order:8}#sende{order:9}"))

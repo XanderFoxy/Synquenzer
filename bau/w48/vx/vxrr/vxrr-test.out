@@ -1,0 +1,19 @@
+INFO Befund: 10 Klicks · 5 Plopps · Brumm 50 Hz · Raumton -42 dB · Schritte click,plop,hum,hp,room · roh Klick -11.13 dB, Stoß 22.97 dB, Brumm -46.07 dB
+OK Spur: Klicks, Plopps und Brummen werden gefunden – ["click","plop","hum"]
+OK Standard (100 %) bitgleich wie 4.88 (Ergebnis und „nur Entferntes“) – ["2b41e1e9","2b41e1e9","2b41e1e9"]
+OK Gesamt 0 %: Signal unverändert (bitgleich) – "273e24e8"
+OK Gesamt 50 %: messbar zwischen roh und voll – {"klick":[-11.13,-17.15,-54.25],"abweichungAnteil":0.517}
+OK Klicks 0 %: Klicks bleiben, Plopps/Brummen wie voll – {"klick":[-11.13,-11.12,-54.25],"stoss":[-5.2,-5.2],"brumm":[-87.87,-87.87]}
+OK Plopps 0 %: Stöße bleiben (Stoß-Rest ≈ roh), Brummen wie sonst, Klicks bleiben entfernt – {"stoss":[22.97,22.97,0.61],"brumm":[-70.17,-70.29],"klick":[-54.23,-54.24]}
+OK Brummen 0 %: Brumm bleibt (≈ roh), Stöße wie sonst, Klicks bleiben entfernt – {"brumm":[-46.07,-46.29,-70.29],"stoss":[0.43,0.61],"klick":[-56.2,-54.24]}
+OK Blatt: Regler „Gesamt 100 %“ + 7 Schritt-Regler, Trefferhöhe ≥ 32 px – {"da":true,"wert":100,"text":"Gesamt 100 %","h":44,"schritte":8}
+OK App: Anwenden mit Standard-Reglern = 4.88 (Fassung bitgleich, gespeicherter Stand gleich) – {"alt":"78a15f10","neu":"78a15f10","cl":[60,60]}
+OK Tipp auf den Regler: Gesamt 0 %, Knopf zeigt wieder „Anwenden“ – {"wert":0,"lab0":{"ap":"Anwenden","lab":"0 %"}}
+OK App Gesamt 0 %: neue Fassung = unverändertes Signal (bitgleich), wird mit dem Take gemerkt – {"gleich":true,"cl":0,"vxrr":{"g":0,"a":{}},"ap":"✓ angewandt"}
+OK App Gesamt 50 %: Fassung messbar zwischen roh und voll (Entferntes kleiner, Säubern 60 → 30 %) – {"wert":50,"klick":[-11.13,-17.37,-55.22],"entferntesAnteil":0.25,"cl":30}
+OK App Klicks 0 %: nur die Klicks bleiben, Stoß-Rest und Brumm wie voll – {"wert":0,"klick":[-11.13,-11.19,-55.22],"stoss":[-5.21,-5.21],"brumm":[-89.98,-89.98]}
+OK Laden: Regler-Stand bleibt erhalten, alte Projekte ohne Regler unverändert – {"mit":{"g":1,"a":{"click":0}},"ohne":false,"vxa":0}
+OK Hochkant 428×926: alles im Rahmen, nichts überlappt/abgeschnitten – {"zeilen":10,"bad":[],"popIn":true,"scrollX":false}
+OK Quer 926×428: alles im Rahmen, nichts überlappt/abgeschnitten – {"zeilen":10,"bad":[],"popIn":true,"scrollX":false}
+OK keine Seitenfehler / console.error – {"alt":[],"neu":[]}
+ERGEBNIS 17/17

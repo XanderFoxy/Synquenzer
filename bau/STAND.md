@@ -1,4 +1,4 @@
-# Stand 23.11.18:26 UTC
+# Stand 23.11.18:28 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -207,8 +207,11 @@ als Nächstes: nichts – bereit zur Übergabe
 - 16:4x: v2 (Dominanz-Regel für tiefe Stimmen): 113/120, fehl 0, sauber 0.
 - 16:5x: Raumton-Test w/rt.mjs: Farbfehler Mittel 2,05 -> 1,27 dB, max 4,25 -> 2,44, beide Enden <=2 dB 8/20 -> 13/20.
 ## vxrr
-# VXRR – Stand (Zwischenstand)
-- apply.py + block.js gebaut, Ausgang index.html erzeugt (Pflicht-Prüfungen ok). Test vxrr-test.cjs in Arbeit.
+# VXRR – Gesang reinigen: Regler (fertig)
+
+Bau: `python3 apply.py <rel-4880/index.html> <ausgang.html>` (md5-Prüfung 695af050…, 9 Anker je genau 1×, Block VXRR-BEGIN/-END vor `function vr1BreathTap(E){`, kein CSS nötig – nutzt `.clrow/.cllab/.clr` des Säubern-Blatts).
+
+## Was geändert ist
 ## werkzeug
 # STAND werkzeug (Grundlage)
 - [ ] pflicht.py

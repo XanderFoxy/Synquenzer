@@ -30,7 +30,8 @@ async function layoutCheck(page, name) {
     }
     for (let i = 0; i < R.length; i++) for (let j = i + 1; j < R.length; j++) {
       const a = R[i].r, b = R[j].r; const ox = Math.min(a.right, b.right) - Math.max(a.left, b.left), oy = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
-      if (ox > 1 && oy > 1 && !R[i].e.contains(R[j].e) && !R[j].e.contains(R[i].e)) out.ueber.push(R[i].id + ' / ' + R[j].id);
+      const fest = e => getComputedStyle(document.getElementById('sende')).position === 'fixed' && e.closest('#sende');
+      if (ox > 1 && oy > 1 && !R[i].e.contains(R[j].e) && !R[j].e.contains(R[i].e) && !(fest(R[i].e) || fest(R[j].e))) out.ueber.push(R[i].id + ' / ' + R[j].id);
     }
     out.seiteBreit = document.documentElement.scrollWidth > vw + 1;
     out.tabsScroll = document.querySelector('.tabs').scrollWidth > document.querySelector('.tabs').clientWidth + 1;
@@ -69,15 +70,15 @@ async function layoutCheck(page, name) {
   // Zwiebel: alle vier Schichten an, Staffelung ganz
   await page.evaluate(() => { for (const s of ['gereinigt', 'timing']) { const b = document.querySelector('.zAug[data-s="' + s + '"]'); if (b.getAttribute('aria-pressed') !== 'true') b.click() } });
   const h0 = await page.evaluate(() => document.getElementById('buehne').getBoundingClientRect().height);
-  await page.evaluate(() => window.__ws2.staffelSetzen(1)); await sleep(400);
+  await page.evaluate(() => { window.__ws2.staffelSetzen(1); scrollTo(0, 0) }); await sleep(400);
   const h1 = await page.evaluate(() => document.getElementById('buehne').getBoundingClientRect().height);
   erg.hoch.zwiebel = await page.evaluate(() => { const l = window.__ws2.lanes(); return Object.fromEntries(Object.entries(l).map(([k, v]) => [k, [Math.round(v.yc), Math.round(v.half)]])) });
   erg.hoch.buehneHoehe = [Math.round(h0), Math.round(h1)];
   await page.evaluate(() => window.__ws2.ansicht(30.5, 6)); await sleep(500);
   await page.screenshot({ path: OUT + '/hoch-zwiebel-getrennt.png' });
-  await page.evaluate(() => window.__ws2.staffelSetzen(.5)); await sleep(300);
+  await page.evaluate(() => { window.__ws2.staffelSetzen(.5); scrollTo(0, 0) }); await sleep(300);
   await page.screenshot({ path: OUT + '/hoch-zwiebel-halb.png' });
-  await page.evaluate(() => window.__ws2.ansicht(216, 8)); await sleep(500);
+  await page.evaluate(() => { window.__ws2.ansicht(216, 8); scrollTo(0, 0) }); await sleep(500);
   await page.screenshot({ path: OUT + '/hoch-zwiebel-sprechstelle.png' });
   erg.hoch.diffAnteil = await page.evaluate(() => { const w = window.__ws2, r = {}; for (const [a, b] of [['original', 'gereinigt'], ['gereinigt', 'timing'], ['timing', 'ende']]) { const I = w.diffI(a, b); let n = 0; for (const v of I) if (v) n++; r[a + '>' + b] = +(100 * n / I.length).toFixed(1) + ' %' } return r });
   // Spur antippen (getrennt) -> diese Schicht hören
@@ -152,7 +153,8 @@ async function layoutCheck(page, name) {
       const mdev = am.map(t => { let b = 1e9; for (const c of ak) if (Math.abs(t - c) < Math.abs(b)) b = t - c; return b * 1000 }).filter(v => Math.abs(v) < 60);
       const med = a => { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : null };
       const absmax = a => a.length ? Math.max(...a.map(Math.abs)) : null;
-      out.push({ von, bis, klicks: ak.length, klick_gegen_raster_med_ms: +(med(kdev) || 0).toFixed(2), musik_anschlaege: mdev.length, musik_gegen_klick_med_ms: +(med(mdev) || 0).toFixed(2),
+      const rms = Math.sqrt(m.reduce((a, v) => a + v * v, 0) / m.length);
+      out.push({ von, bis, rms_musik: +(20 * Math.log10(rms)).toFixed(2), erste_anschlaege: am.slice(0, 4).map(t => +(t + von).toFixed(4)), klicks: ak.length, klick_gegen_raster_med_ms: +(med(kdev) || 0).toFixed(2), musik_anschlaege: mdev.length, musik_gegen_klick_med_ms: +(med(mdev) || 0).toFixed(2),
         musik_gegen_klick_p90_ms: mdev.length ? +[...mdev].map(Math.abs).sort((a, b) => a - b)[Math.floor(mdev.length * .9)].toFixed(2) : null, versatz_mix_ms: Object.entries(w.MESS.versatz).filter(([k]) => k.startsWith('mix')).map(([k, v]) => k + ':' + v.ms + '/' + v.korr) });
     }
     return out;

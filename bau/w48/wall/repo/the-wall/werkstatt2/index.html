@@ -98,7 +98,7 @@ button:disabled{opacity:.38;cursor:default}
 #sendeStatus.fehler{color:var(--rot)}#sendeStatus.gut{color:var(--ok)}
 #bSenden{background:var(--gold);color:var(--goldfg);border-color:var(--gold);font-weight:650;padding:0 18px}
 #listen{margin-top:14px}
-.tabs{display:flex;gap:6px;border-bottom:1px solid var(--lin);padding-bottom:6px;overflow-x:auto}
+.tabs{display:flex;gap:2px 6px;flex-wrap:wrap;border-bottom:1px solid var(--lin);padding-bottom:6px;overflow-x:auto}
 .tabs button{border:0;background:transparent;color:var(--mut);font-weight:600;padding:0 10px;flex:0 0 auto}
 .tabs button[aria-selected=true]{color:var(--fg);box-shadow:inset 0 -3px 0 var(--gold);border-radius:0}
 .tabs b{font-weight:600;color:var(--mut);font-size:13px;margin-left:3px}
@@ -139,7 +139,7 @@ button:disabled{opacity:.38;cursor:default}
   .titel{display:none}
   .schicht{padding:0 7px;font-size:13px}
   .zw .zHoer{padding:0 7px 0 5px;font-size:13px}.zw .zAug{min-width:32px;width:32px}
-  #fassung{order:0;margin:0 0 2px;flex-wrap:wrap;padding:2px 4px}#masterZeit{display:none}#lMaster{padding:0 8px;font-size:13px}
+  #fassung{order:0;margin:0 0 2px;flex-wrap:nowrap;padding:2px 4px}#fassung .seg{width:auto;flex:0 0 auto}#fassung .seg button{min-width:44px;padding:0 6px}#masterZeit{display:none}#lMaster{padding:0 8px;font-size:13px}
   #staffelLeiste{order:6}#staffelWert{display:none}
   #sende{position:sticky;bottom:0;margin-top:auto;flex-wrap:wrap;padding:4px 0 0;border:0;background:var(--bg);z-index:2}
   #sendeStatus{flex-basis:100%;font-size:12px}
