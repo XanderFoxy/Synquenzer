@@ -1,4 +1,4 @@
-# Stand 23.11.15:59 UTC
+# Stand 23.11.16:01 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -7,7 +7,10 @@
 - (b) echt: alt 0 Stimmen nach Arp aus (Taste/Clip), neu 3/3; (e) echt: alt 4/33 falsch, neu 0/33
 ## drum1
 # DRUM1 – Stand
-- Kern-Test: kern.mjs (Lieder: songs.mjs, lieder-pruef.mjs, hart.mjs). Basis-Lauf läuft.
+- Kern-Test: kern.mjs (Lieder: songs.mjs, lieder-pruef.mjs, hart.mjs).
+- Basis 4.86.0: SUMME kick 515/528 +93 · snare 342/344 +82 · hihat 1546/1768 +1. Alte Lieder schon fast 100 % (SPK11B). Schwach: neues Lied „hart“
+  (harter Bass, mittenreicher Kick, Snare mit tiefem Körper): kick 72/80 +93, snare 48/48 +79.
+- Nächster Schritt: Drum-Ebenen dumpen (DUMP=dump), offline Vorlagen-Klassifikation entwickeln.
 ## ent1a
 # ENT1A Stand
 - Start: Analyse Arp/Stopp. stop() kehrt bei !R.playing früh zurück -> arpEndAll fehlt (Verdacht).
@@ -38,6 +41,10 @@
 - Plan: (1) Glätten Gleiten+Vibrato in segment (Block innerhalb vsDspMake), (2) Anlauf, (3) Marken.
 - apply.py + seg-block.js gebaut (Block GES2-SEG in vsDspMake vor segment, 1 Haken vor minF). Kern-Test 17/18 -> 18/18 (Noten 56 -> 53, Soll 53).
 - Anlauf lagefest / Konsonant über stimmhafte Rahmen: nicht angefasst (VX3 macht Letzteres schon bis 3 Rahmen).
+## ke2
+# KE2 Stand
+- Start: Eingang 4.86.0 (md5 a7515b98…) geprüft. KE1-Kern liegt im stillen Block sq-ke1-src (ohne Kommentare). Eichung per CAL (logistisch) gibt es schon.
+- Plan: Node-Prüfstand (Kern aus der Datei, Testtöne mit renderH der App-Engine) -> Welle vorher/nachher + ECE vorher/nachher; dann Welle aus dem Anschlag in analyse(); dann CAL nachschärfen.
 ## kmp1
 fertig: KMP1 gebaut und getestet (index.html md5 b4943476ff3b5bc6951d20cbf9d37914, apply.py, block.js, kern.js, hoch.png, quer.png, KURZ.md, CHANGES.md)
 als Nächstes: nichts – bereit zur Übernahme
