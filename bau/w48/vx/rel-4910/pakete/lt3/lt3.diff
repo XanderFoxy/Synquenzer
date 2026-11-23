@@ -1,0 +1,32 @@
+diff --git a/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/neu/lt3/../rel-4900/index.html b/index.html
+index 75a1480..5ae94c5 100644
+--- a/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/neu/lt3/../rel-4900/index.html
++++ b/index.html
+@@ -109416,16 +109416,24 @@ S=lt2sSig(U,G);
+ if(P.run){
+ if(P.on&&S.sig===P.sig&&G===P.G&&t-P.tStep<400){lt2sStep(U,G,S,t);return true;}
+ lt2sStop();P.nAbort++;
+-}else if(P.on&&P.slow&&S.nl>0&&S.all&&S.key===P.lastKey&&S.sig!==P.lastSig&&(P.lastNl===0||t-P.lastT>=120)){
+-P.run=true;P.G=G;P.sig=S.sig;P.i=0;P.n=Math.min(6,Math.max(2,Math.ceil(P.cost/20)));P.nSeq++;
++}else if(P.on&&S.nl>0&&S.all&&S.key===P.lastKey&&S.sig!==P.lastSig&&(P.lastNl===0||t-P.lastT>=120)&&(P.slow||(typeof lt3Slow==='function'&&lt3Slow(P)))){/*LT3*/
++P.run=true;P.G=G;P.sig=S.sig;P.i=0;P.n=Math.min(6,Math.max(2,Math.ceil((P.cost||(typeof lt3Est==='function'?lt3Est():0))/20)));/*LT3*/P.nSeq++;
+ lt2sStep(U,G,S,t);return true;
+ }
+ }catch(e){P.err=String((e&&e.message)||e).slice(0,200);P.on=false;try{lt2sStop();}catch(e2){}P.inner=false;S=null;}
+-if(S){P.lastKey=S.key;P.lastSig=S.sig;P.lastNl=S.nl;if(S.nl>0)lt2sMeasure(t);}else{P.lastKey=P.lastSig='';P.lastNl=0;}
++if(S){P.lastKey=S.key;P.lastSig=S.sig;P.lastNl=S.nl;if(S.nl>0)lt2sMeasure(t);else if(typeof lt3Measure==='function')lt3Measure(t);}/*LT3*/else{P.lastKey=P.lastSig='';P.lastNl=0;}
+ P.lastT=t;P.nFull++;
+ return false;
+ }
+ // LT2-END
++// LT3-BEGIN – Spektral: das erste Bild mit Ebenen-Farben (z. B. gleich nach dem Zerlegen) wird wie bei LT2S stückweise vorgezeichnet und erst fertig
++// gezeigt, wenn es noch kein gemessenes Farben-Bild gibt, das Gerät aber schon ohne Farben den Bildtakt verpasst (mindestens 2 der letzten 4 Bilder
++// ohne Farben > 19 ms Abstand; Farben kosten etwa das 3,5-Fache). Sonst wie bisher. Endbild gleich. LT3.on = false schaltet es ab.
++const LT3={on:true,g:[],mq:0,k:3.5,lim:19,n:0};
++function lt3Measure(t){const Q=LT3;if(Q.mq)return;Q.mq=1;requestAnimationFrame(()=>{Q.mq=0;Q.g.push(performance.now()-t);if(Q.g.length>4)Q.g.shift();});}
++function lt3Slow(P){const Q=LT3;if(!Q.on||P.cost)return false;if(Q.g.filter(x=>x>Q.lim).length>=2){Q.n++;return true;}return false;}
++function lt3Est(){return LT3.g.length?LT3.k*Math.max(...LT3.g):0;}
++// LT3-END
+ function spk1CpuDraw(U){
+ const cv=U.gcv,W=cv.width,H=cv.height,x=U.c2;if(!x||!W||!H)return;
+ if(!U.img||U.img.width!==W||U.img.height!==H)U.img=x.createImageData(W,H);
