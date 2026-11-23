@@ -60,16 +60,16 @@ lvl_rms = rms_db(L, 10); lvl_pk = peak_db(L, 1.0)
 # Stufe 1 (FET-artig): nur Spitzen
 thr1 = np.percentile(lvl_pk[act], 97)
 L, gr1 = kompressor(L, thr1, 3.0, 5.0, 70.0, knee=2.0, det='peak', det_ms=1.0)
-# Stufe 2 (Opto-artig): weich glätten, Median 1,5–2 dB
-thr2 = np.percentile(rms_db(L, 10)[act], 50) - 3.0
+# Stufe 2 (Opto-artig): weich glätten, nur oberhalb des mittleren Pegels (Silbendynamik bleibt, Xander: „sehr komprimiert“)
+thr2 = np.percentile(rms_db(L, 10)[act], 50) - 0.5
 L, gr2 = kompressor(L, thr2, 2.0, 25.0, 200.0, knee=6.0, det='rms', det_ms=10.0)
 # Entzischer 5,5–8 kHz
 hi_lvl = rms_db(hp_zp(L, 5500.0, 4), 3.0)
 thr_s = np.percentile(hi_lvl[act], 85)
 L, grs = entzischer(L, 5500.0, thr_s, 4.0, 0.6)
-# Spitzenbegrenzer (Plosive wie „C“ bei 71,5 s): Crest höchstens 11 dB über dem aktiven Pegel
+# Spitzenbegrenzer nur für Plosive (wie „C“ bei 71,5 s): Crest höchstens 15 dB über dem aktiven Pegel
 akt_rms = 10 * np.log10(np.mean(L[act] ** 2))
-L2, grp = limiter(np.stack([L, L], 1), akt_rms + 11.0, 1.5, 60.0); L = L2[:, 0]
+L2, grp = limiter(np.stack([L, L], 1), akt_rms + 15.0, 1.5, 100.0); L = L2[:, 0]
 grL = gr1 + gr2
 LOG['lead_spitzen_gr'] = dict(anteil_ueber_1dB=round(float(np.mean(grp[act] > 1) * 100), 2), max=round(float(grp.max()), 1))
 LOG['lead_gr'] = dict(median_singen=round(float(np.median(grL[act])), 2), p95=round(float(np.percentile(grL[act], 95)), 2),
@@ -218,9 +218,9 @@ def lufs_teile(x, rng): return meter.integrated_loudness(np.concatenate([x[int(a
 g_vox = lufs_teile(v11bus, STROPHEN) - lufs_teile(vox, STROPHEN)
 LOG['gesang_angleich_db'] = round(g_vox, 2)
 vox *= undb(g_vox)
-# Spitzen der Gesangssumme (Crest ≤ 9 dB über aktivem Pegel)
+# Spitzen der Gesangssumme nur grob fangen (Crest ≤ 13 dB über aktivem Pegel), Silben bleiben unangetastet
 va = rms_db(vox, 50) > np.percentile(rms_db(vox, 50), 99.5) - 30
-vox, grv = limiter(vox, 10 * np.log10(np.mean(vox[va] ** 2) * 2) + 9.0, 1.5, 60.0)
+vox, grv = limiter(vox, 10 * np.log10(np.mean(vox[va] ** 2) * 2) + 13.0, 1.5, 100.0)
 LOG['gesang_bus_spitzen_gr_p99'] = round(float(np.percentile(grv[va], 99)), 2)
 LOG['gesang_lufs'] = {nm: round(lufs_teile(vox, [r]), 1) for nm, r in dict(S1=(32, 64), R1=(64, 96), S2=(96, 128), R2=(128, 160), ZT=(192, 224), R3=(224, 256)).items()}
 LOG['v11bus_lufs'] = {nm: round(lufs_teile(v11bus, [r]), 1) for nm, r in dict(S1=(32, 64), R1=(64, 96), S2=(96, 128), R2=(128, 160), ZT=(192, 224), R3=(224, 256)).items()}
@@ -230,6 +230,9 @@ sf.write(STEMS + 'gesang_summe.wav', vox.astype(np.float32), SR, subtype='FLOAT'
 vs = rms_db(vox, 50)
 md_ = glaetten(np.clip((vs - (np.percentile(vs, 90) - 12)) / 12, 0, 1) * 1.3, 50.0, 400.0, 1.3)
 musik_d = musik * undb(-md_)[:, None]
+# „Master nur auf der Musik“ (wie v11): Spitzen der fertigen v5-Musik (−0,4 dBTP) sanft auf −1,5 dBTP, schafft Platz für den Gesang
+musik_d, grm = limiter(musik_d, -1.5, 3.0, 40.0)
+LOG['musik_limiter_gr'] = dict(p95=round(float(np.percentile(grm, 95)), 2), p99=round(float(np.percentile(grm, 99)), 2), max=round(float(grm.max()), 2))
 
 mix = musik_d + vox
 ziel = -10.0; g = 0.0
