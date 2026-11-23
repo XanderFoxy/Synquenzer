@@ -1,10 +1,13 @@
-# Stand 23.11.15:57 UTC
+# Stand 23.11.15:59 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
 - apply.py + block.js geschrieben (a,b,d,e); c in Prüfung
 - (a) echt: 3/4+6/8 alt 1. Note 67 (falsch), neu 60; 4/4 gleich
 - (b) echt: alt 0 Stimmen nach Arp aus (Taste/Clip), neu 3/3; (e) echt: alt 4/33 falsch, neu 0/33
+## drum1
+# DRUM1 – Stand
+- Kern-Test: kern.mjs (Lieder: songs.mjs, lieder-pruef.mjs, hart.mjs). Basis-Lauf läuft.
 ## ent1a
 # ENT1A Stand
 - Start: Analyse Arp/Stopp. stop() kehrt bei !R.playing früh zurück -> arpEndAll fehlt (Verdacht).
@@ -54,10 +57,11 @@ als Naechstes: nichts – bereit zur Uebernahme
   bei Ankunft Einstieg an der richtigen Stelle + 5-ms-Blende; Vorab-Quelle (ohne Spektren) wird bei der vollen Quelle übernommen.
   Hauptfaden: ton1Got (PCM gelesen → sofort an wartende Engines), ton1Pre (Engine wartet, PCM schon da → sofort füttern).
 ## ton2
-# TON2 – Stand (in Arbeit)
-- Ausgang: index.html = python3 apply.py ../rel-4860/index.html index.html
-- 4 Haken (/*TON2*/) + Block TON2-BEGIN/-END vor tkLoad: tkPcm liest Stücke parallel (max 6), tkLoad liest gemerkte Lautheits-Analyse (<take>:lv1 im Audio-Speicher) mit, vpFinish merkt neu gerechnete Analyse.
-- Kern-Test: sonde.js (Browser, Reload + sofort ▶, Original-Spur 3 min)
+# TON2 – Stand (fertig)
+- Ausgang: index.html = python3 apply.py ../rel-4860/index.html index.html (md5 f714174b731b2d82d47ff897ca2ef62f)
+- 4 Haken (/*TON2*/) + Block TON2-BEGIN/-END vor tkLoad:
+  1. tkPcm: Stücke mit Vorab-Fenster (TON2_W=6) parallel anfordern, weiter in Reihenfolge einsetzen (gilt für alle Leser von tkPcm).
+  2. tkLoad: ton2Load = tkPcm + gemerkte Analyse (<take>:lv1 im Audio-Speicher, ArrayBuffer: Kopf-JSON + Float32-Hüllkurve nur in Begrenzer-Abschnitten) gleichzeitig.
 ## vl3
 fertig: VL3 gebaut + Kern-Test 10/10 grün, KURZ.md + CHANGES.md geschrieben (Ausgang md5 9bb6ee81)
 als Nächstes: nichts – bereit zur Übergabe
