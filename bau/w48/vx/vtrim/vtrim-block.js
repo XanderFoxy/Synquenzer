@@ -101,7 +101,7 @@ s.textContent='.vtro{position:absolute;pointer-events:none;overflow:hidden;z-ind
 '.vtrt{position:absolute;top:30px;font:600 11px/1 var(--font-ui,sans-serif);color:var(--vtrc);white-space:nowrap}.vtrt.a,.vtrt.e.r{margin-left:6px;transform:none}.vtrt.e,.vtrt.a.r{margin-left:-6px;transform:translateX(-100%)}'+
 '.vtrh{position:absolute;top:0;width:48px;height:48px;padding:0;border:0;background:none;color:var(--vtrc);pointer-events:auto;touch-action:none;cursor:grab;-webkit-tap-highlight-color:transparent}'+
 '.vtrh.a{margin-left:-14px}.vtrh.a svg{left:14px}.vtrh.e{margin-left:-34px}.vtrh.e svg{left:6px}.vtrh svg{position:absolute;top:3px;width:28px;height:22px}'+
-'.vtro.full .vtrh.e path,.vtra.full .vtrh.a path{fill:none;stroke:currentColor;stroke-width:2}'+
+'.vtro.full .vtrh.e path,.vtra.full .vtrh.a path{fill:none;stroke:currentColor;stroke-width:2}.vtro.lo .vtrh.e{top:112px}.vtro.lo .vtrt.e{top:142px}'+
 '.vtrc.mbtn{position:absolute;top:112px;height:36px;padding:0 10px;font-size:12px;color:var(--vtrc);border-color:var(--vtrc);white-space:nowrap;pointer-events:auto;touch-action:manipulation}'+
 '.vtrm{position:absolute;z-index:6;display:flex;gap:6px;padding:6px;border-radius:10px;background:#15171b;border:1px solid rgba(236,232,223,.18);box-shadow:0 6px 18px rgba(0,0,0,.45)}.vtrm .mbtn{min-height:44px;white-space:nowrap}';
 document.head.appendChild(s);
@@ -182,15 +182,17 @@ if(VTR.dead)return;
 const api=ED.roll,cM=api&&api.el.main,f=api?api.fol():null,x=vtrRef(),G=x?vtrGeo(x):null;
 if(!G||!(f.W>0)||!(f.ppb>0)||!cM.isConnected){if(VTR.o)VTR.o.hidden=true;vtrMenuClose();return;}
 const d=VTR.drag,eB=d&&d.k==='e'?d.b:G.eB,aB=d&&d.k==='a'?d.b:G.aB,sOn=vtrStartOn(x);
-const sig=[f.x0,f.ppb,f.W,cM.offsetLeft,cM.offsetTop,cM.offsetWidth,cM.offsetHeight,eB,aB,G.nE,G.segA,G.segB,sOn,x.a.take,x.a.in,x.a.out,VX1E.col,!!d].join('|');
+/* Start-Fähnchen (Vorlauf oder Anfang) ganz nah am Ende-Fähnchen: Ende-Griff + Text rücken nach unten, damit sich nichts überdeckt */
+const vo=typeof VL3==='object'&&VL3.o&&VL3.o.isConnected&&!VL3.o.hidden?VL3.o:null,vx=vo?vo._p.style.left:'';
+const sig=[f.x0,f.ppb,f.W,cM.offsetLeft,cM.offsetTop,cM.offsetWidth,cM.offsetHeight,eB,aB,G.nE,G.segA,G.segB,sOn,x.a.take,x.a.in,x.a.out,VX1E.col,!!d,vx].join('|');
 let o=VTR.o;
 if(sig===VTR.sig&&o&&o.isConnected&&!o.hidden)return;
 VTR.sig=sig;
 if(!o||!o.isConnected||o.parentElement!==cM.parentElement){if(o)o.remove();o=VTR.o=vtrBuild(cM);VTR.envK='';}
 o.hidden=false;
 const st=o.style;st.left=cM.offsetLeft+'px';st.top=cM.offsetTop+'px';st.width=cM.offsetWidth+'px';st.height=cM.offsetHeight+'px';
-const X=b=>(b-f.x0)*f.ppb,xe=X(eB),xn=X(G.nE),xb=X(G.segB);
-o.classList.toggle('full',eB>=G.nE-1e-6);
+const X=b=>(b-f.x0)*f.ppb,xe=X(eB),xn=X(G.nE),xb=X(G.segB),xs=sOn?X(aB):vx?parseFloat(vx):NaN;
+o.classList.toggle('full',eB>=G.nE-1e-6);o.classList.toggle('lo',isFinite(xs)&&xe-xs<64);
 o._ez.style.left=xe+'px';o._ez.style.width=Math.max(0,xn-xe)+'px';
 o._ep.style.left=xe+'px';o._eh.style.left=xe+'px';o._et.style.left=xe+'px';
 const et=vtrTxt('Ende',(G.nE-eB)*G.sp,'−');if(o._et.textContent!==et)o._et.textContent=et;
