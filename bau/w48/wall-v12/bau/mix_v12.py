@@ -234,6 +234,8 @@ musik_d, grm = limiter(musik_d, -1.5, 3.0, 40.0)
 LOG['musik_limiter_gr'] = dict(p95=round(float(np.percentile(grm, 95)), 2), p99=round(float(np.percentile(grm, 99)), 2), max=round(float(grm.max()), 2))
 
 mix = musik_d + vox
+del SP, G, GA_L, GA_R, D, OB_L, OB_R, UN, chor, gegen, doppel, h_lead, h_dop, h_ch, h_ge, dly, musik, v11bus, lead_send, mitte
+import gc; gc.collect()
 ziel = -10.0; g = 0.0
 CLIP = {}
 def master(x):

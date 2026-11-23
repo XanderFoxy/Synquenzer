@@ -170,10 +170,20 @@ def echo(x_mono, zeit_s=0.5, fb=0.18, n_taps=6, lo=300.0, hi=5000.0):
 
 
 # ---------- Limiter (True Peak, 4x Oversampling) ----------
+def _tp_hull(x, blk=SR * 8, pad=256):
+    """Je Sample der höchste 4x-überabgetastete Betrag (blockweise, speicherschonend)."""
+    n = len(x); out = np.empty(n)
+    for s0 in range(0, n, blk):
+        a = max(s0 - pad, 0); b = min(s0 + blk + pad, n)
+        up = np.abs(resample_poly(x[a:b], 4, 1, axis=0))
+        up = up.max(1) if up.ndim > 1 else up
+        m = len(up) // 4; p = up[:m * 4].reshape(m, 4).max(1)
+        out[s0:min(s0 + blk, n)] = p[s0 - a:s0 - a + min(blk, n - s0)]
+    return out
+
+
 def limiter(x, ceiling_dbtp=-1.3, look_ms=1.5, rel_db_s=20.0):
-    up = resample_poly(x, 4, 1, axis=0)
-    p = np.abs(up).max(1)
-    n = len(x); p = p[:n * 4].reshape(n, 4).max(1)
+    p = _tp_hull(x); n = len(x)
     req = np.maximum(db(p) - ceiling_dbtp, 0.0)
     L = max(int(look_ms * SR / 1000), 1)
     a = maximum_filter1d(req, size=L + 1, origin=-(L // 2))     # schaut L Samples voraus
@@ -185,14 +195,22 @@ def limiter(x, ceiling_dbtp=-1.3, look_ms=1.5, rel_db_s=20.0):
 
 
 def true_peak(x):
-    up = resample_poly(x, 4, 1, axis=0)
-    return float(db(np.abs(up).max()))
+    return float(db(_tp_hull(x).max()))
 
 
-def softclip(x, thr_db=-3.0, ceil_db=-0.8):
-    """Weicher Clipper bei 4x Überabtastung: unter thr linear, darüber tanh-Knie bis ceil."""
-    up = resample_poly(x, 4, 1, axis=0); t = undb(thr_db); c = undb(ceil_db)
-    a = np.abs(up); over = a > t
-    y = up.copy(); y[over] = np.sign(up[over]) * (t + (c - t) * np.tanh((a[over] - t) / (c - t)))
-    red = db(np.maximum(a, 1e-12)) - db(np.maximum(np.abs(y), 1e-12))
-    return resample_poly(y, 1, 4, axis=0)[:len(x)], float(np.mean(over) * 100), float(red.max())
+def softclip(x, thr_db=-3.0, ceil_db=-0.8, blk=SR * 8, pad=256):
+    """Weicher Clipper bei 4x Überabtastung (blockweise): unter thr linear, darüber tanh-Knie bis ceil."""
+    t = undb(thr_db); c = undb(ceil_db); n = len(x); out = np.empty_like(x); cnt = 0; tot = 0; mx = 0.0
+    for s0 in range(0, n, blk):
+        a = max(s0 - pad, 0); b = min(s0 + blk + pad, n)
+        up = resample_poly(x[a:b], 4, 1, axis=0); ab = np.abs(up); over = ab > t
+        if over.any():
+            y = up.copy(); y[over] = np.sign(up[over]) * (t + (c - t) * np.tanh((ab[over] - t) / (c - t)))
+            mx = max(mx, float((db(ab[over]) - db(np.abs(y[over]))).max()))
+            cnt += int(over[(s0 - a) * 4:(s0 - a + min(blk, n - s0)) * 4].sum())
+            dn = resample_poly(y, 1, 4, axis=0)
+        else:
+            dn = x[a:b]
+        tot += min(blk, n - s0) * 4 * (x.shape[1] if x.ndim > 1 else 1)
+        out[s0:min(s0 + blk, n)] = dn[s0 - a:s0 - a + min(blk, n - s0)]
+    return out, cnt / tot * 100, mx
