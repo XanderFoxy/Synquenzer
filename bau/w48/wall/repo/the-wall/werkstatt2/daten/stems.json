@@ -1,0 +1,331 @@
+{
+ "lied": "the-wall",
+ "zeit": "Sekunden ab Takt 1 (120 BPM, 4/4)",
+ "hinweis": "Stems austauschbar: weitere Einträge mit id/name/stuecke anlegen; Zeitachse immer ab Takt 1. Lauf 5: Ende = v11, Musik = v11 ohne Gesang.",
+ "rollen": {
+  "bearbeiten": "ende",
+  "a": "original",
+  "musik": "mix"
+ },
+ "stems": [
+  {
+   "id": "ende",
+   "name": "Ende (v11)",
+   "info": "Hauptstimme v11 trocken (Timing wie v10, „Open your eyes“ an der Quelle entfernt)",
+   "kanaele": 1,
+   "herkunft": "Haupt_v11_trocken.wav",
+   "stuecke": [
+    {
+     "datei": "audio/ende-00.mp3?e8b60d04",
+     "von_s": 0.0,
+     "bis_s": 34.5,
+     "abdruck": "ende-00",
+     "bytes": 553005
+    },
+    {
+     "datei": "audio/ende-01.mp3?b914a6ed",
+     "von_s": 29.025,
+     "bis_s": 66.5,
+     "abdruck": "ende-01",
+     "bytes": 600621
+    },
+    {
+     "datei": "audio/ende-02.mp3?2c71cc8f",
+     "von_s": 60.65,
+     "bis_s": 98.5,
+     "abdruck": "ende-02",
+     "bytes": 606765
+    },
+    {
+     "datei": "audio/ende-03.mp3?f9be9d20",
+     "von_s": 93.027,
+     "bis_s": 130.5,
+     "abdruck": "ende-03",
+     "bytes": 600621
+    },
+    {
+     "datei": "audio/ende-04.mp3?415ce65d",
+     "von_s": 124.65,
+     "bis_s": 162.5,
+     "abdruck": "ende-04",
+     "bytes": 606765
+    },
+    {
+     "datei": "audio/ende-05.mp3?629d90f3",
+     "von_s": 155.15,
+     "bis_s": 178.5,
+     "abdruck": "ende-05",
+     "bytes": 374445
+    },
+    {
+     "datei": "audio/ende-06.mp3?46aff248",
+     "von_s": 173.5,
+     "bis_s": 194.5,
+     "abdruck": "ende-06",
+     "bytes": 336813
+    },
+    {
+     "datei": "audio/ende-07.mp3?3527a3c3",
+     "von_s": 188.65,
+     "bis_s": 226.5,
+     "abdruck": "ende-07",
+     "bytes": 606765
+    },
+    {
+     "datei": "audio/ende-08.mp3?816b30c4",
+     "von_s": 220.65,
+     "bis_s": 258.5,
+     "abdruck": "ende-08",
+     "bytes": 606765
+    },
+    {
+     "datei": "audio/ende-09.mp3?777c642c",
+     "von_s": 251.15,
+     "bis_s": 266.0,
+     "abdruck": "ende-09",
+     "bytes": 238509
+    }
+   ]
+  },
+  {
+   "id": "original",
+   "name": "Original",
+   "info": "Aufnahme (5) vom 17.11., trocken, wie gesungen",
+   "kanaele": 1,
+   "herkunft": "Haupt_trocken_E5.flac",
+   "stuecke": [
+    {
+     "datei": "audio/original-00.mp3?cff84783",
+     "von_s": 0.0,
+     "bis_s": 34.5,
+     "abdruck": "original-00",
+     "bytes": 553005
+    },
+    {
+     "datei": "audio/original-01.mp3?c0d4c15d",
+     "von_s": 29.025,
+     "bis_s": 66.5,
+     "abdruck": "original-01",
+     "bytes": 600621
+    },
+    {
+     "datei": "audio/original-02.mp3?840ce907",
+     "von_s": 60.65,
+     "bis_s": 98.5,
+     "abdruck": "original-02",
+     "bytes": 606765
+    },
+    {
+     "datei": "audio/original-03.mp3?f0b8830b",
+     "von_s": 93.027,
+     "bis_s": 130.5,
+     "abdruck": "original-03",
+     "bytes": 600621
+    },
+    {
+     "datei": "audio/original-04.mp3?56c17a41",
+     "von_s": 124.65,
+     "bis_s": 162.5,
+     "abdruck": "original-04",
+     "bytes": 606765
+    },
+    {
+     "datei": "audio/original-05.mp3?629b5fb7",
+     "von_s": 155.15,
+     "bis_s": 178.5,
+     "abdruck": "original-05",
+     "bytes": 374445
+    },
+    {
+     "datei": "audio/original-06.mp3?c6d59a74",
+     "von_s": 173.5,
+     "bis_s": 194.5,
+     "abdruck": "original-06",
+     "bytes": 336813
+    },
+    {
+     "datei": "audio/original-07.mp3?c5158897",
+     "von_s": 188.65,
+     "bis_s": 226.5,
+     "abdruck": "original-07",
+     "bytes": 606765
+    },
+    {
+     "datei": "audio/original-08.mp3?7ca10b7d",
+     "von_s": 220.65,
+     "bis_s": 258.5,
+     "abdruck": "original-08",
+     "bytes": 606765
+    },
+    {
+     "datei": "audio/original-09.mp3?154d22d0",
+     "von_s": 251.15,
+     "bis_s": 266.0,
+     "abdruck": "original-09",
+     "bytes": 238509
+    }
+   ]
+  },
+  {
+   "id": "gereinigt",
+   "name": "gereinigt",
+   "info": "Original nach der G1-Reinigung (nur für die Ansicht neu gerechnet)",
+   "kanaele": 1,
+   "herkunft": "bau/ws_g1_original.py",
+   "stuecke": [
+    {
+     "datei": "audio/gereinigt-00.mp3?623c7db7",
+     "von_s": 0.0,
+     "bis_s": 34.5,
+     "abdruck": "gereinigt-00",
+     "bytes": 553005
+    },
+    {
+     "datei": "audio/gereinigt-01.mp3?78096d34",
+     "von_s": 29.025,
+     "bis_s": 66.5,
+     "abdruck": "gereinigt-01",
+     "bytes": 600621
+    },
+    {
+     "datei": "audio/gereinigt-02.mp3?dc700951",
+     "von_s": 60.65,
+     "bis_s": 98.5,
+     "abdruck": "gereinigt-02",
+     "bytes": 606765
+    },
+    {
+     "datei": "audio/gereinigt-03.mp3?3decfa0e",
+     "von_s": 93.027,
+     "bis_s": 130.5,
+     "abdruck": "gereinigt-03",
+     "bytes": 600621
+    },
+    {
+     "datei": "audio/gereinigt-04.mp3?041f976b",
+     "von_s": 124.65,
+     "bis_s": 162.5,
+     "abdruck": "gereinigt-04",
+     "bytes": 606765
+    },
+    {
+     "datei": "audio/gereinigt-05.mp3?2b45e3c9",
+     "von_s": 155.15,
+     "bis_s": 178.5,
+     "abdruck": "gereinigt-05",
+     "bytes": 374445
+    },
+    {
+     "datei": "audio/gereinigt-06.mp3?e1d31f59",
+     "von_s": 173.5,
+     "bis_s": 194.5,
+     "abdruck": "gereinigt-06",
+     "bytes": 336813
+    },
+    {
+     "datei": "audio/gereinigt-07.mp3?44854e9c",
+     "von_s": 188.65,
+     "bis_s": 226.5,
+     "abdruck": "gereinigt-07",
+     "bytes": 606765
+    },
+    {
+     "datei": "audio/gereinigt-08.mp3?0033449e",
+     "von_s": 220.65,
+     "bis_s": 258.5,
+     "abdruck": "gereinigt-08",
+     "bytes": 606765
+    },
+    {
+     "datei": "audio/gereinigt-09.mp3?d498d844",
+     "von_s": 251.15,
+     "bis_s": 266.0,
+     "abdruck": "gereinigt-09",
+     "bytes": 238509
+    }
+   ]
+  },
+  {
+   "id": "mix",
+   "name": "Musik v11 (ohne Gesang)",
+   "info": "Instrumental wie im v11-Master, ohne Gesang",
+   "kanaele": 2,
+   "herkunft": "n4_musik.py (v11-Master ohne Gesang)",
+   "stuecke": [
+    {
+     "datei": "audio/mix-00.mp3?d6492910",
+     "von_s": 0.0,
+     "bis_s": 34.5,
+     "abdruck": "mix-00",
+     "bytes": 691245
+    },
+    {
+     "datei": "audio/mix-01.mp3?192b5c7f",
+     "von_s": 29.025,
+     "bis_s": 66.5,
+     "abdruck": "mix-01",
+     "bytes": 750765
+    },
+    {
+     "datei": "audio/mix-02.mp3?f220870c",
+     "von_s": 60.65,
+     "bis_s": 98.5,
+     "abdruck": "mix-02",
+     "bytes": 758445
+    },
+    {
+     "datei": "audio/mix-03.mp3?2e395a33",
+     "von_s": 93.027,
+     "bis_s": 130.5,
+     "abdruck": "mix-03",
+     "bytes": 750765
+    },
+    {
+     "datei": "audio/mix-04.mp3?67c09aa7",
+     "von_s": 124.65,
+     "bis_s": 162.5,
+     "abdruck": "mix-04",
+     "bytes": 758445
+    },
+    {
+     "datei": "audio/mix-05.mp3?cb1a58f3",
+     "von_s": 155.15,
+     "bis_s": 178.5,
+     "abdruck": "mix-05",
+     "bytes": 468045
+    },
+    {
+     "datei": "audio/mix-06.mp3?0fd32fee",
+     "von_s": 173.5,
+     "bis_s": 194.5,
+     "abdruck": "mix-06",
+     "bytes": 421005
+    },
+    {
+     "datei": "audio/mix-07.mp3?a8fc1b18",
+     "von_s": 188.65,
+     "bis_s": 226.5,
+     "abdruck": "mix-07",
+     "bytes": 758445
+    },
+    {
+     "datei": "audio/mix-08.mp3?ed5bb63b",
+     "von_s": 220.65,
+     "bis_s": 258.5,
+     "abdruck": "mix-08",
+     "bytes": 758445
+    },
+    {
+     "datei": "audio/mix-09.mp3?a72ec71f",
+     "von_s": 251.15,
+     "bis_s": 266.0,
+     "abdruck": "mix-09",
+     "bytes": 298125
+    }
+   ],
+   "mit_gesang": false
+  }
+ ],
+ "fassung": "v11",
+ "ende_quelle": "v11-Hauptstimme trocken (Haupt_v11_trocken.wav, Timing wie v10)"
+}
