@@ -192,11 +192,11 @@ if(!o||!o.isConnected||o.parentElement!==cM.parentElement){if(o)o.remove();o=VTR
 o.hidden=false;
 const st=o.style;st.left=cM.offsetLeft+'px';st.top=cM.offsetTop+'px';st.width=cM.offsetWidth+'px';st.height=cM.offsetHeight+'px';
 const X=b=>(b-f.x0)*f.ppb,xe=X(eB),xn=X(G.nE),xb=X(G.segB),xs=sOn?X(aB):vx?parseFloat(vx):NaN;
-o.classList.toggle('full',eB>=G.nE-1e-6);o.classList.toggle('lo',isFinite(xs)&&xe-xs<64);
+const lo=isFinite(xs)&&xe-xs<64;o.classList.toggle('full',eB>=G.nE-1e-6);o.classList.toggle('lo',lo);
 o._ez.style.left=xe+'px';o._ez.style.width=Math.max(0,xn-xe)+'px';
 o._ep.style.left=xe+'px';o._eh.style.left=xe+'px';o._et.style.left=xe+'px';
 const et=vtrTxt('Ende',(G.nE-eB)*G.sp,'−');if(o._et.textContent!==et)o._et.textContent=et;
-o._et.classList.toggle('r',xe-o._et.offsetWidth-10<0);
+o._et.classList.toggle('r',lo||xe-o._et.offsetWidth-10<0);
 /* Nachlauf hinter der Loop-Klammer: getönt, mit einem Tipp aufs Loop-Ende begrenzbar */
 const ov=vtrOver(G,eB);o._n.hidden=!ov;if(ov){o._n.style.left=xb+'px';o._n.style.width=Math.max(0,xe-xb)+'px';}
 const cOn=ov&&!d&&xb>=0&&xb<=cM.offsetWidth+1;o._c.hidden=!cOn;
