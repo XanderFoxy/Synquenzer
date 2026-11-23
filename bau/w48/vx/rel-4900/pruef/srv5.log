@@ -62,3 +62,7 @@ Serving HTTP on 127.0.0.1 port 9110 (http://127.0.0.1:9110/) ...
 127.0.0.1 - - [23/Nov/2026 18:46:20] "GET /basis/version.json?t=1795459580866 HTTP/1.1" 200 -
 127.0.0.1 - - [23/Nov/2026 18:46:24] "GET /neu/index.html HTTP/1.1" 200 -
 127.0.0.1 - - [23/Nov/2026 18:46:28] "GET /neu/version.json?t=1795459588965 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 18:49:01] "GET /basis/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 18:49:04] "GET /neu488/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 18:49:06] "GET /basis/version.json?t=1795459746283 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 18:49:08] "GET /neu488/version.json?t=1795459748742 HTTP/1.1" 200 -

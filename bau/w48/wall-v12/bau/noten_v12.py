@@ -111,17 +111,13 @@ def im(t, fen): return any(a <= t < b for a, b in fen)
 
 # ---------- Lead-Töne ----------
 L = stimme('haupt')
-Lq = L.copy(); ok = ~np.isnan(L)
-Lq[ok] = median_filter(np.round(L[ok]), size=5, mode='nearest')
 lead_noten = []
-i = 0
-while i < NFR:
-    if np.isnan(Lq[i]): i += 1; continue
-    j = i
-    while j + 1 < NFR and not np.isnan(Lq[j + 1]) and Lq[j + 1] == Lq[i]: j += 1
-    lead_noten.append(dict(a=float(T[i] - 0.005), b=float(T[j] + 0.005), p=int(Lq[i]), n=j - i + 1))
-    i = j + 1
-
+for n in segmente(L, tol=0.5, minfr=4):
+    m = n['m']; p = int(np.round(m))
+    if p % 12 not in SCALE:
+        c = [q for q in (p - 1, p + 1) if q % 12 in SCALE and abs(q - m) < 0.75]
+        p = min(c, key=lambda q: abs(q - m)) if c else None
+    lead_noten.append(dict(a=n['a'], b=n['b'], p=p, m=m, n=n['i1'] - n['i0'] + 1))
 
 def zeitlinie(noten, key, default=0.0):
     """Pitchmap-Stützpunkte: Wechsel in der Mitte der Lücke (Lücke > 40 ms), sonst 10 ms vor dem nächsten Ton."""
@@ -155,8 +151,8 @@ for n in lead_noten:
     n['akk'] = chord_note(n['a'], n['b'])
     n['ober'] = None; n['unter'] = None
     if not im(mid, CHOR_FENSTER) or n['akk'] is None or im(mid, [OYE]): continue
-    if n['n'] < 4:          # Gleitton: kein eigener Wechsel
-        n['ober'] = n['unter'] = 'halten'; continue
+    if n['n'] < 6 or n['p'] is None:          # Gleitton/leiterfremd: kein eigener Wechsel
+        n['ober'] = 'halten'; n['unter'] = 'halten' if n['akk'] == 'Ab/C' else None; continue
     iv, why = ober_intervall(n['p'], n['akk'])
     n['ober'] = iv; n['ober_why'] = why
     stat['ober'][why] = stat['ober'].get(why, 0) + 1
@@ -170,6 +166,12 @@ for key in ('ober', 'unter'):
         if n[key] == 'halten': n[key] = last
         elif n[key] is not None: last = n[key]
         else: last = None if key == 'unter' else last
+    if key == 'ober':      # Rest ohne Vorgänger: Nachfolger
+        nxt = None
+        for n in reversed(lead_noten):
+            if n[key] == 'halten' or (n[key] is None and nxt is not None and im((n['a']+n['b'])/2, CHOR_FENSTER) and not im((n['a']+n['b'])/2, [OYE]) and n.get('akk')):
+                n[key] = nxt
+            elif n[key] is not None: nxt = n[key]
 
 ober_pm = zeitlinie(lead_noten, 'ober', 4)
 unter_pm = zeitlinie(lead_noten, 'unter', -4)
@@ -212,6 +214,18 @@ for k, n in enumerate(g_noten):
     if n['shift'] is None and im((n['a'] + n['b']) / 2, GEGEN_FENSTER):
         nb = g_noten[k - 1] if k > 0 else None
         n['shift'] = nb['shift'] if nb and nb.get('shift') is not None else 0.0
+# Gleit-Bruchstücke (< 100 ms) bekommen die Verschiebung des anliegenden langen Tons (kein Sprung im Gleiten)
+for k, n in enumerate(g_noten):
+    if n['shift'] is None or (n['b'] - n['a']) >= 0.1: continue
+    prv = next((g_noten[j] for j in range(k - 1, -1, -1) if (g_noten[j]['b'] - g_noten[j]['a']) >= 0.1), None)
+    nxt = next((g_noten[j] for j in range(k + 1, len(g_noten)) if (g_noten[j]['b'] - g_noten[j]['a']) >= 0.1), None)
+    cand = [x for x in (prv, nxt) if x is not None and x.get('shift') is not None and min(abs(x['a'] - n['b']), abs(n['a'] - x['b'])) < 0.06]
+    if cand: n['shift'] = cand[0]['shift']
+# Statistik wie CHOR.md: Töne >= 120 ms in R1
+r1 = [n for n in g_noten if 63 <= n['a'] < 96 and n['b'] - n['a'] >= 0.12 and n.get('tgt') is not None]
+gstat['R1_toene_120ms'] = len(r1)
+gstat['R1_anders_als_eigener_halbton'] = sum(1 for n in r1 if n['tgt'] != int(np.round(n['m'])))
+gstat['R1_zwischen_vorher'] = sum(1 for n in r1 if abs(n['m'] - np.round(n['m'])) > 0.35)
 gegen_pm = zeitlinie(g_noten, 'shift', 0.0)
 gstat['cents_vorher_median'] = float(np.median(gstat['cents_vorher'])); gstat['ueber35c_vorher'] = float(np.mean(np.array(gstat['cents_vorher']) > 35) * 100)
 del gstat['cents_vorher'], gstat['cents_nachher']
@@ -233,9 +247,11 @@ for n in d_noten:
         if dur < 0.25: n['shift'] = 0.0; n['ok'] = True
         else: dstat['stumm'] += 1
         continue
-    lm = float(np.median(lv)); diff = lm - n['m']
-    if abs(diff) > 2.5:
-        dstat['stumm'] += 1; continue
+    lm = float(np.median(lv)); diff = lm - n['m']; lstd = float(np.std(lv))
+    if dur < 0.12:
+        n['shift'] = 0.0; n['ok'] = True; continue          # kurze Übergänge: natürlich lassen
+    if abs(diff) > 2.5 or (abs(diff) > 0.5 and lstd > 0.6):
+        dstat['stumm'] += 1; continue                          # anderer Ton / Lead wechselt: stumm
     if abs(diff) > 0.5: dstat['halbton_korrigiert'] += 1
     elif abs(diff) > 0.15: dstat['cents_korrigiert'] += 1
     n['shift'] = round(diff, 3) if abs(diff) > 0.15 else 0.0
@@ -258,5 +274,24 @@ plan = dict(ober_gate=ober_gate, unter_gate=unter_gate, doppel_gate=doppel_gate,
             stat_ober=stat['ober'], stat_unter=stat['unter'], ober_intervalle_frames=ivz,
             gegen=gstat, doppel=dstat, n_lead_noten=len(lead_noten))
 json.dump(plan, open(OUT + 'plan.json', 'w'), indent=1)
-print(json.dumps({k: v for k, v in plan.items() if k not in ('ober_gate', 'unter_gate', 'doppel_gate')}, indent=1)[:3500])
+print(json.dumps({k: v for k, v in plan.items() if k not in ('ober_gate', 'unter_gate', 'doppel_gate','gegen')}))
+print({k:v for k,v in gstat.items() if k!='geaendert'})
+import collections; print(collections.Counter((g['akk'],g['nach']) for g in gstat['geaendert']))
 print('Pitchmap-Punkte: ober', len(ober_pm), 'unter', len(unter_pm), 'gegen', len(gegen_pm), 'doppel', len(doppel_pm))
+
+# --- Diagnose Doppel ---
+if __name__ == '__main__' and os.environ.get('DIAG'):
+    rows = []
+    for n in d_noten:
+        mid = (n['a'] + n['b']) / 2
+        if not im(mid, CHOR_FENSTER) or im(mid, [OYE]): continue
+        lv = L[n['i0']:n['i1'] + 1]; ok = ~np.isnan(lv)
+        if ok.mean() < 0.4: continue
+        lvv = lv[ok]
+        rows.append((n['b'] - n['a'], np.median(lvv) - n['m'], np.std(lvv), (lvv - n['m']).min(), (lvv - n['m']).max(), n['a']))
+    rows = np.array(rows)
+    for lo, hi in [(-3, -1.5), (-1.5, -0.5), (-0.5, -0.15), (-0.15, 0.15), (0.15, 0.5), (0.5, 1.5), (1.5, 3)]:
+        m = (rows[:, 1] >= lo) & (rows[:, 1] < hi)
+        print('diff %5.2f..%5.2f: Töne %3d  Dauer %.1f s  std-Lead %.2f' % (lo, hi, m.sum(), rows[m, 0].sum(), np.median(rows[m, 2]) if m.any() else 0))
+    m = (np.abs(rows[:, 1]) > 0.5)
+    for r in rows[m][:25]: print('  t=%.2f dur=%.2f diff=%.2f leadstd=%.2f min=%.2f max=%.2f' % (r[5], r[0], r[1], r[2], r[3], r[4]))
