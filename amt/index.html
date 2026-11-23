@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<title>Jobcenter Überblick</title>
+<style>
+:root{--bg:#f6f5f2;--card:#fff;--ink:#1d1d1f;--mut:#5f6368;--line:#dedcd6;--rot:#b3261e;--rotbg:#fdecea;--gelb:#8a5a00;--gelbbg:#fff4dc;--gruen:#1e6b3a;--gruenbg:#e6f4ea;--blau:#1a56a8;--code:#f1efe9}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121212;--card:#1d1d1f;--ink:#ececec;--mut:#a5a5a5;--line:#333;--rot:#ff8a80;--rotbg:#3a1714;--gelb:#ffcc66;--gelbbg:#3a2c10;--gruen:#7fd69a;--gruenbg:#13301d;--blau:#8ab4f8;--code:#262626;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121212;--card:#1d1d1f;--ink:#ececec;--mut:#a5a5a5;--line:#333;--rot:#ff8a80;--rotbg:#3a1714;--gelb:#ffcc66;--gelbbg:#3a2c10;--gruen:#7fd69a;--gruenbg:#13301d;--blau:#8ab4f8;--code:#262626;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+.w{max-width:760px;margin:0 auto;padding-block:16px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font-size:1.45em;margin:.2em 0 .1em}h2{font-size:1.15em;margin:1.6em 0 .5em}h3{font-size:1em;margin:0 0 .3em}
+.stand{color:var(--mut);font-size:.9em}
+nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding:8px 0;display:flex;gap:6px;overflow-x:auto;border-bottom:1px solid var(--line)}
+nav a{flex:none;font-size:.85em;padding:6px 10px;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--ink);text-decoration:none}
+.k{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:10px 0}
+.rot{border-left:6px solid var(--rot);background:var(--rotbg)}.gelb{border-left:6px solid var(--gelb);background:var(--gelbbg)}.gruen{border-left:6px solid var(--gruen);background:var(--gruenbg)}
+.tag{display:inline-block;font-size:.75em;font-weight:700;padding:2px 8px;border-radius:6px;margin-bottom:6px}
+.rot .tag{background:var(--rot);color:#fff}.gelb .tag{background:var(--gelb);color:#fff}.gruen .tag{background:var(--gruen);color:#fff}
+pre{white-space:pre-wrap;word-wrap:break-word;background:var(--code);border-radius:10px;padding:12px;font:13.5px/1.45 ui-monospace,Menlo,monospace;margin:8px 0}
+button.cp{font:inherit;font-size:.9em;padding:10px 14px;min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+button.cp.ok{background:var(--gruen);color:#fff;border-color:var(--gruen)}
+ol,ul{padding-left:1.2em;margin:.3em 0}li{margin:.25em 0}
+table{width:100%;border-collapse:collapse;font-size:.88em}th,td{border-bottom:1px solid var(--line);padding:7px 5px;text-align:left;vertical-align:top}th{color:var(--mut);font-weight:600}
+.tw{overflow-x:auto}
+label.done{display:flex;gap:10px;align-items:center;font-weight:600;margin-top:8px;min-height:44px}
+label.done input{width:24px;height:24px}
+.mut{color:var(--mut);font-size:.9em}
+a{color:var(--blau)}
+
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.w>*{min-width:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+button.cp:focus-visible,nav a:focus-visible,label.done input:focus-visible{outline:2px solid var(--blau);outline-offset:2px}</style>
+</head>
+<body>
+
+
+<div class="w">
+<h1>Jobcenter – mein Überblick</h1>
+<div class="stand">Stand: 23.11.2026, abends · Kundennummer 043A170178 · BG-Nummer 08002//0016389</div>
+
+<nav>
+<a href="#akut">Akut</a><a href="#bald">Bald</a><a href="#dez">Bis 31.12.</a><a href="#termine">Termine</a><a href="#ablehnungen">Ablehnungen</a><a href="#zeit">Zeitleiste</a><a href="#hilfe">Hilfe</a><a href="#ki">Für eine KI</a>
+</nav>
+
+<div class="k"><h3>So reichst du was ein</h3><ul>
+<li><b>Widerspruch</b> → jobcenter.digital, Kachel „Widerspruch einlegen“, mit Ausweis (eID).</li>
+<li><b>Klage</b> → Mein Justizpostfach, mit Ausweis.</li>
+<li><b>Überprüfungsantrag, Mitteilungen</b> → normale Postfach-Nachricht.</li>
+<li><b>Weiterbewilligung</b> → jobcenter.digital, „Grundsicherungsgeld online verlängern“.</li>
+<li><b>Nie</b> nur E-Mail oder Postfach für Widerspruch/Klage – daran bist du zweimal gescheitert.</li>
+</ul></div>
+<h2 id="akut">Akut</h2>
+
+<div class="k rot" data-id="w1">
+<span class="tag">HEUTE 23.11. bis 24 Uhr</span>
+<h3>Widerspruch gegen den Bescheid vom 19.10.2026 (Termin 22.09.)</h3>
+<p><b>Worum es geht:</b> Das Jobcenter sagt, du hättest den Termin am 22.09. ohne Grund versäumt. Das ist ein „erstes Meldeversäumnis“ – noch keine Kürzung, aber die Grundlage für spätere 30-%-Kürzungen.</p>
+<p><b>So geht's:</b> jobcenter.digital → Kachel <b>„Widerspruch einlegen“</b> → Bescheid vom 19.10.2026 → Text einfügen → mit Ausweis (eID) bestätigen → Bestätigung als Bildschirmfoto speichern. <b>Keine</b> normale Postfach-Nachricht – die gilt nicht.</p>
+<pre id="t1">Ich lege Widerspruch gegen den Bescheid vom 19.10.2026 ein (Feststellung eines ersten Meldeversäumnisses, Termin 22.09.2026).
+
+1. Ein Einladungsschreiben vom 10.09.2026 mit Rechtsfolgenbelehrung habe ich nicht erhalten. In meiner Bescheidablage ist vom 10.09.2026 nur die Feststellung zum 06.07.2026. Zum 22.09.2026 kam nur eine App-Meldung „Sie haben einen neuen Termin“, ohne Kontaktart und ohne Belehrung. Ich bestreite den Zugang einer Einladung mit Rechtsfolgenbelehrung (§ 37 Abs. 2 Satz 3 SGB X).
+2. Die Anhörung vom 22.09.2026 hat mich nicht erreicht. Ich hole sie hiermit nach.
+3. Ich hatte einen wichtigen Grund: meine gesundheitliche Lage, bekannt durch das Gutachten aus 2021 sowie meine Nachrichten vom 08.05.2026 und 06.07.2026 mit ärztlichen Berichten. Darin habe ich gebeten, von Terminen vor Ort abzusehen.
+
+Ich beantrage: den Bescheid aufzuheben; Akteneinsicht (§ 25 SGB X) mit Versandnachweisen zu Einladung und Anhörung; eine Kopie des Gutachtens vom 05.05.2022, an dem ich nicht teilgenommen habe; die Klärung meiner Erwerbsfähigkeit (§ 44a SGB II); bis zur Entscheidung keine weiteren Einladungen zu Terminen vor Ort.</pre>
+<button class="cp" data-t="t1">Text kopieren</button>
+<label class="done"><input type="checkbox"> Erledigt</label>
+</div>
+
+<h2 id="bald">Bald</h2>
+
+<div class="k gelb" data-id="k1">
+<span class="tag">BIS MORGEN 24.11.</span>
+<h3>Klage beim Sozialgericht Chemnitz (Termin 06.07.)</h3>
+<p><b>Worum es geht:</b> Dein Widerspruch zum 06.07. wurde am 21.10. nur wegen der Form verworfen (Postfach ohne Unterschrift). Deinen Antrag auf Wiedereinsetzung vom 12.10. (PIN gesperrt) hat das Jobcenter übergangen. Gegen einen Widerspruchsbescheid geht nur noch Klage – <b>kostenlos</b>, kein Anwalt nötig.</p>
+<p><b>Wie einreichen: Mein Justizpostfach</b> – das ist dein einziger digitaler Weg zum Gericht (Postfach/E-Mail des Jobcenters zählen hier nicht).</p><ol><li><a href="https://mein-justizpostfach.bund.de">mein-justizpostfach.bund.de</a> öffnen → „Anmelden“ → mit BundID und Ausweis (eID).</li><li>„Neue Nachricht“ → Empfänger suchen: <b>Sozialgericht Chemnitz</b>.</li><li>Betreff: <b>Klage gegen Jobcenter Mittelsachsen – W-08002-01863/26</b>.</li><li>Text unten einfügen; als Anhang die zwei Bescheide (10.09.2026 und 21.10.2026) aus deiner Bescheidablage.</li><li>Senden → Bestätigung als Bildschirmfoto speichern.</li></ol><p class="mut">Kostenlos (§ 183 SGG), kein Anwalt nötig. Dein Name unten genügt als Unterschrift.</p>
+<pre id="t2">Klage
+des Herrn Alexander Fuchs, Blumenstr. 59, 04720 Döbeln – Kläger –
+gegen das Jobcenter Mittelsachsen, Hainichener Str. 66a, 09648 Mittweida – Beklagter –
+wegen Feststellung eines Meldeversäumnisses (Meldetermin 06.07.2026): Bescheid vom 10.09.2026 in Gestalt des Widerspruchsbescheids vom 21.10.2026 (Geschäftszeichen 701 – 08002//0016389 – W-08002-01863/26)
+
+Ich beantrage, den Bescheid vom 10.09.2026 in Gestalt des Widerspruchsbescheids vom 21.10.2026 aufzuheben.
+
+Begründung:
+1. Gegen den Bescheid vom 10.09.2026 habe ich am 30.09.2026 über das Postfach auf jobcenter.digital Widerspruch eingelegt. Am 12.10.2026 – vor Ablauf der gesetzten Frist (13.10.2026) – habe ich meine Urheberschaft bestätigt und Fristverlängerung sowie Wiedereinsetzung beantragt: Der eService war mir nicht möglich, weil die PIN meines Personalausweises gesperrt war, und persönlich erscheinen konnte ich aus gesundheitlichen Gründen nicht. Am 30.10.2026 ist mein formwirksamer Widerspruch eingegangen. Der Widerspruchsbescheid geht auf meinen Antrag auf Wiedereinsetzung nicht ein.
+2. In der Sache: Ich habe den Termin am 06.07.2026 um 10:00 Uhr am selben Tag um 07:19 Uhr, also vor Terminbeginn, aus gesundheitlichen Gründen abgesagt und vier ärztliche Berichte beigefügt. Die Anhörung vom 07.07.2026 hat mich nicht erreicht.
+3. Beweismittel: meine Postfach-Nachrichten vom 06.07.2026, 30.09.2026 und 12.10.2026 sowie meine Bescheidablage; ich reiche sie nach.
+
+Mit einer Entscheidung ohne mündliche Verhandlung bin ich einverstanden (§ 124 Abs. 2 SGG). Aus gesundheitlichen Gründen kann ich derzeit keine Termine außer Haus wahrnehmen; ich bitte um schriftliche Kommunikation.
+
+Döbeln, 24.11.2026
+Alexander Fuchs</pre>
+<button class="cp" data-t="t2">Text kopieren</button>
+<label class="done"><input type="checkbox"> Erledigt</label>
+</div>
+
+<div class="k gelb" data-id="m1">
+<span class="tag">MORGEN · keine Frist, aber wichtig</span>
+<h3>Postfach-Nachricht zu den Terminen 16.10. und 03.11.</h3>
+<p><b>Warum:</b> Dazu gibt es noch keinen Bescheid. Drei versäumte Termine hintereinander können alle Leistungen kosten – deshalb jetzt schon schriftlich festhalten.</p><p><b>Wie einreichen:</b> normale Nachricht im Postfach auf jobcenter.digital (kein Widerspruch nötig, keine eID).</p>
+<pre id="t3">Zu den Terminen am 16.10.2026 und 03.11.2026: Einladungsschreiben mit Rechtsfolgenbelehrung habe ich weder im Postfach noch per Post erhalten. Den 16.10.2026 habe ich bereits am 30.09.2026 schriftlich abgesagt. Zum 03.11.2026 kam nur eine App-Meldung; beim Öffnen stand „keine neuen Termine“. Ich war zudem gesundheitlich verhindert. Bitte hören Sie mich schriftlich an, bevor etwas festgestellt wird.</pre>
+<button class="cp" data-t="t3">Text kopieren</button>
+<label class="done"><input type="checkbox"> Erledigt</label>
+</div>
+
+<div class="k gelb" data-id="w2">
+<span class="tag">BIS CA. 26.11.</span>
+<h3>Widerspruch gegen den Überprüfungsbescheid vom 26.10.2026 (Termin 06.07.)</h3>
+<p><b>Worum es geht:</b> Auf deinen Überprüfungsantrag vom 12.10. hat das Jobcenter den Bescheid zum 06.07. als „rechtmäßig“ bestätigt – diesmal inhaltlich. Dagegen: Widerspruch. (Frist selbst gerechnet: Bescheid 26.10. + ca. 1 Monat.)</p>
+<p><b>Wie einreichen:</b> jobcenter.digital → Kachel „Widerspruch einlegen“ → Bescheid vom 26.10.2026 → Text einfügen → mit Ausweis (eID) bestätigen → Bestätigung speichern.</p>
+<pre id="t4">Ich lege Widerspruch gegen den Überprüfungsbescheid vom 26.10.2026 ein (Bescheid vom 10.09.2026, Meldeversäumnis 06.07.2026). Mein Widerspruch vom 30.10.2026 richtete sich bereits dagegen.
+
+1. Ich habe den Termin am 06.07.2026 um 10:00 Uhr am selben Tag um 07:19 Uhr, also vor Terminbeginn, über das Postfach aus gesundheitlichen Gründen abgesagt und vier ärztliche Berichte beigefügt. Der Betreff lautete versehentlich „Absage des Vermittlungsgesprächs am 19.05.2026“, weil ich eine Vorlage verwendet habe; der Text bezieht sich ausdrücklich auf den 06.07.2026.
+2. Die Anhörung vom 07.07.2026 hat mich nicht rechtzeitig erreicht; sie ist nicht in meiner Bescheidablage (§ 24 SGB X).
+3. Ihre Nachricht vom 20.05.2026 betraf nur den Termin am 19.05.2026 und hat ihn als entschuldigt anerkannt. Sie ersetzt keine Einladung mit Rechtsfolgenbelehrung für spätere Termine.
+4. Das Gutachten vom 05.05.2022 wurde mir nie ausgehändigt, an einer Begutachtung 2022 habe ich nicht teilgenommen. Den Entlassungsbericht vom 16.11.2021 haben Sie ohne Mitteilung an mich als nicht mehr verwertbar eingestuft. Bei Zweifeln ist von Amts wegen zu ermitteln (§ 20 SGB X), z. B. Begutachtung nach Aktenlage oder Hausbesuch des Ärztlichen Dienstes.
+
+Ich beantrage, den Überprüfungsbescheid aufzuheben, den Bescheid vom 10.09.2026 zurückzunehmen, Akteneinsicht (§ 25 SGB X) und eine Kopie des Gutachtens vom 05.05.2022 mit Verfasser und Auftraggeber. Bitte kommunizieren Sie wegen meiner Erkrankung schriftlich mit mir.</pre>
+<button class="cp" data-t="t4">Text kopieren</button>
+<label class="done"><input type="checkbox"> Erledigt</label>
+</div>
+
+<h2 id="dez">Bis 31.12.</h2>
+
+<div class="k gelb" data-id="wba">
+<span class="tag">ANFANG DEZEMBER</span>
+<h3>Weiterbewilligungsantrag (dein Geld endet am 31.12.2026)</h3>
+<ol>
+<li>jobcenter.digital → „Grundsicherungsgeld online verlängern“.</li>
+<li>Alles vollständig ausfüllen, Änderungen angeben (Miete, Konten, Einkommen).</li>
+<li><b>Kontoauszüge der letzten 3 Monate von allen Konten</b> hochladen – Girokonto, PayPal, VIMPAY, Bitget und jedes weitere. Als PDF; bei PayPal die Kontoauszüge, nicht die Umsatzanzeige.</li>
+<li>Bestätigung als Bildschirmfoto speichern.</li>
+</ol>
+<label class="done"><input type="checkbox"> Erledigt</label>
+</div>
+
+<div class="k gelb" data-id="ueb">
+<span class="tag">VOR DEM 31.12.</span>
+<h3>Neuer Überprüfungsantrag für 2025 und 2026</h3>
+<p><b>Was das ist:</b> Mit § 44 SGB X muss das Jobcenter einen alten Bescheid aufheben und Geld nachzahlen, wenn es dabei <b>das Recht falsch angewandt</b> oder <b>von falschen Tatsachen ausgegangen</b> ist – auch wenn die Widerspruchsfrist längst vorbei ist. Das sind nicht nur Formfehler. Bei Kürzungen wegen Terminen prüfen wir vier Punkte:</p>
+<ol>
+<li><b>Zugang:</b> Kam die Einladung nachweislich bei dir an? Das muss das Jobcenter beweisen.</li>
+<li><b>Rechtsfolgenbelehrung:</b> Stand vorher klar, konkret und richtig drin, was passiert, wenn du nicht kommst? Fehlt sie oder ist sie falsch, ist die Kürzung rechtswidrig.</li>
+<li><b>Wichtiger Grund:</b> Wurde deine Gesundheit berücksichtigt?</li>
+<li><b>Anhörung:</b> Konntest du dich vorher äußern?</li>
+</ol>
+<p><b>Damit du recht bekommst:</b> Jeden Bescheid <b>einzeln mit Datum</b> nennen (der alte Antrag scheiterte genau daran) und gleich die Nachweise verlangen. Kann das Jobcenter Zugang und Belehrung nicht belegen, muss es aufheben und nachzahlen. Rückwirkend geht das nur bis 01.01.2025 – darum <b>vor dem 31.12.2026</b> stellen.</p>
+<p><b>Vorher:</b> Bitte deinen Vater, alle Bescheide aus 2025 über Kürzungen oder Meldeversäumnisse herauszusuchen. Ihr Datum kommt bei Punkt 2 rein.</p>
+<p><b>Wie einreichen:</b> normale Nachricht im Postfach auf jobcenter.digital reicht (für einen Überprüfungsantrag gibt es keine Formvorschrift).</p>
+<pre id="t5">Antrag auf Überprüfung nach § 44 SGB X
+
+Kundennummer 043A170178, BG-Nummer 08002//0016389
+
+Ich beantrage die Überprüfung und Rücknahme folgender Bescheide sowie die Nachzahlung einbehaltener Beträge (§ 44 SGB X, § 40 Abs. 1 SGB II):
+
+1. Bescheid vom 07.04.2026 – Minderung um 10 % (56,30 €) für Mai 2026 wegen des Meldetermins am 16.12.2025.
+Gründe: Eine Einladung mit Rechtsfolgenbelehrung zum 16.12.2025 und die Anhörung vom 16.12.2025 sind mir nicht nachweislich zugegangen; in meiner Bescheidablage auf jobcenter.digital befinden sich weder Einladungen noch Anhörungen. Den Zugang hat das Jobcenter nachzuweisen (§ 37 Abs. 2 Satz 3 SGB X). Zudem hatte ich einen wichtigen Grund: meine gesundheitliche Lage, die dem Jobcenter durch das Gutachten aus 2021 bekannt ist.
+
+2. [Datum] – [Bescheid über Minderung / Meldeversäumnis aus 2025, Termin am ...].
+Gründe: wie bei Nr. 1.
+(für jeden weiteren Bescheid eine Zeile)
+
+Für jeden genannten Bescheid bitte ich um Prüfung,
+– ob die Einladung nachweislich zugegangen ist,
+– ob die Rechtsfolgenbelehrung konkret, verständlich, richtig und vollständig war,
+– ob vor dem Bescheid eine Anhörung zugegangen ist,
+– ob mein wichtiger Grund (gesundheitliche Lage) berücksichtigt wurde.
+
+Zugleich beantrage ich Akteneinsicht (§ 25 SGB X) in die Einladungen, Rechtsfolgenbelehrungen, Anhörungen und Versandnachweise zu diesen Bescheiden sowie eine Liste aller Bescheide über Minderungen und Meldeversäumnisse seit dem 01.01.2025.
+
+Bitte bestätigen Sie den Eingang schriftlich.
+
+Alexander Fuchs</pre>
+<button class="cp" data-t="t5">Text kopieren</button>
+<label class="done"><input type="checkbox"> Erledigt</label>
+</div>
+
+<h2 id="termine">Alle Termine</h2>
+<div class="tw"><table>
+<tr><th>Termin</th><th>Was kam</th><th>Deine Reaktion</th><th>Stand</th></tr>
+<tr><td>16.12.2025</td><td>unbekannt</td><td>unbekannt</td><td>Kürzung 10 % (56,30 €) Mai 2026, Bescheid 07.04. → <b>Überprüfungsantrag</b></td></tr>
+<tr><td>19.05.2026</td><td>Termin</td><td>Abgesagt 08.05.</td><td><b>Entschuldigt</b> (20.05.) – erledigt</td></tr>
+<tr><td>06.07.2026</td><td>App-Meldung 23.06. („persönlich“), kein Einladungsschreiben</td><td><b>Abgesagt 06.07., 07:19</b>, 4 ärztliche Berichte – nie beantwortet</td><td>Festgestellt 10.09. · Widerspruch verworfen 21.10. · Überprüfung abgelehnt 26.10. → <b>Klage + Widerspruch</b></td></tr>
+<tr><td>22.09.2026</td><td>App-Meldung 10.09., Kontaktart „–“, kein Einladungsschreiben</td><td>keine Absage</td><td>Festgestellt 19.10. → <b>Widerspruch HEUTE</b></td></tr>
+<tr><td>16.10.2026</td><td>App-Meldung 23.09., Kontaktart „–“, kein Einladungsschreiben</td><td><b>Abgesagt 30.09.</b></td><td>noch kein Bescheid → Nachricht</td></tr>
+<tr><td>03.11.2026</td><td>App-Meldung 19.10.; beim Öffnen „keine neuen Termine“</td><td>–</td><td>noch kein Bescheid → Nachricht</td></tr>
+</table></div>
+<p class="mut">In der Bescheidablage liegen 14 Dokumente – kein einziges Einladungsschreiben, keine Anhörung, kein Überprüfungsbescheid vom 26.10. Per Post kam laut dir nur der abgelehnte Widerspruch (gelbes Einschreiben).</p>
+
+<h2 id="ablehnungen">Was die Ablehnungen bedeuten</h2>
+<div class="k">
+<ul>
+<li><b>02.03.2026</b> (alter Überprüfungsantrag 2024/25): nur wegen Form verworfen (E-Mail ohne Unterschrift) und „zu allgemein“. Klagefrist vorbei → neuer, genauer Antrag (siehe oben).</li>
+<li><b>21.10.2026</b> (Widerspruch 06.07.): nur wegen Form verworfen. Kein Widerspruch dagegen möglich – nur <b>Klage</b>.</li>
+<li><b>26.10.2026</b> (Überprüfung 06.07.): inhaltlich „rechtmäßig“ → <b>Widerspruch</b>.</li>
+<li><b>Recht bekommen</b> hast du noch nirgends – verloren aber auch nie in der Sache, fast immer an der Form. Deshalb immer: „Widerspruch einlegen“ mit Ausweis, nie nur Postfach oder E-Mail.</li>
+<li>Zweimal gab dir das Jobcenter nur 3–4 Tage, um die Form nachzuholen (20.02.→23.02., 09.10.→13.10.).</li>
+</ul>
+</div>
+
+<h2>Droht eine Kürzung?</h2>
+<div class="k">
+<ul>
+<li>Bisher: nur zwei Feststellungen (06.07., 22.09.) – <b>noch keine Kürzung</b>.</li>
+<li>Jedes <b>weitere</b> Meldeversäumnis: <b>−30 %</b> für einen Monat. Drei hintereinander: Leistungen können ganz wegfallen.</li>
+<li>Eine Kürzung beginnt erst im Monat <b>nach</b> dem Bescheid. Dezember ist daher ziemlich sicher; Januar könnte betroffen sein, falls zum 16.10./03.11. noch ein Bescheid kommt.</li>
+<li>Ein Widerspruch hält eine Kürzung leider nicht auf. Bei einer Kürzung hilft ein Eilantrag beim Sozialgericht.</li>
+</ul>
+</div>
+
+<h2 id="zeit">Zeitleiste</h2>
+<div class="tw"><table>
+<tr><th>Datum</th><th>Was</th></tr>
+<tr><td>31.12.2025</td><td>Du: Überprüfungsantrag 2024/25 (per E-Mail)</td></tr>
+<tr><td>19.01.2026</td><td>JC: Ablehnung (zu allgemein)</td></tr>
+<tr><td>11.02.2026</td><td>Du: Widerspruch per E-Mail</td></tr>
+<tr><td>20.02.2026</td><td>JC: Form nachholen bis 23.02.</td></tr>
+<tr><td>24.02.2026</td><td>Du: Urheberschaft bestätigt (zu spät erhalten)</td></tr>
+<tr><td>02.03.2026</td><td>JC: Widerspruchsbescheid – verworfen</td></tr>
+<tr><td>18.03.2026</td><td>JC: Entziehung (fehlende Kontoauszüge)</td></tr>
+<tr><td>27.03.–29.05.</td><td>Du: viele Nachrichten mit Auszügen (PayPal, VIMPAY, Bitget, Anlage VM)</td></tr>
+<tr><td>07.04.2026</td><td>JC: Kürzung 10 % für Mai (Termin 16.12.2025)</td></tr>
+<tr><td>07.05.2026</td><td>JC: Mai gezahlt, weitere Unterlagen fehlen</td></tr>
+<tr><td>08.05.2026</td><td>Du: Absage 19.05. + Bitte, keine Termine vor Ort</td></tr>
+<tr><td>20.05.2026</td><td>JC: 19.05. entschuldigt; künftig Krankschreibung nötig; Gutachten 05.05.2022 „6 Stunden“</td></tr>
+<tr><td>11.06.2026</td><td>JC: Zahlung ab Juni wieder, Entziehung aufgehoben</td></tr>
+<tr><td>06.07.2026</td><td>Du: Absage 07:19 mit 4 Berichten (keine Antwort)</td></tr>
+<tr><td>10.09.2026</td><td>JC: Feststellung Meldeversäumnis 06.07.</td></tr>
+<tr><td>30.09.2026</td><td>Du: Widerspruch (Postfach) + Absage 16.10.</td></tr>
+<tr><td>09.10.2026</td><td>JC: Form nachholen bis 13.10.</td></tr>
+<tr><td>12.10.2026</td><td>Du: Urheberschaft, Wiedereinsetzung (PIN gesperrt), Überprüfungsantrag, Anruf 17 Min.</td></tr>
+<tr><td>14.10.2026</td><td>JC: Bescheide 2021/2022 (Krankenkasse)</td></tr>
+<tr><td>19.10.2026</td><td>JC: Feststellung Meldeversäumnis 22.09.</td></tr>
+<tr><td>21.10.2026</td><td>JC: Widerspruchsbescheid 06.07. – verworfen</td></tr>
+<tr><td>26.10.2026</td><td>JC: Überprüfungsbescheid – „rechtmäßig“ (nicht in deiner Ablage)</td></tr>
+<tr><td>30.10.2026</td><td>Du: formwirksamer Widerspruch</td></tr>
+<tr><td>03.11.2026</td><td>JC: Vorverfahren abgeschlossen, Frage bis 20.11.</td></tr>
+<tr><td>05.11.2026</td><td>JC: Weiterbewilligung beantragen (Ende 31.12.)</td></tr>
+</table></div>
+<p class="mut">Verhältnis: Du hast 24 Nachrichten geschickt, im Postfach kamen 3 Antworten zurück. Am 05.05. ging dieselbe Nachricht 3-mal in 5 Minuten raus, weil die Seite hakte.</p>
+
+<h2 id="hilfe">Hilfe, die zu dir kommt</h2>
+<div class="k">
+<ul>
+<li><b>Sozialpsychiatrischer Dienst</b> (Landkreis): kostenlos, macht Hausbesuche, hilft beim Schriftverkehr, kann eine Stellungnahme schreiben und einen Arzt vermitteln. Alles freiwillig.</li>
+<li><b>Schuldnerberatung</b>: kostenlos, für die Gläubiger.</li>
+<li><b>Anwalt für Sozialrecht</b> mit Beratungshilfeschein vom Amtsgericht: ca. 15 €.</li>
+</ul>
+<p class="mut">Das hier ist keine Rechtsberatung, sondern Hilfe beim Ordnen.</p>
+</div>
+
+<h2 id="ki">Für eine andere KI</h2>
+<pre id="t6">KONTEXT (Stand 23.11.2026): Alexander Fuchs, Grundsicherungsgeld, Jobcenter Mittelsachsen, Kd-Nr 043A170178, BG 08002//0016389. Kommuniziert nur digital (jobcenter.digital); gesundheitlich nicht in der Lage, das Haus zu verlassen. Form: Widersprüche NUR über eService-Kachel „Widerspruch einlegen“ mit eID (Postfach/E-Mail ohne Unterschrift wurden zweimal als unzulässig verworfen). Klage: Mein Justizpostfach an SG Chemnitz.
+VERFAHREN: (1) Bescheid 19.10.2026 Meldeversäumnis 22.09. – Widerspruch Frist 23.11. (2) Bescheid 10.09.2026 Meldeversäumnis 06.07. – Widerspruchsbescheid 21.10. (unzulässig, Form; Wiedereinsetzungsantrag 12.10. übergangen) → Klage bis ca. 24.11.; Überprüfungsbescheid 26.10. („rechtmäßig“) → Widerspruch bis ca. 26.11. (3) Termine 16.10. (abgesagt 30.09.) und 03.11. (nur App-Meldung, beim Öffnen „keine neuen Termine“) – noch kein Bescheid. (4) Bescheid 07.04.2026 Minderung 10 % Mai (Termin 16.12.2025) – Überprüfungsantrag § 44 SGB X vor 31.12.2026 (wirkt bis 01.01.2025). (5) Weiterbewilligung bis 31.12.2026.
+KERNARGUMENTE: In der Bescheidablage kein Einladungsschreiben und keine Anhörung, nur App-Meldungen (teils ohne Kontaktart). Absage 06.07. 07:19 mit 4 ärztlichen Berichten unbeantwortet. Gutachten 05.05.2022 ohne Teilnahme (Kopie verlangen). Entlassungsbericht 16.11.2021 ohne Mitteilung verworfen. § 20 SGB X (Amtsermittlung), § 24 (Anhörung), § 25 (Akteneinsicht), § 37 Abs. 2 S. 3 (Zugang), § 44a SGB II (Erwerbsfähigkeit).
+WUNSCH: kurze Antworten, Texte zum Kopieren, keine Fachwörter.</pre>
+<button class="cp" data-t="t6">Text kopieren</button>
+</div>
+
+<script>
+(function(){
+  function kopier(t,b){
+    var txt=document.getElementById(t).innerText;
+    function ok(){b.classList.add('ok');b.textContent='Kopiert';setTimeout(function(){b.classList.remove('ok');b.textContent='Text kopieren'},1800)}
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(ok,function(){alt()})}else alt();
+    function alt(){var r=document.createRange();r.selectNodeContents(document.getElementById(t));var s=getSelection();s.removeAllRanges();s.addRange(r);try{document.execCommand('copy');ok()}catch(e){b.textContent='Markiert – jetzt kopieren'}}
+  }
+  document.querySelectorAll('button.cp').forEach(function(b){b.addEventListener('click',function(){kopier(b.dataset.t,b)})});
+  document.querySelectorAll('.k[data-id]').forEach(function(k){
+    var c=k.querySelector('label.done input');if(!c)return;var key='jc-'+k.dataset.id;
+    try{c.checked=localStorage.getItem(key)==='1'}catch(e){}
+    function zeig(){k.style.opacity=c.checked?.55:1}zeig();
+    c.addEventListener('change',function(){try{localStorage.setItem(key,c.checked?'1':'0')}catch(e){}zeig()});
+  });
+})();
+</script>
+
+</body>
+</html>
