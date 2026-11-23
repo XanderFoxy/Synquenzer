@@ -75,8 +75,7 @@ LOG['lead_spitzen_gr'] = dict(anteil_ueber_1dB=round(float(np.mean(grp[act] > 1)
 LOG['lead_gr'] = dict(median_singen=round(float(np.median(grL[act])), 2), p95=round(float(np.percentile(grL[act], 95)), 2),
                       max=round(float(grL.max()), 1), stufe1_p95=round(float(np.percentile(gr1[act], 95)), 2),
                       stufe2_median=round(float(np.median(gr2[act])), 2), entzischer_p95=round(float(np.percentile(grs[act], 95)), 2))
-# Refrain +0,5 dB (Lead führt)
-L = L * undb(0.5 * zeit_maske(REFRAINS, 0.8))
+# (kein Refrain-Anheben mehr nötig: der weniger komprimierte Lead ist im Refrain von selbst lauter)
 
 # ===================== Gegengesang (Xander) =====================
 fen_g = [(a, b_) for a, b_ in plan['gegen_fenster']]
@@ -236,9 +235,11 @@ LOG['musik_limiter_gr'] = dict(p95=round(float(np.percentile(grm, 95)), 2), p99=
 
 mix = musik_d + vox
 ziel = -10.0; g = 0.0
+CLIP = {}
 def master(x):
-    """Zwei Stufen: schnell (Transienten, bis −0,6 dBTP), dann ruhig (−1,5 dBTP)."""
-    y, g1 = limiter(x, -0.6, 1.5, 200.0)
+    """Weicher Clipper (4x, Knie ab −3 dBFS) für kurze Spitzen, dann Limiter schnell (−0,6 dBTP) und ruhig (−1,5 dBTP)."""
+    y, CLIP['anteil_prozent'], CLIP['max_db'] = softclip(x, -3.0, -0.8)
+    y, g1 = limiter(y, -0.6, 1.5, 200.0)
     y, g2 = limiter(y, -1.5, 5.0, 25.0)
     return y, g1 + g2
 for it in range(4):
@@ -248,6 +249,7 @@ for it in range(4):
 y, grl = master(mix * undb(g))
 lu = meter.integrated_loudness(y)
 LOG['musik_duck_db'] = dict(median_refrain=round(float(np.median(np.concatenate([md_[int(a * SR):int(b_ * SR)] for a, b_ in R123]))), 2), max=round(float(md_.max()), 2))
+LOG['clipper'] = {k: round(v, 3) for k, v in CLIP.items()}
 LOG['master'] = dict(gain_db=round(g, 2), lufs=round(lu, 2), tp_48k=round(true_peak(y), 2),
                      limiter_gr_p95=round(float(np.percentile(grl, 95)), 2), limiter_gr_p99=round(float(np.percentile(grl, 99)), 2), limiter_gr_max=round(float(grl.max()), 2),
                      limiter_gr_anteil_ueber_0_5dB=round(float(np.mean(grl > 0.5) * 100), 2))

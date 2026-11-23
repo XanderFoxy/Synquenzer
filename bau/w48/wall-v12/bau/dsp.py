@@ -187,3 +187,12 @@ def limiter(x, ceiling_dbtp=-1.3, look_ms=1.5, rel_db_s=20.0):
 def true_peak(x):
     up = resample_poly(x, 4, 1, axis=0)
     return float(db(np.abs(up).max()))
+
+
+def softclip(x, thr_db=-3.0, ceil_db=-0.8):
+    """Weicher Clipper bei 4x Überabtastung: unter thr linear, darüber tanh-Knie bis ceil."""
+    up = resample_poly(x, 4, 1, axis=0); t = undb(thr_db); c = undb(ceil_db)
+    a = np.abs(up); over = a > t
+    y = up.copy(); y[over] = np.sign(up[over]) * (t + (c - t) * np.tanh((a[over] - t) / (c - t)))
+    red = db(np.maximum(a, 1e-12)) - db(np.maximum(np.abs(y), 1e-12))
+    return resample_poly(y, 1, 4, axis=0)[:len(x)], float(np.mean(over) * 100), float(red.max())
