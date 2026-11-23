@@ -1,0 +1,94 @@
+{
+ "sub": "srv-a",
+ "aufnahme": {
+  "mitAkkorden": {
+   "fest": {
+    "teil3": "12/12",
+    "teil2": "0/12",
+    "det": [
+     "60→60→62",
+     "62→62→64",
+     "64→64→65"
+    ]
+   },
+   "folgt": {
+    "teil3": "12/12",
+    "teil2": "0/12",
+    "det": [
+     "60→60→62",
+     "62→62→64",
+     "64→64→65"
+    ]
+   },
+   "midi": {
+    "gespielt": 69,
+    "gespeichert": 69,
+    "imExport": [
+     71
+    ]
+   }
+  },
+  "ohneAkkorde": {
+   "fest": {
+    "teil3": "12/12",
+    "teil2": "0/12",
+    "det": [
+     "60→60→62",
+     "62→62→64",
+     "64→64→65"
+    ]
+   },
+   "folgt": {
+    "teil3": "12/12",
+    "teil2": "0/12",
+    "det": [
+     "60→60→62",
+     "62→62→64",
+     "64→64→65"
+    ]
+   },
+   "midi": {
+    "gespielt": 69,
+    "gespeichert": 69,
+    "imExport": [
+     71
+    ]
+   }
+  }
+ },
+ "gehaltenMarken": "0+2 2+2 4+2* 6+2 8+2",
+ "gehaltenLane": "[{\"bar\":0,\"slot\":0}]",
+ "gehalten": {
+  "n": 2,
+  "falsch": 2,
+  "rows": [
+   {
+    "grenze": 4,
+    "clipNote": 76,
+    "vorher": 76,
+    "nachher": 76,
+    "soll": 77,
+    "ok": false
+   },
+   {
+    "grenze": 6,
+    "clipNote": 76,
+    "vorher": 77,
+    "nachher": 77,
+    "soll": 76,
+    "ok": false
+   }
+  ]
+ },
+ "kons": {
+  "kon": true,
+  "trsNachKon": "[1,0,\"ionian\"]",
+  "diffKon": "0/339",
+  "diffTeilAenderung": "118/339",
+  "stellen": 1,
+  "zurueck": true,
+  "trsNachZurueck": "[1,0,\"ionian\"]",
+  "diffZurueck": "0/339"
+ },
+ "errs": []
+}

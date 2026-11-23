@@ -1,0 +1,93 @@
+{
+ "open": {
+  "t": 0,
+  "origin": "f-retro-sequenz",
+  "plate": true,
+  "seg": true,
+  "knobs": 24
+ },
+ "knobs": {
+  "FILTER Cutoff": {
+   "changed": [
+    "p.cutoff"
+   ],
+   "ok": true
+  },
+  "FILTER Reso": {
+   "changed": [
+    "p.res"
+   ],
+   "ok": true
+  },
+  "AMP-HÜLLK. A": {
+   "changed": [
+    "p.aA"
+   ],
+   "ok": true
+  },
+  "ECHO Rückk.": {
+   "changed": [
+    "e.fb"
+   ],
+   "ok": true
+  }
+ },
+ "vertical": {
+  "changed": [],
+  "scrollBefore": [
+   0,
+   474,
+   474,
+   0
+  ],
+  "scrollAfter": [
+   0,
+   474,
+   474,
+   0
+  ]
+ },
+ "hold": {
+  "changed": [
+   "mods"
+  ]
+ },
+ "undo": {
+  "btn": "↶",
+  "changed": [
+   "mods"
+  ],
+  "changed2": [
+   "e.fb"
+  ],
+  "plateAfter": true
+ },
+ "voll": {
+  "plate": false,
+  "tabs": 6
+ },
+ "reload": {
+  "plate": false,
+  "seg": true,
+  "on": "voll",
+  "back": true
+ },
+ "chip": 1,
+ "normal": {
+  "plate": false,
+  "seg": false
+ },
+ "quer": {
+  "t": 0,
+  "origin": "f-retro-sequenz",
+  "plate": true,
+  "seg": true,
+  "knobs": 24,
+  "fit": [
+   219,
+   190,
+   926
+  ]
+ },
+ "errs": []
+}

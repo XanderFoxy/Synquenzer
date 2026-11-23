@@ -1,0 +1,351 @@
+[
+ {
+  "file": "index",
+  "view": "926x428",
+  "rep": 0,
+  "mode": "img",
+  "lt": [
+   58,
+   57
+  ],
+  "steps": {
+   "rest": [
+    58
+   ],
+   "alles": [],
+   "gef": [
+    57
+   ],
+   "alles2": []
+  },
+  "hashes": [
+   "rest:9357b848",
+   "alles:7dfcbf14",
+   "gef:4e69057f",
+   "alles2:7dfcbf14"
+  ],
+  "shots": [
+   "rest:5ebfe0f777",
+   "alles:1034ea1c53",
+   "gef:fb60d1e424",
+   "alles2:1034ea1c53"
+  ],
+  "flk": {
+   "pre": "bb4f58f584",
+   "mid": "bb4f58f584",
+   "st": {
+    "run": true,
+    "i": 1,
+    "n": 3
+   },
+   "gleich": true
+  },
+  "gaps": {
+   "rest": 56,
+   "alles": 33,
+   "gef": 57,
+   "alles2": 20
+  },
+  "st": {
+   "slow": true,
+   "cost": 54,
+   "seq": 2,
+   "step": 6,
+   "pres": 2,
+   "abort": 0,
+   "full": 13,
+   "err": "",
+   "on": true
+  },
+  "errs": [],
+  "load": "0.62"
+ },
+ {
+  "file": "index",
+  "view": "926x428",
+  "rep": 0,
+  "mode": "lt",
+  "lt": [],
+  "steps": {
+   "rest": [],
+   "alles": [],
+   "gef": [],
+   "alles2": []
+  },
+  "hashes": [],
+  "shots": [],
+  "flk": null,
+  "gaps": {
+   "rest": 41,
+   "alles": 19,
+   "gef": 36,
+   "alles2": 28
+  },
+  "st": {
+   "slow": true,
+   "cost": 58,
+   "seq": 3,
+   "step": 9,
+   "pres": 3,
+   "abort": 0,
+   "full": 12,
+   "err": "",
+   "on": true
+  },
+  "errs": [],
+  "load": "1.63"
+ },
+ {
+  "file": "basis",
+  "view": "926x428",
+  "rep": 0,
+  "mode": "img",
+  "lt": [
+   64,
+   57,
+   53
+  ],
+  "steps": {
+   "rest": [
+    64
+   ],
+   "alles": [
+    57
+   ],
+   "gef": [],
+   "alles2": [
+    53
+   ]
+  },
+  "hashes": [
+   "rest:9357b848",
+   "alles:7dfcbf14",
+   "gef:4e69057f",
+   "alles2:7dfcbf14"
+  ],
+  "shots": [
+   "rest:5ebfe0f777",
+   "alles:1034ea1c53",
+   "gef:fb60d1e424",
+   "alles2:1034ea1c53"
+  ],
+  "flk": null,
+  "gaps": {
+   "rest": 67,
+   "alles": 55,
+   "gef": 48,
+   "alles2": 57
+  },
+  "st": null,
+  "errs": [],
+  "load": "1.38"
+ },
+ {
+  "file": "basis",
+  "view": "926x428",
+  "rep": 0,
+  "mode": "lt",
+  "lt": [
+   60
+  ],
+  "steps": {
+   "rest": [],
+   "alles": [],
+   "gef": [
+    60
+   ],
+   "alles2": []
+  },
+  "hashes": [],
+  "shots": [],
+  "flk": null,
+  "gaps": {
+   "rest": 31,
+   "alles": 40,
+   "gef": 59,
+   "alles2": 41
+  },
+  "st": null,
+  "errs": [],
+  "load": "1.71"
+ },
+ {
+  "file": "index",
+  "view": "428x926",
+  "rep": 0,
+  "mode": "img",
+  "lt": [
+   57,
+   60
+  ],
+  "steps": {
+   "rest": [
+    57
+   ],
+   "alles": [],
+   "gef": [
+    60
+   ],
+   "alles2": []
+  },
+  "hashes": [
+   "rest:c18e7c9",
+   "alles:3bce7dae",
+   "gef:6bd40b71",
+   "alles2:3bce7dae"
+  ],
+  "shots": [
+   "rest:f8747b5cb1",
+   "alles:ea9bdcf672",
+   "gef:4872289af5",
+   "alles2:ea9bdcf672"
+  ],
+  "flk": {
+   "pre": "3d2ec47554",
+   "mid": "3d2ec47554",
+   "st": {
+    "run": true,
+    "i": 1,
+    "n": 3
+   },
+   "gleich": true
+  },
+  "gaps": {
+   "rest": 56,
+   "alles": 27,
+   "gef": 63,
+   "alles2": 20
+  },
+  "st": {
+   "slow": true,
+   "cost": 57,
+   "seq": 3,
+   "step": 9,
+   "pres": 3,
+   "abort": 0,
+   "full": 13,
+   "err": "",
+   "on": true
+  },
+  "errs": [],
+  "load": "1.55"
+ },
+ {
+  "file": "index",
+  "view": "428x926",
+  "rep": 0,
+  "mode": "lt",
+  "lt": [
+   56
+  ],
+  "steps": {
+   "rest": [],
+   "alles": [],
+   "gef": [
+    56
+   ],
+   "alles2": []
+  },
+  "hashes": [],
+  "shots": [],
+  "flk": null,
+  "gaps": {
+   "rest": 33,
+   "alles": 22,
+   "gef": 56,
+   "alles2": 18
+  },
+  "st": {
+   "slow": true,
+   "cost": 88,
+   "seq": 3,
+   "step": 15,
+   "pres": 3,
+   "abort": 0,
+   "full": 13,
+   "err": "",
+   "on": true
+  },
+  "errs": [],
+  "load": "1.60"
+ },
+ {
+  "file": "basis",
+  "view": "428x926",
+  "rep": 0,
+  "mode": "img",
+  "lt": [
+   57,
+   51,
+   95
+  ],
+  "steps": {
+   "rest": [
+    57
+   ],
+   "alles": [
+    51
+   ],
+   "gef": [
+    95
+   ],
+   "alles2": []
+  },
+  "hashes": [
+   "rest:c18e7c9",
+   "alles:3bce7dae",
+   "gef:305b5f30",
+   "alles2:3bce7dae"
+  ],
+  "shots": [
+   "rest:f8747b5cb1",
+   "alles:ea9bdcf672",
+   "gef:ac40eeb234",
+   "alles2:ea9bdcf672"
+  ],
+  "flk": null,
+  "gaps": {
+   "rest": 57,
+   "alles": 51,
+   "gef": 95,
+   "alles2": 55
+  },
+  "st": null,
+  "errs": [],
+  "load": "1.86"
+ },
+ {
+  "file": "basis",
+  "view": "428x926",
+  "rep": 0,
+  "mode": "lt",
+  "lt": [
+   53,
+   60,
+   63
+  ],
+  "steps": {
+   "rest": [
+    53,
+    60
+   ],
+   "alles": [
+    63
+   ],
+   "gef": [],
+   "alles2": []
+  },
+  "hashes": [],
+  "shots": [],
+  "flk": null,
+  "gaps": {
+   "rest": 60,
+   "alles": 63,
+   "gef": 44,
+   "alles2": 32
+  },
+  "st": null,
+  "errs": [],
+  "load": "1.96"
+ }
+]

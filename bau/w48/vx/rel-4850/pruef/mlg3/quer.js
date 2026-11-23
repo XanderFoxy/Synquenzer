@@ -1,0 +1,11 @@
+const {chromium}=require('playwright');
+(async()=>{const br=await chromium.launch();const ctx=await br.newContext({viewport:{width:926,height:428},hasTouch:true,isMobile:true,deviceScaleFactor:2});
+const pg=await ctx.newPage();const er=[];pg.on('pageerror',e=>er.push(e.message));
+await pg.goto('http://127.0.0.1:8850/index.html');await pg.waitForFunction(()=>typeof S!=='undefined'&&S.tracks&&S.tracks.length,null,{timeout:60000});await pg.waitForTimeout(1500);
+const cdp=await ctx.newCDPSession(pg);
+const b=await pg.evaluate(()=>{const t=S.tracks.findIndex(x=>x.kind==='synth');soundEdit(t,'T',()=>loadPreset(t,'f-retro-sequenz'));R.selT=t;openEditor();
+const k=[...document.querySelectorAll('.mlg3k')].find(x=>x.getAttribute('aria-label')==='FILTER Cutoff');const r=k.getBoundingClientRect();return{x:r.left+25,y:r.top+20,u:UNDO.length,c:kv1Get(t,'cutoff')};});
+const T=(t,x,y)=>cdp.send('Input.dispatchTouchEvent',{type:t,touchPoints:t==='touchEnd'?[]:[{x,y,id:1}]});
+await T('touchStart',b.x,b.y);for(let j=1;j<=12;j++){await T('touchMove',b.x+1,b.y-5*j);await new Promise(r=>setTimeout(r,16));}await T('touchEnd');
+await pg.waitForTimeout(500);
+console.log(JSON.stringify({before:b,after:await pg.evaluate(()=>({u:UNDO.length,c:kv1Get(R.selT,'cutoff'),scroll:document.querySelector('.mlg3w').scrollTop}))}),er);await br.close();})();

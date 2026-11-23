@@ -1,0 +1,2 @@
+- **Bildwechsel-Takt gehört zum Projekt:** Die Wahl „1 · 2 · 4 · 8 Takte / Musik folgt“ wird jetzt im Projekt gespeichert – gleiches Video auf jedem Gerät und nach dem Laden. Die letzte Wahl auf dem Gerät ist nur noch der Vorschlag für neue Projekte; alte Projekte ohne Wert verhalten sich wie bisher. Mit ↶ rücknehmbar.
+Tests: 18/18 Touch-Sonden (hochkant 428×926 + quer 926×428): Wahl per Tap, ↶, Speichern, neues Projekt mit anderem Wert, Laden → Projekt-Wert gilt, altes Projekt → Gerät-Wert; 0 Seitenfehler.

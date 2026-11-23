@@ -1,0 +1,2 @@
+- **Video-Spur im Song gut tippbar:** Auf Handy und Tablet ist die Video-Spur jetzt 40 px hoch – jeder Chip lässt sich sicher antippen, hochkant und quer. Passt der Name nicht, wird er mit „…“ gekürzt, nie übereinander. Am Computer bleibt alles wie bisher.
+Tests: 12/12 Touch-Sonden grün (iPhone hochkant 428×926 und quer 926×428, Song mit 16 Teilen à 1 Takt): Überlappung 0, alle Chips mit Text, Tippziel 42 px (vorher 26/22 px), 0 Seitenfehler.

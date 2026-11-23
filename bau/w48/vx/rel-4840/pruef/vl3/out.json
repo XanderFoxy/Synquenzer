@@ -1,0 +1,107 @@
+{
+ "hoch": {
+  "view": "428x926",
+  "auto": {
+   "st": 6,
+   "id": "ag0vog3hd3",
+   "sp": 0.5357142857142857,
+   "bar": 2.142857142857143,
+   "mode": "gefaltet",
+   "vl3s": 0.5629,
+   "want": 0.5357142857142857,
+   "undo": "Auftakt gefaltet",
+   "tk": true
+  },
+  "flag": {
+   "hx": 134,
+   "hy": 181,
+   "poleX": 120,
+   "zoneR": 221.921875,
+   "cL": 40,
+   "cR": 428,
+   "x0": -1.8754889347079038,
+   "ppb": 97,
+   "vis": true
+  },
+  "flagOk": true,
+  "drag": {
+   "vl3s": 0.2679,
+   "mode": "gefaltet",
+   "grid": true,
+   "undo": "Auftakt verschoben",
+   "x0": -1.8754889347079038
+  },
+  "dragOk": true,
+  "undo": {
+   "vl3s": 0.5629,
+   "mode": "gefaltet"
+  },
+  "undoOk": true,
+  "menu": [
+   "▸ einmal",
+   "↻ gefaltet",
+   "aus"
+  ],
+  "menuMode": [
+   "aus",
+   "gefaltet",
+   false
+  ],
+  "menuOk": true,
+  "render": {
+   "planSec": 0.5629,
+   "vl3s": 0.5629,
+   "fs": 75838,
+   "n": 102857,
+   "pre": [
+    0.359,
+    0.359
+   ],
+   "breath": 0.3504,
+   "maxDiff": 0.0225,
+   "at": 77536,
+   "sineDiff": 0.0225,
+   "wav": {
+    "fs": 75838,
+    "want": 75838
+   }
+  },
+  "renderOk": true,
+  "save": {
+   "saved": 0.5629,
+   "loaded": 0.5629,
+   "mode": "gefaltet"
+  },
+  "saveOk": true,
+  "autoOk": true,
+  "errs": []
+ },
+ "quer": {
+  "view": "926x428",
+  "auto": {
+   "st": 6,
+   "id": "d4pl25alam",
+   "sp": 0.5357142857142857,
+   "bar": 2.142857142857143,
+   "mode": "gefaltet",
+   "vl3s": 0.5629,
+   "want": 0.5357142857142857,
+   "undo": "Auftakt gefaltet",
+   "tk": true
+  },
+  "flag": {
+   "hx": 134,
+   "hy": 121,
+   "poleX": 120,
+   "zoneR": 352.734375,
+   "cL": 40,
+   "cR": 926,
+   "x0": -1.4119204815650865,
+   "ppb": 221.5,
+   "vis": true
+  },
+  "flagOk": true,
+  "autoOk": true,
+  "errs": []
+ }
+}

@@ -1,0 +1,1 @@
+- TON2: Audio-Clips der Original-Spur klingen beim ersten ▶ nach dem Laden nach ~0,1 s statt 0,3–0,5 s (Teile parallel lesen, Lautstärke-Messung mit der Aufnahme merken; Klang bitgleich).

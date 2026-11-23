@@ -1,0 +1,39 @@
+Serving HTTP on 127.0.0.1 port 8850 (http://127.0.0.1:8850/) ...
+127.0.0.1 - - [23/Nov/2026 12:59:39] "GET /version.json HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 12:59:40] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 12:59:40] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 12:59:40] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 12:59:40] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 12:59:43] code 404, message File not found
+127.0.0.1 - - [23/Nov/2026 12:59:43] "GET /medien/abspann-logo.mp4 HTTP/1.1" 404 -
+127.0.0.1 - - [23/Nov/2026 12:59:43] code 404, message File not found
+127.0.0.1 - - [23/Nov/2026 12:59:43] "GET /medien/abspann-logo.mov HTTP/1.1" 404 -
+127.0.0.1 - - [23/Nov/2026 12:59:44] "GET /version.json?t=1795438784791 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 12:59:44] "GET /version.json?t=1795438784820 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 12:59:44] "GET /version.json?t=1795438784834 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 12:59:44] "GET /version.json?t=1795438784854 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 12:59:48] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 12:59:51] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 12:59:51] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 12:59:52] "GET /version.json?t=1795438792699 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 12:59:54] code 404, message File not found
+127.0.0.1 - - [23/Nov/2026 12:59:54] "GET /medien/abspann-logo.mp4 HTTP/1.1" 404 -
+127.0.0.1 - - [23/Nov/2026 12:59:54] code 404, message File not found
+127.0.0.1 - - [23/Nov/2026 12:59:54] "GET /medien/abspann-logo.mov HTTP/1.1" 404 -
+127.0.0.1 - - [23/Nov/2026 12:59:56] "GET /version.json?t=1795438796409 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 12:59:56] "GET /version.json?t=1795438796484 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 12:59:59] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 13:00:03] "GET /version.json?t=1795438803959 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 13:00:26] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 13:00:26] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 13:00:27] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 13:00:27] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 13:00:27] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 13:00:31] "GET /version.json?t=1795438831409 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 13:00:31] "GET /version.json?t=1795438831776 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 13:00:32] "GET /version.json?t=1795438832307 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 13:00:33] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 13:00:41] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 13:00:43] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 13:00:45] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 13:00:47] "GET /index.html HTTP/1.1" 200 -

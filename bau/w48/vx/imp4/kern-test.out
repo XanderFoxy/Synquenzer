@@ -1,0 +1,10 @@
+Basis: Clap-Noten im Drum-Clip 4 v [ 0.709, 0.551 ] doppelte (t,Pad) 2 | Neu: 2 v [ 0.898 ] doppelte 0
+gehörter Clap-Pegel (rel. v²): Basis { schlaege: 2, pegel: 0.5026809999999999 } Neu { schlaege: 2, pegel: 0.806404 } DAW 0.8060016120032241 → Abstand zur DAW: Basis -4.1 dB, Neu 0 dB
+OK     K1 Basis: zwei Clap-Noten je Zeitpunkt im Clip, App hört nur die lautere (Ausgangslage)  {"dup":2}
+OK     K2 Neu: je Zeitpunkt und Pad genau EIN Schlag im Clip
+OK     K3 Neu: Clap-Pegel = Summe wie in der DAW (±0,1 dB)  0
+OK     K4 Neu: Bericht nennt die zusammengelegten Schläge  ["Drums A + Drums B → DRUMS","DRUMS: 8 Schläge gleichzeitig auf demselben Pad → je ein lauterer Schlag"]
+OK     K5 Synth-Spuren, Song-Ablauf, Szenen bitgleich zur Basis
+OK     K6 übrige Drum-Noten bitgleich zur Basis
+OK     K7 zwei volle Schläge: v bleibt ≤ 1 (lautester möglicher Schlag)
+ALLE OK

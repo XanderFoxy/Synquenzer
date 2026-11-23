@@ -1,0 +1,15 @@
+Serving HTTP on 127.0.0.1 port 8840 (http://127.0.0.1:8840/) ...
+127.0.0.1 - - [23/Nov/2026 12:27:32] "GET /version.json HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 12:27:37] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 12:27:37] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 12:27:37] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 12:27:37] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 12:27:41] "GET /version.json?t=1795436861903 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 12:27:41] "GET /version.json?t=1795436861968 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 12:27:44] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 12:27:49] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 12:27:51] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 12:27:55] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 12:27:57] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 12:28:50] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 12:28:54] "GET /version.json?t=1795436934994 HTTP/1.1" 200 -

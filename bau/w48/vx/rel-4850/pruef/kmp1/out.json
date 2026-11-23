@@ -1,0 +1,76 @@
+{
+ "open": {
+  "t": 0,
+  "origin": "f-mk-k101",
+  "plate": true,
+  "seg": true,
+  "knobs": 4
+ },
+ "knobs": {
+  "FILTER Cutoff": "mk.t.0.f.cut",
+  "FILTER Resonanz": "mk.t.0.f.res",
+  "FILTER Hk.-Menge": "mk.t.0.f.eg",
+  "FILTER Hk.-Tempo": "mk.t.0.e1.d",
+  "KLANG Welle": "mk.t.0.o1.w",
+  "KLANG Verstimm.": "mk.t.0.o2.tune",
+  "KLANG LFO-Tempo": "mk.t.0.l1.f",
+  "KLANG LFO-Menge": "mk.t.0.p.1.i",
+  "RAUM Echo": "mk.dly.dep",
+  "RAUM Hall": "fx.rev",
+  "RAUM Breite": "mk.mfx.dep",
+  "RAUM Lautst.": "fx.vol"
+ },
+ "vertical": [],
+ "undo": [
+  "fx.vol"
+ ],
+ "undoPlate": true,
+ "prog": {
+  "o0": "f-mk-k101",
+  "o1": {
+   "o": "f-mk-k102",
+   "lcd": "002 Euphoric Ld",
+   "plate": true
+  },
+  "o2": {
+   "o": "f-mk-k816",
+   "lcd": "128 Sing Arp"
+  },
+  "peak": 0.27652883529663086,
+  "undoBack": "f-mk-k101"
+ },
+ "key": true,
+ "keyOn": [
+  1,
+  "false"
+ ],
+ "keyOff": 0,
+ "gross": {
+  "plate": false,
+  "big": true,
+  "reload": false,
+  "back": true
+ },
+ "normal": {
+  "eng": "mk",
+  "origin": "f-init-analog",
+  "plate": false
+ },
+ "quer": {
+  "t": 0,
+  "origin": "f-mk-k101",
+  "plate": true,
+  "seg": true,
+  "knobs": 4,
+  "fit": [
+   375,
+   375,
+   926
+  ],
+  "knob": [
+   "mk.t.0.f.cut"
+  ]
+ },
+ "vvLabel": null,
+ "errs": []
+}

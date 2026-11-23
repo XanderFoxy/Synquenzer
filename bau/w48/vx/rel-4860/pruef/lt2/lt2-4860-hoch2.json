@@ -1,0 +1,151 @@
+[
+ {
+  "file": "index",
+  "view": "428x926",
+  "rep": 0,
+  "mode": "img",
+  "lt": [],
+  "steps": {
+   "rest": [],
+   "alles": [],
+   "gef": [],
+   "alles2": []
+  },
+  "hashes": [
+   "rest:c18e7c9",
+   "alles:3bce7dae",
+   "gef:6bd40b71",
+   "alles2:3bce7dae"
+  ],
+  "shots": [
+   "rest:f8747b5cb1",
+   "alles:ea9bdcf672",
+   "gef:4872289af5",
+   "alles2:ea9bdcf672"
+  ],
+  "flk": {
+   "pre": "3d2ec47554",
+   "mid": "3d2ec47554",
+   "st": {
+    "run": true,
+    "i": 1,
+    "n": 3
+   },
+   "gleich": true
+  },
+  "gaps": {
+   "rest": 44,
+   "alles": 37,
+   "gef": 48,
+   "alles2": 20
+  },
+  "st": {
+   "slow": true,
+   "cost": 47,
+   "seq": 3,
+   "step": 9,
+   "pres": 3,
+   "abort": 0,
+   "full": 13,
+   "err": "",
+   "on": true
+  },
+  "errs": [],
+  "load": "2.05"
+ },
+ {
+  "file": "index",
+  "view": "428x926",
+  "rep": 0,
+  "mode": "lt",
+  "lt": [],
+  "steps": {
+   "rest": [],
+   "alles": [],
+   "gef": [],
+   "alles2": []
+  },
+  "hashes": [],
+  "shots": [],
+  "flk": null,
+  "gaps": {
+   "rest": 37,
+   "alles": 24,
+   "gef": 26,
+   "alles2": 18
+  },
+  "st": {
+   "slow": true,
+   "cost": 61,
+   "seq": 3,
+   "step": 12,
+   "pres": 3,
+   "abort": 0,
+   "full": 13,
+   "err": "",
+   "on": true
+  },
+  "errs": [],
+  "load": "1.73"
+ },
+ {
+  "file": "basis",
+  "view": "428x926",
+  "rep": 0,
+  "mode": "img",
+  "lt": [],
+  "steps": {
+   "rest": [],
+   "alles": [],
+   "gef": [],
+   "alles2": []
+  },
+  "hashes": [
+   "rest:c18e7c9",
+   "alles:3bce7dae",
+   "gef:6bd40b71",
+   "alles2:3bce7dae"
+  ],
+  "shots": [
+   "rest:f8747b5cb1",
+   "alles:ea9bdcf672",
+   "gef:4872289af5",
+   "alles2:ea9bdcf672"
+  ],
+  "flk": null,
+  "gaps": {
+   "rest": 36,
+   "alles": 40,
+   "gef": 37,
+   "alles2": 35
+  },
+  "st": null,
+  "errs": [],
+  "load": "1.54"
+ },
+ {
+  "file": "basis",
+  "view": "428x926",
+  "rep": 0,
+  "mode": "lt",
+  "lt": [],
+  "steps": {
+   "rest": [],
+   "alles": [],
+   "gef": [],
+   "alles2": []
+  },
+  "hashes": [],
+  "shots": [],
+  "flk": null,
+  "gaps": {
+   "rest": 40,
+   "alles": 28,
+   "gef": 41,
+   "alles2": 36
+  },
+  "st": null,
+  "errs": [],
+  "load": "1.47"
+ }
+]

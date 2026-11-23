@@ -1,0 +1,1 @@
+LT2: Fokus-Wechsel mit Tönung wird bei langsamer Grafik streifenweise im Hintergrund vorgezeichnet und auf einmal gezeigt – Endbild gleich, Bildabstand beim Wechsel zu „Alles“ 31→22 ms (Median), Long Tasks in gefärbten Schritten 1→0; Nur-Rest-Schritt unverändert (nicht Teil des Auftrags).

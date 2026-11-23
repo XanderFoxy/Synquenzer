@@ -1,0 +1,1 @@
+TON1: Klangkorn-Spuren klingen beim ersten ▶ nach dem Laden sofort (Audio vorab an die Spur, laufende Töne steigen an der richtigen Stelle mit 5-ms-Blende ein); Original-Audio-Clips (3-min-Lied) noch ~350 ms Ladezeit – offen.

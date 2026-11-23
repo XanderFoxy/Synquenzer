@@ -1,0 +1,1420 @@
+<script type="text/plain" id="sq-ke1-src">
+/* KE1-BEGIN (stiller Block sq-ke1-src: Worker-Quelltext, Kern, Blatt; erst beim ersten Tipp ausgewertet) */
+function ke1WkCompose(wk, mkt, core) {
+return 'const __KE1_WKF = function (sampleRate, AudioWorkletProcessor, registerProcessor, __G, Math) {\n' + wk.replace(/currentFrame/g, '__G.currentFrame') +
+'\n;};\n' + (mkt || '') + '\n' + core + '\nconst KE1C = ke1CoreFn(__KE1_WKF, typeof MKTAB !== "undefined" ? MKTAB : null);\n';
+}
+function ke1CoreFn(WKF, MKT) {
+'use strict';
+const SR = 44100, OPT_SR = 22050, CR = 16;
+const LOG10 = Math.log(10), dB = p => 10 * Math.log(p + 1e-30) / LOG10;
+const nextPow2 = v => { let n = 1; while (n < v) n <<= 1; return n; };
+const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+const clampI = (x, lo, hi) => Math.round(Math.min(hi, Math.max(lo, x)));
+
+function rng(seed) {
+let a = seed >>> 0;
+const r = () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+r.n = () => { let u = 0, v = 0; while (u === 0) u = r(); v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+return r;
+}
+const FT = new Map();
+function ftab(n) {
+let t = FT.get(n); if (t) return t;
+const rev = new Uint32Array(n), bits = Math.round(Math.log2(n));
+for (let i = 0; i < n; i++) { let r = 0, x = i; for (let b = 0; b < bits; b++) { r = (r << 1) | (x & 1); x >>= 1; } rev[i] = r; }
+const cs = new Float64Array(n / 2), sn = new Float64Array(n / 2);
+for (let i = 0; i < n / 2; i++) { cs[i] = Math.cos(2 * Math.PI * i / n); sn[i] = -Math.sin(2 * Math.PI * i / n); }
+t = {rev, cs, sn}; FT.set(n, t); return t;
+}
+function fft(re, im) {
+const n = re.length, T = ftab(n), rev = T.rev, cs = T.cs, sn = T.sn;
+for (let i = 0; i < n; i++) { const j = rev[i]; if (j > i) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } }
+for (let size = 2; size <= n; size <<= 1) {
+const half = size >> 1, step = n / size;
+for (let i = 0; i < n; i += size) for (let j = 0, k = 0; j < half; j++, k += step) {
+const a = i + j, b = a + half, wr = cs[k], wi = sn[k], xr = re[b] * wr - im[b] * wi, xi = re[b] * wi + im[b] * wr;
+re[b] = re[a] - xr; im[b] = im[a] - xi; re[a] += xr; im[a] += xi;
+}
+}
+}
+const WIN = new Map(), WBH = new Map();
+function hann(n) { let w = WIN.get(n); if (!w) { w = new Float64Array(n); for (let i = 0; i < n; i++) w[i] = .5 - .5 * Math.cos(2 * Math.PI * i / n); WIN.set(n, w); } return w; }
+function bharris(n) { let w = WBH.get(n); if (!w) { w = new Float64Array(n); for (let i = 0; i < n; i++) { const x = 2 * Math.PI * i / n; w[i] = .35875 - .48829 * Math.cos(x) + .14128 * Math.cos(2 * x) - .01168 * Math.cos(3 * x); } WBH.set(n, w); } return w; }
+function powSpecW(x, start, w, nfft) {
+const n = w.length; nfft = nfft || n; const re = new Float64Array(nfft), im = new Float64Array(nfft);
+for (let i = 0; i < n; i++) { const j = start + i; re[i] = (j >= 0 && j < x.length ? x[j] : 0) * w[i]; }
+fft(re, im); const m = new Float64Array(nfft / 2 + 1); for (let i = 0; i <= nfft / 2; i++) m[i] = re[i] * re[i] + im[i] * im[i];
+return m;
+}
+function stft2(x, n, hop, len) {
+len = len || x.length; const frames = Math.max(0, Math.floor((len - n) / hop) + 1), bins = n / 2 + 1, w = hann(n);
+const out = new Float32Array(frames * bins), re = new Float64Array(n), im = new Float64Array(n);
+for (let f = 0; f < frames; f += 2) {
+const s1 = f * hop, s2 = (f + 1) * hop, two = f + 1 < frames;
+for (let i = 0; i < n; i++) { re[i] = x[s1 + i] * w[i]; im[i] = two ? x[s2 + i] * w[i] : 0; }
+fft(re, im);
+const o1 = f * bins, o2 = (f + 1) * bins;
+for (let k = 0; k < bins; k++) {
+const j = (n - k) % n, ar = re[k], ai = im[k], br = re[j], bi = -im[j];
+const xr = .5 * (ar + br), xi = .5 * (ai + bi); out[o1 + k] = Math.sqrt(xr * xr + xi * xi);
+if (two) { const yr = .5 * (ai - bi), yi = -.5 * (ar - br); out[o2 + k] = Math.sqrt(yr * yr + yi * yi); }
+}
+}
+return {mag: out, frames, bins, n, hop};
+}
+const HB = (() => { const N = 63, h = new Float64Array(N), M = (N - 1) / 2; let s = 0;
+for (let i = 0; i < N; i++) { const t = i - M, sinc = t === 0 ? .5 : Math.sin(Math.PI * t / 2) / (Math.PI * t), w = .42 - .5 * Math.cos(2 * Math.PI * i / (N - 1)) + .08 * Math.cos(4 * Math.PI * i / (N - 1)); h[i] = sinc * w; s += h[i]; }
+for (let i = 0; i < N; i++) h[i] /= s; return h; })();
+function down2(x) {
+const N = HB.length, M = (N - 1) / 2, y = new Float32Array(Math.floor(x.length / 2));
+for (let n = 0; n < y.length; n++) { const c = 2 * n; let s = 0; for (let i = 0; i < N; i++) { const j = c + i - M; if (j >= 0 && j < x.length) s += HB[i] * x[j]; } y[n] = s; }
+return y;
+}
+function to44(x, sr) {
+let f = x instanceof Float32Array ? x : Float32Array.from(x, v => v / 32768);
+while (sr >= 2 * SR - 1) { f = down2(f); sr /= 2; }
+if (Math.abs(sr - SR) < .5) return f;
+const r = sr / SR, N = Math.floor((f.length - 3) / r), y = new Float32Array(Math.max(0, N));
+for (let n = 0; n < N; n++) { const t = n * r, i = Math.floor(t), u = t - i, xm = f[i - 1] || 0, x0 = f[i], x1 = f[i + 1], x2 = f[i + 2];
+y[n] = x0 + .5 * u * (x1 - xm + u * (2 * xm - 5 * x0 + 4 * x1 - x2 + u * (3 * (x0 - x1) + x2 - xm))); }
+return y;
+}
+
+const W = {
+cutHz: v => 20 * Math.pow(1000, v / 127), resK: v => 4 * 1.1 * v / 127, egHt: v => v / 63 * 60,
+atk: v => .0005 * Math.pow(2, 15 * v / 127), dec: v => .002 * Math.pow(2, 13 * v / 127), lfoHz: v => .05 * Math.pow(2, 10 * v / 127),
+fine2: v => { const a = Math.abs(v), s = v < 0 ? -1 : 1; return s * (a <= 48 ? 1200 * (a / 48) * (a / 48) : 1200 + 80 * (a - 48)); },
+vibCt: v => v / 63 * 200,
+};
+const Winv = {
+cut: hz => 127 * Math.log(Math.max(20, hz) / 20) / Math.log(1000), atk: s => 127 / 15 * Math.log2(Math.max(5e-4, s) / .0005),
+dec: s => 127 / 13 * Math.log2(Math.max(2e-3, s) / .002), lfo: hz => 127 / 10 * Math.log2(Math.max(.05, hz) / .05),
+fine2: ct => 48 * Math.sqrt(Math.min(1200, Math.abs(ct)) / 1200), vib: ct => ct * 63 / 200,
+};
+const MK_RA = .52, MK_RD = Math.pow(10, -2.25), MK_SM = 1 - Math.exp(-CR / (.005 * SR));
+function envC(a, d, s, r) {
+const T = 1 + MK_RA, ta = Math.max(1e-5, a) * SR / CR, tau = n => (n > 0 ? Math.exp(-1 / n) : 0), E = {};
+E.aC = tau(ta / -Math.log(1 - .9 / T)); E.aT = T;
+const td = Math.max(1e-5, d) * SR / CR, sp = 1 - s;
+E.dC = sp > 1e-6 ? tau(td / -Math.log((.1 * sp + MK_RD) / (sp + MK_RD))) : 0; E.dT = s - MK_RD;
+E.rC = tau(Math.max(1e-5, r) * SR / CR / -Math.log((.1 + MK_RD) / (1 + MK_RD))); E.rT = -MK_RD; E.s = s;
+return E;
+}
+function egAt(a, d, s, r, hold, ts) {
+const E = envC(W.atk(a), W.dec(d), s / 127, W.dec(r)), out = new Float64Array(ts.length);
+let st = 1, o = 0, blk = 0, j = 0; const dtB = CR / SR, offB = Math.round(hold / dtB), tMax = ts[ts.length - 1];
+for (let t = 0; j < ts.length && t <= tMax + dtB; blk++, t += dtB) {
+if (blk === offB && st > 0) st = 4;
+if (st === 1) { o = E.aT + (o - E.aT) * E.aC; if (o >= 1) { o = 1; st = 2; } }
+if (st === 2) { o = E.dT + (o - E.dT) * E.dC; if (o <= E.s) { o = E.s; st = 3; } }
+else if (st === 3) o += (E.s - o) * MK_SM;
+else if (st === 4) { o = E.rT + (o - E.rT) * E.rC; if (o <= 0) { o = 0; st = 0; } }
+while (j < ts.length && ts[j] < t + dtB) out[j++] = o;
+}
+return out;
+}
+function ladderPow(f, fc, k) {
+const g = Math.tan(Math.PI * Math.min(fc, SR * .49) / SR), Om = Math.tan(Math.PI * Math.min(f, SR * .499) / SR) / g;
+const r2 = 1 - Om * Om, i2 = 2 * Om, r4 = r2 * r2 - i2 * i2 + k, i4 = 2 * r2 * i2;
+return 1 / (r4 * r4 + i4 * i4);
+}
+function timbre0() {
+return {asg: 1, prio: 0, trig: 1, udet: 10, trans: 0, tune: 0, vib: 0, bend: 2, porta: 0,
+o1: {w: 0, c1: 0, c2: 0}, o2: {w: 0, mod: 0, semi: 0, tune: 0}, mix: {o1: 127, o2: 0, n: 0},
+f: {type: 0, cut: 127, res: 0, eg: 0, vel: 0, kbd: 0}, a: {lvl: 127, pan: 0, gate: 0, dist: 0, vel: 0, kbd: 0},
+e1: {a: 0, d: 64, s: 0, r: 0, rst: 1}, e2: {a: 0, d: 64, s: 127, r: 8, rst: 1},
+l1: {w: 2, ks: 0, sync: 0, f: 64, note: 6}, l2: {w: 2, ks: 0, sync: 0, f: 64, note: 6}};
+}
+const deep = o => JSON.parse(JSON.stringify(o));
+let MKBASE = null;
+function mkMerge(base, h) {
+const pm = base ? deep(base) : {v: 1, mode: 0, tv: 1, split: 60, scale: 0, skey: 0, usc: null, vmax: 4, t: [timbre0(), timbre0()]};
+const t = pm.t[0];
+t.o1.w = h.sw ? 5 : clampI(h.o1w, 0, 3); t.o1.c1 = t.o1.w === 1 ? clampI(h.c1 || 0, 0, 127) : 0; t.o1.c2 = h.sw ? (h.sw - 1) * 2 : 0;
+t.o2.w = clampI(h.o2w || 0, 0, 2); t.o2.mod = 0; t.o2.semi = h.semi === 12 ? 12 : 0; t.o2.tune = clampI(h.o2tune || 0, -63, 63);
+t.mix.o2 = h.o2 ? clampI(h.o2lvl, 0, 127) : 0; t.mix.o1 = h.o1lvl == null ? 127 : clampI(h.o1lvl, 0, 127); t.mix.n = clampI(h.n || 0, 0, 127);
+const kb = h.kbd ? clampI(h.kbd, -63, 63) : 0, kSh = kb && h.kn != null ? (h.kn - 60) * kb / 48 * 127 / (12 * Math.log2(1000)) : 0;
+t.f.type = clampI(h.ft || 0, 0, 3); t.f.cut = clampI(h.cut - kSh, 0, 127); t.f.res = clampI(h.res, 0, 127); t.f.eg = clampI(h.eg, -63, 63); t.f.kbd = kb; t.f.vel = 0;
+t.e1 = Object.assign(t.e1 || {}, {a: clampI(h.e1a, 0, 127), d: clampI(h.e1d, 0, 127), s: clampI(h.e1s, 0, 127), r: clampI(h.e1r, 0, 127), rst: 1});
+t.e2 = Object.assign(t.e2 || {}, {a: clampI(h.e2a, 0, 127), d: clampI(h.e2d, 0, 127), s: clampI(h.e2s, 0, 127), r: clampI(h.e2r, 0, 127), rst: 1});
+t.vib = clampI(h.vib || 0, 0, 63); t.l2.w = 2; t.l2.f = clampI(h.l2f == null ? 64 : h.l2f, 0, 127); t.l2.sync = 0; t.tune = clampI(h.tune || 0, -50, 50);
+t.a.vel = 0; t.asg = 1; t.porta = 0;
+return pm;
+}
+
+const scopes = new Map(); let wkMs = 0;
+function scope(sr) {
+let S = scopes.get(sr); if (S) return S;
+if (typeof WKF !== 'function') throw new Error('Engine fehlt');
+const t0 = now(), procs = {}, G = {currentFrame: 0};
+class AWP { constructor() { this.port = {postMessage: () => {}, onmessage: null}; } }
+const M = Object.create(Math); let s = 12345; M.random = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; M.__reset = v => { s = v ? v >>> 0 : 12345; };
+WKF(sr, AWP, (n, c) => { procs[n] = c; }, G, M);
+S = {G, procs, M, sr}; scopes.set(sr, S); wkMs += now() - t0; return S;
+}
+const WAVES = new Map();
+const waveOf = n => { let w = WAVES.get(n); if (!w && MKT) { w = MKT.wave(n); WAVES.set(n, w); } return w; };
+let renders = 0, renderMs = 0, bad = 0;
+function renderOpt(opt, o) {
+const t0 = now(), S = scope(o.sr), G = S.G, M = S.M; M.__reset(o.seed); renders++;
+const N = Math.ceil(o.sec * o.sr / 128) * 128;
+const P = new S.procs['dirigent-analog']({processorOptions: opt});
+P.onMsg({tempo: {bpm: 120, start: null}});
+if (opt.mk) { P.onMsg({mkSeed: o.seed || 1}); P.onMsg({mkWheel: {mw0: o.mw0 || 0}}); if (o.wave) { const w = waveOf(o.wave); if (w) P.onMsg({mkw: w}); } }
+P.onMsg({ev: [[0, 1, 1, o.note, o.vel == null ? .8 : o.vel, -1], [Math.max(.02, o.hold), 2, 1]]});
+const out = new Float32Array(N), L = new Float32Array(128), R = new Float32Array(128);
+for (let f = 0; f < N; f += 128) { G.currentFrame = f; P.process([], [[L, R]]); out.set(L, f); }
+renderMs += now() - t0;
+for (let i = 0; i < N; i += 16) if (!(Math.abs(out[i]) < 1e6)) { for (let j = 0; j < N; j++) if (!(Math.abs(out[j]) < 1e6)) out[j] = 0; scopes.delete(o.sr); bad++; break; }
+const n = Math.round(o.sec * o.sr); return n < N ? out.subarray(0, n) : out;
+}
+const renderH = (h, o) => renderOpt({patch: {eng: 3}, mods: [], mk: mkMerge(MKBASE, h)}, {sr: o.sr, sec: o.sec, note: h.note, hold: h.hold, mw0: h.vib > 0 ? 1 : 0, wave: h.sw || 0, seed: o.seed});
+let VAT = null, FMT = null;
+const KT = .5;
+function hToVa(h) {
+const ph = ((h.kn != null ? h.kn : h.note) - 60) / 12, fc = W.cutHz(h.cut), kt = h.kbd != null ? Math.max(0, Math.min(1, h.kbd / 48)) : KT;
+const v = {o1w: h.sw ? 0 : clampI(h.o1w, 0, 3), o1pw: h.o1w === 1 && !h.sw ? Math.max(.05, .5 - .45 * (h.c1 || 0) / 127) : .5, o1fine: 0, o1semi: 0, o1lvl: 1,
+o2w: h.o2 ? clampI(h.o2w || 0, 0, 2) : 0, o2pw: .5, o2lvl: h.o2 ? Math.min(1, h.o2lvl / 127) : 0, o2semi: h.o2 && h.semi === 12 ? 12 : 0,
+o2fine: h.o2 ? Math.max(-50, Math.min(50, W.fine2(h.o2tune || 0))) : 0, o1oct: 0, o2oct: 0, o3lvl: 0, subLvl: 0,
+noise: Math.min(1, (h.n || 0) / 127 * .8), ftype: h.ft === 1 ? 1 : h.ft === 2 ? 3 : h.ft === 3 ? 5 : 0, cutoff: Math.max(20, Math.min(20000, fc / Math.pow(2, kt * ph))), kt,
+res: Math.min(1.1, (h.res || 0) / 127 * 1.1), fenv: Math.max(-1, Math.min(1, W.egHt(h.eg) / 72)), fvel: 0,
+fA: W.atk(h.e1a), fD: W.dec(h.e1d), fS: h.e1s / 127, fR: W.dec(h.e1r), aA: W.atk(h.e2a), aD: W.dec(h.e2d), aS: h.e2s / 127, aR: W.dec(h.e2r), ampVel: 0,
+o1fineT: (h.tune || 0)};
+v.o1fine = Math.max(-50, Math.min(50, h.tune || 0)); v.o2fine = Math.max(-50, Math.min(50, v.o2fine + (h.tune || 0)));
+delete v.o1fineT;
+const vib = h.vib > 0 ? W.vibCt(h.vib) : 0;
+return {p: v, mods: vib > .5 ? [{src: 1, dst: 1, amt: vib / 2400}] : [], lfo: vib > .5 ? {l1shape: 0, l1rate: W.lfoHz(h.l2f), l1sync: 0, l1retrig: 1, l1fade: 0} : null, vib, smods: vib > .5 ? [{src: 'lfo1', dst: 'pitch', amt: vib / 2400}] : []};
+}
+function renderVA(h, o) {
+const V = hToVa(h), flat = Object.assign({}, VAT ? VAT.flat : {eng: 0}, V.p, V.lfo || {}, {eng: 0});
+return renderOpt({patch: flat, mods: V.mods}, {sr: o.sr, sec: o.sec, note: h.note, hold: h.hold, seed: o.seed});
+}
+function fmPatch(f) {
+const base = FMT ? deep(FMT.fm6) : {alg: 1, fb: 0, trans: 0, ops: [0, 1, 2, 3, 4, 5].map(() => ({on: 1, fixed: 0, coarse: 1, fine: 0, det: 0, ol: 0, r: [99, 99, 99, 99], l: [99, 99, 99, 0], vs: 0, rs: 0}))};
+const o0 = base.ops[0], o1 = base.ops[1];
+Object.assign(o0, {on: 1, coarse: clampI(f.c || 1, 1, 8), fine: 0, det: 0, ol: 99, r: [99, 99, 99, 25], l: [99, 99, 99, 0]});
+Object.assign(o1, {on: 1, coarse: clampI(f.r, 1, 12), fine: 0, det: 0, ol: clampI(f.ol, 0, 99), r: [99, clampI(f.mD, 0, 99), 99, 25], l: [99, clampI(f.mS, 0, 99), clampI(f.mS, 0, 99), 0]});
+for (let k = 2; k < base.ops.length; k++) base.ops[k].ol = 0;
+base.alg = 1; base.fb = clampI(f.fb || 0, 0, 7);
+const p = {aA: W.atk(f.e2a), aD: W.dec(f.e2d), aS: f.e2s / 127, aR: W.dec(f.e2r), cutoff: Math.min(20000, W.cutHz(f.cut == null ? 127 : f.cut)), ftype: 1, res: 0};
+return {fm6: base, p};
+}
+function renderFM(f, o) {
+const P = fmPatch(f), flat = Object.assign({}, FMT ? FMT.flat : {eng: 1}, P.p, {eng: 1, o1fine: 0});
+return renderOpt({patch: flat, mods: [], fm6: P.fm6}, {sr: o.sr, sec: o.sec, note: f.note, hold: f.hold, seed: o.seed});
+}
+
+const SIZES = [512, 2048], HOPDIV = {512: 2, 2048: 4};
+function energy(x) { let e = 0; for (let i = 0; i < x.length; i++) e += x[i] * x[i]; return e; }
+function envDb(x, sr, g) {
+const L = Math.round(.005 * sr), n = Math.floor(x.length / L), o = new Float32Array(n); let mx = 0;
+for (let f = 0; f < n; f++) { let s = 0; for (let i = f * L; i < (f + 1) * L; i++) s += x[i] * x[i]; o[f] = s * g * g / L; if (o[f] > mx) mx = o[f]; }
+return {v: o, mx};
+}
+function prepTarget(x, sr) {
+const T = {sr, len: x.length, e: energy(x), S: [], env: null};
+for (const n of SIZES) {
+const s = stft2(x, n, n / HOPDIV[n]); let mx = 0, ss = 0; for (const v of s.mag) { if (v > mx) mx = v; ss += v * v; }
+const B = s.bins, F = s.frames, fl = new Float32Array(B), col = new Float32Array(F);
+for (let k = 0; k < B; k++) { for (let f = 0; f < F; f++) col[f] = s.mag[f * B + k]; col.sort(); fl[k] = col[Math.floor(.1 * F)] + mx * 1e-3; }
+const lg = new Float32Array(s.mag.length); for (let i = 0; i < lg.length; i++) lg[i] = Math.log(s.mag[i] + fl[i % B]);
+T.S.push({n, s, fl, lg, ss: ss || 1e-12});
+}
+T.env = envDb(x, sr, 1);
+{ const v = Array.from(T.env.v).sort((a, b) => a - b); T.env.floor = Math.max(T.env.mx * 1e-6, v[Math.floor(.05 * v.length)] || 0); }
+return T;
+}
+function fadeWin(n, s, e) {
+s = Math.max(0, Math.min(n, Math.round(s))); e = Math.max(s + 1, Math.min(n, Math.round(e))); const g = new Float32Array(e - s);
+for (let i = 0; i < g.length; i++) g[i] = .5 + .5 * Math.cos(Math.PI * i / g.length); return {s, e, g};
+}
+function applyWin(y, w) { if (!w) return y; for (let i = w.s; i < y.length; i++) y[i] *= i < w.e ? w.g[i - w.s] : 0; return y; }
+function dist(T, y) {
+if (T.win) y = applyWin(y, T.win);
+const ey = energy(y), g = ey > 0 ? Math.sqrt(T.e / ey) : 1; let D = 0;
+for (const S of T.S) {
+const s = stft2(y, S.n, S.n / HOPDIV[S.n]), F = Math.min(s.mag.length, S.s.mag.length); let num = 0, l1 = 0; const B = s.bins;
+for (let i = 0; i < F; i++) { const a = S.s.mag[i], b = s.mag[i] * g, d = a - b; num += d * d; l1 += Math.abs(S.lg[i] - Math.log(b + S.fl[i % B])); }
+D += Math.sqrt(num / S.ss) + l1 / Math.max(1, F);
+}
+const E = envDb(y, T.sr, g), fl = T.env.floor; let ed = 0; const nE = Math.min(E.v.length, T.env.v.length);
+for (let i = 0; i < nE; i++) ed += Math.abs(10 * Math.log10(Math.max(fl, T.env.v[i]) / Math.max(fl, E.v[i])));
+return D + ed / Math.max(1, nE * 20);
+}
+function lsd(x, y) {
+const ex = energy(x), ey = energy(y), g = ey > 0 ? Math.sqrt(ex / ey) : 1; let tot = 0;
+for (const n of [256, 1024, 4096]) {
+const X = stft2(x, n, n / 4), Y = stft2(y, n, n / 4); let mx = 0; for (const v of X.mag) if (v > mx) mx = v;
+const fl = mx * 1e-3, bins = X.bins, F = Math.min(X.frames, Y.frames); let s = 0, c = 0;
+for (let f = 0; f < F; f++) { let fs = 0; for (let k = 0; k < bins; k++) { const d = 20 * Math.log10((X.mag[f * bins + k] + fl) / (Y.mag[f * bins + k] * g + fl)); fs += d * d; } s += Math.sqrt(fs / bins); c++; }
+tot += c ? s / c : 0;
+}
+return tot / 3;
+}
+
+function nmCore(x0, step, bounds) {
+const n = x0.length, clip = x => x.map((v, i) => Math.min(bounds[i][1], Math.max(bounds[i][0], v)));
+return {n, clip, S: [clip(x0)].concat(x0.map((_, i) => { const y = x0.slice(); y[i] += step[i]; return clip(y); }))};
+}
+function nelderMead(f, x0, step, maxEval, bounds) {
+const C = nmCore(x0, step, bounds), n = C.n, clip = C.clip; let S = C.S, F = S.map(f), ev = n + 1;
+while (ev < maxEval) {
+const idx = F.map((v, i) => i).sort((a, b) => F[a] - F[b]); S = idx.map(i => S[i]); F = idx.map(i => F[i]);
+const c = new Array(n).fill(0); for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) c[j] += S[i][j] / n;
+const xr = clip(c.map((v, j) => v + (v - S[n][j]))), fr = f(xr); ev++;
+if (fr < F[0]) { const xe = clip(c.map((v, j) => v + 2 * (v - S[n][j]))), fe = f(xe); ev++; if (fe < fr) { S[n] = xe; F[n] = fe; } else { S[n] = xr; F[n] = fr; } }
+else if (fr < F[n - 1]) { S[n] = xr; F[n] = fr; }
+else { const xc = clip(c.map((v, j) => v + .5 * (S[n][j] - v))), fc = f(xc); ev++;
+if (fc < F[n]) { S[n] = xc; F[n] = fc; } else { for (let i = 1; i <= n; i++) { S[i] = clip(S[i].map((v, j) => S[0][j] + .5 * (v - S[0][j]))); F[i] = f(S[i]); ev++; } } }
+let sp = 0; for (let i = 1; i <= n; i++) sp = Math.max(sp, Math.abs(F[i] - F[0])); if (sp < 1e-6) break;
+}
+let bi = 0; for (let i = 1; i < F.length; i++) if (F[i] < F[bi]) bi = i;
+return {x: S[bi], f: F[bi], ev};
+}
+async function nelderMeadA(f, x0, step, maxEval, bounds, stop) {
+const C = nmCore(x0, step, bounds), n = C.n, clip = C.clip; let S = C.S, F = []; for (const s of S) F.push(await f(s)); let ev = n + 1;
+while (ev < maxEval && !stop()) {
+const idx = F.map((v, i) => i).sort((a, b) => F[a] - F[b]); S = idx.map(i => S[i]); F = idx.map(i => F[i]);
+const c = new Array(n).fill(0); for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) c[j] += S[i][j] / n;
+const xr = clip(c.map((v, j) => v + (v - S[n][j]))), fr = await f(xr); ev++;
+if (fr < F[0]) { const xe = clip(c.map((v, j) => v + 2 * (v - S[n][j]))), fe = await f(xe); ev++; if (fe < fr) { S[n] = xe; F[n] = fe; } else { S[n] = xr; F[n] = fr; } }
+else if (fr < F[n - 1]) { S[n] = xr; F[n] = fr; }
+else { const xc = clip(c.map((v, j) => v + .5 * (S[n][j] - v))), fc = await f(xc); ev++;
+if (fc < F[n]) { S[n] = xc; F[n] = fc; } else { for (let i = 1; i <= n && !stop(); i++) { S[i] = clip(S[i].map((v, j) => S[0][j] + .5 * (v - S[0][j]))); F[i] = await f(S[i]); ev++; } } }
+let sp = 0; for (let i = 1; i < F.length; i++) sp = Math.max(sp, Math.abs(F[i] - F[0])); if (sp < 1e-6) break;
+}
+let bi = 0; for (let i = 1; i < F.length; i++) if (F[i] < F[bi]) bi = i;
+return {x: S[bi], f: F[bi], ev};
+}
+
+function eigenSym(C, n) {
+const a = C.map(r => r.slice()), V = Array.from({length: n}, (_, i) => Array.from({length: n}, (_, j) => (i === j ? 1 : 0)));
+for (let sweep = 0; sweep < 30; sweep++) {
+let off = 0; for (let p = 0; p < n; p++) for (let q = p + 1; q < n; q++) off += a[p][q] * a[p][q]; if (off < 1e-20) break;
+for (let p = 0; p < n; p++) for (let q = p + 1; q < n; q++) {
+if (Math.abs(a[p][q]) < 1e-30) continue;
+const th = (a[q][q] - a[p][p]) / (2 * a[p][q]), t = Math.sign(th || 1) / (Math.abs(th) + Math.sqrt(th * th + 1)), c = 1 / Math.sqrt(t * t + 1), s = t * c;
+for (let k = 0; k < n; k++) { const akp = a[k][p], akq = a[k][q]; a[k][p] = c * akp - s * akq; a[k][q] = s * akp + c * akq; }
+for (let k = 0; k < n; k++) { const apk = a[p][k], aqk = a[q][k]; a[p][k] = c * apk - s * aqk; a[q][k] = s * apk + c * aqk; }
+for (let k = 0; k < n; k++) { const vkp = V[k][p], vkq = V[k][q]; V[k][p] = c * vkp - s * vkq; V[k][q] = s * vkp + c * vkq; }
+}
+}
+return {B: V, d: a.map((r, i) => Math.max(1e-20, r[i]))};
+}
+class CMA {
+constructor(n, sigma, seed) {
+this.n = n; this.sigma = sigma; this.R = rng(seed || 1);
+const lam = this.lam = 4 + Math.floor(3 * Math.log(n)), mu = this.mu = Math.floor(lam / 2);
+let w = []; for (let i = 0; i < mu; i++) w.push(Math.log(mu + .5) - Math.log(i + 1)); const sw = w.reduce((a, b) => a + b, 0); w = w.map(v => v / sw); this.w = w;
+const mueff = this.mueff = 1 / w.reduce((a, b) => a + b * b, 0);
+this.cc = (4 + mueff / n) / (n + 4 + 2 * mueff / n); this.cs = (mueff + 2) / (n + mueff + 5);
+this.c1 = 2 / ((n + 1.3) ** 2 + mueff); this.cmu = Math.min(1 - this.c1, 2 * (mueff - 2 + 1 / mueff) / ((n + 2) ** 2 + mueff));
+this.damps = 1 + 2 * Math.max(0, Math.sqrt((mueff - 1) / (n + 1)) - 1) + this.cs; this.chiN = Math.sqrt(n) * (1 - 1 / (4 * n) + 1 / (21 * n * n));
+this.m = new Array(n).fill(0); this.pc = new Array(n).fill(0); this.ps = new Array(n).fill(0);
+this.C = Array.from({length: n}, (_, i) => Array.from({length: n}, (_, j) => (i === j ? 1 : 0))); this.B = this.C.map(r => r.slice()); this.D = new Array(n).fill(1);
+this.gen = 0; this.best = {f: Infinity, z: this.m.slice()};
+}
+ask() {
+const n = this.n, P = [];
+for (let k = 0; k < this.lam; k++) {
+const zz = Array.from({length: n}, () => this.R.n()), y = new Array(n).fill(0);
+for (let i = 0; i < n; i++) { let s = 0; for (let j = 0; j < n; j++) s += this.B[i][j] * this.D[j] * zz[j]; y[i] = s; }
+P.push({y, z: this.m.map((v, i) => v + this.sigma * y[i])});
+}
+return P;
+}
+tell(P, F) {
+const n = this.n, idx = F.map((v, i) => i).sort((a, b) => F[a] - F[b]);
+if (F[idx[0]] < this.best.f) this.best = {f: F[idx[0]], z: P[idx[0]].z.slice()};
+const yw = new Array(n).fill(0); for (let i = 0; i < this.mu; i++) for (let j = 0; j < n; j++) yw[j] += this.w[i] * P[idx[i]].y[j];
+for (let j = 0; j < n; j++) this.m[j] += this.sigma * yw[j];
+const t = new Array(n).fill(0); for (let i = 0; i < n; i++) { let s = 0; for (let j = 0; j < n; j++) s += this.B[j][i] * yw[j]; t[i] = s / this.D[i]; }
+const cinv = new Array(n).fill(0); for (let i = 0; i < n; i++) { let s = 0; for (let j = 0; j < n; j++) s += this.B[i][j] * t[j]; cinv[i] = s; }
+const a = Math.sqrt(this.cs * (2 - this.cs) * this.mueff); for (let i = 0; i < n; i++) this.ps[i] = (1 - this.cs) * this.ps[i] + a * cinv[i];
+const psn = Math.sqrt(this.ps.reduce((s, v) => s + v * v, 0)); this.gen++;
+const hsig = psn / Math.sqrt(1 - Math.pow(1 - this.cs, 2 * this.gen)) / this.chiN < 1.4 + 2 / (n + 1) ? 1 : 0;
+const b = Math.sqrt(this.cc * (2 - this.cc) * this.mueff); for (let i = 0; i < n; i++) this.pc[i] = (1 - this.cc) * this.pc[i] + hsig * b * yw[i];
+for (let i = 0; i < n; i++) for (let j = 0; j <= i; j++) {
+let r = 0; for (let k = 0; k < this.mu; k++) r += this.w[k] * P[idx[k]].y[i] * P[idx[k]].y[j];
+const v = (1 - this.c1 - this.cmu) * this.C[i][j] + this.c1 * (this.pc[i] * this.pc[j] + (1 - hsig) * this.cc * (2 - this.cc) * this.C[i][j]) + this.cmu * r;
+this.C[i][j] = v; this.C[j][i] = v;
+}
+this.sigma *= Math.exp(this.cs / this.damps * (psn / this.chiN - 1)); this.sigma = Math.min(this.sigma, 3);
+const E = eigenSym(this.C, n); this.B = E.B; this.D = E.d.map(Math.sqrt);
+}
+}
+
+function yin(x, start, Wn, tauMin, tauMax, thr) {
+const d = new Float64Array(tauMax + 2);
+for (let tau = 1; tau <= tauMax + 1; tau++) { let s = 0; for (let j = 0; j < Wn; j++) { const v = x[start + j] - x[start + j + tau]; s += v * v; } d[tau] = s; }
+let run = 0; const c = new Float64Array(tauMax + 2); c[0] = 1;
+for (let tau = 1; tau <= tauMax + 1; tau++) { run += d[tau]; c[tau] = run > 0 ? d[tau] * tau / run : 1; }
+let best = -1;
+for (let tau = tauMin; tau <= tauMax; tau++) if (c[tau] < (thr || .15)) { while (tau + 1 <= tauMax && c[tau + 1] < c[tau]) tau++; best = tau; break; }
+if (best < 0) { let m = 1e9; for (let tau = tauMin; tau <= tauMax; tau++) if (c[tau] < m) { m = c[tau]; best = tau; } }
+const a = c[best - 1], b = c[best], e = c[best + 1], den = a - 2 * b + e;
+return {tau: best + (den > 0 ? .5 * (a - e) / den : 0), q: c[best]};
+}
+function findNotes(x) {
+const q = down2(down2(x)), sr4 = SR / 4, hop = Math.round(.01 * sr4), Wn = 256, tauMax = Math.round(sr4 / 45), nF = Math.floor((q.length - Wn - tauMax - 2) / hop);
+if (nF < 8) return [];
+const L = Math.round(.01 * SR), E = new Float64Array(Math.floor(x.length / L)); let pk = 1e-12;
+for (let f = 0; f < E.length; f++) { let s = 0; for (let i = f * L; i < (f + 1) * L; i++) s += x[i] * x[i]; E[f] = 10 * Math.log10(s / L + 1e-20); if (E[f] > pk || pk === 1e-12) pk = Math.max(pk === 1e-12 ? -999 : pk, E[f]); }
+const Es = new Float64Array(E.length); for (let f = 0; f < E.length; f++) { let q2 = 0, k2 = 0; for (let j = Math.max(0, f - 1); j <= Math.min(E.length - 1, f + 1); j++) { q2 += Math.pow(10, E[j] / 10); k2++; } Es[f] = 10 * Math.log10(q2 / k2 + 1e-20); }
+const thr = pk - 40, P = new Float64Array(nF), Q = new Float64Array(nF);
+for (let f = 0; f < nF; f++) { if ((E[f] || -999) < thr) { P[f] = 0; continue; } const y = yin(q, f * hop, Wn, Math.round(sr4 / 1400), tauMax, .2); P[f] = y.q < .35 ? sr4 / y.tau : 0; Q[f] = y.q; }
+const st = f => (P[f] > 0 ? 12 * Math.log2(P[f] / 440) + 69 : null);
+const notes = []; let cur = null;
+const close = (f) => { if (cur && f - cur.a >= 8) { cur.b = f; notes.push(cur); } cur = null; };
+for (let f = 0; f < Math.min(nF, E.length); f++) {
+const on = E[f] >= thr, m = st(f);
+if (!on) { close(f); continue; }
+const rise = f >= 4 && Es[f] - Math.min(Es[f - 2], Es[f - 3], Es[f - 4]) > 9;
+if (!cur) { cur = {a: f, ms: [], E: [], k: 's'}; }
+else if (rise && f - cur.a > 8) { close(f); cur = {a: f, ms: [], E: [], k: 'r'}; }
+else if (m != null && cur.ms.length >= 5) {
+const med = cur.ms.slice(-5).sort((p, r) => p - r)[2];
+if (Math.abs(m - med) > .7) { let k = 0; for (let j = f; j < Math.min(nF, f + 4); j++) { const v = st(j); if (v != null && Math.abs(v - m) < .4) k++; } if (k >= 3) { close(f); cur = {a: f, ms: [], E: [], k: 'p'}; } }
+}
+if (cur) { if (m != null) cur.ms.push(m); cur.E.push(E[f]); }
+}
+close(Math.min(nF, E.length));
+const medOf = q => { const v = q.ms.slice().sort((u, w) => u - w); return v.length ? v[v.length >> 1] : null; };
+for (let i = 1; i < notes.length; i++) {
+const p = notes[i - 1], n = notes[i], mp = medOf(p), mn = medOf(n);
+if (n.k === 's' && n.a <= p.b + 6 && mp != null && mn != null && Math.abs(mp - mn) < .5 && Math.max(...n.E) < Math.max(...p.E) - 6) { p.b = n.b; p.ms = p.ms.concat(n.ms); p.E = p.E.concat(n.E); notes.splice(i, 1); i--; continue; }
+if (n.k !== 'p' || n.a > p.b + 8) continue;
+if (n.b - n.a < 15 || (mp != null && mn != null && Math.abs(mp - mn) < .5)) { p.b = n.b; p.ms = p.ms.concat(n.ms); p.E = p.E.concat(n.E); notes.splice(i, 1); i--; continue; }
+const q = notes[i + 1];
+if (q && q.k === 'p' && q.a <= n.b + 8 && n.b - n.a < 25 && mp != null && Math.abs(mp - medOf(q)) < .5) { p.b = q.b; p.ms = p.ms.concat(q.ms); p.E = p.E.concat(n.E, q.E); notes.splice(i, 2); i--; }
+}
+for (const n of notes) {
+const ms = n.ms.slice().sort((p, r) => p - r), med = ms.length ? ms[ms.length >> 1] : null;
+let dev = 0; for (const v of n.ms) dev += Math.abs(v - med); dev = n.ms.length ? dev / n.ms.length : 9;
+n.f0 = med != null ? 440 * Math.pow(2, (med - 69) / 12) : 0; n.m = med; n.db = Math.max(...n.E) - pk;
+n.on = n.a * .01; n.end = n.b * .01; n.dur = n.end - n.on; n.voiced = n.ms.length / Math.max(1, n.E.length); n.pre = (E[n.a - 2] != null ? E[n.a - 2] : -999) - Math.max(...n.E);
+n.score = Math.min(1.5, n.dur) + .3 * Math.max(-1, n.db / 20 + 1) - .4 * Math.min(2, dev) + (n.voiced > .6 ? .3 : 0);
+delete n.ms; delete n.E;
+}
+const flE = Array.from(Es).sort((u, w) => u - w)[Math.floor(.1 * Es.length)], tEnd = Math.max(pk - 55, flE + 8);
+for (let i = 0; i < notes.length; i++) {
+const n = notes[i], lim = i + 1 < notes.length ? notes[i + 1].on - .005 : x.length / SR; let f = n.b;
+while (f < E.length && f * .01 < lim && f * .01 < n.end + .8 && Es[f] > tEnd) f++;
+n.tail = Math.max(n.end, Math.min(lim, f * .01));
+const a0 = Math.max(0, Math.round((n.on - .015) * SR)), a1 = Math.min(x.length, Math.round((n.on + .03) * SR)); let m2 = 0; for (let k = a0; k < a1; k++) m2 = Math.max(m2, Math.abs(x[k]));
+let k = a0; while (k < a1 && Math.abs(x[k]) < m2 * .02) k++; n.on = Math.max(0, (k - 22) / SR);
+n.a = +n.on.toFixed(4); n.b = +n.tail.toFixed(4); n.dur = +(n.end - n.on).toFixed(3);
+}
+let bi = -1; notes.forEach((n, i) => { if (n.f0 > 0 && (bi < 0 || n.score > notes[bi].score)) bi = i; });
+if (bi < 0 && notes.length) bi = 0;
+notes.forEach((n, i) => { n.best = i === bi; });
+return notes.map(n => ({a: n.a, b: n.b, end: +n.end.toFixed(4), f0: +n.f0.toFixed(2), m: n.m == null ? null : +n.m.toFixed(2), dur: n.dur, db: +n.db.toFixed(1), score: +n.score.toFixed(3), best: n.best, k: n.k, pre: +Math.max(-99, n.pre).toFixed(1)}));
+}
+
+function frameEnv(x, L) { const n = Math.floor(x.length / L), e = new Float64Array(n); for (let f = 0; f < n; f++) { let s = 0; for (let i = f * L; i < (f + 1) * L; i++) s += x[i] * x[i]; e[f] = s / L; } return e; }
+function peakIn(re, im, lo, hi, N, scale) {
+lo = Math.max(1, Math.floor(lo)); hi = Math.min(N / 2 - 1, Math.ceil(hi));
+let bi = lo, bm = -1; for (let i = lo; i <= hi; i++) { const m = re[i] * re[i] + im[i] * im[i]; if (m > bm) { bm = m; bi = i; } }
+const p = i => dB(re[i] * re[i] + im[i] * im[i]);
+const a = p(bi - 1), b = p(bi), c = p(bi + 1), den = a - 2 * b + c, dl = den < 0 && b >= a && b >= c ? Math.max(-.5, Math.min(.5, .5 * (a - c) / den)) : 0;
+const pk = b - .25 * (a - c) * dl;
+return {a: Math.sqrt(Math.pow(10, pk / 10)) * scale, f: (bi + dl) * SR / N};
+}
+const REF = new Map(); const PULSE_C1 = [0, 24, 48, 72, 96, 116];
+function harmAvg(x, f0, N, K, t0, t1) {
+const hop = 441, w = hann(N), re = new Float64Array(N), im = new Float64Array(N), acc = new Float64Array(K + 1); let nf = 0;
+for (let s = Math.round(t0 * SR); s + N <= Math.round(t1 * SR); s += hop) {
+for (let i = 0; i < N; i++) { re[i] = x[s + i] * w[i]; im[i] = 0; } fft(re, im);
+for (let k = 1; k <= K; k++) { const c = k * f0 * N / SR, sp = f0 * N / SR; const p = peakIn(re, im, c - Math.min(.35 * sp, Math.max(1.5, .03 * c)), c + Math.min(.35 * sp, Math.max(1.5, .03 * c)), N, 4 / N); acc[k] += p.a * p.a; }
+nf++;
+}
+for (let k = 1; k <= K; k++) acc[k] = Math.sqrt(acc[k] / Math.max(1, nf));
+return acc;
+}
+const BASE_H = {o1w: 0, c1: 0, o2: 0, o2w: 0, semi: 0, o2lvl: 0, o2tune: 0, n: 0, cut: 127, res: 0, eg: 0, e1a: 0, e1d: 64, e1s: 0, e1r: 0, e2a: 0, e2d: 64, e2s: 127, e2r: 20, hold: 1.2, vib: 0, l2f: 64, tune: 0, ft: 0, sw: 0};
+function refTables(note, N, K) {
+const key = note + '/' + N + '/' + K; if (REF.has(key)) return REF.get(key);
+const f0 = 440 * Math.pow(2, (note - 69) / 12);
+const R = h => renderH(Object.assign({}, BASE_H, {note}, h), {sr: SR, sec: 1.0});
+const S1 = {};
+for (const w of [0, 2, 3]) S1['w' + w] = harmAvg(R({o1w: w}), f0, N, K, .3, .9);
+for (const c1 of PULSE_C1) S1['p' + c1] = harmAvg(R({o1w: 1, c1}), f0, N, K, .3, .9);
+const S2 = {};
+for (const w of [0, 1, 2]) for (const semi of [0, 12]) S2[w + '/' + semi] = harmAvg(R({o1w: 0, o2: 1, o2w: w, semi, o2lvl: 127, o1lvl: 0}), f0, N, K, .3, .9);
+const xn = renderH(Object.assign({}, BASE_H, {note, o1w: 3, n: 127}), {sr: SR, sec: 1.0});
+const t = {S1, S2, f0, noiseVar: null, noiseRaw: xn};
+REF.set(key, t); return t;
+}
+let SWL = null;
+function swList() { if (SWL) return SWL; SWL = []; if (!MKT || !MKT.ready || !MKT.ready()) return SWL; const D = MKT.data(); for (let n = 1; n <= 64; n++) if (D[n] && D[n].r === 1 && !MKT.isOct(n)) SWL.push(n); return SWL; }
+const note0 = f0 => Math.round(69 + 12 * Math.log2(f0 / 440));
+
+function analyse(x, opt) {
+opt = opt || {}; const T0 = now(), out = {feat: {}}, tm = {};
+const sec = x.length / SR, HMIN = .05, HMAX = Math.max(.1, sec - .02);
+const L5 = Math.round(.005 * SR), env = frameEnv(x, L5); let pk = 0; for (let i = 0; i < env.length; i++) if (env[i] > pk) pk = env[i];
+let on = 0; while (on < env.length && env[on] < pk * 3.16e-5) on++;
+const Wn = 2048, tauMax = Math.round(SR / 40), fr = [];
+for (let f = on + 8; f < env.length; f += 4) { const s = f * L5; if (s + Wn + tauMax + 2 >= x.length) break; fr.push(f); }
+fr.sort((a, b) => env[b] - env[a]);
+const cand = fr.slice(0, 7).map(f => yin(x, f * L5, Wn, Math.round(SR / 2000), tauMax));
+if (!cand.length) throw new Error('Ton zu kurz');
+cand.sort((a, b) => a.tau - b.tau); let f0 = SR / cand[Math.floor(cand.length / 2)].tau;
+if (opt.f0hint > 0 && Math.abs(1200 * Math.log2(f0 / opt.f0hint)) > 600) { const r = Math.round(Math.log2(opt.f0hint / f0)); if (Math.abs(r) === 1) f0 *= Math.pow(2, r); }
+let f0k1 = f0;
+{
+const N = 32768, s0 = Math.max(0, Math.min(x.length - 16384, on * L5 + Math.round(.08 * SR))), w = hann(16384), re = new Float64Array(N), im = new Float64Array(N);
+for (let i = 0; i < 16384; i++) re[i] = (x[s0 + i] || 0) * w[i]; fft(re, im);
+let num = 0, den = 0; for (let k = 1; k <= 8; k++) { const c = k * f0 * N / SR; const p = peakIn(re, im, c - .03 * c, c + .03 * c, N, 1); if (p.a > 0) { num += p.a * p.f / k; den += p.a; } if (k === 1) f0k1 = p.f; }
+if (den > 0) f0 = num / den;
+if (!(Math.abs(1200 * Math.log2(f0k1 / f0)) < 60)) f0k1 = f0;
+}
+out.feat.f0 = f0; tm.f0 = now() - T0;
+const N = Math.min(8192, Math.max(1024, nextPow2(4 * SR / f0))), hop = 441, K = Math.max(4, Math.min(40, Math.floor(Math.min(16000, SR * .45) / f0)));
+const nF = Math.floor((x.length - N) / hop) + 1; if (nF < 6) throw new Error('Ton zu kurz');
+const A = [], Fq = [], FL = [], tF = new Float64Array(nF);
+const w = hann(N), re = new Float64Array(N), im = new Float64Array(N), sp = f0 * N / SR;
+for (let f = 0; f < nF; f++) {
+const s = f * hop; for (let i = 0; i < N; i++) { re[i] = x[s + i] * w[i]; im[i] = 0; } fft(re, im);
+const a = new Float64Array(K + 1), q = new Float64Array(K + 1), fl = new Float64Array(K + 1);
+for (let k = 1; k <= K; k++) {
+const c = k * sp, r = Math.min(.35 * sp, Math.max(1.5, .03 * c)); const p = peakIn(re, im, c - r, c + r, N, 4 / N); a[k] = p.a; q[k] = p.f;
+const g0 = Math.round((k + .35) * sp), g1 = Math.max(g0, Math.round((k + .65) * sp)), v = [];
+for (let i = g0; i <= g1 && i < N / 2; i++) v.push((re[i] * re[i] + im[i] * im[i]) * 16 / (N * N));
+v.sort((p1, p2) => p1 - p2); fl[k] = v.length ? v[Math.floor(v.length / 2)] : 0;
+}
+A.push(a); Fq.push(q); FL.push(fl); tF[f] = (s + N / 2) / SR;
+}
+const fpow = new Float64Array(nF); let fpk = 0; for (let f = 0; f < nF; f++) { let s = 0; for (let k = 1; k <= K; k++) s += A[f][k] * A[f][k]; fpow[f] = s; if (s > fpk) fpk = s; }
+const good = []; for (let f = 0; f < nF; f++) if (fpow[f] > fpk * 1e-4) good.push(f);
+let loud = good.filter(f => fpow[f] > fpk * .01); if (!loud.length) loud = good.slice();
+tm.stft = now() - T0;
+const tR0 = now(), R = refTables(note0(f0), N, K); tm.ref = now() - tR0;
+const measDb = f => { const m = new Float64Array(K + 1), fl = new Float64Array(K + 1); let mx = -1e9;
+for (let k = 1; k <= K; k++) { m[k] = dB(A[f][k] * A[f][k]); if (m[k] > mx) mx = m[k]; }
+for (let k = 1; k <= K; k++) { const lo = k > 1 ? Math.min(FL[f][k], FL[f][k - 1]) : FL[f][k]; fl[k] = Math.max(mx - 65, dB(lo) + 6); }
+return {m, fl}; };
+const steady = loud.filter(f => tF[f] > tF[loud[0]] + .1);
+const beat = beatAnalysis(A, tF, steady.length >= 20 ? steady : loud, K, f0);
+out.feat.beat = {obs: beat.obs, r2: +beat.r2.toFixed(3), hz: +beat.hz.toFixed(3), cents: +beat.cents.toFixed(2), oddEven: +beat.oddEven.toFixed(3), rho: +beat.rho.toFixed(3)};
+const srcHyps = [];
+for (const k1 of ['w0', 'w2', 'w3', ...PULSE_C1.map(c => 'p' + c)]) {
+const o1 = {o1w: k1[0] === 'w' ? +k1.slice(1) : 1, c1: k1[0] === 'p' ? +k1.slice(1) : 0};
+srcHyps.push(Object.assign({o2: 0, o2w: 0, semi: 0, rho: 0, key1: k1}, o1));
+for (const o2w of [0, 1, 2]) for (const semi of [0, 12]) for (const rho of [.45, .75, 1]) srcHyps.push(Object.assign({o2: 1, o2w, semi, rho, key1: k1}, o1));
+}
+const srcPow = sh => { const s1 = sh.swA || R.S1[sh.key1], s2 = sh.o2 ? R.S2[sh.o2w + '/' + sh.semi] : null, P = new Float64Array(K + 1);
+for (let k = 1; k <= K; k++) P[k] = s1[k] * s1[k] + (s2 ? sh.rho * sh.rho * s2[k] * s2[k] : 0); return P; };
+const RES = [0, 32, 64, 88, 108], FC = []; for (let st = 0; st <= 112; st++) FC.push(30 * Math.pow(2, st / 12));
+const Hdb = RES.map(r => FC.map(fc => { const a = new Float64Array(K + 1); for (let k = 1; k <= K; k++) a[k] = dB(ladderPow(k * f0, fc, W.resK(r))); return a; }));
+const cntF = loud.map(f => { const M = measDb(f); let c = 0; for (let k = 1; k <= K; k++) if (M.m[k] > M.fl[k]) c++; return {f, c, M}; });
+cntF.sort((a, b) => b.c - a.c || fpow[b.f] - fpow[a.f]);
+const nPick = Math.min(8, cntF.length), sel = cntF.slice(0, Math.max(nPick, 1));
+const MD = sel.map(e => e.M).concat([loud[Math.floor(loud.length * .5)], loud[Math.floor(loud.length * .8)]].map(measDb));
+function frameErr(M, sPdb, ri, ci) {
+const H = Hdb[ri][ci]; let n = 0, sd = 0;
+for (let k = 1; k <= K; k++) if (M.m[k] > M.fl[k]) { sd += M.m[k] - sPdb[k] - H[k]; n++; }
+const g = n ? sd / n : 0; let e = 0;
+for (let k = 1; k <= K; k++) { const mod = sPdb[k] + H[k] + g; if (M.m[k] > M.fl[k]) { const d = M.m[k] - Math.max(mod, M.fl[k] - 10); e += d * d; } else if (mod > M.fl[k]) { const d = mod - M.fl[k]; e += d * d; } }
+return e / K;
+}
+const scoreSrc = (sh, riList) => {
+const P = srcPow(sh), sPdb = new Float64Array(K + 1); for (let k = 1; k <= K; k++) sPdb[k] = dB(P[k]);
+let bestR = 1e18, bestRi = 0;
+for (const ri of riList) { let tot = 0; for (const M of MD) { let mn = 1e18; for (let ci = 0; ci < FC.length; ci += 3) { const e = frameErr(M, sPdb, ri, ci); if (e < mn) mn = e; } tot += mn; } if (tot < bestR) { bestR = tot; bestRi = ri; } }
+return {bestR, bestRi, sPdb};
+};
+const scored = [];
+for (const sh of srcHyps) {
+if (sh.o2 && beat.obs && ((beat.oddEven > .15 && sh.semi === 0) || (beat.oddEven < -.15 && sh.semi === 12))) continue;
+const r = scoreSrc(sh, [0, 1, 2, 3, 4]);
+let pen = 0;
+if (beat.obs) { if (!sh.o2) pen += 10 * beat.r2; else { const oe = beat.oddEven; pen += sh.semi === 12 ? 8 * Math.max(0, -oe) : 8 * Math.max(0, oe - .05); } }
+if (sh.o2) pen += .3;
+scored.push({sh, err: r.bestR / MD.length, ri: r.bestRi, sPdb: r.sPdb, score: r.bestR / MD.length + pen});
+}
+scored.sort((a, b) => a.score - b.score);
+const best = scored[0];
+const perW = {}; for (const s of scored) { const k = s.sh.o1w; if (!(k in perW)) perW[k] = s.score; }
+const Tm = 1.5, z = Object.values(perW).map(v => Math.exp(-(v - best.score) / Tm)), Z = z.reduce((a, b) => a + b, 0);
+out.pWave = Object.keys(perW).map((k, i) => ({o1w: +k, p: z[i] / Z}));
+const swS = [];
+for (const n of swList()) {
+const H = MKT.harm(n).A, a = new Float64Array(K + 1); let mx = 0; for (let k = 1; k <= K; k++) { a[k] = H[k] || 0; mx = Math.max(mx, a[k]); }
+if (mx <= 0) continue; for (let k = 1; k <= K; k++) a[k] = Math.max(a[k], mx * 1e-4);
+const sh = {o2: 0, o2w: 0, semi: 0, rho: 0, o1w: 5, c1: 0, swA: a, sw: n}, r = scoreSrc(sh, [0, 2]);
+swS.push({n, err: r.bestR / MD.length, ri: r.bestRi, sPdb: r.sPdb, sh, score: r.bestR / MD.length + .6 + (beat.obs ? 10 * beat.r2 : 0)});
+}
+swS.sort((a, b) => a.score - b.score);
+out.sw = swS.slice(0, 3).map(s => ({n: s.n, score: +s.score.toFixed(3)}));
+tm.hyp = now() - T0;
+const ri = best.ri, sPdb = best.sPdb, curve = [];
+for (const f of good) { const M = measDb(f); const E = new Float64Array(FC.length); for (let ci = 0; ci < FC.length; ci++) E[ci] = frameErr(M, sPdb, ri, ci); curve.push({f, t: tF[f], E, wt: Math.sqrt(fpow[f] / fpk)}); }
+let srcSum = 0; for (let k = 1; k <= K; k++) srcSum += Math.pow(10, sPdb[k] / 10);
+const lossAt = fcHz => { let s = 0; for (let k = 1; k <= K; k++) s += Math.pow(10, sPdb[k] / 10) * ladderPow(k * f0, fcHz, W.resK(RES[ri])); return s / srcSum; };
+const tE = Array.from(env, (v, i) => (i + .5) * L5 / SR);
+const fcMin = curve.map(c => { let mi = 0; for (let i = 1; i < c.E.length; i++) if (c.E[i] < c.E[mi]) mi = i; return FC[mi]; });
+const lossFrames = fcMin.map(lossAt), lossInterp = (t, ts, L) => { if (!ts.length) return 1; if (t <= ts[0]) return L[0]; if (t >= ts[ts.length - 1]) return L[L.length - 1]; let j = 1; while (ts[j] < t) j++; const u = (t - ts[j - 1]) / (ts[j] - ts[j - 1]); return L[j - 1] * (1 - u) + L[j] * u; };
+const cts = curve.map(c => c.t);
+let ampIn = tE.map((t, i) => env[i] / Math.max(1e-6, lossInterp(t, cts, lossFrames)));
+let amp = fitAmpEG(tE, ampIn, HMIN, HMAX);
+let filt = fitFiltEG(curve, FC, amp.hold);
+{ const e1 = egAt(filt.a, filt.d, filt.s, filt.r, amp.hold, tE), cutSt = 12 * Math.log2(W.cutHz(filt.cut) / 20);
+ampIn = tE.map((t, i) => env[i] / Math.max(1e-6, lossAt(20 * Math.pow(2, (cutSt + W.egHt(filt.eg) * e1[i]) / 12))));
+const e1f = egAt(filt.a, filt.d, filt.s, filt.r, amp.hold, cts), med = [];
+for (let j = 0; j < curve.length; j++) {
+const f = curve[j].f, fc = 20 * Math.pow(2, (cutSt + W.egHt(filt.eg) * e1f[j]) / 12), M = measDb(f), v = [];
+for (let k = 1; k <= Math.min(12, K); k++) if (M.m[k] > M.fl[k] + 6) v.push(M.m[k] - sPdb[k] - dB(ladderPow(k * f0, fc, W.resK(RES[ri]))));
+v.sort((a, b) => a - b); med.push(v.length >= 2 ? v[Math.floor(v.length / 2)] : null);
+}
+let iPk = 0; for (let i = 0; i < env.length; i++) if (ampIn[i] > ampIn[iPk]) iPk = i;
+const tA = tE[iPk] + N / SR / 2;
+const okJ = cts.map((t, j) => (med[j] != null && t >= tA ? j : -1)).filter(j => j >= 0);
+if (okJ.length >= 8) {
+let sd = 0, n = 0; for (const j of okJ) { if (cts[j] > tA + .15) break; const i = Math.min(env.length - 1, Math.round(cts[j] * SR / L5 - .5)); sd += 10 * Math.log10(ampIn[i] + 1e-30) - med[j]; n++; }
+const off = n ? sd / n : 0, mt = okJ.map(j => cts[j]), mv = okJ.map(j => med[j] + off);
+ampIn = tE.map((t, i) => { if (t < tA || t > mt[mt.length - 1]) return ampIn[i]; let q = 1; while (q < mt.length - 1 && mt[q] < t) q++; const u = Math.max(0, Math.min(1, (t - mt[q - 1]) / (mt[q] - mt[q - 1] || 1))); return Math.pow(10, (mv[q - 1] * (1 - u) + mv[q] * u) / 10); });
+}
+amp = fitAmpEG(tE, ampIn, HMIN, HMAX); filt = fitFiltEG(curve, FC, amp.hold); }
+out.feat.amp = amp; tm.eg = now() - T0;
+const noise = estimateNoise(x, f0, amp, best, R, filt, ri);
+out.feat.noise = noise;
+const vib = vibrato(Fq, A, tF, steady.length >= 20 ? steady : loud, K, f0);
+out.feat.vib = vib;
+const sh = best.sh;
+let fT = sh.o2 && sh.semi === 12 ? f0k1 : f0, ctT = 0;
+if (sh.o2 && sh.semi === 0 && beat.obs) ctT = -beat.cents * sh.rho / (1 + sh.rho);
+const midi = 69 + 12 * Math.log2(fT / 440) + ctT / 100, note = Math.round(midi), tune = clampI(100 * (midi - note), -50, 50);
+const o2tune = s2 => (s2.o2 ? clampI(beat.obs ? Winv.fine2(beat.cents) : 1, 0, 30) : 0);
+const h = {note, tune, hold: amp.hold, o1w: sh.o1w, c1: sh.c1, o2: sh.o2, o2w: sh.o2w, semi: sh.semi, sw: 0, ft: 0,
+o2lvl: sh.o2 ? clampI(127 * Math.min(1, beat.obs && beat.rho > 0 ? .5 * (sh.rho + beat.rho) : sh.rho), 0, 127) : 0, o2tune: o2tune(sh),
+n: noise.n, cut: filt.cut, res: RES[ri], eg: filt.eg, e1a: filt.a, e1d: filt.d, e1s: filt.s, e1r: filt.r,
+e2a: amp.a, e2d: amp.d, e2s: amp.s, e2r: amp.r, vib: vib.on ? clampI(Winv.vib(vib.ct), 1, 63) : 0, l2f: vib.on ? clampI(Winv.lfo(vib.hz), 0, 127) : 64};
+out.h = h;
+const seen = new Set([sh.o1w]), alts = [];
+const altOf = s => { const cv = good.map((f, j) => { const M = measDb(f), E = new Float64Array(FC.length); for (let ci = 0; ci < FC.length; ci++) E[ci] = frameErr(M, s.sPdb, s.ri, ci); return {f, t: tF[f], E, wt: curve[j].wt}; });
+const fa = fitFiltEG(cv, FC, amp.hold);
+return Object.assign({}, h, {o1w: s.sh.o1w === 5 ? 0 : s.sh.o1w, c1: s.sh.c1, sw: s.sh.sw || 0, o2: s.sh.o2, o2w: s.sh.o2w, semi: s.sh.semi, o2lvl: s.sh.o2 ? clampI(127 * s.sh.rho, 0, 127) : 0,
+o2tune: o2tune(s.sh), res: RES[s.ri], cut: fa.cut, eg: fa.eg, e1a: fa.a, e1d: fa.d, e1s: fa.s, e1r: fa.r}); };
+for (const s of scored.slice(1)) { const k = s.sh.o1w; if (seen.has(k)) continue; seen.add(k); alts.push({h: altOf(s), score: s.score}); if (alts.length >= 3) break; }
+if (swS.length && swS[0].score <= best.score * 1.25 + .4) alts.push({h: altOf(swS[0]), score: swS[0].score, sw: swS[0].n});
+out.alts = alts; out.score = best.score; out.tm = tm;
+out.ms = now() - T0; out.msNetto = out.ms - tm.ref;
+return out;
+}
+function fitAmpEG(ts, pw, HMIN, HMAX) {
+const m = new Float64Array(ts.length); let mx = -1e9;
+for (let i = 0; i < ts.length; i++) { m[i] = 10 * Math.log10(pw[i] + 1e-30); if (m[i] > mx) mx = m[i]; }
+const fl = mx - 50; for (let i = 0; i < ts.length; i++) m[i] = Math.max(fl, m[i]);
+const idx = []; for (let i = 0; i < ts.length; i++) if (ts[i] < .3 || i % 2 === 0) idx.push(i);
+const tt = idx.map(i => ts[i]), mm = idx.map(i => m[i]);
+const err = p => {
+const [a, d, s, r, hold] = p; if (hold < HMIN || hold > HMAX) return 1e9;
+const e = egAt(a, d, s, r, hold, tt); let n = 0, sd = 0; const md = new Float64Array(tt.length);
+for (let i = 0; i < tt.length; i++) { md[i] = 20 * Math.log10(e[i] + 1e-9); if (mm[i] > fl + 1 && md[i] > -60) { sd += mm[i] - md[i]; n++; } }
+const g = n ? sd / n : 0; let q = 0;
+for (let i = 0; i < tt.length; i++) { const v = Math.max(fl, md[i] + g), d0 = mm[i] - v; q += d0 * d0; }
+return q / tt.length;
+};
+let ip = 0; for (let i = 0; i < mm.length; i++) if (mm[i] > mm[ip]) ip = i;
+let i90 = 0; while (i90 < ip && mm[i90] < mm[ip] - .9) i90++;
+const a0 = clampI(Winv.atk(Math.max(.0006, tt[i90])), 0, 127), sec = ts[ts.length - 1];
+let best = null;
+for (const fr of [.33, .47, .57, .67, .77, .87]) { const hold = Math.max(HMIN, Math.min(HMAX, fr * sec)); for (const s of [10, 50, 90, 127]) for (const d of [40, 70]) { const p = [a0, d, s, 45, hold], e = err(p); if (!best || e < best.e) best = {p, e}; } }
+const nm = nelderMead(err, best.p, [10, 12, 20, 12, .08], 300, [[0, 127], [0, 127], [0, 127], [0, 127], [HMIN, HMAX]]);
+const [a, d, s, r, hold] = nm.x;
+return {a: clampI(a, 0, 127), d: clampI(d, 0, 127), s: clampI(s, 0, 127), r: clampI(r, 0, 127), hold: +hold.toFixed(3), err: nm.f};
+}
+function fitFiltEG(curve, FC, hold) {
+const ts = curve.map(c => c.t), st0 = Math.log2(FC[0] / 20) * 12;
+const cutSt = c => 12 * Math.log2(W.cutHz(c) / 20);
+const evalAt = (E, stv) => { const x = stv - st0; if (x <= 0) return E[0]; if (x >= E.length - 1) return E[E.length - 1]; const i = Math.floor(x), f = x - i; return E[i] * (1 - f) + E[i + 1] * f; };
+const err = p => {
+const [cut, eg, a, d, s, r] = p; const e = egAt(a, d, s, r, hold, ts); let q = 0, wn = 0;
+for (let j = 0; j < curve.length; j++) { const stv = cutSt(cut) + W.egHt(eg) * e[j]; q += curve[j].wt * evalAt(curve[j].E, stv); wn += curve[j].wt; }
+return q / (wn || 1);
+};
+const mins = curve.map(c => { let mi = 0; for (let i = 1; i < c.E.length; i++) if (c.E[i] < c.E[mi]) mi = i; return st0 + mi; });
+const sorted = mins.slice().sort((a, b) => a - b), lo = sorted[Math.floor(.1 * sorted.length)], hi = sorted[Math.floor(.9 * sorted.length)];
+const toCut = stv => 127 * stv / (12 * Math.log2(1000));
+let jmax = 0; for (let j = 0; j < mins.length; j++) if (mins[j] > mins[jmax]) jmax = j;
+const starts = [[toCut(mins[Math.floor(mins.length / 2)]), 0, 0, 64, 0, 30]];
+const span = Math.max(0, hi - lo) * 63 / 60;
+for (const s of [0, 40, 90]) starts.push([toCut(lo), Math.min(63, span), clampI(Winv.atk(Math.max(.0006, ts[jmax] * .6)), 0, 127), 55, s, 40]);
+starts.push([toCut(hi), -Math.min(63, span), 0, 55, 30, 40]);
+let best = null; for (const s of starts) { const e = err(s); if (!best || e < best.e) best = {p: s, e}; }
+const nm = nelderMead(err, best.p, [8, 10, 12, 12, 20, 12], 320, [[0, 127], [-63, 63], [0, 127], [0, 127], [0, 127], [0, 127]]);
+const [cut, eg, a, d, s, r] = nm.x;
+return {cut: clampI(cut, 0, 127), eg: clampI(eg, -63, 63), a: clampI(a, 0, 127), d: clampI(d, 0, 127), s: clampI(s, 0, 127), r: clampI(r, 0, 127), err: nm.f};
+}
+function beatAnalysis(A, tF, frames, K, f0) {
+const n = frames.length, kk = Math.min(10, K), res = {obs: false, r2: 0, oddEven: 0, hz: 0, cents: 0, rho: 0};
+if (n < 16) return res;
+const t = frames.map(f => tF[f]), t0 = t[0], T = t[n - 1] - t0, u = t.map(v => (v - t0) / T - .5);
+const tracks = [];
+for (let k = 1; k <= kk; k++) {
+const y = frames.map(f => dB(A[f][k] * A[f][k]));
+let mp = 0; for (const f of frames) mp += A[f][k] * A[f][k]; mp /= n;
+let s0 = 0, s1 = 0, s2 = 0, s3 = 0, s4 = 0, y0 = 0, y1 = 0, y2 = 0;
+for (let i = 0; i < n; i++) { const v = u[i]; s0++; s1 += v; s2 += v * v; s3 += v * v * v; s4 += v * v * v * v; y0 += y[i]; y1 += v * y[i]; y2 += v * v * y[i]; }
+const c = solve3([[s0, s1, s2], [s1, s2, s3], [s2, s3, s4]], [y0, y1, y2]);
+const d = y.map((v, i) => v - (c[0] + c[1] * u[i] + c[2] * u[i] * u[i])); let vr = 0; for (const v of d) vr += v * v;
+tracks.push({k, d, vr, mp});
+}
+let mpTot = 0; for (const x of tracks) mpTot += x.mp;
+const fitK = (x, fb) => {
+let cc = 0, ss = 0, cs = 0, yc = 0, ys = 0;
+for (let i = 0; i < n; i++) { const ph = 2 * Math.PI * fb * (t[i] - t0), co = Math.cos(ph), si = Math.sin(ph); cc += co * co; ss += si * si; cs += co * si; yc += x.d[i] * co; ys += x.d[i] * si; }
+const det = cc * ss - cs * cs; if (det <= 1e-9) return {r2: 0, amp: 0};
+const a = (yc * ss - ys * cs) / det, b = (ys * cc - yc * cs) / det, expl = a * yc + b * ys;
+return {r2: x.vr > 0 ? Math.max(0, expl / x.vr) : 0, amp: Math.hypot(a, b)};
+};
+let best = 0, bestHz = 0;
+for (let i = 0; i <= 330; i++) {
+const df = .1 * Math.pow(2, i / 48); if (df > 12) break;
+let s = 0, wsum = 0;
+for (const x of tracks) { const fb = x.k * df; if (fb * T < 1 || fb > 40) continue; const wk = Math.sqrt(x.mp / (mpTot || 1)); s += wk * fitK(x, fb).r2; wsum += wk; }
+if (wsum > 0 && s / wsum > best) { best = s / wsum; bestHz = df; }
+}
+res.hz = bestHz; res.r2 = best;
+const per = tracks.map(x => { const fb = x.k * bestHz; if (fb * T < 1 || fb > 40) return {k: x.k, r2: null, rho: null}; const r = fitK(x, fb);
+const q = Math.pow(10, 2 * r.amp / 20), rho = Math.min(1, (q - 1) / (q + 1)); return {k: x.k, r2: r.r2, rho}; });
+const med = a => { const s = a.filter(v => v != null).sort((p, q) => p - q); return s.length ? s[Math.floor(s.length / 2)] : 0; };
+const rOdd = med(per.filter(p => p.k % 2 === 1).map(p => p.r2)), rEven = med(per.filter(p => p.k % 2 === 0).map(p => p.r2));
+res.oddEven = rEven - rOdd; res.obs = best > .3;
+res.rho = med((res.oddEven > .15 ? per.filter(p => p.k % 2 === 0) : per).filter(p => p.r2 > .3).map(p => p.rho));
+res.cents = 1200 * Math.log2(1 + bestHz / f0);
+return res;
+}
+function solve3(M, b) {
+const a = M.map((r, i) => r.concat([b[i]]));
+for (let i = 0; i < 3; i++) { let p = i; for (let j = i + 1; j < 3; j++) if (Math.abs(a[j][i]) > Math.abs(a[p][i])) p = j; const tmp = a[i]; a[i] = a[p]; a[p] = tmp;
+for (let j = i + 1; j < 3; j++) { const f = a[j][i] / (a[i][i] || 1e-30); for (let k = i; k < 4; k++) a[j][k] -= f * a[i][k]; } }
+const x = [0, 0, 0]; for (let i = 2; i >= 0; i--) { let s = a[i][3]; for (let k = i + 1; k < 3; k++) s -= a[i][k] * x[k]; x[i] = s / (a[i][i] || 1e-30); }
+return x;
+}
+function vibrato(Fq, A, tF, frames, K, f0) {
+const n = frames.length, r = {on: false, hz: 0, ct: 0, expl: 0};
+if (n < 30) return r;
+const c = frames.map(f => { let s = 0, w = 0; for (let k = 1; k <= Math.min(6, K); k++) { const a = A[f][k]; if (a > 0 && Fq[f][k] > 0) { s += a * 1200 * Math.log2(Fq[f][k] / (k * f0)); w += a; } } return w ? s / w : 0; });
+const t = frames.map(f => tF[f]), m = c.reduce((a, b) => a + b, 0) / n, d = c.map(v => v - m);
+let best = 0, bh = 0;
+for (let hz = 1; hz <= 12; hz += .05) { let cr = 0, ci = 0, ws = 0; for (let j = 0; j < n; j++) { const wv = .5 - .5 * Math.cos(2 * Math.PI * j / (n - 1)); cr += d[j] * wv * Math.cos(2 * Math.PI * hz * t[j]); ci += d[j] * wv * Math.sin(2 * Math.PI * hz * t[j]); ws += wv; } const a = 2 * Math.hypot(cr, ci) / ws; if (a > best) { best = a; bh = hz; } }
+let v = 0; for (const x of d) v += x * x; v /= n; const expl = best * best / 2 / (v + 1e-12);
+r.hz = +bh.toFixed(2); r.ct = +best.toFixed(2); r.expl = +expl.toFixed(3); r.on = best > 4 && expl > .35;
+return r;
+}
+function estimateNoise(x, f0, amp, best, R, filt, ri) {
+const Nbh = 8192, w = bharris(Nbh); let sw = 0, sw2 = 0; for (let i = 0; i < Nbh; i++) { sw += w[i]; sw2 += w[i] * w[i]; }
+const s0 = Math.round(Math.max(.12, Math.min(amp.hold - Nbh / SR, .35)) * SR);
+const P = powSpecW(x, s0, w), bin = SR / Nbh;
+if (R.noiseVar == null) { const Q = powSpecW(R.noiseRaw, Math.round(.3 * SR), w); let s = 0, c = 0; for (let k = Math.round(200 / bin); k < Math.round(4000 / bin); k++) { s += Q[k]; c++; } R.noiseVar = s / c / sw2; }
+const t = s0 / SR + Nbh / 2 / SR, fcHz = W.cutHz(filt.cut) * Math.pow(2, W.egHt(filt.eg) * egAt(filt.a, filt.d, filt.s, filt.r, amp.hold, [t])[0] / 12);
+const k = W.resK([0, 32, 64, 88, 108][ri]), K = Math.min(40, Math.floor(15000 / f0)), amps = [], floors = [];
+for (let j = 1; j <= K; j++) {
+const c = Math.round(j * f0 / bin); let m = 0; for (let i = c - 3; i <= c + 3; i++) if (P[i] > m) m = P[i];
+amps.push({j, a: 2 * Math.sqrt(m) / sw, H: ladderPow(j * f0, fcHz, k)});
+if (j < K) { const g0 = Math.round((j + .3) * f0 / bin), g1 = Math.round((j + .7) * f0 / bin); const vals = []; for (let i = g0; i <= g1; i++) vals.push(P[i]); vals.sort((a, b) => a - b);
+if (vals.length) floors.push({f: (j + .5) * f0, v: vals[Math.floor(vals.length / 2)] / sw2, H: ladderPow((j + .5) * f0, fcHz, k)}); }
+}
+const s1 = best.sh.swA || R.S1[best.sh.key1], s2 = best.sh.o2 ? R.S2[best.sh.o2w + '/' + best.sh.semi] : null, G2 = [];
+for (const a of amps.slice(0, 4)) { const Mk = s1[a.j] * s1[a.j] + (s2 ? best.sh.rho * best.sh.rho * s2[a.j] * s2[a.j] : 0); if (Mk > 0 && a.H > 1e-3) G2.push(a.a * a.a / (Mk * a.H)); }
+G2.sort((p, q) => p - q); const g2 = G2.length ? G2[Math.floor(G2.length / 2)] : 0;
+const ext = floors.filter(f => f.H < 1e-4).map(f => f.v).sort((p, q) => p - q), fe = ext.length >= 3 ? ext[Math.floor(ext.length / 2)] : 0;
+const est = floors.filter(f => f.H > .05 && f.f < 10000).map(f => Math.max(0, f.v - fe) / (f.H * g2 * R.noiseVar + 1e-30)).sort((p, q) => p - q);
+const gn2 = est.length ? est[Math.floor(est.length * .3)] : 0;
+const n = clampI(127 * Math.sqrt(gn2), 0, 127);
+return {n: n < 3 ? 0 : n};
+}
+
+function besselJ(n, x) { n = Math.abs(n); let s = 0, t = Math.pow(x / 2, n); for (let k = 1; k <= n; k++) t /= k; for (let k = 0; k < 60; k++) { s += t; t *= -(x * x / 4) / ((k + 1) * (k + n + 1)); if (Math.abs(t) < 1e-14 * Math.abs(s) && k > 5) break; } return s; }
+function fmEstimate(x, f0, hold) {
+const K = Math.max(4, Math.min(40, Math.floor(15000 / f0))), N = 8192, s = Math.max(0, Math.min(x.length - N, Math.round(Math.min(.1, hold * .3) * SR)));
+const w = hann(N), re = new Float64Array(N), im = new Float64Array(N); for (let i = 0; i < N; i++) re[i] = (x[s + i] || 0) * w[i]; fft(re, im);
+const a = new Float64Array(K + 1); let mx = 0; for (let k = 1; k <= K; k++) { const cb = Math.round(k * f0 * N / SR); let m = 0; for (let i = cb - 2; i <= cb + 2; i++) if (i > 0 && i < N / 2) m = Math.max(m, Math.hypot(re[i], im[i])); a[k] = m; mx = Math.max(mx, m); }
+const fl = mx * 1e-3, md = Array.from(a, v => 20 * Math.log10(Math.max(v, fl))), out = [];
+for (let c = 1; c <= 3; c++) for (let m = 1; m <= 6; m++) {
+if (c > 1 && m % c === 0) continue; let be = Infinity, bI = 0;
+for (let I = 0; I <= 8.001; I += .1) {
+const p = new Float64Array(K + 1); for (let n = -30; n <= 30; n++) { const k = c + n * m, j = n < 0 && (n & 1) ? -besselJ(-n, I) : besselJ(Math.abs(n), I); if (k > 0 && k <= K) p[k] += j; else if (k < 0 && -k <= K) p[-k] -= j; }
+let pm = 0; for (let k = 1; k <= K; k++) pm = Math.max(pm, Math.abs(p[k])); if (pm <= 0) continue;
+let e = 0; for (let k = 1; k <= K; k++) { const v = 20 * Math.log10(Math.max(Math.abs(p[k]) / pm * mx, fl)); e += (v - md[k]) * (v - md[k]); }
+if (e < be) { be = e; bI = I; }
+}
+out.push({c, m, I: +bI.toFixed(2), e: be / K});
+}
+out.sort((p, q) => p.e - q.e);
+return out.slice(0, 3);
+}
+const iToOl = I => clampI(99 + 8 * Math.log2(Math.max(.05, I) / 13), 0, 99);
+
+const SPEC_MK = {kbd: [8, 0, 63], cut: [8, 0, 127], res: [15, 0, 127], eg: [10, -63, 63], e1a: [12, 0, 127], e1d: [12, 0, 127], e1s: [20, 0, 127], e1r: [12, 0, 127],
+e2a: [10, 0, 127], e2d: [12, 0, 127], e2s: [20, 0, 127], e2r: [10, 0, 127], n: [10, 0, 127], hold: [.05, .05, 2],
+o2lvl: [15, 0, 127], o2tune: [2, 0, 40], c1: [12, 0, 127], vib: [2, 0, 63], l2f: [4, 0, 127]};
+const SPEC_FM = {ol: [6, 0, 99], mD: [10, 0, 99], mS: [12, 0, 99], e2a: [10, 0, 127], e2d: [12, 0, 127], e2s: [20, 0, 127], e2r: [10, 0, 127], hold: [.05, .05, 2], cut: [10, 40, 127]};
+const BLOCKS = [['e2a', 'e2d', 'e2s', 'e2r', 'hold'], ['cut', 'res', 'eg', 'e1a', 'e1d', 'e1s', 'e1r', 'kbd'], ['o2lvl', 'o2tune', 'n', 'c1', 'vib', 'l2f']];
+const BLOCKS_FM = [['ol', 'mD', 'mS'], ['e2a', 'e2d', 'e2s', 'e2r', 'hold'], ['cut']];
+function keysMk(h) { const k = ['cut', 'res', 'eg', 'e1a', 'e1d', 'e1s', 'e1r', 'e2a', 'e2d', 'e2s', 'e2r', 'n', 'hold']; if (h.o2) k.push('o2lvl', 'o2tune'); if (h.o1w === 1 && !h.sw) k.push('c1'); if (h.vib > 0) k.push('vib', 'l2f'); if (h.kbd != null) k.push('kbd'); return k; }
+const keysFm = () => ['ol', 'mD', 'mS', 'e2a', 'e2d', 'e2s', 'e2r', 'hold', 'cut'];
+let LIM = null;
+function decode(p0, keys, z, SPEC, hmax) {
+const p = Object.assign({}, p0); let pen = 0;
+for (let i = 0; i < keys.length; i++) { const sp = SPEC[keys[i]], s = sp[0], lo = sp[1], hi = keys[i] === 'hold' ? hmax : LIM && LIM[keys[i]] != null ? Math.min(sp[2], LIM[keys[i]]) : sp[2]; let v = p0[keys[i]] + z[i] * s; if (v < lo) { pen += (lo - v) / s; v = lo; } if (v > hi) { pen += (v - hi) / s; v = hi; } p[keys[i]] = keys[i] === 'hold' ? +v.toFixed(4) : Math.round(v); }
+return {p, pen};
+}
+const MC = typeof MessageChannel === 'function' ? new MessageChannel() : null; let mcRes = null;
+if (MC) MC.port1.onmessage = () => { const r = mcRes; mcRes = null; if (r) r(); };
+const yieldNow = () => new Promise(r => { if (MC) { mcRes = r; MC.port2.postMessage(0); } else setTimeout(r, 0); });
+
+function Ctx(tg, job, o) {
+const C = {job, o, t0: now(), sec: tg[0].x.length / SR, evals: 0, lastYield: now(), lastProg: 0, best: {}, logs: {mk: [], va: [], fm: []}, maxEv: o.maxEvals || 450, deadline: now() + (o.budgetMs || 6000)};
+C.tg = tg.map(t => { const xt = down2(t.x), T = prepTarget(xt, OPT_SR); T.win = t.win ? fadeWin(xt.length, t.win.s / 2, t.win.e / 2) : null; return {T, sec: xt.length / OPT_SR, dn: t.dn || 0, hold: t.hold, w: t.w == null ? 1 : t.w}; });
+C.hmax = Math.max(.1, (tg[0].win ? tg[0].win.s : tg[0].x.length) / SR - .02); C.lim = tg[0].rMax != null && tg[0].rMax < 127 ? {e2r: tg[0].rMax} : null;
+C.stopped = () => job.stop || job.gen !== job.gen0 || now() > C.deadline || C.evals >= C.maxEv;
+C.render = (eng, p, sr, sec) => { sec = sec || C.sec; return eng === 'mk' ? renderH(p, {sr, sec}) : eng === 'va' ? renderVA(p, {sr, sec}) : renderFM(p, {sr, sec}); };
+C.at = (p, i) => (i ? Object.assign({}, p, {note: p.note + C.tg[i].dn, hold: C.tg[i].hold}) : p);
+C.ev = async (eng, p) => {
+C.evals++; let D = 0, Wt = 0;
+for (let i = 0; i < C.tg.length; i++) { const t = C.tg[i]; D += t.w * dist(t.T, C.render(eng, C.at(p, i), OPT_SR, t.sec)); Wt += t.w; }
+D /= Wt || 1; if (!(D < 1e6)) D = 99; C.logs[eng].push({p, D});
+const b = C.best[eng]; if (!b || D < b.D) C.best[eng] = {p, D};
+const t = now();
+if (t - C.lastProg > 200 && job.prog) { C.lastProg = t; job.prog({phase: 2, n: C.evals, N: C.maxEv, eng, D: C.best[eng].D}); }
+const du = job && job.duty != null ? job.duty : o.duty;
+if (t - C.lastYield > (du ? 20 : 25)) {
+if (du > 0 && du < 1) await new Promise(r => setTimeout(r, Math.round((t - C.lastYield) * (1 - du) / du))); else await yieldNow(); C.lastYield = now(); }
+return D;
+};
+return C;
+}
+async function blockOpt(C, eng, r, keys, SPEC, maxEv, sub) {
+keys = keys.filter(k => r.keys.includes(k)); if (!keys.length || C.stopped() || maxEv < keys.length + 2) return;
+const lim = sub ? Math.min(sub, C.deadline) : C.deadline, stop = () => C.stopped() || now() > lim;
+const p0 = r.p, f = async z => { if (stop()) return 1e9; const d = decode(p0, keys, z, SPEC, C.hmax); return (await C.ev(eng, d.p)) + .05 * d.pen * d.pen; };
+const nm = await nelderMeadA(f, new Array(keys.length).fill(0), new Array(keys.length).fill(.8), maxEv, keys.map(() => [-20, 20]), stop);
+if (nm.f < r.f) { r.p = decode(p0, keys, nm.x, SPEC, C.hmax).p; r.f = nm.f; }
+}
+async function cmaOpt(C, eng, r, SPEC, maxEv, sub, seed) {
+if (C.stopped() || maxEv < 6) return;
+const lim = sub ? Math.min(sub, C.deadline) : C.deadline, ev0 = C.evals, stop = () => C.stopped() || now() > lim || C.evals - ev0 >= maxEv;
+const c = new CMA(r.keys.length, .5, seed || 17); c.best = {f: r.f, z: new Array(r.keys.length).fill(0)};
+while (!stop()) {
+const P = c.ask(), F = []; for (const q of P) { if (stop()) break; const d = decode(r.p, r.keys, q.z, SPEC, C.hmax); F.push((await C.ev(eng, d.p)) + .05 * d.pen * d.pen); }
+if (F.length < P.length) break; c.tell(P, F); if (c.sigma < .03) break;
+}
+if (c.best.f < r.f) { r.p = decode(r.p, r.keys, c.best.z, SPEC, C.hmax).p; r.f = c.best.f; }
+}
+async function stage2(tg, s1, fmE, o, job) {
+const C = Ctx(tg, job, o); LIM = C.lim; const engs = (o.engines || ['mk', 'va', 'fm']).filter(e => e !== 'fm' || fmE.length), H = [s1.h].concat((s1.alts || []).map(a => a.h)).slice(0, 5);
+const hyps = { mk: [], va: [], fm: [] }, R = {};
+if (engs.includes('mk')) for (let i = 0; i < H.length; i++) hyps.mk.push({p: Object.assign({}, H[i]), f: await C.ev('mk', H[i]), keys: keysMk(H[i]), s1: i === 0});
+if (engs.includes('va')) { const h0 = Object.assign({}, s1.h); hyps.va.push({p: h0, f: await C.ev('va', h0), keys: keysMk(h0).filter(k => k !== 'c1'), s1: true});
+for (const a of (s1.alts || []).slice(0, 2)) if (!a.h.sw) { const h = Object.assign({}, a.h); hyps.va.push({p: h, f: await C.ev('va', h), keys: keysMk(h).filter(k => k !== 'c1')}); } }
+if (engs.includes('fm')) for (const e of fmE.slice(0, 2)) { const f = {note: s1.h.note, tune: 0, hold: s1.h.hold, c: e.c, r: e.m, ol: iToOl(e.I), mD: 60, mS: 70, e2a: s1.h.e2a, e2d: s1.h.e2d, e2s: s1.h.e2s, e2r: s1.h.e2r, cut: 127, fb: 0};
+hyps.fm.push({p: f, f: await C.ev('fm', f), keys: keysFm()}); }
+if (o.start) for (const e of Object.keys(o.start)) if (hyps[e] && o.start[e]) {
+const p = Object.assign({}, o.start[e]); hyps[e].forEach(r => { r.s1 = false; }); hyps[e].unshift({p, f: await C.ev(e, p), keys: e === 'fm' ? keysFm() : keysMk(p).filter(k => e !== 'va' || k !== 'c1'), s1: true}); }
+const startD = {}; for (const e of engs) { hyps[e].sort((a, b) => a.f - b.f); startD[e] = hyps[e].length ? hyps[e][0].f : Infinity; }
+const order = engs.slice().sort((a, b) => startD[a] - startD[b]), SH = [.5, .3, .2];
+const ev0 = C.evals, tLeft0 = C.deadline - now(), left = C.maxEv - ev0;
+const shares = {}; order.forEach((e, i) => { shares[e] = order.length === 1 ? 1 : order.length === 2 ? [.62, .38][i] : SH[i]; });
+if (shares.mk != null && order.length > 1) { const rest = order.filter(e => e !== 'mk'); shares.mk = order.length === 2 ? .62 : .5; rest.forEach((e, i) => { shares[e] = order.length === 2 ? .38 : [.3, .2][i]; }); }
+const types = [];
+let tEnd = now();
+for (const e of order) {
+if (C.stopped()) break;
+const evB = Math.max(8, Math.floor(left * shares[e])), ev1 = C.evals; tEnd = Math.min(C.deadline, tEnd + tLeft0 * shares[e]);
+const sub = tEnd, budget = () => evB - (C.evals - ev1);
+const SPEC = e === 'fm' ? SPEC_FM : SPEC_MK, BL = e === 'fm' ? BLOCKS_FM : BLOCKS;
+const s1r = hyps[e].find(r => r.s1), top = s1r ? [s1r].concat(hyps[e].filter(r => r !== s1r).slice(0, 1)) : hyps[e].slice(0, 2);
+const sc = evB / 150;
+for (const r of top) for (let b = 0; b < BL.length; b++) await blockOpt(C, e, r, BL[b], SPEC, Math.round([22, 34, 16][b] * sc / top.length * 2), sub);
+const win = s1r ? (top[1] && top[1].f < .9 * top[0].f ? top[1] : top[0]) : top.sort((a, b) => a.f - b.f)[0];
+if (e === 'mk' && !C.stopped()) {
+types.push({ft: 0, D: win.f});
+for (const ft of [1, 2, 3]) { if (C.stopped() || now() > sub || budget() < 12) break; const r = {p: Object.assign({}, win.p, {ft}), keys: ['cut', 'res', 'eg']}; r.f = await C.ev('mk', r.p);
+await blockOpt(C, 'mk', r, ['cut', 'res', 'eg'], SPEC_MK, Math.max(8, Math.round(10 * sc)), sub); types.push({ft, D: r.f}); if (r.f < win.f) { win.p = r.p; win.f = r.f; } }
+}
+if (budget() > 6) await cmaOpt(C, e, win, SPEC, budget(), sub, 17);
+R[e] = {p: win.p, D: win.f, hyps: hyps[e].map(r => ({p: r.p, D: r.f, o: top.includes(r)}))};
+}
+for (const e of engs) if (!R[e] && hyps[e].length) R[e] = {p: hyps[e][0].p, D: hyps[e][0].f, hyps: hyps[e].map(r => ({p: r.p, D: r.f})), short: true};
+return {R, C, startD, order, types, evals: C.evals, ms: now() - C.t0, stoppedBy: job.stop ? 'stopp' : C.evals >= C.maxEv ? 'versuche' : now() > C.deadline ? 'zeit' : 'fertig'};
+}
+
+function wq(vals, ws, q) { const ix = vals.map((v, i) => i).sort((a, b) => vals[a] - vals[b]); let tot = 0; for (const w of ws) tot += w; let acc = 0; for (const i of ix) { acc += ws[i]; if (acc >= q * tot) return vals[i]; } return vals[ix[ix.length - 1]]; }
+const wordP = p => (p >= .8 ? 'sicher' : p >= .5 ? 'ungefaehr' : 'geraten');
+function certainty(eng, R, C, types) {
+const L = C.logs[eng], best = R.p, Dmin = Math.min(R.D, ...L.map(l => l.D)), Tc = Math.max(.02, .1 * Dmin);
+const near = L.filter(l => l.D - Dmin < 6 * Tc), ws = near.map(l => Math.exp(-(l.D - Dmin) / Tc)), ess = ws.reduce((a, b) => a + b, 0) ** 2 / Math.max(1e-9, ws.reduce((a, b) => a + b * b, 0));
+const span = (fn, kind) => { if (near.length < 6) return {lo: null, hi: null, w: 'geraten', n: near.length}; const v = near.map(l => fn(l.p)), lo = wq(v, ws, .1), hi = wq(v, ws, .9), d = hi - lo;
+const th = {st: [4, 12], oct: [1, 2], lvl: [15, 40], ct: [3, 10], hz: [.5, 2]}[kind] || [1, 3];
+let w = d <= th[0] ? 'sicher' : d <= th[1] ? 'ungefaehr' : 'geraten'; if (ess < 3 && w === 'sicher') w = 'ungefaehr';
+return {lo: +lo.toFixed(3), hi: +hi.toFixed(3), w, n: near.length}; };
+const T = Math.max(.05, .25 * Dmin), soft = list => { const m = Math.min(...list.map(x => x.D)); const z = list.map(x => Math.exp(-(x.D - m) / T)), Z = z.reduce((a, b) => a + b, 0); return list.map((x, i) => Object.assign({}, x, {p: z[i] / Z})); };
+const c = {ess: +ess.toFixed(1), n: L.length};
+const st = h => 12 * Math.log2(W.cutHz(h.cut) / 20), oct = (fn) => h => Math.log2(Math.max(1e-4, fn(h)));
+if (eng === 'fm') {
+c.ratio = soft(R.hyps.map(h => ({v: h.p.c + ':' + h.p.r, D: h.D}))).sort((a, b) => b.p - a.p);
+c.index = span(h => h.ol, 'lvl'); c.idxFall = span(oct(h => W.dec(h.mD * 127 / 99)), 'oct');
+c.attack = span(oct(h => W.atk(h.e2a)), 'oct'); c.decay = span(oct(h => W.dec(h.e2d)), 'oct'); c.sustain = span(h => h.e2s, 'lvl'); c.release = span(oct(h => W.dec(h.e2r)), 'oct');
+return c;
+}
+const hy = R.hyps.map(h => ({h: h.p, D: h.o ? h.D : .75 * h.D}));
+const wv = {}; for (const x of hy) { const k = x.h.sw ? 'sw' + x.h.sw : 'w' + x.h.o1w; if (!(k in wv) || x.D < wv[k]) wv[k] = x.D; }
+const kb = best.sw ? 'sw' + best.sw : 'w' + best.o1w; wv[kb] = Math.min(wv[kb] == null ? Infinity : wv[kb], R.D);
+c.wave = soft(Object.keys(wv).map(k => ({v: k, D: wv[k]}))).sort((a, b) => b.p - a.p);
+const o2 = {}; for (const x of hy) { const k = x.h.o2 ? 'an' : 'aus'; if (!(k in o2) || x.D < o2[k]) o2[k] = x.D; } o2[best.o2 ? 'an' : 'aus'] = Math.min(o2[best.o2 ? 'an' : 'aus'] == null ? Infinity : o2[best.o2 ? 'an' : 'aus'], R.D);
+c.osc2 = soft(Object.keys(o2).map(k => ({v: k, D: o2[k]}))).sort((a, b) => b.p - a.p);
+if (eng === 'mk' && types && types.length > 1) c.ftype = soft(types.map(t => ({v: t.ft, D: t.D}))).sort((a, b) => b.p - a.p);
+c.cutHold = span(h => st(h) + W.egHt(h.eg) * h.e1s / 127, 'st'); c.cut = span(st, 'st'); c.res = span(h => h.res, 'lvl'); c.eg = span(h => h.eg, 'lvl');
+c.fAttack = span(oct(h => W.atk(h.e1a)), 'oct'); c.fDecay = span(oct(h => W.dec(h.e1d)), 'oct');
+c.attack = span(oct(h => W.atk(h.e2a)), 'oct'); c.decay = span(oct(h => W.dec(h.e2d)), 'oct'); c.sustain = span(h => h.e2s, 'lvl'); c.release = span(oct(h => W.dec(h.e2r)), 'oct');
+c.noise = span(h => h.n, 'lvl'); if (best.o2) { c.o2lvl = span(h => h.o2lvl, 'lvl'); c.detune = span(h => W.fine2(h.o2tune), 'ct'); }
+if (best.vib > 0) { c.vibDepth = span(h => W.vibCt(h.vib), 'ct'); c.vibRate = span(h => W.lfoHz(h.l2f), 'hz'); }
+if (best.kbd != null) c.kbd = span(h => h.kbd || 0, 'lvl');
+return c;
+}
+const lgD = v => Math.log(Math.max(1e-3, v)), spW = (q, big) => (q && q.lo != null ? q.hi - q.lo : big);
+function feats(e, r, c, s1, hall, joint) {
+const h = r.p, b = [1, lgD(r.D + .02), hall ? 1 : 0, joint ? 1 : 0], F = {};
+F.amp = b.concat([spW(c.attack, 6) / 6, spW(c.sustain, 127) / 127, spW(c.release, 6) / 6]);
+if (e === 'fm') { F.src = b.concat([c.ratio && c.ratio[0] ? c.ratio[0].p : .5]); F.idx = b.concat([spW(c.index, 99) / 99, (h.ol || 0) / 99]); return F; }
+F.src = b.concat([c.wave && c.wave[0] ? c.wave[0].p : .5, c.osc2 && c.osc2[0] ? c.osc2[0].p : .5, h.o2 ? 1 : 0]);
+F.flt = b.concat([c.ftype && c.ftype[0] ? c.ftype[0].p : .5, spW(c.cutHold, 48) / 48, (h.res || 0) / 127]);
+F.fenv = b.concat([spW(c.eg, 126) / 126, Math.abs(h.eg || 0) / 63]);
+const v1 = s1.feat.vib || {}; F.mov = b.concat([h.vib > 0 ? 1 : 0, Math.min(1, v1.expl || 0), Math.min(2, (v1.ct || 0) / 20)]);
+F.noi = b.concat([spW(c.noise, 127) / 127, (h.n || 0) / 127]);
+return F;
+}
+const CAL =  {"mk":{"src":[-0.776,-0.257,0.38,0.4,0.218,-0.002,-0.416],"flt":[-1.124,-0.43,0.497,0.164,0.065,-0.767,0.179],"fenv":[0.308,0.087,0.537,0.085,-0.62,-0.887],"amp":[-1.158,-0.721,-0.757,0.34,-0.305,0.006,-0.224],"mov":[2.919,0.007,-0.265,0.108,-0.545,-0.305,-0.006],"noi":[1.762,-0.558,0.655,0.114,-0.601,-0.999]},"va":{"src":[0.093,-0.024,0.361,0.079,-0.043,-0.141,-0.933],"flt":[-1.297,-0.487,0.264,0.363,0,-0.848,0.409],"fenv":[0.098,-0.092,0.204,0.048,-0.538,-0.613],"amp":[-1.372,-1.015,-0.204,0.018,0.053,-0.043,0.177],"mov":[2.956,0.18,-0.29,0.086,-0.553,-0.316,-0.019],"noi":[2.189,-0.923,0.335,-0.2,-0.262,-1.112]},"fm":{"src":[-0.953,-0.167,0,0,1.391],"idx":[-1.077,-0.212,0,0,-0.54,1.076],"amp":[-2.192,-1.059,0,0,-0.033,0.104,-0.053]}} ;
+function calib(e, F) {
+const K = CAL && (CAL[e] || (e === 'va' ? CAL.mk : null)); if (!K) return null; const o = {};
+for (const k of Object.keys(F)) { const w = K[k]; if (!w) continue; let z = 0; for (let i = 0; i < w.length; i++) z += w[i] * F[k][i]; o[k] = +(1 / (1 + Math.exp(-z))).toFixed(3); }
+return o;
+}
+function engOrder(L) { const s = L.slice().sort((p, q) => p.D - q.D), m = s.find(q => q.v === 'mk'); if (m && s[0] !== m && m.D <= s[0].D * 1.1 + .02) { s.splice(s.indexOf(m), 1); s.unshift(m); } return s; }
+const simWord = D => (D <= .5 ? 'sehr nah' : D <= .85 ? 'nah' : D <= 1.3 ? 'grob' : 'fern');
+
+function hallCut(x) {
+const L = 441, n = Math.floor(x.length / L); if (n < 45) return null;
+const e = new Float64Array(n); for (let f = 0; f < n; f++) { let q = 0; for (let i = f * L; i < (f + 1) * L; i++) q += x[i] * x[i]; e[f] = 10 * Math.log10(q / L + 1e-20); }
+const m = new Float64Array(n); for (let f = 0; f < n; f++) { const u = e[Math.max(0, f - 1)], v = e[f], w = e[Math.min(n - 1, f + 1)]; m[f] = Math.max(Math.min(u, v), Math.min(Math.max(u, v), w)); }
+let fp = 0; for (let f = 1; f < n; f++) if (m[f] > m[fp]) fp = f; const pk = m[fp], fl = Array.from(m).sort((u, v) => u - v)[Math.floor(.05 * n)];
+const g5 = new Float64Array(n); for (let f = 0; f < n; f++) { let q = 0, c = 0; for (let j = Math.max(0, f - 2); j <= Math.min(n - 1, f + 2); j++) { q += m[j]; c++; } g5[f] = q / c; }
+const fit = (u, v) => { let sx = 0, sy = 0, sxx = 0, sxy = 0, k = 0; for (let f = u; f <= v; f++) { sx += f; sy += g5[f]; sxx += f * f; sxy += f * g5[f]; k++; }
+const d = k * sxx - sx * sx, sl = d > 0 ? (k * sxy - sx * sy) / d : 0, c0 = (sy - sl * sx) / k; let r = 0; for (let f = u; f <= v; f++) { const z = g5[f] - c0 - sl * f; r += z * z; } return {sl: sl * 100, r: Math.sqrt(r / k)}; };
+for (let k = Math.max(fp + 8, 30); k < n - 15; k++) {
+if (m[k] < fl + 14) break;
+if (m[k - 5] - m[k] < 6 || m[k] > pk - 4) continue;
+while (k + 1 < n && m[k] - m[k + 1] > 1.5) k++;
+let e2 = k + 1; while (e2 < n - 1 && m[e2] > fl + 6) e2++;
+if (e2 - k < 15) continue;
+const R = fit(k + 3, Math.min(e2, k + 42));
+if (R.sl < -110 || R.sl > -12 || R.r > 2.5) continue;
+let a0 = k; while (a0 > fp && m[a0 - 1] - m[a0] > .4 && k - a0 < 40) a0--;
+const drop = Math.max(6, (m[a0] - m[k]) / Math.max(.01, (k - a0) * .01));
+return {at: k * L, rt: +(-60 / R.sl).toFixed(2), db: +(m[k] - pk).toFixed(1), relMax: +Math.min(4, 1.5 * 20 / drop).toFixed(3)};
+}
+return null;
+}
+function holdFit(x, amp, until) {
+const L5 = Math.round(.005 * SR), n = Math.min(Math.floor(x.length / L5), Math.floor(until * SR / L5)); if (n < 8) return Math.max(.05, until * .6);
+const ts = new Float64Array(n), mm = new Float64Array(n); let mx = -1e9;
+for (let f = 0; f < n; f++) { let q = 0; for (let i = f * L5; i < (f + 1) * L5; i++) q += x[i] * x[i]; mm[f] = 10 * Math.log10(q / L5 + 1e-30); ts[f] = (f + .5) * L5 / SR; if (mm[f] > mx) mx = mm[f]; }
+const fl = mx - 45; for (let f = 0; f < n; f++) mm[f] = Math.max(fl, mm[f]);
+const err = hold => { const g0 = egAt(amp.a, amp.d, amp.s, amp.r, hold, ts); let sd = 0, k = 0; const md = new Float64Array(n);
+for (let f = 0; f < n; f++) { md[f] = 20 * Math.log10(g0[f] + 1e-9); if (mm[f] > fl + 1 && md[f] > -60) { sd += mm[f] - md[f]; k++; } }
+const g = k ? sd / k : 0; let q = 0; for (let f = 0; f < n; f++) { const d = mm[f] - Math.max(fl, md[f] + g); q += d * d; } return q; };
+const hi = Math.max(.06, until - .02); let best = .05, be = Infinity;
+for (let h = .05; h <= hi; h += .02) { const v = err(h); if (v < be) { be = v; best = h; } }
+for (let h = Math.max(.05, best - .02); h <= Math.min(hi, best + .02); h += .004) { const v = err(h); if (v < be) { be = v; best = h; } }
+return +best.toFixed(3);
+}
+function pickNotes(notes, want) {
+const ok = n => n.f0 > 0 && n.m != null && n.end - n.a >= .12 && n.db > -30 && n.k !== 'p';
+let pi = want != null && want >= 0 && notes[want] ? want : notes.findIndex(n => n.best); if (pi < 0) pi = 0;
+const use = notes.map((n, i) => i).filter(i => i !== pi && ok(notes[i]));
+if (!(want == null || want < 0) || !ok(notes[pi]) || !use.length) return {prim: pi, ids: [pi], joint: false, can: !!use.length && ok(notes[pi])};
+const ids = [pi]; let same = 0;
+while (ids.length < 3) {
+let bi = -1, bs = -Infinity;
+for (const i of use) { if (ids.includes(i)) continue; const n = notes[i], dm = Math.min(...ids.map(j => Math.abs(n.m - notes[j].m)));
+if (dm < .5 && same) continue; const sc = Math.min(dm, 7) + n.score - (n.pre > -15 ? 1 : 0); if (sc > bs) { bs = sc; bi = i; } }
+if (bi < 0) break; if (Math.min(...ids.map(j => Math.abs(notes[bi].m - notes[j].m))) < .5) same++; ids.push(bi);
+}
+return {prim: pi, ids, joint: ids.length > 1, can: true};
+}
+
+async function run(m, job) {
+const t0 = now(); if (m.tpl) setTpl(m.tpl);
+const full = to44(m.pcm, m.sr); let pk0 = 0; for (let i = 0; i < full.length; i++) { if (!(Math.abs(full[i]) < 1e6)) full[i] = 0; else if (Math.abs(full[i]) > pk0) pk0 = Math.abs(full[i]); }
+if (pk0 < 3e-4) throw new Error('Die Aufnahme ist still – kein Ton gefunden');
+let notes = m.notes || findNotes(full);
+if (!notes.length) {
+let pk = 0; for (const v of full) pk = Math.max(pk, Math.abs(v)); let i = 0; while (i < full.length && Math.abs(full[i]) < pk * .01) i++;
+if (!pk || full.length - i < .1 * SR) throw new Error('Kein Ton gefunden');
+const a = Math.max(0, (i - 22) / SR); notes = [{a: +a.toFixed(4), b: +Math.min(full.length / SR, a + 2).toFixed(4), end: +Math.min(full.length / SR, a + 2).toFixed(4), f0: 0, m: null, dur: .1, db: 0, score: 0, best: true, k: 's', pre: -99}];
+}
+const PK = pickNotes(notes, m.note), joint = PK.joint, ni = PK.prim, sel = PK.ids, selV = joint ? -1 : ni;
+const segOf = (i, mx) => { const n = notes[i], a = Math.max(0, Math.round(n.a * SR)), b = Math.min(full.length, Math.round(Math.min(n.b, n.a + mx) * SR)); return full.slice(a, Math.max(a + 1, b)); };
+const raw0 = segOf(ni, joint ? 1.4 : (m.maxSec || 2)); let pk = 0; for (const v of raw0) pk = Math.max(pk, Math.abs(v)); const kG = pk > 0 ? .5 / pk : 1;
+const minN = Math.round(.45 * SR), hall = [];
+const prep = (i, mx) => {
+let x = i === ni ? raw0 : segOf(i, mx); x = Float32Array.from(x, v => v * kG);
+const raw = x; if (x.length < minN) { const y = new Float32Array(minN); y.set(x); x = y; }
+const hc = m.o && m.o.noHall ? null : hallCut(x); let win = null, xa = x;
+if (hc && hc.at > .25 * SR) { const s0 = hc.at - Math.round(.01 * SR), e0 = Math.min(x.length, hc.at + Math.round(.02 * SR)); win = {s: s0, e: e0}; x = applyWin(x.slice(0, e0), fadeWin(e0, s0, e0)); xa = x.subarray(0, s0); hall.push({i, rt: hc.rt, db: hc.db, relMax: hc.relMax}); }
+return {i, x, xa, raw, win, dn: notes[i].m != null && notes[ni].m != null ? Math.round(notes[i].m - notes[ni].m) : 0};
+};
+const T0 = prep(ni), TS = sel.slice(1).map(i => prep(i, .6));
+if (job.prog) job.prog({phase: 1, notes, note: selV, sel, can: PK.can});
+const tW = now(); scope(OPT_SR); scope(SR); const msEngine = now() - tW;
+const dutyOf = () => { const d = job.duty != null ? job.duty : m.o && m.o.duty; return d > 0 && d < 1 ? d : 0; };
+const rest = async t => { const duty = dutyOf(); if (duty) await new Promise(r => setTimeout(r, Math.min(400, Math.round((now() - t) * (1 - duty) / duty)))); };
+let tR = now(); const s1 = analyse(T0.xa, {f0hint: notes[ni].f0}); await rest(tR);
+const h0 = hall.find(q => q.i === ni), rMax = h0 ? clampI(Winv.dec(h0.relMax), 0, 127) : 127;
+if (rMax < 127) { s1.h.e2r = Math.min(s1.h.e2r, rMax); for (const a of s1.alts || []) a.h.e2r = Math.min(a.h.e2r, rMax); }
+if (!(s1.feat.f0 > 30 && s1.feat.f0 < 2500)) throw new Error('Kein klarer Ton gefunden – bitte einen einzelnen, deutlichen Ton wählen');
+const fmE = fmEstimate(T0.xa, s1.feat.f0, s1.h.hold);
+const span = joint ? Math.max(...sel.map(i => notes[i].m)) - Math.min(...sel.map(i => notes[i].m)) : 0, kbd = span >= 5 ? 0 : null;
+for (const t of TS) t.hold = holdFit(t.xa || t.x, s1.feat.amp, (t.win ? t.win.s : t.x.length) / SR);
+const withKb = h => (joint ? Object.assign(h, {kn: h.note}, kbd != null ? {kbd: h.kbd != null ? h.kbd : kbd} : {}) : h);
+withKb(s1.h); for (const a of s1.alts || []) withKb(a.h);
+tR = now(); if (job.s1) job.s1({h: s1.h, pcm: renderH(s1.h, {sr: SR, sec: T0.raw.length / SR}), ms: s1.ms}); await rest(tR);
+const tg = [{x: T0.x, win: T0.win, dn: 0, w: 1, rMax}].concat(TS.map(t => ({x: t.x, win: t.win, dn: t.dn, hold: t.hold, w: .5})));
+const o2 = Object.assign({}, m.o || {}); if (joint && o2.budgetJoint) o2.budgetMs = o2.budgetJoint;
+const S2 = await stage2(tg, s1, fmE, o2, job);
+const HMX = m.maxSec || 2, FO = Math.round(.012 * SR), FI = Math.round(.001 * SR);
+const endOf = i => { const n = notes[i], nx = notes[i + 1], a = Math.round(n.a * SR); let e = Math.min(n.b, n.a + HMX); if (nx) e = Math.min(e, nx.a); return Math.max(a + 1, Math.min(full.length, Math.round(e * SR))); };
+const blend = (y, o, n) => { const fi = Math.min(FI, n >> 2), fo = Math.min(FO, n >> 1);
+for (let k = 0; k < fi; k++) y[o + k] *= .5 * (1 - Math.cos(Math.PI * k / fi));
+for (let k = 0; k < fo; k++) y[o + n - fo + k] *= .5 * (1 + Math.cos(Math.PI * (k + 1) / fo)); return y; };
+const P = [T0].concat(TS).map(t => ({t, n: notes[t.i]})).sort((u, v) => u.n.a - v.n.a), off = [], runs = [];
+for (let j = 0; j < P.length; j++) {
+const a = Math.round(P[j].n.a * SR), pr = runs[runs.length - 1];
+if (pr && P[j].t.i === P[j - 1].t.i + 1 && P[j].n.a - P[j - 1].n.a <= 2.4) off.push(pr.o + a - pr.a);
+else { const o = pr ? pr.o + pr.e - pr.a + Math.round(.12 * SR) : 0; runs.push({a, o, e: a + 1, j0: j, j1: j}); off.push(o); }
+const R = runs[runs.length - 1]; R.e = Math.max(R.e, endOf(P[j].t.i)); R.j1 = j;
+}
+const lastR = runs[runs.length - 1], lenA = lastR.o + lastR.e - lastR.a, xA = new Float32Array(lenA);
+for (const R of runs) { const n = R.e - R.a; for (let i = 0; i < n; i++) xA[R.o + i] = full[R.a + i] * kG; blend(xA, R.o, n); }
+const phrase = (e, p) => { const y = new Float32Array(lenA);
+for (const R of runs) { const rEnd = R.o + R.e - R.a;
+for (let j = R.j0; j <= R.j1; j++) { const t = P[j].t, q = t.i === ni ? p : Object.assign({}, p, {note: p.note + t.dn, hold: t.hold}), n = Math.min(rEnd - off[j], Math.round((q.hold + 1.6) * SR));
+if (n < 1) continue; const z = S2.C.render(e, q, SR, n / SR); for (let i = 0; i < z.length && off[j] + i < rEnd; i++) y[off[j] + i] += z[i]; }
+blend(y, R.o, rEnd - R.o); }
+return y; };
+const x0 = P.length > 1 ? (() => { const a = Math.round(notes[ni].a * SR), e = endOf(ni), y = new Float32Array(e - a); for (let i = 0; i < y.length; i++) y[i] = full[a + i] * kG; return blend(y, 0, y.length); })() : null;
+const eng = {};
+for (const e of Object.keys(S2.R)) {
+tR = now(); const r = S2.R[e], y = phrase(e, r.p);
+if (!(r.D < 1e6)) r.D = 99;
+const cert = certainty(e, r, S2.C, e === 'mk' ? S2.types : null), fx = feats(e, r, cert, s1, hall.length > 0, joint);
+eng[e] = {p: r.p, D: +r.D.toFixed(4), sim: simWord(r.D), lsd: job.stop ? null : +lsd(xA, y).toFixed(3), cert, fx, cal: calib(e, fx), pcm: y, short: !!r.short,
+va: e === 'va' ? hToVa(r.p) : null, fm: e === 'fm' ? fmPatch(r.p) : null};
+if (!job.stop) await rest(tR);
+}
+const list = Object.keys(eng).map(e => ({v: e, D: eng[e].D})), Dm = Math.min(...list.map(l => l.D)), T = Math.max(.05, .25 * Dm), z = list.map(l => Math.exp(-(l.D - Dm) / T)), Z = z.reduce((p, q) => p + q, 0);
+const pEng = engOrder(list.map((l, i) => ({v: l.v, D: l.D, p: z[i] / Z})));
+return {notes, note: selV, sel, prim: ni, can: PK.can, joint, x: xA, x0, sr: SR, hall, span: +span.toFixed(1), holds: TS.map(t => t.hold), offs: off.map(o => +(o / SR).toFixed(4)), ids: P.map(q => q.t.i),
+s1: {h: s1.h, pWave: s1.pWave, sw: s1.sw, feat: {f0: s1.feat.f0, beat: s1.feat.beat, vib: s1.feat.vib, noise: s1.feat.noise, amp: s1.feat.amp}, ms: Math.round(s1.ms), msNetto: Math.round(s1.msNetto), alts: (s1.alts || []).map(q => q.h)},
+fmE, eng, order: pEng.map(q => q.v), pEng, startD: S2.startD, evals: S2.evals, ms2: Math.round(S2.ms), ms: Math.round(now() - t0), stoppedBy: S2.stoppedBy, msEngine: Math.round(msEngine), renders, renderMs: Math.round(renderMs)};
+}
+function setTpl(t) { if (t.mk) MKBASE = t.mk; if (t.va) VAT = t.va; if (t.fm) FMT = t.fm; }
+function serve(G) {
+const jobs = new Map(); let cur = null;
+G.onmessage = async e => {
+const m = e.data || {};
+if (m.t === 'stop') { const j = jobs.get(m.id); if (j) { j.stop = true; j.stopAt = now(); } return; }
+if (m.t === 'ping') { G.postMessage({t: 'pong', id: m.id}); return; }
+if (m.t === 'duty') { const j = jobs.get(m.id); if (j) j.duty = m.d; return; }
+if (m.t !== 'run') return;
+if (cur) cur.stop = true;
+const job = cur = {id: m.id, stop: false, gen: 0, gen0: 0};
+jobs.set(m.id, job);
+job.prog = p => G.postMessage(Object.assign({t: 'prog', id: m.id}, p));
+job.s1 = s => { const c = new Float32Array(s.pcm); G.postMessage({t: 's1', id: m.id, h: s.h, ms: s.ms, pcm: c}, [c.buffer]); };
+try {
+const r = await run(m, job), tr = [r.x.buffer]; if (r.x0) tr.push(r.x0.buffer);
+for (const k of Object.keys(r.eng)) { const c = new Float32Array(r.eng[k].pcm); r.eng[k].pcm = c; tr.push(c.buffer); }
+r.stopLateMs = job.stopAt ? Math.round(now() - job.stopAt) : null;
+G.postMessage({t: 'done', id: m.id, r}, tr);
+} catch (err) { G.postMessage({t: 'err', id: m.id, err: String(err && err.message || err)}); }
+jobs.delete(m.id); if (cur === job) cur = null;
+};
+G.postMessage({t: 'ready'});
+}
+return {serve, run, engOrder, findNotes, analyse, hallCut, holdFit, pickNotes, feats, calib, cal: () => CAL, to44, renderH, renderVA, renderFM, hToVa, fmPatch, mkMerge, setTpl, lsd, dist, prepTarget, down2, W, Winv, egAt, simWord,
+close: () => { try { if (MC) { MC.port1.close(); MC.port2.close(); } } catch (e) {} }, info: () => ({renders, bad, renderMs: Math.round(renderMs), wkMs: Math.round(wkMs), scopes: [...scopes.keys()]}), SR, OPT_SR, rng};
+}
+const KE1X = (() => {
+const Z = {w: null, wErr: null, wMs: 0, id: 0, job: null, src: null, res: null, s1: null, notes: null, note: null, sel: null, can: false, prog: null, eng: null, ab: 'a', t: undefined,
+open: {}, busy: false, pl: null, kill: 0, reo: 0, tks: [], last: null, lastT: 0, paintT: 0, log: [], c0: null, waitT: 0, msgs: 0, stopAt: 0, tplC: null,
+tm: {paint: 0, paintN: 0, prog: 0, progN: 0, msg: 0, start: 0, open: 0}};
+const ENG = e => (e === 'mk' ? MK_LABEL : e === 'va' ? 'VA' : 'FM');
+const W1 = ['Säge', 'Puls', 'Dreieck', 'Sinus'], W2 = ['Säge', 'Rechteck', 'Dreieck'], FT = ['Tiefpass 24 dB', 'Tiefpass 12 dB', 'Bandpass 12 dB', 'Hochpass 12 dB'];
+const WD = {sicher: ['●', 'sicher'], ungefaehr: ['◐', 'ungefähr'], geraten: ['○', 'geraten']};
+const dec = (v, n) => String(+v.toFixed(n)).replace('.', ',');
+const hz = v => (v >= 1000 ? dec(v / 1000, 1) + ' kHz' : Math.round(v) + ' Hz');
+const sec = v => (v < .1 ? Math.max(1, Math.round(v * 1000)) + ' ms' : dec(v, v < 1 ? 2 : 1) + ' s');
+const pc = p => (!(p >= 0) ? '–' : p > .99 ? 'über 99 %' : p < .01 ? 'unter 1 %' : Math.round(p * 100) + ' %');
+const core = () => Z.c0 || (Z.c0 = ke1CoreFn(null, null));
+const NOTE = m => { const n = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'H']; const r = Math.round(m); return n[((r % 12) + 12) % 12] + (Math.floor(r / 12) - 1); };
+const tmk = (k, t0) => { const d = performance.now() - t0; if (d > Z.tm[k]) Z.tm[k] = +d.toFixed(2); return d; };
+
+function worker() {
+if (Z.w) return Z.w;
+const t0 = performance.now();
+try {
+const wk = document.getElementById('sq-worklet-src'), mk = document.getElementById('sq-mk-src'), mt = mk ? mk.textContent : '', a = mt.indexOf('/*MKT{*/'), b = mt.indexOf('/*}MKT*/');
+if (!wk) throw new Error('Engine-Text fehlt');
+const src = ke1WkCompose(wk.textContent, a >= 0 && b > a ? mt.slice(a, b + 8) : '', ke1CoreFn.toString()) + '\nKE1C.serve(self);\n';
+const u = URL.createObjectURL(new Blob([src], {type: 'application/javascript'}));
+Z.w = new Worker(u); setTimeout(() => { try { URL.revokeObjectURL(u); } catch (e) {} }, 30000);
+Z.w.onmessage = e => msg(e.data);
+Z.w.onerror = e => { Z.wErr = String(e && e.message || 'Worker'); try { e.preventDefault(); } catch (x) {} fail('Rechnen nicht möglich (' + Z.wErr + ')'); kill(); };
+} catch (e) { Z.w = null; Z.wErr = String(e && e.message || e); logErr(e); }
+Z.wMs = performance.now() - t0;
+return Z.w;
+}
+function kill() { if (Z.w) { try { Z.w.terminate(); } catch (e) {} } Z.w = null; }
+function tpl() {
+if (Z.tplC) return Z.tplC;
+const mk = SQStore.normalizeSound(factorySound(INIT_IDS.mk)), va = spk2KlSnd({eng: 'va', fix: {o1: 0, o2: 0}, u: [.5, 0, .5, .3, 0, .3, 1, .3, 0, 0, .5]}), fm = spk2KlSnd({eng: 'fm', fix: {r: 1}, u: [.5, .5, .5, 0, .3, 1, .3, 1]});
+return (Z.tplC = {mk: JSON.parse(JSON.stringify(mk.p.mk)), va: {flat: wkFlat(va)}, fm: {flat: wkFlat(fm), fm6: JSON.parse(JSON.stringify(fm.p.fm6))}});
+}
+function msg(m) {
+const t0 = performance.now();
+Z.msgs++; if (!m || m.id !== Z.id) return;
+if (m.t === 'prog') {
+if (m.notes) { const first = !Z.notes; Z.notes = m.notes; Z.note = m.note; Z.sel = m.sel || null; Z.can = !!m.can; if (first || m.phase === 1) { Z.prog = m; paint(); tmk('msg', t0); return; } }
+Z.prog = m; progSoon(); tmk('msg', t0); return;
+}
+if (m.t === 's1') { const had = !!Z.s1; Z.s1 = {h: m.h, pcm: m.pcm, ms: m.ms}; if (had) progSoon(); else paint(); tmk('msg', t0); return; }
+if (m.t === 'err') { Z.busy = false; fail(m.err); return; }
+if (m.t === 'done') {
+Z.busy = false; const r = m.r;
+if (Z.more && Z.res) { const e = Z.more; Z.more = null; if (r.eng[e] && (!Z.res.eng[e] || r.eng[e].D < Z.res.eng[e].D)) Z.res.eng[e] = r.eng[e]; Z.res.evals += r.evals; reorder(Z.res); }
+else { Z.res = r; Z.notes = r.notes; Z.note = r.note; Z.sel = r.sel; Z.can = !!r.can; Z.eng = r.order[0]; }
+Z.stopLate = r.stopLateMs; Z.prog = null; paint(); tmk('msg', t0); return;
+}
+}
+function reorder(r) {
+const L = Object.keys(r.eng).map(e => ({v: e, D: r.eng[e].D})), m = Math.min(...L.map(l => l.D)), T = Math.max(.05, .25 * m), z = L.map(l => Math.exp(-(l.D - m) / T)), S0 = z.reduce((a, b) => a + b, 0);
+r.pEng = core().engOrder(L.map((l, i) => ({v: l.v, D: l.D, p: z[i] / S0}))); r.order = r.pEng.map(q => q.v);
+}
+function fail(t) { Z.err = t; Z.busy = false; paint(); }
+
+async function pcmOf(src) {
+if (src.pcm) return {pcm: src.pcm instanceof Int16Array ? src.pcm.slice() : Float32Array.from(src.pcm), sr: src.sr};
+const m = S.takes && S.takes[src.take]; if (!m) return null;
+const p = await tkPcm(src.take); if (!p) return null;
+const a = Math.max(0, Math.floor((src.in || 0) * m.sr)), b = src.out != null ? Math.min(p.length, Math.ceil(src.out * m.sr)) : p.length;
+return {pcm: a === 0 && b === p.length ? p : p.slice(a, Math.max(a + 1, b)), sr: m.sr};
+}
+async function start(note, more) {
+const src = Z.src; if (!src) return false;
+if (rec && rec.state !== 'off') { fail('Erst die Aufnahme beenden'); return false; }
+const w = worker(); if (!w) { fail('Rechnen nicht möglich' + (Z.wErr ? ' (' + Z.wErr + ')' : '')); return false; }
+let P = null; try { P = await pcmOf(src); } catch (e) { logErr(e); }
+if (!P) {
+if (!more && (Z.waitT = (Z.waitT || 0) + 1) <= 20) { Z.err = null; Z.wait = true; paint(); setTimeout(() => { if (Z.src === src) start(note); }, 700); return false; }
+Z.wait = false; fail('Audio nicht da (Take nicht gespeichert)'); return false;
+}
+const t0 = performance.now();
+Z.wait = false; Z.waitT = 0; Z.err = null;
+const id = Z.id = (Z.id | 0) + 1, play = !!(R.playing), o = Object.assign(play ? {budgetMs: 6000, budgetJoint: 7000, maxEvals: 320, duty: .4} : {budgetMs: 6000, budgetJoint: 7000, maxEvals: 450}, Z.opt || {});
+if (more) { o.engines = [more]; o.budgetMs = o.budgetJoint = play ? 6000 : 4000; o.maxEvals = 260; o.start = {}; o.start[more] = Z.res.eng[more].p; Z.more = more; }
+else { Z.res = null; Z.s1 = null; Z.more = null; }
+Z.busy = true; Z.prog = {phase: 1}; Z.t0 = performance.now(); paint();
+const m = {t: 'run', id, pcm: P.pcm, sr: P.sr, note: note != null ? note : src.note, notes: more ? Z.notes : null, o, tpl: tpl(), maxSec: 2};
+try { w.postMessage(m, [P.pcm.buffer]); } catch (e) { logErr(e); fail('Senden nicht möglich'); return false; }
+lagWatch(o.duty || 0);
+tmk('start', t0);
+return true;
+}
+function stop() { if (Z.busy && Z.w) { Z.stopAt = performance.now(); Z.w.postMessage({t: 'stop', id: Z.id}); } }
+function lagWatch(d0) {
+Z.dutyNow = d0; if (Z.lw) return;
+let last = performance.now(); Z.lowUntil = 0;
+Z.lw = setInterval(() => {
+const t = performance.now(), lag = t - last - 50; last = t;
+if (!Z.busy || !Z.w) { clearInterval(Z.lw); Z.lw = 0; return; }
+const pl = !!R.playing; if (pl && lag > 30) { if (t >= Z.lowUntil) Z.backoffs = (Z.backoffs || 0) + 1; Z.lowUntil = t + 3000; }
+const d = pl ? (t < Z.lowUntil ? .15 : .4) : 0;
+if (d !== Z.dutyNow) { Z.dutyNow = d; try { Z.w.postMessage({t: 'duty', id: Z.id, d}); } catch (e) {} }
+}, 50);
+}
+
+function rms(x) { let e = 0; for (let i = 0; i < x.length; i++) e += x[i] * x[i]; return Math.sqrt(e / Math.max(1, x.length)); }
+function pk(x) { let m = 1e-9; for (let i = 0; i < x.length; i++) m = Math.max(m, Math.abs(x[i])); return m; }
+const vAt = (P, t) => (t <= P.t0 ? 0 : t < P.t0 + P.r ? P.g * (t - P.t0) / P.r : t < P.t0 + P.dur - P.F ? P.g : t < P.t0 + P.dur ? P.g * (P.t0 + P.dur - t) / P.F : 0);
+function abStop() {
+const P = Z.pl; Z.pl = null; if (!P) return; clearTimeout(P.tm);
+try { const tS = P.src.context.currentTime + .025, G = P.out.gain;
+if (tS >= P.t0 + P.dur - P.F) P.src.stop(P.t0 + P.dur + .005);
+else { G.cancelScheduledValues(tS); G.setValueAtTime(tS < P.t0 + P.r ? 0 : vAt(P, tS), tS); G.linearRampToValueAtTime(0, tS + .012); P.src.stop(tS + .02); }
+} catch (e) { try { P.src.stop(); } catch (x) {} }
+setTimeout(() => { try { P.out.disconnect(); } catch (e) {} }, 120);
+}
+function abPlay(w) {
+const r = Z.res, E = r && r.eng[Z.eng], c = ensureAudio(); if (!c) return null;
+const xa = r ? r.x : null, xb = E ? E.pcm : Z.s1 ? Z.s1.pcm : null, x = w === 'b' ? xb : xa; if (!x || !x.length) return null;
+abStop();
+const st = y => y._ke1 || (y._ke1 = {r: rms(y), p: pk(y), b: null}), sA = xa ? st(xa) : null, sB = xb ? st(xb) : null;
+const rA = sA ? sA.r : 0, rB = sB ? sB.r : rA, gB = xa ? rA / Math.max(1e-9, rB) : 1, s = Math.min(1, .9 / Math.max(sA ? sA.p : 0, sB ? sB.p * gB : 0, 1e-9)), g = (w === 'b' ? gB : 1) * s;
+const sr = (r && r.sr) || 44100, sx = st(x); if (!sx.b || sx.b.sampleRate !== sr || sx.c !== c) { sx.b = c.createBuffer(1, x.length, sr); sx.b.copyToChannel(x, 0); sx.c = c; } const b = sx.b;
+const dur = x.length / sr, F = Math.min(.012, dur / 4), r0 = Math.min(.005, dur / 4), out = c.createGain(), t0 = c.currentTime + .04, G = out.gain;
+G.setValueAtTime(0, t0); G.linearRampToValueAtTime(g, t0 + r0); G.setValueAtTime(g, t0 + dur - F); G.linearRampToValueAtTime(0, t0 + dur); out.connect(AU.masterSum || c.destination);
+const src = c.createBufferSource(); src.buffer = b; src.connect(out); src.start(t0);
+const P = Z.pl = {src, out, w, g, t0, dur, F, r: r0, rmsOut: (w === 'b' ? rB : rA) * g, tm: setTimeout(() => { if (Z.pl === P) { Z.pl = null; abUi(); } }, (dur + .2) * 1000)};
+return {w, g: +g.toFixed(4), rms: +P.rmsOut.toFixed(5)};
+}
+function abUi() {
+const p = sheet(); if (!p) return;
+for (const b of p.querySelectorAll('.ke1-ab')) { const on = b.dataset.ab === Z.ab; if (b.classList.contains('on') !== on) b.classList.toggle('on', on); }
+const h = p.querySelector('[data-a="hear"]'), t = (Z.pl ? '■' : '▶') + ' Hören'; if (h && h.textContent !== t) h.textContent = t;
+}
+
+function soundOf(e, nm) {
+const r = Z.res, E = r && r.eng[e]; if (!E) return null; const C = core(), fx = {drive: 0, chorus: {mode: 'off'}, rev: 0, dly: 0, vol: .8, pan: 0};
+nm = (nm || 'Erkannt').slice(0, 24);
+if (e === 'mk') { const s = SQStore.normalizeSound(factorySound(INIT_IDS.mk)); s.p.mk = C.mkMerge(s.p.mk, E.p); if (E.p.vib > 0) s.p.mw = 1; s.name = nm; s.cat = 'eigene'; return SQStore.normalizeSound(s); }
+if (e === 'va') { const t = spk2KlSnd({eng: 'va', fix: {o1: 0, o2: 0}, u: [.5, 0, .5, .3, 0, .3, 1, .3, 0, 0, .5]}), V = C.hToVa(E.p);
+return SQStore.normalizeSound({engine: 'analog', name: nm, cat: 'eigene', p: Object.assign({}, t.p, V.p, V.lfo || {}), mods: V.smods, fx}); }
+const t = spk2KlSnd({eng: 'fm', fix: {r: 1}, u: [.5, .5, .5, 0, .3, 1, .3, 1]}), P = C.fmPatch(E.p);
+return SQStore.normalizeSound({engine: 'fm6', name: nm, cat: 'eigene', p: Object.assign({}, t.p, P.p, {fm6: P.fm6}), mods: [], fx});
+}
+function nameOf() { return ('Erkannt ' + (Z.src && Z.src.name ? Z.src.name : '')).trim(); }
+function defTrack() { if (Z.t !== undefined) return Z.t; if (canAddTrack()) return 'neu'; return spk2MxOk(R.selT) ? R.selT : -1; }
+function take(e, t) {
+e = e || Z.eng; t = t === undefined ? defTrack() : t; const snd = soundOf(e, nameOf()); if (!snd) return null; abStop();
+let res = null; const u0 = UNDO[UNDO.length - 1];
+if (t !== 'neu' && t != null && t >= 0 && spk2MxOk(t)) { soundEdit(t, 'Klang erkennen', () => applySound(t, snd)); res = {track: t, neu: false}; }
+else res = imp1Step('Klang erkennen', () => {
+if (!canAddTrack()) { toast('Keine Spur frei – eine Spur wählen'); return null; }
+const i = NT(), nt = newSynthTrack(i, DEFAULT_SOUNDS[3]); nt.name = nameOf().slice(0, 20); restoreTrack(i, JSON.stringify(nt));
+if (!S.tracks[i]) return null; applySound(i, snd); return {track: i, neu: true};
+});
+if (!res) return null;
+Z.t = res.track; gridSoon();
+toast('Klang → ' + S.tracks[res.track].name + ' (' + ENG(e) + ')', {label: '↶ Rückgängig', fn: () => undo()});
+Z.took = Object.assign({eng: e}, res); Z.tks.push({k: Z.took, u: UNDO[UNDO.length - 1] !== u0 ? UNDO[UNDO.length - 1] : null}); paint(); return Z.took;
+}
+function gridSoon() { if (Z.gq) return; Z.gq = setTimeout(() => { Z.gq = 0; try { if (UI.heads && EL.grid) buildGrid(); } catch (x) { logErr(x); } }, 0); }
+const canUn = () => { const top = Z.tks[Z.tks.length - 1]; return !!(Z.took && top && top.k === Z.took && top.u && UNDO[UNDO.length - 1] === top.u); };
+function unTake() {
+const k = Z.took;
+if (!canUn()) { Z.took = null; Z.tks = []; paint(); return false; }
+abStop(); Z.unT = true; let ok = false; try { ok = undo(); } finally { Z.unT = false; } if (!ok) return false;
+Z.tks.pop(); if (k.neu || !S.tracks[k.track]) Z.t = undefined;
+const pr = Z.tks[Z.tks.length - 1]; Z.took = pr && UNDO[UNDO.length - 1] === pr.u ? pr.k : null; if (!Z.took) Z.tks = [];
+gridSoon(); paint(); return true;
+}
+function asInst() {
+const r = Z.res; if (!r || !r.x) return null; abStop();
+const nm = ('Original ' + (Z.src && Z.src.name ? Z.src.name : '')).trim().slice(0, 20), pcm = spk7I16(r.x0 || r.x), f0 = r.s1.feat.f0;
+const t = defTrack(), u0 = UNDO[UNDO.length - 1];
+const res = imp1Step('Original als Instrument', () => {
+const ex = t !== 'neu' && t != null && t >= 0 && spk2MxOk(t);
+if (!ex && !canAddTrack()) { toast('Keine Spur frei – eine Spur wählen'); return null; }
+const tk = tkAddPcmTake(pcm, r.sr, 'import'), snd = spk7Snd(tk.id, {f0}, spk7Norm({}), nm);
+if (ex) { applySound(t, snd); return {track: t, take: tk.id, neu: false}; }
+const i = NT(), nt = newSynthTrack(i, DEFAULT_SOUNDS[2]); nt.name = nm; restoreTrack(i, JSON.stringify(nt));
+if (!S.tracks[i]) return null; applySound(i, snd); return {track: i, take: tk.id, neu: true};
+});
+if (!res) return null;
+Z.t = res.track; gridSoon();
+toast('Original → ' + S.tracks[res.track].name, {label: '↶ Rückgängig', fn: () => undo()});
+Z.took = Object.assign({eng: 'orig'}, res); Z.tks.push({k: Z.took, u: UNDO[UNDO.length - 1] !== u0 ? UNDO[UNDO.length - 1] : null}); paint(); return Z.took;
+}
+
+const worst = (...ws) => { const o = ['sicher', 'ungefaehr', 'geraten']; let k = 0; for (const w of ws) if (w) k = Math.max(k, o.indexOf(w)); return o[k]; };
+const mid = (...ws) => { const o = ['sicher', 'ungefaehr', 'geraten'], v = ws.filter(Boolean).map(w => o.indexOf(w)).sort(); return v.length ? o[v[v.length >> 1]] : 'geraten'; };
+const wP = p => (p >= .8 ? 'sicher' : p >= .5 ? 'ungefaehr' : 'geraten');
+const spanTx = (s, f) => { if (!s || s.lo == null) return 'zu wenig Versuche für eine Spanne'; const a = f(s.lo), b = f(s.hi); return a === b ? 'Spanne eng (' + a + ')' : 'Spanne ' + a + ' bis ' + b; };
+const st2hz = st => 20 * Math.pow(2, st / 12), o2s = o => Math.pow(2, o);
+function capW(w, D, k) { const o = ['sicher', 'ungefaehr', 'geraten']; let m = D <= .5 ? 0 : D <= .85 ? 1 : 2; if (k === 'flt') m = Math.max(m, D <= .5 ? 1 : 2); if (k === 'noi' || k === 'mov') m = Math.min(m, 1); return w ? o[Math.max(o.indexOf(w), m)] : w; }
+const calTx = p => 'Stimmt in etwa ' + Math.max(1, Math.min(10, Math.round(p * 10))) + ' von 10 Fällen (' + pc(p) + ', an Testtönen geeicht) · ';
+function rows(e) {
+const r = Z.res, E = r.eng[e], h = E.p, c = E.cert || {}, C = core(), Wm = C.W, L = [], cal = E.cal;
+if (e === 'fm') {
+const rt = (c.ratio || [])[0] || {v: h.c + ':' + h.r, p: 1}, r2 = (c.ratio || [])[1];
+L.push({k: 'src', l: 'Tonquelle', t: '2 Operatoren (FM) · Verhältnis ' + rt.v, w: wP(rt.p), d: 'Verhältnis ' + rt.v + (cal ? (r2 ? ' · sonst eher ' + r2.v : '') : ': ' + pc(rt.p) + (r2 ? ' · oder ' + r2.v + ' (' + pc(r2.p) + ')' : ''))});
+L.push({k: 'idx', l: 'Helligkeit', t: 'FM-Stärke ' + h.ol + ' von 99, sinkt auf ' + h.mS, w: worst(c.index && c.index.w, c.idxFall && c.idxFall.w), d: spanTx(c.index, v => Math.round(v))});
+} else {
+const sw = h.sw, o1 = sw ? 'Speicherwelle Nr. ' + sw : W1[h.o1w] + (h.o1w === 1 && (h.c1 || 0) > 24 ? ' (schmal)' : ''), ct = h.o2 ? Wm.fine2(h.o2tune || 0) : 0;
+const t = (h.o2 ? '2 Oszillatoren: ' + o1 + ' + ' + W2[h.o2w] + (h.semi === 12 ? ' (Oktave höher)' : '') + (ct >= 1.5 ? ', leicht verstimmt (+' + Math.round(ct) + ' ct)' : '') : '1 Oszillator: ' + o1);
+const wv = c.wave || [], ow = c.osc2 || [], pw = wv[0] ? wv[0].p : .5, po = ow[0] ? ow[0].p : .5;
+const wn = v => (v[0] === 's' ? 'Speicherwelle ' + v.slice(2) : W1[+v.slice(1)] || v);
+L.push({k: 'src', l: 'Tonquelle', t, w: worst(wP(pw), wP(po), h.o2 && c.detune ? c.detune.w : null), d: cal ? 'Welle ' + wn(wv[0] ? wv[0].v : 'w' + h.o1w) + (wv[1] ? ' (sonst eher ' + wn(wv[1].v) + ')' : '') + ' · 2. Oszillator ' + (ow[0] ? ow[0].v : h.o2 ? 'an' : 'aus') + (h.o2 && c.detune ? ' · Verstimmung ' + spanTx(c.detune, v => Math.round(v) + ' ct') : '')
+: 'Welle ' + wn(wv[0] ? wv[0].v : 'w' + h.o1w) + ': ' + pc(pw) + (wv[1] ? ' · oder ' + wn(wv[1].v) + ' (' + pc(wv[1].p) + ')' : '') + ' · 2. Oszillator ' + (ow[0] ? ow[0].v : h.o2 ? 'an' : 'aus') + ': ' + pc(po) + (h.o2 && c.detune ? ' · Verstimmung ' + spanTx(c.detune, v => Math.round(v) + ' ct') : '')});
+const ftp = (c.ftype || [])[0], cutH = 12 * Math.log2(Wm.cutHz(h.cut) / 20) + Wm.egHt(h.eg) * h.e1s / 127, rs = h.res < 20 ? 'wenig' : h.res < 70 ? 'mittel' : 'stark';
+const kb = h.kbd != null && h.kbd >= 20 ? (h.kbd >= 36 ? ' · folgt der Tonhöhe' : ' · folgt etwas der Tonhöhe') : '';
+L.push({k: 'flt', l: 'Filter', t: FT[h.ft || 0] + ' · Grenze ca. ' + hz(st2hz(cutH)) + ' · Resonanz ' + rs + kb, w: worst(c.cutHold && c.cutHold.w, ftp ? wP(ftp.p) : null), d: 'Grenze beim Halten: ' + spanTx(c.cutHold, v => hz(st2hz(v))) + (ftp ? ' · Typ ' + FT[ftp.v] + (cal ? '' : ': ' + pc(ftp.p)) : '') + ' · Resonanz ' + spanTx(c.res, v => Math.round(v)) + (h.kbd != null ? ' · Tastatur-Verfolgung ' + Math.round(h.kbd * 100 / 48) + ' %' : '')});
+const eg = h.eg || 0, fd = Wm.dec(h.e1d);
+L.push({k: 'fenv', l: 'Filter-Lauf', t: Math.abs(eg) <= 3 ? 'keiner' : (eg > 0 ? 'öffnet und fällt zurück' : 'schließt und kommt zurück') + ' (ca. ' + sec(fd) + ')', w: Math.abs(eg) <= 3 ? (c.eg ? c.eg.w : 'geraten') : worst(c.eg && c.eg.w, c.fDecay && c.fDecay.w), d: 'Stärke ' + spanTx(c.eg, v => Math.round(v)) + ' · Dauer ' + spanTx(c.fDecay, v => sec(o2s(v)))});
+}
+const at = Wm.atk(h.e2a), rl = Wm.dec(h.e2r), su = h.e2s;
+L.push({k: 'amp', l: 'Lautstärke', t: (at < .012 ? 'Anschlag schnell' : at < .12 ? 'Anschlag weich' : 'Anschlag langsam (' + sec(at) + ')') + ' · ' + (su >= 100 ? 'bleibt lange' : su >= 40 ? 'wird leiser' : 'klingt ab (' + sec(Wm.dec(h.e2d)) + ')') + ' · ' + (rl < .12 ? 'kurzes Ausklingen' : 'Ausklang ' + sec(rl)),
+w: mid(c.attack && c.attack.w, c.sustain && c.sustain.w, c.release && c.release.w), d: 'Anschlag ' + spanTx(c.attack, v => sec(o2s(v))) + ' · Halten ' + spanTx(c.sustain, v => Math.round(v * 100 / 127) + ' %') + ' · Ausklang ' + spanTx(c.release, v => sec(o2s(v)))});
+if (e !== 'fm') {
+const vb = h.vib > 0, v1 = r.s1.feat.vib || {};
+L.push({k: 'mov', l: 'Bewegung', t: vb ? 'Vibrato ca. ' + dec(Wm.lfoHz(h.l2f), 1) + ' Hz, ' + Math.round(Wm.vibCt(h.vib)) + ' ct' : 'kein Vibrato', w: vb ? worst(c.vibDepth && c.vibDepth.w, c.vibRate && c.vibRate.w) : (v1.expl < .2 ? 'sicher' : 'ungefaehr'), d: vb ? 'Tiefe ' + spanTx(c.vibDepth, v => Math.round(v) + ' ct') + ' · Tempo ' + spanTx(c.vibRate, v => dec(v, 1) + ' Hz') : 'Tonhöhe schwankt kaum (gemessen ' + dec(v1.ct || 0, 1) + ' ct). Filter- oder Lautstärke-Bewegung wird noch nicht gesucht.'});
+L.push({k: 'noi', l: 'Rauschen', t: !h.n ? 'keins' : h.n < 20 ? 'wenig' : h.n < 60 ? 'etwas' : 'viel', w: c.noise ? c.noise.w : 'geraten', d: 'Anteil ' + spanTx(c.noise, v => Math.round(v * 100 / 127) + ' %')});
+}
+for (const x of L) { const p = cal && cal[x.k]; if (p != null) { x.w = wP(p); x.p = p; x.d = calTx(p) + x.d; } else x.w = capW(x.w, E.D, x.k); }
+const rt = Z.src && Z.src.route, hl = r.hall || [], mic = rt === 'speaker' || rt === 'bt';
+if (hl.length) { const t = hl.reduce((a, q) => a + q.rt, 0) / hl.length; L.push({k: 'room', l: 'Raum', t: 'Hall erkannt (Nachhall ca. ' + sec(t) + ') – vor dem Vergleich ausgeblendet', w: null, d: (mic ? 'Mikro im Raum. ' : '') + 'Der Nachbau ist trocken; der Hall gehört zum Raum, nicht zum Klang. Besser: Kabel ins Mischpult, ohne Hall.'}); }
+else if (mic) L.push({k: 'room', l: 'Raum', t: 'Mikro im Raum – Ergebnis ungenauer', w: null, d: 'Besser: Kabel ins Mischpult, ohne Hall.'});
+return L;
+}
+function badge(w) { const b = WD[w]; return b ? `<span class="ke1-w ke1-${w}">${b[0]} ${b[1]}</span>` : ''; }
+
+let progQ = 0;
+function progSoon() { if (progQ) return; const d = Math.max(0, (R.playing ? 500 : 250) - (performance.now() - Z.paintT)); progQ = setTimeout(() => { progQ = 0; progPaint(); }, d); }
+function progPaint() {
+const p = sheet(); if (!p || !Z.busy) return; const t0 = performance.now(); Z.paintT = t0;
+const P = Z.prog || {}, n = P.n || 0, N = P.N || 1, ph = P.phase || 1, bar = p.querySelector('.ke1-bar>i'), s2 = p.querySelector('.ke1-s2'), s1 = p.querySelector('.ke1-s1');
+if (!bar || !s2) { paint(); return; }
+bar.style.width = Math.round(100 * Math.min(1, n / N)) + '%';
+const t2 = '2 Ausprobieren' + (ph === 2 ? ' ' + n + '/' + N : ''); if (s2.textContent !== t2) { s2.textContent = t2; s2.className = 'ke1-s2' + (ph === 2 ? ' on' : ''); }
+if (s1 && (ph > 1 || Z.s1) && s1.className !== 'ke1-s1 ok') { s1.className = 'ke1-s1 ok'; s1.textContent = '1 Hinhören ✓'; }
+Z.tm.progN++; tmk('prog', t0);
+}
+function sheet() { return UI.pop && UI.pop.name === 'ke1' ? UI.pop.el : null; }
+function noteTx() {
+const ns = Z.notes || [], sl = Z.sel || [];
+if (Z.note === -1 && sl.length > 1) return ' · ' + sl.length + ' Töne zusammen: ' + sl.slice().sort((a, b) => ns[a].a - ns[b].a).map(i => (ns[i].m != null ? NOTE(ns[i].m) : '?')).join(' · ');
+const nt = ns[Z.note != null && Z.note >= 0 ? Z.note : sl[0]]; return nt ? ' · Ton ' + (nt.m != null ? NOTE(nt.m) : '?') + ' (bei ' + dec(nt.a, 1) + ' s)' : '';
+}
+const choices = () => (Z.can ? [-1] : []).concat((Z.notes || []).map((n, i) => i));
+function paint(pEl) {
+const p = pEl || sheet(); if (!p) return; const t0 = performance.now(); Z.paintT = t0;
+let bd = p.querySelector(':scope > .ke1-bd'); if (!bd) { bd = el('div', 'ke1-bd pan-y'); p.appendChild(bd); }
+const r = Z.res, ns = Z.notes || [], run = Z.busy, ch = choices(), ci = ch.indexOf(Z.note);
+let h = '<div class="ke1-colA">';
+const nm = Z.src && Z.src.name ? '<span class="ke1-nm" title="' + esc(Z.src.name) + '">„' + esc(Z.src.name) + '“</span>' : 'Aufnahme'; /* ENT1D */
+h += `<div class="ke1-src"><span>${nm}${esc(noteTx())}</span>` +
+(ch.length > 1 ? `<span class="ke1-nn"><button class="rb ke1-c" data-a="np" aria-label="Voriger Ton"${run || ci <= 0 ? ' disabled' : ''}>‹</button><b>${Z.note === -1 ? (Z.sel || []).length + ' Töne' : (Z.note + 1) + '/' + ns.length}</b><button class="rb ke1-c" data-a="nn" aria-label="Nächster Ton"${run || ci < 0 || ci >= ch.length - 1 ? ' disabled' : ''}>›</button></span>` : '') + '</div>';
+if (Z.wait) h += '<div class="ke1-msg">Take wird noch gespeichert …</div>';
+if (Z.err) h += `<div class="ke1-msg warn">${esc(Z.err)}</div>`;
+if (run) {
+const P = Z.prog || {}, n = P.n || 0, N = P.N || 1, ph = P.phase || 1;
+h += `<div class="ke1-steps"><span class="ke1-s1 ${ph > 1 || Z.s1 ? 'ok' : 'on'}">1 Hinhören${ph > 1 || Z.s1 ? ' ✓' : ' …'}</span><span class="ke1-s2${ph === 2 ? ' on' : ''}">2 Ausprobieren${ph === 2 ? ' ' + n + '/' + N : ''}</span><span>3 ${esc(MK_LABEL)} · VA · FM</span></div>` +
+`<div class="ke1-bar"><i style="width:${Math.round(100 * Math.min(1, n / N))}%"></i></div>` +
+`<div class="ke1-row2"><button class="mbtn rb ke1-b" data-a="stop">■ Stopp – Zwischenstand behalten</button>${Z.s1 ? '<button class="mbtn rb ke1-b" data-a="hb">▶ Start-Klang</button>' : ''}</div>`;
+}
+let hB = '';
+if (r && !run) {
+const E = r.eng[Z.eng] || r.eng[r.order[0]], land = window.innerWidth > window.innerHeight && window.innerHeight <= 500;
+const far = r.order.every(e => r.eng[e].sim === 'grob' || r.eng[e].sim === 'fern');
+const hd = (far ? '<div class="ke1-row2"><button class="mbtn rb ke1-b ke1-orig" data-a="orig">Original als Instrument</button></div>' : '') +
+`<div class="ke1-hd">Klang erkannt · am nächsten: <b>${esc(ENG(r.order[0]))}</b> · Ähnlichkeit: <b>${esc(E.sim)}</b></div>` +
+'<div class="ke1-tabs" role="tablist">' + r.order.map(e => `<button class="rb ke1-tab${e === Z.eng ? ' on' : ''}" data-e="${e}" role="tab" aria-selected="${e === Z.eng}">${esc(ENG(e))}${e === r.order[0] ? ' ✓' : ''}<small>${esc(r.eng[e].sim)}</small></button>`).join('') + '</div>';
+const pe = (r.pEng || []).map(q => ENG(q.v) + ' ' + pc(q.p)).join(' · ');
+const card = '<div class="ke1-card">' + rows(Z.eng).map(x => `<button class="ke1-r" data-k="${x.k}" aria-expanded="${!!Z.open[x.k]}"><span class="ke1-l">${esc(x.l)}</span><span class="ke1-t">${esc(x.t)}</span>${badge(x.w)}` +
+(Z.open[x.k] ? `<span class="ke1-d">${esc(x.d)}</span>` : '') + '</button>').join('') + '</div>' +
+(Z.open.eng ? `<div class="ke1-msg">Am nächsten (Anteil): ${esc(pe)} · ${r.evals} Versuche in ${dec(r.ms / 1000, 1)} s</div>` : '');
+const tt = defTrack(), chips = [];
+if (canAddTrack()) chips.push(`<button class="rb ke1-c ke1-tr${tt === 'neu' ? ' on' : ''}" data-t="neu">${tt === 'neu' ? '✓ ' : ''}+ Neue Spur</button>`);
+for (let i = 0; i < NT(); i++) if (spk2MxOk(i)) chips.push(`<button class="rb ke1-c ke1-tr${tt === i ? ' on' : ''}" data-t="${i}">${tt === i ? '✓ ' : ''}${esc(S.tracks[i].name)}</button>`);
+const act = `<div class="ke1-row2"><span class="ke1-seg">${['a', 'b'].map(w => `<button class="rb ke1-ab${Z.ab === w ? ' on' : ''}" data-ab="${w}">${w === 'a' ? 'A Original' : 'B Nachbau'}</button>`).join('')}</span><button class="mbtn rb ke1-b" data-a="hear">${Z.pl ? '■' : '▶'} Hören</button><button class="mbtn rb ke1-b" data-a="more">Weiter verbessern</button></div>` +
+`<div class="ke1-lbl">Auf Spur</div><div class="ke1-trs pan-x">${chips.join('')}</div>` +
+`<div class="ke1-row2"><button class="mbtn rb ke1-b ke1-ok" data-a="take"${tt === -1 ? ' disabled' : ''}>Übernehmen</button>${far ? '' : '<button class="mbtn rb ke1-b" data-a="orig">Original als Instrument</button>'}</div>` +
+(Z.took ? `<div class="ke1-row2 ke1-tk"><span class="ke1-msg">${Z.took.eng === 'orig' ? 'Original' : esc(ENG(Z.took.eng))} → ${esc(S.tracks[Z.took.track] ? S.tracks[Z.took.track].name : '')}</span>${canUn() ? '<button class="mbtn rb ke1-b ke1-un" data-a="undo">↶ Rückgängig</button>' : ''}</div>` : '') +
+'<div class="ke1-ft">Zeile antippen = Einzelheiten. Alles bleibt auf dem Gerät. Am besten: Kabel ins Mischpult, ohne Hall.</div>';
+if (land) { h += card; hB = hd + act; } else { h += hd + card; hB = act; }
+}
+bd.innerHTML = h + '</div>' + (hB ? '<div class="ke1-colB">' + hB + '</div>' : '');
+if (!pEl) { if (p._psh) pshKeep(p); popFit(p); }
+Z.paintMs = performance.now() - t0; Z.tm.paintN++; tmk('paint', t0);
+}
+function tap(b) {
+const d = b.dataset;
+if (d.e) { Z.eng = d.e; abStop(); paint(); return; }
+if (d.k) { Z.open[d.k] = !Z.open[d.k]; if (d.k === 'src') Z.open.eng = Z.open.src; paint(); return; }
+if (d.ab) { Z.ab = d.ab; abPlay(Z.ab); abUi(); return; }
+if (d.t != null) { Z.t = d.t === 'neu' ? 'neu' : +d.t; paint(); return; }
+const a = d.a;
+if (a === 'stop') { stop(); return; }
+if (a === 'hb') { abPlay('b'); return; }
+if (a === 'hear') { if (Z.pl) abStop(); else abPlay(Z.ab); abUi(); return; }
+if (a === 'undo') { unTake(); return; }
+if (a === 'more') { if (Z.res && !Z.busy) start(Z.note, Z.eng); return; }
+if (a === 'take') { take(); return; }
+if (a === 'orig') { asInst(); return; }
+if (a === 'np' || a === 'nn') { const ch = choices(), i = ch.indexOf(Z.note) + (a === 'np' ? -1 : 1); if (i >= 0 && i < ch.length) { Z.note = ch[i]; start(Z.note); } return; }
+if (a === 'back') { close(); return; }
+}
+function css() {
+if (document.getElementById('ke1Css')) return; const s = document.createElement('style'); s.id = 'ke1Css';
+s.textContent = ['.pop.ke1{width:min(440px,calc(100vw - 16px));max-width:calc(100vw - 16px)}', /* ENT1D */ '.ke1 .ke1-nm{display:inline-block;max-width:min(100%,15em);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}',
+'.ke1 .ke1-bd{display:flex;flex-direction:column;gap:8px;font:13px/1.35 var(--font-ui)}',
+'.ke1 .ke1-src{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--text-dim)}.ke1 .ke1-nn{display:flex;align-items:center;gap:6px;flex:none}',
+'.ke1 .ke1-c{min-width:44px;min-height:44px;padding:0 10px;font:600 12px/1 var(--font-ui)}.ke1 .ke1-c.on{background:var(--sel);color:#111}',
+'.ke1 .ke1-b{min-height:44px;flex:1 1 auto;justify-content:center}.ke1 .ke1-ok{background:var(--sel);color:#111;font-weight:700}',
+'.ke1 .ke1-row2{display:flex;gap:6px;flex-wrap:wrap;align-items:center}',
+'.ke1 .ke1-steps{display:flex;gap:10px;flex-wrap:wrap;color:var(--text-dim);font-size:12px}.ke1 .ke1-steps .on{color:var(--amber)}.ke1 .ke1-steps .ok{color:var(--text)}',
+'.ke1 .ke1-bar{height:6px;border-radius:3px;background:rgba(255,255,255,.08);overflow:hidden}.ke1 .ke1-bar>i{display:block;height:100%;background:var(--amber)}',
+'.ke1 .ke1-hd{font-size:13px}.ke1 .ke1-tabs{display:flex;gap:6px}',
+'.ke1 .ke1-tab{flex:1 1 0;min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:700 12px/1 var(--font-ui)}.ke1 .ke1-tab small{font-weight:500;font-size:10px;color:var(--text-dim)}',
+'.ke1 .ke1-tab.on{background:var(--sel);color:#111}.ke1 .ke1-tab.on small{color:#222}',
+'.ke1 .ke1-card{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:8px;overflow:hidden}',
+'.ke1 .ke1-r{display:grid;grid-template-columns:76px 1fr auto;gap:2px 8px;align-items:center;text-align:left;min-height:44px;padding:6px 8px;background:none;border:0;border-bottom:1px solid var(--line);color:var(--text);font:inherit}',
+'.ke1 .ke1-r:last-child{border-bottom:0}.ke1 .ke1-l{color:var(--text-dim);font-size:11px}.ke1 .ke1-t{font-size:12.5px}',
+'.ke1 .ke1-d{grid-column:1/-1;color:var(--text-dim);font-size:11.5px}',
+'.ke1 .ke1-w{font-size:11px;white-space:nowrap}.ke1 .ke1-sicher{color:#3ecf6e}.ke1 .ke1-ungefaehr{color:#f2c230}.ke1 .ke1-geraten{color:var(--text-dim)}',
+'.ke1 .ke1-seg{display:flex}.ke1 .ke1-ab{min-height:44px;padding:0 10px}.ke1 .ke1-ab.on{background:var(--sel);color:#111}',
+'.ke1 .ke1-lbl{color:var(--text-dim);font-size:11px}.ke1 .ke1-trs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}.ke1 .ke1-tr{flex:none}',
+'.ke1 .ke1-tk .ke1-msg{flex:1 1 auto;min-width:0}.ke1 .ke1-un{flex:0 0 auto}',
+'.ke1 .ke1-msg{font-size:12px;color:var(--text-dim)}.ke1 .ke1-msg.warn{color:var(--amber)}.ke1 .ke1-ft{font-size:11px;color:var(--text-dim)}',
+'.ke1 .ke1-colA,.ke1 .ke1-colB{display:flex;flex-direction:column;gap:8px;min-width:0}',
+'@media (orientation:landscape) and (max-height:500px){.pop.ke1{width:calc(100vw - 16px)}.ke1 .ke1-bd{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:6px 12px;align-items:start}.ke1 .ke1-colA,.ke1 .ke1-colB{gap:6px}.ke1 .ke1-tab{min-height:44px}.ke1 .ke1-ft{display:none}}'].join('\n');
+document.head.appendChild(s);
+}
+function open(src, o) {
+const t0 = performance.now();
+css(); o = o || {};
+if (Z.busy && Z.w) stop();
+clearTimeout(Z.kill); clearTimeout(Z.reo); Z.reo = 0; abStop(); clearTimeout(progQ); progQ = 0;
+Z.src = src; Z.res = null; Z.s1 = null; Z.notes = null; Z.note = null; Z.sel = null; Z.can = false; Z.err = null; Z.took = null; Z.tks = []; Z.t = undefined; Z.open = {}; Z.ab = 'a'; Z.eng = null; Z.waitT = 0; Z.opt = o.opt || null;
+if (src.take && S.takes && S.takes[src.take] && !src.route) src.route = S.takes[src.take].route;
+sheetOpen(src, o);
+if (!Z.rs) { Z.rs = () => { if (Z.reo) { clearTimeout(Z.reo); Z.reo = setTimeout(Z.reoFn, 450); } else if (sheet() && !Z.busy) paint(); }; window.addEventListener('resize', Z.rs); }
+clearTimeout(Z.go); Z.go = 0;
+if (!o.noRun) Z.go = setTimeout(() => { Z.go = 0; if (Z.src === src) start(src.note); }, 16);
+tmk('open', t0);
+return true;
+}
+function sheetOpen(src, o) {
+Z.land = window.innerWidth > window.innerHeight;
+openPop(EL.top, p => { Z.pEl = p; p.classList.add('ke1'); guardTouch(p); paint(p); onTap(p, b => { try { tap(b); } catch (e) { logErr(e); } }, 'button'); },
+{name: 'ke1', sheet: {title: () => 'Klang erkennen', ref: () => Z.src, valid: () => !!Z.src, repaint: () => paint()}, onClose: () => closed(src, o)});
+}
+function closed(src, o) {
+abStop(); clearTimeout(progQ); progQ = 0;
+const ev = window.event, own = !!Z.unT, rot = own || (ev && ev.type === 'resize') || (window.innerWidth > window.innerHeight) !== Z.land;
+if (rot && Z.src === src && !(Z.pEl && Z.pEl.classList.contains('abg'))) {
+clearTimeout(Z.reo);
+Z.reoFn = () => { Z.reo = 0; if (Z.src !== src) return; if (UI.pop || PSH.dock) { gone(o); return; } sheetOpen(src, o); Z.reopened = (Z.reopened || 0) + 1; };
+Z.reo = setTimeout(Z.reoFn, own ? 0 : 450); return;
+}
+gone(o);
+}
+function gone(o) {
+if (Z.busy) stop(); Z.kill = setTimeout(() => { if (!sheet()) kill(); }, 60000);
+const b = Z.src && Z.src.back; Z.src = null; if (b && b.tk && o.backOnClose) { try { tkSheet(b.tk); } catch (e) { logErr(e); } }
+}
+function close() { clearTimeout(Z.reo); Z.reo = 0; if (sheet()) closePop(); }
+return {open, close, start, stop, take, asInst, unTake, abPlay, abStop, soundOf, paint,
+state: () => ({busy: Z.busy, err: Z.err, wait: !!Z.wait, reopened: Z.reopened || 0, reo: !!Z.reo, src: !!Z.src, pl: Z.pl ? Z.pl.w : null, notes: Z.notes, note: Z.note, sel: Z.sel, can: Z.can, eng: Z.eng, t: Z.t, took: Z.took, prog: Z.prog, wMs: Z.wMs, paintMs: Z.paintMs, msgs: Z.msgs, stopLate: Z.stopLate, dutyNow: Z.dutyNow, backoffs: Z.backoffs || 0, tm: Object.assign({}, Z.tm),
+res: Z.res ? {order: Z.res.order, pEng: Z.res.pEng, evals: Z.res.evals, ms: Z.res.ms, ms2: Z.res.ms2, stoppedBy: Z.res.stoppedBy, s1: Z.res.s1, note: Z.res.note, sel: Z.res.sel, joint: Z.res.joint, hall: Z.res.hall, offs: Z.res.offs, ids: Z.res.ids, span: Z.res.span, holds: Z.res.holds, fmE: Z.res.fmE, msEngine: Z.res.msEngine, nx: Z.res.x.length, nx0: Z.res.x0 ? Z.res.x0.length : 0,
+eng: Object.fromEntries(Object.keys(Z.res.eng).map(e => [e, {p: Z.res.eng[e].p, D: Z.res.eng[e].D, sim: Z.res.eng[e].sim, lsd: Z.res.eng[e].lsd, cert: Z.res.eng[e].cert, cal: Z.res.eng[e].cal, n: Z.res.eng[e].pcm.length}]))} : null}),
+rows: e => (Z.res ? rows(e || Z.eng) : null), pcm: w => (Z.res ? Array.from(w === 'a' ? Z.res.x : w === 'a0' ? (Z.res.x0 || Z.res.x) : Z.res.eng[w].pcm) : null), worker: () => !!Z.w, kill, tpl, opt: o => { Z.opt = o; }, tmReset: () => { for (const k of Object.keys(Z.tm)) Z.tm[k] = 0; }};
+})();
+/* KE1-END */
+</script>
+<script type="text/plain" id="sq-md-src">
