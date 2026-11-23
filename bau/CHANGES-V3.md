@@ -1,3 +1,14 @@
+## 4.86.0 — Erster Ton sofort, Spektral ohne Ruckler, Arp genauer, Gesang genauer · 23.11.2026
+
+- **Erster Ton sofort:** Drückst du gleich nach dem Öffnen eines Projekts ▶, klingen Klangkorn-Spuren (Instrument aus einem Take) jetzt von Anfang an – laufende Töne steigen an der richtigen Stelle weich ein, ohne Knackser.
+- **Spektral ohne Ruckler:** Beim Umschalten „Alles / Nur Gefundenes“ (und bei den Ebenen-Farben) wird das Bild auf langsamer Grafik im Hintergrund vorgezeichnet und dann auf einmal gezeigt – das Endbild ist genau dasselbe.
+- **Zerlegen etwas schneller:** gleiches Ergebnis Bit für Bit, die Vorbereitung ist rund dreimal so schnell.
+- **Arp und Wiedergabe genauer:** Key Sync „aus“ zählt in 3/4 und 6/8 richtig (auch beim „In den Clip schreiben“ und im MIDI-Export); nach „Arp aus“ klingen gehaltene Töne sofort weiter; keine doppelte Hi-Hat, wenn die Band mitten im Lauf auf DRUMS schaltet; an der Clip-Schleifengrenze kommen die Noten in der richtigen Reihenfolge.
+- **Gesang sitzt genauer:** Langsames Gleiten zwischen zwei Tönen – auch mit Vibrato – wird nicht mehr in kurze Zwischennoten zerhackt (gilt für neue Erkennungen).
+- **Gesang reinigen:** Bei tiefen Stimmen werden normale Stimmlippen-Pulse am Notenende nicht mehr als Klick „repariert“.
+- Gespeicherte Projekte laden und klingen wie vorher.
+Tests: erster Ton 9/9 Paket-Prüfungen (Pegel in den ersten 300 ms vorher 0,0007, nachher 0,0224; normaler Klang bitgleich, 192 000 Proben) · Spektral: Long Tasks > 50 ms beim Fokus-Wechsel 1 → 0, Endbild gleich · Zerlegen bitgleich (Hash gleich), Vorbereitung 211 → 53–65 ms bei 3 min · Arp: 3/4 und 6/8 erste Note richtig, 3/3 gehaltene Töne nach „Arp aus“, 0 doppelte Hi-Hats, 0 vertauschte Noten an der Schleifengrenze · Gesang 18/18 Phrasen richtig (vorher 17/18) · Gesang reinigen: Fehlalarme 3 → 0 · ohne Rückschritt: 4.84/4.85-Prüfungen 8/8 · Rauchtest 6/6, 0 Seitenfehler, keine doppelten Namen, App 15 KB größer als 4.85.
+
 ## 4.85.0 — Video-Takt im Projekt, Video-Spur gut tippbar, Klang erkennen aufgeräumt · 23.11.2026
 
 - **Bildwechsel-Takt gehört zum Projekt:** Die Wahl „1 · 2 · 4 · 8 Takte / Musik folgt“ wird jetzt im Projekt gespeichert – gleiches Video auf jedem Gerät und nach dem Laden. Die letzte Wahl auf dem Gerät ist nur noch der Vorschlag für neue Projekte; alte Projekte verhalten sich wie bisher. Mit ↶ rücknehmbar.
