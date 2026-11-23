@@ -1,0 +1,6 @@
+Serving HTTP on 127.0.0.1 port 8971 (http://127.0.0.1:8971/) ...
+127.0.0.1 - - [23/Nov/2026 17:20:25] "GET /b/version.json HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 17:20:28] "GET /a/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 17:20:33] "GET /a/version.json?t=1795454433365 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 17:21:07] "GET /b/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 17:21:12] "GET /b/version.json?t=1795454472052 HTTP/1.1" 200 -

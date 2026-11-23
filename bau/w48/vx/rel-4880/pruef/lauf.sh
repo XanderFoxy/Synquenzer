@@ -1,0 +1,6 @@
+cd /tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/neu/rel-4880/pruef
+(cd perf4 && timeout 900 node kern-test.cjs 8971 > kern.out 2> kern.err; echo "perf4 rc=$?" >> ../lauf.log) &
+(cd impd && timeout 900 node impd-test.cjs 8972 > impd-test.out 2> impd-test.err; echo "impd rc=$?" >> ../lauf.log) &
+(cd spkv && RASTER=1 timeout 900 node kern-spkv.mjs /tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/neu/rel-4880/index.html > kern-spkv.out 2> kern-spkv.err; echo "spkv rc=$?" >> ../lauf.log) &
+(cd ges3 && timeout 900 node kern-test.cjs /tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/neu/rel-4870/index.html /tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/neu/rel-4880/index.html > kern-test.out 2> kern-test.err; echo "ges3 rc=$?" >> ../lauf.log) &
+wait; echo DONE >> lauf.log
