@@ -1,0 +1,9 @@
+## 4.92.0 — Gesang am Ende beschneiden · 23.11.2026
+
+- **Gesang-Ende mit dem Finger festlegen (Sequencer, Gesang-Editor):** Gesang-Clip in der Matrix öffnen (✎ Bearbeiten → Gesang-Editor). Am Ende des Gesangs steht jetzt ein Fähnchen **„Ende“**. Nach links ziehen kürzt den Nachlauf, nach rechts ziehen holt ihn zurück (höchstens bis zur ganzen Aufnahme). Es rastet am Raster (1/16 usw.) ein, an jeder Taktgrenze und am Loop-Ende besonders fest. Der weggeschnittene Teil ist schraffiert, am Fähnchen steht, wie viel weg ist (z. B. „Ende −1,50 s“). Antippen öffnet „ganze Länge“. Jeder Schnitt lässt sich mit ↶ zurücknehmen und wird mitgespeichert; die Aufnahme selbst bleibt ganz.
+- **Gesang bleibt in seiner Loop-Klammer:** Klingt der Nachlauf über das Loop-Ende hinaus, ist dieser Teil farbig getönt, und links vom Loop-Ende erscheint der Knopf **„Ende auf Loop-Ende“** – ein Tipp, und der Gesang hört genau am Loop-Ende auf (auch im Menü des Fähnchens).
+- **Anfang:** Hat der Clip keinen Vorlauf, steht am Beginn ein Fähnchen **„Anfang“**, mit dem sich der Beginn genauso wegschneiden lässt. Mit Vorlauf übernimmt das Vorlauf-Fähnchen diese Aufgabe. Liegen zwei Fähnchen ganz nah beieinander, rückt das Ende-Fähnchen etwas nach unten – beide bleiben greifbar und lesbar.
+- **Vorlauf-Fähnchen wirkt jetzt auch in „▸ einmal“:** Bisher bewegte sich das Fähnchen dort, gehört wurde aber weiter der ganze Vorlauf. Nach dem Ziehen gilt jetzt genau die Fähnchen-Stelle. Alte Projekte klingen unverändert, bis man das Fähnchen zieht.
+- Der Schnitt gilt überall gleich: Matrix, Loop, Song, Mixdown/Export, Clip-WAV, ▶ im Gesang-Editor und Gesang→Noten (Noten im weggeschnittenen Teil schweigen, gelöscht wird nichts). An der Schnittkante liegt eine kurze Blende (10 ms) – kein Knacksen.
+- Die Werkstatt (Wellenform und Warp) bleibt davon getrennt und unverändert.
+- Gespeicherte Projekte laden und klingen wie vorher.

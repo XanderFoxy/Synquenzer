@@ -1,0 +1,10 @@
+Serving HTTP on 127.0.0.1 port 9243 (http://127.0.0.1:9243/) ...
+127.0.0.1 - - [23/Nov/2026 21:37:00] "GET /basis/version.json HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 21:37:22] "GET /basis/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 21:37:26] "GET /basis/version.json?t=1795469846829 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 21:37:34] "GET /neu/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 21:37:39] "GET /neu/version.json?t=1795469859080 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 21:38:10] "GET /neu/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 21:38:14] "GET /neu/version.json?t=1795469894570 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 21:38:16] "GET /neu/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 21:38:20] "GET /neu/version.json?t=1795469900677 HTTP/1.1" 200 -

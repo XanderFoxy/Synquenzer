@@ -431,7 +431,7 @@ function welle(c,lage,stil,farbe,alpha,plan,ln,rec){
 // Hintergrund (alles, was sich beim Ziehen nicht bewegt) wird in ein eigenes Bild gezeichnet und nur bei Bedarf neu gebaut;
 // je Bild kommen nur noch die Schicht „Neu“, die Silben und deine Züge dazu.
 let HINTER=null,HINTER_KEY='',LETZTER_KEY='',LETZTE_ANSICHT='',FEINVER=0,THEMAVER=0,NEU_MESS=false;
-function hinterKey(bearb){return [Z.t0,Z.dur,W,H,DPR,Z.sch.original,Z.sch.gereinigt,Z.sch.timing,Z.sch.ende,Z.sch.neu,Z.sch.ton,Z.sch.aend,Z.staffel,bearb,Z.bereich?Z.bereich.von+'/'+Z.bereich.bis:'',Z.raster,G&&G.art==='zieht'?1:0,FEINVER,THEMAVER,!!SCH.ende].join('|')}
+function hinterKey(bearb){return [Z.t0,Z.dur,W,H,DPR,Z.sch.original,Z.sch.gereinigt,Z.sch.timing,Z.sch.ende,Z.sch.neu,Z.sch.ton,Z.sch.aend,Z.staffel,bearb,Z.bereich?Z.bereich.von+'/'+Z.bereich.bis:'',Z.raster,FEINVER,THEMAVER,!!SCH.ende].join('|')}
 function zeichneHinter(c,bearb){
   c.fillStyle=FB.bg;c.fillRect(0,0,W,H);
   c.fillStyle=FB.band1;c.fillRect(0,0,W,L.rul);c.fillRect(0,L.yM,W,L.mark);
@@ -476,6 +476,7 @@ function zeichneBasis(){
   else if(key!==HINTER_KEY||!HINTER){if(!HINTER)HINTER=document.createElement('canvas');if(HINTER.width!==cb.width||HINTER.height!==cb.height){HINTER.width=cb.width;HINTER.height=cb.height}
     const h=HINTER.getContext('2d');h.setTransform(DPR,0,0,DPR,0,0);zeichneHinter(h,bearb);HINTER_KEY=key;MESS.hinter=(MESS.hinter||0)+1}
   if(!direkt){c.setTransform(1,0,0,1,0,0);c.drawImage(HINTER,0,0);c.setTransform(DPR,0,0,DPR,0,0)}
+  zeichneZiehRaster(c);
   const sel=Z.wahl;
   if(sel!=null){const s=SIL[sel],o=offOf(G&&G.art==='zieht'&&G.temp?G.temp:ZG.d,sel);
     const xa=xz(s.a+o),xb=xz(s.b+o);c.fillStyle=FB.hi;c.globalAlpha=.35;c.fillRect(xa,L.yW,Math.max(1,xb-xa),L.wav);c.globalAlpha=1}
@@ -506,8 +507,9 @@ function zeichneRaster(c){
   const rs=rasterSchritt();
   if(rs&&rs<SCHLAG&&rs/Z.dur*W>=7){const a=Math.floor((Z.t0-T1)/rs),b=Math.ceil((Z.t0+Z.dur-T1)/rs);c.fillStyle=FB.lin;
     for(let k=a;k<=b;k++){const t=T1+k*rs;if(Math.abs(((t-T1)/SCHLAG)-Math.round((t-T1)/SCHLAG))<1e-6)continue;c.fillRect(Math.round(xz(t)*DPR)/DPR-.5,L.yS+L.syl-8,1,L.wav+8)}}
-  if(G&&G.art==='zieht'&&rs){const a=Math.floor((Z.t0-T1)/rs),b=Math.ceil((Z.t0+Z.dur-T1)/rs);if(b-a<600){c.fillStyle=FB.blau;c.globalAlpha=.32;for(let k=a;k<=b;k++)c.fillRect(xz(T1+k*rs)-.5,L.yW,1,L.wav);c.globalAlpha=1}}
 }
+// Einrast-Linien beim Ziehen (Lauf 7: je Bild über dem Hintergrund statt darin – Ziehen beginnen/loslassen baut das Hintergrundbild nicht neu)
+function zeichneZiehRaster(c){const rs=rasterSchritt();if(!(G&&G.art==='zieht'&&rs))return;const a=Math.floor((Z.t0-T1)/rs),b=Math.ceil((Z.t0+Z.dur-T1)/rs);if(b-a<600){c.fillStyle=FB.blau;c.globalAlpha=.32;for(let k=a;k<=b;k++)c.fillRect(xz(T1+k*rs)-.5,L.yW,1,L.wav);c.globalAlpha=1}}
 function zeichneLineal(c){
   const pxSchlag=SCHLAG/Z.dur*W,pxTakt=pxSchlag*TAKT;
   let lab=1;while(pxTakt*lab<34)lab*=2;
@@ -888,8 +890,8 @@ function dAuftrag(p,prio,key,gruppe){let j=DJOB.get(key);
   if(j){if(prio<j.prio)j.prio=prio;j.gruppe=gruppe||'';return j}   // ohne Gruppe (Abspielen/Vorrat) wird der Auftrag nicht mehr verworfen
   j={key,p,prio,gruppe:gruppe||'',warte:[],t:performance.now()};DJOB.set(key,j);DQ.push(j);dPumpe();return j}
 // gedehnte Stücke eines Plans in [von,bis) vormerken (für Abspielen und Vorrat)
-function dVoraus(P,von,bis,prio){if(!P||!dWorker())return;let j=stueckBei(P,von);if(j<0)j=-1-j;
-  for(;j<P.length&&P[j].d0<bis;j++){const p=P[j];if(gedehnt(p)){const key=dKey(p);if(!DEHN.has(key))dAuftrag(p,prio,key)}}}
+function dVoraus(P,von,bis,prio){if(!P||P.length<2||DWORK===false)return;let j=stueckBei(P,von);if(j<0)j=-1-j;
+  for(;j<P.length&&P[j].d0<bis;j++){const p=P[j];if(gedehnt(p)){const key=dKey(p);if(!DEHN.has(key)&&dWorker())dAuftrag(p,prio,key)}}}
 // Vorhör-Aufträge eines älteren Zwischenstands, die noch nicht laufen, fallen weg (beim Ziehen zählt nur der neueste)
 function dVerwerfen(gruppe){for(let i=DQ.length-1;i>=0;i--){const j=DQ[i];if(j.gruppe&&j.gruppe!==gruppe){DQ.splice(i,1);DJOB.delete(j.key);for(const f of j.warte)f(null)}}}
 function dPumpe(){if(DLAEUFT||!DQ.length)return;const w=dWorker();if(!w)return;
