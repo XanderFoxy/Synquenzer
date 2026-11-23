@@ -278,11 +278,11 @@ function reparieren(y, g0, g1, sr) {
 
 function brumm(y, sr, st, sub) {
   const len = y.length;
-  let N = 1 << Math.ceil(Math.log2(sr * 1.2));
+  let N = 1 << Math.ceil(Math.log2(sr * 0.6));
   while (N > 8192 && N > len) N >>= 1;
   if (len < N) return { anzahl: 0, db: 0, hz: 0, hinweis: 'zu kurz' };
   const starts = ruhigeSegmente(y, N, 12);
-  const P = spektrum(y, N, starts);
+  const P = spektrum(y, N, starts, true);
   sub(0.3);
   const df = sr / N;
   const ana = [50, 60].map((b) => harmonische(P, df, b, sr));
@@ -304,7 +304,7 @@ function brumm(y, sr, st, sub) {
   }
   if (orig) { const s = st.staerke; for (let i = 0; i < len; i++) y[i] = orig[i] + s * (y[i] - orig[i]); }
   sub(0.8);
-  const P2 = spektrum(y, N, starts);
+  const P2 = spektrum(y, N, starts, true);
   let red = 0;
   for (const o of ziele) red += dbP(P[o.bin]) - dbP(P2[o.bin]);
   return {
@@ -324,14 +324,20 @@ function ruhigeSegmente(y, N, anz) {
   return (ok.length ? ok : cand).slice(0, anz).map((c) => c[1]);
 }
 
-function spektrum(y, N, starts) {
-  const p = fftPlan(N), re = new Float64Array(N), im = new Float64Array(N), w = hann(N), P = new Float64Array((N >> 1) + 1);
-  for (const s of starts) {
+// Leistungsspektrum je Segment; median=true → Median je Bin über die Segmente
+// (stationäres Brummen bleibt, wechselnde Gesangs-Obertöne fallen heraus)
+function spektrum(y, N, starts, median = false) {
+  const p = fftPlan(N), re = new Float64Array(N), im = new Float64Array(N), w = hann(N), K = (N >> 1) + 1;
+  const S = starts.length, alle = median && S >= 3 ? new Float64Array(S * K) : null, P = new Float64Array(K);
+  starts.forEach((s, si) => {
     for (let i = 0; i < N; i++) { re[i] = y[s + i] * w[i]; im[i] = 0; }
     fft(re, im, p, false);
-    for (let k = 0; k <= N >> 1; k++) P[k] += re[k] * re[k] + im[k] * im[k];
-  }
-  for (let k = 0; k < P.length; k++) P[k] /= Math.max(1, starts.length);
+    for (let k = 0; k < K; k++) { const v = re[k] * re[k] + im[k] * im[k]; if (alle) alle[k * S + si] = v; else P[k] += v; }
+  });
+  if (alle) {
+    const t = new Float64Array(S), h = S >> 1;
+    for (let k = 0; k < K; k++) { for (let i = 0; i < S; i++) t[i] = alle[k * S + i]; t.sort(); P[k] = S & 1 ? t[h] : 0.5 * (t[h - 1] + t[h]); }
+  } else for (let k = 0; k < K; k++) P[k] /= Math.max(1, S);
   return P;
 }
 
@@ -393,6 +399,10 @@ function rauschen(y, sr, st, sub) {
   }
   for (let k = 0; k < K; k++) Nk[k] /= q;
   { const t = Nk.slice(); for (let k = 1; k < K - 1; k++) Nk[k] = 0.25 * t[k - 1] + 0.5 * t[k] + 0.25 * t[k + 1]; }
+  // Profil darf nicht „tonal“ sein (dann wären es Gesangsreste statt Rauschen, z. B. bei gegateten Spuren)
+  const ton = tonalitaet(Nk, sr / N);
+  if (ton > 6) return { anzahl: 0, db: 0, bodenVorher: r1(bodenVorher), tonal: r1(ton), hinweis: 'keine reinen Rauschstellen (Spur wohl schon gegatet)' };
+  if (ton > 3) s *= 0.4;
   const beta = 1 + 1.2 * s;                                // Überschätzung des Rauschens
   const gmin = Math.pow(10, -(6 + 14 * s) / 20);           // Std: −14,4 dB max. Absenkung
   const alpha = 0.98;
@@ -453,7 +463,20 @@ function rauschen(y, sr, st, sub) {
   }
   y.set(out);
   const nachher = bodenVorher + dbP(en) - dbP(ev);
-  return { anzahl: q, db: r1(bodenVorher - nachher), bodenVorher: r1(bodenVorher), bodenNachher: r1(nachher), maxAbsenkungDb: r1(6 + 14 * s) };
+  return { anzahl: q, db: r1(bodenVorher - nachher), bodenVorher: r1(bodenVorher), bodenNachher: r1(nachher), maxAbsenkungDb: r1(6 + 14 * s), tonal: r1(ton) };
+}
+
+// Mittlere lokale Spitzigkeit (arithm./geom. Mittel in 16-Bin-Fenstern, 300–4000 Hz) in dB
+function tonalitaet(P, df) {
+  const a = Math.max(1, Math.round(300 / df)), b = Math.min(P.length - 16, Math.round(4000 / df));
+  let sum = 0, n = 0;
+  for (let k = a; k < b; k += 8) {
+    let am = 0, gm = 0;
+    for (let i = k; i < k + 16; i++) { am += P[i]; gm += Math.log(P[i] + EPS); }
+    am /= 16; gm = Math.exp(gm / 16);
+    sum += 10 * Math.log10((am + EPS) / (gm + EPS)); n++;
+  }
+  return n ? sum / n : 0;
 }
 
 // ───────────────────────── 4. Schmatzer ─────────────────────────
@@ -554,18 +577,24 @@ function atmer(y, sr, st, sub) {
     }
   }
   sub(0.5);
-  const lv = new Float64Array(nb);
+  const lv = new Float64Array(nb), lf = new Float64Array(nb), hf = new Float64Array(nb);
   for (let j = 0; j < nb; j++) {
     let a = 0, l = 0, h = 0;
     for (let q = Math.max(0, j - 1); q <= Math.min(nb - 1, j + 1); q++) { a += ea[q]; l += el[q]; h += eh[q]; }
     lv[j] = dbP(a / 3);
-    el[j] = l / (a + EPS); eh[j] = h / (a + EPS);   // jetzt Anteile
+    lf[j] = l / (a + EPS); hf[j] = h / (a + EPS);   // Anteile < 600 Hz bzw. > 5 kHz
   }
   const gueltig = []; for (let j = 0; j < nb; j++) if (lv[j] > -90) gueltig.push(lv[j]);
   if (gueltig.length < 20) return { anzahl: 0, db: 0 };
   const A = perzentil(gueltig, 0.95), Fl = perzentil(gueltig, 0.1);
   if (A - Fl < 20) return { anzahl: 0, db: 0, hinweis: 'zu wenig Dynamik' };
-  const istAtem = (j) => lv[j] < A - 15 && lv[j] > Fl + 6 && el[j] < 0.35 && eh[j] < 0.45;
+  const vorab = (j) => lv[j] < A - 8 && lv[j] > Fl + 6 && lf[j] < 0.35 && hf[j] < 0.45;
+  const stimm = new Float32Array(nb).fill(-1);
+  const istAtem = (j) => {
+    if (!vorab(j)) return false;
+    if (stimm[j] < 0) stimm[j] = periodizitaet(y, sr, j * bs + (bs >> 1));
+    return stimm[j] < 0.5;        // stimmhaft (leise Silbe) ≠ Atem
+  };
   const minB = 15, maxB = 150, luecke = 2;
   const att = Math.pow(10, -(12 * s) / 20);
   const fade = Math.max(1, Math.round(sr * 0.02));
@@ -590,6 +619,33 @@ function atmer(y, sr, st, sub) {
   }
   sub(1);
   return { anzahl, db: anzahl ? r1(-12 * s) : 0, gesamtMs };
+}
+
+// Normierte Autokorrelation (40 ms, grob auf ~6 kHz heruntergemittelt), Maximum für 60–500 Hz
+function periodizitaet(y, sr, mitte) {
+  const d = Math.max(1, Math.round(sr / 6000)), fs = sr / d;
+  const n = Math.round(0.04 * fs), lmin = Math.floor(fs / 500), lmax = Math.ceil(fs / 60);
+  const start = mitte - ((n + lmax) * d >> 1);
+  const m = n + lmax, z = new Float64Array(m);
+  for (let i = 0; i < m; i++) {
+    let s = 0;
+    for (let k = 0; k < d; k++) { const j = start + i * d + k; if (j >= 0 && j < y.length) s += y[j]; }
+    z[i] = s / d;
+  }
+  let mean = 0; for (let i = 0; i < m; i++) mean += z[i]; mean /= m;
+  for (let i = 0; i < m; i++) z[i] -= mean;
+  let e0 = 0; for (let i = 0; i < n; i++) e0 += z[i] * z[i];
+  let el = e0;
+  for (let i = 0; i < lmin; i++) el += z[i + n] * z[i + n] - z[i] * z[i];
+  let best = 0;
+  for (let L = lmin; L <= lmax; L++) {
+    let r = 0;
+    for (let i = 0; i < n; i++) r += z[i] * z[i + L];
+    const v = r / Math.sqrt(e0 * el + EPS);
+    if (v > best) best = v;
+    el += z[L + n] !== undefined ? z[L + n] * z[L + n] - z[L] * z[L] : 0;
+  }
+  return best;
 }
 
 // ───────────────────────── 6. Ausgleich ─────────────────────────

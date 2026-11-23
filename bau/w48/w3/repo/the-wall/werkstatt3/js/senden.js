@@ -8,8 +8,9 @@
 // Notiz, Stellen, Quelle und Zeitpunkt reisen als Zusatzfelder je Datei mit (ton-ticket legt sie in „extra“ ab).
 // Abholen kann nur Claude (ton-holen mit eigenem Abhol-Schlüssel) – siehe SENDEN.md.
 //
-// export async function anClaude({blob, name, notiz, stellen, onFortschritt, original, originalName, code, signal, zusatz})
+// export async function anClaude({blob, name, notiz, stellen, onFortschritt, original, originalName, code, signal, zusatz, nochmal})
 //        → {ok:true, id, dateien:[{nr, name, rolle, bytes}], doppelt?}   id = Satz-ID (UUID) im Speicher
+//        doppelt = genau dieser Inhalt (Datei + Notiz + Stellen) ging in dieser Sitzung schon an; nochmal:true sendet trotzdem
 //        → {ok:false, art, text}   art: 'code' | 'netz' | 'platz' | 'drossel' | 'abgebrochen' | 'eingabe' | 'server'
 //        Wirft nie. Gleiche Datei nochmal (nach Netzabbruch) → geht dort weiter, wo es aufgehört hat.
 //        onFortschritt({schritt, anteil, gesendet, gesamt, text}) – anteil 0…1 über alles; schritt:
@@ -85,7 +86,7 @@ function sauberName(n, ersatz) {
   const p = n.lastIndexOf('.'), end = p > 0 && n.length - p <= 9 ? n.slice(p) : '';
   return n.slice(0, 120 - end.length).trimEnd() + end;
 }
-const endung = (n) => { const m = /\.([a-z0-9]{1,8})$/i.exec(n || ''); return m ? m[1].toLowerCase() : ''; };
+const endung = (n) => { const m = /\.([a-z0-9]{2,8})$/i.exec(n || ''); return m && /[a-z]/i.test(m[1]) ? m[1].toLowerCase() : ''; };
 const TYPEN = { 'audio/wav': 'wav', 'audio/x-wav': 'wav', 'audio/wave': 'wav', 'audio/vnd.wave': 'wav', 'audio/mpeg': 'mp3', 'audio/mp4': 'm4a',
   'audio/x-m4a': 'm4a', 'audio/aac': 'aac', 'audio/flac': 'flac', 'audio/x-flac': 'flac', 'audio/aiff': 'aiff', 'audio/x-aiff': 'aiff', 'audio/ogg': 'ogg', 'audio/webm': 'webm' };
 const istBlob = (b) => b && typeof b.size === 'number' && typeof b.slice === 'function';
@@ -102,17 +103,19 @@ function pause(ms, signal) {
 }
 const warteZeit = (v) => Math.min(30000, 1500 * 2 ** Math.min(v - 1, 4));
 
-// Bildschirm wach halten (iPhone: gesperrter Bildschirm bricht Uploads ab)
-let sperre = null, wachAn = 0;
-async function wach(an) {
-  wachAn = Math.max(0, wachAn + (an ? 1 : -1));
+// Bildschirm wach halten, solange gesendet wird (iPhone: gesperrter Bildschirm bricht Uploads ab)
+let sperre = null, holt = false, wachZahl = 0;
+async function sperreAnpassen() {
   try {
-    if (wachAn && !sperre && G.navigator?.wakeLock && G.document?.visibilityState === 'visible') {
-      sperre = await G.navigator.wakeLock.request('screen'); sperre.addEventListener?.('release', () => { sperre = null; });
-    } else if (!wachAn && sperre) { const s = sperre; sperre = null; await s.release(); }
+    if (wachZahl && !sperre && !holt && G.navigator?.wakeLock && G.document?.visibilityState === 'visible') {
+      holt = true;
+      try { sperre = await G.navigator.wakeLock.request('screen'); sperre.addEventListener?.('release', () => { sperre = null; }); } finally { holt = false; }
+      if (!wachZahl) sperreAnpassen();
+    } else if (!wachZahl && sperre) { const s = sperre; sperre = null; await s.release(); }
   } catch { sperre = null; }
 }
-G.document?.addEventListener?.('visibilitychange', () => { if (wachAn && G.document.visibilityState === 'visible') { wachAn--; wach(true); } });
+const wach = (an) => { wachZahl = Math.max(0, wachZahl + (an ? 1 : -1)); sperreAnpassen(); };
+G.document?.addEventListener?.('visibilitychange', () => { if (wachZahl) sperreAnpassen(); });
 
 // ---------------------------------------------------------------- Dateikopf (WAV/RF64), ohne die Datei ganz zu laden
 const txt4 = (dv, o) => String.fromCharCode(dv.getUint8(o), dv.getUint8(o + 1), dv.getUint8(o + 2), dv.getUint8(o + 3));
@@ -204,7 +207,10 @@ class Sha256 {
     return s;
   }
 }
-const merk = { sha: new WeakMap(), auftrag: new WeakMap(), fertig: new WeakMap(), laeuft: new WeakMap() };
+// Merkzettel im Speicher der Seite: Prüfsumme je Blob; angefangene und fertige Sendungen je Inhalt (sig),
+// damit ein neuer Tipp mit derselben Datei fortsetzt statt doppelt zu senden – auch wenn die UI den Blob neu baut.
+const merk = { sha: new WeakMap(), laeuft: new WeakMap(), auftrag: new Map(), fertig: new Map() };
+const merkSetzen = (m, k, v, max) => { m.delete(k); m.set(k, v); while (m.size > max) m.delete(m.keys().next().value); };
 async function pruefsumme(blob, fort, signal) {
   if (merk.sha.has(blob)) { fort(blob.size); return merk.sha.get(blob); }
   const h = new Sha256(), S = 4 << 20; // 4 MiB je Schritt, dazwischen Luft für die Oberfläche
@@ -323,20 +329,22 @@ async function erneuern(auftrag, dateien, ctx) {
   }
   auftrag.bis = Date.now() + GUELTIG;
 }
+// Beide parallelen Teile teilen sich eine Erneuerung (keine doppelten Anfragen)
+const erneuernEinmal = (auftrag, ctx) => auftrag.neuP || (auftrag.neuP = erneuern(auftrag, auftrag.dateien.filter((x) => !x.angekommen), ctx).finally(() => { auftrag.neuP = null; }));
 const urlVon = (u) => (typeof u === 'string' ? u : (u && (u.signedUrl || u.signedURL || u.url)) || '');
 
 async function teilHoch(auftrag, d, i, fort, ctx) {
   let netz = 0, hart = 0, neu = 0;
   for (;;) {
     abbruch(ctx.signal);
-    if (auftrag.bis <= Date.now()) await erneuern(auftrag, auftrag.dateien.filter((x) => !x.angekommen), ctx);
+    if (auftrag.bis <= Date.now()) await erneuernEinmal(auftrag, ctx);
     const a = i * TEIL, body = d.blob.slice(a, Math.min(d.blob.size, a + TEIL));
     const r = await put(d.uploads[i], body, fort, ctx.signal);
     if (r.abgebrochen) throw new Fehler('abgebrochen', TEXT.abgebrochen);
     if (r.ok || r.status === 409 || /already exists|duplicate/i.test(r.text || '')) { d.da[i] = 1; return; } // 409: Teil liegt schon da
     fort(0);
     if ((r.status === 400 || r.status === 401 || r.status === 403) && /exp|jwt|token|signature|unauthori/i.test(r.text || '') && ++neu <= 2) {
-      await erneuern(auftrag, [d], ctx); continue; // Adresse abgelaufen → frische holen
+      await erneuernEinmal(auftrag, ctx); continue; // Adresse abgelaufen → frische holen
     }
     if (r.netz) { if (++netz > NETZ_VERSUCHE) throw new Fehler('netz', TEXT.netz); ctx.melde('warten'); await pause(warteZeit(netz), ctx.signal); continue; }
     if (r.status >= 400 && r.status < 500 && r.status !== 408 && r.status !== 429 && ++hart > 3) throw new Fehler('server', `Der Speicher nimmt die Datei nicht an (Fehler ${r.status}).`);
@@ -346,8 +354,8 @@ async function teilHoch(auftrag, d, i, fort, ctx) {
 }
 
 async function parallel(liste, n, f) {
-  let next = 0;
-  const arbeiter = async () => { while (next < liste.length) await f(liste[next++]); };
+  let next = 0, halt = false; // nach einem Fehler keine neuen Teile mehr anfangen
+  const arbeiter = async () => { while (!halt && next < liste.length) { try { await f(liste[next++]); } catch (e) { halt = true; throw e; } } };
   await Promise.all(Array.from({ length: Math.min(n, liste.length) }, arbeiter));
 }
 
@@ -361,8 +369,9 @@ export function anClaude(opt = {}) {
   return p;
 }
 
-async function senden({ blob, name, notiz = '', stellen = [], onFortschritt, original = null, originalName, code: codeArg, signal, zusatz } = {}) {
-  let code = '';
+async function senden(opt, neuVersuch = false) {
+  const { blob, name, notiz = '', stellen = [], onFortschritt, original = null, originalName, code: codeArg, signal, zusatz } = opt;
+  let code = '', wachGesetzt = false, sigJetzt = '';
   // Fortschritt: vorbereiten 0–6 %, senden 6–97 %, prüfen 97–100 %
   const st = { schritt: '', gesamt: 0, basis: 0, unterwegs: new Map(), hash: 0, zuletzt: 0 };
   const melde = (schritt, text) => {
@@ -386,7 +395,7 @@ async function senden({ blob, name, notiz = '', stellen = [], onFortschritt, ori
     code = String(codeArg || '').trim() || ls.get(LS_CODE);
     if (!code) return fehler('code', TEXT.codeFehlt);
     abbruch(signal);
-    wach(true);
+    wach(true); wachGesetzt = true;
 
     const dateien = [{ blob, name: sauberName(name || blob.name, 'Gesang Werkstatt 3.wav'), rolle: 'bearbeitet' }];
     if (original) dateien.push({ blob: original, name: sauberName(originalName || original.name, 'Original.wav'), rolle: 'original' });
@@ -403,13 +412,15 @@ async function senden({ blob, name, notiz = '', stellen = [], onFortschritt, ori
     }
     const notizT = String(notiz ?? '').trim().slice(0, 30000), stellenN = stellenListe(stellen);
     const sig = JSON.stringify([dateien.map((d) => [d.name, d.blob.size, d.sha, d.rolle]), notizT, stellenN, zusatz ?? null]);
-    const schon = merk.fertig.get(blob);
-    if (schon && schon.sig === sig) { melde('fertig'); return { ok: true, id: schon.id, dateien: schon.dateien, doppelt: true }; }
+    sigJetzt = sig;
+    const schon = merk.fertig.get(sig);
+    if (schon && !opt.nochmal) { melde('fertig'); return { ok: true, id: schon.id, dateien: schon.dateien, doppelt: true }; }
 
     // 2) Anmelden (oder angefangene Sendung fortsetzen)
     const ctx = { signal, melde };
-    let auftrag = merk.auftrag.get(blob);
-    if (!auftrag || auftrag.sig !== sig || auftrag.code !== code) {
+    let auftrag = merk.auftrag.get(sig);
+    if (auftrag && auftrag.code === code) auftrag.dateien.forEach((d, i) => { d.blob = dateien[i].blob; }); // gleicher Inhalt, evtl. neuer Blob
+    else {
       melde('anmelden');
       const zeitpunkt = ortsZeit();
       const plan = dateien.map((d) => {
@@ -434,7 +445,7 @@ async function senden({ blob, name, notiz = '', stellen = [], onFortschritt, ori
         if (uploads.length !== plan[i].teile || uploads.some((u) => !/^https:\/\//.test(u))) throw new Fehler('server', TEXT.server + ' (Antwort unvollständig)');
         return { blob: d.blob, name: d.name, rolle: d.rolle, nr: liste[i].nr ?? i + 1, teile: plan[i].teile, uploads, da: new Uint8Array(plan[i].teile), angekommen: false };
       }) };
-      merk.auftrag.set(blob, auftrag);
+      merkSetzen(merk.auftrag, sig, auftrag, 3);
       if (codeArg) codeMerken(code); // der Code stimmt: merken (geteilt mit der Ton-Post)
     }
 
@@ -464,15 +475,18 @@ async function senden({ blob, name, notiz = '', stellen = [], onFortschritt, ori
       }
     }
     const erg = { ok: true, id: auftrag.satzId, dateien: auftrag.dateien.map((d) => ({ nr: d.nr, name: d.name, rolle: d.rolle, bytes: d.blob.size })) };
-    merk.auftrag.delete(blob);
-    merk.fertig.set(blob, { sig, id: erg.id, dateien: erg.dateien });
+    merk.auftrag.delete(sig);
+    merkSetzen(merk.fertig, sig, { id: erg.id, dateien: erg.dateien }, 20);
     melde('fertig');
     return erg;
   } catch (e) {
-    if (e instanceof Fehler && e.art === 'weg') { merk.auftrag.delete(blob); e.art = 'server'; } // nächster Versuch beginnt neu
-    if (e instanceof Fehler && e.art === 'code') merk.auftrag.delete(blob);
+    if (e instanceof Fehler && (e.art === 'weg' || e.art === 'code')) merk.auftrag.delete(sigJetzt);
+    if (e instanceof Fehler && e.art === 'weg') {
+      if (!neuVersuch) return senden(opt, true); // Satz im Speicher weg (oder durcheinander): einmal ganz neu anmelden
+      e.art = 'server';
+    }
     return fehlerAus(e, code);
   } finally {
-    wach(false);
+    if (wachGesetzt) wach(false);
   }
 }
