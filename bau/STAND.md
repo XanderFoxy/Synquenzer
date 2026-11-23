@@ -1,4 +1,4 @@
-# Stand 23.11.15:28 UTC
+# Stand 23.11.15:30 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -54,6 +54,10 @@ als Naechstes: nichts – bereit zur Uebernahme
 ## vl3
 fertig: VL3 gebaut + Kern-Test 10/10 grün, KURZ.md + CHANGES.md geschrieben (Ausgang md5 9bb6ee81)
 als Nächstes: nichts – bereit zur Übergabe
+## vox2
+# VOX2 Stand
+- Start: Eingang 4.85.0 geprüft (md5 9c7f63cf…). Keine echten Takes vorhanden (realvox fehlt) -> synthetische Testsignale.
+- Plan: (1) Klicks in lauten tiefen Vokalen: puls-synchroner Vergleich in clickScan.test; (2) Plopps messen; (3) Raumton nur wenn Zeit.
 ## werkzeug
 # STAND werkzeug (Grundlage)
 - [ ] pflicht.py
