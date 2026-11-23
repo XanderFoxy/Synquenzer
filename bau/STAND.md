@@ -1,4 +1,4 @@
-# Stand 23.11.16:21 UTC
+# Stand 23.11.16:23 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -99,6 +99,9 @@ als Nächstes: nichts – bereit zur Übergabe
 ## vox3
 # VOX3 Stand
 - Start 16:2x: Eingang 4.86.0 (md5 a7515b98…). Plan: (1) Test-Gerüst w/pt.mjs (Plopps) + w/rt.mjs (Raumton-Farbe), synthetisch; (2) Plopp-Erkennung/-Reparatur; (3) Raumton-Farbe.
+- 16:3x: block.js+apply.py v1 (Plopps 2. Durchgang, Raumton-Farbverlauf). Plopp-Test w/pt.mjs: 90/120 -> 107/120, fehl 0, sauber 0. Offen: tiefe Takes A/A2.
+- 16:4x: v2 (Dominanz-Regel für tiefe Stimmen): 113/120, fehl 0, sauber 0.
+- 16:5x: Raumton-Test w/rt.mjs: Farbfehler Mittel 2,05 -> 1,27 dB, max 4,25 -> 2,44, beide Enden <=2 dB 8/20 -> 13/20.
 ## werkzeug
 # STAND werkzeug (Grundlage)
 - [ ] pflicht.py
