@@ -1,10 +1,13 @@
-# Stand 23.11.12:15 UTC
+# Stand 23.11.12:17 UTC
+## kmp1
+fertig: Ordner angelegt
+als Nächstes: Code finden (MKK/Kompakt)
 ## mlg3
-fertig: block.js + apply.py, index.html gebaut
-als Naechstes: Browser-Kerntest (Touch), KURZ.md, CHANGES.md
+fertig: MLG3 gebaut und getestet (index.html, apply.py, block.js, kern.js, quer.js, KURZ.md, CHANGES.md)
+als Naechstes: nichts – bereit zur Uebernahme
 ## vl3
-fertig: apply.py + vl3-block.js, index.html gebaut
-als Nächstes: Browser-Kern-Test (test.js)
+fertig: apply.py, vl3-block.js, index.html, test.js
+als Nächstes: test.js laufen lassen, Fehler beheben, KURZ/CHANGES
 ## werkzeug
 # STAND werkzeug (Grundlage)
 - [ ] pflicht.py
