@@ -1,0 +1,118 @@
+{
+ "base": {
+  "ohne": {
+   "c": 126,
+   "hi": 0.00004
+  },
+  "mitA": {
+   "c": 126,
+   "hi": 0.00004
+  },
+  "mitB": {
+   "c": 126,
+   "hi": 0.00004
+  },
+  "fcA": 655,
+  "hash": [
+   "5f9fea59",
+   "5f9fea59"
+  ]
+ },
+ "neu": {
+  "ohne": [
+   {
+    "c": 126,
+    "hi": 0.00004
+   },
+   {
+    "c": 126,
+    "hi": 0.00004
+   },
+   655,
+   655
+  ],
+  "mit": [
+   {
+    "c": 173,
+    "hi": 0.00676
+   },
+   {
+    "c": 83,
+    "hi": 0
+   },
+   2620,
+   164
+  ],
+  "mit2": [
+   {
+    "c": 83,
+    "hi": 0
+   },
+   {
+    "c": 173,
+    "hi": 0.00676
+   },
+   164,
+   2620
+  ],
+  "hash": [
+   "5f9fea59",
+   "8fd709c9"
+  ],
+  "sent": [
+   [
+    {
+     "n": 36,
+     "v": 0.8,
+     "at": 0.05,
+     "d": 0,
+     "id": 1,
+     "fc": 24
+    },
+    {
+     "n": 36,
+     "v": 0.8,
+     "at": 1.25,
+     "d": 0,
+     "id": 2,
+     "fc": -24
+    }
+   ]
+  ],
+  "live": {
+   "bm": true,
+   "msgs": [
+    [
+     {
+      "n": 60,
+      "v": 0.8,
+      "at": 0.5527891156462585,
+      "d": 0,
+      "id": 1,
+      "fc": 24
+     },
+     {
+      "n": 60,
+      "v": 0.8,
+      "at": 0.8527891156462586,
+      "d": 0,
+      "id": 2
+     }
+    ]
+   ]
+  }
+ }
+}
+OK   Filter je Note auf VA vor dem Laden des Bit-Mask-Teils: kein Fehler {"ok":true,"loaded":false,"lk":[35,1520]}
+OK   Kern-Abgriff liefert Werte
+OK   ohne Filter-je-Note-Werte: Audio bitgleich zur 4.86.0 (5f9fea59)
+OK   ohne Werte: Note-an-Nachrichten gleich wie 4.86.0
+OK   Vorher (4.86.0): Werte wirken auf Bit Mask nicht (Audio gleich)
+OK   mit Werten: Audio anders
+OK   Note-an traegt +24 / -24 Halbtoene (fc +32 / -32)
+OK   Helligkeit: Note +32 heller, Note -32 dunkler (Schwerpunkt 173 / 126 / 83 Hz)
+OK   umgekehrt: Note 1 dunkler, Note 2 heller
+OK   Cutoff je Stimme x4 / x1/4 = 2^(+-24/12), wie VA (2620 / 655 / 164 Hz)
+OK   Programm-Weg (lkNoteX -> Stimme -> Kern): Note mit Wert traegt 24, Note ohne Wert ohne Feld
+OK   keine Seitenfehler / console.error []
+OK BM1: 12/12 bestanden
