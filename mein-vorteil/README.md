@@ -17,9 +17,8 @@ alte Adresse kommt, sieht einmal den Hinweis „Teilen → Zum Home-Bildschirm�
 - Kam Mein Vorteil trotzdem einmal über ihn (Push-Link beim allerersten Besuch), merkt die Seite das 1,5 s nach dem
   Laden (Titel der Kopie ist „Mein Vorteil“, „Vorteile“, „Schnäppchen…“, „Konzert…“) und legt die echte Startseite
   des Synthesizers wieder hin (dieselbe Antwort, die sein Worker beim nächsten Start holen würde).
-- Bleibt offen (nur mit Xanders OK): Beim allerersten Besuch über einen Push-Link bei schwachem Netz (> 3 s) zeigt
-  der SYNQUENZER-Worker statt Mein Vorteil seine Kopie. Die Ein-Zeilen-Lösung dort: nur `rest === '' ||
-  rest === 'index.html'` als Seite behandeln.
+- Erledigt (Xander OK 23.11.2026): Der SYNQUENZER-Worker behandelt nur `rest === '' || rest === 'index.html'` als Seite
+  (seit 31.10. in `sw.js`) – ein Push-Link öffnet damit auch bei schwachem Netz Mein Vorteil, nicht die Synquenzer-Kopie.
 - Im alten Home-Bildschirm-Symbol (eigenes Fenster ohne Safari-Leiste) nennt der Umzug-Hinweis die Adresse mit
   „Adresse kopieren“, weil es dort kein „Teilen“ gibt.
 
