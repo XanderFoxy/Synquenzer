@@ -4,83 +4,218 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="color-scheme" content="light dark">
 <title>Jobcenter Überblick</title>
 <style>
-:root{--bg:#f6f5f2;--card:#fff;--ink:#1d1d1f;--mut:#5f6368;--line:#dedcd6;--rot:#b3261e;--rotbg:#fdecea;--gelb:#8a5a00;--gelbbg:#fff4dc;--gruen:#1e6b3a;--gruenbg:#e6f4ea;--blau:#1a56a8;--code:#f1efe9}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121212;--card:#1d1d1f;--ink:#ececec;--mut:#a5a5a5;--line:#333;--rot:#ff8a80;--rotbg:#3a1714;--gelb:#ffcc66;--gelbbg:#3a2c10;--gruen:#7fd69a;--gruenbg:#13301d;--blau:#8ab4f8;--code:#262626;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#121212;--card:#1d1d1f;--ink:#ececec;--mut:#a5a5a5;--line:#333;--rot:#ff8a80;--rotbg:#3a1714;--gelb:#ffcc66;--gelbbg:#3a2c10;--gruen:#7fd69a;--gruenbg:#13301d;--blau:#8ab4f8;--code:#262626;color-scheme:dark}
+:root{--bg:#f5f4f0;--card:#fff;--ink:#1d1d1f;--mut:#545a61;--line:#dcd9d1;--soft:#f1efea;--blau:#1a56a8;--blau-i:#fff;
+--rot:#b42318;--rot-i:#fff;--rot-b:#fdeeec;--or:#e46f0c;--or-i:#1f0f00;--or-b:#fff1e2;--ge:#f2cb2e;--ge-i:#2a2000;--ge-b:#fff8d8;
+--gr:#1e6b3a;--gr-i:#fff;--gr-b:#e7f3eb;--gy:#6b7075;--gy-i:#fff;--gy-b:#efeeec;--ok:#1e6b3a;--ok-i:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121314;--card:#1c1d20;--ink:#ebebeb;--mut:#aeb2b7;--line:#36383c;--soft:#25272a;--blau:#8ab4f8;--blau-i:#0b1a2e;
+--rot:#f28b82;--rot-i:#2b0906;--rot-b:#3a1b18;--or:#f6a55b;--or-i:#2a1400;--or-b:#37250f;--ge:#efd26b;--ge-i:#262000;--ge-b:#322b10;
+--gr:#81c995;--gr-i:#0b2414;--gr-b:#15301e;--gy:#9aa0a6;--gy-i:#17181a;--gy-b:#26282b;--ok:#81c995;--ok-i:#0b2414;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121314;--card:#1c1d20;--ink:#ebebeb;--mut:#aeb2b7;--line:#36383c;--soft:#25272a;--blau:#8ab4f8;--blau-i:#0b1a2e;
+--rot:#f28b82;--rot-i:#2b0906;--rot-b:#3a1b18;--or:#f6a55b;--or-i:#2a1400;--or-b:#37250f;--ge:#efd26b;--ge-i:#262000;--ge-b:#322b10;
+--gr:#81c995;--gr-i:#0b2414;--gr-b:#15301e;--gy:#9aa0a6;--gy-i:#17181a;--gy-b:#26282b;--ok:#81c995;--ok-i:#0b2414;color-scheme:dark}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
-.w{max-width:760px;margin:0 auto;padding-block:16px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-h1{font-size:1.45em;margin:.2em 0 .1em}h2{font-size:1.15em;margin:1.6em 0 .5em}h3{font-size:1em;margin:0 0 .3em}
-.stand{color:var(--mut);font-size:.9em}
-nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding:8px 0;display:flex;gap:6px;overflow-x:auto;border-bottom:1px solid var(--line)}
-nav a{flex:none;font-size:.85em;padding:6px 10px;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--ink);text-decoration:none}
-.k{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:10px 0}
-.rot{border-left:6px solid var(--rot);background:var(--rotbg)}.gelb{border-left:6px solid var(--gelb);background:var(--gelbbg)}.gruen{border-left:6px solid var(--gruen);background:var(--gruenbg)}
-.tag{display:inline-block;font-size:.75em;font-weight:700;padding:2px 8px;border-radius:6px;margin-bottom:6px}
-.rot .tag{background:var(--rot);color:#fff}.gelb .tag{background:var(--gelb);color:#fff}.gruen .tag{background:var(--gruen);color:#fff}
-pre{white-space:pre-wrap;word-wrap:break-word;background:var(--code);border-radius:10px;padding:12px;font:13.5px/1.45 ui-monospace,Menlo,monospace;margin:8px 0}
-button.cp{font:inherit;font-size:.9em;padding:10px 14px;min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
-button.cp.ok{background:var(--gruen);color:#fff;border-color:var(--gruen)}
-ol,ul{padding-left:1.2em;margin:.3em 0}li{margin:.25em 0}
-table{width:100%;border-collapse:collapse;font-size:.88em}th,td{border-bottom:1px solid var(--line);padding:7px 5px;text-align:left;vertical-align:top}th{color:var(--mut);font-weight:600}
-.tw{overflow-x:auto}
-label.done{display:flex;gap:10px;align-items:center;font-weight:600;margin-top:8px;min-height:44px}
-label.done input{width:24px;height:24px}
-.mut{color:var(--mut);font-size:.9em}
-a{color:var(--blau)}
-
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.w{max-width:680px;margin:0 auto;padding-block:max(18px,env(safe-area-inset-top,0px)) 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .w>*{min-width:0}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
-button.cp:focus-visible,nav a:focus-visible,label.done input:focus-visible{outline:2px solid var(--blau);outline-offset:2px}
+h1{font-size:26px;line-height:1.25;margin:0 0 4px}
+h2{font-size:22px;line-height:1.3;margin:36px 0 12px}
+h3{font-size:20px;line-height:1.3;margin:10px 0 8px}
+p{margin:0 0 10px}
+a{color:var(--blau)}
+.mut{color:var(--mut)}.klein{font-size:16px}
+.nw{white-space:nowrap}
+.heute-dat{font-size:19px;font-weight:600;margin:0}
+.kopfz .klein{margin:2px 0 0}
+.i{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+
+/* Ampel */
+.a-rot{--c:var(--rot);--ci:var(--rot-i);--cb:var(--rot-b)}.a-or{--c:var(--or);--ci:var(--or-i);--cb:var(--or-b)}
+.a-ge{--c:var(--ge);--ci:var(--ge-i);--cb:var(--ge-b)}.a-gr{--c:var(--gr);--ci:var(--gr-i);--cb:var(--gr-b)}
+.a-gy{--c:var(--gy);--ci:var(--gy-i);--cb:var(--gy-b)}
+.ab{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:5px 13px;border-radius:999px;background:var(--c,var(--gy));color:var(--ci,var(--gy-i));font-weight:700;font-size:17px;line-height:1.25;text-align:center}
+.ab:empty{display:none}
+
+/* Heute zu tun */
+.heute{background:var(--cb,var(--card));border:2px solid var(--c,var(--line));border-radius:18px;padding:16px;margin:18px 0 6px}
+.heute:empty{display:none}
+.heute .hl{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
+.heute .hl>b{font-size:15px;letter-spacing:.07em;text-transform:uppercase}
+.heute h2{font-size:22px;margin:10px 0 4px}
+.heute .hd{font-weight:600;margin:0 0 4px}
+.heute .hd{margin-bottom:10px}
+.heute ol.schritte li{font-size:17px;line-height:1.45;margin-bottom:10px}
+.heute .hk{display:grid;grid-template-columns:1.3fr 1fr;gap:10px;margin-top:12px}
+.heute .hk>*{padding-left:10px;padding-right:10px;white-space:nowrap}
+.heute .hk .gross{font-size:18px}
+.heute .hk>:only-child{grid-column:1/-1}
+.heute .warn{margin:4px 0 0!important}
+.heute .knopf{background:transparent}
+.heute .spaet{background:var(--card);border-left:5px solid var(--c)}
+
+/* Schritte */
+ol.schritte{list-style:none;counter-reset:s;padding:0;margin:6px 0 0}
+ol.schritte li{counter-increment:s;position:relative;padding-left:46px;margin:0 0 12px;min-height:34px}
+ol.schritte li::before{content:counter(s);position:absolute;left:0;top:-2px;width:34px;height:34px;border-radius:50%;background:var(--ink);color:var(--bg);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px}
+
+/* Fristen-Liste */
+.fl{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.fl a{display:block;padding:12px 14px;min-height:64px;background:var(--card);border:1px solid var(--line);border-left:8px solid var(--c);border-radius:14px;color:var(--ink);text-decoration:none;-webkit-tap-highlight-color:transparent}
+.fl .fo{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-bottom:6px}
+.fl .fd{font-size:16px;font-weight:600;color:var(--mut)}
+.fl b{display:block;font-size:18px;line-height:1.3}
+.fl .fk{display:block;font-size:15px;line-height:1.35;color:var(--mut);margin-top:3px}
+.fl li.a-gy a{opacity:.62}
+.fl li.a-gy a b{text-decoration:line-through;text-decoration-thickness:1px}
+.legende{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:15px;color:var(--mut);margin:12px 0 0}
+.legende span{display:inline-flex;align-items:center;gap:6px}
+.legende i{display:inline-block;width:14px;height:14px;border-radius:50%;background:var(--c)}
+.hilfe-link{margin:10px 0 0;font-size:16px}
+.hilfe-link a{display:inline-flex;align-items:center;min-height:44px}
+
+/* Karten */
+.k{background:var(--card);border:1px solid var(--line);border-left:8px solid var(--c,var(--line));border-radius:16px;padding:16px 16px 6px;margin:0 0 22px;scroll-margin-top:16px}
+.k.fertig{opacity:.6}
+.kk{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.kd{font-size:16px;font-weight:600;color:var(--mut)}
+.worum{margin:0 0 6px}
+.spaet{background:var(--cb,var(--soft));border-radius:10px;padding:10px 12px;margin:6px 0 10px;font-size:17px}
+.blk{margin:16px 0}
+.bl{margin:0 0 6px;font-size:14px;line-height:1.3;letter-spacing:.07em;text-transform:uppercase;color:var(--mut);font-weight:700}
+.blk>p{margin:0}
+.hinw{font-size:16px;color:var(--mut);margin-top:6px!important}
+.warn{background:var(--or-b);border-radius:10px;padding:10px 12px;font-size:16px;margin:8px 0 !important}
+.felder{list-style:none;margin:0;padding:0}
+.felder li{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"fn kf" "wert kf";column-gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.felder li:first-child{border-top:0;padding-top:2px}
+.fn{grid-area:fn;font-size:15px;color:var(--mut);line-height:1.3}
+.wert{grid-area:wert;font-size:19px;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;line-height:1.35}
+.felder .kf{grid-area:kf}
+.zz{font-size:16px;margin:0 0 10px!important}
+.zz b{font-variant-numeric:tabular-nums}
+label.done{display:flex;gap:12px;align-items:center;font-weight:700;font-size:19px;min-height:56px;margin:6px 0 4px;padding:6px 0;border-top:1px solid var(--line);cursor:pointer}
+label.done input{width:28px;height:28px;margin:0;accent-color:var(--ok);flex:none}
+.hoch{display:block;text-align:right;font-size:15px;padding:0 0 8px}
+.hoch a{display:inline-flex;align-items:center;min-height:44px;padding:0 4px}
+
+/* Knöpfe */
+button{font:inherit}
+.cp,.kf,.knopf{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:10px 16px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);font-size:16px;font-weight:600;line-height:1.2;cursor:pointer;text-decoration:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.gross{width:100%;min-height:58px;font-size:19px;background:var(--blau);color:var(--blau-i);border-color:var(--blau)}
+.cp.ok,.kf.ok{background:var(--ok);color:var(--ok-i);border-color:var(--ok)}
+.cp:focus-visible,.kf:focus-visible,.knopf:focus-visible,a:focus-visible,summary:focus-visible,label.done input:focus-visible{outline:3px solid var(--blau);outline-offset:2px}
+
+/* Aufklappen */
+details>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;min-height:50px;padding:8px 0;font-weight:600;-webkit-tap-highlight-color:transparent}
+details>summary::-webkit-details-marker{display:none}
+details>summary::before{content:"";flex:none;width:10px;height:10px;margin:0 2px 0 4px;border-right:2.5px solid currentColor;border-bottom:2.5px solid currentColor;transform:rotate(-45deg);transition:transform .15s}
+details[open]>summary::before{transform:rotate(45deg) translate(-2px,-2px)}
+details.txt>summary{font-size:17px;color:var(--blau)}
+details.zu{border-top:1px solid var(--line)}
+details.zu>summary{font-size:17px}
+details.mehr>summary{font-size:16px;color:var(--blau);min-height:44px;padding:4px 0}
+details.mehr[open]{padding-bottom:4px}
+.hg{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:2px 16px;margin:0 0 10px;scroll-margin-top:16px}
+.hg[open]{padding-bottom:14px}
+.hg>summary{font-size:18px}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--soft);border-radius:10px;padding:14px;margin:6px 0 12px;font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink)}
+ul{padding-left:1.2em;margin:.3em 0}li{margin:.3em 0}
+.kontakt{background:var(--soft);border-radius:12px;padding:12px 14px;margin:12px 0;font-size:16px}
+.kontakt p{margin:0 0 8px}.kontakt p:last-child{margin:0}
+.kontakt a{display:inline-flex;align-items:center;min-height:44px}
+
+/* Tabellen */
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:16px}
+th,td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
+th{color:var(--mut);font-weight:600}
+table.stapel,table.stapel tbody,table.stapel tr,table.stapel td{display:block}
+table.stapel tr:first-child{display:none}
+table.stapel tr{border-bottom:1px solid var(--line);padding:10px 0}
+table.stapel td{border:0;padding:2px 0}
+table.stapel td:first-child{font-weight:700;font-size:17px}
+table.stapel td:not(:first-child)::before{content:attr(data-l) ": ";color:var(--mut);font-weight:600}
+
+/* Anhänge (Inhalt unverändert) */
 img{max-width:100%}
-.anh{margin:12px 0 6px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
-.anh h4{margin:0 0 2px;font-size:1em}
-.anh p{margin:.3em 0}
-.anh .bl{font-size:.9em}
+.anh{margin:4px 0 10px;padding:4px 12px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.anh h4{display:none}
+.anh p{margin:.4em 0}
+.anh .bl{font-size:16px;letter-spacing:0;text-transform:none;color:var(--ink);font-weight:400}
 .anh ol{list-style:none;padding:0;margin:8px 0}
-.anh li{display:grid;grid-template-columns:72px minmax(0,1fr);gap:10px;align-items:start;margin:0;padding:10px 0;border-top:1px solid var(--line);font-size:.9em}
+.anh li{display:grid;grid-template-columns:72px minmax(0,1fr);gap:12px;align-items:start;margin:0;padding:12px 0;border-top:1px solid var(--line);font-size:16px}
 .anh .vb{display:block;width:72px;height:100px;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#fff}
 .anh .vb img{display:block;width:100%;height:100%;object-fit:cover}
 .anh .at{min-width:0;overflow-wrap:anywhere}
-a.lad{display:inline-flex;align-items:center;min-height:44px;margin-top:6px;padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);text-decoration:none;font-size:.95em}
-a.lad.pdf{background:var(--blau);border-color:var(--blau);color:var(--card);font-weight:600}
-a.lad:focus-visible,.anh .vb:focus-visible{outline:2px solid var(--blau);outline-offset:2px}
+.anh .mut{font-size:15px}
+a.lad{display:inline-flex;align-items:center;min-height:44px;margin-top:6px;padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);text-decoration:none;font-size:16px}
+a.lad.pdf{background:var(--blau);border-color:var(--blau);color:var(--blau-i);font-weight:600}
+a.lad:focus-visible,.anh .vb:focus-visible{outline:3px solid var(--blau);outline-offset:2px}
 #lb{position:fixed;inset:0;z-index:20;background:var(--bg);display:flex;flex-direction:column}
 #lb[hidden]{display:none}
 #lb .lbk{display:flex;gap:8px;align-items:center;padding:8px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px));padding-top:max(8px,env(safe-area-inset-top,0px));border-bottom:1px solid var(--line)}
-#lb .lbk span{flex:1;min-width:0;font-size:.85em;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#lb .lbk span{flex:1;min-width:0;font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #lb .lbk a.lad{margin:0}
 #lb .lbs{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
-#lb .lbs img{display:block;width:100%;max-width:856px;height:auto;margin:0 auto}</style>
+#lb .lbs img{display:block;width:100%;max-width:856px;height:auto;margin:0 auto}
+.fuss{margin-top:28px;font-size:15px;color:var(--mut)}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+</style>
 </head>
 <body>
-
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<symbol id="i-cp" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H15"/></symbol>
+<symbol id="i-ok" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+<symbol id="i-ab" viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></symbol>
+<symbol id="i-ex" viewBox="0 0 24 24"><path d="M8 16L16 8M10 8h6v6"/></symbol>
+</svg>
 
 <div class="w">
+<header class="kopfz">
 <h1>Jobcenter – mein Überblick</h1>
-<div class="stand">Stand: 23.11.2026, abends · Kundennummer 043A170178 · BG-Nummer 08002//0016389</div>
+<p class="heute-dat" id="heuteDat">Texte: Stand 23.11.2026</p>
+</header>
 
-<nav>
-<a href="#akut">Akut</a><a href="#bald">Bald</a><a href="#dez">Bis 31.12.</a><a href="#termine">Termine</a><a href="#ablehnungen">Ablehnungen</a><a href="#zeit">Zeitleiste</a><a href="#hilfe">Hilfe</a><a href="#ki">Für eine KI</a>
-</nav>
+<section id="heute" class="heute" aria-live="polite"></section>
+<noscript><p class="warn">Die Fristen-Ampel braucht JavaScript. Alle Aufgaben stehen unten.</p></noscript>
 
-<div class="k"><h3>So reichst du was ein</h3><ul>
-<li><b>Widerspruch</b> → jobcenter.digital, Kachel „Widerspruch einlegen“, mit Ausweis (eID).</li>
-<li><b>Klage</b> → Mein Justizpostfach, mit Ausweis.</li>
-<li><b>Überprüfungsantrag, Mitteilungen</b> → normale Postfach-Nachricht.</li>
-<li><b>Weiterbewilligung</b> → jobcenter.digital, „Grundsicherungsgeld online verlängern“.</li>
-<li><b>Nie</b> nur E-Mail oder Postfach für Widerspruch/Klage – daran bist du zweimal gescheitert.</li>
+<h2 id="fristen">Alle Fristen</h2>
+<ol class="fl" id="fl"></ol>
+<p class="legende" aria-label="Farben"><span class="a-rot"><i></i>heute, morgen, vorbei</span><span class="a-or"><i></i>diese Woche</span><span class="a-ge"><i></i>in 3 Wochen</span><span class="a-gr"><i></i>später</span><span class="a-gy"><i></i>erledigt</span></p>
+<p class="hilfe-link"><a href="#hilfe">Alles zu viel? Hilfe und Kontakte</a></p>
+
+<h2 id="aufgaben">Aufgaben</h2>
+<p class="klein mut">Jede Karte ist gleich aufgebaut: Wo · So geht’s · Felder · Text · Anhänge · Erledigt.</p>
+<div id="karten">
+
+<article class="k" id="k-w1" data-id="w1">
+<div class="kk"><span class="ab" data-ab></span><span class="kd" data-kd>Frist: 23.11.2026, bis 24 Uhr</span></div>
+<h3>Widerspruch gegen den Bescheid vom 19.10.2026 <span class="nw">(Termin 22.09.)</span></h3>
+<p class="spaet" data-spaet hidden></p>
+<p class="worum">Das Jobcenter sagt, du hättest den Termin am 22.09. ohne Grund versäumt. Das ist ein „erstes Meldeversäumnis“ – noch keine Kürzung, aber die Grundlage für spätere 30-%-Kürzungen.</p>
+<div class="blk"><h4 class="bl">Wo</h4><p><a href="https://www.jobcenter.digital" rel="noopener">jobcenter.digital</a> → Kachel <b>„Widerspruch einlegen“</b>, mit Ausweis (eID).</p><p class="hinw">Keine normale Postfach-Nachricht – die gilt nicht.</p></div>
+<div class="blk"><h4 class="bl">So geht’s</h4><ol class="schritte">
+<li>jobcenter.digital → Kachel „Widerspruch einlegen“ → Bescheid vom 19.10.2026.</li>
+<li>Felder ausfüllen, Text in „Begründung“ einfügen (Kopieren-Knöpfe). Anhänge kommen später.</li>
+<li>Mit Ausweis (eID) bestätigen, Bildschirmfoto machen, „Erledigt“ antippen.</li>
+</ol></div>
+<div class="blk"><h4 class="bl">Felder fürs Formular</h4><ul class="felder">
+<li><span class="fn">Datum des Bescheids</span><span class="wert">19.10.2026</span><button type="button" class="kf"><svg class="i" aria-hidden="true"><use href="#i-cp"/></svg><span>Kopieren</span></button></li>
+<li><span class="fn">BG-Nummer</span><span class="wert">08002//0016389</span><button type="button" class="kf"><svg class="i" aria-hidden="true"><use href="#i-cp"/></svg><span>Kopieren</span></button></li>
+<li><span class="fn">Kundennummer</span><span class="wert">043A170178</span><button type="button" class="kf"><svg class="i" aria-hidden="true"><use href="#i-cp"/></svg><span>Kopieren</span></button></li>
+<li><span class="fn">Zeichen des Bescheids (nur falls gefragt)</span><span class="wert">783.p-043A170178</span><button type="button" class="kf"><svg class="i" aria-hidden="true"><use href="#i-cp"/></svg><span>Kopieren</span></button></li>
 </ul></div>
-<h2 id="akut">Akut</h2>
-
-<div class="k rot" data-id="w1">
-<span class="tag">HEUTE 23.11. bis 24 Uhr</span>
-<h3>Widerspruch gegen den Bescheid vom 19.10.2026 (Termin 22.09.)</h3>
-<p><b>Worum es geht:</b> Das Jobcenter sagt, du hättest den Termin am 22.09. ohne Grund versäumt. Das ist ein „erstes Meldeversäumnis“ – noch keine Kürzung, aber die Grundlage für spätere 30-%-Kürzungen.</p>
-<p><b>So geht's:</b> jobcenter.digital → Kachel <b>„Widerspruch einlegen“</b> → Bescheid vom 19.10.2026 → Text einfügen → <b>Anhänge unten hochladen</b> → mit Ausweis (eID) bestätigen → Bestätigung als Bildschirmfoto speichern. <b>Keine</b> normale Postfach-Nachricht – die gilt nicht.</p>
+<div class="blk"><h4 class="bl">Text für das Feld „Begründung“</h4>
+<p class="zz"><b data-zz="t1k" data-max="1000">987 / 1000 Zeichen</b> · ohne Anhänge – die kommen später</p>
+<button type="button" class="cp gross" data-t="t1k"><svg class="i" aria-hidden="true"><use href="#i-cp"/></svg><span>Text kopieren</span></button>
+<details class="txt"><summary>Text ansehen</summary><pre id="t1k">Den Zugang der Aufforderung vom 10.09.2026 zur Meldung am 22.09.2026 bestreite ich. In meiner Bescheidablage liegt sie nicht. Das einzige Schriftstück vom 10.09.2026 ist die Feststellung zum Termin am 06.07.2026. Zum 22.09.2026 kamen nur App-Meldungen ohne Kontaktart und ohne Rechtsfolgenbelehrung. Den Zugang und Abruf muss das Jobcenter nachweisen (Paragraf 37 Abs. 2 und 2a SGB X). Die Anhörung hat mich nicht erreicht. Zudem hatte ich einen wichtigen Grund: Ich leide an Depression und Zwangsstörung. Das ist Ihnen durch den Entlassungsbericht 2021 und meine Nachrichten vom 08.05. und 06.07.2026 bekannt. Dass dieser Bericht nicht mehr gelten soll, wurde mir nie mitgeteilt. Das Gutachten vom 05.05.2022 entstand ohne meine Teilnahme. Ich beantrage die Aufhebung des Bescheids, Akteneinsicht mit Versand- und Abrufnachweisen, eine Kopie des Gutachtens, die erneute Klärung meiner Erwerbsfähigkeit ohne Termin vor Ort und bis dahin keine weiteren Einladungen. Bitte nur schriftlich.</pre></details>
+</div>
+<details class="zu"><summary>Ausführliche Fassung (für später, z. B. Klage)</summary>
+<p class="hinw">Nicht für das Formular – zu lang für das Feld „Begründung“.</p>
 <pre id="t1">Ich lege Widerspruch gegen den Bescheid vom 19.10.2026 ein (Feststellung eines ersten Meldeversäumnisses, Termin 22.09.2026).
 
 1. Ihr Bescheid stützt sich auf eine Aufforderung vom 10.09.2026 zur Meldung am 22.09.2026. Diese Aufforderung mit Rechtsfolgenbelehrung habe ich nicht erhalten – weder in meiner Bescheidablage noch per Post. Das einzige Schriftstück vom 10.09.2026 in meiner Bescheidablage (11:26 Uhr) ist die Feststellung zum Termin am 06.07.2026. Zum Termin am 22.09.2026 erhielt ich nur zwei App-Meldungen (10.09.2026, 10:22 Uhr „Sie haben einen neuen Termin“, und 20.09.2026, 20:03 Uhr „Ihr Termin bei uns findet demnächst statt“), jeweils mit „Kontaktart: -“ und ohne Rechtsfolgenbelehrung. Bildschirmfotos meiner Bescheidablage und der Mitteilungen füge ich bei.
@@ -98,7 +233,9 @@ Ich beantrage:
 Bitte kommunizieren Sie schriftlich mit mir. Weitere Begründung behalte ich mir nach Akteneinsicht vor.
 
 Anlagen: 1. Bescheidablage Seite 1 (27.03.–05.11.2026), 2. Mitteilungen (11.06.–09.11.2026) – Bildschirmfotos aus jobcenter.digital.</pre>
-<button class="cp" data-t="t1">Text kopieren</button>
+<button type="button" class="cp" data-t="t1"><svg class="i" aria-hidden="true"><use href="#i-cp"/></svg><span>Ausführliche Fassung kopieren</span></button>
+</details>
+<details class="zu"><summary>Anhänge – für später</summary>
 <!--anh:t1-->
 <div class="anh" id="anh-t1">
 <h4>Anhänge zu diesem Schreiben</h4>
@@ -112,17 +249,30 @@ Anlagen: 1. Bescheidablage Seite 1 (27.03.–05.11.2026), 2. Mitteilungen (11.06
 <p class="mut">Für Upload-Felder, die nur eine Datei oder nur PDF nehmen.</p>
 </div>
 <!--/anh:t1-->
+</details>
 <label class="done"><input type="checkbox"> Erledigt</label>
-</div>
+<p class="hoch"><a href="#fristen">↑ Zur Übersicht</a></p>
+</article>
 
-<h2 id="bald">Bald</h2>
-
-<div class="k gelb" data-id="k1">
-<span class="tag">BIS MORGEN 24.11.</span>
-<h3>Klage beim Sozialgericht Chemnitz (Termin 06.07.)</h3>
-<p><b>Worum es geht:</b> Dein Widerspruch zum 06.07. wurde am 21.10. nur wegen der Form verworfen (Postfach ohne Unterschrift). Deinen Antrag auf Wiedereinsetzung vom 12.10. (PIN gesperrt) hat das Jobcenter übergangen. Gegen einen Widerspruchsbescheid geht nur noch Klage – <b>kostenlos</b>, kein Anwalt nötig.</p>
-<p><b>Wie einreichen: Mein Justizpostfach</b> – das ist dein einziger digitaler Weg zum Gericht (Postfach/E-Mail des Jobcenters zählen hier nicht).</p><ol><li><a href="https://mein-justizpostfach.bund.de">mein-justizpostfach.bund.de</a> öffnen → „Anmelden“ → mit BundID und Ausweis (eID).</li><li>„Neue Nachricht“ → Empfänger suchen: <b>Sozialgericht Chemnitz</b>.</li><li>Betreff: <b>Klage gegen Jobcenter Mittelsachsen – W-08002-01863/26</b>.</li><li>Text unten einfügen; als Anhang die zwei Bescheide (10.09.2026 und 21.10.2026) aus deiner Bescheidablage und die Bilder aus „Anhänge zu diesem Schreiben“.</li><li>Senden → Bestätigung als Bildschirmfoto speichern.</li></ol><p class="mut">Kostenlos (§ 183 SGG), kein Anwalt nötig. Dein Name unten genügt als Unterschrift.</p>
-<pre id="t2">Klage
+<article class="k" id="k-k1" data-id="k1">
+<div class="kk"><span class="ab" data-ab></span><span class="kd" data-kd>Frist: 24.11.2026</span></div>
+<h3>Klage beim Sozialgericht Chemnitz <span class="nw">(Termin 06.07.)</span></h3>
+<p class="spaet" data-spaet hidden></p>
+<p class="worum">Dein Widerspruch zum 06.07. wurde am 21.10. nur wegen der Form verworfen (Postfach ohne Unterschrift). Dagegen geht nur noch Klage – <b>kostenlos</b>, kein Anwalt nötig.</p>
+<details class="mehr"><summary>Mehr dazu</summary><p>Deinen Antrag auf Wiedereinsetzung vom 12.10. (PIN gesperrt) hat das Jobcenter übergangen. Mein Justizpostfach ist dein einziger digitaler Weg zum Gericht (Postfach/E-Mail des Jobcenters zählen hier nicht).</p><p class="mut">Kostenlos (§ 183 SGG), kein Anwalt nötig. Dein Name unten genügt als Unterschrift.</p></details>
+<div class="blk"><h4 class="bl">Wo</h4><p><a href="https://mein-justizpostfach.bund.de" rel="noopener">Mein Justizpostfach</a> – mit BundID und Ausweis (eID).</p></div>
+<div class="blk"><h4 class="bl">So geht’s</h4><ol class="schritte">
+<li>mein-justizpostfach.bund.de öffnen → „Anmelden“ mit BundID und Ausweis (eID) → „Neue Nachricht“.</li>
+<li>Empfänger und Betreff eintragen, Text einfügen (Kopieren-Knöpfe). Als Anhang die zwei Bescheide (10.09.2026 und 21.10.2026) aus deiner Bescheidablage und die Bilder unter „Anhänge“.</li>
+<li>Senden, Bildschirmfoto der Bestätigung machen, „Erledigt“ antippen.</li>
+</ol></div>
+<div class="blk"><h4 class="bl">Felder fürs Formular</h4><ul class="felder">
+<li><span class="fn">Empfänger</span><span class="wert">Sozialgericht Chemnitz</span><button type="button" class="kf"><svg class="i" aria-hidden="true"><use href="#i-cp"/></svg><span>Kopieren</span></button></li>
+<li><span class="fn">Betreff</span><span class="wert">Klage gegen Jobcenter Mittelsachsen – <span class="nw">W-08002-01863/26</span></span><button type="button" class="kf"><svg class="i" aria-hidden="true"><use href="#i-cp"/></svg><span>Kopieren</span></button></li>
+</ul></div>
+<div class="blk"><h4 class="bl">Text</h4>
+<button type="button" class="cp gross" data-t="t2"><svg class="i" aria-hidden="true"><use href="#i-cp"/></svg><span>Text kopieren</span></button>
+<details class="txt"><summary>Text ansehen</summary><pre id="t2">Klage
 des Herrn Alexander Fuchs, Blumenstr. 59, 04720 Döbeln – Kläger –
 gegen das Jobcenter Mittelsachsen, Hainichener Str. 66a, 09648 Mittweida – Beklagter –
 wegen Feststellung eines Meldeversäumnisses (Meldetermin 06.07.2026): Bescheid vom 10.09.2026 in Gestalt des Widerspruchsbescheids vom 21.10.2026 (Geschäftszeichen 701 – 08002//0016389 – W-08002-01863/26)
@@ -138,8 +288,9 @@ Begründung:
 Mit einer Entscheidung ohne mündliche Verhandlung bin ich einverstanden (§ 124 Abs. 2 SGG). Aus gesundheitlichen Gründen kann ich derzeit keine Termine außer Haus wahrnehmen; ich bitte um schriftliche Kommunikation.
 
 Döbeln, 24.11.2026
-Alexander Fuchs</pre>
-<button class="cp" data-t="t2">Text kopieren</button>
+Alexander Fuchs</pre></details>
+</div>
+<details class="zu"><summary>Anhänge zum Hochladen</summary>
 <!--anh:t2-->
 <div class="anh" id="anh-t2">
 <h4>Anhänge zu diesem Schreiben</h4>
@@ -154,14 +305,28 @@ Alexander Fuchs</pre>
 <p class="mut">Für Upload-Felder, die nur eine Datei oder nur PDF nehmen.</p>
 </div>
 <!--/anh:t2-->
+</details>
 <label class="done"><input type="checkbox"> Erledigt</label>
-</div>
+<p class="hoch"><a href="#fristen">↑ Zur Übersicht</a></p>
+</article>
 
-<div class="k gelb" data-id="m1">
-<span class="tag">MORGEN · keine Frist, aber wichtig</span>
+<article class="k" id="k-m1" data-id="m1">
+<div class="kk"><span class="ab" data-ab></span><span class="kd" data-kd>Ziel: 24.11.2026 · keine Frist</span></div>
 <h3>Nachricht: Termine 16.10./03.11., Terminpause, Gutachten</h3>
-<p><b>Warum:</b> Dazu gibt es noch keinen Bescheid. Drei versäumte Termine hintereinander können alle Leistungen kosten – deshalb jetzt schon schriftlich festhalten.</p><p><b>Wie einreichen:</b> normale Nachricht im Postfach auf jobcenter.digital (kein Widerspruch nötig, keine eID), mit den Anhängen unten.</p>
-<pre id="t3">Betreff: Termine 16.10. und 03.11.2026 – Bitte um Aussetzung weiterer Einladungen und Klärung meiner Erwerbsfähigkeit
+<p class="spaet" data-spaet hidden></p>
+<p class="worum">Zu diesen Terminen gibt es noch keinen Bescheid. Drei versäumte Termine hintereinander können alle Leistungen kosten – deshalb jetzt schon schriftlich festhalten.</p>
+<div class="blk"><h4 class="bl">Wo</h4><p>Normale Nachricht im Postfach auf <a href="https://www.jobcenter.digital" rel="noopener">jobcenter.digital</a> – kein Widerspruch nötig, keine eID.</p></div>
+<div class="blk"><h4 class="bl">So geht’s</h4><ol class="schritte">
+<li>jobcenter.digital → Postfach → neue Nachricht.</li>
+<li>Betreff und Text einfügen (Kopieren-Knöpfe), die Anhänge dazu.</li>
+<li>Senden, Bildschirmfoto machen, „Erledigt“ antippen.</li>
+</ol></div>
+<div class="blk"><h4 class="bl">Felder fürs Formular</h4><ul class="felder">
+<li><span class="fn">Betreff</span><span class="wert">Termine 16.10. und 03.11.2026 – Bitte um Aussetzung weiterer Einladungen und Klärung meiner Erwerbsfähigkeit</span><button type="button" class="kf"><svg class="i" aria-hidden="true"><use href="#i-cp"/></svg><span>Kopieren</span></button></li>
+</ul></div>
+<div class="blk"><h4 class="bl">Text</h4>
+<button type="button" class="cp gross" data-t="t3"><svg class="i" aria-hidden="true"><use href="#i-cp"/></svg><span>Text kopieren</span></button>
+<details class="txt"><summary>Text ansehen</summary><pre id="t3">Betreff: Termine 16.10. und 03.11.2026 – Bitte um Aussetzung weiterer Einladungen und Klärung meiner Erwerbsfähigkeit
 
 Sehr geehrte Damen und Herren,
 
@@ -174,8 +339,9 @@ Sehr geehrte Damen und Herren,
 Bitte bestätigen Sie mir den Eingang dieser Nachricht.
 
 Mit freundlichen Grüßen
-Alexander Fuchs</pre>
-<button class="cp" data-t="t3">Text kopieren</button>
+Alexander Fuchs</pre></details>
+</div>
+<details class="zu"><summary>Anhänge zum Hochladen</summary>
 <!--anh:t3-->
 <div class="anh" id="anh-t3">
 <h4>Anhänge zu diesem Schreiben</h4>
@@ -190,15 +356,33 @@ Alexander Fuchs</pre>
 <p class="mut">Für Upload-Felder, die nur eine Datei oder nur PDF nehmen.</p>
 </div>
 <!--/anh:t3-->
+</details>
 <label class="done"><input type="checkbox"> Erledigt</label>
-</div>
+<p class="hoch"><a href="#fristen">↑ Zur Übersicht</a></p>
+</article>
 
-<div class="k gelb" data-id="w2">
-<span class="tag">BIS CA. 26.11.</span>
-<h3>Widerspruch gegen den Überprüfungsbescheid vom 26.10.2026 (Termin 06.07.)</h3>
-<p><b>Worum es geht:</b> Auf deinen Überprüfungsantrag vom 12.10. hat das Jobcenter den Bescheid zum 06.07. als „rechtmäßig“ bestätigt – diesmal inhaltlich. Dagegen: Widerspruch. (Frist selbst gerechnet: Bescheid 26.10. + ca. 1 Monat.)</p>
-<p><b>Wie einreichen:</b> jobcenter.digital → Kachel „Widerspruch einlegen“ → Bescheid vom 26.10.2026 → Text einfügen → Anhänge unten hochladen → mit Ausweis (eID) bestätigen → Bestätigung speichern.</p>
-<pre id="t4">Ich lege Widerspruch gegen den Überprüfungsbescheid vom 26.10.2026 ein (Bescheid vom 10.09.2026, Meldeversäumnis 06.07.2026). Mein Widerspruch vom 30.10.2026 richtete sich bereits dagegen.
+<article class="k" id="k-w2" data-id="w2">
+<div class="kk"><span class="ab" data-ab></span><span class="kd" data-kd>Frist: ca. 26.11.2026</span></div>
+<h3>Widerspruch gegen den Überprüfungsbescheid vom 26.10.2026 <span class="nw">(Termin 06.07.)</span></h3>
+<p class="spaet" data-spaet hidden></p>
+<p class="worum">Auf deinen Überprüfungsantrag vom 12.10. hat das Jobcenter den Bescheid zum 06.07. als „rechtmäßig“ bestätigt – diesmal inhaltlich. Dagegen: Widerspruch.</p>
+<details class="mehr"><summary>Mehr dazu</summary><p>Frist selbst gerechnet: Bescheid 26.10. + ca. 1 Monat.</p></details>
+<div class="blk"><h4 class="bl">Wo</h4><p><a href="https://www.jobcenter.digital" rel="noopener">jobcenter.digital</a> → Kachel <b>„Widerspruch einlegen“</b>, mit Ausweis (eID).</p><p class="hinw">Keine normale Postfach-Nachricht – die gilt nicht.</p></div>
+<div class="blk"><h4 class="bl">So geht’s</h4><ol class="schritte">
+<li>jobcenter.digital → Kachel „Widerspruch einlegen“ → Bescheid vom 26.10.2026.</li>
+<li>Felder ausfüllen, Text einfügen (Kopieren-Knöpfe), die Anhänge hochladen.</li>
+<li>Mit Ausweis (eID) bestätigen, Bildschirmfoto machen, „Erledigt“ antippen.</li>
+</ol></div>
+<div class="blk"><h4 class="bl">Felder fürs Formular</h4><ul class="felder">
+<li><span class="fn">Datum des Bescheids</span><span class="wert">26.10.2026</span><button type="button" class="kf"><svg class="i" aria-hidden="true"><use href="#i-cp"/></svg><span>Kopieren</span></button></li>
+<li><span class="fn">BG-Nummer</span><span class="wert">08002//0016389</span><button type="button" class="kf"><svg class="i" aria-hidden="true"><use href="#i-cp"/></svg><span>Kopieren</span></button></li>
+<li><span class="fn">Kundennummer</span><span class="wert">043A170178</span><button type="button" class="kf"><svg class="i" aria-hidden="true"><use href="#i-cp"/></svg><span>Kopieren</span></button></li>
+</ul></div>
+<div class="blk"><h4 class="bl">Text für das Feld „Begründung“</h4>
+<p class="zz"><b data-zz="t4" data-max="1000">2213 Zeichen</b></p>
+<p class="warn" data-zu-lang="t4">Das Feld „Begründung“ nimmt nur 1000 Zeichen – dieser Text ist länger. Eine Kurzfassung fehlt noch.</p>
+<button type="button" class="cp gross" data-t="t4"><svg class="i" aria-hidden="true"><use href="#i-cp"/></svg><span>Text kopieren</span></button>
+<details class="txt"><summary>Text ansehen</summary><pre id="t4">Ich lege Widerspruch gegen den Überprüfungsbescheid vom 26.10.2026 ein (Bescheid vom 10.09.2026, Meldeversäumnis 06.07.2026). Mein Widerspruch vom 30.10.2026 richtete sich bereits dagegen.
 
 1. Ich habe den Termin am 06.07.2026 um 10:00 Uhr am selben Tag um 07:19 Uhr, also vor Terminbeginn, über das Postfach aus gesundheitlichen Gründen abgesagt und vier ärztliche Berichte beigefügt. Der Betreff lautete versehentlich „Absage des Vermittlungsgesprächs am 19.05.2026“, weil ich eine Vorlage verwendet habe; der Text bezieht sich ausdrücklich auf den 06.07.2026.
 2. Die Anhörung vom 07.07.2026 hat mich nicht rechtzeitig erreicht; sie ist nicht in meiner Bescheidablage (§ 24 SGB X).
@@ -206,8 +390,9 @@ Alexander Fuchs</pre>
 4. Ihre Nachricht vom 20.05.2026 betraf nur den Termin am 19.05.2026 und hat ihn als entschuldigt anerkannt. Sie ersetzt keine Einladung mit Rechtsfolgenbelehrung für spätere Termine.
 5. Das Gutachten vom 05.05.2022 wurde mir nie ausgehändigt, an einer Begutachtung 2022 habe ich nicht teilgenommen. Den Entlassungsbericht vom 16.11.2021 haben Sie ohne Mitteilung an mich als nicht mehr verwertbar eingestuft; davon habe ich erst nachträglich erfahren und durfte mich am 06.07.2026 noch darauf verlassen. Bei Zweifeln ist von Amts wegen zu ermitteln (§ 20 SGB X), z. B. Begutachtung nach Aktenlage oder Hausbesuch des Ärztlichen Dienstes.
 
-Ich beantrage, den Überprüfungsbescheid aufzuheben, den Bescheid vom 10.09.2026 zurückzunehmen, Akteneinsicht (§ 25 SGB X) und eine Kopie des Gutachtens vom 05.05.2022 mit Verfasser und Auftraggeber sowie die erneute Klärung meiner Erwerbsfähigkeit mit aktuellen Befunden (§ 44a SGB II), ohne Termin vor Ort. Bis zur Entscheidung bitte ich, keine weiteren Einladungen zu versenden. Bitte kommunizieren Sie wegen meiner Erkrankung schriftlich mit mir.</pre>
-<button class="cp" data-t="t4">Text kopieren</button>
+Ich beantrage, den Überprüfungsbescheid aufzuheben, den Bescheid vom 10.09.2026 zurückzunehmen, Akteneinsicht (§ 25 SGB X) und eine Kopie des Gutachtens vom 05.05.2022 mit Verfasser und Auftraggeber sowie die erneute Klärung meiner Erwerbsfähigkeit mit aktuellen Befunden (§ 44a SGB II), ohne Termin vor Ort. Bis zur Entscheidung bitte ich, keine weiteren Einladungen zu versenden. Bitte kommunizieren Sie wegen meiner Erkrankung schriftlich mit mir.</pre></details>
+</div>
+<details class="zu"><summary>Anhänge zum Hochladen</summary>
 <!--anh:t4-->
 <div class="anh" id="anh-t4">
 <h4>Anhänge zu diesem Schreiben</h4>
@@ -221,26 +406,37 @@ Ich beantrage, den Überprüfungsbescheid aufzuheben, den Bescheid vom 10.09.202
 <p class="mut">Für Upload-Felder, die nur eine Datei oder nur PDF nehmen.</p>
 </div>
 <!--/anh:t4-->
+</details>
 <label class="done"><input type="checkbox"> Erledigt</label>
-</div>
+<p class="hoch"><a href="#fristen">↑ Zur Übersicht</a></p>
+</article>
 
-<h2 id="dez">Bis 31.12.</h2>
-
-<div class="k gelb" data-id="wba">
-<span class="tag">ANFANG DEZEMBER</span>
-<h3>Weiterbewilligungsantrag (dein Geld endet am 31.12.2026)</h3>
-<ol>
+<article class="k" id="k-wba" data-id="wba">
+<div class="kk"><span class="ab" data-ab></span><span class="kd" data-kd>Ziel: Anfang Dezember · Frist: 31.12.2026</span></div>
+<h3>Weiterbewilligungsantrag <span class="nw">(Geld endet 31.12.2026)</span></h3>
+<p class="spaet" data-spaet hidden></p>
+<p class="worum">Dein Grundsicherungsgeld endet am 31.12.2026. Damit es weitergeht, Anfang Dezember den Antrag stellen.</p>
+<div class="blk"><h4 class="bl">Wo</h4><p><a href="https://www.jobcenter.digital" rel="noopener">jobcenter.digital</a> → „Grundsicherungsgeld online verlängern“.</p></div>
+<div class="blk"><h4 class="bl">So geht’s</h4><ol class="schritte">
 <li>jobcenter.digital → „Grundsicherungsgeld online verlängern“.</li>
-<li>Alles vollständig ausfüllen, Änderungen angeben (Miete, Konten, Einkommen).</li>
-<li><b>Kontoauszüge der letzten 3 Monate von allen Konten</b> hochladen – Girokonto, PayPal, VIMPAY, Bitget und jedes weitere. Als PDF; bei PayPal die Kontoauszüge, nicht die Umsatzanzeige.</li>
-<li>Bestätigung als Bildschirmfoto speichern.</li>
-</ol>
+<li>Alles vollständig ausfüllen, Änderungen angeben (Miete, Konten, Einkommen). <b>Kontoauszüge der letzten 3 Monate von allen Konten</b> als PDF hochladen – Girokonto, PayPal, VIMPAY, Bitget und jedes weitere; bei PayPal die Kontoauszüge, nicht die Umsatzanzeige.</li>
+<li>Absenden, Bildschirmfoto der Bestätigung machen, „Erledigt“ antippen.</li>
+</ol></div>
+<div class="blk"><h4 class="bl">Felder fürs Formular</h4><ul class="felder">
+<li><span class="fn">Kundennummer</span><span class="wert">043A170178</span><button type="button" class="kf"><svg class="i" aria-hidden="true"><use href="#i-cp"/></svg><span>Kopieren</span></button></li>
+<li><span class="fn">BG-Nummer</span><span class="wert">08002//0016389</span><button type="button" class="kf"><svg class="i" aria-hidden="true"><use href="#i-cp"/></svg><span>Kopieren</span></button></li>
+</ul></div>
+<div class="blk"><h4 class="bl">Text</h4><p class="hinw" style="margin-top:0!important">Kein Text nötig – das Formular fragt alles ab.</p></div>
 <label class="done"><input type="checkbox"> Erledigt</label>
-</div>
+<p class="hoch"><a href="#fristen">↑ Zur Übersicht</a></p>
+</article>
 
-<div class="k gelb" data-id="ueb">
-<span class="tag">VOR DEM 31.12.</span>
+<article class="k" id="k-ueb" data-id="ueb">
+<div class="kk"><span class="ab" data-ab></span><span class="kd" data-kd>Frist: 31.12.2026</span></div>
 <h3>Neuer Überprüfungsantrag für 2025 und 2026</h3>
+<p class="spaet" data-spaet hidden></p>
+<p class="worum">Das Jobcenter muss falsche alte Bescheide aufheben und nachzahlen – auch nach der Widerspruchsfrist (§ 44 SGB X). Rückwirkend geht das nur bis 01.01.2025, darum <b>vor dem 31.12.2026</b> stellen.</p>
+<details class="mehr"><summary>Mehr dazu: was geprüft wird</summary>
 <p><b>Was das ist:</b> Mit § 44 SGB X muss das Jobcenter einen alten Bescheid aufheben und Geld nachzahlen, wenn es dabei <b>das Recht falsch angewandt</b> oder <b>von falschen Tatsachen ausgegangen</b> ist – auch wenn die Widerspruchsfrist längst vorbei ist. Das sind nicht nur Formfehler. Bei Kürzungen wegen Terminen prüfen wir vier Punkte:</p>
 <ol>
 <li><b>Zugang:</b> Kam die Einladung nachweislich bei dir an? Das muss das Jobcenter beweisen.</li>
@@ -249,9 +445,21 @@ Ich beantrage, den Überprüfungsbescheid aufzuheben, den Bescheid vom 10.09.202
 <li><b>Anhörung:</b> Konntest du dich vorher äußern?</li>
 </ol>
 <p><b>Damit du recht bekommst:</b> Jeden Bescheid <b>einzeln mit Datum</b> nennen (der alte Antrag scheiterte genau daran) und gleich die Nachweise verlangen. Kann das Jobcenter Zugang und Belehrung nicht belegen, muss es aufheben und nachzahlen. Rückwirkend geht das nur bis 01.01.2025 – darum <b>vor dem 31.12.2026</b> stellen.</p>
-<p><b>Vorher:</b> Bitte deinen Vater, alle Bescheide aus 2025 über Kürzungen oder Meldeversäumnisse herauszusuchen. Ihr Datum kommt bei Punkt 2 rein.</p>
-<p><b>Wie einreichen:</b> normale Nachricht im Postfach auf jobcenter.digital reicht (für einen Überprüfungsantrag gibt es keine Formvorschrift), mit den Anhängen unten.</p>
-<pre id="t5">Antrag auf Überprüfung nach § 44 SGB X
+</details>
+<div class="blk"><h4 class="bl">Wo</h4><p>Normale Nachricht im Postfach auf <a href="https://www.jobcenter.digital" rel="noopener">jobcenter.digital</a> – für einen Überprüfungsantrag gibt es keine Formvorschrift.</p></div>
+<div class="blk"><h4 class="bl">So geht’s</h4><ol class="schritte">
+<li>Vorher: Bitte deinen Vater, alle Bescheide aus 2025 über Kürzungen oder Meldeversäumnisse herauszusuchen.</li>
+<li>Text kopieren und bei Punkt 2 jeden dieser Bescheide <b>einzeln mit Datum</b> eintragen.</li>
+<li>jobcenter.digital → Postfach → neue Nachricht mit Text und Anhängen senden, Bildschirmfoto machen, „Erledigt“ antippen.</li>
+</ol></div>
+<div class="blk"><h4 class="bl">Felder fürs Formular</h4><ul class="felder">
+<li><span class="fn">Betreff</span><span class="wert">Antrag auf Überprüfung nach <span class="nw">§ 44 SGB X</span></span><button type="button" class="kf"><svg class="i" aria-hidden="true"><use href="#i-cp"/></svg><span>Kopieren</span></button></li>
+<li><span class="fn">Kundennummer</span><span class="wert">043A170178</span><button type="button" class="kf"><svg class="i" aria-hidden="true"><use href="#i-cp"/></svg><span>Kopieren</span></button></li>
+<li><span class="fn">BG-Nummer</span><span class="wert">08002//0016389</span><button type="button" class="kf"><svg class="i" aria-hidden="true"><use href="#i-cp"/></svg><span>Kopieren</span></button></li>
+</ul></div>
+<div class="blk"><h4 class="bl">Text</h4>
+<button type="button" class="cp gross" data-t="t5"><svg class="i" aria-hidden="true"><use href="#i-cp"/></svg><span>Text kopieren</span></button>
+<details class="txt"><summary>Text ansehen</summary><pre id="t5">Antrag auf Überprüfung nach § 44 SGB X
 
 Kundennummer 043A170178, BG-Nummer 08002//0016389
 
@@ -274,8 +482,9 @@ Zugleich beantrage ich Akteneinsicht (§ 25 SGB X) in die Einladungen, Rechtsfol
 
 Bitte bestätigen Sie den Eingang schriftlich.
 
-Alexander Fuchs</pre>
-<button class="cp" data-t="t5">Text kopieren</button>
+Alexander Fuchs</pre></details>
+</div>
+<details class="zu"><summary>Anhänge zum Hochladen</summary>
 <!--anh:t5-->
 <div class="anh" id="anh-t5">
 <h4>Anhänge zu diesem Schreiben</h4>
@@ -289,23 +498,53 @@ Alexander Fuchs</pre>
 <p class="mut">Für Upload-Felder, die nur eine Datei oder nur PDF nehmen.</p>
 </div>
 <!--/anh:t5-->
+</details>
 <label class="done"><input type="checkbox"> Erledigt</label>
+<p class="hoch"><a href="#fristen">↑ Zur Übersicht</a></p>
+</article>
+
 </div>
 
-<h2 id="termine">Alle Termine</h2>
-<div class="tw"><table>
+<h2 id="hintergrund">Hintergrund</h2>
+<p class="klein mut">Zum Nachlesen – für die Aufgaben oben nicht nötig.</p>
+
+<details class="hg" id="hilfe"><summary>Hilfe, die zu dir kommt</summary>
+<ul>
+<li><b>Sozialpsychiatrischer Dienst</b> (Landkreis): kostenlos, macht Hausbesuche, hilft beim Schriftverkehr, kann eine Stellungnahme schreiben und einen Arzt vermitteln. Alles freiwillig.</li>
+<li><b>Schuldnerberatung</b>: kostenlos, für die Gläubiger.</li>
+<li><b>Anwalt für Sozialrecht</b> mit Beratungshilfeschein vom Amtsgericht: ca. 15 €.</li>
+</ul>
+<div class="kontakt">
+<p><b>Sozialpsychiatrischer Dienst Döbeln</b> – kostenlos<br><a href="tel:+4937317991353">03731 799-1353</a> · <a href="tel:+4937317992118">799-2118</a> · <a href="tel:+4937317992119">799-2119</a><br><a href="mailto:spdi@landkreis-mittelsachsen.de">spdi@landkreis-mittelsachsen.de</a></p>
+<p><b>Telefonseelsorge</b> – kostenlos, Tag und Nacht: <a href="tel:08001110111">0800 111 0 111</a></p>
+</div>
+<p class="mut">Das hier ist keine Rechtsberatung, sondern Hilfe beim Ordnen.</p>
+</details>
+
+<details class="hg" id="einreichen"><summary>So reichst du was ein</summary>
+<ul>
+<li><b>Widerspruch</b> → jobcenter.digital, Kachel „Widerspruch einlegen“, mit Ausweis (eID).</li>
+<li><b>Klage</b> → Mein Justizpostfach, mit Ausweis.</li>
+<li><b>Überprüfungsantrag, Mitteilungen</b> → normale Postfach-Nachricht.</li>
+<li><b>Weiterbewilligung</b> → jobcenter.digital, „Grundsicherungsgeld online verlängern“.</li>
+<li><b>Nie</b> nur E-Mail oder Postfach für Widerspruch/Klage – daran bist du zweimal gescheitert.</li>
+</ul>
+</details>
+
+<details class="hg" id="termine"><summary>Alle Termine</summary>
+<div class="tw"><table class="stapel">
 <tr><th>Termin</th><th>Was kam</th><th>Deine Reaktion</th><th>Stand</th></tr>
-<tr><td>16.12.2025</td><td>unbekannt</td><td>unbekannt</td><td>Kürzung 10 % (56,30 €) Mai 2026, Bescheid 07.04. → <b>Überprüfungsantrag</b></td></tr>
-<tr><td>19.05.2026</td><td>Termin</td><td>Abgesagt 08.05.</td><td><b>Entschuldigt</b> (20.05.) – erledigt</td></tr>
-<tr><td>06.07.2026</td><td>App-Meldung 23.06. („persönlich“), kein Einladungsschreiben</td><td><b>Abgesagt 06.07., 07:19</b>, 4 ärztliche Berichte – nie beantwortet</td><td>Festgestellt 10.09. · Widerspruch verworfen 21.10. · Überprüfung abgelehnt 26.10. → <b>Klage + Widerspruch</b></td></tr>
-<tr><td>22.09.2026</td><td>App-Meldung 10.09., Kontaktart „–“, kein Einladungsschreiben</td><td>keine Absage</td><td>Festgestellt 19.10. → <b>Widerspruch HEUTE</b></td></tr>
-<tr><td>16.10.2026</td><td>App-Meldung 23.09., Kontaktart „–“, kein Einladungsschreiben</td><td><b>Abgesagt 30.09.</b></td><td>noch kein Bescheid → Nachricht</td></tr>
-<tr><td>03.11.2026</td><td>App-Meldung 19.10.; beim Öffnen „keine neuen Termine“</td><td>–</td><td>noch kein Bescheid → Nachricht</td></tr>
+<tr><td data-l="Termin">16.12.2025</td><td data-l="Was kam">unbekannt</td><td data-l="Deine Reaktion">unbekannt</td><td data-l="Stand">Kürzung 10 % (56,30 €) Mai 2026, Bescheid 07.04. → <b>Überprüfungsantrag</b></td></tr>
+<tr><td data-l="Termin">19.05.2026</td><td data-l="Was kam">Termin</td><td data-l="Deine Reaktion">Abgesagt 08.05.</td><td data-l="Stand"><b>Entschuldigt</b> (20.05.) – erledigt</td></tr>
+<tr><td data-l="Termin">06.07.2026</td><td data-l="Was kam">App-Meldung 23.06. („persönlich“), kein Einladungsschreiben</td><td data-l="Deine Reaktion"><b>Abgesagt 06.07., 07:19</b>, 4 ärztliche Berichte – nie beantwortet</td><td data-l="Stand">Festgestellt 10.09. · Widerspruch verworfen 21.10. · Überprüfung abgelehnt 26.10. → <b>Klage + Widerspruch</b></td></tr>
+<tr><td data-l="Termin">22.09.2026</td><td data-l="Was kam">App-Meldung 10.09., Kontaktart „–“, kein Einladungsschreiben</td><td data-l="Deine Reaktion">keine Absage</td><td data-l="Stand">Festgestellt 19.10. → <b>Widerspruch (Frist 23.11.)</b></td></tr>
+<tr><td data-l="Termin">16.10.2026</td><td data-l="Was kam">App-Meldung 23.09., Kontaktart „–“, kein Einladungsschreiben</td><td data-l="Deine Reaktion"><b>Abgesagt 30.09.</b></td><td data-l="Stand">noch kein Bescheid → Nachricht</td></tr>
+<tr><td data-l="Termin">03.11.2026</td><td data-l="Was kam">App-Meldung 19.10.; beim Öffnen „keine neuen Termine“</td><td data-l="Deine Reaktion">–</td><td data-l="Stand">noch kein Bescheid → Nachricht</td></tr>
 </table></div>
 <p class="mut">In der Bescheidablage liegen 14 Dokumente – kein einziges Einladungsschreiben, keine Anhörung, kein Überprüfungsbescheid vom 26.10. Per Post kam laut dir nur der abgelehnte Widerspruch (gelbes Einschreiben).</p>
+</details>
 
-<h2 id="ablehnungen">Was die Ablehnungen bedeuten</h2>
-<div class="k">
+<details class="hg" id="ablehnungen"><summary>Was die Ablehnungen bedeuten</summary>
 <ul>
 <li><b>02.03.2026</b> (alter Überprüfungsantrag 2024/25): nur wegen Form verworfen (E-Mail ohne Unterschrift) und „zu allgemein“. Klagefrist vorbei → neuer, genauer Antrag (siehe oben).</li>
 <li><b>21.10.2026</b> (Widerspruch 06.07.): nur wegen Form verworfen. Kein Widerspruch dagegen möglich – nur <b>Klage</b>.</li>
@@ -313,19 +552,18 @@ Alexander Fuchs</pre>
 <li><b>Recht bekommen</b> hast du noch nirgends – verloren aber auch nie in der Sache, fast immer an der Form. Deshalb immer: „Widerspruch einlegen“ mit Ausweis, nie nur Postfach oder E-Mail.</li>
 <li>Zweimal gab dir das Jobcenter nur 3–4 Tage, um die Form nachzuholen (20.02.→23.02., 09.10.→13.10.).</li>
 </ul>
-</div>
+</details>
 
-<h2>Droht eine Kürzung?</h2>
-<div class="k">
+<details class="hg" id="kuerzung"><summary>Droht eine Kürzung?</summary>
 <ul>
 <li>Bisher: nur zwei Feststellungen (06.07., 22.09.) – <b>noch keine Kürzung</b>.</li>
 <li>Jedes <b>weitere</b> Meldeversäumnis: <b>−30 %</b> für einen Monat. Drei hintereinander: Leistungen können ganz wegfallen.</li>
 <li>Eine Kürzung beginnt erst im Monat <b>nach</b> dem Bescheid. Dezember ist daher ziemlich sicher; Januar könnte betroffen sein, falls zum 16.10./03.11. noch ein Bescheid kommt.</li>
 <li>Ein Widerspruch hält eine Kürzung leider nicht auf. Bei einer Kürzung hilft ein Eilantrag beim Sozialgericht.</li>
 </ul>
-</div>
+</details>
 
-<h2 id="zeit">Zeitleiste</h2>
+<details class="hg" id="zeit"><summary>Zeitleiste</summary>
 <div class="tw"><table>
 <tr><th>Datum</th><th>Was</th></tr>
 <tr><td>31.12.2025</td><td>Du: Überprüfungsantrag 2024/25 (per E-Mail)</td></tr>
@@ -355,18 +593,9 @@ Alexander Fuchs</pre>
 <tr><td>05.11.2026</td><td>JC: Weiterbewilligung beantragen (Ende 31.12.)</td></tr>
 </table></div>
 <p class="mut">Verhältnis: Du hast 24 Nachrichten geschickt, im Postfach kamen 3 Antworten zurück. Am 05.05. ging dieselbe Nachricht 3-mal in 5 Minuten raus, weil die Seite hakte.</p>
+</details>
 
-<h2 id="hilfe">Hilfe, die zu dir kommt</h2>
-<div class="k">
-<ul>
-<li><b>Sozialpsychiatrischer Dienst</b> (Landkreis): kostenlos, macht Hausbesuche, hilft beim Schriftverkehr, kann eine Stellungnahme schreiben und einen Arzt vermitteln. Alles freiwillig.</li>
-<li><b>Schuldnerberatung</b>: kostenlos, für die Gläubiger.</li>
-<li><b>Anwalt für Sozialrecht</b> mit Beratungshilfeschein vom Amtsgericht: ca. 15 €.</li>
-</ul>
-<p class="mut">Das hier ist keine Rechtsberatung, sondern Hilfe beim Ordnen.</p>
-</div>
-
-<h2 id="ki">Für eine andere KI</h2>
+<details class="hg" id="ki"><summary>Für eine andere KI</summary>
 <p class="mut">Den ganzen Block kopieren und als erste Nachricht in eine andere KI einfügen. Die Originale der Bescheide liegen in deiner Bescheidablage auf jobcenter.digital – die KI braucht sie nicht, hier steht alles Wichtige daraus. Welche Bildschirmfotos zu welchem Schreiben gehören, steht unten unter „ANHÄNGE“.</p>
 <pre id="t6">Du hilfst mir bei meinen Verfahren mit dem Jobcenter. Antworte kurz, ohne Fachwörter, und gib mir fertige Texte zum Kopieren. Keine Rechtsberatung, aber genaue Hilfe beim Ordnen und Formulieren.
 
@@ -399,7 +628,10 @@ STAND 23.11.2026: (1) Widerspruch gegen Bescheid 19.10. – Frist 23.11. (2) Kla
 ANHÄNGE (Original-Bildschirmfotos aus jobcenter.digital, unverändert; je Schreiben auch als ein PDF): Widerspruch 19.10. → Bescheidablage Seite 1, Mitteilungen (Glocke). Klage → Nachricht 06.07. 07:19, Nachricht 12.10. 11:12, Bescheidablage Seite 1 (dazu die Bescheide 10.09. und 21.10. als PDF). Nachricht 16.10./03.11. → Mitteilungen, Nachricht 30.09., Bescheidablage Seite 1, Posteingang. Widerspruch 26.10. → Nachricht 06.07., Bescheidablage Seite 1, Nachricht des Jobcenters 20.05. Überprüfungsantrag → Bescheidablage Seite 1 und 2.
 
 KERNARGUMENTE: Zugang der Einladung und Anhörung nicht nachgewiesen (§ 37 Abs. 2 S. 3 SGB X); keine Rechtsfolgenbelehrung zugegangen (§ 32 SGB II, § 309 SGB III); wichtiger Grund Gesundheit; Anhörung fehlt (§ 24 SGB X); Amtsermittlung (§ 20 SGB X) statt veraltetem Gutachten; Akteneinsicht (§ 25 SGB X); Klärung Erwerbsfähigkeit (§ 44a SGB II).</pre>
-<button class="cp" data-t="t6">Ganzen Block kopieren</button>
+<button type="button" class="cp" data-t="t6"><svg class="i" aria-hidden="true"><use href="#i-cp"/></svg><span>Ganzen Block kopieren</span></button>
+</details>
+
+<p class="fuss">Kundennummer 043A170178 · BG-Nummer 08002//0016389<br>Texte: Stand 23.11.2026, abends. Das hier ist keine Rechtsberatung, sondern Hilfe beim Ordnen.</p>
 </div>
 
 <div id="lb" hidden role="dialog" aria-modal="true" aria-label="Anhang groß">
@@ -408,34 +640,203 @@ KERNARGUMENTE: Zugang der Einladung und Anhörung nicht nachgewiesen (§ 37 Abs.
 </div>
 
 <script>
-(function(){
-  function kopier(t,b){
-    var txt=document.getElementById(t).innerText;
-    function ok(){b.classList.add('ok');b.textContent='Kopiert';setTimeout(function(){b.classList.remove('ok');b.textContent='Text kopieren'},1800)}
-    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(ok,function(){alt()})}else alt();
-    function alt(){var r=document.createRange();r.selectNodeContents(document.getElementById(t));var s=getSelection();s.removeAllRanges();s.addRange(r);try{document.execCommand('copy');ok()}catch(e){b.textContent='Markiert – jetzt kopieren'}}
+/* Fristen – hier pflegen. Datum als JJJJ-MM-TT. frist = echte Frist, ziel = "bis dahin erledigen" (ohne Frist).
+   ca: true = Frist nur geschätzt. karte = id der Karte unten. spaet = Hinweis, wenn die Frist vorbei ist. */
+var AUFGABEN = [
+  { id: 'w1', titel: 'Widerspruch gegen Bescheid vom 19.10. (Termin 22.09.)', frist: '2026-11-23',
+    kanal: 'jobcenter.digital → „Widerspruch einlegen“ (eID)', text: 't1k',
+    spaet: 'Frist vorbei? Trotzdem einreichen – ein verspäteter Widerspruch wird in der Regel als Überprüfungsantrag (§\u00a044\u00a0SGB\u00a0X) weiter geprüft.' },
+  { id: 'k1', titel: 'Klage beim Sozialgericht Chemnitz (Termin 06.07.)', frist: '2026-11-24',
+    kanal: 'Mein Justizpostfach (eID)', text: 't2',
+    spaet: 'Frist vorbei? Trotzdem einreichen und dazuschreiben, dass du krank warst – das Gericht kann die Frist nachträglich gewähren (§\u00a067\u00a0SGG). Der Widerspruch zum 26.10. betrifft denselben Termin.' },
+  { id: 'm1', titel: 'Nachricht: Termine 16.10./03.11., Terminpause, Gutachten', ziel: '2026-11-24',
+    kanal: 'Postfach-Nachricht auf jobcenter.digital', text: 't3' },
+  { id: 'w2', titel: 'Widerspruch gegen Überprüfungsbescheid vom 26.10. (Termin 06.07.)', frist: '2026-11-26', ca: true,
+    kanal: 'jobcenter.digital → „Widerspruch einlegen“ (eID)', text: 't4',
+    spaet: 'Frist vorbei? Trotzdem einreichen – ein verspäteter Widerspruch wird in der Regel als Überprüfungsantrag (§\u00a044\u00a0SGB\u00a0X) weiter geprüft.' },
+  { id: 'wba', titel: 'Weiterbewilligungsantrag (Geld endet 31.12.)', ziel: '2026-12-05', frist: '2026-12-31',
+    kanal: 'jobcenter.digital → „Grundsicherungsgeld online verlängern“',
+    spaet: 'Frist vorbei? Sofort stellen – der Antrag wirkt auf den Ersten des Monats zurück (§\u00a037\u00a0SGB\u00a0II).' },
+  { id: 'ueb', titel: 'Neuer Überprüfungsantrag für 2025 und 2026', frist: '2026-12-31',
+    kanal: 'Postfach-Nachricht auf jobcenter.digital', text: 't5',
+    spaet: 'Frist vorbei? Trotzdem stellen – rückwirkend geht es dann nur noch bis 01.01.2026 (die Kürzung für Mai 2026 zählt noch).' }
+];
+
+(function () {
+  'use strict';
+  var WT = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+  var WTL = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+  var $ = function (id) { return document.getElementById(id); };
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  /* Heutiges Datum in Berlin, als Tagesnummer */
+  function heuteYMD() {
+    var d = new Date();
+    try {
+      var o = {};
+      new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Berlin', year: 'numeric', month: 'numeric', day: 'numeric' })
+        .formatToParts(d).forEach(function (p) { o[p.type] = p.value; });
+      if (o.year && o.month && o.day) return [+o.year, +o.month, +o.day];
+    } catch (e) {}
+    return [d.getFullYear(), d.getMonth() + 1, d.getDate()];
   }
-  document.querySelectorAll('button.cp[data-t]').forEach(function(b){b.addEventListener('click',function(){kopier(b.dataset.t,b)})});
-  document.querySelectorAll('.k[data-id]').forEach(function(k){
-    var c=k.querySelector('label.done input');if(!c)return;var key='jc-'+k.dataset.id;
-    try{c.checked=localStorage.getItem(key)==='1'}catch(e){}
-    function zeig(){k.style.opacity=c.checked?.55:1}zeig();
-    c.addEventListener('change',function(){try{localStorage.setItem(key,c.checked?'1':'0')}catch(e){}zeig()});
+  function nr(y, m, d) { return Math.round(Date.UTC(y, m - 1, d) / 864e5); }
+  function isoNr(s) { var a = s.split('-'); return nr(+a[0], +a[1], +a[2]); }
+  function datum(s, jahr) {
+    var a = s.split('-'), w = new Date(Date.UTC(+a[0], +a[1] - 1, +a[2])).getUTCDay();
+    return WT[w] + ' ' + a[2] + '.' + a[1] + '.' + (jahr ? a[0] : '');
+  }
+
+  /* Erledigt-Häkchen (gleiche Schlüssel wie vorher: jc-<id>) */
+  var fertig = {};
+  function lies(id) { try { return localStorage.getItem('jc-' + id) === '1'; } catch (e) { return false; } }
+  function schreib(id, v) { try { localStorage.setItem('jc-' + id, v ? '1' : '0'); } catch (e) {} }
+
+  /* Ampel für eine Aufgabe */
+  function lage(a, heute) {
+    var r = { a: a };
+    var z = a.ziel ? isoNr(a.ziel) : null, f = a.frist ? isoNr(a.frist) : null, ref, art;
+    if (z !== null && (f === null || heute <= z)) { ref = z; art = 'ziel'; } else { ref = f; art = 'frist'; }
+    var d = ref - heute, ca = (a.ca && art === 'frist') ? 'ca. ' : '';
+    var farbe = d <= 1 ? 'rot' : d <= 7 ? 'or' : d <= 21 ? 'ge' : 'gr';
+    if (art === 'ziel') { if (d < 0) farbe = 'ge'; else if (farbe === 'rot') farbe = 'or'; }  // ohne echte Frist nie rot
+    else if (z !== null && (farbe === 'ge' || farbe === 'gr')) farbe = 'or';               // Ziel schon vorbei
+    var ab;
+    if (art === 'ziel' && d < 0) ab = 'bald machen';
+    else if (d < 0) ab = 'seit ' + ca + (-d) + (d === -1 ? ' Tag' : ' Tagen') + ' vorbei';
+    else if (d === 0) ab = ca ? 'heute (ca.)' : 'heute';
+    else if (d === 1) ab = ca ? 'morgen (ca.)' : 'morgen';
+    else ab = 'noch ' + ca + d + ' Tage';
+    var bis = (art === 'frist' && (d === 0 || d === 1) && !fertig[a.id]) ? ' · bis 24 Uhr' : '';
+    function z2(j) {
+      if (a.ziel && a.frist) return 'Ziel: ' + datum(a.ziel) + ' · Frist: ' + datum(a.frist, j);
+      if (a.ziel) return 'Ziel: ' + datum(a.ziel, j) + ' · keine Frist';
+      return 'Frist: ' + (a.ca ? 'ca. ' : '') + datum(a.frist, j) + bis;
+    }
+    r.farbe = farbe; r.d = d; r.ab = ab; r.zeile = z2(1); r.kz = z2(0);
+    r.vorbei = art === 'frist' && d < 0;
+    r.rang = farbe === 'rot' ? (d >= 0 ? 0 : 1) : farbe === 'or' ? 2 : farbe === 'ge' ? 3 : 4;
+    r.sub = r.rang === 1 ? -d : d;
+    if (fertig[a.id]) { r.farbe = 'gy'; r.rang = 9; r.sub = 0; r.ab = 'erledigt'; r.vorbei = false; }
+    return r;
+  }
+
+  var stand = null;
+  function zeichne(neuOrdnen) {
+    var t = heuteYMD(), heute = nr(t[0], t[1], t[2]);
+    var L = AUFGABEN.map(function (a, i) { var r = lage(a, heute); r.i = i; return r; });
+    L.sort(function (x, y) { return (x.rang - y.rang) || (x.sub - y.sub) || (x.i - y.i); });
+    var wd = new Date(Date.UTC(t[0], t[1] - 1, t[2])).getUTCDay();
+    $('heuteDat').textContent = 'Heute ist ' + WTL[wd] + ', ' + ('0' + t[2]).slice(-2) + '.' + ('0' + t[1]).slice(-2) + '.' + t[0];
+
+    // Fristen-Liste
+    $('fl').innerHTML = L.map(function (r) {
+      return '<li class="a-' + r.farbe + '"><a href="#k-' + r.a.id + '"><span class="fo"><span class="ab">' + esc(r.ab) + '</span><span class="fd">' +
+        esc(r.kz) + '</span></span><b>' + esc(r.a.titel) + '</b><span class="fk">' + esc(r.a.kanal) + '</span></a></li>';
+    }).join('');
+
+    // Karten
+    L.forEach(function (r) {
+      var k = $('k-' + r.a.id); if (!k) return;
+      k.className = 'k a-' + r.farbe + (fertig[r.a.id] ? ' fertig' : '');
+      var ab = k.querySelector('[data-ab]'), kd = k.querySelector('[data-kd]'), sp = k.querySelector('[data-spaet]');
+      if (ab) ab.textContent = r.ab;
+      if (kd) kd.textContent = r.zeile;
+      if (sp) { var zeig = r.vorbei && r.a.spaet; sp.hidden = !zeig; sp.textContent = zeig ? r.a.spaet : ''; }
+      if (neuOrdnen) $('karten').appendChild(k);
+    });
+
+    // Heute zu tun
+    var h = $('heute'), top = null;
+    for (var i = 0; i < L.length; i++) if (L[i].rang < 9) { top = L[i]; break; }
+    if (!top) {
+      h.className = 'heute a-gr';
+      h.innerHTML = '<div class="hl"><b>Heute zu tun</b></div><h2>Alles erledigt.</h2><p>Gut gemacht. Kommt neue Post, wird sie hier ergänzt.</p>';
+    } else {
+      var k = $('k-' + top.a.id), ol = k ? k.querySelector('ol.schritte') : null;
+      h.className = 'heute a-' + top.farbe;
+      h.innerHTML = '<div class="hl"><b>' + (top.rang <= 1 ? 'Heute zu tun' : 'Als Nächstes') + '</b><span class="ab">' + esc(top.ab) + '</span></div>' +
+        '<h2>' + esc(top.a.titel) + '</h2><p class="hd">' + esc(top.zeile) + '</p>' +
+        (top.vorbei && top.a.spaet ? '<p class="spaet">' + esc(top.a.spaet) + '</p>' : '') +
+        (ol ? ol.outerHTML : '') +
+        (k && k.querySelector('[data-zu-lang]:not([hidden])') ? '<p class="warn">' + esc(k.querySelector('[data-zu-lang]').textContent) + '</p>' : '') +
+        '<div class="hk">' +
+        (top.a.text ? '<button type="button" class="cp gross" data-t="' + top.a.text + '"><svg class="i" aria-hidden="true"><use href="#i-cp"/></svg><span>Text kopieren</span></button>' : '') +
+        '<a class="knopf" href="#k-' + top.a.id + '"><svg class="i" aria-hidden="true"><use href="#i-ab"/></svg><span>Zur Aufgabe</span></a></div>';
+    }
+    stand = heute;
+  }
+
+  // Zeichenzähler
+  document.querySelectorAll('[data-zz]').forEach(function (b) {
+    var p = $(b.getAttribute('data-zz')); if (!p) return;
+    var n = p.textContent.length, max = +b.getAttribute('data-max') || 0;
+    b.textContent = max ? n + ' / ' + max + ' Zeichen' + (n <= max ? ' – passt' : ' – zu lang') : n + ' Zeichen';
+    var w = document.querySelector('[data-zu-lang="' + b.getAttribute('data-zz') + '"]');
+    if (w) w.hidden = !(max && n > max);
   });
+
+  // Häkchen
+  document.querySelectorAll('.k[data-id]').forEach(function (k) {
+    var id = k.getAttribute('data-id'), c = k.querySelector('label.done input'); if (!c) return;
+    fertig[id] = c.checked = lies(id);
+    c.addEventListener('change', function () { fertig[id] = c.checked; schreib(id, c.checked); zeichne(false); });
+  });
+
+  zeichne(true);
+  // Neuer Tag (Seite bleibt offen, App kommt zurück): neu rechnen
+  function pruefTag() { var t = heuteYMD(); if (nr(t[0], t[1], t[2]) !== stand) zeichne(true); }
+  setInterval(pruefTag, 60000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) pruefTag(); });
+
+  // Kopieren
+  function kopiere(txt, b, quelle) {
+    var s = b.querySelector('span'), u = b.querySelector('use');
+    if (!b._alt) b._alt = s.textContent;
+    function ok() {
+      s.textContent = 'Kopiert'; if (u) u.setAttribute('href', '#i-ok'); b.classList.add('ok');
+      clearTimeout(b._t); b._t = setTimeout(function () { s.textContent = b._alt; if (u) u.setAttribute('href', '#i-cp'); b.classList.remove('ok'); }, 2000);
+    }
+    function alt() {
+      var ta = document.createElement('textarea'), g = false;
+      ta.value = txt; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;font-size:16px';
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      try { ta.setSelectionRange(0, txt.length); g = document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+      if (g) return ok();
+      if (quelle) { var dt = quelle.closest('details'); if (dt) dt.open = true; var r = document.createRange(); r.selectNodeContents(quelle); var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); }
+      s.textContent = 'Markiert – jetzt kopieren';
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, alt); else alt();
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('button[data-t],button.kf');
+    if (b) {
+      if (b.hasAttribute('data-t')) { var p = $(b.getAttribute('data-t')); if (p) kopiere(p.textContent, b, p); }
+      else { var w = b.parentNode.querySelector('.wert'); if (w) kopiere(w.textContent, b, w); }
+      return;
+    }
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (a) oeffne(a.getAttribute('href').slice(1));
+  });
+  function oeffne(id) { var el = id && $(id); if (el && el.tagName === 'DETAILS') el.open = true; }
+  if (location.hash) oeffne(location.hash.slice(1));
+
   // Anhang groß ansehen (ohne JS öffnet der Link das Bild direkt)
-  var lb=document.getElementById('lb'),lbi=document.getElementById('lbi'),lbt=document.getElementById('lbt'),lbd=document.getElementById('lbd'),offen=false;
-  function zu(){if(!offen)return;offen=false;lb.hidden=true;lbi.removeAttribute('src');document.documentElement.style.overflow=''}
-  document.querySelectorAll('.anh a.vb').forEach(function(a){a.addEventListener('click',function(e){
-    e.preventDefault();lbi.src=a.getAttribute('href');lbi.alt=a.dataset.titel;lbt.textContent=a.dataset.titel;lbd.href=a.getAttribute('href');
-    lb.hidden=false;offen=true;document.documentElement.style.overflow='hidden';lb.querySelector('.lbs').scrollTop=0;
-    try{history.pushState({lb:1},'')}catch(x){}
-    document.getElementById('lbx').focus();
-  })});
-  document.getElementById('lbx').addEventListener('click',function(){if(history.state&&history.state.lb)history.back();else zu()});
-  addEventListener('popstate',zu);
-  addEventListener('keydown',function(e){if(e.key==='Escape'&&offen)document.getElementById('lbx').click()});
+  var lb = $('lb'), lbi = $('lbi'), lbt = $('lbt'), lbd = $('lbd'), offen = false;
+  function zu() { if (!offen) return; offen = false; lb.hidden = true; lbi.removeAttribute('src'); document.documentElement.style.overflow = ''; }
+  document.querySelectorAll('.anh a.vb').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      e.preventDefault(); lbi.src = a.getAttribute('href'); lbi.alt = a.dataset.titel; lbt.textContent = a.dataset.titel; lbd.href = a.getAttribute('href');
+      lb.hidden = false; offen = true; document.documentElement.style.overflow = 'hidden'; lb.querySelector('.lbs').scrollTop = 0;
+      try { history.pushState({ lb: 1 }, ''); } catch (x) {}
+      $('lbx').focus();
+    });
+  });
+  $('lbx').addEventListener('click', function () { if (history.state && history.state.lb) history.back(); else zu(); });
+  addEventListener('popstate', zu);
+  addEventListener('keydown', function (e) { if (e.key === 'Escape' && offen) $('lbx').click(); });
 })();
 </script>
-
 </body>
 </html>
