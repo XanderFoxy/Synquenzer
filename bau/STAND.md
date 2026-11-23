@@ -1,4 +1,4 @@
-# Stand 23.11.12:11 UTC
+# Stand 23.11.12:13 UTC
 ## mlg3
 fertig: block.js + apply.py, index.html gebaut
 als Naechstes: Browser-Kerntest (Touch), KURZ.md, CHANGES.md
