@@ -1,0 +1,39 @@
+{
+ "lead_gr": {
+  "median_singen": 1.97,
+  "p95": 4.04,
+  "max": 9.0,
+  "stufe1_p95": 0.81,
+  "stufe2_median": 1.96,
+  "entzischer_p95": 3.57
+ },
+ "gegen_gr_median": 3.09,
+ "fader_db": {
+  "G": -8.0,
+  "GA_L": -17.6,
+  "GA_R": -17.6,
+  "D": -7.8,
+  "OB_L": -16.7,
+  "OB_R": -16.5,
+  "UN": -18.7
+ },
+ "pegel_rel_lead_nachher": {
+  "G": -5.5,
+  "GA_L": -15.0,
+  "GA_R": -15.0,
+  "D": -11.0,
+  "OB_L": -15.5,
+  "OB_R": -15.5,
+  "UN": -18.0
+ },
+ "chorbus_gr_median": 5.24,
+ "gesang_angleich_db": 11.73,
+ "master": {
+  "gain_db": 1.39,
+  "lufs": -10.16,
+  "tp_48k": -1.5,
+  "limiter_gr_p99": 5.92,
+  "limiter_gr_max": 8.96,
+  "limiter_gr_anteil_ueber_0_5dB": 57.43
+ }
+}

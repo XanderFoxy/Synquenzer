@@ -1,4 +1,4 @@
-# Stand 23.11.19:05 UTC
+# Stand 23.11.19:07 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -134,12 +134,24 @@ Bau: `python3 apply.py <eingang> <ausgang>` (Eingang 4.88.0 md5 695af0504463a638
 Quellen: `block-wk.js` (Worklet, ASCII, /* KSM-BEGIN (worklet) */ vor `function ks4Def(){`), `block.js` (Hauptskript, /* KSM-BEGIN */ vor `function ks4PageLfo(pg,i,n){`).
 Haken (Code-Anker, je feste Trefferzahl): Worklet `startVoice` → `this.ksmV(v,this.lkEv)` nach lkStart; lkStart überspringt Paare -9000…-9017 (kein lkBad);
 `ks4Lfo`/`ks4Ctl`-Aufruf → `ksmLfo`/`ksmCtl` (ohne v.ksm exakt alter Aufruf); `ks4Post` m/k je Stimme (v.ksmF); `ks4Der` liest Takt-Schläge aus P statt Q (gleiche Werte)
+## ksm2
+# KSM2 – Stand (fertig, Umfang ehrlich unten)
+Bau: `python3 apply.py <eingang> <ausgang>` (Eingang 4.90.0 md5 a23eefd7ac3f52251e5bc881f1de4628; Ausgang hier `index.html`, md5 941cc0f750f8273b0bd63143fb236681).
+Quellen: `block.js` (Hauptskript, /* KSM2-BEGIN */ vor `function lkNoteX(i,clip,nt,rb){`), `block-bm.js` (Bit-Mask-Worklet-Vorlage BM_WK, ASCII, vor `class BmProc extends AudioWorkletProcessor{`).
+Haken (je feste Trefferzahl 1): lkNoteX – KSM-Locks (LKT[k].ksm) bei wt/mk/bm gehen an `ksm2Put` (vorher: wt verworfen wegen nat:'nein', mk/bm schon an lkFamOk gescheitert);
+nativer spawnVoice nach `NativeVoice.source` → `ksm2NatPe` (nur wenn PL.ksm2Pe); sq-bm-src `if(lk)bm1On(o,lk);` → zusätzlich `ksm2Bm(o,lk)`;
 ## lt2
 # LT2 STAND
 - 15:2x block.js + apply.py gebaut (Stückweise-Vorzeichnen bei Tönung), Test folgt
 - 15:3x erster Lauf: Endbild/Bildschirm gleich (926x428), basis bei Last <1 ohne LT; großer Lauf run1.out läuft
 - 15:4x Blit durch Kopier-Shader ersetzt + Zaun (fenceSync) vor dem Zeigen; Schnelltest: Bilder gleich, Bildabstand alles 23/19 statt 31/39 ms; großer A/B-Lauf run2.out läuft (index md5 43e05a35…)
 ## Aufbau (index md5 43e05a3592d31884bf73f8e2eb67d3c8, Eingang 9c7f63cf…)
+## lt3
+# LT3 – Stand: fertig (gebaut, gemessen)
+Ausgang `index.html` md5 83cb473e0c0a4d214456f7e3480423f4 (Eingang 4.90.0 a23eefd7ac3f52251e5bc881f1de4628, VERSION unverändert).
+Bau: `python3 apply.py <eingang> <ausgang.html>` – Block `block.js` (LT3-BEGIN/-END) direkt hinter `// LT2-END`; 3 Haken `/*LT3*/` in lt2sDraw:
+Startbedingung LT2S `(P.slow||lt3Slow(P))` (statt nur `P.slow`, Reihenfolge der übrigen Bedingungen gleich, lt3Slow zuletzt), Streifenzahl
+`P.cost||lt3Est()`, Messung des Bildabstands nach jedem vollen Bild ohne Farben (`lt3Measure`). Diff `lt3.diff` +11/−3. Pflicht: `pflicht.out`.
 ## mlg3
 fertig: MLG3 gebaut und getestet (index.html, apply.py, block.js, kern.js, quer.js, KURZ.md, CHANGES.md)
 als Naechstes: nichts – bereit zur Uebernahme

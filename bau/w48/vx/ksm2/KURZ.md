@@ -1,0 +1,1 @@
+KSM2: Klangschule-Locks (TAKT-Zeiten, Tonh.-Hk.) jetzt hörbar bei Wavetable (9), MS-Platte (6) und Bit Mask (7); Filter 2/LFO-Raster/Routen dort ehrlich ausgelassen (Kern hat sie nicht); ohne Lock Render-Hash = 4.90.
