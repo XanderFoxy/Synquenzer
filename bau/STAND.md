@@ -1,7 +1,8 @@
-# Stand 23.11.15:22 UTC
+# Stand 23.11.15:24 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
+- apply.py + block.js geschrieben (a,b,d,e); c in Prüfung
 ## ent1a
 # ENT1A Stand
 - Start: Analyse Arp/Stopp. stop() kehrt bei !R.playing früh zurück -> arpEndAll fehlt (Verdacht).
@@ -54,5 +55,8 @@ als Nächstes: nichts – bereit zur Übergabe
 - [ ] KARTE.md
 - [ ] base geprüft
 ## zrl2
-# STAND
-- apply.py + block-lo.js + block-q.js gebaut (Tiefband-Rand + Quantisierung ohne log10). Tests laufen.
+# ZRL2 auf 4.85.0 – Stand: fertig (2 von 3 Punkten)
+Ausgang `index.html` md5 cbdf7b2e629b5d3306eb03e1c5890a20 (Eingang 9c7f63cf…). Bau: `python3 apply.py <eingang> <ausgang>` (Blöcke `block-q.js`, `block-lo.js`).
+Gebaut (bitgleich):
+1. Tiefband (`magsLo`, spk3DspMake): Rand-Rahmen des vorigen Streifens werden übernommen (gleiche FFT-Paare, Prüfung Signal-Objekt, Fenster, N/R/K, cen je Rahmen, Versatz gerade). Speicher kopiert vor der Rückgabe (lowSplit4 ändert Y in place), 2 Einträge je Schlüssel, Freigabe im finally von zerlegen.
+2. zPrep-Quantisierung ohne log10: Tabelle über float32-Bits (Exponent + 6 Mantissen-Bits), je Zelle höchstens eine Schwelle (per Binärsuche mit der alten Formel gefunden), nahe der Schwelle (±2,5e-4 relativ) und Sonderwerte genau gerechnet.
