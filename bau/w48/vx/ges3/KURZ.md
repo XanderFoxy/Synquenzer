@@ -1,0 +1,1 @@
+GES3: Gesang→Noten-Einsatz auf die echte Onset-Probe (Fehler 4,1 → 1,5 ms, Lage-Schwanken 9 → 0,4 ms); Marken nur bei echtem Einsatz für neue Takes (Fehlmarken im gehaltenen Vokal 44 → 3, Treffer 18/18 bleibt); 3 Rest-Fehlmarken bei starkem Vibrato+Tremolo.
