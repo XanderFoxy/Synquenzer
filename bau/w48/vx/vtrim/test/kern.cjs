@@ -1,0 +1,197 @@
+// VTRIM Kern-Test: node kern.cjs <port>   (Server-Wurzel mit neu/ und basis/)
+// Take mit 2 s Nachlauf → Ende-Fähnchen per Touch um 1,5 s kürzen → Mixdown/Wiedergabe/Clip-WAV gemessen, ↶, Speichern/Laden;
+// ohne Beschnitt bitgleich zu 4.91 (basis). Fotos: foto-vorher.png (4.91), foto-nachher.png (hochkant), foto-nachher-quer.png.
+const {chromium, sleep, open, setup, render} = require('./lib.cjs');
+const port = process.argv[2];
+const OUT = __dirname + '/..';
+let fail = 0, n = 0; const res = {};
+const ok = (name, c, x) => { n++; console.log((c ? 'OK     ' : 'FEHLER ') + name + (x !== undefined ? '  ' + JSON.stringify(x) : '')); if (!c) fail++; res[name] = {ok: !!c, x}; };
+
+// in der Seite: Fänger für tkStartSrc (trockene Nachbildung), Hash, Clip-WAV-Proben
+async function tools(p) {
+  await p.evaluate(() => {
+    window.__cap = null;
+    const o0 = tkStartSrc;
+    tkStartSrc = function (o) { if (window.__cap && !o.ctx) __cap.push({buf: o.buf, when: o.when, off: o.off, end: o.end, fi: o.fi, fo: o.fo, gain: o.gain, xc: o.xc, xw: o.xw, key: o.key, take: o.take, aud: null}); return o0.apply(this, arguments); };
+    window.__hash = y => { const u = new Uint32Array(y.buffer, y.byteOffset, y.length); let h = 2166136261; for (let k = 0; k < u.length; k++) { h ^= u[k]; h = Math.imul(h, 16777619) >>> 0; } return h.toString(16) + ':' + y.length; };
+    window.__dry = async (cap, N, sr) => { const oc = new OfflineAudioContext(1, N, sr); for (const c of cap) tkStartSrc(Object.assign({}, c, {ctx: oc, dest: oc.destination, i: 0, xc: null, xw: 0})); const b = await oc.startRendering(); return Float32Array.from(b.getChannelData(0)); };
+    window.__wav = async (st) => { const c = S.tracks[st].clips[0], a = c.audio; if (typeof vl2X === 'function') { for (let k = 0; k < 200 && !vl2X(); k++) await new Promise(r => setTimeout(r, 25)); } const out = {}; for (const f of ['A', 'B']) { const P = vl2ClipPlanX({a, clip: c}, f), y = new Float32Array(P.n); for (let j = 0; j < P.n; j++) y[j] = P.get(0, j); out[f] = {y, P: {n: P.n, cue1: P.cue1, sr: P.sr}}; } return out; };
+  });
+}
+async function renderBoth(p, name) {
+  await p.evaluate(() => { window.__cap = []; });
+  const r = await render(p);
+  return p.evaluate(async ({r, name}) => { const cap = __cap; window.__cap = null; const D = await __dry(cap, __R[0].length, r.sr); window.__RS = window.__RS || {};
+    window.__RS[name] = {r, D, W: __R[0], cap}; return {r, hashW: __hash(__R[0]) + '|' + __hash(__R[1]), hashD: __hash(D), cap: cap.map(c => ({when: c.when, off: c.off, end: c.end, fi: c.fi, fo: c.fo}))}; }, {r, name});
+}
+
+(async () => {
+  const b = await chromium.launch({args: ['--autoplay-policy=no-user-gesture-required']});
+  // ---------- Basis 4.91: Render ohne Beschnitt + Foto vorher ----------
+  let base;
+  {
+    const {ctx, p, errs} = await open(b, port, 'basis', 428, 926);
+    await tools(p);
+    const s = await setup(p);
+    await render(p);
+    base = await p.evaluate(async st => { window.__cap = null; const W = __wav ? await __wav(st) : null; return {hashW: __hash(__R[0]) + '|' + __hash(__R[1]), wavA: __hash(W.A.y), wavB: __hash(W.B.y), n: __R[0].length}; }, s.st);
+    await p.evaluate(st => vx1rOpen({t: st, s: 0}), s.st);
+    for (let k = 0; k < 40; k++) { await sleep(250); if (await p.evaluate(() => VX1E.clip && VX1E.clip.notes.length > 0)) break; }
+    await p.evaluate(() => { const f = ED.roll.fol(); ED.roll.showPage(Math.max(0, 8 - (f.W - 60) / f.ppb)); });
+    await sleep(500);
+    await p.screenshot({path: OUT + '/foto-vorher.png'});
+    base.errs = errs.slice();
+    ok('Basis 4.91 lädt ohne Seitenfehler', errs.length === 0, errs.slice(0, 3));
+    await ctx.close();
+  }
+  // ---------- neu, hochkant ----------
+  {
+    const {ctx, p, errs, T} = await open(b, port, 'neu', 428, 926);
+    await tools(p);
+    const s = await setup(p);
+    const R0 = await renderBoth(p, 'R0');
+    const W0 = await p.evaluate(async st => { const W = await __wav(st); window.__W0 = W; return {A: __hash(W.A.y), B: __hash(W.B.y)}; }, s.st);
+    ok('ohne Beschnitt: Mixdown bitgleich zu 4.91', R0.hashW === base.hashW, {neu: R0.hashW, basis: base.hashW});
+    ok('ohne Beschnitt: Clip-WAV (mit Vorlauf / Loop rund) bitgleich zu 4.91', W0.A === base.wavA && W0.B === base.wavB, {neu: W0, basis: [base.wavA, base.wavB]});
+
+    // Gesang-Editor öffnen, ans Clip-Ende rollen
+    await p.evaluate(st => vx1rOpen({t: st, s: 0}), s.st);
+    for (let k = 0; k < 40; k++) { await sleep(250); if (await p.evaluate(() => VX1E.clip && VX1E.clip.notes.length > 0)) break; }
+    await p.evaluate(() => { const f = ED.roll.fol(); ED.roll.showPage(Math.max(0, 8 - (f.W - 60) / f.ppb)); });
+    await sleep(500);
+    const g0 = await p.evaluate(() => { const o = document.querySelector('.vtro'), h = o && o.querySelector('.vtrh.e'), f = ED.roll.fol(), cM = ED.roll.el.main.getBoundingClientRect(); if (!h || o.hidden) return null; const r = h.getBoundingClientRect(), pl = o.querySelector('.vtrp.e').getBoundingClientRect(); return {pole: pl.left + pl.width / 2, hx: r.left + 20, hy: r.top + 14, w: r.width, h: r.height, x0: f.x0, ppb: f.ppb, cL: cM.left, cR: cM.right, txt: o.querySelector('.vtrt.e').textContent, full: o.classList.contains('full')}; });
+    ok('Ende-Fähnchen sichtbar am Clip-Ende (Nachlauf ganz, hohl, Text „Ende“), Griff 48 px', g0 && Math.abs(g0.pole - (g0.cL + (8 - g0.x0) * g0.ppb)) < 1.5 && g0.full && g0.txt === 'Ende' && g0.w >= 32 && g0.h >= 32, g0);
+    // Ziehen mit dem Finger: 3 Schläge = 1,5 s nach links (Raster 1/16)
+    const dx = -3 * g0.ppb;
+    await T.drag(g0.hx, g0.hy, g0.hx + dx, 14);
+    await sleep(300);
+    const d1 = await p.evaluate(st => { const a = S.tracks[st].clips[0].audio, o = document.querySelector('.vtro'); return {vt: a.vt, out: a.out, undo: UNDO[UNDO.length - 1].label, txt: o.querySelector('.vtrt.e').textContent, zone: o.querySelector('.vtrz.e').getBoundingClientRect().width, x0: ED.roll.fol().x0}; }, s.st);
+    ok('Touch-Ziehen: Ende 1,5 s früher (Take bleibt ganz), ↶-Eintrag, Text „Ende − 1,50 s“, Zone schraffiert', d1.vt && Math.abs(d1.vt.e - (d1.out - 1.5)) < 1e-6 && d1.undo === 'Gesang-Ende verschoben' && d1.txt === 'Ende −1,50 s' && Math.abs(d1.zone - 3 * g0.ppb) < 2 && Math.abs(d1.x0 - g0.x0) < 1e-9, d1);
+    await p.screenshot({path: OUT + '/foto-nachher.png'});
+
+    // Mixdown mit Beschnitt
+    const R1 = await renderBoth(p, 'R1');
+    const M = await p.evaluate(async ({inS}) => {
+      const R0 = __RS.R0, R1 = __RS.R1, sr = R1.r.sr, body = R0.cap.find(c => Math.abs(c.off - inS) < 1e-6), t0 = body.when, cut = t0 + 2.5, ic = Math.round(cut * sr), iEnd = Math.round((t0 + 4) * sr);
+      const D0 = R0.D, D1 = R1.D, W0 = R0.W, W1 = R1.W;
+      let lastD1 = -1, lastD0 = -1; for (let j = 0; j < D1.length; j++) { if (Math.abs(D1[j]) > 1e-7) lastD1 = j; if (Math.abs(D0[j]) > 1e-7) lastD0 = j; }
+      let after = 0; for (let j = ic + 1; j < D1.length; j++) after = Math.max(after, Math.abs(D1[j]));
+      const fF = Math.round(.0105 * sr); let sameD = true, sameW = true; for (let j = 0; j < ic - fF; j++) { if (D0[j] !== D1[j]) { sameD = false; } if (W0[j] !== W1[j]) { sameW = false; } }
+      const jump = (y, a, b) => { let m = 0; for (let j = Math.max(1, a); j < Math.min(y.length, b); j++) m = Math.max(m, Math.abs(y[j] - y[j - 1])); return m; };
+      const nat = Math.round(2.05 * sr), w15 = Math.round(.015 * sr);
+      const jD1 = jump(D1, ic - w15, ic + w15), jD0n = jump(D0, Math.round(t0 * sr) + nat, iEnd - w15), jW1 = jump(W1, ic - w15, ic + w15), jW0n = jump(W0, Math.round(t0 * sr) + nat, iEnd - w15);
+      const db = (y, a, b) => { let s = 0; for (let j = a; j < b; j++) s += y[j] * y[j]; return +(10 * Math.log10(s / Math.max(1, b - a) + 1e-20)).toFixed(1); };
+      const win = [ic + Math.round(.1 * sr), iEnd - Math.round(.05 * sr)];
+      // Sprung ohne Blende zum Vergleich: Signalwert direkt vor der Schnittkante in D0
+      let hard = 0; for (let j = ic - 3; j <= ic; j++) hard = Math.max(hard, Math.abs(D0[j]));
+      return {sr, t0: +t0.toFixed(4), cut: +cut.toFixed(4), lenD0: +((lastD0 + 1) / sr - t0).toFixed(4), lenD1: +((lastD1 + 1) / sr - t0).toFixed(4), stilleDanach: after, gleichBisSchnitt: {trocken: sameD, mix: sameW},
+        sprung: {trockenSchnitt: +jD1.toFixed(5), trockenSignal: +jD0n.toFixed(5), mixSchnitt: +jW1.toFixed(5), mixSignal: +jW0n.toFixed(5), ohneBlende: +hard.toFixed(4)},
+        dbFenster: {vorher: db(W0, win[0], win[1]), nachher: db(W1, win[0], win[1]), trockenNachher: db(D1, win[0], win[1])}, stuecke: R1.cap.length};
+    }, {inS: s.in}).catch(e => ({err: String(e)}));
+    ok('Mixdown: Gesang endet 2,50 s nach der 1 (vorher 4,00 s), danach exakt still (trocken)', M.lenD1 !== undefined && Math.abs(M.lenD1 - 2.5) < 1.5 / M.sr && Math.abs(M.lenD0 - 4) < 2 / M.sr && M.stilleDanach === 0, M);
+    ok('Mixdown: bis zur Blende bitgleich mit unbeschnitten (trocken und Mix)', M.gleichBisSchnitt && M.gleichBisSchnitt.trocken && M.gleichBisSchnitt.mix, M.gleichBisSchnitt);
+    ok('kein Knackser: größter Sprung an der Schnittkante ≤ Sprung im Signal selbst (trocken und Mix)', M.sprung && M.sprung.trockenSchnitt <= M.sprung.trockenSignal && M.sprung.mixSchnitt <= M.sprung.mixSignal, M.sprung);
+    ok('Mix nach dem Schnitt: nur noch Hall-Ausklang (mind. 10 dB leiser als der Nachlauf)', M.dbFenster && M.dbFenster.nachher <= M.dbFenster.vorher - 10 && M.dbFenster.trockenNachher < -150, M.dbFenster);
+
+    // Wiedergabe in der Matrix (Loop): jede Runde endet am Fähnchen
+    const live = await p.evaluate(async ({st, inS}) => {
+      window.__cap = []; ensureAudio(); await new Promise(r => setTimeout(r, 300)); launchScene(0);
+      const t0 = performance.now(); while (performance.now() - t0 < 6500) await new Promise(r => setTimeout(r, 100));
+      const cap = __cap; window.__cap = null; try { stop(); } catch (e) {}
+      return cap.filter(c => Math.abs(c.off - inS) < 1e-6).map(c => ({len: +(c.end - c.when).toFixed(4), fo: c.fo}));
+    }, {st: s.st, inS: s.in});
+    ok('Matrix-Loop: jede Runde 2,50 s Gesang, Blende 10 ms an der Kante', live.length >= 2 && live.every(x => Math.abs(x.len - 2.5) < 1e-3 && Math.abs(x.fo - .01) < 1e-9), live);
+
+    // Clip-WAV mit Beschnitt
+    const WV = await p.evaluate(async ({st, inS}) => {
+      const W = await __wav(st), W0 = __W0, sp = spb(), out = {};
+      for (const f of ['A', 'B']) {
+        const y = W[f].y, y0 = W0[f].y, sr = W[f].P.sr, c1 = W[f].P.cue1, ic = c1 + Math.round(2.5 * sr), ie = c1 + Math.round(4 * sr);
+        let after = 0; for (let j = ic + 1; j < Math.min(y.length, ie); j++) after = Math.max(after, Math.abs(y[j]));
+        let pre = 0; for (let j = ic - Math.round(.5 * sr); j < ic - Math.round(.011 * sr); j++) pre = Math.max(pre, Math.abs(y[j] - y0[j]));
+        let jmp = 0; for (let j = ic - 600; j < ic + 600; j++) jmp = Math.max(jmp, Math.abs(y[j] - y[j - 1]));
+        let jn = 0; for (let j = c1 + Math.round(2.1 * sr); j < c1 + Math.round(3.9 * sr); j++) jn = Math.max(jn, Math.abs(y0[j] - y0[j - 1]));
+        out[f] = {stilleDanach: after, diffVorher: pre, sprung: +jmp.toFixed(5), sprungSignal: +jn.toFixed(5)};
+      }
+      return out;
+    }, {st: s.st, inS: s.in});
+    ok('Clip-WAV (mit Vorlauf / Loop rund): nach dem Fähnchen still, davor unverändert, kein Knackser', ['A', 'B'].every(f => WV[f].stilleDanach === 0 && WV[f].diffVorher === 0 && WV[f].sprung <= WV[f].sprungSignal), WV);
+
+    // Rückgängig per Touch (↶ in der Editor-Leiste)
+    const ub = await p.evaluate(() => { const b = [...ED.roll.el.bar.querySelectorAll('button')].find(x => x.title === 'Rückgängig'); if (!b) return null; const r = b.getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2}; });
+    await T.tap(ub); await sleep(300);
+    const u = await p.evaluate(st => { const a = S.tracks[st].clips[0].audio, o = document.querySelector('.vtro'); return {vt: a.vt || null, txt: o && o.querySelector('.vtrt.e').textContent}; }, s.st);
+    const R2 = await renderBoth(p, 'R2');
+    ok('↶ (Touch) stellt den ganzen Nachlauf wieder her – Mixdown wieder bitgleich zu 4.91', !u.vt && u.txt === 'Ende' && R2.hashW === base.hashW, {u, hash: R2.hashW});
+    // ↷ und Speichern/Laden
+    const sv = await p.evaluate(st => { redo(); const c = S.tracks[st].clips[0], j = JSON.parse(serializeProject()), sc = j.tracks[st].clips[0], o = normClip(JSON.parse(JSON.stringify(sc)), S.tracks[st].kind); return {live: c.audio.vt, saved: sc.audio && sc.audio.vt, loaded: o.audio && o.audio.vt, take: c.audio.take}; }, s.st);
+    ok('Speichern/Laden behält den Beschnitt (vt im Projekt, nach normClip gleich)', sv.live && JSON.stringify(sv.saved) === JSON.stringify(sv.live) && JSON.stringify(sv.loaded) === JSON.stringify(sv.live) && sv.loaded.k === sv.take, sv);
+    // Tipp aufs Fähnchen: „ganze Länge“ und wieder ↶
+    await p.evaluate(() => { const f = ED.roll.fol(); ED.roll.showPage(Math.max(0, 8 - (f.W - 60) / f.ppb)); }); await sleep(400);
+    const g2 = await p.evaluate(() => { const h = document.querySelector('.vtro .vtrh.e').getBoundingClientRect(); return {x: h.left + 20, y: h.top + 14}; });
+    await T.tap(g2);
+    const mn = await p.evaluate(() => [...document.querySelectorAll('.vtrm button')].map(b => { const r = b.getBoundingClientRect(); return {t: b.textContent, on: b.classList.contains('on'), x: r.left + r.width / 2, y: r.top + r.height / 2, h: r.height, w: r.width}; }));
+    if (mn[0]) await T.tap(mn[0]);
+    const mf = await p.evaluate(st => { const a = S.tracks[st].clips[0].audio; const r = {vt: a.vt || null, label: UNDO[UNDO.length - 1].label, menu: !!document.querySelector('.vtrm')}; undo(); r.back = S.tracks[st].clips[0].audio.vt || null; return r; }, s.st);
+    ok('Tippen aufs Fähnchen: Menü „ganze Länge“ (≥ 44 px) setzt zurück, ↶ holt den Schnitt wieder', mn.length === 1 && mn[0].t === 'ganze Länge' && mn[0].h >= 44 && !mf.vt && mf.label === 'Gesang-Ende: ganze Länge' && !mf.menu && mf.back && Math.abs(mf.back.e - (s.out - 1.5)) < 1e-6, {mn, mf});
+
+    // Nachlauf hinter dem Loop-Ende (take.post) endet am Fähnchen
+    const po = await p.evaluate(st => { const c = S.tracks[st].clips[0], a = c.audio, m = S.takes[a.take], keep = a.vt; m.post = {out: a.out, sec: .25};
+      const r = {ohne: (delete a.vt, g3PostOf(a))}; a.vt = {k: a.take, e: a.out + .1}; r.mitIn = g3PostOf(a); a.vt = {k: a.take, e: a.out - 1}; r.mitDavor = g3PostOf(a);
+      a.vt = {k: a.take, e: a.out + .1}; const G = vtrGeo({c, a}); r.geo = {nE: G.nE, eB: +G.eB.toFixed(4)}; delete m.post; a.vt = keep; return r; }, s.st);
+    ok('Nachlauf hinter dem Loop-Ende: Fähnchen kürzt ihn (0,25 → 0,10 s, davor 0), Griff reicht bis ganz hinten', Math.abs(po.ohne - .25) < 1e-9 && Math.abs(po.mitIn - .1) < 1e-6 && po.mitDavor === 0 && Math.abs(po.geo.nE - 8.5) < 1e-6 && Math.abs(po.geo.eB - 8.2) < 1e-6, po);
+
+    // Gesang→Noten: verknüpfte Noten im weggeschnittenen Teil schweigen (nichts gelöscht)
+    const gn = await p.evaluate(async ({st}) => {
+      const id = S.tracks[st].clips[0].audio.take, mt = MEL_T;
+      S.tracks[mt].clips[0] = {len: 2, key: S.key, notes: [{t: 1, d: .5, n: 60, v: .8}, {t: 6, d: .5, n: 64, v: .8}], take: id};
+      clipChanged(mt, 0);
+      const log = []; const sv0 = spawnClipVoice; spawnClipVoice = function (i, out, v, t) { if (i === mt) log.push(+(t).toFixed(3)); return sv0.apply(this, arguments); };
+      try {
+        await (async () => { SYNQUENZER.songFromChain([{scene: 0, bars: 2}]); VV.cancel = false; await vvRenderAudio({range: {a: 0, b: S.song.bars, sel: false}}); })();
+        const mit = log.slice(); log.length = 0;
+        const a = S.tracks[st].clips[0].audio, keep = a.vt; delete a.vt;
+        await vvRenderAudio({range: {a: 0, b: S.song.bars, sel: false}}); a.vt = keep;
+        return {mit, ohne: log.slice(), notes: S.tracks[mt].clips[0].notes.length};
+      } finally { spawnClipVoice = sv0; S.tracks[mt].clips[0] = null; clipChanged(mt, 0); }
+    }, {st: s.st}).catch(e => ({err: String(e)}));
+    ok('Gesang→Noten: Note im weggeschnittenen Teil schweigt, Note davor spielt, nichts gelöscht', gn.mit && gn.mit.length === 1 && gn.ohne.length === 2 && gn.notes === 2, gn);
+
+    // Vorlauf-Fähnchen in „▸ einmal“: nach dem Ziehen wirksam; alte Clips (ohne Marker) wie 4.91
+    const v3 = await p.evaluate(st => { const c = S.tracks[st].clips[0], a = c.audio, m = S.takes[a.take], kp = m.pre, kv = m.vorlauf;
+      m.pre = {in: a.in, sec: 1}; m.vorlauf = {in: a.in, takte: 1, ersterEinsatz: 1}; c.vl3s = .5; delete c.vorlaufModus;
+      const alt = vl2PreOf(c, a), posAlt = vl3Pos({c, a}, vl3Max(c, a)); vl3Set(st, 0, .75); const neu = vl2PreOf(c, a), lab = UNDO[UNDO.length - 1].label, mk = a.v3e; undo();
+      const c2 = S.tracks[st].clips[0], back = vl2PreOf(c2, c2.audio);
+      if (kp) m.pre = kp; else delete m.pre; if (kv) m.vorlauf = kv; else delete m.vorlauf; delete c2.vl3s; clipChanged(st, 0);
+      return {alt, posAlt, neu, lab, mk, back};
+    }, s.st);
+    ok('Vorlauf-Fähnchen in „▸ einmal“: alter Clip spielt/zeigt wie 4.91 (1,0 s), nach Ziehen 0,75 s hörbar, ↶ zurück', v3.alt === 1 && v3.posAlt === 1 && Math.abs(v3.neu - .75) < 1e-9 && v3.mk === 1 && v3.back === 1 && v3.lab === 'Auftakt verschoben', v3);
+
+    ok('keine Seitenfehler (neu, hochkant)', errs.length === 0, errs.slice(0, 5));
+    res.mess = M; res.live = live; res.wav = WV;
+    await ctx.close();
+  }
+  // ---------- neu, quer ----------
+  {
+    const {ctx, p, errs, T} = await open(b, port, 'neu', 926, 428);
+    await tools(p);
+    const s = await setup(p);
+    await p.evaluate(st => vx1rOpen({t: st, s: 0}), s.st);
+    for (let k = 0; k < 40; k++) { await sleep(250); if (await p.evaluate(() => VX1E.clip && VX1E.clip.notes.length > 0)) break; }
+    await p.evaluate(() => { const f = ED.roll.fol(); ED.roll.showPage(Math.max(0, 8 - (f.W - 60) / f.ppb)); }); await sleep(500);
+    const g0 = await p.evaluate(() => { const o = document.querySelector('.vtro'), h = o && o.querySelector('.vtrh.e'), f = ED.roll.fol(); if (!h || o.hidden) return null; const r = h.getBoundingClientRect(), cM = ED.roll.el.main.getBoundingClientRect(); return {hx: r.left + 20, hy: r.top + 14, w: Math.min(r.right, cM.right) - Math.max(r.left, cM.left), h: r.height, ppb: f.ppb, top: r.top, cT: cM.top, vw: innerWidth, vh: innerHeight}; });
+    await T.drag(g0.hx, g0.hy, g0.hx - 3 * g0.ppb, 14); await sleep(300);
+    const q = await p.evaluate(st => { const a = S.tracks[st].clips[0].audio, o = document.querySelector('.vtro'), R = e => { const r = e.getBoundingClientRect(); return {l: r.left, r: r.right, t: r.top, b: r.bottom}; };
+      const hd = document.querySelector('.rhead'), hb = hd ? R(hd) : null, h = R(o.querySelector('.vtrh.e')), t = R(o.querySelector('.vtrt.e')), ha = o.querySelector('.vtra').hidden ? null : R(o.querySelector('.vtrh.a'));
+      return {vt: a.vt, out: a.out, h, t, ha, hb, vw: innerWidth, vh: innerHeight}; }, s.st);
+    const sep = (a, c) => !a || !c || a.r <= c.l + .5 || c.r <= a.l + .5 || a.b <= c.t + .5 || c.b <= a.t + .5;
+    ok('quer: Touch-Ziehen kürzt 1,5 s, Griff ≥ 32 px im Bild, Text und Anfang-Griff überlappen nicht', q.vt && Math.abs(q.vt.e - (q.out - 1.5)) < 1e-6 && g0.w >= 32 && g0.h >= 32 && q.h.t >= g0.cT - 1 && q.h.b <= q.vh && q.t.l >= 0 && sep(q.h, q.ha) && sep(q.t, q.ha), {g0, q});
+    await p.screenshot({path: OUT + '/foto-nachher-quer.png'});
+    ok('keine Seitenfehler (quer)', errs.length === 0, errs.slice(0, 5));
+    await ctx.close();
+  }
+  await b.close();
+  console.log(JSON.stringify({gesamt: n, fehler: fail}));
+  require('fs').writeFileSync(__dirname + '/kern.json', JSON.stringify(res, null, 1));
+  process.exit(fail ? 1 : 0);
+})().catch(e => { console.error(e); process.exit(2); });
