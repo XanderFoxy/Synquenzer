@@ -1,4 +1,4 @@
-# Stand 23.11.16:05 UTC
+# Stand 23.11.16:07 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -45,6 +45,8 @@
 # KE2 Stand
 - Start: Eingang 4.86.0 (md5 a7515b98…) geprüft. KE1-Kern liegt im stillen Block sq-ke1-src (ohne Kommentare). Eichung per CAL (logistisch) gibt es schon.
 - Plan: Node-Prüfstand (Kern aus der Datei, Testtöne mit renderH der App-Engine) -> Welle vorher/nachher + ECE vorher/nachher; dann Welle aus dem Anschlag in analyse(); dann CAL nachschärfen.
+- 33 min: Kern-Test w/kt.mjs (Node, Kern aus der Datei, Töne per renderH). Vorher (Saat 20261118, 48 Töne): Welle 25/48, ECE 0,112.
+  Anschlag-Merkmale (gerade/ungerade Teiltöne + Krümmung, filterfest) Gewicht 6: Stufe-1-Welle Eichsaat 30/60 -> 33/60. Läuft: Endlauf nach + Eichlauf für CAL.
 ## kmp1
 fertig: KMP1 gebaut und getestet (index.html md5 b4943476ff3b5bc6951d20cbf9d37914, apply.py, block.js, kern.js, hoch.png, quer.png, KURZ.md, CHANGES.md)
 als Nächstes: nichts – bereit zur Übernahme
