@@ -42,7 +42,7 @@ async function setup(p) {
 // Mixdown wie Export (vvRenderAudio über den Song aus Szene 1, 2 Takte)
 async function render(p) {
   return p.evaluate(async () => {
-    SYNQUENZER.songFromChain([{scene: 0, bars: 2}]); ensureAudio();
+    if (!S.song || !S.song.bars) SYNQUENZER.songFromChain([{scene: 0, bars: 2}]); ensureAudio();
     for (let k = 0; k < 200 && !TK.buf.size; k++) await new Promise(r => setTimeout(r, 25));
     const MR = Math.random; Math.random = () => .3125;
     try { VV.cancel = false; const r = await vvRenderAudio({range: {a: 0, b: S.song.bars, sel: false}}); window.__R = [Float32Array.from(r.ch[0]), Float32Array.from(r.ch[1])]; return {n: r.n, sr: r.sr, lead: r.lead || 0}; }

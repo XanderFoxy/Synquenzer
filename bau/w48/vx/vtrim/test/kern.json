@@ -1,0 +1,336 @@
+{
+ "Basis 4.91 lädt ohne Seitenfehler": {
+  "ok": true,
+  "x": []
+ },
+ "ohne Beschnitt: Mixdown bitgleich zu 4.91": {
+  "ok": false,
+  "x": {
+   "neu": "14c357e6:259744|b1c5fe8:259744",
+   "basis": "390e276e:259744|fb3111bb:259744"
+  }
+ },
+ "ohne Beschnitt: Clip-WAV (mit Vorlauf / Loop rund) bitgleich zu 4.91": {
+  "ok": true,
+  "x": {
+   "neu": {
+    "A": "8deda921:288000",
+    "B": "b7617892:192000"
+   },
+   "basis": [
+    "8deda921:288000",
+    "b7617892:192000"
+   ]
+  }
+ },
+ "Ende-Fähnchen sichtbar am Clip-Ende (Nachlauf ganz, hohl, Text „Ende“), Griff 48 px": {
+  "ok": true,
+  "x": {
+   "pole": 368,
+   "hx": 354,
+   "hy": 181,
+   "w": 48,
+   "h": 48,
+   "x0": 4.618556701030927,
+   "ppb": 97,
+   "cL": 40,
+   "cR": 428,
+   "txt": "Ende",
+   "full": true
+  }
+ },
+ "Touch-Ziehen: Ende 1,5 s früher (Take bleibt ganz), ↶-Eintrag, Text „Ende − 1,50 s“, Zone schraffiert": {
+  "ok": true,
+  "x": {
+   "vt": {
+    "k": "4cjjo0bv8p",
+    "e": 4.5
+   },
+   "out": 6,
+   "undo": "Gesang-Ende verschoben",
+   "txt": "Ende −1,50 s",
+   "zone": 291,
+   "x0": 4.618556701030927
+  }
+ },
+ "Mixdown: Gesang endet 2,50 s nach der 1 (vorher 4,00 s), danach exakt still (trocken)": {
+  "ok": true,
+  "x": {
+   "sr": 44100,
+   "t0": 0.06,
+   "cut": 2.56,
+   "lenD0": 4,
+   "lenD1": 2.5,
+   "stilleDanach": 0,
+   "gleichBisSchnitt": {
+    "trocken": false,
+    "mix": false
+   },
+   "sprung": {
+    "trockenSchnitt": 0.03857,
+    "trockenSignal": 0.06913,
+    "mixSchnitt": 0.00244,
+    "mixSignal": 0.01564,
+    "ohneBlende": 0.2151
+   },
+   "dbFenster": {
+    "vorher": -24.6,
+    "nachher": -42.2,
+    "trockenNachher": -200
+   },
+   "stuecke": 1
+  }
+ },
+ "Mixdown: bis zur Blende bitgleich mit unbeschnitten (trocken und Mix)": {
+  "ok": false,
+  "x": {
+   "trocken": false,
+   "mix": false
+  }
+ },
+ "kein Knackser: größter Sprung an der Schnittkante ≤ Sprung im Signal selbst (trocken und Mix)": {
+  "ok": true,
+  "x": {
+   "trockenSchnitt": 0.03857,
+   "trockenSignal": 0.06913,
+   "mixSchnitt": 0.00244,
+   "mixSignal": 0.01564,
+   "ohneBlende": 0.2151
+  }
+ },
+ "Mix nach dem Schnitt: nur noch Hall-Ausklang (mind. 10 dB leiser als der Nachlauf)": {
+  "ok": true,
+  "x": {
+   "vorher": -24.6,
+   "nachher": -42.2,
+   "trockenNachher": -200
+  }
+ },
+ "Matrix-Loop: jede Runde 2,50 s Gesang, Blende 10 ms an der Kante": {
+  "ok": true,
+  "x": [
+   {
+    "len": 2.5,
+    "fo": 0.01
+   },
+   {
+    "len": 2.5,
+    "fo": 0.01
+   }
+  ]
+ },
+ "Clip-WAV (mit Vorlauf / Loop rund): nach dem Fähnchen still, davor unverändert, kein Knackser": {
+  "ok": true,
+  "x": {
+   "A": {
+    "stilleDanach": 0,
+    "diffVorher": 0,
+    "sprung": 0.03955,
+    "sprungSignal": 0.04719
+   },
+   "B": {
+    "stilleDanach": 0,
+    "diffVorher": 0,
+    "sprung": 0.03955,
+    "sprungSignal": 0.04719
+   }
+  }
+ },
+ "↶ (Touch) stellt den ganzen Nachlauf wieder her – Mixdown wieder bitgleich zu 4.91": {
+  "ok": false,
+  "x": {
+   "u": {
+    "vt": {
+     "k": "4cjjo0bv8p",
+     "e": 4.5
+    },
+    "txt": "Ende −1,50 s"
+   },
+   "hash": "656e5ec:193696|1ddfed2d:193696"
+  }
+ },
+ "Speichern/Laden behält den Beschnitt (vt im Projekt, nach normClip gleich)": {
+  "ok": true,
+  "x": {
+   "live": {
+    "k": "4cjjo0bv8p",
+    "e": 4.5
+   },
+   "saved": {
+    "k": "4cjjo0bv8p",
+    "e": 4.5
+   },
+   "loaded": {
+    "k": "4cjjo0bv8p",
+    "e": 4.5
+   },
+   "take": "4cjjo0bv8p"
+  }
+ },
+ "Tippen aufs Fähnchen: Menü „ganze Länge“ (≥ 44 px) setzt zurück, ↶ holt den Schnitt wieder": {
+  "ok": true,
+  "x": {
+   "mn": [
+    {
+     "t": "ganze Länge",
+     "on": false,
+     "x": 101.765625,
+     "y": 248,
+     "h": 44,
+     "w": 101.53125
+    }
+   ],
+   "mf": {
+    "vt": null,
+    "label": "Gesang-Ende: ganze Länge",
+    "menu": false,
+    "back": {
+     "k": "4cjjo0bv8p",
+     "e": 4.5
+    }
+   }
+  }
+ },
+ "Nachlauf hinter dem Loop-Ende: Fähnchen kürzt ihn (0,25 → 0,10 s, davor 0), Griff reicht bis ganz hinten": {
+  "ok": true,
+  "x": {
+   "ohne": 0.25,
+   "mitIn": 0.09999999999999964,
+   "mitDavor": 0,
+   "geo": {
+    "nE": 8.5,
+    "eB": 8.2
+   }
+  }
+ },
+ "Gesang→Noten: Note im weggeschnittenen Teil schweigt, Note davor spielt, nichts gelöscht": {
+  "ok": true,
+  "x": {
+   "mit": [
+    0.56
+   ],
+   "ohne": [
+    0.56,
+    3.06
+   ],
+   "notes": 2
+  }
+ },
+ "Vorlauf-Fähnchen in „▸ einmal“: alter Clip spielt/zeigt wie 4.91 (1,0 s), nach Ziehen 0,75 s hörbar, ↶ zurück": {
+  "ok": true,
+  "x": {
+   "alt": 1,
+   "posAlt": 1,
+   "neu": 0.75,
+   "lab": "Auftakt verschoben",
+   "mk": 1,
+   "back": 1
+  }
+ },
+ "keine Seitenfehler (neu, hochkant)": {
+  "ok": true,
+  "x": []
+ },
+ "mess": {
+  "sr": 44100,
+  "t0": 0.06,
+  "cut": 2.56,
+  "lenD0": 4,
+  "lenD1": 2.5,
+  "stilleDanach": 0,
+  "gleichBisSchnitt": {
+   "trocken": false,
+   "mix": false
+  },
+  "sprung": {
+   "trockenSchnitt": 0.03857,
+   "trockenSignal": 0.06913,
+   "mixSchnitt": 0.00244,
+   "mixSignal": 0.01564,
+   "ohneBlende": 0.2151
+  },
+  "dbFenster": {
+   "vorher": -24.6,
+   "nachher": -42.2,
+   "trockenNachher": -200
+  },
+  "stuecke": 1
+ },
+ "live": [
+  {
+   "len": 2.5,
+   "fo": 0.01
+  },
+  {
+   "len": 2.5,
+   "fo": 0.01
+  }
+ ],
+ "wav": {
+  "A": {
+   "stilleDanach": 0,
+   "diffVorher": 0,
+   "sprung": 0.03955,
+   "sprungSignal": 0.04719
+  },
+  "B": {
+   "stilleDanach": 0,
+   "diffVorher": 0,
+   "sprung": 0.03955,
+   "sprungSignal": 0.04719
+  }
+ },
+ "quer: Touch-Ziehen kürzt 1,5 s, Griff ≥ 32 px im Bild, Text und Anfang-Griff überlappen nicht": {
+  "ok": true,
+  "x": {
+   "g0": {
+    "hx": 852,
+    "hy": 121,
+    "w": 48,
+    "h": 48,
+    "ppb": 221.5,
+    "top": 107,
+    "cT": 107,
+    "vw": 926,
+    "vh": 428
+   },
+   "q": {
+    "vt": {
+     "k": "10mqc4slao",
+     "e": 4.5
+    },
+    "out": 6,
+    "h": {
+     "l": 167.5,
+     "r": 215.5,
+     "t": 107,
+     "b": 155
+    },
+    "t": {
+     "l": 142.390625,
+     "r": 195.5,
+     "t": 137,
+     "b": 148
+    },
+    "ha": {
+     "l": -920,
+     "r": -872,
+     "t": 107,
+     "b": 155
+    },
+    "hb": {
+     "l": 0,
+     "r": 926,
+     "t": 45,
+     "b": 81
+    },
+    "vw": 926,
+    "vh": 428
+   }
+  }
+ },
+ "keine Seitenfehler (quer)": {
+  "ok": true,
+  "x": []
+ }
+}
