@@ -12,28 +12,34 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Kaninchenbau">
-<meta name="description" content="Kaninchenbau – lernen, was dich interessiert: Fragen, Stufen von Einsteiger bis Profi, Querverbindungen und echte Quellen. Alles bleibt auf deinem Gerät.">
+<meta name="description" content="Kaninchenbau – kurze Runden mit einem Tipp pro Antwort: Persönlichkeit, Denken, Gefühle, Ideen, Wissen, Mindset, Kreativität. Defragmentieren ordnet alles zu einer Karte. Dazu Lernen mit Stufen und Quellen. Alles bleibt auf deinem Gerät.">
 <title>Kaninchenbau</title>
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="./icon-180.png">
 <link rel="stylesheet" href="./stil.css">
 <link rel="modulepreload" href="./app.js">
+<link rel="modulepreload" href="./kern.js">
+<link rel="modulepreload" href="./seiten.js">
+<link rel="modulepreload" href="./lernen.js">
+<link rel="modulepreload" href="./wesen.js">
+<link rel="modulepreload" href="./auswertung.js">
+<link rel="modulepreload" href="./speicher.js">
 <link rel="modulepreload" href="./inhalt.js">
 <link rel="modulepreload" href="./profil.js">
-<link rel="modulepreload" href="./speicher.js">
 </head>
 <body>
 <header id="kopf">
   <a class="knopf-ico" id="zurueck" href="#start" aria-label="Zurück" hidden><svg class="sym" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
   <h1 id="titel">Kaninchenbau</h1>
-  <span class="moehren" id="moehren" aria-label="Möhren"></span>
+  <span class="moehren" id="moehren" aria-live="off"></span>
 </header>
 <main id="inhalt" tabindex="-1"><p class="leise lade">Kaninchenbau lädt …</p><noscript><p>Diese App braucht JavaScript. Es wird nichts gesendet.</p></noscript></main>
 <nav id="leiste" aria-label="Bereiche">
   <a href="#start" data-bereich="start"><svg class="sym" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M6 20v-5a6 6 0 0 1 12 0v5"/><path d="M10 20v-3a2 2 0 0 1 4 0v3"/></svg><span>Bau</span></a>
-  <a href="#baum" data-bereich="baum"><svg class="sym" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5" r="2"/><circle cx="18" cy="12" r="2"/><circle cx="6" cy="19" r="2"/><path d="M6 7v10"/><path d="M6 12h10"/><path d="M8 19c6 0 10-2 10-5" stroke-dasharray="2 2.5"/></svg><span>Baum</span></a>
-  <a href="#quellen" data-bereich="quellen"><svg class="sym" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20"/><path d="M8 7h8M8 11h6"/></svg><span>Quellen</span></a>
+  <a href="#antworten" data-bereich="antworten"><svg class="sym" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M3.5 6l1.2 1.2L7 5M3.5 12l1.2 1.2L7 11M3.5 18l1.2 1.2L7 17"/></svg><span>Antworten</span></a>
+  <a href="#karte" data-bereich="karte"><svg class="sym" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.5" r="2"/><circle cx="4.5" cy="10" r="2"/><circle cx="19.5" cy="10" r="2"/><circle cx="7.5" cy="19" r="2"/><circle cx="16.5" cy="19" r="2"/><path d="M10.4 5.7L6.1 8.8M13.6 5.7l4.3 3.1M5.2 11.9l1.6 5.2M18.8 11.9l-1.6 5.2M9.5 19h5M6.5 10h11"/></svg><span>Karte</span></a>
+  <a href="#gaenge" data-bereich="gaenge"><svg class="sym" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5" r="2"/><circle cx="18" cy="12" r="2"/><circle cx="6" cy="19" r="2"/><path d="M6 7v10"/><path d="M6 12h10"/><path d="M8 19c6 0 10-2 10-5" stroke-dasharray="2 2.5"/></svg><span>Lernen</span></a>
   <a href="#mehr" data-bereich="mehr"><svg class="sym" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg><span>Mehr</span></a>
 </nav>
 <div id="meldung" class="meldung" role="status" aria-live="polite"></div>

@@ -1,0 +1,1049 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex,nofollow">
+<title>Gesang-Werkstatt 2</title>
+<link rel="preload" href="daten/schichten.json?daf52730" as="fetch" crossorigin>
+<style>
+:root{--bg:#fbfaf7;--fg:#1d1c1a;--mut:#857f75;--lin:#e7e3db;--lin2:#cfc9be;--gold:#a87908;--goldfg:#fff;--hi:#f5e3ad;--bar:#fffdf8;--rot:#b03a2e;--welle:#4f5b67;--warn:#b25d12;--blau:#2c69ad;--band1:#f4f1eb;--band2:#ebe7df;--bereich:rgba(168,121,8,.13);--ok:#2b7a4b;--karte:#fffdf8;
+  --c-orig:#7c4ddb;--c-rein:#0d8f7c;--c-tim:#d07a12;--c-ton:#c8322f;--c-ende:#8d97a2;--c-neu:#3b4652;--c-spaet:#2c69ad;--c-frueh:#c8322f;--c-pruef:#e07b00}
+@media (prefers-color-scheme:dark){:root{--bg:#141312;--fg:#eeeae2;--mut:#948f86;--lin:#2a2825;--lin2:#45413b;--gold:#e0b24a;--goldfg:#141312;--hi:#5a4a1f;--bar:#1d1c1a;--rot:#e0665a;--welle:#9ba7b3;--warn:#f0a050;--blau:#80b2ea;--band1:#1a1917;--band2:#23211e;--bereich:rgba(224,178,74,.08);--ok:#6fcf97;--karte:#1d1c1a;
+  --c-orig:#a98bf5;--c-rein:#35c9b2;--c-tim:#f3a33a;--c-ton:#f06b66;--c-ende:#6d7782;--c-neu:#c3ccd5;--c-spaet:#80b2ea;--c-frueh:#f06b66;--c-pruef:#ff9d2e}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+html,body{margin:0;background:var(--bg);color:var(--fg);overflow-x:hidden}
+body{font:16px/1.35 -apple-system,system-ui,"Segoe UI",sans-serif;padding:8px max(12px,env(safe-area-inset-right)) calc(96px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+h1{font-size:17px;margin:2px 0 1px;font-weight:650}
+.tipp{color:var(--mut);font-size:13px;margin:0 0 8px}
+#werk{min-width:0}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 0 6px;padding:0 0 2px;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;min-height:44px;padding:0 13px;border-radius:22px;border:1px solid var(--lin2);background:var(--bar);color:var(--fg);font:500 15px -apple-system,system-ui,sans-serif}
+.chip.an{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.chip.fokus{border-color:var(--gold);color:var(--gold);font-weight:650}
+.chip.fokus.an{background:var(--gold);color:var(--goldfg)}
+#ueber{display:block;width:100%;height:36px;border-radius:8px;touch-action:none;margin:0 0 6px;background:var(--band1)}
+#kern{position:sticky;top:0;z-index:5;background:var(--bg);padding:4px 0 2px;margin-top:-4px}
+#buehne{position:relative;height:clamp(300px,42vh,450px);border-radius:10px;overflow:hidden;touch-action:none;border:1px solid var(--lin);background:var(--bg)}
+#buehne canvas{position:absolute;left:0;top:0;width:100%;height:100%}
+#lupe{position:absolute!important;width:176px!important;height:104px!important;left:0;top:0;border-radius:12px;border:2px solid var(--gold);box-shadow:0 6px 18px rgba(0,0,0,.25);pointer-events:none;display:none;background:var(--bar)}
+#laden{position:absolute;left:0;right:0;top:50%;text-align:center;color:var(--mut);font-size:14px;pointer-events:none}
+#info{min-height:44px;display:flex;align-items:center;gap:6px;margin-top:6px;padding:4px 6px 4px 10px;border-radius:10px;background:var(--band1);border:1px solid var(--lin);font-size:14px}
+#infoText{flex:1;min-width:0;line-height:1.25}
+#infoText b{font-weight:650}
+#infoText small{color:var(--mut);font-size:12.5px}
+#steuer{min-width:0}
+.leiste{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px}
+button{font:500 15px -apple-system,system-ui,sans-serif;color:var(--fg);background:var(--bar);border:1px solid var(--lin2);border-radius:10px;min-height:44px;min-width:44px;padding:0 12px;touch-action:manipulation;cursor:pointer}
+button:disabled{opacity:.38;cursor:default}
+.rund{width:44px;padding:0;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+.rund svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+#bSpiel{background:var(--gold);color:var(--goldfg);border-color:var(--gold)}
+#bSpiel svg{fill:currentColor;stroke:none}
+.rund[aria-pressed=true]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.zeit{flex:1 1 70px;min-width:70px;font:600 16px/1.1 ui-monospace,Menlo,monospace;text-align:center;white-space:nowrap}
+.zeit small{display:block;font:12px/1.2 ui-monospace,Menlo,monospace;color:var(--mut)}
+.seg{display:inline-flex;border:1px solid var(--lin2);border-radius:10px;overflow:hidden;flex:0 1 auto;max-width:100%}
+.seg button{border:0;border-radius:0;border-left:1px solid var(--lin2);background:var(--bar);padding:0 9px;flex:1 1 auto;min-width:40px}
+.seg button:first-child{border-left:0}
+.seg button[aria-pressed=true]{background:var(--fg);color:var(--bg)}
+.titel{font-size:12px;color:var(--mut);font-weight:600;min-width:40px}
+#bAB{font-weight:700;padding:0 10px}
+#bEinrasten{background:var(--gold);color:var(--goldfg);border-color:var(--gold);font-weight:650}
+.schicht{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 10px;border-radius:20px;font-size:14px}
+.schicht i{width:12px;height:12px;border-radius:50%;display:inline-block;background:var(--c);opacity:.35;border:2px solid var(--c)}
+.schicht[aria-pressed=true]{background:var(--band2);border-color:var(--c)}
+.schicht[aria-pressed=true] i{opacity:1}
+.schalt{font-size:14px;min-height:40px;border-radius:20px}
+.schalt[aria-pressed=true]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+#bereichsleiste{background:var(--band1);border:1px solid var(--lin);border-radius:10px;padding:4px 6px 4px 10px}
+#bereichsleiste[hidden]{display:none}
+#bereichText{flex:1 1 120px;font:600 14px ui-monospace,Menlo,monospace;min-width:0}
+#sende{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;align-items:center;gap:8px;background:var(--bar);border-top:1px solid var(--lin);padding:8px max(12px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+#sendeStatus{flex:1;font-size:13px;color:var(--mut);min-width:0;line-height:1.25}
+#sendeStatus.fehler{color:var(--rot)}#sendeStatus.gut{color:var(--ok)}
+#bSenden{background:var(--gold);color:var(--goldfg);border-color:var(--gold);font-weight:650;padding:0 18px}
+#listen{margin-top:14px}
+.tabs{display:flex;gap:6px;border-bottom:1px solid var(--lin);padding-bottom:6px;overflow-x:auto}
+.tabs button{border:0;background:transparent;color:var(--mut);font-weight:600;padding:0 10px;flex:0 0 auto}
+.tabs button[aria-selected=true]{color:var(--fg);box-shadow:inset 0 -3px 0 var(--gold);border-radius:0}
+.tabs b{font-weight:600;color:var(--mut);font-size:13px;margin-left:3px}
+.liste{padding:6px 0 0}
+.liste[hidden]{display:none}
+.leer{color:var(--mut);font-size:14px;padding:10px 2px}
+.karte{border:1px solid var(--lin);background:var(--karte);border-radius:12px;padding:10px 12px;margin:8px 0}
+.karte .kopf{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;font-size:13px;color:var(--mut)}
+.karte .kopf b{color:var(--fg);font-weight:600;font-size:14px}
+.karte .text{margin:4px 0 2px;font-size:15px;white-space:pre-wrap;word-wrap:break-word;-webkit-user-select:text;user-select:text}
+.knoepfe{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.knoepfe button{min-height:44px;font-size:14px}
+.zeile{display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--lin);padding:4px 0}
+.zeile .wann{font:600 13px ui-monospace,Menlo,monospace;min-width:64px}
+.zeile .was{flex:1;font-size:15px;min-width:0}
+.marke{font-size:11px;font-weight:650;border-radius:6px;padding:1px 6px;border:1px solid var(--lin2);color:var(--mut)}
+.hilfe{font-size:15px;padding-left:18px}.hilfe li{margin:6px 0}
+#notiz{width:100%;min-height:72px;font:16px/1.35 -apple-system,system-ui,sans-serif;background:var(--bg);color:var(--fg);border:1px solid var(--lin2);border-radius:10px;padding:8px;-webkit-user-select:text;user-select:text;resize:vertical;margin-top:6px}
+@media (orientation:landscape) and (max-height:560px){
+  body{padding-top:6px;padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+  #kopf{display:none}
+  #werk{display:grid;grid-template-columns:minmax(0,1fr) 272px;grid-template-rows:auto auto 1fr auto;column-gap:10px;grid-template-areas:"chips steuer" "ueber steuer" "buehne steuer" "info steuer"}
+  #kern{display:contents}
+  #chips{grid-area:chips;margin-bottom:4px}.chip{min-height:40px}
+  #ueber{grid-area:ueber;height:26px;margin-bottom:4px}
+  #buehne{grid-area:buehne;height:max(200px,calc(100vh - 150px - env(safe-area-inset-bottom)));height:max(200px,calc(100dvh - 150px - env(safe-area-inset-bottom)))}
+  #info{grid-area:info;margin-top:4px;min-height:40px;font-size:13px}
+  #steuer{grid-area:steuer;max-height:calc(100vh - 14px);max-height:calc(100dvh - 14px);overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:2px}
+  #steuer .leiste{margin-top:4px;gap:4px}
+  .seg{width:100%}.seg button{padding:0 3px;min-width:0;font-size:13.5px}
+  #segRaster button{min-width:44px}
+  /* Lauf 5 (Prüfung 832×378): Raster und Einrasten direkt unter dem Transport, ohne Scrollen erreichbar */
+  #transport{order:1}#zugLeiste{order:2}#zugLeiste2{order:3}#hoerLeiste{order:4}#schichtLeiste{order:5}#tonLeiste{order:6}#bereichsleiste{order:7}#sende{order:8}
+  #zugLeiste2,#hoerLeiste{flex-wrap:nowrap}
+  #zugLeiste2 .seg,#hoerLeiste .seg{width:auto;flex:1 1 0;min-width:0}
+  #zugLeiste2 .seg button,#hoerLeiste .seg button{white-space:normal;line-height:1.1;padding:0 2px;flex:1 1 0;min-width:44px}
+  #bEinrasten,#bAB{flex:0 0 auto;padding:0 8px}
+  .titel{display:none}
+  .schicht{padding:0 7px;font-size:13px}
+  #sende{position:sticky;bottom:0;margin-top:auto;flex-wrap:wrap;padding:4px 0 0;border:0;background:var(--bg);z-index:2}
+  #sendeStatus{flex-basis:100%;font-size:12px}
+  #bSenden{flex:1}
+}
+</style>
+</head>
+<body>
+<header id="kopf">
+  <h1>The Wall · Gesang-Werkstatt 2</h1>
+  <p class="tipp">Silbe antippen = hören. Silbe ziehen = verschieben, rastet am Raster ein (Finger tiefer = feiner). Zwei Finger = Lupe.</p>
+</header>
+<main id="werk">
+  <nav id="chips" class="chips" aria-label="Stellen"></nav>
+  <canvas id="ueber" aria-label="Ganzes Lied"></canvas>
+  <div id="kern">
+  <div id="buehne" aria-label="Wellenform mit Schichten"><canvas id="cb"></canvas><canvas id="co"></canvas><canvas id="lupe"></canvas><div id="laden">Wellen laden …</div></div>
+  <div id="info"><div id="infoText">Silbe antippen zum Hören, ziehen zum Verschieben.</div><button id="bSilbeHoer" class="rund" aria-label="Silbe hören" hidden><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/></svg></button><button id="bSilbeWeg" hidden>↺ wie Ende</button></div>
+  </div>
+  <div id="steuer">
+    <div id="transport" class="leiste">
+      <button id="bSpiel" class="rund" aria-label="Abspielen"><svg viewBox="0 0 24 24"><path id="iSpiel" d="M7 4.5v15l12.5-7.5z"/></svg></button>
+      <button id="bSchleife" class="rund" aria-pressed="true" aria-label="Bereich wiederholen"><svg viewBox="0 0 24 24"><path d="M4 11V9a3 3 0 0 1 3-3h12m-3-3 3 3-3 3M20 13v2a3 3 0 0 1-3 3H5m3 3-3-3 3-3"/></svg></button>
+      <button id="bUndo" class="rund" aria-label="Rückgängig" disabled><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+      <button id="bRedo" class="rund" aria-label="Wiederholen" disabled><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
+      <div id="zeit" class="zeit">T1.1<small>0:00,0</small></div>
+      <button id="bMinus" class="rund" aria-label="Verkleinern"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+      <button id="bPlus" class="rund" aria-label="Lupe: vergrößern"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6"/><path d="m15 15 5 5M8 10.5h5M10.5 8v5"/></svg></button>
+    </div>
+    <div class="leiste" id="hoerLeiste">
+      <span class="titel">Hören</span>
+      <div class="seg" id="segHoeren" role="group" aria-label="Was hören"><button data-h="original">Original</button><button data-h="gereinigt">gereinigt</button><button data-h="v10">v11</button><button data-h="neu">Neu</button></div>
+      <button id="bAB" aria-label="A/B umschalten">A/B</button>
+    </div>
+    <div class="leiste" id="zugLeiste">
+      <span class="titel">Raster</span>
+      <div class="seg" id="segRaster" role="group" aria-label="Einrasten auf"></div>
+    </div>
+    <div class="leiste" id="zugLeiste2">
+      <span class="titel">Zieht</span>
+      <div class="seg" id="segZieht" role="group" aria-label="Was mitgeht"><button data-z="silbe">Silbe</button><button data-z="wort">Wort</button><button data-z="zeile">Zeile ab hier</button></div>
+      <button id="bEinrasten">Einrasten</button>
+    </div>
+    <div class="leiste" id="schichtLeiste" role="group" aria-label="Schichten"></div>
+    <div class="leiste" id="tonLeiste">
+      <button id="bMusik" class="schalt" aria-pressed="false">Musik</button>
+      <button id="bKlick" class="schalt" aria-pressed="false">Klick</button>
+    </div>
+    <div id="bereichsleiste" class="leiste" hidden>
+      <span id="bereichText"></span>
+      <button id="bBereichZeile">Zeile</button><button id="bBereichTeil">Teil</button>
+      <button id="bBereichWeg" class="rund" aria-label="Bereich aufheben"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <div id="sende">
+      <div id="sendeStatus" aria-live="polite"></div>
+      <button id="bKopie" hidden>Text kopieren</button>
+      <button id="bSenden">Senden</button>
+    </div>
+  </div>
+</main>
+<section id="listen">
+  <div class="tabs" role="tablist">
+    <button id="tabZ" role="tab" aria-selected="true">Deine Züge<b id="anzZ"></b></button>
+    <button id="tabA" role="tab" aria-selected="false">Was geändert wurde<b id="anzA"></b></button>
+    <button id="tabH" role="tab" aria-selected="false">Hilfe</button>
+  </div>
+  <div id="listeZ" class="liste"></div>
+  <div id="listeA" class="liste" hidden></div>
+  <div id="listeH" class="liste" hidden>
+    <ul class="hilfe">
+      <li><b>Schichten</b> wie Zwiebelhaut: <span style="color:var(--c-orig)">Original</span> = deine Aufnahme an der Stelle, wo du gesungen hast. <span style="color:var(--c-rein)">gereinigt</span> = nach Klick-, Rausch- und Atmer-Reinigung. <span style="color:var(--c-tim)">Timing</span> = so lag es nach dem Verschieben. <span style="color:var(--c-ton)">Tonhöhe</span> = wie viel Cent korrigiert wurde. Ende = v11 (Timing wie v10). Neu = mit deinen Zügen.</li>
+      <li><b>Änderungen</b> (Streifen unten): blau = später als gesungen, rot = früher, die Zahl in ms. ✂︎ = hier wurde geschnitten. Orange ? = Prüfstelle: Ende weicht stark von der verschobenen Aufnahme ab. Antippen zeigt, was dort gemacht wurde.</li>
+      <li><b>Silbe verschieben:</b> Silbe oben anfassen und ziehen. Sie rastet am Raster ein (1/4, 1/8, 1/16, Triolen oder frei). Gezählt wird der echte Wortbeginn (gelb), der Anlauf davor geht mit. Finger beim Ziehen nach unten nehmen = vier Mal feiner.</li>
+      <li><b>Hören:</b> beim Ziehen und Loslassen hörst du sofort das Stück, mit weichen Blenden. Was von der Silbe davor noch klingt, wird mit einer kurzen Blende gekürzt. Eine Lücke bleibt still – beim sauberen Neurechnen fülle ich sie wie in v10.</li>
+      <li><b>Einrasten:</b> setzt die gewählte Silbe, das Wort oder die Zeile auf das Raster. Liegt die Melodie-Note auf dem Raster, gilt sie als Ziel.</li>
+      <li><b>A/B</b> springt zwischen den letzten zwei Hör-Wahlen (Start: Original ↔ Neu). ↶ ↷ gehen je Zug zurück und vor.</li>
+      <li><b>Bereich:</b> lange drücken und ziehen. Mit Wiederholen läuft er im Kreis. Zwei Finger oder + und − zoomen.</li>
+      <li><b>Senden</b> schickt alle Züge mit genauen Zeiten an Claude. Geht es nicht, bleibt alles hier gespeichert.</li>
+    </ul>
+  </div>
+</section>
+<noscript>Diese Seite braucht JavaScript.</noscript>
+<script>
+'use strict';
+const LIED={"lied":"the-wall","titel":"The Wall","bpm":120.0,"takt":[4,4],"tpb":960,"takt1_s":0.0,"takt_s":2.0,"dauer_s":266.0,"abschnitte":[{"name":"Intro","kurz":"In","chip":"Intro","von_s":0.0,"bis_s":32.0,"takt_von":1,"zeilen":[],"akkorde":"Ebm – Gb – Db – Ab/C – Ebm – Gb – Db – Ab/C","auftakt_s":0.0},{"name":"Strophe 1","kurz":"S1","chip":"Strophe 1","von_s":32.0,"bis_s":64.0,"takt_von":17,"zeilen":[0,1,2,3],"akkorde":"","auftakt_s":31.525},{"name":"Refrain 1","kurz":"R1","chip":"Refrain 1","von_s":64.0,"bis_s":96.0,"takt_von":33,"zeilen":[4,5,6,7],"akkorde":"","auftakt_s":63.15},{"name":"Strophe 2","kurz":"S2","chip":"Strophe 2","von_s":96.0,"bis_s":128.0,"takt_von":49,"zeilen":[8,9,10,11],"akkorde":"","auftakt_s":95.527},{"name":"Refrain 2","kurz":"R2","chip":"Refrain 2","von_s":128.0,"bis_s":160.0,"takt_von":65,"zeilen":[12,13,14,15],"akkorde":"","auftakt_s":127.15},{"name":"Tag nach Refrain 2","kurz":"Tag","chip":"Tag","von_s":160.0,"bis_s":176.0,"takt_von":81,"zeilen":[16],"akkorde":"","auftakt_s":157.65},{"name":"Übergang","kurz":"Üb","chip":"Übergang","von_s":176.0,"bis_s":192.0,"takt_von":89,"zeilen":[],"akkorde":"Bbm – Gb – Ab – Bbsus4","auftakt_s":176.0},{"name":"Zwischenteil","kurz":"ZT","chip":"Zwischenteil","von_s":192.0,"bis_s":224.0,"takt_von":97,"zeilen":[17,18,19,20],"akkorde":"Ebm – Gb – Db – Ab/C – Ebm – Gb – Db – Ab/C","auftakt_s":191.15},{"name":"Refrain 3","kurz":"R3","chip":"Refrain 3","von_s":224.0,"bis_s":256.0,"takt_von":113,"zeilen":[21,22,23,24],"akkorde":"","auftakt_s":223.15},{"name":"Outro","kurz":"Out","chip":"Outro","von_s":256.0,"bis_s":null,"takt_von":129,"zeilen":[25],"akkorde":"","auftakt_s":253.65}],"zeilen":[{"abschnitt":1,"woerter":[0,1,2,3,4,5],"text":"Welcome to the fake zombies living"},{"abschnitt":1,"woerter":[6,7,8],"text":"for Gods sake"},{"abschnitt":1,"woerter":[9,10,11,12,13],"text":"In a world of Sheep"},{"abschnitt":1,"woerter":[14,15,16,17],"text":"Everything we Do believe"},{"abschnitt":2,"woerter":[18,19,20,21,22,23],"text":"We claim we know It all"},{"abschnitt":2,"woerter":[24,25,26,27,28,29,30],"text":"Can’t see Who is behind this wall."},{"abschnitt":2,"woerter":[31,32,33,34,35],"text":"Don’t wait, follow the light"},{"abschnitt":2,"woerter":[36,37,38,39,40],"text":"wake up open your eyes."},{"abschnitt":3,"woerter":[41,42,43,44,45],"text":"Why can’t we just feel"},{"abschnitt":3,"woerter":[46,47,48,49,50,51,52],"text":"there is so much more to see"},{"abschnitt":3,"woerter":[53,54,55],"text":"Are we hypnotised?"},{"abschnitt":3,"woerter":[56,57,58,59,60,61],"text":"What does it need to realise"},{"abschnitt":4,"woerter":[62,63,64,65,66,67],"text":"We claim we know It all"},{"abschnitt":4,"woerter":[68,69,70,71,72,73,74],"text":"Can’t see Who is behind this wall."},{"abschnitt":4,"woerter":[75,76,77,78,79],"text":"Don’t wait, follow the light"},{"abschnitt":4,"woerter":[80,81,82,83,84],"text":"wake up open your eyes."},{"abschnitt":5,"woerter":[85,86,87],"text":"open your eyes"},{"abschnitt":7,"woerter":[88,89,90,91,92,93],"text":"We claim we know it all"},{"abschnitt":7,"woerter":[94,95,96,97,98,99,100],"text":"Can’t see Who is behind this wall"},{"abschnitt":7,"woerter":[101,102,103,104,105],"text":"Don’t wait, Folge dem Licht"},{"abschnitt":7,"woerter":[106,107,108,109,110,111],"text":"Wach auf, siehst du mich nicht"},{"abschnitt":8,"woerter":[112,113,114,115,116,117],"text":"We claim we know It all"},{"abschnitt":8,"woerter":[118,119,120,121,122,123,124],"text":"Can’t see Who is behind this wall."},{"abschnitt":8,"woerter":[125,126,127,128,129],"text":"Don’t wait, follow the light"},{"abschnitt":8,"woerter":[130,131,132,133,134],"text":"wake up open your eyes."},{"abschnitt":9,"woerter":[135,136,137],"text":"open your eyes"}],"woerter":[{"text":"Welcome","zeile":0,"silben":[0,1]},{"text":"to","zeile":0,"silben":[2]},{"text":"the","zeile":0,"silben":[3]},{"text":"fake","zeile":0,"silben":[4]},{"text":"zombies","zeile":0,"silben":[5,6]},{"text":"living","zeile":0,"silben":[7,8]},{"text":"for","zeile":1,"silben":[9]},{"text":"Gods","zeile":1,"silben":[10]},{"text":"sake","zeile":1,"silben":[11]},{"text":"In","zeile":2,"silben":[12]},{"text":"a","zeile":2,"silben":[13]},{"text":"world","zeile":2,"silben":[14]},{"text":"of","zeile":2,"silben":[15]},{"text":"Sheep","zeile":2,"silben":[16]},{"text":"Everything","zeile":3,"silben":[17,18,19]},{"text":"we","zeile":3,"silben":[20]},{"text":"Do","zeile":3,"silben":[21]},{"text":"believe","zeile":3,"silben":[22,23]},{"text":"We","zeile":4,"silben":[24]},{"text":"claim","zeile":4,"silben":[25]},{"text":"we","zeile":4,"silben":[26]},{"text":"know","zeile":4,"silben":[27]},{"text":"It","zeile":4,"silben":[28]},{"text":"all","zeile":4,"silben":[29]},{"text":"Can’t","zeile":5,"silben":[30]},{"text":"see","zeile":5,"silben":[31]},{"text":"Who","zeile":5,"silben":[32]},{"text":"is","zeile":5,"silben":[33]},{"text":"behind","zeile":5,"silben":[34,35]},{"text":"this","zeile":5,"silben":[36]},{"text":"wall.","zeile":5,"silben":[37]},{"text":"Don’t","zeile":6,"silben":[38]},{"text":"wait,","zeile":6,"silben":[39]},{"text":"follow","zeile":6,"silben":[40,41]},{"text":"the","zeile":6,"silben":[42]},{"text":"light","zeile":6,"silben":[43]},{"text":"wake","zeile":7,"silben":[44]},{"text":"up","zeile":7,"silben":[45]},{"text":"open","zeile":7,"silben":[46,47]},{"text":"your","zeile":7,"silben":[48]},{"text":"eyes.","zeile":7,"silben":[49]},{"text":"Why","zeile":8,"silben":[50]},{"text":"can’t","zeile":8,"silben":[51]},{"text":"we","zeile":8,"silben":[52]},{"text":"just","zeile":8,"silben":[53]},{"text":"feel","zeile":8,"silben":[54]},{"text":"there","zeile":9,"silben":[55]},{"text":"is","zeile":9,"silben":[56]},{"text":"so","zeile":9,"silben":[57]},{"text":"much","zeile":9,"silben":[58]},{"text":"more","zeile":9,"silben":[59]},{"text":"to","zeile":9,"silben":[60]},{"text":"see","zeile":9,"silben":[61]},{"text":"Are","zeile":10,"silben":[62]},{"text":"we","zeile":10,"silben":[63]},{"text":"hypnotised?","zeile":10,"silben":[64,65,66]},{"text":"What","zeile":11,"silben":[67]},{"text":"does","zeile":11,"silben":[68]},{"text":"it","zeile":11,"silben":[69]},{"text":"need","zeile":11,"silben":[70]},{"text":"to","zeile":11,"silben":[71]},{"text":"realise","zeile":11,"silben":[72,73]},{"text":"We","zeile":12,"silben":[74]},{"text":"claim","zeile":12,"silben":[75]},{"text":"we","zeile":12,"silben":[76]},{"text":"know","zeile":12,"silben":[77]},{"text":"It","zeile":12,"silben":[78]},{"text":"all","zeile":12,"silben":[79]},{"text":"Can’t","zeile":13,"silben":[80]},{"text":"see","zeile":13,"silben":[81]},{"text":"Who","zeile":13,"silben":[82]},{"text":"is","zeile":13,"silben":[83]},{"text":"behind","zeile":13,"silben":[84,85]},{"text":"this","zeile":13,"silben":[86]},{"text":"wall.","zeile":13,"silben":[87]},{"text":"Don’t","zeile":14,"silben":[88]},{"text":"wait,","zeile":14,"silben":[89]},{"text":"follow","zeile":14,"silben":[90,91]},{"text":"the","zeile":14,"silben":[92]},{"text":"light","zeile":14,"silben":[93]},{"text":"wake","zeile":15,"silben":[94]},{"text":"up","zeile":15,"silben":[95]},{"text":"open","zeile":15,"silben":[96,97]},{"text":"your","zeile":15,"silben":[98]},{"text":"eyes.","zeile":15,"silben":[99]},{"text":"open","zeile":16,"silben":[100,101]},{"text":"your","zeile":16,"silben":[102]},{"text":"eyes","zeile":16,"silben":[103]},{"text":"We","zeile":17,"silben":[104]},{"text":"claim","zeile":17,"silben":[105]},{"text":"we","zeile":17,"silben":[106]},{"text":"know","zeile":17,"silben":[107]},{"text":"it","zeile":17,"silben":[108]},{"text":"all","zeile":17,"silben":[109]},{"text":"Can’t","zeile":18,"silben":[110]},{"text":"see","zeile":18,"silben":[111]},{"text":"Who","zeile":18,"silben":[112]},{"text":"is","zeile":18,"silben":[113]},{"text":"behind","zeile":18,"silben":[114,115]},{"text":"this","zeile":18,"silben":[116]},{"text":"wall","zeile":18,"silben":[117]},{"text":"Don’t","zeile":19,"silben":[118]},{"text":"wait,","zeile":19,"silben":[119]},{"text":"Folge","zeile":19,"silben":[120,121]},{"text":"dem","zeile":19,"silben":[122]},{"text":"Licht","zeile":19,"silben":[123]},{"text":"Wach","zeile":20,"silben":[124]},{"text":"auf,","zeile":20,"silben":[125]},{"text":"siehst","zeile":20,"silben":[126]},{"text":"du","zeile":20,"silben":[127]},{"text":"mich","zeile":20,"silben":[128]},{"text":"nicht","zeile":20,"silben":[129]},{"text":"We","zeile":21,"silben":[130]},{"text":"claim","zeile":21,"silben":[131]},{"text":"we","zeile":21,"silben":[132]},{"text":"know","zeile":21,"silben":[133]},{"text":"It","zeile":21,"silben":[134]},{"text":"all","zeile":21,"silben":[135]},{"text":"Can’t","zeile":22,"silben":[136]},{"text":"see","zeile":22,"silben":[137]},{"text":"Who","zeile":22,"silben":[138]},{"text":"is","zeile":22,"silben":[139]},{"text":"behind","zeile":22,"silben":[140,141]},{"text":"this","zeile":22,"silben":[142]},{"text":"wall.","zeile":22,"silben":[143]},{"text":"Don’t","zeile":23,"silben":[144]},{"text":"wait,","zeile":23,"silben":[145]},{"text":"follow","zeile":23,"silben":[146,147]},{"text":"the","zeile":23,"silben":[148]},{"text":"light","zeile":23,"silben":[149]},{"text":"wake","zeile":24,"silben":[150]},{"text":"up","zeile":24,"silben":[151]},{"text":"open","zeile":24,"silben":[152,153]},{"text":"your","zeile":24,"silben":[154]},{"text":"eyes.","zeile":24,"silben":[155]},{"text":"open","zeile":25,"silben":[156,157]},{"text":"your","zeile":25,"silben":[158]},{"text":"eyes","zeile":25,"silben":[159]}],"silben":[{"text":"Wel","wort":0,"zeile":0,"abschnitt":1,"art":"gesungen","wortende":false,"ziel_s":31.875,"a":31.881,"b":31.956,"b_art":"Fahne","einsatz":31.879,"sicher":1.0,"b_roh":31.999,"a_roh":31.924},{"text":"come","wort":0,"zeile":0,"abschnitt":1,"art":"gesungen","wortende":true,"ziel_s":32.75,"a":32.696,"b":32.752,"b_art":"Fahne","einsatz":32.694,"sicher":0.84,"b_roh":32.795,"a_roh":32.739},{"text":"to","wort":1,"zeile":0,"abschnitt":1,"art":"gesungen","wortende":true,"ziel_s":34.125,"a":34.026,"b":34.116,"b_art":"Fahne","einsatz":34.024,"sicher":0.64,"b_roh":34.048,"a_roh":33.958},{"text":"the","wort":2,"zeile":0,"abschnitt":1,"art":"gesungen","wortende":true,"ziel_s":34.75,"a":34.691,"b":34.77,"b_art":"Fahne","einsatz":34.712,"sicher":0.92,"b_roh":34.71,"a_roh":34.63},{"text":"fake","wort":3,"zeile":0,"abschnitt":1,"art":"gesungen","wortende":true,"ziel_s":36.0,"a":35.625,"b":35.992,"b_art":"Vokal","einsatz":35.987,"sicher":0.99,"b_roh":35.992,"a_roh":35.565},{"text":"zom","wort":4,"zeile":0,"abschnitt":1,"art":"gesungen","wortende":false,"ziel_s":40.0,"a":39.796,"b":39.978,"b_art":"Vokal","einsatz":39.97,"sicher":0.95,"b_roh":40.033,"a_roh":39.851},{"text":"bies","wort":4,"zeile":0,"abschnitt":1,"art":"gesungen","wortende":true,"ziel_s":40.75,"a":40.511,"b":40.752,"b_art":"Fahne","einsatz":40.753,"sicher":0.84,"b_roh":40.785,"a_roh":40.551},{"text":"li","wort":5,"zeile":0,"abschnitt":1,"art":"gesungen","wortende":false,"ziel_s":42.0,"a":41.925,"b":42.004,"b_art":"Fahne","einsatz":41.923,"sicher":0.74,"b_roh":42.031,"a_roh":41.952},{"text":"ving","wort":5,"zeile":0,"abschnitt":1,"art":"gesungen","wortende":true,"ziel_s":42.75,"a":42.688,"b":42.746,"b_art":"Fahne","einsatz":42.73,"sicher":0.98,"b_roh":42.775,"a_roh":42.717},{"text":"for","wort":6,"zeile":1,"abschnitt":1,"art":"gesungen","wortende":true,"ziel_s":44.0,"a":43.828,"b":44.0,"b_art":"Vokal","einsatz":43.93,"sicher":0.77,"b_roh":44.016,"a_roh":43.844},{"text":"Gods","wort":7,"zeile":1,"abschnitt":1,"art":"gesungen","wortende":true,"ziel_s":44.75,"a":44.718,"b":44.738,"b_art":"Fahne","einsatz":44.722,"sicher":0.95,"b_roh":44.776,"a_roh":44.756},{"text":"sake","wort":8,"zeile":1,"abschnitt":1,"art":"gesungen","wortende":true,"ziel_s":46.0,"a":45.608,"b":45.806,"b_art":"Vokal","einsatz":45.981,"sicher":0.87,"b_roh":45.815,"a_roh":45.622},{"text":"In","wort":9,"zeile":2,"abschnitt":1,"art":"gesungen","wortende":true,"ziel_s":48.0,"a":48.003,"b":48.084,"b_art":"Fahne","einsatz":48.001,"sicher":1.0,"b_roh":48.087,"a_roh":48.003},{"text":"a","wort":10,"zeile":2,"abschnitt":1,"art":"gesungen","wortende":true,"ziel_s":48.75,"a":48.72,"b":48.746,"b_art":"Fahne","einsatz":48.75,"sicher":0.15,"b_roh":48.769,"a_roh":48.742},{"text":"world","wort":11,"zeile":2,"abschnitt":1,"art":"gesungen","wortende":true,"ziel_s":50.0,"a":50.145,"b":50.2,"b_art":"Fahne","einsatz":50.161,"sicher":0.35,"b_roh":50.212,"a_roh":50.158},{"text":"of","wort":12,"zeile":2,"abschnitt":1,"art":"gesungen","wortende":true,"ziel_s":50.75,"a":50.722,"b":50.734,"b_art":"Fahne","einsatz":50.732,"sicher":0.92,"b_roh":50.734,"a_roh":50.723},{"text":"Sheep","wort":13,"zeile":2,"abschnitt":1,"art":"gesungen","wortende":true,"ziel_s":52.0,"a":51.751,"b":52.018,"b_art":"Vokal","einsatz":52.003,"sicher":0.81,"b_roh":52.058,"a_roh":51.782},{"text":"Eve","wort":14,"zeile":3,"abschnitt":1,"art":"gesungen","wortende":false,"ziel_s":56.0,"a":55.958,"b":56.002,"b_art":"Fahne","einsatz":55.956,"sicher":0.35,"b_roh":56.028,"a_roh":55.984},{"text":"ry","wort":14,"zeile":3,"abschnitt":1,"art":"gesungen","wortende":false,"ziel_s":56.75,"a":56.666,"b":56.756,"b_art":"Fahne","einsatz":56.73,"sicher":0.98,"b_roh":56.8,"a_roh":56.708},{"text":"thing","wort":14,"zeile":3,"abschnitt":1,"art":"gesungen","wortende":true,"ziel_s":58.0,"a":57.959,"b":58.006,"b_art":"Fahne","einsatz":57.965,"sicher":0.93,"b_roh":58.089,"a_roh":58.041},{"text":"we","wort":15,"zeile":3,"abschnitt":1,"art":"gesungen","wortende":true,"ziel_s":58.75,"a":58.584,"b":58.686,"b_art":"Fahne","einsatz":58.691,"sicher":0.54,"b_roh":58.749,"a_roh":58.65},{"text":"Do","wort":16,"zeile":3,"abschnitt":1,"art":"gesungen","wortende":true,"ziel_s":60.0,"a":59.96,"b":60.05,"b_art":"Fahne","einsatz":59.958,"sicher":0.9,"b_roh":60.052,"a_roh":59.96},{"text":"be","wort":17,"zeile":3,"abschnitt":1,"art":"gesungen","wortende":false,"ziel_s":60.75,"a":60.74,"b":60.754,"b_art":"Fahne","einsatz":60.749,"sicher":0.91,"b_roh":60.778,"a_roh":60.763},{"text":"lieve","wort":17,"zeile":3,"abschnitt":1,"art":"gesungen","wortende":true,"ziel_s":62.0,"a":61.89,"b":62.024,"b_art":"Fahne","einsatz":62.015,"sicher":0.49,"b_roh":62.071,"a_roh":61.935},{"text":"We","wort":18,"zeile":4,"abschnitt":2,"art":"gesungen","wortende":true,"ziel_s":63.5,"a":63.465,"b":63.52,"b_art":"Fahne","einsatz":63.463,"sicher":0.92,"b_roh":63.491,"a_roh":63.435},{"text":"claim","wort":19,"zeile":4,"abschnitt":2,"art":"gesungen","wortende":true,"ziel_s":64.0,"a":63.934,"b":64.032,"b_art":"Fahne","einsatz":63.932,"sicher":0.78,"b_roh":64.019,"a_roh":63.918},{"text":"we","wort":20,"zeile":4,"abschnitt":2,"art":"gesungen","wortende":true,"ziel_s":66.0,"a":65.951,"b":66.022,"b_art":"Fahne","einsatz":65.949,"sicher":0.86,"b_roh":66.022,"a_roh":65.951},{"text":"know","wort":21,"zeile":4,"abschnitt":2,"art":"gesungen","wortende":true,"ziel_s":66.75,"a":66.527,"b":66.764,"b_art":"Fahne","einsatz":66.746,"sicher":0.49,"b_roh":66.764,"a_roh":66.527},{"text":"It","wort":22,"zeile":4,"abschnitt":2,"art":"gesungen","wortende":true,"ziel_s":67.5,"a":67.257,"b":67.304,"b_art":"Fahne","einsatz":67.284,"sicher":0.35,"b_roh":67.304,"a_roh":67.257},{"text":"all","wort":23,"zeile":4,"abschnitt":2,"art":"gesungen","wortende":true,"ziel_s":68.0,"a":68.001,"b":68.014,"b_art":"Fahne","einsatz":68.005,"sicher":1.0,"b_roh":68.03,"a_roh":68.017},{"text":"Can’t","wort":24,"zeile":5,"abschnitt":2,"art":"gesungen","wortende":true,"ziel_s":71.5,"a":71.462,"b":71.516,"b_art":"Fahne","einsatz":71.46,"sicher":0.91,"b_roh":71.506,"a_roh":71.452},{"text":"see","wort":25,"zeile":5,"abschnitt":2,"art":"gesungen","wortende":true,"ziel_s":72.0,"a":71.901,"b":72.046,"b_art":"Vokal","einsatz":72.043,"sicher":0.9,"b_roh":72.052,"a_roh":71.903},{"text":"Who","wort":26,"zeile":5,"abschnitt":2,"art":"gesungen","wortende":true,"ziel_s":74.0,"a":73.946,"b":74.01,"b_art":"Fahne","einsatz":73.944,"sicher":0.84,"b_roh":74.021,"a_roh":73.957},{"text":"is","wort":27,"zeile":5,"abschnitt":2,"art":"gesungen","wortende":true,"ziel_s":74.75,"a":74.567,"b":74.77,"b_art":"Fahne","einsatz":74.784,"sicher":0.62,"b_roh":74.768,"a_roh":74.561},{"text":"be","wort":28,"zeile":5,"abschnitt":2,"art":"gesungen","wortende":false,"ziel_s":75.5,"a":75.522,"b":75.542,"b_art":"Fahne","einsatz":75.53,"sicher":0.95,"b_roh":75.564,"a_roh":75.543},{"text":"hind","wort":28,"zeile":5,"abschnitt":2,"art":"gesungen","wortende":true,"ziel_s":76.0,"a":75.987,"b":76.024,"b_art":"Fahne","einsatz":76.014,"sicher":0.74,"b_roh":76.046,"a_roh":76.009},{"text":"this","wort":29,"zeile":5,"abschnitt":2,"art":"gesungen","wortende":true,"ziel_s":77.5,"a":77.456,"b":77.498,"b_art":"Fahne","einsatz":77.454,"sicher":0.89,"b_roh":77.45,"a_roh":77.408},{"text":"wall","wort":30,"zeile":5,"abschnitt":2,"art":"gesungen","wortende":true,"ziel_s":78.0,"a":78.046,"b":78.086,"b_art":"Fahne","einsatz":78.052,"sicher":0.86,"b_roh":78.055,"a_roh":78.014},{"text":"Don’t","wort":31,"zeile":6,"abschnitt":2,"art":"gesungen","wortende":true,"ziel_s":79.5,"a":79.486,"b":79.524,"b_art":"Fahne","einsatz":79.484,"sicher":0.98,"b_roh":79.545,"a_roh":79.507},{"text":"wait","wort":32,"zeile":6,"abschnitt":2,"art":"gesungen","wortende":true,"ziel_s":80.0,"a":79.956,"b":79.99,"b_art":"Fahne","einsatz":79.973,"sicher":0.96,"b_roh":80.017,"a_roh":79.982},{"text":"fol","wort":33,"zeile":6,"abschnitt":2,"art":"gesungen","wortende":false,"ziel_s":82.0,"a":81.984,"b":82.046,"b_art":"Vokal","einsatz":81.988,"sicher":0.99,"b_roh":82.056,"a_roh":81.995},{"text":"low","wort":33,"zeile":6,"abschnitt":2,"art":"gesungen","wortende":true,"ziel_s":82.75,"a":82.498,"b":82.722,"b_art":"Fahne","einsatz":82.675,"sicher":0.45,"b_roh":82.712,"a_roh":82.494},{"text":"the","wort":34,"zeile":6,"abschnitt":2,"art":"gesungen","wortende":true,"ziel_s":83.5,"a":83.494,"b":83.512,"b_art":"Fahne","einsatz":83.5,"sicher":1.0,"b_roh":83.525,"a_roh":83.507},{"text":"light","wort":35,"zeile":6,"abschnitt":2,"art":"gesungen","wortende":true,"ziel_s":84.0,"a":83.992,"b":84.018,"b_art":"Fahne","einsatz":84.0,"sicher":0.91,"b_roh":84.047,"a_roh":84.02},{"text":"wake","wort":36,"zeile":7,"abschnitt":2,"art":"gesungen","wortende":true,"ziel_s":87.5,"a":87.478,"b":87.552,"b_art":"Fahne","einsatz":87.48,"sicher":0.98,"b_roh":87.489,"a_roh":87.413},{"text":"up","wort":37,"zeile":7,"abschnitt":2,"art":"gesungen","wortende":true,"ziel_s":88.0,"a":88.019,"b":88.06,"b_art":"Fahne","einsatz":88.017,"sicher":0.98,"b_roh":88.012,"a_roh":87.97},{"text":"o","wort":38,"zeile":7,"abschnitt":2,"art":"gesungen","wortende":false,"ziel_s":90.0,"a":89.994,"b":90.03,"b_art":"Fahne","einsatz":89.992,"sicher":1.0,"b_roh":90.036,"a_roh":90.0},{"text":"pen","wort":38,"zeile":7,"abschnitt":2,"art":"gesungen","wortende":true,"ziel_s":90.75,"a":90.747,"b":90.764,"b_art":"Fahne","einsatz":90.745,"sicher":1.0,"b_roh":90.764,"a_roh":90.747},{"text":"your","wort":39,"zeile":7,"abschnitt":2,"art":"gesungen","wortende":true,"ziel_s":91.5,"a":91.242,"b":91.506,"b_art":"Fahne","einsatz":91.509,"sicher":0.73,"b_roh":91.513,"a_roh":91.247},{"text":"eyes","wort":40,"zeile":7,"abschnitt":2,"art":"gesungen","wortende":true,"ziel_s":92.0,"a":91.864,"b":91.926,"b_art":"Fahne","einsatz":91.893,"sicher":0.52,"b_roh":91.922,"a_roh":91.86},{"text":"Why","wort":41,"zeile":8,"abschnitt":3,"art":"gesungen","wortende":true,"ziel_s":95.877,"a":95.894,"b":95.986,"b_art":"Fahne","einsatz":95.892,"sicher":0.99,"b_roh":95.986,"a_roh":95.894},{"text":"can’t","wort":42,"zeile":8,"abschnitt":3,"art":"gesungen","wortende":true,"ziel_s":96.752,"a":96.709,"b":96.754,"b_art":"Fahne","einsatz":96.707,"sicher":0.89,"b_roh":96.776,"a_roh":96.731},{"text":"we","wort":43,"zeile":8,"abschnitt":3,"art":"gesungen","wortende":true,"ziel_s":98.127,"a":97.902,"b":98.156,"b_art":"Fahne","einsatz":98.11,"sicher":0.95,"b_roh":98.227,"a_roh":97.973},{"text":"just","wort":44,"zeile":8,"abschnitt":3,"art":"gesungen","wortende":true,"ziel_s":98.752,"a":98.639,"b":98.728,"b_art":"Fahne","einsatz":98.637,"sicher":0.35,"b_roh":98.795,"a_roh":98.707},{"text":"feel","wort":45,"zeile":8,"abschnitt":3,"art":"gesungen","wortende":true,"ziel_s":100.002,"a":99.735,"b":99.994,"b_art":"Vokal","einsatz":99.993,"sicher":1.0,"b_roh":100.043,"a_roh":99.784},{"text":"there","wort":46,"zeile":9,"abschnitt":3,"art":"gesungen","wortende":true,"ziel_s":104.002,"a":103.972,"b":104.0,"b_art":"Fahne","einsatz":103.97,"sicher":0.94,"b_roh":104.015,"a_roh":103.987},{"text":"is","wort":47,"zeile":9,"abschnitt":3,"art":"gesungen","wortende":true,"ziel_s":104.752,"a":104.482,"b":104.754,"b_art":"Fahne","einsatz":104.753,"sicher":0.75,"b_roh":104.751,"a_roh":104.479},{"text":"so","wort":48,"zeile":9,"abschnitt":3,"art":"gesungen","wortende":true,"ziel_s":106.002,"a":105.808,"b":106.0,"b_art":"Vokal","einsatz":106.002,"sicher":1.0,"b_roh":106.06,"a_roh":105.805},{"text":"much","wort":49,"zeile":9,"abschnitt":3,"art":"gesungen","wortende":true,"ziel_s":106.752,"a":106.683,"b":106.736,"b_art":"Fahne","einsatz":106.73,"sicher":0.67,"b_roh":106.796,"a_roh":106.743},{"text":"more","wort":50,"zeile":9,"abschnitt":3,"art":"gesungen","wortende":true,"ziel_s":108.002,"a":107.895,"b":108.0,"b_art":"Fahne","einsatz":107.893,"sicher":0.35,"b_roh":108.003,"a_roh":107.898},{"text":"to","wort":51,"zeile":9,"abschnitt":3,"art":"gesungen","wortende":true,"ziel_s":108.752,"a":108.654,"b":108.754,"b_art":"Fahne","einsatz":108.652,"sicher":0.65,"b_roh":108.794,"a_roh":108.694},{"text":"see","wort":52,"zeile":9,"abschnitt":3,"art":"gesungen","wortende":true,"ziel_s":110.002,"a":109.601,"b":110.0,"b_art":"Vokal","einsatz":110.005,"sicher":1.0,"b_roh":109.823,"a_roh":109.641},{"text":"Are","wort":53,"zeile":10,"abschnitt":3,"art":"gesungen","wortende":true,"ziel_s":112.002,"a":111.946,"b":112.0,"b_art":"Fahne","einsatz":111.944,"sicher":0.83,"b_roh":112.007,"a_roh":111.953},{"text":"we","wort":54,"zeile":10,"abschnitt":3,"art":"gesungen","wortende":true,"ziel_s":112.752,"a":112.706,"b":112.778,"b_art":"Fahne","einsatz":112.756,"sicher":0.76,"b_roh":112.821,"a_roh":112.749},{"text":"hyp","wort":55,"zeile":10,"abschnitt":3,"art":"gesungen","wortende":false,"ziel_s":114.002,"a":113.813,"b":114.0,"b_art":"Vokal","einsatz":113.906,"sicher":0.66,"b_roh":113.982,"a_roh":113.856},{"text":"no","wort":55,"zeile":10,"abschnitt":3,"art":"gesungen","wortende":false,"ziel_s":114.752,"a":114.722,"b":114.756,"b_art":"Fahne","einsatz":114.726,"sicher":0.96,"b_roh":114.667,"a_roh":114.633},{"text":"tised","wort":55,"zeile":10,"abschnitt":3,"art":"gesungen","wortende":true,"ziel_s":116.002,"a":115.901,"b":115.998,"b_art":"Fahne","einsatz":115.984,"sicher":0.98,"b_roh":116.031,"a_roh":115.934},{"text":"What","wort":56,"zeile":11,"abschnitt":3,"art":"gesungen","wortende":true,"ziel_s":120.002,"a":119.914,"b":119.962,"b_art":"Fahne","einsatz":119.954,"sicher":0.77,"b_roh":119.962,"a_roh":119.914},{"text":"does","wort":57,"zeile":11,"abschnitt":3,"art":"gesungen","wortende":true,"ziel_s":120.752,"a":120.728,"b":120.762,"b_art":"Fahne","einsatz":120.726,"sicher":0.96,"b_roh":120.786,"a_roh":120.752},{"text":"it","wort":58,"zeile":11,"abschnitt":3,"art":"gesungen","wortende":true,"ziel_s":122.002,"a":121.949,"b":122.066,"b_art":"Fahne","einsatz":121.947,"sicher":0.84,"b_roh":122.108,"a_roh":121.992},{"text":"need","wort":59,"zeile":11,"abschnitt":3,"art":"gesungen","wortende":true,"ziel_s":122.752,"a":122.634,"b":122.756,"b_art":"Fahne","einsatz":122.632,"sicher":0.35,"b_roh":122.79,"a_roh":122.669},{"text":"to","wort":60,"zeile":11,"abschnitt":3,"art":"gesungen","wortende":true,"ziel_s":124.002,"a":123.965,"b":124.082,"b_art":"Fahne","einsatz":123.995,"sicher":0.93,"b_roh":124.056,"a_roh":123.937},{"text":"rea","wort":61,"zeile":11,"abschnitt":3,"art":"gesungen","wortende":false,"ziel_s":124.752,"a":124.512,"b":124.802,"b_art":"Fahne","einsatz":124.765,"sicher":0.65,"b_roh":124.798,"a_roh":124.5},{"text":"lise","wort":61,"zeile":11,"abschnitt":3,"art":"gesungen","wortende":true,"ziel_s":126.002,"a":125.945,"b":125.972,"b_art":"Fahne","einsatz":125.965,"sicher":0.74,"b_roh":125.984,"a_roh":125.956},{"text":"We","wort":62,"zeile":12,"abschnitt":4,"art":"gesungen","wortende":true,"ziel_s":127.5,"a":127.472,"b":127.494,"b_art":"Fahne","einsatz":127.47,"sicher":0.95,"b_roh":127.449,"a_roh":127.427},{"text":"claim","wort":63,"zeile":12,"abschnitt":4,"art":"gesungen","wortende":true,"ziel_s":128.0,"a":127.956,"b":128.05,"b_art":"Fahne","einsatz":127.955,"sicher":0.89,"b_roh":128.022,"a_roh":127.925},{"text":"we","wort":64,"zeile":12,"abschnitt":4,"art":"gesungen","wortende":true,"ziel_s":130.0,"a":129.987,"b":130.03,"b_art":"Fahne","einsatz":129.985,"sicher":0.99,"b_roh":130.031,"a_roh":129.987},{"text":"know","wort":65,"zeile":12,"abschnitt":4,"art":"gesungen","wortende":true,"ziel_s":130.75,"a":130.56,"b":130.83,"b_art":"Fahne","einsatz":130.82,"sicher":0.46,"b_roh":130.852,"a_roh":130.578},{"text":"It","wort":66,"zeile":12,"abschnitt":4,"art":"gesungen","wortende":true,"ziel_s":131.5,"a":131.239,"b":131.502,"b_art":"Fahne","einsatz":131.476,"sicher":0.83,"b_roh":131.509,"a_roh":131.252},{"text":"all","wort":67,"zeile":12,"abschnitt":4,"art":"gesungen","wortende":true,"ziel_s":132.0,"a":131.985,"b":132.034,"b_art":"Fahne","einsatz":132.004,"sicher":1.0,"b_roh":132.057,"a_roh":132.007},{"text":"Can’t","wort":68,"zeile":13,"abschnitt":4,"art":"gesungen","wortende":true,"ziel_s":135.5,"a":135.463,"b":135.526,"b_art":"Fahne","einsatz":135.461,"sicher":0.91,"b_roh":135.51,"a_roh":135.446},{"text":"see","wort":69,"zeile":13,"abschnitt":4,"art":"gesungen","wortende":true,"ziel_s":136.0,"a":135.903,"b":136.046,"b_art":"Vokal","einsatz":136.046,"sicher":0.89,"b_roh":136.046,"a_roh":135.898},{"text":"Who","wort":70,"zeile":13,"abschnitt":4,"art":"gesungen","wortende":true,"ziel_s":138.0,"a":137.93,"b":138.0,"b_art":"Fahne","einsatz":137.928,"sicher":0.35,"b_roh":138.021,"a_roh":137.951},{"text":"is","wort":71,"zeile":13,"abschnitt":4,"art":"gesungen","wortende":true,"ziel_s":138.75,"a":138.519,"b":138.75,"b_art":"Fahne","einsatz":138.751,"sicher":0.75,"b_roh":138.75,"a_roh":138.525},{"text":"be","wort":72,"zeile":13,"abschnitt":4,"art":"gesungen","wortende":false,"ziel_s":139.5,"a":139.469,"b":139.514,"b_art":"Fahne","einsatz":139.484,"sicher":0.98,"b_roh":139.538,"a_roh":139.491},{"text":"hind","wort":72,"zeile":13,"abschnitt":4,"art":"gesungen","wortende":true,"ziel_s":140.0,"a":139.939,"b":140.05,"b_art":"Vokal","einsatz":139.951,"sicher":0.87,"b_roh":140.06,"a_roh":139.951},{"text":"this","wort":73,"zeile":13,"abschnitt":4,"art":"gesungen","wortende":true,"ziel_s":141.5,"a":141.469,"b":141.516,"b_art":"Fahne","einsatz":141.467,"sicher":0.94,"b_roh":141.516,"a_roh":141.469},{"text":"wall","wort":74,"zeile":13,"abschnitt":4,"art":"gesungen","wortende":true,"ziel_s":142.0,"a":142.002,"b":142.028,"b_art":"Fahne","einsatz":142.009,"sicher":1.0,"b_roh":142.044,"a_roh":142.018},{"text":"Don’t","wort":75,"zeile":14,"abschnitt":4,"art":"gesungen","wortende":true,"ziel_s":143.5,"a":143.399,"b":143.526,"b_art":"Fahne","einsatz":143.397,"sicher":0.63,"b_roh":143.527,"a_roh":143.399},{"text":"wait","wort":76,"zeile":14,"abschnitt":4,"art":"gesungen","wortende":true,"ziel_s":144.0,"a":143.966,"b":144.002,"b_art":"Fahne","einsatz":143.988,"sicher":0.95,"b_roh":144.016,"a_roh":143.979},{"text":"fol","wort":77,"zeile":14,"abschnitt":4,"art":"gesungen","wortende":false,"ziel_s":146.0,"a":145.811,"b":146.004,"b_art":"Vokal","einsatz":145.969,"sicher":0.94,"b_roh":146.02,"a_roh":145.827},{"text":"low","wort":77,"zeile":14,"abschnitt":4,"art":"gesungen","wortende":true,"ziel_s":146.75,"a":146.575,"b":146.658,"b_art":"Fahne","einsatz":146.731,"sicher":0.49,"b_roh":146.685,"a_roh":146.602},{"text":"the","wort":78,"zeile":14,"abschnitt":4,"art":"gesungen","wortende":true,"ziel_s":147.5,"a":147.493,"b":147.508,"b_art":"Fahne","einsatz":147.505,"sicher":0.99,"b_roh":147.533,"a_roh":147.518},{"text":"light","wort":79,"zeile":14,"abschnitt":4,"art":"gesungen","wortende":true,"ziel_s":148.0,"a":147.963,"b":147.988,"b_art":"Fahne","einsatz":147.986,"sicher":0.73,"b_roh":148.028,"a_roh":148.002},{"text":"wake","wort":80,"zeile":15,"abschnitt":4,"art":"gesungen","wortende":true,"ziel_s":151.5,"a":151.484,"b":151.528,"b_art":"Fahne","einsatz":151.482,"sicher":0.98,"b_roh":151.529,"a_roh":151.484},{"text":"up","wort":81,"zeile":15,"abschnitt":4,"art":"gesungen","wortende":true,"ziel_s":152.0,"a":151.977,"b":152.01,"b_art":"Fahne","einsatz":151.975,"sicher":0.96,"b_roh":152.021,"a_roh":151.987},{"text":"o","wort":82,"zeile":15,"abschnitt":4,"art":"gesungen","wortende":false,"ziel_s":154.0,"a":153.988,"b":154.014,"b_art":"Fahne","einsatz":153.986,"sicher":0.99,"b_roh":154.014,"a_roh":153.988},{"text":"pen","wort":82,"zeile":15,"abschnitt":4,"art":"gesungen","wortende":true,"ziel_s":154.75,"a":154.729,"b":154.758,"b_art":"Fahne","einsatz":154.727,"sicher":0.97,"b_roh":154.77,"a_roh":154.741},{"text":"your","wort":83,"zeile":15,"abschnitt":4,"art":"gesungen","wortende":true,"ziel_s":155.5,"a":155.206,"b":155.5,"b_art":"Fahne","einsatz":155.491,"sicher":0.84,"b_roh":155.524,"a_roh":155.225},{"text":"eyes","wort":84,"zeile":15,"abschnitt":4,"art":"gesungen","wortende":true,"ziel_s":156.0,"a":155.94,"b":155.996,"b_art":"Fahne","einsatz":155.957,"sicher":0.9,"b_roh":156.007,"a_roh":155.952},{"text":"o","wort":85,"zeile":16,"abschnitt":5,"art":"gesungen","wortende":false,"ziel_s":158.0,"a":157.99,"b":158.018,"b_art":"Fahne","einsatz":157.988,"sicher":0.99,"b_roh":158.017,"a_roh":157.99},{"text":"pen","wort":85,"zeile":16,"abschnitt":5,"art":"gesungen","wortende":true,"ziel_s":158.5,"a":158.129,"b":158.394,"b_art":"Fahne","einsatz":158.4,"sicher":0.57,"b_roh":158.382,"a_roh":158.125},{"text":"your","wort":86,"zeile":16,"abschnitt":5,"art":"gesungen","wortende":true,"ziel_s":159.0,"a":158.726,"b":158.746,"b_art":"Fahne","einsatz":158.724,"sicher":0.35,"b_roh":158.745,"a_roh":158.724},{"text":"eyes","wort":87,"zeile":16,"abschnitt":5,"art":"gesungen","wortende":true,"ziel_s":159.75,"a":159.942,"b":159.974,"b_art":"Fahne","einsatz":159.94,"sicher":0.43,"b_roh":159.984,"a_roh":159.952},{"text":"We","wort":88,"zeile":17,"abschnitt":7,"art":"gesungen","wortende":true,"ziel_s":191.5,"a":191.465,"b":191.514,"b_art":"Fahne","einsatz":191.463,"sicher":0.92,"b_roh":191.489,"a_roh":191.44},{"text":"claim","wort":89,"zeile":17,"abschnitt":7,"art":"gesungen","wortende":true,"ziel_s":192.0,"a":191.929,"b":192.028,"b_art":"Fahne","einsatz":191.927,"sicher":0.35,"b_roh":192.02,"a_roh":191.917},{"text":"we","wort":90,"zeile":17,"abschnitt":7,"art":"gesprochen","wortende":true,"ziel_s":null,"a":194.007,"b":194.02,"b_art":"Sprechen Fahne","einsatz":194.013,"sicher":0.45,"b_roh":194.02,"a_roh":194.007},{"text":"know","wort":91,"zeile":17,"abschnitt":7,"art":"gesprochen","wortende":true,"ziel_s":null,"a":194.257,"b":194.294,"b_art":"Sprechen Fahne","einsatz":194.255,"sicher":0.25,"b_roh":194.294,"a_roh":194.257},{"text":"it","wort":92,"zeile":17,"abschnitt":7,"art":"gesprochen","wortende":true,"ziel_s":null,"a":195.314,"b":195.35,"b_art":"Sprechen Fahne","einsatz":195.318,"sicher":0.45,"b_roh":195.35,"a_roh":195.314},{"text":"all","wort":93,"zeile":17,"abschnitt":7,"art":"gesprochen","wortende":true,"ziel_s":null,"a":195.773,"b":195.81,"b_art":"Sprechen Fahne","einsatz":195.781,"sicher":0.45,"b_roh":195.81,"a_roh":195.773},{"text":"Can’t","wort":94,"zeile":18,"abschnitt":7,"art":"gesungen","wortende":true,"ziel_s":199.5,"a":199.462,"b":199.516,"b_art":"Fahne","einsatz":199.46,"sicher":0.91,"b_roh":199.506,"a_roh":199.452},{"text":"see","wort":95,"zeile":18,"abschnitt":7,"art":"gesungen","wortende":true,"ziel_s":200.0,"a":199.901,"b":200.046,"b_art":"Vokal","einsatz":200.043,"sicher":0.9,"b_roh":200.052,"a_roh":199.903},{"text":"Who","wort":96,"zeile":18,"abschnitt":7,"art":"gesprochen","wortende":true,"ziel_s":null,"a":201.973,"b":202.028,"b_art":"Sprechen Fahne","einsatz":201.976,"sicher":0.45,"b_roh":202.028,"a_roh":201.973},{"text":"is","wort":97,"zeile":18,"abschnitt":7,"art":"gesprochen","wortende":true,"ziel_s":null,"a":203.293,"b":203.304,"b_art":"Sprechen Fahne","einsatz":203.291,"sicher":0.45,"b_roh":203.304,"a_roh":203.293},{"text":"be","wort":98,"zeile":18,"abschnitt":7,"art":"gesprochen","wortende":false,"ziel_s":null,"a":203.548,"b":203.568,"b_art":"Sprechen Fahne","einsatz":203.546,"sicher":0.45,"b_roh":203.568,"a_roh":203.548},{"text":"hind","wort":98,"zeile":18,"abschnitt":7,"art":"gesprochen","wortende":true,"ziel_s":null,"a":204.418,"b":204.426,"b_art":"Sprechen Fahne","einsatz":204.423,"sicher":0.45,"b_roh":204.426,"a_roh":204.418},{"text":"this","wort":99,"zeile":18,"abschnitt":7,"art":"gesprochen","wortende":true,"ziel_s":null,"a":205.496,"b":205.504,"b_art":"Sprechen Fahne","einsatz":205.502,"sicher":0.45,"b_roh":205.504,"a_roh":205.496},{"text":"wall","wort":100,"zeile":18,"abschnitt":7,"art":"gesprochen","wortende":true,"ziel_s":null,"a":205.588,"b":205.794,"b_art":"Sprechen Fahne","einsatz":205.789,"sicher":0.45,"b_roh":205.794,"a_roh":205.588},{"text":"Don’t","wort":101,"zeile":19,"abschnitt":7,"art":"gesungen","wortende":true,"ziel_s":207.5,"a":207.433,"b":207.524,"b_art":"Fahne","einsatz":207.431,"sicher":0.78,"b_roh":207.545,"a_roh":207.433},{"text":"wait","wort":102,"zeile":19,"abschnitt":7,"art":"gesungen","wortende":true,"ziel_s":208.0,"a":207.967,"b":208.002,"b_art":"Fahne","einsatz":207.983,"sicher":0.98,"b_roh":208.017,"a_roh":207.982},{"text":"Fol","wort":103,"zeile":19,"abschnitt":7,"art":"gesprochen","wortende":false,"ziel_s":null,"a":210.337,"b":210.362,"b_art":"Sprechen Fahne","einsatz":210.345,"sicher":0.45,"b_roh":210.362,"a_roh":210.337},{"text":"ge","wort":103,"zeile":19,"abschnitt":7,"art":"gesprochen","wortende":true,"ziel_s":null,"a":211.506,"b":211.514,"b_art":"Sprechen Fahne","einsatz":211.51,"sicher":0.45,"b_roh":211.514,"a_roh":211.506},{"text":"dem","wort":104,"zeile":19,"abschnitt":7,"art":"gesprochen","wortende":true,"ziel_s":null,"a":212.068,"b":212.102,"b_art":"Sprechen Fahne","einsatz":212.1,"sicher":0.45,"b_roh":212.102,"a_roh":212.068},{"text":"Licht","wort":105,"zeile":19,"abschnitt":7,"art":"gesprochen","wortende":true,"ziel_s":null,"a":212.368,"b":212.376,"b_art":"Sprechen Fahne","einsatz":212.37,"sicher":0.45,"b_roh":212.376,"a_roh":212.368},{"text":"Wach","wort":106,"zeile":20,"abschnitt":7,"art":"gesungen","wortende":true,"ziel_s":215.5,"a":215.399,"b":215.52,"b_art":"Fahne","einsatz":215.494,"sicher":1.0,"b_roh":215.49,"a_roh":215.369},{"text":"auf","wort":107,"zeile":20,"abschnitt":7,"art":"gesungen","wortende":true,"ziel_s":216.0,"a":215.778,"b":215.978,"b_art":"Fahne","einsatz":215.98,"sicher":0.7,"b_roh":215.941,"a_roh":215.744},{"text":"siehst","wort":108,"zeile":20,"abschnitt":7,"art":"gesprochen","wortende":true,"ziel_s":null,"a":219.239,"b":219.51,"b_art":"Sprechen Fahne","einsatz":219.53,"sicher":0.45,"b_roh":219.51,"a_roh":219.239},{"text":"du","wort":109,"zeile":20,"abschnitt":7,"art":"gesprochen","wortende":true,"ziel_s":null,"a":219.867,"b":220.066,"b_art":"Sprechen Fahne","einsatz":220.06,"sicher":0.25,"b_roh":220.066,"a_roh":219.867},{"text":"mich","wort":110,"zeile":20,"abschnitt":7,"art":"gesprochen","wortende":true,"ziel_s":null,"a":220.786,"b":220.906,"b_art":"Sprechen Fahne","einsatz":220.91,"sicher":0.25,"b_roh":220.906,"a_roh":220.786},{"text":"nicht","wort":111,"zeile":20,"abschnitt":7,"art":"gesprochen","wortende":true,"ziel_s":null,"a":221.017,"b":221.27,"b_art":"Sprechen Fahne","einsatz":221.015,"sicher":0.45,"b_roh":221.27,"a_roh":221.017},{"text":"We","wort":112,"zeile":21,"abschnitt":8,"art":"gesungen","wortende":true,"ziel_s":223.5,"a":223.478,"b":223.52,"b_art":"Fahne","einsatz":223.476,"sicher":0.97,"b_roh":223.499,"a_roh":223.458},{"text":"claim","wort":113,"zeile":21,"abschnitt":8,"art":"gesungen","wortende":true,"ziel_s":224.0,"a":223.949,"b":224.044,"b_art":"Fahne","einsatz":223.947,"sicher":0.85,"b_roh":224.01,"a_roh":223.916},{"text":"we","wort":114,"zeile":21,"abschnitt":8,"art":"gesungen","wortende":true,"ziel_s":226.0,"a":225.949,"b":226.002,"b_art":"Fahne","einsatz":225.947,"sicher":0.35,"b_roh":226.002,"a_roh":225.949},{"text":"know","wort":115,"zeile":21,"abschnitt":8,"art":"gesungen","wortende":true,"ziel_s":226.75,"a":226.492,"b":226.52,"b_art":"Fahne","einsatz":226.503,"sicher":0.35,"b_roh":226.525,"a_roh":226.497},{"text":"It","wort":116,"zeile":21,"abschnitt":8,"art":"gesungen","wortende":true,"ziel_s":227.5,"a":227.236,"b":227.512,"b_art":"Fahne","einsatz":227.521,"sicher":0.66,"b_roh":227.502,"a_roh":227.229},{"text":"all","wort":117,"zeile":21,"abschnitt":8,"art":"gesungen","wortende":true,"ziel_s":228.0,"a":227.946,"b":227.996,"b_art":"Fahne","einsatz":227.956,"sicher":0.89,"b_roh":228.002,"a_roh":227.95},{"text":"Can’t","wort":118,"zeile":22,"abschnitt":8,"art":"gesungen","wortende":true,"ziel_s":231.5,"a":231.462,"b":231.538,"b_art":"Fahne","einsatz":231.46,"sicher":0.91,"b_roh":231.533,"a_roh":231.456},{"text":"see","wort":119,"zeile":22,"abschnitt":8,"art":"gesungen","wortende":true,"ziel_s":232.0,"a":231.907,"b":232.036,"b_art":"Vokal","einsatz":232.037,"sicher":0.92,"b_roh":232.046,"a_roh":231.913},{"text":"Who","wort":120,"zeile":22,"abschnitt":8,"art":"gesungen","wortende":true,"ziel_s":234.0,"a":233.936,"b":233.982,"b_art":"Fahne","einsatz":233.948,"sicher":0.86,"b_roh":234.008,"a_roh":233.962},{"text":"is","wort":121,"zeile":22,"abschnitt":8,"art":"gesungen","wortende":true,"ziel_s":234.75,"a":234.472,"b":234.768,"b_art":"Fahne","einsatz":234.758,"sicher":0.67,"b_roh":234.772,"a_roh":234.484},{"text":"be","wort":122,"zeile":22,"abschnitt":8,"art":"gesungen","wortende":false,"ziel_s":235.5,"a":235.474,"b":235.51,"b_art":"Fahne","einsatz":235.472,"sicher":0.95,"b_roh":235.524,"a_roh":235.488},{"text":"hind","wort":122,"zeile":22,"abschnitt":8,"art":"gesungen","wortende":true,"ziel_s":236.0,"a":235.897,"b":235.982,"b_art":"Vokal","einsatz":235.971,"sicher":0.95,"b_roh":236.011,"a_roh":235.923},{"text":"this","wort":123,"zeile":22,"abschnitt":8,"art":"gesungen","wortende":true,"ziel_s":237.5,"a":237.456,"b":237.512,"b_art":"Fahne","einsatz":237.454,"sicher":0.89,"b_roh":237.523,"a_roh":237.467},{"text":"wall","wort":124,"zeile":22,"abschnitt":8,"art":"gesungen","wortende":true,"ziel_s":238.0,"a":237.996,"b":238.02,"b_art":"Fahne","einsatz":237.999,"sicher":1.0,"b_roh":238.047,"a_roh":238.023},{"text":"Don’t","wort":125,"zeile":23,"abschnitt":8,"art":"gesungen","wortende":true,"ziel_s":239.5,"a":239.417,"b":239.526,"b_art":"Fahne","einsatz":239.415,"sicher":0.7,"b_roh":239.526,"a_roh":239.417},{"text":"wait","wort":126,"zeile":23,"abschnitt":8,"art":"gesungen","wortende":true,"ziel_s":240.0,"a":239.968,"b":240.002,"b_art":"Fahne","einsatz":239.98,"sicher":0.98,"b_roh":240.007,"a_roh":239.973},{"text":"fol","wort":127,"zeile":23,"abschnitt":8,"art":"gesungen","wortende":false,"ziel_s":242.0,"a":241.786,"b":241.998,"b_art":"Vokal","einsatz":241.97,"sicher":0.95,"b_roh":241.976,"a_roh":241.764},{"text":"low","wort":127,"zeile":23,"abschnitt":8,"art":"gesungen","wortende":true,"ziel_s":242.75,"a":242.467,"b":242.748,"b_art":"Fahne","einsatz":242.747,"sicher":0.77,"b_roh":242.707,"a_roh":242.433},{"text":"the","wort":128,"zeile":23,"abschnitt":8,"art":"gesungen","wortende":true,"ziel_s":243.5,"a":243.162,"b":243.504,"b_art":"Fahne","einsatz":243.497,"sicher":1.0,"b_roh":243.467,"a_roh":243.123},{"text":"light","wort":129,"zeile":23,"abschnitt":8,"art":"gesungen","wortende":true,"ziel_s":244.0,"a":243.894,"b":244.062,"b_art":"Fahne","einsatz":244.044,"sicher":0.56,"b_roh":244.041,"a_roh":243.869},{"text":"wake","wort":130,"zeile":24,"abschnitt":8,"art":"gesungen","wortende":true,"ziel_s":247.5,"a":247.399,"b":247.516,"b_art":"Fahne","einsatz":247.397,"sicher":0.35,"b_roh":247.516,"a_roh":247.399},{"text":"up","wort":131,"zeile":24,"abschnitt":8,"art":"gesungen","wortende":true,"ziel_s":248.0,"a":247.991,"b":248.022,"b_art":"Fahne","einsatz":247.989,"sicher":0.99,"b_roh":248.022,"a_roh":247.991},{"text":"o","wort":132,"zeile":24,"abschnitt":8,"art":"gesungen","wortende":false,"ziel_s":250.0,"a":249.974,"b":250.02,"b_art":"Fahne","einsatz":249.972,"sicher":0.95,"b_roh":250.02,"a_roh":249.974},{"text":"pen","wort":132,"zeile":24,"abschnitt":8,"art":"gesungen","wortende":true,"ziel_s":250.75,"a":250.735,"b":250.76,"b_art":"Fahne","einsatz":250.733,"sicher":0.98,"b_roh":250.76,"a_roh":250.735},{"text":"your","wort":133,"zeile":24,"abschnitt":8,"art":"gesungen","wortende":true,"ziel_s":251.5,"a":251.268,"b":251.526,"b_art":"Fahne","einsatz":251.488,"sicher":0.8,"b_roh":251.519,"a_roh":251.264},{"text":"eyes","wort":134,"zeile":24,"abschnitt":8,"art":"gesungen","wortende":true,"ziel_s":252.0,"a":251.936,"b":251.966,"b_art":"Fahne","einsatz":251.965,"sicher":0.67,"b_roh":251.947,"a_roh":251.918},{"text":"o","wort":135,"zeile":25,"abschnitt":9,"art":"gesungen","wortende":false,"ziel_s":254.0,"a":253.984,"b":254.028,"b_art":"Fahne","einsatz":253.982,"sicher":0.98,"b_roh":254.039,"a_roh":253.995},{"text":"pen","wort":135,"zeile":25,"abschnitt":9,"art":"gesungen","wortende":true,"ziel_s":254.75,"a":254.74,"b":254.76,"b_art":"Fahne","einsatz":254.738,"sicher":0.99,"b_roh":254.771,"a_roh":254.751},{"text":"your","wort":136,"zeile":25,"abschnitt":9,"art":"gesungen","wortende":true,"ziel_s":255.5,"a":255.458,"b":255.528,"b_art":"Fahne","einsatz":255.467,"sicher":0.94,"b_roh":255.529,"a_roh":255.459},{"text":"eyes","wort":137,"zeile":25,"abschnitt":9,"art":"gesungen","wortende":true,"ziel_s":256.0,"a":255.978,"b":255.986,"b_art":"Fahne","einsatz":255.989,"sicher":0.73,"b_roh":255.995,"a_roh":255.987}],"akkorde":{"takte":{"1":"Ebm","2":"Ebm","3":"Gb","4":"Gb","5":"Db","6":"Db","7":"Ab/C","8":"Ab/C","9":"Ebm","10":"Ebm","11":"Gb","12":"Gb","13":"Db","14":"Db","15":"Ab/C","16":"Ab/C","17":"Bbm","18":"Bbm","19":"Gb","20":"Gb","21":"Ab","22":"Ab","23":"Fm","24":"Fm","25":"Bbm","26":"Bbm","27":"Gb","28":"Gb","29":"Ab","30":"Ab","31":"Bbsus4","32":"Bbsus4","33":"Ebm","34":"Ebm","35":"Gb","36":"Gb","37":"Db","38":"Db","39":"Ab/C","40":"Ab/C","41":"Ebm","42":"Ebm","43":"Gb","44":"Gb","45":"Db","46":"Db","47":"Ab/C","48":"Ab/C","49":"Bbm","50":"Bbm","51":"Gb","52":"Gb","53":"Ab","54":"Ab","55":"Fm","56":"Fm","57":"Bbm","58":"Bbm","59":"Gb","60":"Gb","61":"Ab","62":"Ab","63":"Bbsus4","64":"Bbsus4","65":"Ebm","66":"Ebm","67":"Gb","68":"Gb","69":"Db","70":"Db","71":"Ab/C","72":"Ab/C","73":"Ebm","74":"Ebm","75":"Gb","76":"Gb","77":"Db","78":"Db","79":"Ab/C","80":"Ab/C","81":"Ebm","82":"Ebm","83":"Gb","84":"Gb","85":"Db","86":"Db","87":"Ab/C","88":"Ab/C","89":"Bbm","90":"Bbm","91":"Gb","92":"Gb","93":"Ab","94":"Ab","95":"Bbsus4","96":"Bbsus4","97":"Ebm","98":"Ebm","99":"Gb","100":"Gb","101":"Db","102":"Db","103":"Ab/C","104":"Ab/C","105":"Ebm","106":"Ebm","107":"Gb","108":"Gb","109":"Db","110":"Db","111":"Ab/C","112":"Ab/C","113":"Ebm","114":"Ebm","115":"Gb","116":"Gb","117":"Db","118":"Db","119":"Ab/C","120":"Ab/C","121":"Ebm","122":"Ebm","123":"Gb","124":"Gb","125":"Db","126":"Db","127":"Ab/C","128":"Ab/C","129":"Bb","130":"Bb","131":"Bb","132":"Bb","133":"Bb"},"quelle":"sauber/akkorde.json (Pad/Bass gemessen); Strophen stimmen mit Xanders Meldung (akkord_meldung 3/6) überein"},"karte":[[0.0,31.677,0.0,31.6765],[31.677,32.566,31.7195,32.6085],[32.566,32.681,32.5655,32.6815],[32.681,33.544,32.7245,33.5865],[33.544,34.125,33.4755,34.057],[34.125,34.75,34.057,34.69],[34.75,35.744,34.69,35.684],[35.744,39.627,35.744,39.6265],[39.627,40.0,39.6815,40.055],[40.0,40.745,40.055,40.778],[40.745,41.684,40.778,41.717],[41.684,41.7,41.717,41.7336],[41.7,41.895,41.7004,41.8955],[41.895,42.0,41.9225,42.027],[42.0,42.75,42.027,42.779],[42.75,43.816,42.779,43.8445],[43.816,44.0,43.8315,44.016],[44.0,44.76,44.016,44.799],[44.76,45.997,44.799,46.0],[45.997,46.822,46.0,46.825],[46.822,46.823,46.825,46.8268],[46.823,48.0,46.8233,48.0],[48.0,48.76,48.0,48.783],[48.76,50.0,48.783,50.016],[50.0,50.75,50.016,50.75],[50.75,52.031,50.75,52.071],[52.031,53.034,52.071,53.074],[53.034,53.054,53.074,53.0938],[53.054,55.465,53.0542,55.465],[55.465,56.0,55.491,56.026],[56.0,56.75,56.026,56.794],[56.75,58.003,56.794,58.086],[58.003,58.713,58.086,58.775],[58.713,59.693,58.775,59.755],[59.693,59.997,59.693,59.997],[59.997,60.77,59.997,60.794],[60.77,62.0,60.794,62.047],[62.0,62.913,62.047,62.9595],[62.913,63.5,62.8825,63.47],[63.5,64.046,63.47,64.033],[64.046,65.456,64.033,65.4425],[65.456,67.5,65.4556,67.5],[67.5,68.002,67.5,68.018],[68.002,69.463,68.018,69.479],[69.463,69.471,69.479,69.4868],[69.471,70.979,69.4712,70.979],[70.979,71.5,70.969,71.49],[71.5,72.066,71.49,72.073],[72.066,73.309,72.073,73.316],[73.309,73.312,73.316,73.3197],[73.312,73.847,73.3123,73.8465],[73.847,74.0,73.8575,74.011],[74.0,74.613,74.011,74.606],[74.613,75.544,74.606,75.566],[75.544,77.081,75.566,77.103],[77.081,77.383,77.081,77.383],[77.383,77.5,77.335,77.452],[77.5,78.064,77.452,78.033],[78.064,79.146,78.033,79.1157],[79.146,79.427,79.1463,79.4265],[79.427,79.5,79.4475,79.521],[79.5,80.0,79.521,80.027],[80.0,81.341,80.027,81.3675],[81.341,81.776,81.3405,81.7755],[81.776,82.0,81.7865,82.011],[82.0,82.742,82.011,82.731],[82.742,83.504,82.731,83.517],[83.504,84.009,83.517,84.038],[84.009,85.36,84.038,85.389],[85.36,85.375,85.389,85.4033],[85.375,87.377,85.3747,87.3775],[87.377,87.5,87.3125,87.435],[87.5,88.054,87.435,88.006],[88.054,89.352,88.006,89.304],[89.352,89.46,89.352,89.46],[89.46,90.0,89.466,90.006],[90.0,90.75,90.006,90.75],[90.75,91.5,90.75,91.507],[91.5,91.872,91.507,91.868],[91.872,93.864,91.868,93.8601],[93.864,96.694,93.8639,96.694],[96.694,97.799,96.716,97.821],[97.799,97.88,97.799,97.8805],[97.88,98.127,97.9515,98.198],[98.127,98.752,98.198,98.819],[98.752,99.686,98.819,99.753],[99.686,101.066,99.735,101.1145],[101.066,103.945,101.0655,103.945],[103.945,103.948,103.945,103.9631],[103.948,104.18,103.9631,104.1947],[104.18,104.183,104.1947,104.1791],[104.183,105.815,104.1791,105.8115],[105.815,105.818,105.8115,105.8778],[105.818,107.837,105.8778,107.8972],[107.837,107.84,107.8972,107.843],[107.84,108.645,107.843,108.6476],[108.645,108.648,108.6476,108.688],[108.648,109.712,108.688,109.7516],[109.712,109.715,109.7516,109.5381],[109.715,111.129,109.5381,110.9526],[111.129,111.132,110.9526,111.1391],[111.132,112.684,111.1391,112.691],[112.684,112.687,112.691,112.73],[112.687,113.839,112.73,113.8823],[113.839,113.842,113.8823,113.865],[113.842,113.864,113.865,113.8863],[113.864,113.867,113.8863,113.869],[113.867,113.888,113.869,113.8903],[113.888,113.891,113.8903,113.873],[113.891,114.637,113.873,114.6187],[114.637,114.64,114.6187,114.598],[114.64,114.664,114.598,114.6227],[114.664,114.667,114.6227,114.602],[114.667,114.692,114.602,114.6267],[114.692,114.695,114.6267,114.606],[114.695,115.892,114.606,115.803],[115.892,115.895,115.803,115.928],[115.895,117.072,115.928,117.105],[117.072,117.075,117.105,117.075],[117.075,120.651,117.075,120.651],[120.651,121.921,120.675,121.9455],[121.921,122.002,121.9645,122.045],[122.002,122.752,122.045,122.786],[122.752,123.889,122.786,123.923],[123.889,124.002,123.861,123.974],[124.002,124.757,123.974,124.752],[124.757,126.002,124.752,126.014],[126.002,127.399,126.014,127.4115],[127.399,127.5,127.3545,127.455],[127.5,128.043,127.455,128.015],[128.043,129.534,128.015,129.5059],[129.534,130.0,129.5341,130.0],[130.0,130.761,130.0,130.785],[130.761,131.5,130.785,131.507],[131.5,132.03,131.507,132.053],[132.03,133.373,132.053,133.396],[133.373,133.384,133.396,133.4077],[133.384,134.988,133.3843,134.9885],[134.988,135.5,134.9715,135.483],[135.5,136.056,135.483,136.056],[136.056,137.325,136.056,137.325],[137.325,137.325,137.325,137.3251],[137.325,137.433,137.3249,137.4335],[137.433,138.0,137.4545,138.021],[138.0,138.75,138.021,138.75],[138.75,139.527,138.75,139.551],[139.527,140.0,139.551,140.01],[140.0,141.058,140.01,141.068],[141.058,141.063,141.068,141.0732],[141.063,141.5,141.0629,141.5],[141.5,142.014,141.5,142.03],[142.014,143.079,142.03,143.095],[143.079,143.501,143.079,143.501],[143.501,144.0,143.501,144.014],[144.0,145.376,144.014,145.39],[145.376,145.737,145.376,145.737],[145.737,146.566,145.753,146.5825],[146.566,146.75,146.5935,146.777],[146.75,147.5,146.777,147.525],[147.5,148.001,147.525,148.041],[148.001,149.29,148.041,149.33],[149.29,149.31,149.33,149.3503],[149.31,151.5,149.3098,151.5],[151.5,152.0,151.5,152.011],[152.0,153.299,152.011,153.3105],[153.299,154.0,153.2995,154.0],[154.0,155.5,154.0,155.524],[155.5,155.962,155.524,155.973],[155.962,157.475,155.973,157.485],[157.475,157.48,157.485,157.4903],[157.48,158.0,157.4798,158.0],[158.0,158.41,158.0,158.398],[158.41,159.01,158.398,159.017],[159.01,159.75,159.017,159.76],[159.75,161.239,159.76,161.249],[161.239,191.097,161.239,191.0975],[191.097,191.5,191.0725,191.475],[191.5,192.042,191.475,192.034],[192.042,193.495,192.034,193.4869],[193.495,198.974,193.4951,198.974],[198.974,199.5,198.964,199.49],[199.5,200.066,199.49,200.073],[200.066,201.55,200.073,201.558],[201.55,201.554,201.558,201.5617],[201.554,207.456,201.5542,207.4555],[207.456,207.5,207.4765,207.521],[207.5,208.0,207.521,208.015],[208.0,209.304,208.015,209.3185],[209.304,214.92,209.3035,214.92],[214.92,215.5,214.89,215.47],[215.5,216.0,215.47,215.963],[216.0,216.845,215.963,216.8085],[216.845,223.063,216.8455,223.063],[223.063,223.5,223.043,223.48],[223.5,223.995,223.48,223.961],[223.995,225.334,223.961,225.2998],[225.334,226.0,225.3342,226.0],[226.0,226.75,226.0,226.757],[226.75,227.421,226.757,227.408],[227.421,228.005,227.408,228.011],[228.005,229.427,228.011,229.433],[229.427,229.43,229.433,229.4358],[229.43,231.246,229.4302,231.246],[231.246,231.5,231.24,231.494],[231.5,232.054,231.494,232.065],[232.054,233.32,232.065,233.331],[233.32,233.325,233.331,233.3365],[233.325,233.448,233.3254,233.448],[233.448,234.0,233.474,234.026],[234.0,234.741,234.026,234.745],[234.741,235.5,234.745,235.514],[235.5,236.016,235.514,236.046],[236.016,237.079,236.046,237.109],[237.079,237.384,237.079,237.3845],[237.384,237.5,237.3955,237.511],[237.5,238.008,237.511,238.035],[238.008,238.851,238.035,238.878],[238.851,238.865,238.878,238.8913],[238.865,239.5,238.8646,239.5],[239.5,240.0,239.5,240.005],[240.0,241.323,240.005,241.3285],[241.323,241.716,241.3235,241.716],[241.716,242.0,241.694,241.978],[242.0,242.75,241.978,242.709],[242.75,243.5,242.709,243.463],[243.5,244.006,243.463,243.985],[244.006,245.126,243.985,245.1044],[245.126,250.75,245.1257,250.75],[250.75,251.5,250.75,251.494],[251.5,251.957,251.494,251.938],[251.957,253.491,251.938,253.4714],[253.491,253.936,253.4906,253.9365],[253.936,254.75,253.9475,254.761],[254.75,255.5,254.761,255.5],[255.5,256.0,255.5,256.009],[256.0,257.44,256.009,257.4485],[257.44,266.0,257.4395,266.0]],"ereignisse":{"klicks":[[30.782,30.788],[30.901,30.904],[30.913,30.919],[30.991,30.997],[31.02,31.029],[31.03,31.033],[31.032,31.036],[31.043,31.058],[31.148,31.156],[31.199,31.201],[31.395,31.4],[31.434,31.437],[32.472,32.475],[33.462,33.466],[33.471,33.475],[33.514,33.519],[33.574,33.578],[33.583,33.587],[33.627,33.63],[33.961,33.968],[33.971,33.978],[34.013,34.02],[34.016,34.02],[34.016,34.019],[34.023,34.027],[34.023,34.027],[34.024,34.027],[34.66,34.667],[34.676,34.679],[35.06,35.065],[36.143,36.147],[36.709,36.713],[36.746,36.754],[36.858,36.862],[36.866,36.871],[37.234,37.243],[37.514,37.52],[37.769,37.784],[37.829,37.832],[37.85,37.858],[37.891,37.91],[37.91,37.916],[38.016,38.025],[38.143,38.147],[38.151,38.154],[38.444,38.447],[38.514,38.52],[38.892,38.895],[39.266,39.271],[39.27,39.276],[39.514,39.519],[39.538,39.542],[39.654,39.657],[39.797,39.8],[41.677,41.681],[41.71,41.714],[42.888,42.892],[42.901,42.906],[43.2,43.203],[43.848,43.85],[44.675,44.679],[45.55,45.554],[46.855,46.858],[47.464,47.468],[47.855,47.859],[47.998,48.006],[48.739,48.742],[48.75,48.754],[49.477,49.481],[50.73,50.734],[51.226,51.229],[51.228,51.233],[51.62,51.623],[52.414,52.422],[52.681,52.685],[52.855,52.861],[53.148,53.157],[53.276,53.281],[53.514,53.519],[53.85,53.856],[53.867,53.873],[53.891,53.9],[53.903,53.911],[53.914,53.917],[54.016,54.025],[54.333,54.337],[54.459,54.462],[54.514,54.52],[55.111,55.114],[55.217,55.221],[55.232,55.236],[55.437,55.444],[55.45,55.456],[55.478,55.504],[55.508,55.517],[55.531,55.538],[55.543,55.55],[55.904,55.907],[55.907,55.913],[58.625,58.63],[58.678,58.683],[58.73,58.734],[59.898,59.901],[59.907,59.911],[59.937,59.941],[59.973,59.977],[59.98,59.985],[60.271,60.275],[63.413,63.417],[63.441,63.444],[63.913,63.917],[63.922,63.926],[65.882,65.885],[65.927,65.933],[66.763,66.766],[67.97,67.974],[69.251,69.256],[69.255,69.26],[69.514,69.522],[71.374,71.377],[71.397,71.406],[71.408,71.412],[71.413,71.421],[71.43,71.438],[73.257,73.266],[73.514,73.518],[73.807,73.812],[75.495,75.499],[75.533,75.537],[76.791,76.794],[76.838,76.845],[76.844,76.849],[76.883,76.886],[76.904,76.907],[76.924,76.927],[77.265,77.269],[77.269,77.275],[77.43,77.439],[77.46,77.464],[79.93,79.936],[80.862,80.871],[80.915,80.927],[81.237,81.246],[81.513,81.519],[83.447,83.45],[83.457,83.46],[83.488,83.492],[84.717,84.722],[85.033,85.04],[85.514,85.518],[86.016,86.019],[86.891,86.894],[87.359,87.368],[87.424,87.428],[87.953,87.955],[87.954,87.959],[87.986,87.992],[88.001,88.005],[88.01,88.017],[88.01,88.017],[88.93,88.933],[88.932,88.941],[88.94,88.945],[88.997,89.001],[89.046,89.052],[89.096,89.106],[89.316,89.321],[89.508,89.512],[89.568,89.578],[89.588,89.591],[89.594,89.6],[89.602,89.608],[89.616,89.623],[89.641,89.644],[89.689,89.692],[89.766,89.771],[89.94,89.95],[89.975,89.978],[89.977,89.982],[89.989,89.999],[90.403,90.408],[90.51,90.514],[90.723,90.725],[90.748,90.751],[91.401,91.405],[91.433,91.437],[91.437,91.441],[91.805,91.811],[93.457,93.462],[93.471,93.479],[93.641,93.644],[94.514,94.518],[94.764,94.772],[94.909,94.915],[94.98,94.983],[95.015,95.017],[96.514,96.519],[96.674,96.677],[97.49,97.494],[97.595,97.6],[97.595,97.599],[97.595,97.599],[97.697,97.701],[97.697,97.7],[98.494,98.498],[98.578,98.581],[98.615,98.623],[99.588,99.592],[99.617,99.621],[100.343,100.346],[100.691,100.7],[101.261,101.27],[101.514,101.518],[101.869,101.876],[101.929,101.931],[102.154,102.158],[102.433,102.439],[102.514,102.526],[102.891,102.895],[103.156,103.16],[103.207,103.21],[103.263,103.266],[103.907,103.912],[103.975,103.982],[103.975,103.982],[103.975,103.983],[105.787,105.789],[105.853,105.858],[105.879,105.881],[106.127,106.131],[106.466,106.472],[106.503,106.507],[107.374,107.379],[107.86,107.864],[107.915,107.919],[108.047,108.05],[108.075,108.079],[108.66,108.663],[108.671,108.677],[108.704,108.714],[108.722,108.725],[110.742,110.746],[116.919,116.925],[117.162,117.171],[117.172,117.178],[117.324,117.334],[117.333,117.337],[117.337,117.344],[117.528,117.537],[117.577,117.582],[117.581,117.584],[117.956,117.963],[117.968,117.972],[118.078,118.087],[118.201,118.21],[118.21,118.216],[118.215,118.218],[118.218,118.227],[118.559,118.566],[118.577,118.582],[118.585,118.587],[119.187,119.194],[119.249,119.254],[119.32,119.327],[119.493,119.503],[119.493,119.495],[120.688,120.692],[120.698,120.701],[120.711,120.719],[120.722,120.726],[121.704,121.708],[121.868,121.871],[122.632,122.636],[122.642,122.653],[122.707,122.712],[123.459,123.464],[123.481,123.485],[123.484,123.488],[123.616,123.619],[123.855,123.858],[123.916,123.92],[123.924,123.933],[123.956,123.959],[123.956,123.959],[123.956,123.959],[127.525,127.529],[127.533,127.537],[127.924,127.933],[129.104,129.107],[129.139,129.145],[129.162,129.165],[129.964,129.97],[132.804,132.806],[132.865,132.874],[133.119,133.126],[133.24,133.244],[133.514,133.519],[133.519,133.522],[134.022,134.025],[134.766,134.774],[135.398,135.403],[135.415,135.419],[135.647,135.65],[137.268,137.273],[137.896,137.901],[139.228,139.231],[139.904,139.907],[141.1,141.107],[141.107,141.117],[141.117,141.125],[141.126,141.131],[141.403,141.406],[141.481,141.485],[143.391,143.394],[143.399,143.401],[143.404,143.407],[143.426,143.435],[143.601,143.604],[144.996,145.005],[145.023,145.028],[145.452,145.458],[145.467,145.473],[145.806,145.811],[147.488,147.492],[148.729,148.732],[148.772,148.776],[148.849,148.86],[149.515,149.519],[149.894,149.901],[150.011,150.018],[150.515,150.52],[150.523,150.526],[150.765,150.772],[150.771,150.775],[151.472,151.476],[153.108,153.113],[153.139,153.143],[153.913,153.917],[153.984,153.988],[154.388,154.393],[154.506,154.511],[154.681,154.685],[154.712,154.72],[154.728,154.732],[155.434,155.437],[155.917,155.922],[155.992,155.994],[157.467,157.47],[157.473,157.476],[157.482,157.486],[157.503,157.506],[157.514,157.519],[157.992,157.995],[158.405,158.409],[159.18,159.185],[161.514,161.522],[161.894,161.899],[162.514,162.519],[162.891,162.896],[163.514,163.519],[163.835,163.839],[164.515,164.52],[165.515,165.518],[166.016,166.024],[166.515,166.518],[167.145,167.15],[167.947,167.955],[168.514,168.518],[169.514,169.518],[169.891,169.899],[170.514,170.52],[171.515,171.518],[172.016,172.024],[172.515,172.518],[172.724,172.727],[172.891,172.899],[173.141,173.144],[173.145,173.152],[173.152,173.16],[173.266,173.274],[173.514,173.519],[174.017,174.024],[174.514,174.518],[175.269,175.274],[175.514,175.52],[176.02,176.024],[176.514,176.519],[177.514,177.523],[179.266,179.27],[179.269,179.275],[179.514,179.519],[180.514,180.518],[181.514,181.518],[182.514,182.518],[183.514,183.518],[183.754,183.756],[184.514,184.518],[185.514,185.518],[186.015,186.024],[186.514,186.518],[188.514,188.518],[188.891,188.895],[189.514,189.518],[190.275,190.283],[190.514,190.519],[191.407,191.412],[191.435,191.44],[191.908,191.912],[191.917,191.921],[194.581,194.585],[198.016,198.019],[199.374,199.377],[199.397,199.405],[199.408,199.412],[199.413,199.421],[199.43,199.438],[201.439,201.452],[201.912,201.917],[202.567,202.572],[202.592,202.597],[202.95,202.953],[204.687,204.691],[204.882,204.887],[207.435,207.439],[208.874,208.881],[208.928,208.939],[209.251,209.258],[212.57,212.574],[213.0,213.004],[213.127,213.133],[214.475,214.48],[214.504,214.508],[214.527,214.532],[214.606,214.612],[214.678,214.68],[214.72,214.724],[214.762,214.768],[215.415,215.419],[217.262,217.269],[217.269,217.274],[217.514,217.518],[217.574,217.583],[217.594,217.596],[217.601,217.606],[217.622,217.626],[217.626,217.629],[217.695,217.697],[217.773,217.776],[217.981,217.986],[217.995,218.005],[218.747,218.755],[219.409,219.412],[219.43,219.435],[219.442,219.446],[219.446,219.448],[219.803,219.808],[221.451,221.456],[221.465,221.474],[221.636,221.639],[221.978,221.982],[222.112,222.114],[222.228,222.232],[222.299,222.304],[222.331,222.334],[222.345,222.349],[223.256,223.26],[223.405,223.41],[223.462,223.465],[223.939,223.943],[225.301,225.31],[225.907,225.911],[226.474,226.477],[226.584,226.587],[226.762,226.765],[226.78,226.783],[227.608,227.611],[228.131,228.136],[228.136,228.139],[228.188,228.192],[229.514,229.518],[229.896,229.901],[231.014,231.018],[231.305,231.31],[231.347,231.351],[231.366,231.369],[231.395,231.4],[231.856,231.858],[232.727,232.731],[233.137,233.142],[233.261,233.265],[235.929,235.934],[235.961,235.966],[236.788,236.793],[236.928,236.931],[236.957,236.96],[237.286,237.291],[237.298,237.3],[237.425,237.429],[237.488,237.493],[238.738,238.744],[238.867,238.87],[239.39,239.394],[239.424,239.428],[239.453,239.457],[239.49,239.495],[240.885,240.893],[240.988,240.992],[241.008,241.017],[245.515,245.518],[245.897,245.899],[246.821,246.828],[247.339,247.35],[247.378,247.382],[248.893,248.898],[248.916,248.918],[248.997,249.001],[249.97,249.976],[250.656,250.661],[250.73,250.734],[251.489,251.493],[253.555,253.558],[254.697,254.703],[254.734,254.737],[254.739,254.744],[259.277,259.285]],"atmer":[[26.26,26.44],[26.76,26.99],[30.465,30.73],[30.89,31.07],[31.26,31.43],[31.465,31.66],[47.135,47.72],[52.47,52.65],[55.48,55.86],[65.27,65.665],[69.505,69.705],[69.89,70.065],[70.355,70.6],[70.64,70.915],[73.505,73.815],[81.505,81.745],[86.395,86.585],[86.635,86.94],[87.02,87.19],[89.5,89.805],[95.385,95.81],[103.51,103.875],[107.365,107.84],[111.26,111.675],[119.5,119.75],[129.165,129.6],[133.025,133.3],[133.505,133.68],[133.89,134.055],[134.26,134.44],[135.05,135.375],[137.445,137.84],[141.08,141.25],[143.105,143.425],[145.51,145.7],[149.505,149.675],[149.88,150.85],[151.085,151.33],[153.64,153.835],[161.005,161.17],[161.51,161.695],[161.76,162.435],[162.505,162.66],[162.76,163.325],[163.505,163.66],[163.765,163.965],[164.765,164.935],[165.02,165.36],[165.505,165.945],[166.01,166.195],[168.78,168.94],[169.505,169.695],[169.765,170.2],[170.235,170.425],[170.765,170.94],[170.98,171.195],[171.505,171.68],[171.76,171.94],[172.01,172.18],[176.01,176.175],[178.77,178.95],[179.02,179.185],[179.505,179.67],[179.76,179.95],[182.015,182.19],[185.765,185.93],[186.01,186.325],[186.77,186.945],[188.77,188.925],[189.51,189.7],[190.01,190.205],[190.51,190.695],[194.935,195.205],[196.895,197.1],[197.145,197.34],[201.645,201.95],[202.98,203.235],[204.83,205.0],[206.875,207.425],[209.545,209.79],[211.105,211.38],[212.88,213.175],[217.505,217.81],[222.22,222.46],[222.505,223.4],[225.37,225.88],[229.14,229.315],[233.485,233.8],[237.135,237.365],[239.12,239.425],[241.4,241.65],[247.025,247.32],[249.45,249.825]],"plopps":[[32.721,32.74],[34.683,34.695],[36.497,36.524],[51.938,51.975],[57.375,57.403],[63.977,64.006],[65.943,65.978],[96.436,96.475],[99.907,99.918],[113.9,113.926],[127.999,128.017],[135.505,135.526],[137.948,137.978],[191.972,192.001],[195.307,195.317],[214.552,214.575],[214.606,214.62],[214.706,214.726],[214.982,215.019],[216.681,216.722],[226.476,226.501],[231.503,231.529],[241.893,241.916],[247.405,247.459]],"deesser":[[32.701,32.781,6.2],[34.032,34.183,8.0],[36.455,36.505,3.1],[38.026,38.082,3.5],[39.824,40.054,8.0],[41.348,41.398,2.6],[41.465,41.691,8.0],[43.895,44.079,7.9],[45.607,45.879,8.0],[48.011,48.125,6.9],[51.809,52.059,8.0],[55.961,56.005,2.5],[57.489,57.596,5.1],[57.814,57.874,2.3],[57.887,58.012,5.8],[59.996,60.104,6.1],[63.955,63.961,1.0],[70.018,70.11,8.0],[71.905,72.126,7.9],[75.379,75.532,6.7],[77.962,78.104,6.8],[79.952,79.974,1.5],[81.002,81.056,1.6],[93.14,93.468,8.0],[96.355,96.394,2.3],[97.615,97.662,2.3],[98.071,98.125,3.2],[98.667,98.764,5.2],[99.406,99.615,8.0],[99.873,100.044,6.5],[103.984,104.057,5.0],[105.462,105.738,7.7],[105.98,106.185,8.0],[108.736,108.853,6.3],[109.638,109.9,8.0],[111.747,111.759,1.2],[111.963,112.082,7.7],[113.99,114.031,2.3],[115.952,116.039,6.1],[116.711,116.91,7.5],[118.079,118.175,8.0],[120.73,120.807,5.1],[121.502,121.732,7.5],[122.072,122.165,5.8],[123.97,124.159,8.0],[126.906,127.136,8.0],[135.462,135.533,5.3],[135.898,136.12,8.0],[139.373,139.529,8.0],[141.928,142.063,5.9],[143.487,143.496,1.1],[148.689,148.708,1.4],[150.018,150.115,8.0],[150.273,150.362,8.0],[151.98,152.029,3.1],[157.15,157.485,7.6],[160.686,160.982,8.0],[191.95,191.956,1.0],[199.905,200.126,7.9],[203.334,203.554,8.0],[204.438,204.494,2.4],[205.514,205.849,8.0],[207.962,207.982,1.4],[208.95,208.969,1.4],[209.006,209.106,3.0],[209.909,210.108,8.0],[211.521,211.613,7.4],[212.157,212.457,8.0],[215.466,215.536,2.5],[216.44,216.532,4.5],[216.54,216.725,7.6],[219.885,220.12,8.0],[220.158,220.272,6.5],[221.096,221.458,8.0],[222.768,222.858,8.0],[231.472,231.52,1.9],[231.917,232.098,7.2],[235.346,235.518,7.9],[237.911,238.041,5.7],[241.897,241.983,1.9],[247.995,248.048,3.4],[253.139,253.485,7.3],[256.771,256.993,5.7]],"schmatzer_v7":[30.918,96.211,119.467,119.481,119.496,120.63,120.648,214.601,214.731,214.772],"what_spektral":[[119.442,119.453],[119.477,119.482],[119.491,119.499],[119.5,119.505],[119.969,119.973],[119.977,119.981],[119.986,119.989],[120.003,120.006],[120.019,120.021],[120.028,120.031],[120.037,120.039],[120.045,120.049],[120.053,120.057],[120.063,120.065],[120.071,120.074],[120.135,120.139],[120.144,120.147],[120.153,120.156],[120.169,120.175],[120.185,120.187],[120.198,120.204],[120.224,120.231],[120.241,120.245],[120.401,120.403],[120.407,120.41],[120.432,120.435],[120.439,120.445],[120.457,120.46],[120.553,120.557],[120.573,120.577],[120.628,120.633],[120.711,120.717],[120.721,120.726],[120.729,120.733]]},"schnitte":[{"t":31.677,"sprung_ms":43.0,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":32.566,"sprung_ms":-43.0,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":32.681,"sprung_ms":43.0,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":33.544,"sprung_ms":-111.0,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":35.744,"sprung_ms":60.0,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":39.627,"sprung_ms":55.0,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":41.7,"sprung_ms":-33.3,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":41.895,"sprung_ms":27.0,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":43.816,"sprung_ms":-13.0,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":46.823,"sprung_ms":-3.5,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":53.054,"sprung_ms":-39.6,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":55.465,"sprung_ms":26.0,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":59.693,"sprung_ms":-62.0,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":62.913,"sprung_ms":-77.0,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":65.456,"sprung_ms":13.1,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":69.471,"sprung_ms":-15.5,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":70.979,"sprung_ms":-10.0,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":73.312,"sprung_ms":-7.5,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":73.847,"sprung_ms":11.0,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":77.081,"sprung_ms":-22.0,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":77.383,"sprung_ms":-48.0,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":79.146,"sprung_ms":30.6,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":79.427,"sprung_ms":21.0,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":81.341,"sprung_ms":-27.0,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":81.776,"sprung_ms":11.0,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":85.375,"sprung_ms":-28.6,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":87.377,"sprung_ms":-65.0,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":89.352,"sprung_ms":47.9,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":89.46,"sprung_ms":6.0,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":93.864,"sprung_ms":3.8,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":96.694,"sprung_ms":22.0,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":97.799,"sprung_ms":-22.0,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":97.88,"sprung_ms":71.0,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":99.686,"sprung_ms":-18.0,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":101.066,"sprung_ms":-49.0,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":103.945,"sprung_ms":15.1,"quelle":"G4","art":"Stück ausgelassen (Senke)"},{"t":104.18,"sprung_ms":-18.6,"quelle":"G4","art":"Stück doppelt (Stille/Senkengrund)"},{"t":105.815,"sprung_ms":63.3,"quelle":"G4","art":"Stück ausgelassen (Senke)"},{"t":107.837,"sprung_ms":-57.2,"quelle":"G4","art":"Stück doppelt (Stille/Senkengrund)"},{"t":108.645,"sprung_ms":37.4,"quelle":"G4","art":"Stück ausgelassen (Senke)"},{"t":109.712,"sprung_ms":-216.5,"quelle":"G4","art":"Rauschen verlängert (s nachgebildet) im stimmlosen Anlaut (191 -> 408 ms)"},{"t":111.129,"sprung_ms":183.5,"quelle":"G4","art":"Stück ausgelassen (Senke)"},{"t":112.684,"sprung_ms":36.0,"quelle":"G4","art":"Stück ausgelassen"},{"t":113.839,"sprung_ms":-20.3,"quelle":"G4","art":"Stück doppelt (Stille/Senkengrund)"},{"t":113.864,"sprung_ms":-20.3,"quelle":"G4","art":"Stück doppelt (Stille/Senkengrund)"},{"t":113.888,"sprung_ms":-20.3,"quelle":"G4","art":"Stück doppelt (Stille/Senkengrund)"},{"t":114.637,"sprung_ms":-23.7,"quelle":"G4","art":"Stück doppelt (Stille/Senkengrund)"},{"t":114.664,"sprung_ms":-23.7,"quelle":"G4","art":"Stück doppelt (Stille/Senkengrund)"},{"t":114.692,"sprung_ms":-23.7,"quelle":"G4","art":"Stück doppelt (Stille/Senkengrund)"},{"t":115.892,"sprung_ms":122.0,"quelle":"G4","art":"Stück ausgelassen (Senke)"},{"t":117.072,"sprung_ms":-33.0,"quelle":"G4","art":"Stück doppelt (Stille/Senkengrund)"},{"t":120.651,"sprung_ms":24.0,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":121.921,"sprung_ms":19.0,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":123.889,"sprung_ms":-62.0,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":127.399,"sprung_ms":-57.0,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":129.534,"sprung_ms":28.2,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":133.384,"sprung_ms":-23.4,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":134.988,"sprung_ms":-17.0,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":137.433,"sprung_ms":21.0,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":141.063,"sprung_ms":-10.3,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":143.079,"sprung_ms":-16.0,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":145.376,"sprung_ms":-14.0,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":145.737,"sprung_ms":16.0,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":146.566,"sprung_ms":11.0,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":149.31,"sprung_ms":-40.5,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":153.299,"sprung_ms":-11.0,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":157.48,"sprung_ms":-10.5,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":161.239,"sprung_ms":-10.0,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":191.097,"sprung_ms":-25.0,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":193.495,"sprung_ms":8.2,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":198.974,"sprung_ms":-10.0,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":201.554,"sprung_ms":-7.5,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":207.456,"sprung_ms":21.0,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":209.304,"sprung_ms":-15.0,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":214.92,"sprung_ms":-30.0,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":216.845,"sprung_ms":37.0,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":223.063,"sprung_ms":-20.0,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":225.334,"sprung_ms":34.4,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":229.43,"sprung_ms":-5.6,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":231.246,"sprung_ms":-6.0,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":233.325,"sprung_ms":-11.1,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":233.448,"sprung_ms":26.0,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":237.079,"sprung_ms":-30.0,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":237.384,"sprung_ms":11.0,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":238.865,"sprung_ms":-26.7,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":241.323,"sprung_ms":-5.0,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":241.716,"sprung_ms":-22.0,"quelle":"v7","art":"Stück doppelt (Silbe später)"},{"t":245.126,"sprung_ms":21.3,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":253.491,"sprung_ms":19.3,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":253.936,"sprung_ms":11.0,"quelle":"v7","art":"Stück ausgelassen (Silbe früher)"},{"t":257.44,"sprung_ms":-9.0,"quelle":"v7","art":"Stück doppelt (Silbe später)"}],"blenden_v7":[31.677,32.566,32.681,33.544,35.744,37.09,39.627,41.7,41.895,43.816,46.823,47.871,53.054,55.465,59.693,62.913,65.456,65.904,69.471,70.979,73.312,73.847,77.081,77.383,79.146,79.427,81.341,81.776,85.375,87.377,89.352,89.46,93.864,95.852,96.61,96.694,97.799,97.88,99.686,101.066,103.903,105.85,107.616,107.898,110.996,111.885,117.267,119.364,120.651,121.921,123.889,127.399,129.534,129.931,133.384,134.988,137.325,137.433,141.063,141.428,143.079,145.376,145.737,146.566,149.31,151.391,153.299,153.869,157.48,157.951,161.239,191.097,193.495,198.974,201.554,207.456,209.304,214.92,216.845,223.063,225.334,225.912,229.43,231.246,233.325,233.448,237.079,237.384,238.865,238.985,241.323,241.716,245.126,246.966,249.125,249.873,253.491,253.936,257.44],"pruefstellen":[{"von_s":109.711,"bis_s":109.816,"art":"Loch","db":-22.1}],"tonhoehe":{"raster_s":0.01,"laeufe":[[32.88,[4,4,5,4,3,2,0,-2,-3,-5,-7,-9,-11,-12,-12,-12,-11,-11,-12,-13,-16,-19,-22,-25,-28,-31,-34,-36,-37,-37,-35,-31,-24,-13,0,13,20,23,23,20,14,7,-2,-11,-19,-22,-22,-22,-22,-22,-22,-22,-22,-22,-22,-22,-22,-22,-22,-22,-22,-22,-22,-22,-22,-21,-19,-22,-22,-22,-22,-22,-22,-22,-22,-22,-21,-20,-18,-17,-15,-14,-12,-11,-9,-8,-6,-5,-3]],[34.19,[4,15,36,62,89,113,131,139,139,133,121,109,97,86,77,70,65,60,56,53,50,47,45,44,43,43,42,42,42,42,41,41,40,40,40,41,41,42,42,44,46,49,50,50,50,50,50,50,50,47,29,7]],[34.86,[-8,-14,-22,-30,-38,-45,-47,-46,-43,-40,-35,-31,-28,-25,-22,-20,-19,-19,-21,-23,-25,-26,-26,-25,-24,-23,-24,-25,-27,-30,-33,-37,-40,-43,-44,-45,-45,-44,-42,-40,-37,-35,-33,-31,-28,-27,-26,-25,-23,-21,-20,-21,-23,-25,-27,-28,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-28,-27,-25,-23,-21,-19,-17,-15,-13,-11,-9,-7,-5,-4]],[36.08,[5,16,35,61,89,116,138,155,163,164,157,147,135,123,108,94,81,70,61,53,48,45,45,47,51,55,59,61,63,64,65,66,67,67,67,67,67,67,67,67,67,67,67,67,67,67,67,67,67,67,67,67,67,66,62,58,53,49,44,40,35,31,26,22,17,13,8,4]],[40.07,[6,21,50,90,135,181,223,255,273,277,268,252,236,221,206,193,182,170,159,149,140,131,123,114,105,96,86,77,68,60,55,52,54,60,63,65,67,70,75,81,89,99,115,139,179,221,243,245,241,235,228,217,203,190,178,168,159,151,143,137,132,130,129,122,77,20]],[40.85,[-3,-6,-10,-14,-18,-22,-25,-28,-30,-31,-31,-30,-28,-26,-25,-24,-23,-21,-18,-16,-13,-11,-9,-8,-5,-1,5,14,26,41,56,69,78,85,94,105,112,114,113,107,94,72,44,20,2,-8,-13,-14,-14,-14,-14,-14,-14,-14,-14,-14,-14,-14,-14,-14,-14,-14,-14,-14,-14,-14,-14,-13,-12,-11,-10,-9,-8,-7,-6,-5,-4,-3]],[42.07,[9,19,32,47,64,78,90,96,97,94,90,84,79,74,69,63,58,53,49,46,45,45,46,47,48,48,48,48,48,47,46,46,47,49,51,53,55,56,57,57,57,57,56,54,52,50,48,45,43,40,39,40,44,49,54,55,56,55,54,53,52,50,47,46,44,28,7]],[42.83,[7,13,21,30,38,45,50,54,55,57,58,60,62,65,68,70,72,73,75,75,74,72,70,68,68,69,71,71,69,67,66,65,67,69,71,74,77,80,85,92,99,105,107,103,94,83,74,66,63,63,66,69,72,73,73,73,73,73,73,73,73,73,73,73,73,73,73,73,73,73,73,73,71,67,63,58,53,48,43,38,34,29,24,19,14,9,5]],[44.09,[9,25,45,65,80,88,89,83,73,63,55,49,46,43,42,40,37,33,27,20,13,5,-3,-10,-16,-21,-25,-28,-29,-29,-28,-26,-24,-21,-17,-14,-12,-10,-10,-10,-11,-12,-14,-15,-17,-18,-19,-20,-19,-18,-15,-12,-8,-2,5,10,11,9,6,2,-3,-8,-9,-9,-6]],[44.84,[6,11,18,23,28,30,30,28,22,16,9,4,-1,-6,-9,-10,-10,-9,-7,-6,-4,-2,1,3,6,8,11,12,14,15,17,21,29,40,49,54,56,60,65,73,89,106,115,115,106,88,65,49,43,41,40,39,36,30,23,20,21,24,25,25,22,18,14,10,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,6,6,6,5,5,4,4,3]],[46.13,[3,5,7,8,8,8,8,7,7,6,5,3,0,-2,-4,-6,-8,-9,-9,-8,-8,-7,-6,-4,-2,2,5,6,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,4,4,4,3]],[48.12,[5,15,27,39,47,50,47,41,31,21,11,2,-5,-12,-17,-22,-26,-28,-29,-29,-28,-25,-22,-18,-14,-9,-5]],[48.44,[-3,-5,-7,-9,-11,-13,-14,-15,-15,-15,-15,-14,-13,-13,-12,-12,-12,-12,-11,-11,-11,-11,-10,-10,-10,-10,-10,-10,-9,-4]],[48.87,[3,4,5,6,7,6,5,4]],[49.12,[-3,-3,-3,-3,-4,-4,-4,-5,-5,-5,-5,-5,-5,-5,-4,-4,-5,-5,-5,-5,-5,-4,-4,-3]],[49.54,[-4,-6,-8,-10,-12,-14,-16,-19,-21,-22,-22,-21,-19,-17,-15,-13,-11,-9,-7,-6,-5,-3]],[50.06,[4,15,34,59,86,113,134,146,150,143,129,112,96,81,67,54,44,36,32,30,29,29,29,29,29,30,30,31,31,32,32,32,31,30,28,26,25,23,21,20,18,17,17,16,16,15,15,15,15,14,14,14,13,13,14,14,15,16,18,21,24,25,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,25,23,22,20,18,16,14,13,11,9,7,5,4]],[52.14,[-6,-14,-22,-31,-40,-47,-51,-52,-48,-42,-35,-27,-21,-18,-16,-15,-17,-18,-19,-19,-19,-19,-19,-19,-19,-19,-19,-19,-19,-19,-19,-19,-19,-19,-19,-19,-18,-18,-17,-15,-14,-13,-12,-10,-9,-8,-7,-5,-4]],[56.11,[5,7,4,-3,-13,-25,-36,-43,-45,-45,-43,-40,-36,-33,-31,-29,-27,-27,-28,-29,-30,-30,-28,-23,-13,1,10,15,20,27,35,47,67,100,136,164,180,183,176,167,157,147,140,136,135,132,128,123,116,103,88,74,64,55,45,31,14,-3,-16,-22,-22,-14,-4]],[56.85,[4,6,7,9,8,7,4,1,-3,-6,-8,-10,-10,-10,-9,-7,-6,-6,-6,-6,-6,-6,-6,-6,-6,-7,-7,-6,-5,-3,-1,1,3,4,5,4]],[57.28,[-4,-5,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-5,-5,-4,-4,-4,-3]],[58.08,[7,12,19,25,30,33,34,32,27,20,12,3,-5,-12,-18,-22,-24,-25,-25,-23,-21,-18,-14,-12,-9,-7,-6,-5,-5,-5,-6,-8,-10,-12,-14,-15,-16,-15,-15,-15,-14,-14,-13,-12,-11,-9,-8,-6,-6,-6,-6,-7,-7,-8,-9,-10,-11,-11,-11,-10,-7]],[58.79,[3,6,9,12,14,15,15,13,10,7,4]],[58.95,[6,11,15,18,20,21,20,17,14,11,7,3,0,-3,-5,-5,-5,-3,-1,2,5,11,17,22,27,30,30,28,25,22,19,17,14,11,7,3]],[60.13,[4,10,19,26,30,28,21,10,-1,-11,-18,-22,-24,-25,-26,-25,-24,-22,-21,-20,-20,-19,-20,-20,-21,-22,-21,-21,-20,-18,-17,-17,-17,-18,-20,-21,-22,-23,-23,-24,-24,-24,-23,-21,-19,-16,-13,-11,-10,-9,-9,-7,-5,-3,-2,-4,-8,-13,-18,-20,-20,-13,-3]],[60.84,[6,13,25,39,55,70,82,88,89,85,79,71,61,51,41,31,22,15,11,8,7,7,7,8,9,11,12,13,14,14,14,13,13,13,13,13,13,13,14,16,19,26,37,49,56,61,66,72,80,91,104,122,150,181,190,166,133,108,89,75,64,57,52,49,44,33,21,16,16,18,22,27,31,35,39,42,45,48,50,41,16]],[61.8,[3,34,79,97,98,95,88,79,71,62,54,47,42,37,35,35,31,17]],[62.1,[4,4,5,5,5,5,4,4,3,3,3,3,3,3,3,4,5,9,15,25,38,54,71,88,105,119,131,140,146,148,147,144,140,136,134,133,133,133,134,134,134,135,136,133,128,121,111,101,90,79,69,59,51,47,47,47,47,47,47,47,47,47,47,47,47,47,47,47,47,47,47,47,46,44,41,38,35,32,29,25,22,19,40,37,34,31,28,25,21,18,15,12,9,6]],[63.7,[3,4,5,6,7,9,11,13,16,19,21,23,25,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,20,8]],[64.23,[3,5,6,7,8,9,11,12,14,16,17,19,20,21,22,22,22,22,22,22,21,21,20,19,19,18,18,19,20,23,26,29,30,31,33,36,41,51,62,71,77,80,79,77,75,74,73,73,73,71,68,65,62,59,58,57,56,56,55,54,53,52,51,50,49,48,46,44,42,41,39,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,37,35,33,30,28,25,23,20,18,15,13,10,8,5]],[66.17,[3,5,6,7,7,7,7,6,5,4]],[66.38,[6,10,16,19,20,20,20,19,18,17,16,14,10,4]],[66.76,[-4,-5,-6,-7,-8,-9,-9,-9,-9,-9,-9,-9,-10,-10,-11,-13,-14,-16,-17,-18,-19,-20,-20,-20,-19,-19,-18,-18,-17,-17,-16,-16,-16,-16,-15,-14,-11,-6,-1,2,3,5,8,11,16,23,32,44,60,75,77,71,64,61,58,56,43,17]],[67.64,[-3,-4,-6,-7,-9,-10,-12,-14,-15,-15,-16,-16,-16,-15,-15,-15,-14,-14,-13,-12,-11,-10,-9,-9,-8,-9,-10,-11,-12,-13,-15,-15,-14,-8]],[68.12,[4,8,12,16,19,21,22,21,18,13,6,-1,-8,-14,-19,-24,-27,-30,-32,-32,-32,-31,-30,-28,-26,-25,-24,-23,-22,-22,-21,-22,-22,-23,-23,-23,-24,-24,-23,-22,-20,-17,-13,-9,-4,1,7,14,21,29,35,40,42,39,32,22,11,2,-5,-11,-14,-17,-19,-20,-21,-22,-22,-22,-22,-22,-22,-22,-22,-22,-22,-22,-22,-22,-22,-22,-22,-22,-22,-22,-21,-20,-19,-17,-16,-14,-13,-11,-10,-8,-7,-6,-4]],[71.79,[3,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,4]],[72.26,[-3,-4,-5,-6,-7,-8,-9,-10,-11,-11,-12,-13,-13,-13,-13,-13,-13,-13,-13,-13,-13,-13,-13,-13,-13,-13,-12,-11,-8,-4,2,6,9,11,14,18,22,28,35,44,54,61,60,49,33,18,6,1,-1,-2,-6,-10,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-11,-10,-9,-8,-8,-7,-6,-5,-4,-3]],[74.29,[3,4,5,6,7,9,11,15,19,23,26,28,31,33,37,40,44,48,54,59,57,50,42,33,26,20,16,14,14,9]],[74.98,[-3,-4,-5,-6,-7,-8,-9,-8,-7,-5,0,6,10,13,16,19,23,28,35,42,51,64,79,86,85,82,76,69,61,53,43,34,25,16,8]],[75.76,[4,6,7,8,9,10,11,12,13,15,18,22,27,32,35,38,40,43,48,55,64,71,75,75,70,60,50,43,37,33,30,26,23,21,20,21,21,20,14,5]],[76.42,[6,12,18,22,25,28,33,41,48,51,48,42,35,28,20,15,11,9,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,6,6,5,5,4,4,3]],[77.65,[6,10,14,19,24,28,32,34,36,38,39,41,44,48,54,59,63,65,69,74,83,92,99,104,109,111,110,107,105,103,101,98,96,94,92,91,90,88,59,15]],[78.29,[-3,-4,-4,-5,-5,-5,-5,-6,-6,-6,-6,-6,-6,-6,-6,-7,-7,-8,-8,-8,-8,-8,-6,-3,1,6,9,11,14,17,21,28,37,46,57,69,80,87,87,79,68,55,44,34,26,20,14,8,3,-3,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-5,-5,-4,-4,-3,-3]],[79.78,[4,5,5,6,7,8,8,9,9,9,9,8,8,8,8,7,4]],[80.27,[3,4,4,4,4,4,4,4,3]],[80.43,[4,7,10,11,12,13,14,17,21,29,35,38,37,33,27,20,14,8,3]],[82.24,[5,7,10,13,17,21,25,29,34,39,43,49,55,62,67,71,75,77,80,83,87,91,100,114,127,134,135,131,128,125,122,96,41,4]],[82.69,[30,74,63,16]],[83.04,[4,6,9,13,18,25,32,39,46,54,62,71,81,91,102,115,130,141,142,137,133,129,127,124,122,120,117,115,112,110,107,106,106,106,107,109,111,113,115,116,116,116,113,80,25]],[83.64,[-5,-7,-9,-12,-14,-15,-16,-16,-15,-15,-14,-13,-13,-13,-12,-13,-13,-14,-14,-15,-15,-15,-15,-15,-14,-13,-12,-12,-12,-12,-12,-12,-10,-5]],[84.13,[4,5,6,5,2,-3,-10,-17,-26,-33,-39,-43,-44,-44,-43,-42,-41,-40,-39,-39,-39,-40,-41,-41,-41,-41,-39,-38,-36,-34,-33,-34,-35,-37,-39,-41,-41,-40,-40,-39,-40,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-40,-38,-36,-33,-30,-27,-25,-22,-19,-16,-14,-11,-8,-5]],[87.76,[-3,-5,-7,-9,-11,-13,-15,-17,-18,-20,-22,-23,-23,-24,-24,-23,-23,-23,-23,-23,-23,-23,-23,-18,-7]],[88.37,[3,3,4,4,5,5,5,6,6,5,5,5,6,8,12,17,20,20,21,21,21,21,22,23,23,20,14,9,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,5,5,5,4,4,3]],[90.23,[4,5,6,8,10,13,16,19,22,25,28,32,37,42,45,46,48,49,51,53,57,67,79,90,96,95,89,82,76,71,67,63,60,58,55,53,51,51,51,51,51,51,51,51,51,47,27,6]],[90.96,[4,5,7,9,10,12,14,15,16,18,19,20,21,22,25,30,33,35,36,38,41,44,48,53,61,72,85,99,109,114,114,108,103,99,96,94,93,92,90,86,82,78,74,70,66,63,60,57,55,54,48,25,4]],[91.71,[-3,-4,-4,-5,-5,-6,-7,-7,-8,-8,-8,-8,-7,-4]],[92.02,[3,4,5,6,6,6,6,6,5,5,5,5,5,5,5,6,6,6,6,5,5,4]],[92.32,[5,7,9,11,12,13,13,13,13,13,12,11,10,9,8,7,7,7,8,8,9,10,10,10,10,9,8,6,5,4]],[92.71,[3,4,5,6,7,9,12,15,20,25,30,35,41,46,51,58,65,72,76,79,81,83,85,86,86,79,69,56,41,29,21,17,13,10,8,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,6,6,5,5,4,4,3,3]],[96.94,[3,6,9,12,16,20,25,30,35,41,46,52,57,61,65,69,73,78,82,83,85,86,88,90,94,99,106,115,127,138,147,152,154,153,151,151,150,148,146,143,140,138,135,134,132,129,128,126,126,126,126,126,127,127,128,128,129,129,129,129,129,129,129,129,129,129,129,129,129,129,129,129,129,129,129,129,125,118,109,100,92,83,75,66,57,49,59,50,42,33,25,16,8]],[98.19,[7,17,31,48,66,83,99,109,114,112,105,98,90,84,79,78,80,85,93,98,101,103,108,114,121,130,141,146,143,132,119,104,93,85,82,81,81,81,81,81,81,81,81,81,81,81,81,81,81,79,54,17]],[98.84,[3,4,4,3,2,2,2,3,5,8,10,13,15,18,20,20,20,18,17,15,13,10,6,2,-2,-5,-8,-10,-12,-12,-12,-11,-9,-7,-6,-3,-1,2,4,6,8,9,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,9,9,8,7,7,6,6,5,4,4]],[100.08,[4,16,36,63,93,122,146,161,165,158,145,129,114,103,94,87,83,82,83,85,89,93,97,98,99,98,96,94,91,90,90,90,91,91,91,91,91,91,91,91,91,91,91,91,91,91,91,91,91,91,91,91,91,87,82,76,70,64,58,51,45,39,33,27,21,15,9,3]],[104.1,[12,31,62,101,145,188,225,250,261,253,263,260,250,238,226,213,200,186,171,156,144,133,124,118,113,108,103,98,91,83,72,61,49,37,27,19,13,9,6,4,4,5,10,17,26,38,52,68,85,99,109,114,119,122,124,126,126,126,123,116,104,92,84,82,73,39,7]],[104.88,[6,9,13,16,17,16,14,12,9,7,4,2,1,2,2,3,5,6,6,6,6,6,6,6,6,6,7,10,15,22,33,46,60,73,81,82,79,74,66,55,44,32,21,11,6,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,3,3]],[106.1,[8,22,42,66,90,113,129,138,139,132,120,107,93,80,68,58,50,43,38,33,30,27,26,26,25,25,24,23,21,18,15,12,10,8,7,7,7,7,7,6,6,6,5,5,5,4,4,4,4,5,7,10,13,16,18,18,17,16,16,15,9]],[106.83,[3,5,8,11,15,19,22,24,25,23,22,21,22,23,23,23,22,21,19,16,15,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,13,12,11,10,9,8,7,6,6,5,4]],[108.01,[3,12,29,50,72,91,105,112,112,107,97,85,71,58,44,31,20,9,-1,-10,-17,-23,-28,-30,-29,-27,-25,-22,-20,-20,-20,-21,-23,-25,-28,-30,-32,-34,-35,-37,-38,-39,-39,-39,-37,-35,-33,-31,-30,-30,-30,-30,-31,-31,-30,-28,-26,-25,-25,-25,-25,-25,-25,-25]],[108.85,[8,14,21,28,32,34,31,25,17,10,3,-1,-4,-7,-8,-10,-11,-12,-11,-10,-9,-8,-8,-8,-8,-8,-9,-9,-9,-9,-9,-9,-9,-9,-8,-7,-5,0,8,18,26,31,36,41,51,68,90,106,116,121,121,114,105,100,97,95,92,86,76,67,57,46,36,26,17,9,3,-2,-4,-5,-5,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,6,1,-3,-5,-5,-5,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-3,-3]],[110.36,[-3,-5,-6,-7,-8,-9,-9,-9,-9,-8,-8,-8,-7,-7,-7,-7,-6,-6,-7,-8,-9,-11,-13,-15,-17,-18,-19,-18,-15,-11,-7,-4,-3,-4,-7,-8,-8,-8,-8,-8,-8,-8,-8,-8,-8,-8,-8,-8,-8,-8,-8,-8,-8,-8,-8,-7,-7,-6,-6,-5,-5,-4,-4,-3]],[112.14,[6,16,30,45,60,71,78,80,78,74,69,65,62,57,52,46,39,32,25,18,11,5,-1,-6,-10,-14,-16,-18,-19,-19,-19,-19,-18,-18,-18,-18,-17,-16,-15,-13,-12,-10,-10,-9,-9,-9,-8,-9,-8,-8,-7,-7,-6,-6,-7,-8]],[112.8,[4,4,1,-3,-8,-11,-12,-11,-8,-5,-3,-1,-1,-2,-4,-7,-9,-12,-13,-13,-14,-13,-13,-12,-12,-12,-11,-11,-12,-12,-13,-14,-16,-17,-18,-19,-19,-19,-19,-18,-18,-18,-17,-16,-15,-15,-14,-14,-14,-15,-15,-16,-17,-17,-18,-19,-21,-22,-23,-24,-25,-26,-27,-28,-29,-30,-31,-32,-33,-34,-34,-34,-34,-34,-34,-34,-34,-33,-32,-29,-24,-16,-6,5,16,23,25,23,20,15,9,4,-2,-8,-14,-18,-19,-19,-19,-19,-19,-19,-19,-19,-19,-19,-19,-19,-19,-19,-19,-19,-19,-13,-4]],[114.1,[8,17,26,34,37,36,29,18,5,-7,-17,-25,-30,-33,-33,-32,-31,-30,-28,-27,-26,-25,-25,-26,-27,-28,-29,-30,-31,-31,-32,-31,-31,-30,-28,-26,-24,-21,-19,-17,-15,-14,-14,-15,-14,-13,-14,-16,-18,-21,-23,-25,-28,-29,-27,-29,-29,-28,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-29,-27,-26,-24,-22,-20,-18,-16,-14,-12,-10,-8,-6,-4]],[116.11,[8,20,35,49,62,71,77,80,81,79,76,73,72,71,70,68,65,60,55,48,40,36,36,37,38,34,30,28,30,35,41,48,54,59,64,68,70,71,71,71,71,71,71,71,71,71,71,71,71,71,71,71,71,71,71,70,68,64,59,55,50,45,40,36,31,26,21,17,12,7,3]],[120.85,[7,20,39,63,87,109,127,141,148,151,151,151,152,154,157,161,165,169,174,178,182,184,186,188,189,191,192,194,194,193,191,189,188,190,192,194,194,193,193,196,201,205,207,204,189,166,142,129,129,135,141,144,142,141,144,150,162,177,186,188,188,188,188,188,188,188,188,188,188,188,188,188,188,188,188,188,188,186,180,168,156,143,131,118,106,93,81,68,56,43,31,18,7]],[122.13,[4,13,26,44,62,80,93,102,104,100,93,84,75,66,58,52,47,44,41,38,35,34,32,31,31,31,30,29,27,23,19,14,10,6,2,0,-1,1,4,4,4,5,7,11,17,24,33,45,57,67,72,74,75,70,58,44,35,32,30,19,5]],[122.84,[6,11,17,24,30,34,36,35,32,28,23,17,12,8,6,4,4,4,5,7,9,11,13,15,16,16,17,17,19,23,29,34,38,41,43,45,47,49,51,53,52,47,39,30,22,17,15,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,13,12,11,10,9,8,7,6,5,4,3]],[124.16,[11,25,41,55,63,65,60,51,40,29,21,16,13,12,11,11,12,13,14,15,16,15,14,11,8,6,3]],[124.82,[5,14,26,41,56,70,82,92,100,104,107,110,112,112,112,110,106,102,96,89,81,73,65,57,51,46,43,41,41,41,41,42,43,44,44,44,43,41,40,38,36,36,36,37,39,44,52,61,68,73,82,99,119,136,148,157,162,164,162,155,148,143,139,132,123,116,112,110,108,108,107,107,107,104,77,28]],[125.77,[12,43,63,64,63,62,64,68,74,81,88,92,94,94,94,93,92,91,91,89,64,22]],[126.08,[5,10,16,23,28,33,34,35,34,32,31,30,29,28,27,26,25,25,24,23,22,21,20,20,22,25,31,40,52,61,67,72,79,88,102,120,133,137,135,125,110,94,87,88,92,97,100,100,99,101,105,109,114,119,122,124,123,121,118,117,118,121,124,128,130,132,131,128,123,117,112,106,98,90,81,73,66,62,61,61,61,61,61,61,61,61,61,61,61,61,61,61,61,61,61,61,61,59,56,51,47,43,39,35,31,27,23,19,15,11,7]],[127.74,[3,3,4,5,7,9,12,15,18,20,23,24,25,25,26,26,26,26,26,26,26,26,26,25,20,8]],[128.31,[4,5,6,7,8,9,10,10,10,9,9,9,9,9,9,9,9,9,8,8,8,9,10,14,19,22,24,25,27,29,33,39,49,62,71,74,69,62,58,56,55,54,53,53,51,49,46,45,45,44,43,40,36,33,30,27,25,22,18,15,12,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,10,9,9,8,7,6,6,5,4,3]],[130.17,[3,5,7,8,8,8,7,7,6,5,5,5,5,5,6,7,8,8,9,11,13,18,22,24,26,27,29,32,37,43,53,69,87,96,94,90,85,82,80,75,49,13]],[131.08,[-3,-3,-3,0,4,7,8,9,11,13,16,20,26,34,45,59,74,85,88,85,81,79,77,76,74,71,66,58,50,43,35,28,21,15,9,4]],[131.65,[-4,-6,-9,-12,-15,-17,-20,-21,-21,-20,-19,-18,-17,-16,-15,-14,-14,-13,-13,-14,-14,-14,-15,-14,-13,-11,-8,-6,-7,-8,-10,-12,-14,-15,-13,-7]],[132.15,[6,9,13,16,18,18,16,14,11,9,7,6,6,6,5,5,5,6,6,7,7,7,7,5,4]],[132.53,[5,7,7,6,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,4,4,4,3]],[135.8,[-3,-4,-4,-4,-4,-5,-5,-5,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-5]],[136.52,[3,5,7,10,12,15,16,18,19,19,20,22,24,27,31,35,39,43,48,52,55,59,64,68,72,74,71,61,47,33,21,12,10,12,13,14,15,15,15,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,13,12,12,11,10,9,8,7,6,5,4,3]],[138.26,[4,6,8,10,13,16,19,23,26,29,32,36,39,43,48,53,56,58,60,62,65,68,72,78,88,104,118,124,122,118,114,111,108,98,61,15]],[138.9,[4,6,10,13,18,22,27,32,37,41,45,49,53,55,58,60,61,62,64,67,70,75,81,85,88,90,94,98,102,108,115,126,138,145,144,140,137,135,135,135,136,137,138,137,136,135,136,137,137,138,139,139,138,136,133,130,127,125,125,107,49,5]],[139.67,[-4,-6,-8,-10,-11,-12,-13,-12,-12,-11,-10,-9,-8,-7,-7,-6,-6,-7,-7,-8,-9,-9,-9,-8,-8,-8,-8,-8,-8,-4]],[140.2,[4,4,3,1,-2,-6,-10,-14,-17,-20,-20,-19,-17,-15,-13,-11,-9,-7,-6,-5,-4,-3]],[140.5,[4,10,17,23,26,31,38,48,55,57,56,51,44,36,27,18,10,4]],[141.71,[4,5,8,12,16,19,23,28,32,38,44,48,48,45,41,36,31,28,27,27,27,27,27,27,22,9]],[142.34,[3,5,8,11,14,17,20,24,28,32,37,41,46,51,55,60,65,71,76,81,87,92,96,100,104,106,109,111,112,113,113,113,112,110,109,107,96,53,11]],[142.88,[11,56,100,109,109,109,109,109,109,109,109,109,109,109,109,109,109,109,109,109,109,109,109,109,108,106,100,93,86,79,71,64,57,50,42,35,28,21,13,6]],[143.81,[4,4,5,6,7,8,9,9,8,7,6,6,6,6,4]],[144.2,[3,4,5,5,6,7,8,9,10,11,12,12,13,13,13,13,13,13,13,14,15,15,17,18,20,23,28,33,36,39,41,44,47,51,56,65,77,88,93,92,89,87,86,86,86,86,86,85,82,77,71,64,58,51,44,39,36,35,34,34,33,32,32,31,30,30,29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,28,26,24,22,20,18,16,14,13,11,9,7,5]],[146.21,[3,4,4,4,4,5,5,6,7,8,9,10,11,11,12,12,12,12,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,10,9,8,8,7,6,5,5,4]],[147.05,[3,6,9,14,19,25,33,42,54,67,84,103,115,121,123,124,123,121,119,115,86,33]],[147.44,[24,73,94,57,13]],[147.64,[-4,-6,-8,-9,-11,-12,-12,-11,-11,-11,-11,-11,-12,-12,-13,-13,-14,-15,-15,-15,-14,-12,-9,-5,-2,-1,-1,-3,-5,-7,-10,-11,-11,-7]],[148.17,[-5,-10,-15,-20,-23,-24,-23,-21,-19,-17,-16,-16,-16,-16,-17,-18,-19,-20,-20,-19,-15,-10,-3,2,5,6,6,4,2,-1,-5,-9,-13,-17,-18,-18,-18,-18,-18,-18,-18,-18,-18,-18,-18,-18,-18,-18,-18,-18,-18,-18,-18,-17,-16,-15,-14,-13,-12,-10,-9,-8,-7,-6,-5,-3]],[151.67,[4,7,9,12,14,16,18,20,22,23,25,26,28,30,32,33,35,37,38,38,38,38,38,38,38,38,36,21,5]],[152.3,[3,4,4,4,4,4,4,4,3,3,3,4,5,7,10,15,19,20,22,25,28,31,36,42,50,62,75,79,72,61,51,42,34,26,19,11,6,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,4,4,4,4,3]],[154.26,[4,6,8,10,13,16,20,25,30,35,39,43,47,51,56,62,69,80,91,88,73,66,68,69,70,68,67,65,63,60,58,56,53,51,49,49,49,49,49,49,49,49,44,24,5]],[154.98,[3,4,5,5,6,7,8,9,10,10,10,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,8,8,7,6,6,5,5,4,3]],[155.71,[-3,-3,-4,-4,-4,-4,-5,-5,-5,-6,-6,-7,-8,-8,-8,-8,-8,-8,-8,-6]],[156.12,[4,5,6,7,8,8,9,9,10,10,10,10,10,9,9,8,8,8,9,9,11,12,15,17,19,21,23,23,24,24,23,23,22,21,20,20,19,19,20,21,22,23,24,25,25,25,25,25,25,24,22,21,20,19,18,18,17,17,16,16,15,15,15,15,15,16,17,18,20,21,24,27,31,36,40,45,37,14]],[157.02,[4,13,17,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,17,17,16,15,13,12,11,10,9,7,6,5,4]],[191.7,[4,5,5,6,8,10,12,15,17,20,22,24,25,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,20,8]],[192.23,[4,5,6,7,9,10,11,13,15,17,18,20,21,22,22,22,22,22,22,21,21,20,20,19,18,18,18,19,21,25,28,30,31,32,34,38,46,57,67,74,79,80,78,76,74,74,73,73,72,69,66,63,60,58,57,57,56,55,55,54,53,52,51,50,48,47,45,43,42,40,39,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,37,36,34,32,29,27,24,22,19,17,14,12,9,7,4]],[199.79,[3,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,4]],[200.26,[-3,-4,-5,-6,-7,-8,-9,-10,-11,-11,-12,-13,-13,-13,-13,-13,-13,-13,-13,-13,-13,-13,-13,-13,-13,-13,-12,-11,-8,-4,2,6,9,11,14,18,22,28,35,44,54,61,60,49,33,18,6,1,-1,-2,-6,-10,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-11,-10,-9,-8,-8,-7,-6,-5,-4,-3]],[207.78,[3,4,5,6,7,7,8,8,9,9,9,9,8,8,8,8,7,4]],[208.28,[3,4,4,4,4,4,4,4,3]],[208.44,[4,7,9,10,11,13,14,16,20,27,34,38,38,34,28,21,15,9,4]],[216.34,[4,6,8,11,14,16,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,17,15,14,13,12,11,9,8,7,6,4,3]],[223.74,[-3,-5,-7,-9,-10,-12,-13,-14,-15,-16,-16,-17,-19,-19,-20,-20,-20,-20,-19,-13,-4]],[224.25,[3,5,6,8,10,12,14,17,20,23,26,29,32,35,37,39,40,41,41,41,41,40,40,39,39,38,38,38,38,39,41,45,51,58,65,72,78,83,86,89,91,92,92,91,88,84,80,77,75,74,75,77,78,80,82,84,86,87,87,83,77,70,65,61,60,61,61,60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,59,57,53,49,45,41,37,33,29,25,21,17,13,9,5]],[226.15,[4,6,9,11,12,14,14,14,13,13,13,13,13,14,14,16,17,18,19,22,25,30,36,39,41,43,46,49,54,60,69,81,91,91,83,75,72,71,71,72,73,68,40,8]],[227.0,[-3,-3,-4,-4,-4,-4,-4,-4,-4,-3,0,4,10,13,15,17,20,23,27,32,39,50,66,80,87,86,79,69,59,50,40,32,24,16,9]],[227.6,[5,8,11,13,15,15,15,13,11,9,6,4]],[227.86,[3,7,9,9,8,7,6,4]],[228.13,[5,6,7,6,3,-1,-6,-12,-17,-21,-23,-25,-26,-25,-25,-24,-23,-22,-21,-20,-20,-19,-19,-19,-19,-19,-20,-20,-21,-21,-22,-22,-21,-20,-19,-16,-12,-7,-1,5,12,19,27,35,43,51,57,60,61,58,50,39,28,18,9,1,-5,-11,-15,-18,-19,-20,-20,-20,-20,-20,-20,-20,-20,-20,-20,-20,-20,-20,-20,-20,-20,-20,-20,-19,-19,-17,-16,-15,-13,-12,-11,-10,-8,-7,-6,-4]],[231.77,[4,5,7,9,11,14,17,20,24,27,29,31,32,32,31,31,32,35,37,37,34,31,27,25,25,19,8]],[232.47,[3,4,4,4,4,4,3,2,2,2,5,10,14,16,17,18,20,24,28,35,41,50,55,53,46,37,29,21,13,7,3]],[234.22,[5,6,8,11,14,17,21,25,29,33,37,40,43,46,48,51,55,59,61,62,63,65,68,71,76,84,96,107,113,112,108,105,102,94,58,15]],[234.98,[-3,-4,-4,-4,-5,-5,-5,-5,-5,-5,-4,0,5,9,11,13,15,18,21,26,33,43,56,65,69,64,53,41,30,20,12,5,-1,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4]],[235.65,[-5,-7,-10,-12,-15,-17,-19,-20,-21,-21,-21,-21,-21,-21,-22,-23,-25,-28,-31,-34,-36,-37,-38,-37,-37,-36,-34,-32,-29,-26,-23,-21,-20,-17,-7]],[236.13,[3,6,8,10,11,10,8,6,3,0,-2,-4,-4,-4]],[236.32,[3,3,3,3]],[236.44,[6,11,17,24,31,37,42,45,45,41,37,33,27,22,16,11,6,3]],[237.7,[4,5,8,12,16,20,24,29,34,41,47,49,49,45,41,36,33,32,32,32,32,32,32,32,30,17,4]],[238.27,[3,4,4,5,5,5,5,6,6,7,8,8,8,9,9,9,10,10,10,11,12,13,15,18,21,25,28,30,31,31,30,27,24,19,14,11,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,9,9,8,7,8,8,7,6,6,5,4,4]],[239.75,[3,4,5,6,8,9,11,12,13,13,14,14,14,14,14,13,13,13,13,10,4]],[240.26,[3,4,5,6,6,7,8,9,10,10,10,10,10,10,9,9,9,9,9,9,11,15,19,22,24,26,28,34,44,54,64,73,80,84,84,82,80,78,75,71,67,61,56,49,41,34,28,23,19,16,14,13,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,11,11,10,10,9,8,7,6,6,5,4,3]],[242.19,[5,8,11,15,19,24,29,34,39,43,48,52,56,61,65,70,75,78,80,82,84,87,90,94,103,114,125,132,136,135,133,131,129,127,118,73,18]],[243.06,[5,8,11,15,20,28,38,50,62,75,91,104,113,119,124,128,130,129,126,121,116,113,97,50,8]],[243.44,[15,62,85,43,6]],[243.61,[4,8,13,19,25,31,37,42,47,51,54,59,66,75,86,96,106,115,124,132,140,147,153,156,153,146,138,131,127,123,122,121,121,122,123,123,105,48,5]],[244.15,[-4,-5,-7,-8,-9,-11,-12,-12,-12,-12,-11,-11,-11,-10,-11,-11,-12,-13,-14,-16,-18,-19,-20,-21,-21,-20,-17,-14,-11,-8,-7,-7,-8,-10,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-12,-11,-10,-9,-9,-8,-7,-6,-5,-5,-4]],[248.37,[-4,-5,-6,-6,-5,-3,1,7,15,22,27,31,35,40,46,55,64,71,72,65,53,40,28,19,12,8,4,0,-2,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-3,-3]],[250.18,[5,9,13,18,23,29,35,41,47,53,59,65,72,79,86,91,94,96,99,102,105,112,123,136,145,148,147,144,141,139,137,136,135,134,133,132,132,133,134,136,139,140,140,140,140,140,140,140,140,140,130,77,17]],[250.98,[3,4,5,5,5,6,6,7,8,9,11,13,14,16,17,16,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,14,13,12,11,10,9,8,7,6,3]],[251.69,[-4,-6,-7,-9,-10,-11,-13,-14,-15,-16,-17,-17,-18,-19,-19,-20,-21,-21,-21,-21,-21,-20,-20,-14,-5]],[252.21,[4,4,5,5,5,5,5,5,5,5,5,6,7,8,9,10,12,13,14,14,14,14,13,12,11,10,10,9,9,9,9,9,10,10,10,9,9,8,8,7,7,6,6,5,5,5,5,6,7,8,9,9,8,7,6,4,3,3,2,3,5,10,16,23,30,39,47,55,61,66,68,65,58,50,42,34,27,21,16,12,9,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,6,6,5,5,5,4,4,3]]],"quelle":"mix-3/v7/werte/shift_3.npz (v7-Korrektur in Cent, auf Ende-Zeit gebracht)"},"gebaut":"2026-11-22 23:35","fokus":{"von_s":103.4,"bis_s":117.6,"text":"Strophe 2: „There is so much more to see“ + „Are we hypnotised“"}};
+let STEMS={"lied":"the-wall","zeit":"Sekunden ab Takt 1 (120 BPM, 4/4)","hinweis":"Stems austauschbar: weitere Einträge mit id/name/stuecke anlegen; Zeitachse immer ab Takt 1. Lauf 5: Ende = v11, Musik = v11 ohne Gesang.","rollen":{"bearbeiten":"ende","a":"original","musik":"mix"},"stems":[{"id":"ende","name":"Ende (v11)","info":"Hauptstimme v11 trocken (Timing wie v10, „Open your eyes“ an der Quelle entfernt)","kanaele":1,"herkunft":"Haupt_v11_trocken.wav","stuecke":[{"datei":"audio/ende-00.mp3?e8b60d04","von_s":0.0,"bis_s":34.5,"abdruck":"ende-00","bytes":553005},{"datei":"audio/ende-01.mp3?b914a6ed","von_s":29.025,"bis_s":66.5,"abdruck":"ende-01","bytes":600621},{"datei":"audio/ende-02.mp3?2c71cc8f","von_s":60.65,"bis_s":98.5,"abdruck":"ende-02","bytes":606765},{"datei":"audio/ende-03.mp3?f9be9d20","von_s":93.027,"bis_s":130.5,"abdruck":"ende-03","bytes":600621},{"datei":"audio/ende-04.mp3?415ce65d","von_s":124.65,"bis_s":162.5,"abdruck":"ende-04","bytes":606765},{"datei":"audio/ende-05.mp3?629d90f3","von_s":155.15,"bis_s":178.5,"abdruck":"ende-05","bytes":374445},{"datei":"audio/ende-06.mp3?46aff248","von_s":173.5,"bis_s":194.5,"abdruck":"ende-06","bytes":336813},{"datei":"audio/ende-07.mp3?3527a3c3","von_s":188.65,"bis_s":226.5,"abdruck":"ende-07","bytes":606765},{"datei":"audio/ende-08.mp3?816b30c4","von_s":220.65,"bis_s":258.5,"abdruck":"ende-08","bytes":606765},{"datei":"audio/ende-09.mp3?777c642c","von_s":251.15,"bis_s":266.0,"abdruck":"ende-09","bytes":238509}]},{"id":"original","name":"Original","info":"Aufnahme (5) vom 17.11., trocken, wie gesungen","kanaele":1,"herkunft":"Haupt_trocken_E5.flac","stuecke":[{"datei":"audio/original-00.mp3?cff84783","von_s":0.0,"bis_s":34.5,"abdruck":"original-00","bytes":553005},{"datei":"audio/original-01.mp3?c0d4c15d","von_s":29.025,"bis_s":66.5,"abdruck":"original-01","bytes":600621},{"datei":"audio/original-02.mp3?840ce907","von_s":60.65,"bis_s":98.5,"abdruck":"original-02","bytes":606765},{"datei":"audio/original-03.mp3?f0b8830b","von_s":93.027,"bis_s":130.5,"abdruck":"original-03","bytes":600621},{"datei":"audio/original-04.mp3?56c17a41","von_s":124.65,"bis_s":162.5,"abdruck":"original-04","bytes":606765},{"datei":"audio/original-05.mp3?629b5fb7","von_s":155.15,"bis_s":178.5,"abdruck":"original-05","bytes":374445},{"datei":"audio/original-06.mp3?c6d59a74","von_s":173.5,"bis_s":194.5,"abdruck":"original-06","bytes":336813},{"datei":"audio/original-07.mp3?c5158897","von_s":188.65,"bis_s":226.5,"abdruck":"original-07","bytes":606765},{"datei":"audio/original-08.mp3?7ca10b7d","von_s":220.65,"bis_s":258.5,"abdruck":"original-08","bytes":606765},{"datei":"audio/original-09.mp3?154d22d0","von_s":251.15,"bis_s":266.0,"abdruck":"original-09","bytes":238509}]},{"id":"gereinigt","name":"gereinigt","info":"Original nach der G1-Reinigung (nur für die Ansicht neu gerechnet)","kanaele":1,"herkunft":"bau/ws_g1_original.py","stuecke":[{"datei":"audio/gereinigt-00.mp3?623c7db7","von_s":0.0,"bis_s":34.5,"abdruck":"gereinigt-00","bytes":553005},{"datei":"audio/gereinigt-01.mp3?78096d34","von_s":29.025,"bis_s":66.5,"abdruck":"gereinigt-01","bytes":600621},{"datei":"audio/gereinigt-02.mp3?dc700951","von_s":60.65,"bis_s":98.5,"abdruck":"gereinigt-02","bytes":606765},{"datei":"audio/gereinigt-03.mp3?3decfa0e","von_s":93.027,"bis_s":130.5,"abdruck":"gereinigt-03","bytes":600621},{"datei":"audio/gereinigt-04.mp3?041f976b","von_s":124.65,"bis_s":162.5,"abdruck":"gereinigt-04","bytes":606765},{"datei":"audio/gereinigt-05.mp3?2b45e3c9","von_s":155.15,"bis_s":178.5,"abdruck":"gereinigt-05","bytes":374445},{"datei":"audio/gereinigt-06.mp3?e1d31f59","von_s":173.5,"bis_s":194.5,"abdruck":"gereinigt-06","bytes":336813},{"datei":"audio/gereinigt-07.mp3?44854e9c","von_s":188.65,"bis_s":226.5,"abdruck":"gereinigt-07","bytes":606765},{"datei":"audio/gereinigt-08.mp3?0033449e","von_s":220.65,"bis_s":258.5,"abdruck":"gereinigt-08","bytes":606765},{"datei":"audio/gereinigt-09.mp3?d498d844","von_s":251.15,"bis_s":266.0,"abdruck":"gereinigt-09","bytes":238509}]},{"id":"mix","name":"Musik v11 (ohne Gesang)","info":"Instrumental wie im v11-Master, ohne Gesang","kanaele":2,"herkunft":"n4_musik.py (v11-Master ohne Gesang)","stuecke":[{"datei":"audio/mix-00.mp3?d6492910","von_s":0.0,"bis_s":34.5,"abdruck":"mix-00","bytes":691245},{"datei":"audio/mix-01.mp3?192b5c7f","von_s":29.025,"bis_s":66.5,"abdruck":"mix-01","bytes":750765},{"datei":"audio/mix-02.mp3?f220870c","von_s":60.65,"bis_s":98.5,"abdruck":"mix-02","bytes":758445},{"datei":"audio/mix-03.mp3?2e395a33","von_s":93.027,"bis_s":130.5,"abdruck":"mix-03","bytes":750765},{"datei":"audio/mix-04.mp3?67c09aa7","von_s":124.65,"bis_s":162.5,"abdruck":"mix-04","bytes":758445},{"datei":"audio/mix-05.mp3?cb1a58f3","von_s":155.15,"bis_s":178.5,"abdruck":"mix-05","bytes":468045},{"datei":"audio/mix-06.mp3?0fd32fee","von_s":173.5,"bis_s":194.5,"abdruck":"mix-06","bytes":421005},{"datei":"audio/mix-07.mp3?a8fc1b18","von_s":188.65,"bis_s":226.5,"abdruck":"mix-07","bytes":758445},{"datei":"audio/mix-08.mp3?ed5bb63b","von_s":220.65,"bis_s":258.5,"abdruck":"mix-08","bytes":758445},{"datei":"audio/mix-09.mp3?a72ec71f","von_s":251.15,"bis_s":266.0,"abdruck":"mix-09","bytes":298125}],"mit_gesang":false}],"fassung":"v11","ende_quelle":"v11-Hauptstimme trocken (Haupt_v11_trocken.wav, Timing wie v10)"};   // Startwert; zur Laufzeit gilt daten/stems.json (Stems austauschbar ohne Neubau der Seite)
+const SCHICHT_URL='daten/schichten.json?daf52730';
+const $=id=>document.getElementById(id);
+const SPEICHER='tw-gesang-werkstatt-2';
+// Gleiche Ablage wie die heutige Werkstatt: Supabase-Tabelle gesang_notiz (nur Einfügen für anon).
+const MELDUNG_URL='https://dbdnsryoivvezspgydpx.supabase.co/rest/v1/gesang_notiz';
+const MELDUNG_KEY='sb_publishable_6utuy3es2447DjAQvxdrUQ_F-6fE5_M';
+const TS=LIED.takt_s,TAKT=LIED.takt[0],SCHLAG=TS/TAKT,T1=LIED.takt1_s,DAUER=LIED.dauer_s;
+const SIL=LIED.silben,WOE=LIED.woerter,ZEI=LIED.zeilen,ABS=LIED.abschnitte,AKK=LIED.akkorde.takte;
+const RASTER=[{id:'1/4',s:.5},{id:'1/8',s:.25},{id:'1/16',s:.125},{id:'1/8T',s:.5/3},{id:'1/16T',s:.5/6},{id:'frei',s:0}];
+const DMIN=.4,DMAX=DAUER+4;
+const SCHICHTEN=[{id:'original',name:'Original',c:'--c-orig'},{id:'gereinigt',name:'gereinigt',c:'--c-rein'},{id:'timing',name:'Timing',c:'--c-tim'},{id:'ton',name:'Tonhöhe',c:'--c-ton'},{id:'ende',name:'Ende v11',c:'--c-ende'},{id:'neu',name:'Neu',c:'--c-neu'},{id:'aend',name:'Änderungen',c:'--c-spaet'}];
+const HOEREN={original:'original',gereinigt:'gereinigt',v10:'ende',neu:'ende'};
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+function esc(t){return String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+const jetzt=()=>new Date().toISOString();
+function mmss(t){t=Math.max(0,t);const m=Math.floor(t/60),s=t-m*60;return m+':'+(s<10?'0':'')+s.toFixed(1).replace('.',',')}
+function sek(t){return t.toFixed(3).replace('.',',')+' s'}
+function tpos(t){const b=Math.floor((t-T1)/SCHLAG+1e-6);const tk=Math.floor(b/TAKT);return 'T'+(tk+1)+'.'+(b-tk*TAKT+1)}
+function msT(ms){ms=Math.round(ms);return (ms>0?'+':ms<0?'−':'±')+Math.abs(ms)+' ms'}
+const BRUCH=[[0,''],[.25,'e'],[.5,'+'],[.75,'a'],[1/3,'⅓'],[2/3,'⅔'],[1/6,'⅙'],[5/6,'⅚']];
+function rasterName(t){const q=(t-T1)/SCHLAG,b=Math.floor(q+1e-6),f=q-b,tk=Math.floor(b/TAKT);let suf='';let best=1;for(const [v,s] of BRUCH){const d=Math.abs(f-v);if(d<best){best=d;suf=s}}
+  if(Math.abs(f-1)<best){return tpos(T1+(b+1)*SCHLAG)}return 'T'+(tk+1)+'.'+(b-tk*TAKT+1)+suf}
+function abschnittBei(t){let a=0;for(let i=0;i<ABS.length;i++)if(t>=ABS[i].auftakt_s-.01)a=i;return a}
+function silbeName(i){const s=SIL[i],w=WOE[s.wort];return '„'+s.text+'“'+(w.silben.length>1?' ('+w.text.replace(/[.,?!]+$/,'')+')':'')}
+// Zeitliche Reihenfolge der Silben (nach Anlauf-Beginn in v10)
+const ORD=SIL.map((_,i)=>i).sort((a,b)=>SIL[a].a-SIL[b].a);
+const POS=new Int32Array(SIL.length);ORD.forEach((i,k)=>POS[i]=k);
+
+// ---------------- Zustand
+const Z={t0:LIED.fokus.von_s,dur:LIED.fokus.bis_s-LIED.fokus.von_s,pos:LIED.fokus.von_s+.4,spielt:false,schleife:true,bereich:{von:103.6,bis:117.4},
+  raster:'1/8',zieht:'silbe',hoeren:'neu',ab:'original',musik:false,klick:false,wahl:null,tab:'Z',
+  sch:{original:true,gereinigt:false,timing:false,ton:false,ende:true,neu:true,aend:true}};
+let ZG={d:{},q:{}},HIST=[],REDO=[],NOTIZ='',GESENDET=null,speicherOk=true;
+try{const s=localStorage.getItem(SPEICHER);if(s){const d=JSON.parse(s);
+  if(d.zg&&d.zg.d)ZG={d:d.zg.d,q:d.zg.q||{}};if(Array.isArray(d.hist))HIST=d.hist.slice(-80);if(Array.isArray(d.redo))REDO=d.redo.slice(-80);
+  if(typeof d.notiz==='string')NOTIZ=d.notiz;GESENDET=d.gesendet||null;
+  const a=d.ansicht||{};for(const k of ['t0','dur','pos'])if(isFinite(a[k]))Z[k]=a[k];
+  if(RASTER.some(r=>r.id===a.raster))Z.raster=a.raster;if(['silbe','wort','zeile'].includes(a.zieht))Z.zieht=a.zieht;
+  if(HOEREN[a.hoeren])Z.hoeren=a.hoeren;if(HOEREN[a.ab])Z.ab=a.ab;if(a.sch)for(const k in Z.sch)if(typeof a.sch[k]==='boolean')Z.sch[k]=a.sch[k];
+  if(typeof a.schleife==='boolean')Z.schleife=a.schleife;if(a.tab)Z.tab=a.tab;Z.musik=!!a.musik;Z.klick=!!a.klick;
+  Z.bereich=a.bereich&&a.bereich.bis>a.bereich.von?a.bereich:(a.bereich===null?null:Z.bereich)}}catch(e){speicherOk=false}
+Z.dur=clamp(Z.dur,DMIN,DMAX);
+let sichernUhr=0;
+function sichern(){clearTimeout(sichernUhr);sichernUhr=0;
+  const d={v:1,zg:ZG,hist:HIST.slice(-80),redo:REDO.slice(-80),notiz:NOTIZ,gesendet:GESENDET,
+    ansicht:{t0:Z.t0,dur:Z.dur,pos:Z.pos,raster:Z.raster,zieht:Z.zieht,hoeren:Z.hoeren,ab:Z.ab,sch:Z.sch,schleife:Z.schleife,tab:Z.tab,musik:Z.musik,klick:Z.klick,bereich:Z.bereich}};
+  try{localStorage.setItem(SPEICHER,JSON.stringify(d));speicherOk=true}catch(e){speicherOk=false}}
+function sichernSpaeter(){if(!sichernUhr)sichernUhr=setTimeout(sichern,400)}
+
+// ---------------- Plan (Ende + Züge) -> Stücke auf der Zeitachse
+// Jede Silbe = Stück [a_k, a_k+1) der v10-Hauptstimme. Verschiebung d: Ziel = Quelle + d.
+// Überlappt die Folgesilbe, wird der Ausklang davor gekürzt (Blende), eine Lücke bleibt still.
+const offOf=(d,i)=>d[i]||0;
+function plan(d){
+  const P=[];let cur=null;const n=ORD.length;
+  const A=k=>SIL[ORD[k]].a;
+  const push=(d0,d1,off,i,ende)=>{if(d1-d0<5e-4)return;
+    if(cur&&Math.abs(cur.off-off)<1e-6&&Math.abs(cur.d1-d0)<1e-6){cur.d1=d1;cur.ende=ende;if(i>=0)cur.sil.push(i);return}
+    cur={d0,d1,off,stem:'ende',sil:i>=0?[i]:[],ende};P.push(cur)};
+  push(0,Math.min(A(0),A(0)+offOf(d,ORD[0])),0,-1,A(0)+offOf(d,ORD[0])<A(0)?'kurz':'natur');
+  for(let k=0;k<n;k++){const i=ORD[k],o=offOf(d,i),st=A(k)+o,nat=(k+1<n?A(k+1):DAUER)+o,nx=k+1<n?A(k+1)+offOf(d,ORD[k+1]):DAUER;
+    const e=Math.min(nat,nx);push(Math.max(st,0),e,o,i,nx<nat-1e-6?'kurz':'natur')}
+  for(let j=0;j<P.length;j++){const p=P[j],q=P[j-1],r=P[j+1];
+    p.fi=!q||Math.abs(q.d1-p.d0)>1e-6||Math.abs(q.off-p.off)>1e-6;
+    p.fo=!r||Math.abs(p.d1-r.d0)>1e-6||Math.abs(r.off-p.off)>1e-6}
+  return P;
+}
+let PLAN=plan(ZG.d),PLAN_TEMP=null;
+const aktPlan=()=>PLAN_TEMP||PLAN;
+function stueckBei(P,t){let a=0,b=P.length-1;while(a<=b){const m=(a+b)>>1;if(P[m].d1<=t)a=m+1;else if(P[m].d0>t)b=m-1;else return m}return -1-a}
+function bNeu(i,d){return SIL[i].b+offOf(d||ZG.d,i)}
+
+// ---------------- Spitzenwerte
+const SCH={};let SCH_P=1;
+async function ladeSchichten(){
+  const r=await fetch(SCHICHT_URL);if(!r.ok)throw new Error('HTTP '+r.status);const j=await r.json();SCH_P=j.gemeinsame_spitze;
+  for(const k in j.schichten){const s=j.schichten[k],bin=atob(s.b64),w=new Int8Array(bin.length);for(let i=0;i<bin.length;i++){const c=bin.charCodeAt(i);w[i]=c>127?c-256:c}
+    SCH[k]={rate:s.rate,n:s.n,w,gain:Math.pow(10,s.gain_db/20),zeit:s.zeit}}
+}
+const LAGE_STEM={original:'original',gereinigt:'gereinigt',ende:'ende',neu:'ende'};
+// min/max einer Schicht über die Quellzeit [ta,tb); fein (1 ms, aus dem geladenen Audio) wenn vorhanden und nah gezoomt
+function mm(lage,ta,tb,out){
+  let mn=127,mx=-127;
+  const sid=LAGE_STEM[lage];
+  if(sid&&tb-ta<.012){const f=feinFuer(sid,ta,tb);if(f){const i0=Math.max(0,Math.floor((ta-f.von)*1000)),i1=Math.min(f.n,Math.max(i0+1,Math.ceil((tb-f.von)*1000)));
+      for(let i=i0;i<i1;i++){const a=f.w[2*i],b=f.w[2*i+1];if(a<mn)mn=a;if(b>mx)mx=b}out[0]=mn;out[1]=mx;return i1>i0}}
+  const s=SCH[lage==='neu'?'ende':lage];if(!s)return false;
+  let i0=Math.floor(ta*s.rate),i1=Math.ceil(tb*s.rate);if(i1<=i0)i1=i0+1;if(i1<=0||i0>=s.n)return false;if(i0<0)i0=0;if(i1>s.n)i1=s.n;
+  const w=s.w;for(let i=i0;i<i1;i++){const a=w[2*i],b=w[2*i+1];if(a<mn)mn=a;if(b>mx)mx=b}
+  out[0]=mn;out[1]=mx;return true;
+}
+
+// ---------------- Farben, Größen
+let FB={};
+function farben(){const s=getComputedStyle(document.documentElement);
+  for(const k of ['bg','fg','mut','lin','lin2','gold','hi','bar','karte','welle','warn','blau','band1','band2','bereich','ok','rot','c-orig','c-rein','c-tim','c-ton','c-ende','c-neu','c-spaet','c-frueh','c-pruef'])FB[k]=s.getPropertyValue('--'+k).trim();
+  ueberStatisch=null;THEMAVER++;basisNeu()}
+const cb=$('cb'),co=$('co'),ue=$('ueber'),buehne=$('buehne'),lupe=$('lupe');
+const cxB=cb.getContext('2d'),cxO=co.getContext('2d'),cxU=ue.getContext('2d'),cxL=lupe.getContext('2d');
+let W=1,H=1,DPR=1,UW=1,UH=1;const L={};
+function groesse(){
+  const r=buehne.getBoundingClientRect();DPR=Math.min(2,window.devicePixelRatio||1);W=Math.max(1,r.width);H=Math.max(1,r.height);
+  for(const c of [cb,co]){c.width=Math.round(W*DPR);c.height=Math.round(H*DPR)}
+  lupe.width=Math.round(176*DPR);lupe.height=Math.round(104*DPR);
+  const flach=H<300;L.rul=flach?28:34;L.syl=flach?46:54;L.mark=flach?28:34;
+  L.yS=L.rul;L.yW=L.rul+L.syl;L.wav=Math.max(60,H-L.rul-L.syl-L.mark);L.yM=L.yW+L.wav;
+  const u=ue.getBoundingClientRect();UW=Math.max(1,u.width);UH=Math.max(1,u.height);ue.width=Math.round(UW*DPR);ue.height=Math.round(UH*DPR);
+  ueberStatisch=null;OBEN_ALT=null;clampView();basisNeu();
+}
+const xz=t=>(t-Z.t0)/Z.dur*W,tz=x=>Z.t0+x/W*Z.dur;
+function clampView(){Z.dur=clamp(Z.dur,DMIN,DMAX);if(Z.dur>=DAUER+2)Z.t0=(DAUER-Z.dur)/2;else Z.t0=clamp(Z.t0,-1,DAUER-Z.dur+1)}
+
+// ---------------- Zeichnen
+let basisDirty=true,ueberDirty=true,rafId=0,ueberStatisch=null;
+const MESS={basis:[],frames:0,aussetzer:0,vorhoeren:0,versatz:{}};
+function anfordern(){if(!rafId)rafId=requestAnimationFrame(frame)}
+function basisNeu(){basisDirty=true;ueberDirty=true;anfordern()}
+let sylBox=[],markBox=[],rulBox=[];
+const breiten=new Map();
+function breite(c,t){let w=breiten.get(c.font+t);if(w==null){w=c.measureText(t).width;breiten.set(c.font+t,w)}return w}
+function rund(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
+const MM=[0,0];
+// Welle einer Schicht zeichnen. quelle(t) bildet die Spalten-Zeit auf die Quellzeit ab (eigene Zeit = Identität).
+function welle(c,lage,stil,farbe,alpha,plan){
+  const y0=L.yW,h=L.wav,yc=y0+h/2,amp=(h/2-4)/127;
+  const cols=Math.round(W*DPR),cw=W/cols,dtc=Z.dur/cols;
+  c.globalAlpha=alpha;
+  if(stil==='fuellen'){c.fillStyle=farbe;c.beginPath()}
+  const oben=[],unten=[];
+  let j=0;
+  for(let k=0;k<cols;k++){
+    const ta=Z.t0+k*dtc,tb=ta+dtc;let ok=false,mn=127,mx=-127;
+    if(plan){ // Spalte aus den Plan-Stücken zusammensetzen
+      while(j<plan.length&&plan[j].d1<=ta)j++;
+      for(let q=j;q<plan.length&&plan[q].d0<tb;q++){const p=plan[q],a=Math.max(ta,p.d0),b=Math.min(tb,p.d1);if(b<=a)continue;
+        if(mm(lage,a-p.off,b-p.off,MM)){ok=true;if(MM[0]<mn)mn=MM[0];if(MM[1]>mx)mx=MM[1]}}
+    }else ok=mm(lage,ta,tb,MM),mn=MM[0],mx=MM[1];
+    if(!ok){if(stil!=='fuellen'){oben.push(null);unten.push(null)}continue}
+    const yt=yc-mx*amp,yb=yc-mn*amp;
+    if(stil==='fuellen')c.rect(k*cw,yt,cw,Math.max(yb-yt,1/DPR));else{oben.push([k*cw,yt]);unten.push([k*cw,yb])}
+  }
+  if(stil==='fuellen')c.fill();
+  else{c.strokeStyle=farbe;c.lineWidth=stil==='linie2'?1.4:1;c.beginPath();for(const arr of [oben,unten]){let an=false;for(const p of arr){if(!p){an=false;continue}if(!an){c.moveTo(p[0],p[1]);an=true}else c.lineTo(p[0],p[1])}}c.stroke()}
+  c.globalAlpha=1;
+}
+// Hintergrund (alles, was sich beim Ziehen nicht bewegt) wird in ein eigenes Bild gezeichnet und nur bei Bedarf neu gebaut;
+// je Bild kommen nur noch die Schicht „Neu“, die Silben und deine Züge dazu.
+let HINTER=null,HINTER_KEY='',LETZTER_KEY='',FEINVER=0,THEMAVER=0;
+function hinterKey(bearb){return [Z.t0,Z.dur,W,H,DPR,Z.sch.original,Z.sch.gereinigt,Z.sch.timing,Z.sch.ende,Z.sch.neu,Z.sch.ton,Z.sch.aend,bearb,Z.bereich?Z.bereich.von+'/'+Z.bereich.bis:'',Z.raster,G&&G.art==='zieht'?1:0,FEINVER,THEMAVER,!!SCH.ende].join('|')}
+function zeichneHinter(c,bearb){
+  c.fillStyle=FB.bg;c.fillRect(0,0,W,H);
+  c.fillStyle=FB.band1;c.fillRect(0,0,W,L.rul);c.fillRect(0,L.yM,W,L.mark);
+  c.font='600 10.5px -apple-system,system-ui,sans-serif';c.textBaseline='middle';
+  for(let i=0;i<ABS.length;i++){const a=ABS[i],b=i+1<ABS.length?ABS[i+1].von_s:DAUER,x0=xz(a.von_s),x1=xz(b);if(x1<0||x0>W)continue;
+    c.fillStyle=i%2?FB.band2:FB.band1;c.fillRect(x0,0,x1-x0,12);const tw=breite(c,a.name),xs=Math.max(x0,0)+4;if(xs+tw<x1-2){c.fillStyle=FB.mut;c.fillText(a.name,xs,6.5)}}
+  if(Z.bereich){const a=xz(Z.bereich.von),b=xz(Z.bereich.bis);c.fillStyle=FB.bereich;c.fillRect(a,0,b-a,H)}
+  zeichneRaster(c);
+  if(Z.sch.original&&SCH.original)welle(c,'original','fuellen',FB['c-orig'],.30,null);
+  if(Z.sch.gereinigt&&SCH.gereinigt)welle(c,'gereinigt','linie',FB['c-rein'],.95,null);
+  if(Z.sch.timing&&SCH.timing)welle(c,'timing','linie2',FB['c-tim'],.95,null);
+  if(SCH.ende&&(Z.sch.ende||(!bearb&&Z.sch.neu)))welle(c,'ende',bearb&&Z.sch.neu?'linie':'fuellen',bearb&&Z.sch.neu?FB['c-ende']:FB.welle,bearb&&Z.sch.neu?.9:.78,null);
+  // Lauf 5 (Prüfung: Original nur zu 9–10 % sichtbar): Umriss des Originals über der Ende-Füllung
+  if(Z.sch.original&&SCH.original)welle(c,'original','linie',FB['c-orig'],.85,null);
+  if(Z.sch.ton)zeichneTon(c);
+  zeichneAenderungen(c,'fest');
+  zeichneLineal(c);
+}
+// Lauf 5 (Prüfung: Tonhöhe nur zu 24–27 % sichtbar): Original-Umriss + Tonhöhe ÜBER „Neu“; beim Ziehen als fertiges Bild
+let VORNE=null,VORNE_KEY='';
+function zeichneVorne(c,direkt,key){
+  const orig=Z.sch.original&&SCH.original;if(!orig&&!Z.sch.ton)return;
+  const mal=k=>{if(orig)welle(k,'original','linie',FB['c-orig'],.85,null);if(Z.sch.ton)zeichneTon(k)};
+  if(direkt){mal(c);return}
+  if(key!==VORNE_KEY||!VORNE){if(!VORNE)VORNE=document.createElement('canvas');if(VORNE.width!==cb.width||VORNE.height!==cb.height){VORNE.width=cb.width;VORNE.height=cb.height}
+    const h=VORNE.getContext('2d');h.setTransform(1,0,0,1,0,0);h.clearRect(0,0,VORNE.width,VORNE.height);h.setTransform(DPR,0,0,DPR,0,0);mal(h);VORNE_KEY=key}
+  c.setTransform(1,0,0,1,0,0);c.drawImage(VORNE,0,0);c.setTransform(DPR,0,0,DPR,0,0)}
+function zeichneBasis(){
+  const t0=performance.now(),c=cxB;
+  const P=aktPlan(),bearb=P.length>1||P[0].off!==0,key=hinterKey(bearb);
+  // Ansicht ändert sich gerade (Schieben, Zoomen): direkt zeichnen. Steht sie (Ziehen, Abspielen): Hintergrundbild bauen und wiederverwenden.
+  const direkt=window.__ohneHinter||key!==LETZTER_KEY;LETZTER_KEY=key;
+  if(direkt){c.setTransform(DPR,0,0,DPR,0,0);zeichneHinter(c,bearb)}
+  else if(key!==HINTER_KEY||!HINTER){if(!HINTER)HINTER=document.createElement('canvas');if(HINTER.width!==cb.width||HINTER.height!==cb.height){HINTER.width=cb.width;HINTER.height=cb.height}
+    const h=HINTER.getContext('2d');h.setTransform(DPR,0,0,DPR,0,0);zeichneHinter(h,bearb);HINTER_KEY=key;MESS.hinter=(MESS.hinter||0)+1}
+  if(!direkt){c.setTransform(1,0,0,1,0,0);c.drawImage(HINTER,0,0);c.setTransform(DPR,0,0,DPR,0,0)}
+  const sel=Z.wahl;
+  if(sel!=null){const s=SIL[sel],o=offOf(G&&G.art==='zieht'&&G.temp?G.temp:ZG.d,sel);
+    const xa=xz(s.a+o),xb=xz(s.b+o);c.fillStyle=FB.hi;c.globalAlpha=.35;c.fillRect(xa,L.yW,Math.max(1,xb-xa),L.wav);c.globalAlpha=1}
+  if(Z.sch.neu&&SCH.ende&&bearb){welle(c,'neu','fuellen',FB.welle,.9,P);
+    const bew=P.filter(p=>p.off!==0);if(bew.length){c.save();c.beginPath();for(const p of bew){const a=xz(p.d0),b=xz(p.d1);if(b<0||a>W)continue;c.rect(a,L.yW,b-a,L.wav)}c.clip();welle(c,'neu','fuellen',FB.gold,.95,P);c.restore()}
+    zeichneVorne(c,direkt,key)}
+  c.fillStyle=FB.lin2;c.fillRect(0,L.yW+L.wav/2,W,1/DPR);
+  zeichneSilben(c);
+  zeichneAenderungen(c,'zuege');
+  if(Z.bereich)zeichneGriffe(c);
+  c.strokeStyle=FB.lin;c.lineWidth=1;c.beginPath();c.moveTo(0,L.rul+.5);c.lineTo(W,L.rul+.5);c.moveTo(0,L.yW+.5);c.lineTo(W,L.yW+.5);c.moveTo(0,L.yM+.5);c.lineTo(W,L.yM+.5);c.stroke();
+  const dt=performance.now()-t0;MESS.basis.push(dt);if(MESS.basis.length>400)MESS.basis.shift();
+}
+function rasterSchritt(){const r=RASTER.find(r=>r.id===Z.raster);return r?r.s:0}
+function zeichneRaster(c){
+  const pxSchlag=SCHLAG/Z.dur*W,pxTakt=pxSchlag*TAKT;
+  let tSchritt=1;while(pxTakt*tSchritt<7)tSchritt*=2;
+  const zeigSchlag=pxSchlag>=8;
+  const step=zeigSchlag?SCHLAG:TS*tSchritt;
+  const k0=Math.floor((Z.t0-T1)/step)-1,k1=Math.ceil((Z.t0+Z.dur-T1)/step)+1;
+  for(let k=k0;k<=k1;k++){const t=T1+k*step;if(t<-.001||t>DAUER+.001)continue;const x=Math.round(xz(t)*DPR)/DPR;
+    const sch=Math.round((t-T1)/SCHLAG),imTakt=sch%TAKT===0;
+    c.fillStyle=FB.lin2;c.globalAlpha=imTakt?1:.55;c.fillRect(x-.5,imTakt?12:L.rul-7,1,H-(imTakt?12:L.rul-7));c.globalAlpha=1}
+  // feines Raster (Einrast-Linien)
+  const rs=rasterSchritt();
+  if(rs&&rs<SCHLAG&&rs/Z.dur*W>=7){const a=Math.floor((Z.t0-T1)/rs),b=Math.ceil((Z.t0+Z.dur-T1)/rs);c.fillStyle=FB.lin;
+    for(let k=a;k<=b;k++){const t=T1+k*rs;if(Math.abs(((t-T1)/SCHLAG)-Math.round((t-T1)/SCHLAG))<1e-6)continue;c.fillRect(Math.round(xz(t)*DPR)/DPR-.5,L.yS+L.syl-8,1,L.wav+8)}}
+  if(G&&G.art==='zieht'&&rs){const a=Math.floor((Z.t0-T1)/rs),b=Math.ceil((Z.t0+Z.dur-T1)/rs);if(b-a<600){c.fillStyle=FB.blau;c.globalAlpha=.32;for(let k=a;k<=b;k++)c.fillRect(xz(T1+k*rs)-.5,L.yW,1,L.wav);c.globalAlpha=1}}
+}
+function zeichneLineal(c){
+  const pxSchlag=SCHLAG/Z.dur*W,pxTakt=pxSchlag*TAKT;
+  let lab=1;while(pxTakt*lab<34)lab*=2;
+  c.font='600 11px ui-monospace,Menlo,monospace';c.textBaseline='alphabetic';
+  const k0=Math.max(0,Math.floor((Z.t0-T1)/TS)-1),k1=Math.ceil((Z.t0+Z.dur-T1)/TS)+1;
+  let letzteAkk=null;
+  for(let k=k0;k<=k1;k++){const t=T1+k*TS;if(t>DAUER)break;const x=xz(t),takt=k+1;
+    const akk=AKK[String(takt)];
+    if(k%lab===0){c.fillStyle=FB.fg;c.fillText(String(takt),x+3,L.rul-6);
+      if(akk&&pxTakt>=44&&(akk!==AKK[String(takt-1)]||k===k0)){const tw=breite(c,String(takt));c.font='500 10.5px -apple-system,system-ui,sans-serif';c.fillStyle=FB.mut;c.fillText(akk,x+tw+7,L.rul-6);c.font='600 11px ui-monospace,Menlo,monospace'}}
+    if(pxSchlag>=40)for(let b=1;b<TAKT;b++){const xb=xz(t+b*SCHLAG);c.fillStyle=FB.mut;c.font='10px ui-monospace,Menlo,monospace';c.fillText(takt+'.'+(b+1),xb+2,L.rul-6);c.font='600 11px ui-monospace,Menlo,monospace'}
+  }
+}
+function zeichneTon(c){
+  const T=LIED.tonhoehe,yc=L.yW+L.wav/2,sk=(L.wav/2-6)/300;
+  c.strokeStyle=FB['c-ton'];c.lineWidth=1.6;c.beginPath();
+  for(const [t0,v] of T.laeufe){const t1=t0+v.length*T.raster_s;if(t1<Z.t0||t0>Z.t0+Z.dur)continue;
+    const st=Math.max(1,Math.floor(v.length/(W*DPR*(v.length*T.raster_s)/Z.dur)));let an=false;
+    for(let i=0;i<v.length;i+=st){const t=t0+i*T.raster_s;if(t<Z.t0-.05||t>Z.t0+Z.dur+.05){an=false;continue}const x=xz(t),y=yc-clamp(v[i],-300,300)*sk;if(!an){c.moveTo(x,y);an=true}else c.lineTo(x,y)}}
+  c.stroke();
+  c.font='600 10px -apple-system,system-ui,sans-serif';c.fillStyle=FB.bg;c.globalAlpha=.8;c.fillRect(2,yc-100*sk-13,c.measureText('+100 ct').width+4,12);c.globalAlpha=1;   // Schild lesbar über der Welle
+  c.fillStyle=FB['c-ton'];c.fillText('+100 ct',4,yc-100*sk-2);c.globalAlpha=.35;c.fillRect(0,yc-100*sk,W,1/DPR);c.fillRect(0,yc+100*sk,W,1/DPR);c.globalAlpha=1;
+}
+function zeichneSilben(c){
+  sylBox=[];
+  const pxs=W/Z.dur,zeilenH=L.syl>=52?24:21,fs=L.syl>=52?15:14;
+  const fN=fs+'px -apple-system,system-ui,sans-serif',fK='italic '+fs+'px -apple-system,system-ui,sans-serif';
+  const ende=[-1e9,-1e9],dT=G&&G.art==='zieht'?G.temp:null;
+  c.textBaseline='alphabetic';
+  for(const i of ORD){
+    const s=SIL[i],o=offOf(dT||ZG.d,i),b=s.b+o,x=xz(b);
+    if(x<-80)continue;if(x>W+80)break;
+    const bewegt=Math.abs(o)>5e-4,unsicher=s.sicher<.5,spr=s.art==='gesprochen';
+    const txt=s.text+(s.wortende?'':'-');
+    c.font=spr?fK:fN;const tw=breite(c,txt);
+    let row=-1;if(x>=ende[0]+4)row=0;else if(x>=ende[1]+4)row=1;
+    const farbe=bewegt?FB.gold:unsicher?FB.warn:FB.fg;
+    // Beginn-Linie durch die Welle
+    c.strokeStyle=farbe;c.globalAlpha=i===Z.wahl?1:bewegt?.85:.33;c.lineWidth=i===Z.wahl?2:1;c.beginPath();c.moveTo(Math.round(x)+.5,L.yS+(row<0?L.syl-10:6+row*zeilenH+zeilenH-3));c.lineTo(Math.round(x)+.5,L.yM);c.stroke();c.globalAlpha=1;
+    if(row<0){c.fillStyle=farbe;c.beginPath();c.arc(x,L.yS+L.syl-8,2.4,0,7);c.fill();sylBox.push({i,x:x-8,y:L.yS+L.syl-18,w:16,h:18,punkt:true});continue}
+    ende[row]=x+tw+8;
+    const yb=L.yS+5+row*zeilenH;
+    if(i===Z.wahl){c.fillStyle=FB.hi;rund(c,x-4,yb,tw+9,zeilenH-2,6);c.fill()}
+    c.fillStyle=farbe;c.fillText(txt,x+1,yb+zeilenH-7);
+    if(bewegt){c.strokeStyle=FB.gold;c.lineWidth=2;c.beginPath();c.moveTo(x+1,yb+zeilenH-3.5);c.lineTo(x+1+tw,yb+zeilenH-3.5);c.stroke()}
+    else if(unsicher){c.strokeStyle=FB.warn;c.setLineDash([2,2]);c.lineWidth=1.2;c.beginPath();c.moveTo(x+1,yb+zeilenH-3.5);c.lineTo(x+1+tw,yb+zeilenH-3.5);c.stroke();c.setLineDash([])}
+    sylBox.push({i,x:x-6,y:yb,w:tw+12,h:zeilenH});
+  }
+}
+function zeichneAenderungen(c,teil){
+  const y0=L.yM,h=L.mark,ym=y0+h/2;
+  if(teil==='fest'){markBox=[];
+  if(Z.sch.aend){
+    // Verschiebungen bis v10 (Zeitkarte Ende -> Aufnahme): blau = später als gesungen, rot = früher
+    c.font='600 10px ui-monospace,Menlo,monospace';c.textBaseline='middle';
+    for(const s of LIED.karte){const [a0,a1,r0,r1]=s;if(a1<Z.t0||a0>Z.t0+Z.dur)continue;const du=a1-a0;if(du<.006)continue;
+      const off=(a0-r0)*1000,steig=(r1-r0)/du;if(Math.abs(off)<5&&Math.abs(steig-1)<.005)continue;
+      const xa=Math.max(-2,xz(a0)),xb=Math.min(W+2,xz(a1));c.fillStyle=off>0?FB['c-spaet']:FB['c-frueh'];c.globalAlpha=clamp(.18+Math.abs(off)/220,.18,.65);c.fillRect(xa,y0+2,xb-xa,10);c.globalAlpha=1;
+      if(xb-xa>30){const lab=(off>0?'+':'−')+Math.abs(Math.round(off));c.fillStyle=FB.fg;c.fillText(lab,xa+3,y0+7.5)}
+      if(Math.abs(steig-1)>=.005&&xb-xa>46){c.fillStyle=FB.mut;c.fillText((steig>1?'↔':'⇥')+Math.abs(Math.round((1/steig-1)*100))+'%',xb-34,y0+7.5)}}
+    // Schnitte
+    for(const s of LIED.schnitte){const x=xz(s.t);if(x<-8||x>W+8)continue;c.fillStyle=s.sprung_ms>0?FB['c-frueh']:FB['c-spaet'];c.font='13px -apple-system,system-ui,sans-serif';c.fillText('✂︎',x-6,y0+20);markBox.push({x,art:'schnitt',d:s})}
+    // Pfeile Aufnahme -> v10 je Silbe
+    if(Z.sch.original){c.strokeStyle=FB['c-orig'];c.lineWidth=1.2;for(const i of ORD){const s=SIL[i],xa=xz(s.b_roh),xb=xz(s.b);if(Math.max(xa,xb)<0)continue;if(Math.min(xa,xb)>W)break;
+      if(Math.abs(xb-xa)<2)continue;c.beginPath();c.moveTo(xa,ym+7);c.lineTo(xb,ym+7);c.stroke();const dir=xb>xa?1:-1;c.beginPath();c.moveTo(xb,ym+7);c.lineTo(xb-dir*4,ym+4);c.lineTo(xb-dir*4,ym+10);c.closePath();c.fillStyle=FB['c-orig'];c.fill()}}
+    // Prüfstellen
+    for(const p of LIED.pruefstellen){const xa=xz(p.von_s),xb=xz(p.bis_s);if(xb<-10||xa>W+10)continue;c.fillStyle=FB['c-pruef'];c.globalAlpha=.25;c.fillRect(xa,L.yW,Math.max(2,xb-xa),L.wav);c.globalAlpha=1;
+      c.font='700 13px -apple-system,system-ui,sans-serif';c.fillText('?',(xa+xb)/2-3,y0+h-8);markBox.push({x:(xa+xb)/2,art:'pruef',d:p})}
+  }
+  // Reinigung (zur Schicht gereinigt)
+  if(Z.sch.gereinigt){const E=LIED.ereignisse;c.fillStyle=FB['c-rein'];
+    for(const [a,b] of E.atmer){const xa=xz(a),xb=xz(b);if(xb<0||xa>W)continue;c.globalAlpha=.25;c.fillRect(xa,L.yW+L.wav-10,xb-xa,10);c.globalAlpha=1;markBox.push({x:(xa+xb)/2,art:'atmer',d:{t:a,bis:b}})}
+    for(const [a] of E.klicks){const x=xz(a);if(x<0||x>W)continue;c.fillRect(x-.5,L.yW+L.wav-16,1.2,16)}
+    for(const [a,b] of E.plopps){const x=xz(a);if(x<0||x>W)continue;c.fillRect(x-1,L.yW+L.wav-22,2,22);markBox.push({x,art:'plopp',d:{t:a,bis:b}})}
+    for(const [a,b,dbv] of E.deesser){const xa=xz(a),xb=xz(b);if(xb<0||xa>W)continue;c.globalAlpha=.5;c.fillRect(xa,L.yW+2,Math.max(1.5,xb-xa),5);c.globalAlpha=1}}
+  return}
+  // deine Züge: Pfeil v10 -> neu
+  const dT=G&&G.art==='zieht'?G.temp:ZG.d;
+  c.strokeStyle=FB.gold;c.fillStyle=FB.gold;c.lineWidth=2;c.font='700 11px -apple-system,system-ui,sans-serif';c.textBaseline='alphabetic';
+  for(const k in dT){const i=+k,o=dT[k];if(!o)continue;const s=SIL[i],xa=xz(s.b),xb=xz(s.b+o);if(Math.max(xa,xb)<-30||Math.min(xa,xb)>W+30)continue;
+    const y=y0+h-5;c.beginPath();c.moveTo(xa,y);c.lineTo(xb,y);c.stroke();const dir=xb>=xa?1:-1;c.beginPath();c.moveTo(xb,y);c.lineTo(xb-dir*5,y-4);c.lineTo(xb-dir*5,y+4);c.closePath();c.fill();
+    if(Math.abs(xb-xa)>40||G&&G.i===i)c.fillText(msT(o*1000),Math.min(xa,xb)+2,y-5)}
+}
+function zeichneGriffe(c){
+  for(const k of ['von','bis']){const x=xz(Z.bereich[k]);if(x<-20||x>W+20)continue;c.fillStyle=FB.gold;c.fillRect(Math.round(x)-1,0,2,H);rund(c,x-9,1,18,L.rul-2,5);c.fill();
+    c.fillStyle=FB.bg;c.fillRect(x-3,8,1.5,L.rul-16);c.fillRect(x+1.5,8,1.5,L.rul-16)}
+}
+// Übersicht
+function zeichneUeber(){
+  const c=cxU;c.setTransform(DPR,0,0,DPR,0,0);
+  if(!ueberStatisch){const o=document.createElement('canvas');o.width=ue.width;o.height=ue.height;const k=o.getContext('2d');k.setTransform(DPR,0,0,DPR,0,0);
+    k.fillStyle=FB.band1;k.fillRect(0,0,UW,UH);k.font='600 10px -apple-system,system-ui,sans-serif';k.textBaseline='top';
+    for(let i=0;i<ABS.length;i++){const a=ABS[i],b=i+1<ABS.length?ABS[i+1].von_s:DAUER,x0=a.von_s/DAUER*UW,x1=b/DAUER*UW;k.fillStyle=i%2?FB.band2:FB.band1;k.fillRect(x0,0,x1-x0,UH);
+      if(k.measureText(a.kurz).width<x1-x0-4){k.fillStyle=FB.mut;k.fillText(a.kurz,x0+2,2)}}
+    const s=SCH.ende;if(s){const yc=UH*.6,amp=UH*.36/127,cols=Math.round(UW*DPR),cw=UW/cols;k.fillStyle=FB.welle;k.beginPath();
+      for(let q=0;q<cols;q++){const i0=Math.floor(q/cols*DAUER*s.rate),i1=Math.max(i0+1,Math.floor((q+1)/cols*DAUER*s.rate));let mx=0;for(let i=i0;i<i1&&i<s.n;i++){const a=-s.w[2*i],b=s.w[2*i+1];if(a>mx)mx=a;if(b>mx)mx=b}if(mx>0)k.rect(q*cw,yc-mx*amp,cw,2*mx*amp)}k.fill()}
+    const f=LIED.fokus;k.fillStyle=FB.gold;k.fillRect(f.von_s/DAUER*UW,UH-3,(f.bis_s-f.von_s)/DAUER*UW,3);
+    ueberStatisch=o}
+  c.clearRect(0,0,UW,UH);c.drawImage(ueberStatisch,0,0,UW,UH);
+  c.fillStyle=FB.gold;for(const k in ZG.d){const x=bNeu(+k)/DAUER*UW;c.fillRect(x-1,0,2,8)}
+  if(Z.bereich){c.fillStyle=FB.bereich;c.fillRect(Z.bereich.von/DAUER*UW,0,(Z.bereich.bis-Z.bereich.von)/DAUER*UW,UH)}
+  const a=Math.max(0,Z.t0)/DAUER*UW,b=Math.min(DAUER,Z.t0+Z.dur)/DAUER*UW;c.strokeStyle=FB.gold;c.lineWidth=2;c.strokeRect(a+1,1,Math.max(3,b-a-2),UH-2);
+  const xp=Z.pos/DAUER*UW;c.fillStyle=FB.fg;c.fillRect(xp-.75,0,1.5,UH);
+}
+// Oberleiste: nur die Streifen löschen, die im letzten Bild bemalt wurden (spart Pixel beim Abspielen)
+let OBEN_ALT=[],OBEN_NEU=[];
+function merke(x,y,w,h){OBEN_NEU.push([Math.floor(x)-2,Math.floor(y)-2,Math.ceil(w)+4,Math.ceil(h)+4])}
+function pille(c,txt,x,y,farbe){c.font='600 14px -apple-system,system-ui,sans-serif';const w=c.measureText(txt).width+18,xx=clamp(x-w/2,4,W-w-4),yy=clamp(y,2,H-30);
+  merke(xx,yy,w,28);c.fillStyle=farbe;rund(c,xx,yy,w,28,8);c.fill();c.fillStyle='#fff';c.textBaseline='middle';c.fillText(txt,xx+9,yy+14.5);c.textBaseline='alphabetic'}
+function zeichneOben(){
+  const c=cxO;c.setTransform(DPR,0,0,DPR,0,0);
+  if(OBEN_ALT===null)c.clearRect(0,0,W,H);else for(const r of OBEN_ALT)c.clearRect(r[0],r[1],r[2],r[3]);
+  OBEN_NEU=[];
+  const x=xz(Z.pos);
+  if(x>=-2&&x<=W+2){merke(x-7,L.rul,14,H-L.rul);c.fillStyle=FB.rot;c.fillRect(x-.75,L.rul,1.5,H-L.rul);c.beginPath();c.moveTo(x-6,L.rul);c.lineTo(x+6,L.rul);c.lineTo(x,L.rul+8);c.closePath();c.fill()}
+  const vp=vorhoerPos();if(vp!=null){const xv=xz(vp);merke(xv-1,L.yW,2,L.wav);c.fillStyle=FB.gold;c.globalAlpha=.9;c.fillRect(xv-1,L.yW,2,L.wav);c.globalAlpha=1}
+  if(G&&G.art==='zieht'){const xb=xz(G.ziel);merke(xb-1,L.rul,2,H-L.rul);c.fillStyle=FB.gold;c.fillRect(xb-1,L.rul,2,H-L.rul);
+    const rs=rasterSchritt(),lab=silbeName(G.i)+' → '+rasterName(G.ziel)+'  '+msT(G.delta*1000)+(G.fein?'  fein':''),LO=lupenOrt();
+    pille(c,lab,LO.lx+LO.w/2,LO.ly-31>=2?LO.ly-31:LO.ly+LO.h+3,G.snap?FB.gold:FB.mut);
+    zeichneLupe(LO)}
+  else if((G&&(G.art==='bereich'||G.art==='rand'))&&Z.bereich)pille(c,tpos(Z.bereich.von)+' – '+tpos(Z.bereich.bis),G.x,Math.max(2,G.y-80),FB.gold);
+  if(!(G&&G.art==='zieht'))lupe.style.display='none';
+  OBEN_ALT=OBEN_NEU;
+}
+// Lauf 5 (Prüfung): Lupe und Ziel-Pille lagen unter Finger und Hand. Jetzt oben in der Ecke auf der anderen Seite des
+// Fingers; sie wechselt die Seite erst, wenn der Finger ihr nahe kommt (kein Hin- und Herspringen).
+function lupenOrt(){const w=176,h=104,frei=40;if(G.lupeLinks==null)G.lupeLinks=G.x>W/2;
+  if(G.lupeLinks&&G.x<4+w+frei)G.lupeLinks=false;else if(!G.lupeLinks&&G.x>W-w-4-frei)G.lupeLinks=true;
+  return {lx:G.lupeLinks?4:W-w-4,ly:clamp(L.rul+34,4,Math.max(4,H-h-4)),w,h}}
+// Lupe beim Ziehen: ±90 ms um den Wortbeginn, 1-ms-Auflösung
+function zeichneLupe(LO){
+  const c=cxL,w=176,h=104,R=.09;c.setTransform(DPR,0,0,DPR,0,0);c.fillStyle=FB.bar;c.fillRect(0,0,w,h);
+  const t0=G.ziel-R,t1=G.ziel+R,P=aktPlan(),yc=h/2+6,amp=(h/2-12)/127,cols=w,dt=(t1-t0)/cols;
+  c.fillStyle=FB.welle;c.beginPath();let j=0;
+  for(let k=0;k<cols;k++){const ta=t0+k*dt,tb=ta+dt;let mn=127,mx=-127,ok=false;while(j<P.length&&P[j].d1<=ta)j++;
+    for(let q=j;q<P.length&&P[q].d0<tb;q++){const p=P[q],a=Math.max(ta,p.d0),b=Math.min(tb,p.d1);if(b<=a)continue;if(mm('neu',a-p.off,b-p.off,MM)){ok=true;if(MM[0]<mn)mn=MM[0];if(MM[1]>mx)mx=MM[1]}}
+    if(ok)c.rect(k,yc-mx*amp,1,Math.max(1,(mx-mn)*amp))}
+  c.fill();
+  const rs=rasterSchritt();if(rs){c.fillStyle=FB.blau;const a=Math.ceil((t0-T1)/rs),b=Math.floor((t1-T1)/rs);for(let k=a;k<=b;k++){const xg=(T1+k*rs-t0)/(t1-t0)*w;c.fillRect(xg-1,12,2,h-12)}}
+  const xb=(G.ziel-t0)/(t1-t0)*w;c.fillStyle=FB.gold;c.fillRect(xb-1,12,2,h-12);
+  const s=SIL[G.i],xa=(s.a+G.delta+offOf(G.d0,G.i)-t0)/(t1-t0)*w;if(xa>0){c.globalAlpha=.25;c.fillRect(Math.max(0,xa),12,Math.max(0,xb-Math.max(0,xa)),h-12);c.globalAlpha=1}
+  c.fillStyle=FB.fg;c.font='600 11px -apple-system,system-ui,sans-serif';c.textBaseline='top';
+  const g=rs?T1+Math.round((G.ziel-T1)/rs)*rs:null;c.fillText(g!=null?'zum Raster '+msT((G.ziel-g)*1000):'frei',6,2);
+  lupe.style.display='block';lupe.style.left=LO.lx+'px';lupe.style.top=LO.ly+'px';
+}
+
+// ---------------- Hauptschleife
+let traeg=null,letzteZeit='',folgen=true;
+function frame(now){
+  rafId=0;let weiter=false;MESS.frames++;
+  if(Z.spielt){posAktualisieren();weiter=true}
+  if(VOR&&VOR.an)weiter=true;
+  if(traeg){traegSchritt(now);weiter=true}
+  if(G&&G.rand){Z.t0+=G.rand*Z.dur*.014;clampView();if(G.art==='zieht')ziehen(G.x,G.y,true);basisDirty=true;weiter=true}
+  if(basisDirty){basisDirty=false;zeichneBasis();chipsMarkieren()}
+  zeichneOben();
+  if(ueberDirty||Z.spielt){ueberDirty=false;zeichneUeber()}
+  zeitAnzeige();
+  if(weiter)anfordern();
+}
+function zeitAnzeige(){const t=tpos(Z.pos)+'|'+mmss(Z.pos)+(AE.wartet?' lädt':'');if(t===letzteZeit)return;letzteZeit=t;const [a,b]=t.split('|');$('zeit').innerHTML=esc(a)+'<small>'+esc(b)+'</small>'}
+function traegSchritt(now){const dt=Math.min(40,now-traeg.last);traeg.last=now;const vor=Z.t0;Z.t0+=traeg.v*dt;traeg.v*=Math.pow(.9935,dt);clampView();basisDirty=true;if(Z.t0===vor||Math.abs(traeg.v)/Z.dur*W<.02)traeg=null}
+
+// ---------------- Audio (Web Audio, Stücke je Liedteil, Abdruck misst den Dekoder-Versatz)
+const AE={ctx:null,puf:{},stem:{},abdruck:null,abdruckP:null,wartet:false};
+function stemsSetzen(j){AE.stem={};AE.puf={};for(const s of j.stems){AE.stem[s.id]=s;AE.puf[s.id]=[]}STEMS=j}
+stemsSetzen(STEMS);
+const STEMS_P=fetch('daten/stems.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(j=>{
+  if(j&&Array.isArray(j.stems)&&['ende','original','mix'].every(id=>j.stems.some(s=>s.id===id&&s.stuecke&&s.stuecke.length)))stemsSetzen(j)}).catch(()=>{});
+function ctx(){
+  if(!AE.ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;
+    try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}
+    try{AE.ctx=new C({latencyHint:'interactive'})}catch(e){AE.ctx=new C()}
+    const c=AE.ctx;AE.out=c.createGain();AE.out.connect(c.destination);
+    AE.bus={stimme:c.createGain(),musik:c.createGain(),klick:c.createGain()};AE.bus.musik.gain.value=.5;AE.bus.klick.gain.value=.35;for(const k in AE.bus)AE.bus[k].connect(AE.out);
+    AE.klickPuf=klickPuffer(c)}
+  return AE.ctx}
+function wecken(){const c=ctx();if(c&&c.state!=='running'){try{c.resume()}catch(e){}}}
+function klickPuffer(c){const sr=c.sampleRate,mk=(f,a)=>{const n=Math.round(sr*.03),b=c.createBuffer(1,n,sr),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=Math.sin(2*Math.PI*f*i/sr)*Math.exp(-i/(sr*.006))*a;return b};return {takt:mk(1900,1),schlag:mk(1250,.7)}}
+function b64u8(s){const b=atob(s),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u}
+function abdruecke(){if(!AE.abdruckP)AE.abdruckP=fetch('daten/abdruck.json?6fd288bc').then(r=>r.json()).then(j=>AE.abdruck=j);return AE.abdruckP}
+function dekodiere(c,ab){return new Promise((res,rej)=>{let fertig=false;const ok=b=>{if(!fertig){fertig=true;res(b)}},no=e=>{if(!fertig){fertig=true;rej(e||new Error('decode'))}};const r=c.decodeAudioData(ab,ok,no);if(r&&r.then)r.then(ok,no)})}
+// Versatz zwischen dekodiertem Stück und Quelle: Hülle (2 ms) gegen den Abdruck, ±90 ms
+function versatzMessen(buf,fp){
+  const ref=b64u8(fp.b64),n=fp.n,sr=buf.sampleRate,L2=45,ch=[];for(let k=0;k<buf.numberOfChannels;k++)ch.push(buf.getChannelData(k));
+  const env=new Float32Array(n+2*L2);
+  for(let j=0;j<n+2*L2;j++){const t=fp.ab_s+(j-L2)*.002,i0=Math.max(0,Math.round(t*sr)),i1=Math.min(ch[0].length,Math.round((t+.002)*sr));let mx=0;
+    for(let i=i0;i<i1;i++){let v=0;for(const d of ch)v+=d[i];v=Math.abs(v/ch.length);if(v>mx)mx=v}env[j]=clamp((20*Math.log10(mx+1e-7)+100)*2,0,255)}
+  let ma=0;for(let i=0;i<n;i++)ma+=ref[i];ma/=n;let va=0;for(let i=0;i<n;i++)va+=(ref[i]-ma)**2;
+  const kor=new Float32Array(2*L2+1);let best=0,bk=-2;
+  for(let l=-L2;l<=L2;l++){let mb=0;for(let i=0;i<n;i++)mb+=env[i+l+L2];mb/=n;let cov=0,vb=0;for(let i=0;i<n;i++){const a=ref[i]-ma,b=env[i+l+L2]-mb;cov+=a*b;vb+=b*b}
+    const k=cov/Math.sqrt(va*vb+1e-9);kor[l+L2]=k;if(k>bk){bk=k;best=l}}
+  let f=best;const j=best+L2;if(j>0&&j<2*L2){const a=kor[j-1],b=kor[j],c=kor[j+1],den=a-2*b+c;if(Math.abs(den)>1e-9)f=best+.5*(a-c)/den}
+  return bk<.5?{s:0,korr:bk,unsicher:true}:{s:f*.002,korr:bk}
+}
+// feine Spitzen (1 ms) für die Zeichnung, gleiche Skala wie die vorgerechneten
+const STEM_LAGE={ende:'ende',original:'original',gereinigt:'gereinigt'};
+function feinSpitzen(buf,vs,st,sid){
+  const lage=STEM_LAGE[sid];if(!lage||!SCH[lage])return null;const g=SCH[lage].gain,P=SCH_P,d=buf.getChannelData(0),sr=buf.sampleRate;
+  const n=Math.floor((st.bis_s-st.von_s)*1000),w=new Int8Array(2*n);const f=v=>{const a=Math.sqrt(Math.min(1,Math.abs(v*g)/P))*127;return v<0?-a:a};
+  for(let i=0;i<n;i++){const i0=Math.max(0,Math.round((i/1000+vs)*sr)),i1=Math.min(d.length,Math.round(((i+1)/1000+vs)*sr));let mn=0,mx=0;for(let k=i0;k<i1;k++){const v=d[k];if(v<mn)mn=v;if(v>mx)mx=v}w[2*i]=Math.round(f(mn));w[2*i+1]=Math.round(f(mx))}
+  return {von:st.von_s,n,w};
+}
+function feinFuer(sid,ta,tb){const P=AE.puf[sid];if(!P)return null;const S=AE.stem[sid].stuecke;for(let k=0;k<P.length;k++){const e=P[k];if(e&&e.fein&&ta>=S[k].von_s+.05&&tb<=S[k].bis_s-.05)return e.fein}return null}
+function stueckIndex(sid,t){const S=AE.stem[sid].stuecke;let best=-1,bd=-1;for(let k=0;k<S.length;k++){const a=S[k].von_s,b=S[k].bis_s;if(t>=a+.2&&t<b-.3){const d=Math.min(t-a,b-t);if(d>bd){bd=d;best=k}}}if(best<0){for(let k=0;k<S.length;k++)if(t>=S[k].von_s&&t<S[k].bis_s)return k;return t<1?0:S.length-1}return best}
+function ladeStueck(sid,k){
+  const P=AE.puf[sid];if(P[k])return P[k].p;const st=AE.stem[sid].stuecke[k],e={status:'laedt',zuletzt:performance.now()};P[k]=e;
+  e.p=(async()=>{const c=ctx();const t0=performance.now();const r=await fetch(st.datei);if(!r.ok)throw new Error('HTTP '+r.status);const ab=await r.arrayBuffer();
+    const [buf]=await Promise.all([dekodiere(c,ab),abdruecke().catch(()=>null)]);const fp=AE.abdruck&&st.abdruck&&AE.abdruck[st.abdruck];
+    const v=fp?versatzMessen(buf,fp):{s:0,korr:0,ohneAbdruck:true};
+    e.buf=buf;e.vs=v.s;e.korr=v.korr;e.fein=feinSpitzen(buf,v.s,st,sid);if(e.fein)FEINVER++;e.status='ok';e.ms=Math.round(performance.now()-t0);
+    MESS.versatz[sid+'-'+k]={ms:+(v.s*1000).toFixed(2),korr:+v.korr.toFixed(3),laden_ms:e.ms,sr:buf.sampleRate};
+    aufraeumen(sid);basisNeu();return e})();
+  e.p.catch(err=>{e.status='fehler';e.err=String(err&&err.message||err);setTimeout(()=>{if(P[k]===e)P[k]=null},4000);status('Audio lädt nicht ('+AE.stem[sid].name+').','fehler')});
+  return e.p}
+function aufraeumen(sid){const P=AE.puf[sid],da=P.map((e,k)=>e&&e.status==='ok'?k:-1).filter(k=>k>=0);if(da.length<=3)return;
+  da.sort((a,b)=>P[a].zuletzt-P[b].zuletzt);const brauch=new Set(benoetigt());for(const k of da){if(da.length<=3)break;if(brauch.has(sid+'-'+k))continue;P[k]=null;FEINVER++;da.splice(da.indexOf(k),1)}}
+function benoetigt(){const out=[];for(const sid of ['ende','original']){for(const t of [Z.t0,Z.t0+Z.dur,Z.pos])out.push(sid+'-'+stueckIndex(sid,clamp(t,0,DAUER-.1)))}return out}
+function stueckBereit(sid,t){const k=stueckIndex(sid,t),e=AE.puf[sid][k];if(e&&e.status==='ok'){e.zuletzt=performance.now();return {e,k,st:AE.stem[sid].stuecke[k]}}ladeStueck(sid,k).catch(()=>{});return null}
+// Lauf 5 (Prüfung: erster Ton bei langsamem Netz 6,2 s): zuerst nur das Stück der gehörten Fassung (+ Musik, wenn an),
+// die anderen Fassungen erst, wenn es da ist.
+function vorladen(){const tp=clamp(Z.pos,0,DAUER-.1),tm=clamp(Z.t0+Z.dur/2,0,DAUER-.1),hs=HOEREN[Z.hoeren]||'ende';
+  const erst=[[hs,tp],[hs,tm]];if(Z.musik)erst.push(['mix',tp]);
+  const rest=[];for(const sid of ['ende','original'])if(sid!==hs)for(const t of [tp,tm])rest.push([sid,t]);
+  if(hs!=='gereinigt'&&(Z.hoeren==='gereinigt'||Z.ab==='gereinigt'))rest.push(['gereinigt',tp]);
+  const warten=[];for(const [sid,t] of erst){if(!stueckBereit(sid,t)){const e=AE.puf[sid][stueckIndex(sid,t)];if(e&&e.p)warten.push(e.p)}}
+  if(!warten.length){for(const [sid,t] of rest)stueckBereit(sid,t);return}
+  Promise.allSettled(warten).then(()=>{for(const [sid,t] of rest)stueckBereit(sid,t)})}
+
+// Abspiel-Läufe: je Lauf Spuren (Stimme, Musik, Klick) mit eigenem Zeiger; gleiche Schleifenlogik -> bleiben synchron
+const LOOK=.5,XO=.006,FI=.004,FO=.010,FL=.008;let BLENDE=1;   // BLENDE=0 nur für die Messung „ohne Blenden“
+let HAUPT=null,VOR=null;
+function planFuer(h){if(h==='neu')return PLAN_TEMP||PLAN;return [{d0:0,d1:DAUER,off:0,stem:HOEREN[h],sil:[],fi:true,fo:true,ende:'natur'}]}
+function neueSpur(art,lauf,tl,ct,planFn,bus){return {art,lauf,tl,ct,planFn,bus,nodes:new Set(),segs:[],letzt:null,fertig:false}}
+function knoten(sp,buf,when,off,dur,fin,fout,ext){
+  if(BLENDE!==1){fin*=BLENDE;fout*=BLENDE;ext*=BLENDE}
+  const c=AE.ctx,now=c.currentTime;if(when<now){const late=now-when;off+=late;dur-=late;fin=Math.max(0,fin-late);when=now}if(dur+ext<=.001)return;
+  const s=c.createBufferSource();s.buffer=buf;const g=c.createGain();s.connect(g);g.connect(sp.bus);
+  const end=when+dur+ext;g.gain.value=fin>0?0:1;g.gain.setValueAtTime(fin>0?0:1,Math.max(0,when-.003));g.gain.setValueAtTime(fin>0?0:1,when);if(fin>0)g.gain.linearRampToValueAtTime(1,when+fin);
+  if(fout>0){g.gain.setValueAtTime(1,Math.max(when+fin,end-fout));g.gain.linearRampToValueAtTime(0,end)}
+  try{s.start(when,Math.max(0,off),dur+ext)}catch(e){return}
+  const n={s,g,end};sp.nodes.add(n);s.onended=()=>sp.nodes.delete(n);
+}
+function spurSchritt(sp){
+  const lauf=sp.lauf,lp=lauf.schleife&&lauf.bereich?lauf.bereich:null,bis=lauf.bis!=null?lauf.bis:DAUER;
+  if(lp&&sp.tl>=lp.bis-1e-5){sp.tl=lp.von;sp.letzt=null;sp.wrap=true}
+  if(!lp&&sp.tl>=bis-1e-5){sp.fertig=true;return 'fertig'}
+  const grenze=lp&&sp.tl<lp.bis?lp.bis:bis;
+  if(sp.art==='klick'){const e=Math.min(grenze,sp.tl+.5);const a=Math.ceil((sp.tl-T1)/SCHLAG-1e-9),b=Math.floor((e-T1)/SCHLAG-1e-9);
+    for(let k=a;k<=b;k++){const tb=T1+k*SCHLAG;if(tb<sp.tl-1e-9||tb>=e)continue;const s=AE.ctx.createBufferSource();s.buffer=k%TAKT===0?AE.klickPuf.takt:AE.klickPuf.schlag;s.connect(sp.bus);const w=sp.ct+(tb-sp.tl);if(w>=AE.ctx.currentTime){s.start(w);const n={s,end:w+.03};sp.nodes.add(n);s.onended=()=>sp.nodes.delete(n)}}
+    sp.ct+=e-sp.tl;sp.tl=e;return 'ok'}
+  const P=sp.planFn();let j=stueckBei(P,sp.tl);
+  if(j<0){const nx=-1-j,g=nx<P.length?P[nx].d0:DAUER,e=Math.min(g,grenze);sp.ct+=e-sp.tl;sp.tl=e;sp.letzt=null;return 'ok'}
+  const p=P[j],src=sp.tl-p.off,q=stueckBereit(p.stem,src);
+  if(!q)return 'warte';
+  const sl=q.st,sEnd=sl.bis_s-.25+p.off;
+  let e=Math.min(p.d1,grenze),grund=e===p.d1?'stueck':'grenze';
+  if(sEnd<e){e=sEnd;grund='scheibe'}
+  const dur=e-sp.tl;if(dur<=1e-5){sp.tl=e;return 'ok'}
+  // Blenden: Anfang
+  let fin=0;const l=sp.wrap?null:sp.letzt;
+  if(!l)fin=(Math.abs(sp.tl-p.d0)<1e-6&&p.fi&&!sp.wrap)?FI:FL;
+  else if(l.grund==='scheibe')fin=XO;
+  else if(l.grund==='stueck')fin=p.fi?FI:0;
+  else fin=FL;
+  sp.wrap=false;
+  // Ende
+  let fout=0,ext=0;
+  if(grund==='scheibe'){fout=XO;ext=XO}
+  else if(grund==='grenze'){fout=lauf.bis!=null&&!lp?.02:FL}
+  else if(p.fo){if(p.ende==='kurz'){fout=FO;ext=.008}else fout=FO}
+  knoten(sp,q.e.buf,sp.ct,src-sl.von_s+q.e.vs,dur,fin,fout,ext);
+  if(sp.art==='stimme'){sp.segs.push({ct0:sp.ct,tl0:sp.tl,dur});if(sp.segs.length>60)sp.segs.shift()}
+  sp.ct+=dur;sp.tl=e;sp.letzt={grund};return 'ok';
+}
+function laufTick(lauf){
+  if(!lauf||!lauf.an)return;const now=AE.ctx.currentTime;
+  for(const sp of lauf.spuren){let n=0;
+    while(!sp.fertig&&sp.ct<now+LOOK&&n++<40){const r=spurSchritt(sp);
+      if(r==='warte'){if(sp.ct<now+.02){ // Stück noch nicht da und schon spät: kurze Lücke statt Versatz
+          if(sp.art==='stimme'&&lauf===HAUPT){AE.wartet=true;MESS.aussetzer++}sp.ct=now+.03;sp.letzt=null}break}
+      if(sp.art==='stimme'&&lauf===HAUPT)AE.wartet=false}
+    // vorausladen
+    if(sp.art!=='klick'&&!sp.fertig){const P=sp.planFn(),j=stueckBei(P,sp.tl+6),p=j>=0?P[j]:null;if(p)stueckBereit(p.stem,clamp(sp.tl+6-p.off,0,DAUER-.1))}}
+  if(lauf.spuren.every(s=>s.fertig)&&now>Math.max(...lauf.spuren.map(s=>s.ct))+.05){lauf.an=false;if(lauf===HAUPT)hauptFertig();if(lauf===VOR)VOR=null}
+}
+setInterval(()=>{laufTick(HAUPT);laufTick(VOR)},40);
+function laufStop(lauf,fade=.012){if(!lauf)return;lauf.an=false;const c=AE.ctx;if(!c)return;const now=c.currentTime;
+  for(const sp of lauf.spuren)for(const n of sp.nodes){try{if(n.g){n.g.gain.cancelScheduledValues(now);n.g.gain.setValueAtTime(n.g.gain.value,now);n.g.gain.linearRampToValueAtTime(0,now+fade)}n.s.stop(now+fade+.005)}catch(e){}}}
+const MIXPLAN=[{d0:0,d1:DAUER,off:0,stem:'mix',sil:[],fi:true,fo:true,ende:'natur'}];
+function spurNeu(lauf,art,tl,ct){const pf=art==='musik'?()=>MIXPLAN:lauf.plan?()=>lauf.plan:()=>planFuer(lauf.hoeren);return neueSpur(art,lauf,tl,ct,pf,AE.bus[art])}
+function laufStart(opt){
+  const c=ctx();if(!c)return null;const ct=c.currentTime+(opt.vorlauf||.05);
+  const lauf={an:true,von:opt.von,bis:opt.bis!=null?opt.bis:null,schleife:!!opt.schleife,bereich:opt.bereich||null,hoeren:opt.hoeren,plan:opt.plan||null,spuren:[],ct0:ct,tl0:opt.von};
+  lauf.spuren.push(spurNeu(lauf,'stimme',opt.von,ct));if(opt.musik)lauf.spuren.push(spurNeu(lauf,'musik',opt.von,ct));if(opt.klick)lauf.spuren.push(spurNeu(lauf,'klick',opt.von,ct));
+  for(const sp of lauf.spuren){sp.letzt=null;sp.wrap=true}
+  laufTick(lauf);return lauf}
+function laufPos(lauf){if(!lauf||!AE.ctx)return null;const sp=lauf.spuren[0],now=AE.ctx.currentTime-(AE.ctx.outputLatency||0);
+  for(let i=sp.segs.length-1;i>=0;i--){const s=sp.segs[i];if(now>=s.ct0-1e-4)return now<=s.ct0+s.dur+.05?s.tl0+(now-s.ct0):s.tl0+s.dur}return lauf.tl0}
+function vorhoerPos(){return VOR&&VOR.an?laufPos(VOR):null}
+// Stimme neu ansetzen (Hören umgeschaltet, Zug während des Spielens)
+function stimmeNeu(){if(!HAUPT||!HAUPT.an)return;const c=AE.ctx,now=c.currentTime,t=laufPos(HAUPT);const alt=HAUPT.spuren[0];
+  for(const n of alt.nodes){try{n.g.gain.cancelScheduledValues(now);n.g.gain.setValueAtTime(n.g.gain.value,now);n.g.gain.linearRampToValueAtTime(0,now+.015);n.s.stop(now+.02)}catch(e){}}
+  HAUPT.hoeren=Z.hoeren;const sp=spurNeu(HAUPT,'stimme',t,now+.012);sp.letzt=null;sp.wrap=true;HAUPT.spuren[0]=sp;laufTick(HAUPT)}
+function musikSchalten(){if(!HAUPT||!HAUPT.an)return;const c=AE.ctx,now=c.currentTime;const i=HAUPT.spuren.findIndex(s=>s.art==='musik');
+  if(i>=0){const sp=HAUPT.spuren[i];for(const n of sp.nodes){try{n.g.gain.setTargetAtTime(0,now,.005);n.s.stop(now+.05)}catch(e){}}HAUPT.spuren.splice(i,1)}
+  if(Z.musik){const t=laufPos(HAUPT);const sp=spurNeu(HAUPT,'musik',t,now+.03);sp.wrap=true;HAUPT.spuren.push(sp)}
+  const k=HAUPT.spuren.findIndex(s=>s.art==='klick');if(k>=0){for(const n of HAUPT.spuren[k].nodes){try{n.s.stop()}catch(e){}}HAUPT.spuren.splice(k,1)}
+  if(Z.klick){const t=laufPos(HAUPT);HAUPT.spuren.push(spurNeu(HAUPT,'klick',t,now+.03))}laufTick(HAUPT)}
+async function bereitFuer(t,hoeren,musik){const ps=[];const P=planFuer(hoeren),j=stueckBei(P,t),p=j>=0?P[j]:P[Math.min(P.length-1,-1-j)];
+  if(p){const k=stueckIndex(p.stem,clamp(t-p.off,0,DAUER-.1));ps.push(ladeStueck(p.stem,k))}
+  if(musik)ps.push(ladeStueck('mix',stueckIndex('mix',clamp(t,0,DAUER-.1))));await Promise.all(ps)}
+async function spielen(){
+  if(Z.spielt){pause();return}
+  await STEMS_P;
+  wecken();laufStop(VOR);VOR=null;
+  const b=Z.bereich;if(Z.schleife&&b&&(Z.pos<b.von-.01||Z.pos>=b.bis-.02))Z.pos=b.von;if(Z.pos>=DAUER-.05)Z.pos=0;
+  Z.spielt=true;folgen=true;spielKnopf();AE.wartet=true;anfordern();
+  try{await bereitFuer(Z.pos,Z.hoeren,Z.musik)}catch(e){Z.spielt=false;spielKnopf();AE.wartet=false;status('Audio lädt nicht. Netz prüfen und nochmal tippen.','fehler');return}
+  if(!Z.spielt)return;AE.wartet=false;
+  HAUPT=laufStart({von:Z.pos,schleife:Z.schleife,bereich:Z.bereich,hoeren:Z.hoeren,musik:Z.musik,klick:Z.klick});
+  if(!HAUPT){Z.spielt=false;spielKnopf();status('Dieses Gerät kann hier kein Audio abspielen.','fehler')}
+  anfordern();
+}
+function pause(){if(HAUPT){const t=laufPos(HAUPT);if(t!=null)Z.pos=clamp(t,0,DAUER)}laufStop(HAUPT);HAUPT=null;Z.spielt=false;spielKnopf();sichernSpaeter();anfordern()}
+function hauptFertig(){Z.spielt=false;HAUPT=null;spielKnopf();anfordern()}
+function posAktualisieren(){if(!HAUPT)return;const t=laufPos(HAUPT);if(t==null)return;Z.pos=clamp(t,0,DAUER);
+  if(folgen&&!G&&!traeg){const x=xz(Z.pos);if(x>W*.9||x<0){Z.t0=Z.pos-Z.dur*.1;clampView();basisDirty=true}}}
+function spielKnopf(){$('iSpiel').setAttribute('d',Z.spielt?'M7 5h3.5v14H7zM13.5 5H17v14h-3.5z':'M7 4.5v15l12.5-7.5z');$('bSpiel').setAttribute('aria-label',Z.spielt?'Pause':'Abspielen')}
+function springe(t){Z.pos=clamp(t,0,DAUER);folgen=true;if(Z.spielt){laufStop(HAUPT,.01);HAUPT=null;Z.spielt=false;spielen()}ueberDirty=true;anfordern();sichernSpaeter()}
+// Vorhören (beim Ziehen/Loslassen/Antippen): kurzes Stück mit weichen Blenden, ersetzt das vorige
+let VORNR=0;
+async function vorhoeren(von,bis,dT){
+  wecken();const c=ctx();if(!c)return;von=clamp(von,0,DAUER);bis=clamp(bis,von+.05,DAUER);
+  const nr=++VORNR,hoe=dT?'neu':Z.hoeren,P=dT?plan(dT):planFuer(hoe);
+  await STEMS_P;if(nr!==VORNR)return;
+  if(Z.spielt)pause();
+  laufStop(VOR,.010);VOR=null;
+  const fehlt=()=>{for(const t of [von,(von+bis)/2,bis-.01]){const j=stueckBei(P,t),p=j>=0?P[j]:null;if(p&&!stueckBereit(p.stem,clamp(t-p.off,0,DAUER-.1)))return true}return false};
+  if(fehlt()){try{await bereitFuer(von,hoe,false);await bereitFuer(Math.min(bis,von+(bis-von)/2),hoe,false)}catch(e){return}if(nr!==VORNR)return}
+  MESS.vorhoeren++;
+  VOR=laufStart({von,bis,hoeren:hoe,plan:P,musik:Z.musik&&!!stueckBereit('mix',von),klick:Z.klick,vorlauf:.02});
+  anfordern();
+}
+
+// ---------------- Züge
+function gruppe(i){const s=SIL[i];if(Z.zieht==='wort')return WOE[s.wort].silben.slice();
+  if(Z.zieht==='zeile'){const k=POS[i];return ORD.filter((j,kk)=>kk>=k&&SIL[j].zeile===s.zeile)}return [i]}
+function raster(t){const s=rasterSchritt();return s?T1+Math.round((t-T1)/s)*s:t}
+// Ziel beim Einrasten: Rasterlinie nächst dem Wortbeginn; liegt die Melodie-Note auf dem Raster und nahe, gilt sie
+function einrastZiel(i,bAkt){const s=rasterSchritt();if(!s)return bAkt;const g1=raster(bAkt),z=SIL[i].ziel_s;
+  if(z!=null){const g2=raster(z);if(Math.abs(z-g2)<=.02&&Math.abs(g2-bAkt)<=Math.max(.09,s*.75))return g2}return g1}
+function grenzen(gr,d){ // erlaubte Verschiebung (delta) der Gruppe
+  const ks=gr.map(i=>POS[i]),kmin=Math.min(...ks),kmax=Math.max(...ks);let lo=-10,hi=10;
+  const f=gr[ks.indexOf(kmin)],l=gr[ks.indexOf(kmax)];
+  if(kmin>0){const p=ORD[kmin-1];lo=Math.max(lo,(SIL[p].b+offOf(d,p)+.04)-(SIL[f].a+offOf(d,f)))}
+  if(kmax<ORD.length-1){const nx=ORD[kmax+1];hi=Math.min(hi,(SIL[nx].a+offOf(d,nx)-.06)-(SIL[l].a+offOf(d,l)))}
+  return [lo,hi]}
+function aendern(fn,meldung){HIST.push(JSON.stringify(ZG));if(HIST.length>80)HIST.shift();REDO=[];fn();nachZug();if(meldung)status(meldung)}
+function nachZug(){for(const k in ZG.d)if(Math.abs(ZG.d[k])<5e-4){delete ZG.d[k];delete ZG.q[k]}PLAN=plan(ZG.d);sichern();listen();sendeZustand();basisNeu();undoKnoepfe();if(Z.spielt&&Z.hoeren==='neu')stimmeNeu();infoZeigen()}
+function undoKnoepfe(){$('bUndo').disabled=!HIST.length;$('bRedo').disabled=!REDO.length}
+$('bUndo').onclick=()=>{if(!HIST.length)return;REDO.push(JSON.stringify(ZG));ZG=JSON.parse(HIST.pop());nachZug();status('Zug zurückgenommen.')};
+$('bRedo').onclick=()=>{if(!REDO.length)return;HIST.push(JSON.stringify(ZG));ZG=JSON.parse(REDO.pop());nachZug();status('Zug wiederhergestellt.')};
+function einrasten(){
+  let ziel=[];
+  if(Z.wahl!=null){const s=SIL[Z.wahl];ziel=Z.zieht==='silbe'?[Z.wahl]:Z.zieht==='wort'?WOE[s.wort].silben.slice():ORD.filter(j=>SIL[j].zeile===s.zeile)}
+  else if(Z.bereich)ziel=ORD.filter(j=>{const b=bNeu(j);return b>=Z.bereich.von&&b<=Z.bereich.bis});
+  if(!ziel.length){status('Erst eine Silbe antippen oder einen Bereich wählen.');return}
+  if(!rasterSchritt()){status('Raster ist auf „frei“ – bitte 1/4, 1/8, 1/16 oder Triole wählen.');return}
+  if(ziel.length>1)ziel=ziel.filter(j=>SIL[j].art!=='gesprochen');
+  ziel.sort((a,b)=>POS[a]-POS[b]);
+  const d=Object.assign({},ZG.d),q=Object.assign({},ZG.q);let n=0;
+  for(const i of ziel){const bA=SIL[i].b+offOf(d,i),zz=einrastZiel(i,bA);let delta=zz-bA;const [lo,hi]=grenzen([i],d);delta=clamp(delta,lo,hi);
+    const neu=offOf(d,i)+delta;if(Math.abs(delta)>=5e-4){n++}d[i]=neu;q[i]=Z.raster}
+  aendern(()=>{ZG.d=d;ZG.q=q},n?n+(n===1?' Silbe':' Silben')+' auf '+Z.raster+' eingerastet.':'Liegt schon auf dem Raster.');
+  const a=SIL[ziel[0]].a+offOf(ZG.d,ziel[0]),e=bNeu(ziel[ziel.length-1]);vorhoeren(a-.35,Math.max(e+.9,a+1.2),ZG.d);
+}
+$('bEinrasten').onclick=einrasten;
+
+// ---------------- Gesten
+const P=new Map();let G=null;
+function lokal(e){const r=buehne.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top}}
+function treffer(x,y){
+  const b=Z.bereich;
+  if(y<L.rul){if(b)for(const k of ['von','bis'])if(Math.abs(x-xz(b[k]))<=22)return {art:'rand',kante:k};return {art:'lineal'}}
+  if(y<L.yW){let best=null,bd=1e9;for(const s of sylBox){const dx=x<s.x?s.x-x:x>s.x+s.w?x-s.x-s.w:0,dy=Math.abs(y-(s.y+s.h/2));const d=dx+(dy>s.h/2?(dy-s.h/2)*.6:0);if(d<bd){bd=d;best=s}}
+    if(best&&bd<=16)return {art:'silbe',i:best.i,punkt:!!best.punkt};return null}
+  if(y>=L.yM){let best=null,bd=18;for(const m of markBox){const d=Math.abs(x-m.x);if(d<bd){bd=d;best=m}}return best?{art:'marke',m:best}:{art:'leer'}}
+  // in der Welle: Beginn-Linie einer Silbe (nur nah gezoomt)
+  if(W/Z.dur>=70){let best=null,bd=14;for(const s of sylBox){if(s.punkt)continue;const xb=s.x+6,d=Math.abs(x-xb);if(d<bd){bd=d;best=s}}if(best)return {art:'silbe',i:best.i,welle:true}}
+  if(b)for(const k of ['von','bis'])if(Math.abs(x-xz(b[k]))<=12)return {art:'rand',kante:k};
+  return null}
+function randFaktor(x){return x<34?-(34-x)/34:x>W-34?(x-W+34)/34:0}
+buehne.addEventListener('pointerdown',e=>{
+  if(e.button>0)return;e.preventDefault();try{buehne.setPointerCapture(e.pointerId)}catch(_){}
+  const p=lokal(e);P.set(e.pointerId,p);traeg=null;wecken();
+  if(P.size===2){if(G&&G.lang)clearTimeout(G.lang);if(G&&G.art==='bereich')Z.bereich=G.vorher;if(G&&G.art==='zieht'){PLAN_TEMP=null}
+    const [a,b]=[...P.values()];G={art:'pinch',d0:Math.max(24,Math.hypot(a.x-b.x,a.y-b.y)),dur0:Z.dur,tA:tz((a.x+b.x)/2)};folgen=false;basisNeu();return}
+  if(P.size>2)return;
+  const h=treffer(p.x,p.y);
+  G={art:'wartet',h,id:e.pointerId,x0:p.x,y0:p.y,x:p.x,y:p.y,t0v:Z.t0,spur:[[performance.now(),p.x]],lang:0};
+  if((!h||h.art==='leer')&&p.y>=L.yW)G.lang=setTimeout(langDruck,430);
+});
+function langDruck(){if(!G||G.art!=='wartet')return;G.lang=0;G.art='bereich';G.vorher=Z.bereich?{...Z.bereich}:null;G.anker=clamp(tz(G.x0),0,DAUER);Z.bereich={von:G.anker,bis:G.anker+.001};try{navigator.vibrate&&navigator.vibrate(8)}catch(_){}basisNeu();bereichsleiste()}
+buehne.addEventListener('pointermove',e=>{
+  if(!P.has(e.pointerId))return;const p=lokal(e);P.set(e.pointerId,p);if(!G)return;
+  if(G.art==='pinch'){if(P.size<2)return;const [a,b]=[...P.values()],d=Math.max(24,Math.hypot(a.x-b.x,a.y-b.y)),mx=(a.x+b.x)/2;Z.dur=clamp(G.dur0*G.d0/d,DMIN,DMAX);Z.t0=G.tA-mx/W*Z.dur;clampView();basisNeu();return}
+  if(e.pointerId!==G.id)return;
+  const now=performance.now();G.spur.push([now,p.x]);while(G.spur.length>2&&now-G.spur[0][0]>100)G.spur.shift();
+  if(G.art==='wartet'&&Math.hypot(p.x-G.x0,p.y-G.y0)>8){
+    if(G.lang){clearTimeout(G.lang);G.lang=0}const h=G.h;
+    if(h&&h.art==='silbe'&&!h.punkt)zugStart(h.i);
+    else if(h&&h.art==='rand'){G.art='rand';G.vorher={...Z.bereich}}
+    else{G.art='schiebt';folgen=false}}
+  if(G.art==='zieht'){ziehen(p.x,p.y,false);return}
+  G.x=p.x;G.y=p.y;
+  if(G.art==='schiebt'){Z.t0=G.t0v-(p.x-G.x0)/W*Z.dur;clampView();basisNeu()}
+  else if(G.art==='bereich'){const t=clamp(tz(p.x),0,DAUER);Z.bereich={von:Math.min(G.anker,t),bis:Math.max(G.anker,t)+.001};G.rand=randFaktor(p.x);basisNeu();bereichsleiste()}
+  else if(G.art==='rand'){const t=clamp(tz(p.x),0,DAUER),b=Z.bereich;if(G.h.kante==='von')b.von=Math.min(t,b.bis-.05);else b.bis=Math.max(t,b.von+.05);G.rand=randFaktor(p.x);basisNeu();bereichsleiste()}
+});
+function zugStart(i){
+  const d0=Object.assign({},ZG.d),gr=gruppe(i);
+  G.art='zieht';G.i=i;G.gr=gr;G.d0=d0;G.b0=SIL[i].b+offOf(d0,i);G.acc=0;G.lx=G.x0;G.ly=G.y0;G.ziel=G.b0;G.delta=0;G.temp=d0;G.grenz=grenzen(gr,d0);G.letztVor=0;G.vorZiel=null;
+  Z.wahl=i;infoZeigen();PLAN_TEMP=plan(d0);basisNeu();
+}
+function ziehen(x,y,auto){
+  if(!auto){const fein=y-G.y0>56;G.fein=fein;G.acc+=(x-G.lx)*(fein?.25:1)*Z.dur/W;G.lx=x;G.x=x;G.y=y;G.rand=randFaktor(x)}
+  else G.acc+=G.rand*Z.dur*.014;
+  const roh=G.b0+G.acc,rs=rasterSchritt();let ziel=rs?raster(roh):roh;G.snap=!!rs;
+  let delta=clamp(ziel-G.b0,G.grenz[0],G.grenz[1]);if(Math.abs(ziel-G.b0-delta)>1e-6){ziel=G.b0+delta;G.snap=false}
+  G.ziel=ziel;G.delta=delta;const t=Object.assign({},G.d0);for(const j of G.gr){t[j]=offOf(G.d0,j)+delta}G.temp=t;PLAN_TEMP=plan(t);
+  basisDirty=true;anfordern();infoZiehen();
+  // Vorhören beim Ziehen: neues Rasterziel oder 25 ms bewegt, frühestens alle 170 ms
+  const now=performance.now();
+  if((G.vorZiel==null||Math.abs(ziel-G.vorZiel)>.02)&&now-G.letztVor>170){G.letztVor=now;G.vorZiel=ziel;const s=SIL[G.i];vorhoeren(s.a+offOf(t,G.i)-.12,ziel+.45,t)}
+}
+function zugEnde(g){
+  PLAN_TEMP=null;
+  if(Math.abs(g.delta)<5e-4){PLAN=plan(ZG.d);basisNeu();status('Nicht verschoben.');return}
+  const t=g.temp,i=g.i,rs=Z.raster;
+  aendern(()=>{ZG.d=t;for(const j of g.gr)ZG.q[j]=g.snap?rs:'frei'},silbeName(i)+' → '+rasterName(g.ziel)+' ('+msT(g.delta*1000)+')');
+  const s=SIL[i];vorhoeren(s.a+offOf(ZG.d,i)-.6,g.ziel+1.0,ZG.d);
+}
+function ende(e,abbruch){
+  if(!P.has(e.pointerId))return;P.delete(e.pointerId);if(!G)return;
+  if(G.art==='pinch'||G.art==='nichts'){if(P.size===0)G=null;else G={art:'nichts'};sichernSpaeter();anfordern();return}
+  if(e.pointerId!==G.id)return;if(G.lang)clearTimeout(G.lang);const g=G;G=null;
+  if(abbruch){if(g.art==='bereich'||g.art==='rand')Z.bereich=g.vorher;if(g.art==='zieht'){PLAN_TEMP=null;laufStop(VOR)}basisNeu();bereichsleiste();return}
+  switch(g.art){
+    case 'wartet':tippen(g);break;
+    case 'schiebt':{const s=g.spur,a=s[0],b=s[s.length-1],dt=b[0]-a[0];if(dt>0){const v=(b[1]-a[1])/dt;if(Math.abs(v)>.12)traeg={v:-v/W*Z.dur,last:performance.now()}}break}
+    case 'bereich':if(Z.bereich.bis-Z.bereich.von<.08)Z.bereich=g.vorher;bereichsleiste(true);break;
+    case 'rand':bereichsleiste(true);break;
+    case 'zieht':zugEnde(g);break;
+  }
+  basisNeu();sichernSpaeter();
+}
+buehne.addEventListener('pointerup',e=>ende(e,false));
+buehne.addEventListener('pointercancel',e=>ende(e,true));
+buehne.addEventListener('contextmenu',e=>e.preventDefault());
+buehne.addEventListener('touchend',e=>{if(e.cancelable)e.preventDefault()},{passive:false});
+document.addEventListener('gesturestart',e=>e.preventDefault());
+function tippen(g){
+  const h=g.h;
+  if(h&&h.art==='silbe'){if(h.punkt){Z.dur=clamp(3,DMIN,DMAX);Z.t0=bNeu(h.i)-1.2;clampView();Z.wahl=h.i;folgen=false;basisNeu();infoZeigen();return}
+    Z.wahl=h.i;infoZeigen();basisNeu();const s=SIL[h.i],o=offOf(ZG.d,h.i);vorhoeren(s.a+o-.25,s.b+o+.75);return}
+  if(h&&h.art==='marke'){markeInfo(h.m);return}
+  if(h&&h.art==='rand')return;
+  if(Z.wahl!=null){Z.wahl=null;infoZeigen();basisNeu()}
+  springe(tz(g.x0));
+}
+function markeInfo(m){const d=m.d;let t='';
+  if(m.art==='schnitt')t='<b>✂︎ '+esc(sek(d.t))+'</b> · '+esc(d.art)+' · '+msT(d.sprung_ms)+' <small>('+esc(d.quelle==='G4'?'v10-Neuschnitt Strophe 2':'v7-Zeitkorrektur')+')</small>';
+  else if(m.art==='pruef')t='<b>? Prüfstelle '+esc(sek(d.von_s))+'–'+esc(sek(d.bis_s))+'</b> · Ende ist hier '+Math.abs(d.db)+' dB '+(d.art==='Loch'?'leiser':'lauter')+' als die verschobene Aufnahme <small>(Vermutung: hier hat eine Korrektur etwas verändert – bitte anhören)</small>';
+  else if(m.art==='atmer')t='<b>Atmer '+esc(sek(d.t))+'</b> · 8 dB leiser gemacht (G1)';
+  else if(m.art==='plopp')t='<b>Plopp '+esc(sek(d.t))+'</b> · Tiefen abgesenkt (G1)';
+  $('infoText').innerHTML=t;$('bSilbeHoer').hidden=false;$('bSilbeWeg').hidden=true;INFO_HOER=[(d.t!=null?d.t:d.von_s)-.6,(d.t!=null?d.t:d.bis_s)+.8];
+}
+let INFO_HOER=null;
+// Lauf 5 (Prüfung): die Info-Zeile zeigt beim Ziehen Ziel, Abstand zum Raster und Verschiebung mit
+let INFO_ZIEH='';
+function infoZiehen(){const rs=rasterSchritt(),g=rs?raster(G.ziel):null,o=offOf(G.temp,G.i);
+  const t='<b>'+esc(silbeName(G.i))+'</b> → '+esc(rasterName(G.ziel))+(g!=null?' · zum Raster '+esc(msT((G.ziel-g)*1000)):' · frei')+' · <b style="color:var(--gold)">'+esc(msT(o*1000))+'</b> gegen v11'+(G.fein?' · fein':'');
+  if(t!==INFO_ZIEH){INFO_ZIEH=t;$('infoText').innerHTML=t}}
+function infoZeigen(){INFO_ZIEH='';
+  const i=Z.wahl;if(i==null){$('infoText').innerHTML='Silbe antippen zum Hören, ziehen zum Verschieben.';$('bSilbeHoer').hidden=true;$('bSilbeWeg').hidden=true;INFO_HOER=null;return}
+  const s=SIL[i],o=offOf(ZG.d,i),b=s.b+o,rs=rasterSchritt(),g=rs?raster(b):null;
+  const zum=g!=null?' · zum Raster '+msT((b-g)*1000):'';
+  const gesungen=(b-s.b_roh)*1000;
+  $('infoText').innerHTML='<b>'+esc(silbeName(i))+'</b> '+esc(rasterName(b))+esc(zum)+(o?' · <b style="color:var(--gold)">'+esc(msT(o*1000))+'</b> gegen v10':'')+
+    '<br><small>Beginn ('+esc(s.b_art)+') '+esc(sek(b))+' · Anlauf '+Math.round((s.b-s.a)*1000)+' ms · gegen Aufnahme '+esc(msT(gesungen))+(s.sicher<.5?' · Erkennung unsicher':'')+'</small>';
+  $('bSilbeHoer').hidden=false;$('bSilbeWeg').hidden=!o;INFO_HOER=[s.a+o-.25,b+.8];
+}
+$('bSilbeHoer').onclick=()=>{if(INFO_HOER)vorhoeren(INFO_HOER[0],INFO_HOER[1])};
+$('bSilbeWeg').onclick=()=>{const i=Z.wahl;if(i==null||!ZG.d[i])return;aendern(()=>{delete ZG.d[i];delete ZG.q[i]},silbeName(i)+' wieder wie Ende.');const s=SIL[i];vorhoeren(s.a-.4,s.b+.8,ZG.d)};
+// Übersicht
+let ueZug=null;
+ue.addEventListener('pointerdown',e=>{e.preventDefault();try{ue.setPointerCapture(e.pointerId)}catch(_){}ueZug=e.pointerId;ueSetze(e);traeg=null;folgen=false});
+ue.addEventListener('pointermove',e=>{if(ueZug===e.pointerId)ueSetze(e)});
+const ueEnde=e=>{if(ueZug===e.pointerId){ueZug=null;sichernSpaeter()}};ue.addEventListener('pointerup',ueEnde);ue.addEventListener('pointercancel',ueEnde);
+function ueSetze(e){const r=ue.getBoundingClientRect(),t=(e.clientX-r.left)/r.width*DAUER;Z.t0=t-Z.dur/2;clampView();basisNeu();vorladen()}
+
+// ---------------- Bedienung
+function zoom(f){const t=Z.wahl!=null?bNeu(Z.wahl):(Z.pos>=Z.t0&&Z.pos<=Z.t0+Z.dur)?Z.pos:Z.t0+Z.dur/2,xa=clamp(xz(t)/W,0,1);Z.dur=clamp(Z.dur*f,DMIN,DMAX);Z.t0=t-xa*Z.dur;clampView();basisNeu();sichernSpaeter()}
+$('bMinus').onclick=()=>zoom(2);$('bPlus').onclick=()=>zoom(.5);
+$('bSpiel').onclick=spielen;
+$('bSchleife').onclick=()=>{Z.schleife=!Z.schleife;$('bSchleife').setAttribute('aria-pressed',Z.schleife);if(HAUPT)HAUPT.schleife=Z.schleife;status(Z.schleife?'Bereich wird wiederholt.':'Wiederholen aus.');sichernSpaeter()};
+function chipsZeigen(){const f=LIED.fokus;$('chips').innerHTML='<button class="chip fokus" data-f="1">★ hypnotised</button>'+ABS.map((a,i)=>'<button class="chip" data-a="'+i+'">'+esc(a.chip)+'</button>').join('')}
+let chipAn=null;
+function chipsMarkieren(){const f=LIED.fokus,fok=Math.abs(Z.t0-f.von_s)<1.5&&Math.abs(Z.dur-(f.bis_s-f.von_s))<3;const i=fok?'f':abschnittBei(Z.t0+Z.dur*.35);if(i===chipAn)return;chipAn=i;
+  for(const b of $('chips').children)b.classList.toggle('an',b.dataset.f?i==='f':+b.dataset.a===i)}
+$('chips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;
+  if(b.dataset.f){const f=LIED.fokus;Z.t0=f.von_s;Z.dur=f.bis_s-f.von_s;Z.bereich={von:103.6,bis:117.4};bereichsleiste(true);clampView();springe(103.6);basisNeu();vorladen();status('Strophe 2: „There is so much more to see“ und „Are we hypnotised“.');return}
+  const a=ABS[+b.dataset.a];if(Z.dur>18||Z.dur<3)Z.dur=W>520?14:9;Z.t0=a.auftakt_s-.4;clampView();springe(a.auftakt_s);basisNeu();vorladen()});
+function segZeigen(){
+  for(const b of $('segHoeren').children)b.setAttribute('aria-pressed',b.dataset.h===Z.hoeren);
+  $('bAB').textContent='A/B';$('bAB').setAttribute('aria-label','A/B: '+Z.hoeren+' ↔ '+Z.ab);
+  $('segRaster').innerHTML=RASTER.map(r=>'<button data-r="'+r.id+'" aria-pressed="'+(r.id===Z.raster)+'">'+r.id+'</button>').join('');
+  for(const b of $('segZieht').children)b.setAttribute('aria-pressed',b.dataset.z===Z.zieht);
+  $('schichtLeiste').innerHTML=SCHICHTEN.map(s=>'<button class="schicht" data-s="'+s.id+'" style="--c:var('+s.c+')" aria-pressed="'+!!Z.sch[s.id]+'"><i></i>'+esc(s.name)+'</button>').join('');
+  $('bMusik').setAttribute('aria-pressed',Z.musik);$('bKlick').setAttribute('aria-pressed',Z.klick);$('bSchleife').setAttribute('aria-pressed',Z.schleife);
+}
+function hoerenSetzen(h){if(h===Z.hoeren)return;Z.ab=Z.hoeren;Z.hoeren=h;segZeigen();sichernSpaeter();vorladen();if(Z.spielt)stimmeNeu();status('Hören: '+({original:'Original (Aufnahme)',gereinigt:'gereinigt',v10:'v11',neu:'Neu (v11 + deine Züge)'})[h]+'.')}
+$('segHoeren').addEventListener('click',e=>{const b=e.target.closest('button');if(b)hoerenSetzen(b.dataset.h)});
+$('bAB').onclick=()=>hoerenSetzen(Z.ab);
+$('segRaster').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;Z.raster=b.dataset.r;segZeigen();basisNeu();infoZeigen();sichernSpaeter();status(Z.raster==='frei'?'Ziehen ohne Einrasten.':'Rastet auf '+Z.raster+' ein.')});
+$('segZieht').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;Z.zieht=b.dataset.z;segZeigen();sichernSpaeter();status(({silbe:'Nur die Silbe geht mit.',wort:'Das ganze Wort geht mit.',zeile:'Die Silbe und der Rest der Zeile gehen mit.'})[Z.zieht])});
+$('schichtLeiste').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const k=b.dataset.s;Z.sch[k]=!Z.sch[k];b.setAttribute('aria-pressed',Z.sch[k]);if(k==='original'||k==='gereinigt')vorladen();basisNeu();sichernSpaeter()});
+$('bMusik').onclick=()=>{Z.musik=!Z.musik;segZeigen();sichernSpaeter();if(Z.musik){stueckBereit('mix',clamp(Z.pos,0,DAUER-.1));status(AE.stem&&AE.stem.mix&&AE.stem.mix.mit_gesang?'Musik an (der Mix enthält noch Gesang).':'Musik an (ohne Gesang).')}musikSchalten()};
+$('bKlick').onclick=()=>{Z.klick=!Z.klick;segZeigen();sichernSpaeter();musikSchalten()};
+function bereichsleiste(zeigen){const b=Z.bereich,l=$('bereichsleiste');l.hidden=!b;if(b)$('bereichText').textContent=tpos(b.von)+' – '+tpos(b.bis)+' · '+(b.bis-b.von).toFixed(1).replace('.',',')+' s';if(HAUPT)HAUPT.bereich=b}
+$('bBereichWeg').onclick=()=>{Z.bereich=null;bereichsleiste();basisNeu();sichernSpaeter()};
+$('bBereichZeile').onclick=()=>{const i=Z.wahl!=null?Z.wahl:ORD.find(j=>bNeu(j)>=Z.pos)||ORD[0];const z=SIL[i].zeile,ss=ORD.filter(j=>SIL[j].zeile===z);const a=SIL[ss[0]].a+offOf(ZG.d,ss[0])-.3,e=bNeu(ss[ss.length-1])+1.2;
+  Z.bereich={von:a,bis:e};Z.dur=clamp((e-a)*1.15,DMIN,DMAX);Z.t0=a-(e-a)*.07;clampView();bereichsleiste(true);springe(a);basisNeu();status('Bereich: Zeile „'+ZEI[z].text+'“.')};
+$('bBereichTeil').onclick=()=>{const t=Z.bereich?(Z.bereich.von+Z.bereich.bis)/2:Z.pos,i=abschnittBei(t),a=ABS[i],bis=i+1<ABS.length?ABS[i+1].von_s:DAUER;Z.bereich={von:a.auftakt_s,bis};
+  Z.dur=clamp((bis-a.auftakt_s)*1.08,DMIN,DMAX);Z.t0=a.auftakt_s-(bis-a.auftakt_s)*.04;clampView();bereichsleiste(true);springe(a.auftakt_s);basisNeu();vorladen();status('Bereich: '+a.name+'.')};
+
+// ---------------- Listen
+function zugListe(){
+  const out=[];
+  for(const k of Object.keys(ZG.d).map(Number).sort((a,b)=>POS[a]-POS[b])){const s=SIL[k],o=ZG.d[k],kk=POS[k];
+    const pv=kk>0?ORD[kk-1]:null,nx=kk+1<ORD.length?ORD[kk+1]:null,op=pv!=null?offOf(ZG.d,pv):0,on=nx!=null?offOf(ZG.d,nx):0;
+    out.push({silbe:k,text:s.text,wort:WOE[s.wort].text.replace(/[.,?!]+$/,''),zeile:ZEI[s.zeile].text,teil:ABS[s.abschnitt].name,art:s.art,
+      b_v10_s:+s.b.toFixed(3),b_neu_s:+(s.b+o).toFixed(3),versatz_ms:Math.round(o*1000),takt_neu:rasterName(s.b+o),raster:ZG.q[k]||'frei',
+      a_v10_s:+s.a.toFixed(3),anlauf_ms:Math.round((s.b-s.a)*1000),beginn_art:s.b_art,
+      b_aufnahme_s:s.b_roh,a_aufnahme_s:s.a_roh,neu_gegen_aufnahme_ms:Math.round((s.b+o-s.b_roh)*1000),
+      vorsilbe_gekuerzt_ms:Math.max(0,Math.round((op-o)*1000)),luecke_davor_ms:Math.max(0,Math.round((o-op)*1000)),luecke_danach_ms:nx!=null?Math.max(0,Math.round((on-o)*1000)):0})}
+  return out}
+function zugText(z){return z.teil+', „'+z.zeile+'“: '+'„'+z.text+'“'+(z.wort!==z.text?' ('+z.wort+')':'')+' '+msT(z.versatz_ms)+' → '+z.takt_neu+(z.raster!=='frei'?' ('+z.raster+')':' (frei)')+
+  (z.vorsilbe_gekuerzt_ms?' · Vorsilbe '+z.vorsilbe_gekuerzt_ms+' ms gekürzt':'')+(z.luecke_davor_ms?' · Lücke davor '+z.luecke_davor_ms+' ms':'')}
+let AEND=null;
+function listen(){
+  const zl=zugListe();
+  $('listeZ').innerHTML=(zl.length?zl.map(z=>'<div class="karte" data-s="'+z.silbe+'"><div class="kopf"><b>'+esc(z.takt_neu)+'</b><span>'+esc(z.teil)+'</span><span class="marke">'+esc(z.raster)+'</span></div><div class="text">'+esc(zugText(z))+'</div>'+
+    '<div class="knoepfe"><button data-tu="hin">Hin</button><button data-tu="hoer">Hören</button><button data-tu="weg">↺ wie Ende</button></div></div>').join(''):'<p class="leer">Noch keine Züge. Probier „★ hypnotised“: Silbe anfassen und ziehen.</p>')+
+    '<label for="notiz" style="display:block;margin-top:10px;font-size:13px;color:var(--mut)">Notiz an Claude (geht mit beim Senden)</label><textarea id="notiz" placeholder="z. B. „hyp“ klingt jetzt zu spät, das s von „see“ zu lang …">'+esc(NOTIZ)+'</textarea>';
+  $('anzZ').textContent=zl.length?' '+zl.length:'';
+  const n=$('notiz');n.oninput=()=>{NOTIZ=n.value;sichernSpaeter();sendeZustand()};
+  let h='';
+  if(LIED.pruefstellen.length)h+=LIED.pruefstellen.map(p=>'<div class="zeile"><button data-hin="'+p.von_s+'" data-bis="'+p.bis_s+'">Hin</button><span class="wann">'+esc(tpos(p.von_s))+'<br><small>'+esc(mmss(p.von_s))+'</small></span><span class="was">Prüfstelle (Vermutung): Ende '+Math.abs(p.db)+' dB '+(p.art==='Loch'?'leiser':'lauter')+' als die verschobene Aufnahme</span></div>').join('');
+  if(AEND)h+=AEND.slice().sort((a,b)=>(a.fassung==='v10'?0:1)-(b.fassung==='v10'?0:1)||a.zeit_s-b.zeit_s).map(a=>'<div class="zeile">'+(a.ganz?'<span class="wann">ganzes<br>Lied</span>':'<button data-hin="'+a.zeit_s+'"'+(a.bis_s?' data-bis="'+a.bis_s+'"':'')+'>Hin</button><span class="wann">'+esc(tpos(a.zeit_s))+'<br><small>'+esc(mmss(a.zeit_s))+'</small></span>')+'<span class="was">'+esc(a.was)+' <span class="marke">'+esc(a.fassung)+'</span></span></div>').join('');
+  $('listeA').innerHTML=h||'<p class="leer">Liste lädt …</p>';$('anzA').textContent=AEND?' '+(AEND.length+LIED.pruefstellen.length):'';
+}
+$('listeZ').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const k=b.closest('.karte');if(!k)return;const i=+k.dataset.s;
+  if(b.dataset.tu==='hin'){Z.wahl=i;const t=bNeu(i);if(Z.dur>8)Z.dur=6;Z.t0=t-Z.dur*.4;clampView();infoZeigen();basisNeu();vorladen();buehne.scrollIntoView({behavior:'smooth',block:'center'})}
+  else if(b.dataset.tu==='hoer'){const s=SIL[i];vorhoeren(s.a+offOf(ZG.d,i)-.6,bNeu(i)+1)}
+  else if(b.dataset.tu==='weg'){aendern(()=>{delete ZG.d[i];delete ZG.q[i]},silbeName(i)+' wieder wie Ende.')}});
+$('listeA').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.dataset.hin==null)return;const t=+b.dataset.hin,bis=b.dataset.bis?+b.dataset.bis:null;
+  if(bis!=null&&bis-t<20){Z.bereich={von:t,bis};bereichsleiste(true);if(bis-t>Z.dur*.9)Z.dur=clamp((bis-t)*1.2,DMIN,DMAX)}Z.t0=t-Z.dur*.15;clampView();springe(t);basisNeu();vorladen();buehne.scrollIntoView({behavior:'smooth',block:'center'})});
+function zeigeTab(t){Z.tab=t;for(const [k,id] of [['Z','tabZ'],['A','tabA'],['H','tabH']]){$(id).setAttribute('aria-selected',k===t);$('liste'+k).hidden=k!==t}sichernSpaeter()}
+$('tabZ').onclick=()=>zeigeTab('Z');$('tabA').onclick=()=>zeigeTab('A');$('tabH').onclick=()=>zeigeTab('H');
+
+// ---------------- Status + Senden
+let statusUhr=0,unterwegs=false;
+function status(t,art){const s=$('sendeStatus');s.textContent=t;s.className=art||'';clearTimeout(statusUhr);if(art!=='fehler'&&!unterwegs)statusUhr=setTimeout(sendeZustand,3500)}
+function signatur(){return JSON.stringify([ZG.d,NOTIZ.trim()])}
+function offen(){return (Object.keys(ZG.d).length||NOTIZ.trim()||(GESENDET&&GESENDET.sig!=='[{},""]'))&&(!GESENDET||GESENDET.sig!==signatur())}
+function sendeZustand(){clearTimeout(statusUhr);const s=$('sendeStatus'),n=Object.keys(ZG.d).length;
+  if(unterwegs){s.textContent='Wird gesendet …';s.className='';return}   // Lauf 5: nicht nach 3,5 s „noch nicht gesendet“ zeigen
+  s.className='';
+  s.textContent=!speicherOk?'Achtung: hier kann nichts gespeichert werden.':offen()?(n?n+(n===1?' Zug':' Züge')+' noch nicht gesendet.':'Änderung noch nicht gesendet.'):n?'Alles gesendet.':'Noch keine Züge.';
+  if(!speicherOk)s.className='fehler';$('bSenden').textContent=offen()&&n?'Senden ('+n+')':'Senden'}
+function bauSendung(stempel){
+  const zl=zugListe(),geraet={breite:innerWidth,hoehe:innerHeight,dpr:window.devicePixelRatio||1,quer:innerWidth>innerHeight};
+  return [{lied:LIED.lied,fassung:(STEMS&&STEMS.fassung)||'v11',daten:{seite:'gesang-werkstatt-2',seite_stand:LIED.gebaut,gesendet_um:stempel,geraet,quelle:'Ende = '+((STEMS&&STEMS.ende_quelle)||'v11-Hauptstimme trocken')+'; Zeiten ab Takt 1 (Timing gleich v10, b_v10_s/a_v10_s = Zeit in der Ende-Fassung); b = Wortbeginn (Fahne/Vokal), a = Anlauf-Beginn',
+    zuege:zl,notiz:NOTIZ.trim(),bereich:Z.bereich?{von_s:+Z.bereich.von.toFixed(3),bis_s:+Z.bereich.bis.toFixed(3)}:null,
+    regeln:{luecke:'still (Vorschau); beim Neurechnen wie v10 füllen',ueberlappung:'Vorsilbe mit 10-ms-Blende gekürzt',raster_ziel:'Rasterlinie nächst dem Wortbeginn; Melodie-Note, wenn sie auf dem Raster liegt'},
+    text:zl.map(zugText).join('\n')+(NOTIZ.trim()?'\nNotiz: '+NOTIZ.trim():'')}}]}
+async function senden(){
+  if(unterwegs)return;if(!offen()){status('Alles schon gesendet.');return}
+  const stempel=jetzt(),sig=signatur(),body=JSON.stringify(bauSendung(stempel));sichern();
+  unterwegs=true;$('bSenden').disabled=true;status('Wird gesendet …');
+  let erg;
+  if(navigator.onLine===false)erg={ok:false,grund:'kein Netz'};
+  else{const ab=new AbortController(),uhr=setTimeout(()=>ab.abort(),10000);
+    try{const r=await fetch(MELDUNG_URL,{method:'POST',signal:ab.signal,headers:{apikey:MELDUNG_KEY,Authorization:'Bearer '+MELDUNG_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},body});erg=r.ok?{ok:true}:{ok:false,grund:'Fehler '+r.status}}
+    catch(e){erg={ok:false,grund:e.name==='AbortError'?'keine Antwort':'kein Netz'}}finally{clearTimeout(uhr)}}
+  unterwegs=false;$('bSenden').disabled=false;
+  if(erg.ok){GESENDET={sig,wann:stempel};sichern();sendeZustand();$('bKopie').hidden=true;status('Angekommen. '+Object.keys(ZG.d).length+' Züge an Claude gesendet.','gut')}
+  else{status('Senden ging nicht ('+erg.grund+'). Alles bleibt hier gespeichert – später nochmal tippen oder Text kopieren.','fehler');$('bKopie').hidden=false}
+}
+$('bSenden').onclick=senden;
+$('bKopie').onclick=async()=>{const t='The Wall – Gesang-Werkstatt 2\n'+bauSendung(jetzt())[0].daten.text;let ok=false;try{await navigator.clipboard.writeText(t);ok=true}catch(e){}
+  if(!ok){const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{ok=document.execCommand('copy')}catch(e){}ta.remove()}
+  status(ok?'Text kopiert. Bitte an Claude schicken.':'Kopieren ging nicht.',ok?'gut':'fehler')};
+
+// ---------------- Start
+addEventListener('pagehide',sichern);
+document.addEventListener('visibilitychange',()=>{if(document.hidden){sichern();if(Z.spielt)pause()}});
+addEventListener('keydown',e=>{if(/TEXTAREA|INPUT/.test(document.activeElement.tagName))return;if(e.code==='Space'){e.preventDefault();spielen()}else if((e.metaKey||e.ctrlKey)&&e.key==='z'){e.preventDefault();(e.shiftKey?$('bRedo'):$('bUndo')).click()}});
+try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',farben)}catch(e){}
+chipsZeigen();segZeigen();spielKnopf();bereichsleiste(false);undoKnoepfe();farben();groesse();listen();sendeZustand();zeigeTab(Z.tab);infoZeigen();
+new ResizeObserver(()=>groesse()).observe(buehne);addEventListener('resize',()=>groesse());
+ladeSchichten().then(()=>{$('laden').hidden=true;ueberStatisch=null;THEMAVER++;basisNeu();performance.mark('wellen-gezeichnet');
+  const idle=window.requestIdleCallback||(f=>setTimeout(f,60));STEMS_P.then(()=>idle(()=>{ctx();vorladen()}))}).catch(()=>{$('laden').textContent='Wellen konnten nicht laden.'});
+fetch('daten/aenderungen.json?cabbccfe').then(r=>r.ok?r.json():[]).then(a=>{AEND=Array.isArray(a)?a:[];listen()}).catch(()=>{AEND=[];listen()});
+// Zeitmessung je Funktion (für Test und Fehlersuche, kostet fast nichts)
+const PROF={};
+function wrap(n,f){return function(){const t=performance.now();try{return f.apply(this,arguments)}finally{const d=performance.now()-t,p=PROF[n]||(PROF[n]={n:0,max:0,sum:0});p.n++;p.sum+=d;if(d>p.max)p.max=d}}}
+zeichneBasis=wrap('zeichneBasis',zeichneBasis);zeichneOben=wrap('zeichneOben',zeichneOben);zeichneUeber=wrap('zeichneUeber',zeichneUeber);
+ziehen=wrap('ziehen',ziehen);laufStart=wrap('laufStart',laufStart);laufTick=wrap('laufTick',laufTick);feinSpitzen=wrap('feinSpitzen',feinSpitzen);
+versatzMessen=wrap('versatzMessen',versatzMessen);listen=wrap('listen',listen);infoZeigen=wrap('infoZeigen',infoZeigen);sichern=wrap('sichern',sichern);plan=wrap('plan',plan);nachZug=wrap('nachZug',nachZug);
+// Prüf-Haken: denselben Plan offline rendern (gleiche Stücke, gleiche Blenden) – für die Knackser-Messung im Test
+async function renderOffline(von,bis,dT,ohneBlenden){
+  const sr=48000,n=Math.ceil((bis-von)*sr),P=plan(dT||{});
+  for(const t of [von,(von+bis)/2,bis-.02]){const j=stueckBei(P,t),p=j>=0?P[j]:P[Math.min(P.length-1,-1-j)];await ladeStueck(p.stem,stueckIndex(p.stem,clamp(t-p.off,0,DAUER-.1)))}
+  const off=new OfflineAudioContext(1,n,sr),bus=off.createGain();bus.connect(off.destination);
+  const mc=AE.ctx,mb=AE.bus;AE.ctx=off;AE.bus={stimme:bus};BLENDE=ohneBlenden?0:1;
+  try{const lauf={an:true,von,bis,schleife:false,bereich:null,hoeren:'neu',plan:P,spuren:[],ct0:0,tl0:von};const sp=spurNeu(lauf,'stimme',von,0);sp.wrap=true;lauf.spuren.push(sp);
+    let g=0;while(!sp.fertig&&g++<800){if(spurSchritt(sp)==='warte')throw new Error('Stück fehlt')}}
+  finally{AE.ctx=mc;AE.bus=mb;BLENDE=1}
+  const buf=await off.startRendering();const gr=[];for(let j=1;j<P.length;j++){const a=P[j-1],b=P[j];if(!(a.fo||b.fi))continue;if(b.d0>von+.003&&b.d0<bis-.003)gr.push({t:b.d0,src:[b.d0-b.off,Math.min(a.d1,b.d0)-a.off]});if(a.d1<b.d0-1e-6&&a.d1>von+.003)gr.push({t:a.d1,src:[a.d1-a.off]})}
+  return {x:Array.from(buf.getChannelData(0)),grenzen:gr};
+}
+function ansicht(t0,dur){Z.t0=t0;Z.dur=dur;clampView();basisNeu()}
+window.__ws2={renderOffline,PROF,ansicht,Z,get ZG(){return ZG},get PLAN(){return PLAN},MESS,LIED,AE,SIL,ORD,xz,tz,L:()=>L,sylBox:()=>sylBox,markBox:()=>markBox,plan,bauSendung,laufPos:()=>laufPos(HAUPT),vorhoerPos,
+  einrastZiel,get HAUPT(){return HAUPT},get VOR(){return VOR},grenzen};
+</script>
+</body>
+</html>

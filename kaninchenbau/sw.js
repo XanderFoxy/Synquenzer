@@ -1,13 +1,13 @@
 // Kaninchenbau – Service Worker (offline). Schale zuerst aus dem Cache; eine Fassung pro Cache.
-// Neue Fassung: V hochzählen (gleich VERSION in app.js), dann `node test/sw-liste.mjs` – das schreibt DATEIEN und PRUEF neu.
+// Neue Fassung: V hochzählen (gleich VERSION in kern.js), dann `node test/sw-liste.mjs` – das schreibt DATEIEN und PRUEF neu.
 // Beim Einrichten wird jede Datei gegen ihre Prüfsumme geprüft: liefert der Server (CDN-Cache) noch eine alte Datei,
 // scheitert die Einrichtung und die alte Fassung bleibt aktiv (nie halbe Fassungen). Die neue wird erst auf Knopfdruck
 // („Neue Fassung bereit – Jetzt laden“, Nachricht 'jetzt') aktiv oder wenn alle Fenster zu sind.
-const V = '0.1.0';
+const V = '0.2.1';
 const SCHALE = 'kaninchenbau-schale-' + V;
 // ERZEUGT von test/sw-liste.mjs – nicht von Hand ändern
-const DATEIEN = /*DATEIEN*/["./","./app.js","./icon-180.png","./icon-192.png","./icon-512.png","./icon.svg","./index.html","./inhalt.js","./manifest.webmanifest","./profil.js","./speicher.js","./stil.css"]/*ENDE*/;
-const PRUEF = /*PRUEF*/{"./":"3c35b134a2f0464c","./app.js":"edff70613b4e52de","./icon-180.png":"74a86ff5987d6cc3","./icon-192.png":"f8233ec3a01b66c3","./icon-512.png":"f54d77221ac64bb6","./icon.svg":"6b29919df397aa74","./index.html":"3c35b134a2f0464c","./inhalt.js":"568499fb6747bbc1","./manifest.webmanifest":"ae3c3ee13323a1ea","./profil.js":"d53b94d83855fc0f","./speicher.js":"234b043260e89613","./stil.css":"2d5d8b60097ac9a4"}/*ENDE*/;
+const DATEIEN = /*DATEIEN*/["./","./app.js","./auswertung.js","./icon-180.png","./icon-192.png","./icon-512.png","./icon.svg","./index.html","./inhalt.js","./kern.js","./lernen.js","./manifest.webmanifest","./profil.js","./seiten.js","./speicher.js","./stil.css","./wesen.js"]/*ENDE*/;
+const PRUEF = /*PRUEF*/{"./":"0c85029ce766883f","./app.js":"6bd83ee449d0d32f","./auswertung.js":"e767b7f5c93f126b","./icon-180.png":"74a86ff5987d6cc3","./icon-192.png":"f8233ec3a01b66c3","./icon-512.png":"f54d77221ac64bb6","./icon.svg":"6b29919df397aa74","./index.html":"0c85029ce766883f","./inhalt.js":"568499fb6747bbc1","./kern.js":"9eb1008f09275a71","./lernen.js":"69e15365d36af12c","./manifest.webmanifest":"8cf24919f790a0a9","./profil.js":"d53b94d83855fc0f","./seiten.js":"8c2f7fa76f33ee26","./speicher.js":"8f6ff3115e230282","./stil.css":"1e04e58c013f8e1d","./wesen.js":"94cc232168162662"}/*ENDE*/;
 const neu = (d) => new Request(d, { cache: 'reload' });
 const summe = async (r) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', await r.clone().arrayBuffer()))].slice(0, 8).map((b) => b.toString(16).padStart(2, '0')).join('');
 self.addEventListener('install', (e) => {
