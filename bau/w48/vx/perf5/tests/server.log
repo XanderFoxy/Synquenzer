@@ -6,3 +6,8 @@ Serving HTTP on 127.0.0.1 port 8983 (http://127.0.0.1:8983/) ...
 127.0.0.1 - - [23/Nov/2026 18:10:42] "GET /b/version.json?t=1795457442839 HTTP/1.1" 200 -
 127.0.0.1 - - [23/Nov/2026 18:11:18] "GET /a/index.html HTTP/1.1" 200 -
 127.0.0.1 - - [23/Nov/2026 18:11:23] "GET /a/version.json?t=1795457483420 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 18:12:58] "GET /a/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 18:13:02] "GET /a/version.json?t=1795457582861 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 18:13:37] "GET /b/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 18:13:42] "GET /b/version.json?t=1795457622388 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 18:14:18] "GET /a/index.html HTTP/1.1" 200 -

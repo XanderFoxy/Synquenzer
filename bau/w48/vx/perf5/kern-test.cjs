@@ -70,8 +70,9 @@ async function run(br, dir, tag) {
     const ok = SYNQUENZER.ke1.open({pcm: x, sr, name: 'Probe'});
     let st = null; for (let k = 0; k < 120; k++) { await new Promise(z => setTimeout(z, 250)); st = SYNQUENZER.ke1.state(); if (st && (st.done || st.result || st.err || (st.phase && /fertig|done|ready|res/i.test(String(st.phase))))) break; }
     const full = st ? JSON.stringify(st, (k, v) => /^(ms|wMs|took|t0|t1|at|ts)$/.test(k) && typeof v === 'number' ? 0 : v) : ''; let h = 0x811c9dc5; for (let i = 0; i < full.length; i++) { h ^= full.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
-    const s = {len: full.length, h: h.toString(16), kopf: full.slice(0, 160)}; try { SYNQUENZER.ke1.close(); } catch (e) {}
+    const s = {len: full.length, h: h.toString(16), kopf: full.slice(0, 160)}; window.__ke1full = full; try { SYNQUENZER.ke1.close(); } catch (e) {}
     const inf = SYNQUENZER.ke1.info(); return {ok: !!ok, geladen: inf.loaded, err: inf.err, state: s}; } catch (e) { return {err: String(e)}; } });
+  r.ke1full = await pg.evaluate(() => window.__ke1full || '');
   await sleep(400);
   // (4) MS-Platte
   r.platte = await pg.evaluate(async () => { try {
@@ -85,7 +86,7 @@ async function run(br, dir, tag) {
   r.shotMs = await pg.screenshot({path: __dirname + '/tests/ms-' + dir + tag + '.png'});
   // (8b) NDP-Platte (Drum-Kit)
   r.ndp = await pg.evaluate(async () => { try { try { closeEditor && closeEditor(); } catch (e) {} await new Promise(z => setTimeout(z, 400));
-    const ok = window.NDP && NDP.open ? NDP.open({}) : null; await new Promise(z => setTimeout(z, 1500));
+    const ok = typeof ndpOpen === 'function' ? ndpOpen({}) : null; await new Promise(z => setTimeout(z, 1500));
     const el = document.getElementById('ndp'); return {ok: !!ok, da: !!el, sichtbar: !!el && !el.hidden && el.getBoundingClientRect().height > 0, teile: el ? el.querySelectorAll('*').length : 0}; } catch (e) { return {err: String(e)}; } });
   r.shotNdp = await pg.screenshot({path: __dirname + '/tests/ndp-' + dir + tag + '.png'});
   // (6) Worklet-Vorlagen des Haupt-Skripts
@@ -109,6 +110,13 @@ async function run(br, dir, tag) {
   for (const r of [a1, b1, a2]) { delete r.shotMs; delete r.shotNdp; }
   const cssCmp = CA.map((x, k) => ({id: x.id, vorher: x.raw.length, nachher: (CB[k] || {raw: ''}).raw.length, regeln: a1.cssom[k].n, gleich: !!CB[k] && CB[k].id === x.id && JSON.stringify(a1.cssom[k]) === JSON.stringify(b1.cssom[k])}));
   const cssom = a1.cssom; for (const r of [a1, b1, a2]) delete r.cssom;
+  // ke1: Felder, die sich unterscheiden (vorher/nachher und Kontrolle vorher/vorher)
+  const pathsDiff = (x, y, p = '', out = []) => { if (out.length > 12) return out; if (typeof x !== 'object' || typeof y !== 'object' || !x || !y) { if (JSON.stringify(x) !== JSON.stringify(y)) out.push(p + '=' + JSON.stringify(x).slice(0, 40) + '|' + JSON.stringify(y).slice(0, 40)); return out; }
+    for (const k of new Set([...Object.keys(x), ...Object.keys(y)])) pathsDiff(x[k], y[k], p + '.' + k, out); return out; };
+  const jp = t => { try { return JSON.parse(t); } catch (e) { return t; } };
+  const keDiffAB = pathsDiff(jp(a1.ke1full), jp(b1.ke1full)), keDiffAA = pathsDiff(jp(a1.ke1full), jp(a2.ke1full));
+  console.log('ke1 Unterschiede vorher/nachher: ' + JSON.stringify(keDiffAB) + ' | Kontrolle vorher/vorher: ' + JSON.stringify(keDiffAA));
+  for (const r of [a1, b1, a2]) delete r.ke1full;
   console.log(JSON.stringify({vorher: a1, nachher: b1, vorher2: {mk: a2.mk, errs: a2.errs}}, null, 1));
   console.log('CSS-Vorlagen: ' + JSON.stringify(cssCmp));
   const cssOk = CA.length === CB.length && CA.length >= 6 && cssCmp.every(c => c.gleich && c.regeln > 10) && cssom.every(c => !c.err);

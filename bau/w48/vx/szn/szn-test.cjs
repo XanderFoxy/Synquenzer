@@ -1,6 +1,6 @@
 // SZN Kern-Test: Szenen-Name im Matrix-Kopf. node szn-test.cjs <port> [basis-ordner] [neu-ordner]
 // Server-Wurzel srv/ mit <basis>/ (4.88.0) und <neu>/, je index.html + version.json.
-const {chromium}=require('playwright'),fs=require('fs');
+const {chromium}=require('playwright'),fs=require('fs'),pngdiff=require('./pngdiff.cjs');
 const port=process.argv[2],BA=process.argv[3]||'basis',NE=process.argv[4]||'neu',here=__dirname;
 let fail=0;const ok=(n,c,x)=>{console.log((c?'OK     ':'FEHLER ')+n+(x!==undefined?'  '+JSON.stringify(x):''));if(!c)fail++;};
 const VPS={hoch:{width:428,height:926},quer:{width:926,height:428}};
@@ -26,7 +26,8 @@ const kopf=p=>p.evaluate(()=>UI.scenes.filter(b=>b.getBoundingClientRect().width
   return {s:+b.dataset.s,sn:sn.textContent,cut:sn.scrollWidth>sn.clientWidth,ell:cs.textOverflow,innen:r.left>=br.left-.01&&r.right<=br.right+.01&&r.top>=br.top&&r.bottom<=br.bottom,
     allesInnen:kids.every(k=>k.top>=br.top&&k.bottom<=br.bottom&&k.left>=br.left-.01&&k.right<=br.right+.01),under:r.top>=b.querySelector('.st').getBoundingClientRect().bottom-.01,
     sh:b.scrollHeight,ch:b.clientHeight,mitte:[r.x+r.width/2,r.y+r.height/2]};}));
-const kopfBild=async(p,datei)=>{const g=await p.evaluate(()=>{const r=EL.grid.getBoundingClientRect(),h=UI.scenes[0].getBoundingClientRect();return {x:r.x,y:Math.max(0,h.y-6),w:r.width,h:h.height+12};});
+// Bild der Szenen-Koepfe (alle sichtbaren Szenen-Spalten; Ecke mit SONG/SZ-Knopf hat eigene Animationen und gehoert nicht dazu)
+const kopfBild=async(p,datei)=>{await p.waitForTimeout(1200);const g=await p.evaluate(()=>{const v=UI.scenes.filter(b=>b.getBoundingClientRect().width>0).map(b=>b.getBoundingClientRect());const x0=Math.min(...v.map(r=>r.left))-2,x1=Math.max(...v.map(r=>r.right))+2,h=v[0];return {x:x0,y:Math.max(0,h.y-6),w:x1-x0,h:h.height+12};});
   return p.screenshot({path:datei,clip:{x:g.x,y:g.y,width:g.w,height:g.h}});};
 const zust=p=>p.evaluate(()=>({playing:!!R.playing,q:UI.scenes.map(b=>b.classList.contains('q')||b.classList.contains('full')),pend:[...R.pend].map(x=>x==null?null:typeof x==='object'?JSON.stringify(x):x),slot:[...R.slot],
   names:S.scenes.map(x=>x.name),clips:S.tracks.map(t=>t?t.clips.map(c=>c?(c.notes?c.notes.length:1):0).join(''):'')}));
@@ -42,7 +43,7 @@ const NAMEN=['Strophe','Refrain mit sehr langem Namen',null,'Szene 4','Bridge','
     // 2) Ohne Namen: Kopfzeile pixel-gleich zu Basis
     await laden(A.p,[]);await laden(N.p,[]);
     const pa=await kopfBild(A.p,here+'/tests/ohne-'+vn+'-basis.png'),pn=await kopfBild(N.p,here+'/tests/ohne-'+vn+'-neu.png');
-    ok(vn+': ohne Namen – Kopfzeile pixel-gleich ('+pa.length+' B)',pa.equals(pn));
+    const df=await pngdiff(b,pa,pn);ok(vn+': ohne Namen – Szenen-Köpfe pixel-gleich ('+df.w+'×'+df.h+' px)',df.n===0,df);
     const ga2=await geo(A.p),gn2=await geo(N.p);ok(vn+': ohne Namen – Geometrie gleich',JSON.stringify(ga2)===JSON.stringify(gn2));
     ok(vn+': ohne Namen – kein Namens-Feld',(await kopf(N.p)).every(k=>k.sn===null));
     // 3) Mit Namen (auch langer Name, Standard-Name "Szene 4" und leer = kein Name)
@@ -73,14 +74,20 @@ const NAMEN=['Strophe','Refrain mit sehr langem Namen',null,'Szene 4','Bridge','
     const za=await zust(A.p),zn=await zust(N.p);
     ok(vn+': Tipp auf Namen → Szene 2 startet wie Basis',zn.playing&&JSON.stringify({p:za.playing,q:za.q,s:za.pend})===JSON.stringify({p:zn.playing,q:zn.q,s:zn.pend}),{basis:za.q,neu:zn.q,playing:zn.playing});
     await A.p.evaluate(()=>{stop();});await N.p.evaluate(()=>{stop();});await A.p.waitForTimeout(300);await N.p.waitForTimeout(300);
-    // 7) Ziehen: Kopf von Szene 1 (am Namen gepackt) auf Szene 3 – gleiche Wirkung wie Basis
-    const p0=by(0).mitte,K3=await N.p.evaluate(()=>{const r=UI.scenes[2].getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2];});
+    // 6b) Halten auf dem Namen oeffnet das Szenen-Blatt wie bisher
+    const hold=async P=>{const cdp=await P.context().newCDPSession(P);const q=by(0).mitte;await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:q[0],y:q[1],id:1}]});
+      await P.waitForTimeout(900);await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await P.waitForTimeout(300);
+      const r=await P.evaluate(()=>{const h=document.querySelector('.mtxscn h4');return h?h.textContent:null;});await P.evaluate(()=>closePop());await P.waitForTimeout(200);return r;};
+    const ha=await hold(A.p),hn=await hold(N.p);
+    ok(vn+': Halten auf dem Namen öffnet das Szenen-Blatt wie Basis',hn&&ha===hn,{basis:ha,neu:hn});
+    // 7) Ziehen am oberen Rand des Kopfs (Szene 1 -> Spalte 3) – gleiche Wirkung wie Basis, Namen wandern mit
+    const p0=await N.p.evaluate(()=>{const r=UI.scenes[0].getBoundingClientRect();return [r.x+r.width/2,r.y+4];}),K3=await N.p.evaluate(()=>{const r=UI.scenes[2].getBoundingClientRect();return [r.x+r.width/2,r.y+4];});
     const vor=await zust(N.p);
-    for(const P of [A.p,N.p]){const pfad=[[p0[0],p0[1]+60],[K3[0],p0[1]+60],[K3[0],K3[1]+60]];const cdp=await P.context().newCDPSession(P),T=(type,x,y)=>cdp.send('Input.dispatchTouchEvent',{type,touchPoints:type==='touchEnd'?[]:[{x,y,id:1}]});
+    for(const P of [A.p,N.p]){const pfad=[[p0[0],p0[1]+60],[K3[0],p0[1]+60]];const cdp=await P.context().newCDPSession(P),T=(type,x,y)=>cdp.send('Input.dispatchTouchEvent',{type,touchPoints:type==='touchEnd'?[]:[{x,y,id:1}]});
       await T('touchStart',p0[0],p0[1]);let c=[p0[0],p0[1]];
       for(const z of pfad){for(let k=1;k<=8;k++){await T('touchMove',c[0]+(z[0]-c[0])*k/8,c[1]+(z[1]-c[1])*k/8);await P.waitForTimeout(30);}c=z;}await P.waitForTimeout(150);await T('touchEnd');await P.waitForTimeout(700);}
     const da=await zust(A.p),dn=await zust(N.p);
-    ok(vn+': Ziehen des Kopfs wirkt wie Basis',JSON.stringify([da.names,da.clips])===JSON.stringify([dn.names,dn.clips]),{basis:da.names,neu:dn.names,geaendert:JSON.stringify([vor.names,vor.clips])!==JSON.stringify([dn.names,dn.clips])});
+    ok(vn+': Ziehen des Kopfs wirkt wie Basis (und verschiebt wirklich)',JSON.stringify([vor.names,vor.clips])!==JSON.stringify([dn.names,dn.clips])&&JSON.stringify([da.names,da.clips])===JSON.stringify([dn.names,dn.clips]),{basis:da.names,neu:dn.names,geaendert:JSON.stringify([vor.names,vor.clips])!==JSON.stringify([dn.names,dn.clips])});
     const Kd=await kopf(N.p);ok(vn+': nach Ziehen zeigt der Kopf die Namen passend',Kd.every(k=>(k.sn||'')===((n=>n&&n!=='Szene '+(k.s+1)?n:'')((dn.names[k.s]||'').trim()))),Kd.map(k=>[k.s,k.sn]));
     ok(vn+': keine Seitenfehler',A.errs.length===0&&N.errs.length===0,{basis:A.errs,neu:N.errs});
     await A.ctx.close();await N.ctx.close();

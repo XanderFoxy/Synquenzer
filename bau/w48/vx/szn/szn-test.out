@@ -1,6 +1,6 @@
 --- hoch 428x926
 OK     hoch: Start – Kopf/Zellen-Geometrie gleich
-OK     hoch: ohne Namen – Kopfzeile pixel-gleich (39362 B)
+OK     hoch: ohne Namen – Szenen-Köpfe pixel-gleich (526×112 px)  {"n":0,"box":null,"w":526,"h":112}
 OK     hoch: ohne Namen – Geometrie gleich
 OK     hoch: ohne Namen – kein Namens-Feld
 OK     hoch: Name "Strophe" sichtbar unter der Nummer  {"s":0,"sn":"Strophe","cut":false,"ell":"ellipsis","innen":true,"allesInnen":true,"under":true,"sh":42,"ch":42,"mitte":[148.78125,80.5]}
@@ -10,24 +10,3 @@ OK     hoch: nichts ragt aus dem Kopf (alle Zeilen)  [[0,42,42,true],[1,42,42,tr
 OK     hoch: mit Namen – Kopf/Zellen-Geometrie gleich wie Basis
 OK     hoch: nach Speichern/Laden gleich  ["Strophe","Refrain mit sehr langem","","","","","",""]
 OK     hoch: Name + Tonart + Akkord-Zeile innerhalb des Rahmens  {"n":4,"innen":true,"sh":42,"ch":42,"h":44}
-OK     hoch: Tipp auf Namen → Szene 2 startet wie Basis  {"basis":[false,true,false,false,false,false,false,false],"neu":[false,true,false,false,false,false,false,false],"playing":true}
-OK     hoch: Ziehen des Kopfs wirkt wie Basis  {"basis":["Strophe","Refrain mit sehr langem ","Szene 3","Szene 4","Bridge","","Szene 7","Outro"],"neu":["Strophe","Refrain mit sehr langem ","Szene 3","Szene 4","Bridge","","Szene 7","Outro"],"geaendert":false}
-OK     hoch: nach Ziehen zeigt der Kopf die Namen passend  [[0,"Strophe"],[1,"Refrain mit sehr langem"],[2,null],[3,null]]
-OK     hoch: keine Seitenfehler  {"basis":[],"neu":[]}
---- quer 926x428
-OK     quer: Start – Kopf/Zellen-Geometrie gleich
-OK     quer: ohne Namen – Kopfzeile pixel-gleich (49723 B)
-OK     quer: ohne Namen – Geometrie gleich
-OK     quer: ohne Namen – kein Namens-Feld
-OK     quer: Name "Strophe" sichtbar unter der Nummer  {"s":0,"sn":"Strophe","cut":false,"ell":"ellipsis","innen":true,"allesInnen":true,"under":true,"sh":42,"ch":42,"mitte":[133.046875,71.5]}
-OK     quer: langer Name mit … gekürzt, bleibt in der Zelle  {"s":1,"sn":"Refrain mit sehr langem","cut":true,"ell":"ellipsis","innen":true,"allesInnen":true,"under":true,"sh":42,"ch":42,"mitte":[192.4453125,71.5]}
-OK     quer: ohne Namen / Standard-Name → kein Feld
-OK     quer: nichts ragt aus dem Kopf (alle Zeilen)  [[0,42,42,true],[1,42,42,true],[2,null,null,null],[3,null,null,null],[4,42,42,true],[5,null,null,null],[6,null,null,null],[7,42,42,true]]
-OK     quer: mit Namen – Kopf/Zellen-Geometrie gleich wie Basis
-OK     quer: nach Speichern/Laden gleich  ["Strophe","Refrain mit sehr langem","","","Bridge","","","Outro"]
-OK     quer: Name + Tonart + Akkord-Zeile innerhalb des Rahmens  {"n":4,"innen":true,"sh":42,"ch":42,"h":44}
-OK     quer: Tipp auf Namen → Szene 2 startet wie Basis  {"basis":[false,true,false,false,false,false,false,false],"neu":[false,true,false,false,false,false,false,false],"playing":true}
-OK     quer: Ziehen des Kopfs wirkt wie Basis  {"basis":["Strophe","Refrain mit sehr langem ","Szene 3","Szene 4","Bridge","","Szene 7","Outro"],"neu":["Strophe","Refrain mit sehr langem ","Szene 3","Szene 4","Bridge","","Szene 7","Outro"],"geaendert":false}
-OK     quer: nach Ziehen zeigt der Kopf die Namen passend  [[0,"Strophe"],[1,"Refrain mit sehr langem"],[2,null],[3,null],[4,"Bridge"],[5,null],[6,null],[7,"Outro"]]
-OK     quer: keine Seitenfehler  {"basis":[],"neu":[]}
-ALLE OK

@@ -217,13 +217,29 @@ function cssFrame(s) {
   return {items, gaps};
 }
 const isDel = t => t && t.t === 'ch' && CSS_DEL.has(t.v);
+// Werte mit var(…) und eigene Eigenschaften (--x) hält der Browser als Original-Text (CSSOM zeigt jeden Leerraum):
+// dort bleibt der Leerraum innerhalb des Werts wörtlich.
+function cssVerbatimGaps(items) {
+  const keep = new Set();
+  for (let k = 2; k < items.length; k++) {
+    if (items[k].v !== ':' || items[k - 1].t !== 'w' || !(items[k - 2].v === '{' || items[k - 2].v === ';')) continue;
+    let d = 0, e = k + 1, sub = items[k - 1].v.startsWith('--');
+    for (; e < items.length; e++) { const v = items[e].v;
+      if (v === '(') d++; else if (v === ')') d--; else if (d <= 0 && (v === ';' || v === '}' || v === '{')) break;
+      if (items[e].t === 'w' && /^var$/i.test(v) && items[e + 1] && items[e + 1].v === '(') sub = true; }
+    if (e >= items.length || items[e].v === '{' || !sub) continue;
+    for (let g = k + 1; g < e; g++) keep.add(g);   // Lücke g = vor items[g]: nach ':' bis vor dem letzten Wert-Token
+  }
+  return keep;
+}
 function cssMin(s) {
-  const {items, gaps} = cssFrame(s);
+  const {items, gaps} = cssFrame(s), keep = cssVerbatimGaps(items);
   let o = '';
   for (let k = 0; k < gaps.length; k++) {
     const g = gaps[k], a = items[k - 1], b = items[k], rand = !a || !b;
     if (g.raw) {
-      if (rand) o += g.ws ? '\n' : g.raw;                     // Rand (Vorlage wird ggf. verkettet): höchstens ein Umbruch
+      if (keep.has(k)) o += g.raw;
+      else if (rand) o += g.ws ? '\n' : g.raw;                     // Rand (Vorlage wird ggf. verkettet): höchstens ein Umbruch
       else if (isDel(a) || isDel(b)) o += '';
       else if (g.ws) o += ' ';
       else o += g.raw;                                        // nur Kommentar ohne Leerraum (a/**/b): wörtlich

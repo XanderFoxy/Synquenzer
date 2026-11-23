@@ -1,4 +1,4 @@
-# Stand 23.11.18:12 UTC
+# Stand 23.11.18:14 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -67,8 +67,9 @@ Block `block.js` (/* DSE-BEGIN/-END */ direkt hinter `Object.assign(SYNQUENZER,{
 - 13:05 FERTIG: Sonde nachher 24/24 OK (hoch+quer), Pflichtprüfungen ok. Ausgang: ausgang.html (md5 ffc7f9a61c3ee41c671ff55ba2124d13).
 ## farb
 # FARB – Stand
-- apply.py + block.css fertig (CSS-Block nach der Alias-Zeile --t9..--t24). Ausgang index.html gebaut.
-- Offen: Pflicht-Pruefung, Browser-Kern-Test, Fotos.
+- apply.py + block.css fertig (CSS-Block FARB-BEGIN/-END direkt nach der Alias-Zeile --t9..--t24 im Haupt-Stil). Ausgang index.html.
+- Kern-Test farb-test.cjs: ALLE OK (16 Spuren, Matrix/Song/Video/Auswahl, Kontrast, 1-8 bitgleich, keine Fehler).
+- Offen: Fotos, Pflicht-Pruefung, CHANGES/KURZ.
 ## fok4
 # FOK4 – Stand: fertig (gebaut, gemessen; Grenzen unten)
 Ausgang `index.html` md5 496e9d9d146f8bd7d48c2e61f0e04caf (Eingang 4.88.0 695af0504463a6385e21dc94e55b00c9).
