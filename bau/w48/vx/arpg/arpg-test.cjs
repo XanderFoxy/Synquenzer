@@ -37,7 +37,7 @@ const caseA = async () => {
     out[k] = {log: lg(s, i, 'arp'), r: A.render(src, cfg, {a: 0, b: 8, spb: spb(), seed: ARP1K.seedOf(i)}), bake: A.bakeNotes(i, 0),
       midi: Array.from(SYNQUENZER.buildMidi({mode: 'scene', scene: 0}).bytes), au: 0}; if (g === 80 && m === 'auf' && cn === 'akkord') { out.rms = rms(ch0(s)); out.rms2 = rms(ch0(await rend(2))); }
   }
-  A.set(i, {on: 1, m: 'auf', r: 16, g: 100}); out.datei = SYNQUENZER.serialize().replace(/"sum":"[0-9a-f]+"/, '').replace(/"id":"p-[a-z0-9-]+"/, '').replace(/"uid":"[a-z0-9]+"/g, '');
+  A.set(i, {on: 1, m: 'auf', r: 16, g: 100}); out.datei = SYNQUENZER.serialize().replace(/"sum":"[0-9a-f]+"/, '').replace(/"id":"p-[a-z0-9-]+"/, '').replace(/"uid":"[a-z0-9]+"/g, '').replace(/"appVersion":"[^"]*"/, ''); /* TPFL: Versionsnummer der App gehört nicht zum Vergleich */
   out.norm = [A.norm({g: 100}), A.norm({g: 5}), A.norm({g: 3}), A.norm({}), A.norm({g: 80.4})];
   return out;
 };
@@ -85,7 +85,7 @@ const caseB = async () => {
     const diff = keys.filter(k => JSON.stringify(ra[k]) !== JSON.stringify(rn[k]));
     ok(diff.length === 0, 'A1 Gate 5/30/80/100 % (Auf, Oktave+Swing, Akkord; Akkord- und Achtel-Clip): Render-Protokoll (Zeit, Ton, Länge), Rechnung, Festschreiben, MIDI-Bytes gleich wie 4.88 – ' + keys.length + ' Fälle, ' + keys.reduce((s, k) => s + ra[k].log.length, 0) + ' Noten', diff.slice(0, 3));
     const dd = (() => { const x = ra.datei, y = rn.datei; if (x === y) return null; let k = 0; while (x[k] === y[k]) k++; return [x.slice(k - 60, k + 60), y.slice(k - 60, k + 60)]; })();
-    ok(ra.datei === rn.datei, 'A2 Projektdatei mit Gate 100 % bytegleich zu 4.88 (ohne Zufalls-Kennungen)', dd);
+    ok(ra.datei === rn.datei, 'A2 Projektdatei mit Gate 100 % bytegleich zu 4.88 (ohne Zufalls-Kennungen und App-Versionsnummer)', dd);
     ok(JSON.stringify(ra.norm) === JSON.stringify(rn.norm), 'A3 Bereinigen alter Werte (100, 5, 3, leer, 80.4) wie 4.88', rn.norm.map(x => x.g));
     await pa.close();
     const r = await run(pn, caseB);

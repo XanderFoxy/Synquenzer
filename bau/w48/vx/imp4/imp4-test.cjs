@@ -1,7 +1,9 @@
 // IMP4 Browser-Test (Kern-Test-Datei): Basis gegen neue Fassung, iPhone hochkant 428×926, Touch.
-// Aufruf: node imp4-test.cjs <port>   (Server-Wurzel mit basis/index.html und neu/index.html, je version.json)
+// Aufruf: node imp4-test.cjs <port> [basis-ordner] [neu-ordner]   (Server-Wurzel mit basis/index.html und neu/index.html, je version.json;
+//   ohne Ordner-Angabe basis/ und neu/. Foto nur beim Standard-Ordner neu/.)
+// TPFL: T6 erwartet für „Lead“ den Bericht-Text seit CMD3 (4.90): „eigenes Echo 1/8 | 1/16 wie in der DAW“.
 const {chromium} = require('playwright'), fs = require('fs'), path = require('path');
-const port = process.argv[2], here = __dirname, cbp = fs.readFileSync(path.join(here, 'tests', 'imp4-song.cbp')).toString('base64');
+const port = process.argv[2], BAS = process.argv[3] || 'basis', NEU = process.argv[4] || 'neu', here = __dirname, cbp = fs.readFileSync(path.join(here, 'tests', 'imp4-song.cbp')).toString('base64');
 let fail = 0; const ok = (n, c, x) => { console.log((c ? 'OK     ' : 'FEHLER ') + n + (x !== undefined ? '  ' + JSON.stringify(x) : '')); if (!c) fail++; };
 async function lauf(b, wer) {
   const ctx = await b.newContext({viewport: {width: 428, height: 926}, hasTouch: true, isMobile: true, deviceScaleFactor: 2});
@@ -47,7 +49,7 @@ async function lauf(b, wer) {
   await ctx.close(); return Object.assign(r, q, {errs});
 }
 (async () => {
-  const b = await chromium.launch(); const A = await lauf(b, 'basis'), B = await lauf(b, 'neu'); await b.close();
+  const b = await chromium.launch(); const A = await lauf(b, BAS), B = await lauf(b, NEU); await b.close();
   console.log('Basis', JSON.stringify(A)); console.log('Neu  ', JSON.stringify(B));
   ok('T1 beide laden + importieren ohne Fehler', !A.err && !B.err && A.errs.length === 0 && B.errs.length === 0, A.errs.concat(B.errs).slice(0, 4));
   ok('T2 Basis: Clap im Drum-Clip doppelt (zwei Schläge je Zeitpunkt), gehört wird nur einer: Abstand zur DAW', A.claps.length === 4, A.abstand + ' dB');
@@ -56,7 +58,7 @@ async function lauf(b, wer) {
   const sp = (L, n) => (L || []).find(s => s.startsWith(n + ' '));
   ok('T5 Basis: Bericht beschreibt den XLA-Klang (Ausgangslage)', /^Bass · angenähert/.test(sp(A.an, 'Bass') || ''), sp(A.an, 'Bass'));
   ok('T6 Neu (Klänge aus der DAW an): Bericht beschreibt den übernommenen Klang + Echo', /^Bass · Klang aus der DAW · Echo 1\/4\. wie in der DAW · \d+ übernommen/.test(sp(B.an, 'Bass') || '') &&
-    /^Lead · Klang aus der DAW · eigenes Delay 1\/8 → Projekt-Echo 1\/4\. \(eins für alle Spuren\)/.test(sp(B.an, 'Lead') || '') && !(B.an || []).some(s => /Ein Echo für alle Spuren: /.test(s)), [sp(B.an, 'Bass'), sp(B.an, 'Lead')]);
+    /^Lead · Klang aus der DAW · eigenes Echo 1\/8 \| 1\/16 wie in der DAW · \d+ übernommen/.test(sp(B.an, 'Lead') || '') && !(B.an || []).some(s => /Ein Echo für alle Spuren: |Projekt-Echo .*\(eins für alle Spuren\)/.test(s)), [sp(B.an, 'Bass'), sp(B.an, 'Lead')]);
   ok('T7 Neu (Werksklänge): Bericht wie bisher (bis auf die neue Drum-Zeile)', JSON.stringify((B.aus || []).map(s => s.replace(/^Zusammengelegt: (.*?) · DRUMS: .*$/, 'Zusammengelegt: $1'))) === JSON.stringify(A.aus), {neu: B.aus, basis: A.aus});
   ok('T8 Bericht nennt die zusammengelegten Clap-Schläge', (B.an || []).some(s => /DRUMS: 8 Schläge gleichzeitig auf demselben Pad → je ein lauterer Schlag/.test(s)));
   ok('T9 Echo/Anteile nach dem Import unverändert gegenüber der Basis', JSON.stringify(A.echo) === JSON.stringify(B.echo) && JSON.stringify(A.dly) === JSON.stringify(B.dly), {echo: B.echo, dly: B.dly});
