@@ -28,7 +28,7 @@ h1{font-size:17px;margin:2px 0 1px;font-weight:650}
 .chip.fokus.an{background:var(--gold);color:var(--goldfg)}
 #ueber{display:block;width:100%;height:36px;border-radius:8px;touch-action:none;margin:0 0 6px;background:var(--band1)}
 #kern{position:sticky;top:0;z-index:5;background:var(--bg);padding:4px 0 2px;margin-top:-4px}
-#buehne{position:relative;height:clamp(300px,42vh,450px);border-radius:10px;overflow:hidden;touch-action:none;border:1px solid var(--lin);background:var(--bg)}
+#buehne{position:relative;height:calc(clamp(300px,42vh,450px) + var(--zusatz,0px));border-radius:10px;overflow:hidden;touch-action:none;border:1px solid var(--lin);background:var(--bg)}
 #buehne canvas{position:absolute;left:0;top:0;width:100%;height:100%}
 #lupe{position:absolute!important;width:176px!important;height:104px!important;left:0;top:0;border-radius:12px;border:2px solid var(--gold);box-shadow:0 6px 18px rgba(0,0,0,.25);pointer-events:none;display:none;background:var(--bar)}
 #laden{position:absolute;left:0;right:0;top:50%;text-align:center;color:var(--mut);font-size:14px;pointer-events:none}
@@ -58,6 +58,36 @@ button:disabled{opacity:.38;cursor:default}
 .schicht i{width:12px;height:12px;border-radius:50%;display:inline-block;background:var(--c);opacity:.35;border:2px solid var(--c)}
 .schicht[aria-pressed=true]{background:var(--band2);border-color:var(--c)}
 .schicht[aria-pressed=true] i{opacity:1}
+/* Zwiebel-Legende: Punkt = zeigen/verbergen, Name = diese Schicht hören */
+.zw{display:inline-flex;align-items:stretch;border:1px solid var(--lin2);border-radius:20px;overflow:hidden;min-height:40px;background:var(--bar)}
+.zw.an{border-color:var(--c)}
+.zw button{border:0;border-radius:0;min-height:40px;background:transparent;font-size:14px}
+.zw .zAug{min-width:36px;width:36px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-right:1px solid var(--lin2)}
+.zw .zAug i{width:12px;height:12px;border-radius:50%;display:inline-block;background:var(--c);opacity:.3;border:2px solid var(--c)}
+.zw.an .zAug{background:var(--band2)}.zw.an .zAug i{opacity:1}
+.zw .zHoer{min-width:44px;padding:0 10px 0 8px;display:inline-flex;align-items:center;gap:5px}
+.zw .zHoer[aria-pressed=true]{background:var(--fg);color:var(--bg)}
+.zw .zHoer svg{width:12px;height:12px;fill:currentColor;flex:0 0 auto}
+#staffelLeiste label{display:flex;align-items:center;gap:8px;flex:1 1 200px;min-width:0;font-size:14px}
+#staffel{flex:1 1 auto;min-width:90px;height:36px;margin:0;accent-color:var(--gold);background:transparent}
+#staffel::-webkit-slider-thumb{width:30px;height:30px}
+#staffelWert{font-size:12.5px;color:var(--mut);min-width:84px;text-align:right}
+#fassung{margin:0 0 8px;background:var(--band1);border:1px solid var(--lin);border-radius:10px;padding:4px 6px;flex-wrap:nowrap}
+#fassung .titel{min-width:0}
+#bMaster{background:var(--gold);color:var(--goldfg);border-color:var(--gold)}
+#bMaster svg{fill:currentColor;stroke:none}
+#segMaster button{min-width:46px;padding:0 8px}
+#masterZeit{font:600 13px ui-monospace,Menlo,monospace;min-width:40px;text-align:center;color:var(--mut)}
+#lMaster{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--lin2);background:var(--bar);color:var(--fg);font:600 14px -apple-system,system-ui,sans-serif;text-decoration:none;white-space:nowrap;margin-left:auto}
+.filter{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 2px}
+.filter button{min-height:36px;font-size:13.5px;border-radius:18px;padding:0 12px}
+.filter button[aria-pressed=true]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.zeile .was .knoepfe{margin-top:4px}
+.zeile .was .knoepfe button{min-height:36px;font-size:13.5px;padding:0 10px}
+.marke.s3{border-color:var(--rot);color:var(--rot)}.marke.s2{border-color:var(--warn);color:var(--warn)}
+.zeile.pz{align-items:flex-start;padding:8px 0}
+.zeile.pz .wann{padding-top:12px}
+#bVorher{font-size:13.5px;padding:0 9px;flex:0 0 auto}
 .schalt{font-size:14px;min-height:40px;border-radius:20px}
 .schalt[aria-pressed=true]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
 #bereichsleiste{background:var(--band1);border:1px solid var(--lin);border-radius:10px;padding:4px 6px 4px 10px}
@@ -101,13 +131,16 @@ button:disabled{opacity:.38;cursor:default}
   .seg{width:100%}.seg button{padding:0 3px;min-width:0;font-size:13.5px}
   #segRaster button{min-width:44px}
   /* Lauf 5 (Prüfung 832×378): Raster und Einrasten direkt unter dem Transport, ohne Scrollen erreichbar */
-  #transport{order:1}#zugLeiste{order:2}#zugLeiste2{order:3}#hoerLeiste{order:4}#schichtLeiste{order:5}#tonLeiste{order:6}#bereichsleiste{order:7}#sende{order:8}
+  #transport{order:1}#zugLeiste{order:2}#zugLeiste2{order:3}#hoerLeiste{order:4}#schichtLeiste{order:5}#tonLeiste{order:7}#bereichsleiste{order:8}#sende{order:9}
   #zugLeiste2,#hoerLeiste{flex-wrap:nowrap}
   #zugLeiste2 .seg,#hoerLeiste .seg{width:auto;flex:1 1 0;min-width:0}
   #zugLeiste2 .seg button,#hoerLeiste .seg button{white-space:normal;line-height:1.1;padding:0 2px;flex:1 1 0;min-width:44px}
   #bEinrasten,#bAB{flex:0 0 auto;padding:0 8px}
   .titel{display:none}
   .schicht{padding:0 7px;font-size:13px}
+  .zw .zHoer{padding:0 7px 0 5px;font-size:13px}.zw .zAug{min-width:32px;width:32px}
+  #fassung{order:0;margin:0 0 2px;flex-wrap:wrap;padding:2px 4px}#masterZeit{display:none}#lMaster{padding:0 8px;font-size:13px}
+  #staffelLeiste{order:6}#staffelWert{display:none}
   #sende{position:sticky;bottom:0;margin-top:auto;flex-wrap:wrap;padding:4px 0 0;border:0;background:var(--bg);z-index:2}
   #sendeStatus{flex-basis:100%;font-size:12px}
   #bSenden{flex:1}
@@ -119,12 +152,21 @@ button:disabled{opacity:.38;cursor:default}
   <h1>The Wall · Gesang-Werkstatt 2</h1>
   <p class="tipp">Silbe antippen = hören. Silbe ziehen = verschieben, rastet am Raster ein (Finger tiefer = feiner). Zwei Finger = Lupe.</p>
 </header>
+<div id="fassung" class="leiste" role="group" aria-label="Ganze Fassung hören und laden">
+  <span class="titel">Master</span>
+  <button id="bMaster" class="rund" aria-label="Master abspielen"><svg viewBox="0 0 24 24"><path id="iMaster" d="M7 4.5v15l12.5-7.5z"/></svg></button>
+  <div class="seg" id="segMaster" role="group" aria-label="Fassung"><button data-m="v10" aria-pressed="false">v10</button><button data-m="v11" aria-pressed="true">v11</button></div>
+  <span id="masterZeit">0:00</span>
+  <a id="lMaster" href="../projekt11/The-Wall_A_v11.mp3" download="The-Wall_A_v11.mp3" aria-label="v11 als MP3 laden">v11 laden</a>
+  <audio id="aV10" preload="none" src="../projekt10/The-Wall_A_v10_Club.mp3"></audio>
+  <audio id="aV11" preload="none" src="../projekt11/The-Wall_A_v11.mp3"></audio>
+</div>
 <main id="werk">
   <nav id="chips" class="chips" aria-label="Stellen"></nav>
   <canvas id="ueber" aria-label="Ganzes Lied"></canvas>
   <div id="kern">
   <div id="buehne" aria-label="Wellenform mit Schichten"><canvas id="cb"></canvas><canvas id="co"></canvas><canvas id="lupe"></canvas><div id="laden">Wellen laden …</div></div>
-  <div id="info"><div id="infoText">Silbe antippen zum Hören, ziehen zum Verschieben.</div><button id="bSilbeHoer" class="rund" aria-label="Silbe hören" hidden><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/></svg></button><button id="bSilbeWeg" hidden>↺ wie Ende</button></div>
+  <div id="info"><div id="infoText">Silbe antippen zum Hören, ziehen zum Verschieben.</div><button id="bSilbeHoer" class="rund" aria-label="Silbe hören" hidden><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/></svg></button><button id="bSilbeWeg" hidden>↺ wie Ende</button><button id="bVorher" hidden aria-label="Vorher und nachher vergleichen">A/B vorher</button></div>
   </div>
   <div id="steuer">
     <div id="transport" class="leiste">
@@ -151,9 +193,12 @@ button:disabled{opacity:.38;cursor:default}
       <button id="bEinrasten">Einrasten</button>
     </div>
     <div class="leiste" id="schichtLeiste" role="group" aria-label="Schichten"></div>
+    <div class="leiste" id="staffelLeiste"><label for="staffel"><span class="titel">Zwiebel</span><input type="range" id="staffel" min="0" max="1" step="0.05" value="0" aria-label="Staffelung der Schichten"><span id="staffelWert">übereinander</span></label></div>
     <div class="leiste" id="tonLeiste">
       <button id="bMusik" class="schalt" aria-pressed="false">Musik</button>
       <button id="bKlick" class="schalt" aria-pressed="false">Klick</button>
+      <button id="bDehnen" class="schalt" aria-pressed="true">Dehnen</button>
+      <button id="bVorspiel" class="schalt" aria-pressed="true">Vorspielen</button>
     </div>
     <div id="bereichsleiste" class="leiste" hidden>
       <span id="bereichText"></span>
@@ -171,16 +216,23 @@ button:disabled{opacity:.38;cursor:default}
   <div class="tabs" role="tablist">
     <button id="tabZ" role="tab" aria-selected="true">Deine Züge<b id="anzZ"></b></button>
     <button id="tabA" role="tab" aria-selected="false">Was geändert wurde<b id="anzA"></b></button>
+    <button id="tabP" role="tab" aria-selected="false">Prüfstellen<b id="anzP"></b></button>
     <button id="tabH" role="tab" aria-selected="false">Hilfe</button>
   </div>
   <div id="listeZ" class="liste"></div>
   <div id="listeA" class="liste" hidden></div>
+  <div id="listeP" class="liste" hidden></div>
   <div id="listeH" class="liste" hidden>
     <ul class="hilfe">
       <li><b>Schichten</b> wie Zwiebelhaut: <span style="color:var(--c-orig)">Original</span> = deine Aufnahme an der Stelle, wo du gesungen hast. <span style="color:var(--c-rein)">gereinigt</span> = nach Klick-, Rausch- und Atmer-Reinigung. <span style="color:var(--c-tim)">Timing</span> = so lag es nach dem Verschieben. <span style="color:var(--c-ton)">Tonhöhe</span> = wie viel Cent korrigiert wurde. Ende = v11 (Timing wie v10). Neu = mit deinen Zügen.</li>
-      <li><b>Änderungen</b> (Streifen unten): blau = später als gesungen, rot = früher, die Zahl in ms. ✂︎ = hier wurde geschnitten. Orange ? = Prüfstelle: Ende weicht stark von der verschobenen Aufnahme ab. Antippen zeigt, was dort gemacht wurde.</li>
+      <li><b>Zwiebel:</b> der Regler „Zwiebel“ staffelt die Schichten von oben nach unten – ganz links liegen sie genau übereinander, ganz rechts getrennt untereinander. Kräftig gefärbt und mit Strich am oberen Rand = hier weicht die Schicht deutlich von der darüber ab (mehr als 5 dB), blass = deckungsgleich. Punkt antippen = Schicht zeigen/verbergen, Namen antippen = genau diese Schicht hören. Bei getrennten Schichten hörst du beim Antippen in einer Spur genau diese Schicht.</li>
+      <li><b>Dehnen:</b> verschiebst du eine Silbe, wird das Stück davor und danach in der Länge gedehnt oder gestaucht – mit gleicher Tonhöhe, wie beim Time-Stretching. Du hörst es sofort, mit der Musik. „A/B vorher“ spielt die Stelle vor und nach dem letzten Zug. „Vorspielen“ aus = nach dem Loslassen nicht automatisch abspielen. „Dehnen“ aus = alte Vorschau mit Lücke und Kürzen.</li>
+      <li><b>Raster:</b> die kräftigen Striche sind die Taktstriche (Taktnummer oben), die feinen die Schläge. Sie liegen genau auf den Schlägen der Musik (gemessen: Abweichung im Mittel 0 ms). „Klick“ spielt sie mit.</li>
+      <li><b>Prüfstellen</b> (Reiter und orange Marken am Rand): Stellen, an denen meine Bearbeitung etwas verschlechtert haben könnte. „Hin“ spielt die Stelle in v11 im Kreis, „A/B“ wechselt zu deiner Aufnahme und zurück, „Als Notiz“ schreibt sie in deine Notiz.</li>
+      <li><b>Master</b> (Zeile oben): v10 oder v11 komplett hören, beim Umschalten an derselben Stelle weiter. „v11 laden“ speichert die MP3.</li>
+      <li><b>Änderungen</b> (Streifen unten): blau = später als gesungen, rot = früher, die Zahl in ms. ✂︎ = hier wurde geschnitten. Orange ? = Prüfstelle. Antippen zeigt, was dort gemacht wurde.</li>
       <li><b>Silbe verschieben:</b> Silbe oben anfassen und ziehen. Sie rastet am Raster ein (1/4, 1/8, 1/16, Triolen oder frei). Gezählt wird der echte Wortbeginn (gelb), der Anlauf davor geht mit. Finger beim Ziehen nach unten nehmen = vier Mal feiner.</li>
-      <li><b>Hören:</b> beim Ziehen und Loslassen hörst du sofort das Stück, mit weichen Blenden. Was von der Silbe davor noch klingt, wird mit einer kurzen Blende gekürzt. Eine Lücke bleibt still – beim sauberen Neurechnen fülle ich sie wie in v10.</li>
+      <li><b>Hören:</b> beim Ziehen und Loslassen hörst du sofort das Stück mit der Musik. Mit „Dehnen“ wird das Stück davor und danach gedehnt statt gekürzt; ohne „Dehnen“ bleibt eine Lücke still und die Silbe davor wird mit einer kurzen Blende gekürzt.</li>
       <li><b>Einrasten:</b> setzt die gewählte Silbe, das Wort oder die Zeile auf das Raster. Liegt die Melodie-Note auf dem Raster, gilt sie als Ziel.</li>
       <li><b>A/B</b> springt zwischen den letzten zwei Hör-Wahlen (Start: Original ↔ Neu). ↶ ↷ gehen je Zug zurück und vor.</li>
       <li><b>Bereich:</b> lange drücken und ziehen. Mit Wiederholen läuft er im Kreis. Zwei Finger oder + und − zoomen.</li>
@@ -203,8 +255,9 @@ const TS=LIED.takt_s,TAKT=LIED.takt[0],SCHLAG=TS/TAKT,T1=LIED.takt1_s,DAUER=LIED
 const SIL=LIED.silben,WOE=LIED.woerter,ZEI=LIED.zeilen,ABS=LIED.abschnitte,AKK=LIED.akkorde.takte;
 const RASTER=[{id:'1/4',s:.5},{id:'1/8',s:.25},{id:'1/16',s:.125},{id:'1/8T',s:.5/3},{id:'1/16T',s:.5/6},{id:'frei',s:0}];
 const DMIN=.4,DMAX=DAUER+4;
-const SCHICHTEN=[{id:'original',name:'Original',c:'--c-orig'},{id:'gereinigt',name:'gereinigt',c:'--c-rein'},{id:'timing',name:'Timing',c:'--c-tim'},{id:'ton',name:'Tonhöhe',c:'--c-ton'},{id:'ende',name:'Ende v11',c:'--c-ende'},{id:'neu',name:'Neu',c:'--c-neu'},{id:'aend',name:'Änderungen',c:'--c-spaet'}];
-const HOEREN={original:'original',gereinigt:'gereinigt',v10:'ende',neu:'ende'};
+const SCHICHTEN=[{id:'original',name:'Original',c:'--c-orig',h:'original'},{id:'gereinigt',name:'gereinigt',c:'--c-rein',h:'gereinigt'},{id:'timing',name:'Timing',c:'--c-tim',h:'timing'},{id:'ton',name:'Tonhöhe',c:'--c-ton'},{id:'ende',name:'v11',c:'--c-ende',h:'v10'},{id:'neu',name:'Neu',c:'--c-neu',h:'neu'},{id:'aend',name:'Änderungen',c:'--c-spaet'}];
+const HOEREN={original:'original',gereinigt:'gereinigt',timing:'gereinigt',v10:'ende',neu:'ende'};
+const SCHWERE={3:'deutlich',2:'mittel',1:'leicht'};
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 function esc(t){return String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 const jetzt=()=>new Date().toISOString();
@@ -223,7 +276,7 @@ const POS=new Int32Array(SIL.length);ORD.forEach((i,k)=>POS[i]=k);
 
 // ---------------- Zustand
 const Z={t0:LIED.fokus.von_s,dur:LIED.fokus.bis_s-LIED.fokus.von_s,pos:LIED.fokus.von_s+.4,spielt:false,schleife:true,bereich:{von:103.6,bis:117.4},
-  raster:'1/8',zieht:'silbe',hoeren:'neu',ab:'original',musik:false,klick:false,wahl:null,tab:'Z',
+  raster:'1/8',zieht:'silbe',hoeren:'neu',ab:'original',musik:false,klick:false,wahl:null,tab:'Z',staffel:0,dehnen:true,vorspiel:true,aendFilter:'alle',
   sch:{original:true,gereinigt:false,timing:false,ton:false,ende:true,neu:true,aend:true}};
 let ZG={d:{},q:{}},HIST=[],REDO=[],NOTIZ='',GESENDET=null,speicherOk=true;
 try{const s=localStorage.getItem(SPEICHER);if(s){const d=JSON.parse(s);
@@ -233,12 +286,13 @@ try{const s=localStorage.getItem(SPEICHER);if(s){const d=JSON.parse(s);
   if(RASTER.some(r=>r.id===a.raster))Z.raster=a.raster;if(['silbe','wort','zeile'].includes(a.zieht))Z.zieht=a.zieht;
   if(HOEREN[a.hoeren])Z.hoeren=a.hoeren;if(HOEREN[a.ab])Z.ab=a.ab;if(a.sch)for(const k in Z.sch)if(typeof a.sch[k]==='boolean')Z.sch[k]=a.sch[k];
   if(typeof a.schleife==='boolean')Z.schleife=a.schleife;if(a.tab)Z.tab=a.tab;Z.musik=!!a.musik;Z.klick=!!a.klick;
-  Z.bereich=a.bereich&&a.bereich.bis>a.bereich.von?a.bereich:(a.bereich===null?null:Z.bereich)}}catch(e){speicherOk=false}
+  Z.bereich=a.bereich&&a.bereich.bis>a.bereich.von?a.bereich:(a.bereich===null?null:Z.bereich);
+  if(isFinite(a.staffel))Z.staffel=clamp(+a.staffel,0,1);if(typeof a.dehnen==='boolean')Z.dehnen=a.dehnen;if(typeof a.vorspiel==='boolean')Z.vorspiel=a.vorspiel;if(['alle','v11','v10','v7'].includes(a.aendFilter))Z.aendFilter=a.aendFilter}}catch(e){speicherOk=false}
 Z.dur=clamp(Z.dur,DMIN,DMAX);
 let sichernUhr=0;
 function sichern(){clearTimeout(sichernUhr);sichernUhr=0;
   const d={v:1,zg:ZG,hist:HIST.slice(-80),redo:REDO.slice(-80),notiz:NOTIZ,gesendet:GESENDET,
-    ansicht:{t0:Z.t0,dur:Z.dur,pos:Z.pos,raster:Z.raster,zieht:Z.zieht,hoeren:Z.hoeren,ab:Z.ab,sch:Z.sch,schleife:Z.schleife,tab:Z.tab,musik:Z.musik,klick:Z.klick,bereich:Z.bereich}};
+    ansicht:{t0:Z.t0,dur:Z.dur,pos:Z.pos,raster:Z.raster,zieht:Z.zieht,hoeren:Z.hoeren,ab:Z.ab,sch:Z.sch,schleife:Z.schleife,tab:Z.tab,musik:Z.musik,klick:Z.klick,bereich:Z.bereich,staffel:Z.staffel,dehnen:Z.dehnen,vorspiel:Z.vorspiel,aendFilter:Z.aendFilter}};
   try{localStorage.setItem(SPEICHER,JSON.stringify(d));speicherOk=true}catch(e){speicherOk=false}}
 function sichernSpaeter(){if(!sichernUhr)sichernUhr=setTimeout(sichern,400)}
 
@@ -246,7 +300,8 @@ function sichernSpaeter(){if(!sichernUhr)sichernUhr=setTimeout(sichern,400)}
 // Jede Silbe = Stück [a_k, a_k+1) der v10-Hauptstimme. Verschiebung d: Ziel = Quelle + d.
 // Überlappt die Folgesilbe, wird der Ausklang davor gekürzt (Blende), eine Lücke bleibt still.
 const offOf=(d,i)=>d[i]||0;
-function plan(d){
+function plan(d){return Z.dehnen?planDehnen(d):planSchnitt(d)}
+function planSchnitt(d){
   const P=[];let cur=null;const n=ORD.length;
   const A=k=>SIL[ORD[k]].a;
   const push=(d0,d1,off,i,ende)=>{if(d1-d0<5e-4)return;
@@ -260,6 +315,37 @@ function plan(d){
     p.fo=!r||Math.abs(p.d1-r.d0)>1e-6||Math.abs(r.off-p.off)>1e-6}
   return P;
 }
+// Lauf 6 (Xander: „wenn ich das Time-Stretching benutze, dass es hörbar ist“): Dehnen wie mit Warp-Markern.
+// Anker = Anlauf-Beginn jeder Silbe. Das Stück zwischen zwei Ankern wird auf die neue Länge gedehnt/gestaucht
+// (gleiche Tonhöhe, WSOLA im Browser). Gleich verschobene Nachbarn bleiben starr. Stücke über 3 s: nur die letzten 1,5 s.
+// Quellzeit eines Plan-Stücks: starr t-off, gedehnt s0+(t-d0)*k
+const qz=(p,t)=>p.k&&p.k!==1?p.s0+(t-p.d0)*p.k:t-p.off;
+function planDehnen(d){
+  const n=ORD.length,A=k=>SIL[ORD[k]].a,O=k=>offOf(d,ORD[k]),P=[];
+  const anc=[{s:0,o:0,i:-1}];for(let k=0;k<n;k++)anc.push({s:A(k),o:O(k),i:ORD[k]});anc.push({s:DAUER,o:n?O(n-1):0,i:-1});
+  const add=(s0,s1,o0,o1,sil)=>{const d0=s0+o0,d1=s1+o1;if(d1-d0<5e-4||s1-s0<5e-4)return;
+    if(Math.abs(o1-o0)<5e-4){const q=P[P.length-1];
+      if(q&&q.k===1&&Math.abs(q.off-o0)<1e-6&&Math.abs(q.d1-d0)<1e-6){q.d1=d1;if(sil>=0)q.sil.push(sil);return}
+      P.push({d0,d1,off:o0,k:1,s0,stem:'ende',sil:sil>=0?[sil]:[],ende:'natur'});return}
+    if(s1-s0>3){add(s0,s1-1.5,o0,o0,sil);add(s1-1.5,s1,o0,o1,-1);return}
+    const k=(s1-s0)/(d1-d0);if(!(k>0&&k<20))return;
+    P.push({d0,d1,off:d0-s0,k,s0,stem:'ende',sil:sil>=0?[sil]:[],ende:'natur',dehn:true})};
+  for(let j=0;j+1<anc.length;j++)add(anc[j].s,anc[j+1].s,anc[j].o,anc[j+1].o,anc[j].i);
+  for(let j=0;j<P.length;j++){const p=P[j],q=P[j-1],r=P[j+1];
+    const ci=q&&Math.abs(q.d1-p.d0)<1e-6&&Math.abs(qz(q,q.d1)-qz(p,p.d0))<2e-4,co=r&&Math.abs(p.d1-r.d0)<1e-6&&Math.abs(qz(p,p.d1)-qz(r,r.d0))<2e-4;
+    p.fi=!ci;p.fo=!co;p.xi=!!ci&&(p.k!==1||q.k!==1);p.xo=!!co&&(p.k!==1||r.k!==1)}
+  return P;
+}
+// Schicht „Timing“ hörbar: gereinigt über die Zeitkarte auf Ende-Zeit gelegt (gleiche Stücke wie die Timing-Welle)
+let TPLAN=null;
+function timingPlan(){if(TPLAN)return TPLAN;const P=[];
+  for(const [a0,a1,r0,r1] of LIED.karte){if(a1-a0<.006&&P.length){P[P.length-1].d1=a1;continue}
+    const du=a1-a0,dr=r1-r0,k=dr/du;let p;
+    if(Math.abs(du-dr)<.003||!(k>.2&&k<5)){const off=(a0+a1)/2-(r0+r1)/2;p={d0:a0,d1:a1,off,k:1,s0:a0-off}}
+    else p={d0:a0,d1:a1,off:a0-r0,k,s0:r0};
+    p.stem='gereinigt';p.sil=[];p.ende='natur';P.push(p)}
+  for(let j=0;j<P.length;j++){const p=P[j];p.fi=j===0;p.fo=j===P.length-1;p.xi=j>0;p.xo=j<P.length-1}
+  return TPLAN=P}
 let PLAN=plan(ZG.d),PLAN_TEMP=null;
 const aktPlan=()=>PLAN_TEMP||PLAN;
 function stueckBei(P,t){let a=0,b=P.length-1;while(a<=b){const m=(a+b)>>1;if(P[m].d1<=t)a=m+1;else if(P[m].d0>t)b=m-1;else return m}return -1-a}
@@ -316,8 +402,8 @@ function breite(c,t){let w=breiten.get(c.font+t);if(w==null){w=c.measureText(t).
 function rund(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
 const MM=[0,0];
 // Welle einer Schicht zeichnen. quelle(t) bildet die Spalten-Zeit auf die Quellzeit ab (eigene Zeit = Identität).
-function welle(c,lage,stil,farbe,alpha,plan){
-  const y0=L.yW,h=L.wav,yc=y0+h/2,amp=(h/2-4)/127;
+function welle(c,lage,stil,farbe,alpha,plan,ln){
+  const y0=L.yW,h=L.wav,yc=ln?ln.yc:y0+h/2,amp=(ln?ln.half:h/2-4)/127;
   const cols=Math.round(W*DPR),cw=W/cols,dtc=Z.dur/cols;
   c.globalAlpha=alpha;
   if(stil==='fuellen'){c.fillStyle=farbe;c.beginPath()}
@@ -328,7 +414,7 @@ function welle(c,lage,stil,farbe,alpha,plan){
     if(plan){ // Spalte aus den Plan-Stücken zusammensetzen
       while(j<plan.length&&plan[j].d1<=ta)j++;
       for(let q=j;q<plan.length&&plan[q].d0<tb;q++){const p=plan[q],a=Math.max(ta,p.d0),b=Math.min(tb,p.d1);if(b<=a)continue;
-        if(mm(lage,a-p.off,b-p.off,MM)){ok=true;if(MM[0]<mn)mn=MM[0];if(MM[1]>mx)mx=MM[1]}}
+        if(mm(lage,qz(p,a),qz(p,b),MM)){ok=true;if(MM[0]<mn)mn=MM[0];if(MM[1]>mx)mx=MM[1]}}
     }else ok=mm(lage,ta,tb,MM),mn=MM[0],mx=MM[1];
     if(!ok){if(stil!=='fuellen'){oben.push(null);unten.push(null)}continue}
     const yt=yc-mx*amp,yb=yc-mn*amp;
@@ -341,7 +427,7 @@ function welle(c,lage,stil,farbe,alpha,plan){
 // Hintergrund (alles, was sich beim Ziehen nicht bewegt) wird in ein eigenes Bild gezeichnet und nur bei Bedarf neu gebaut;
 // je Bild kommen nur noch die Schicht „Neu“, die Silben und deine Züge dazu.
 let HINTER=null,HINTER_KEY='',LETZTER_KEY='',FEINVER=0,THEMAVER=0;
-function hinterKey(bearb){return [Z.t0,Z.dur,W,H,DPR,Z.sch.original,Z.sch.gereinigt,Z.sch.timing,Z.sch.ende,Z.sch.neu,Z.sch.ton,Z.sch.aend,bearb,Z.bereich?Z.bereich.von+'/'+Z.bereich.bis:'',Z.raster,G&&G.art==='zieht'?1:0,FEINVER,THEMAVER,!!SCH.ende].join('|')}
+function hinterKey(bearb){return [Z.t0,Z.dur,W,H,DPR,Z.sch.original,Z.sch.gereinigt,Z.sch.timing,Z.sch.ende,Z.sch.neu,Z.sch.ton,Z.sch.aend,Z.staffel,bearb,Z.bereich?Z.bereich.von+'/'+Z.bereich.bis:'',Z.raster,G&&G.art==='zieht'?1:0,FEINVER,THEMAVER,!!SCH.ende].join('|')}
 function zeichneHinter(c,bearb){
   c.fillStyle=FB.bg;c.fillRect(0,0,W,H);
   c.fillStyle=FB.band1;c.fillRect(0,0,W,L.rul);c.fillRect(0,L.yM,W,L.mark);
@@ -350,12 +436,15 @@ function zeichneHinter(c,bearb){
     c.fillStyle=i%2?FB.band2:FB.band1;c.fillRect(x0,0,x1-x0,12);const tw=breite(c,a.name),xs=Math.max(x0,0)+4;if(xs+tw<x1-2){c.fillStyle=FB.mut;c.fillText(a.name,xs,6.5)}}
   if(Z.bereich){const a=xz(Z.bereich.von),b=xz(Z.bereich.bis);c.fillStyle=FB.bereich;c.fillRect(a,0,b-a,H)}
   zeichneRaster(c);
-  if(Z.sch.original&&SCH.original)welle(c,'original','fuellen',FB['c-orig'],.30,null);
-  if(Z.sch.gereinigt&&SCH.gereinigt)welle(c,'gereinigt','linie',FB['c-rein'],.95,null);
-  if(Z.sch.timing&&SCH.timing)welle(c,'timing','linie2',FB['c-tim'],.95,null);
-  if(SCH.ende&&(Z.sch.ende||(!bearb&&Z.sch.neu)))welle(c,'ende',bearb&&Z.sch.neu?'linie':'fuellen',bearb&&Z.sch.neu?FB['c-ende']:FB.welle,bearb&&Z.sch.neu?.9:.78,null);
+  // Lauf 6 (Zwiebel): jede Schicht in ihrer Spur; Staffelung 0 = genau übereinander, 1 = getrennt untereinander
+  const LN=lanes(),fa=.16*Math.min(1,Z.staffel*3);
+  if(Z.sch.original&&SCH.original)welle(c,'original','fuellen',FB['c-orig'],.30,null,LN.original);
+  if(Z.sch.gereinigt&&SCH.gereinigt){if(fa)welle(c,'gereinigt','fuellen',FB['c-rein'],fa,null,LN.gereinigt);welle(c,'gereinigt','linie',FB['c-rein'],.95,null,LN.gereinigt)}
+  if(Z.sch.timing&&SCH.timing){if(fa)welle(c,'timing','fuellen',FB['c-tim'],fa,null,LN.timing);welle(c,'timing','linie2',FB['c-tim'],.95,null,LN.timing)}
+  if(SCH.ende&&(Z.sch.ende||(!bearb&&Z.sch.neu)))welle(c,'ende',bearb&&Z.sch.neu?'linie':'fuellen',bearb&&Z.sch.neu?FB['c-ende']:FB.welle,bearb&&Z.sch.neu?.9:.78,null,LN.ende);
   // Lauf 5 (Prüfung: Original nur zu 9–10 % sichtbar): Umriss des Originals über der Ende-Füllung
-  if(Z.sch.original&&SCH.original)welle(c,'original','linie',FB['c-orig'],.85,null);
+  if(Z.sch.original&&SCH.original)welle(c,'original','linie',FB['c-orig'],.85,null,LN.original);
+  zeichneZwiebel(c,LN);
   if(Z.sch.ton)zeichneTon(c);
   zeichneAenderungen(c,'fest');
   zeichneLineal(c);
@@ -364,7 +453,7 @@ function zeichneHinter(c,bearb){
 let VORNE=null,VORNE_KEY='';
 function zeichneVorne(c,direkt,key){
   const orig=Z.sch.original&&SCH.original;if(!orig&&!Z.sch.ton)return;
-  const mal=k=>{if(orig)welle(k,'original','linie',FB['c-orig'],.85,null);if(Z.sch.ton)zeichneTon(k)};
+  const mal=k=>{if(orig)welle(k,'original','linie',FB['c-orig'],.85,null,lanes().original);if(Z.sch.ton)zeichneTon(k)};
   if(direkt){mal(c);return}
   if(key!==VORNE_KEY||!VORNE){if(!VORNE)VORNE=document.createElement('canvas');if(VORNE.width!==cb.width||VORNE.height!==cb.height){VORNE.width=cb.width;VORNE.height=cb.height}
     const h=VORNE.getContext('2d');h.setTransform(1,0,0,1,0,0);h.clearRect(0,0,VORNE.width,VORNE.height);h.setTransform(DPR,0,0,DPR,0,0);mal(h);VORNE_KEY=key}
@@ -381,10 +470,11 @@ function zeichneBasis(){
   const sel=Z.wahl;
   if(sel!=null){const s=SIL[sel],o=offOf(G&&G.art==='zieht'&&G.temp?G.temp:ZG.d,sel);
     const xa=xz(s.a+o),xb=xz(s.b+o);c.fillStyle=FB.hi;c.globalAlpha=.35;c.fillRect(xa,L.yW,Math.max(1,xb-xa),L.wav);c.globalAlpha=1}
-  if(Z.sch.neu&&SCH.ende&&bearb){welle(c,'neu','fuellen',FB.welle,.9,P);
-    const bew=P.filter(p=>p.off!==0);if(bew.length){c.save();c.beginPath();for(const p of bew){const a=xz(p.d0),b=xz(p.d1);if(b<0||a>W)continue;c.rect(a,L.yW,b-a,L.wav)}c.clip();welle(c,'neu','fuellen',FB.gold,.95,P);c.restore()}
+  const LN=lanes();
+  if(Z.sch.neu&&SCH.ende&&bearb){welle(c,'neu','fuellen',FB.welle,.9,P,LN.ende);
+    const bew=P.filter(p=>p.off!==0||(p.k&&p.k!==1));if(bew.length){c.save();c.beginPath();for(const p of bew){const a=xz(p.d0),b=xz(p.d1);if(b<0||a>W)continue;c.rect(a,L.yW,b-a,L.wav)}c.clip();welle(c,'neu','fuellen',FB.gold,.95,P,LN.ende);c.restore()}
     zeichneVorne(c,direkt,key)}
-  c.fillStyle=FB.lin2;c.fillRect(0,L.yW+L.wav/2,W,1/DPR);
+  c.fillStyle=FB.lin2;{const ks=Object.keys(LN);if(Z.staffel>.05&&ks.length>1){for(const k of ks)c.fillRect(0,LN[k].yc,W,1/DPR)}else c.fillRect(0,L.yW+L.wav/2,W,1/DPR)}
   zeichneSilben(c);
   zeichneAenderungen(c,'zuege');
   if(Z.bereich)zeichneGriffe(c);
@@ -400,7 +490,7 @@ function zeichneRaster(c){
   const k0=Math.floor((Z.t0-T1)/step)-1,k1=Math.ceil((Z.t0+Z.dur-T1)/step)+1;
   for(let k=k0;k<=k1;k++){const t=T1+k*step;if(t<-.001||t>DAUER+.001)continue;const x=Math.round(xz(t)*DPR)/DPR;
     const sch=Math.round((t-T1)/SCHLAG),imTakt=sch%TAKT===0;
-    c.fillStyle=FB.lin2;c.globalAlpha=imTakt?1:.55;c.fillRect(x-.5,imTakt?12:L.rul-7,1,H-(imTakt?12:L.rul-7));c.globalAlpha=1}
+    if(imTakt){c.fillStyle=FB.mut;c.globalAlpha=.62;c.fillRect(x-.75,12,1.5,H-12)}else{c.fillStyle=FB.lin2;c.globalAlpha=.85;c.fillRect(x-.5,L.rul-7,1,H-(L.rul-7))}c.globalAlpha=1}
   // feines Raster (Einrast-Linien)
   const rs=rasterSchritt();
   if(rs&&rs<SCHLAG&&rs/Z.dur*W>=7){const a=Math.floor((Z.t0-T1)/rs),b=Math.ceil((Z.t0+Z.dur-T1)/rs);c.fillStyle=FB.lin;
@@ -472,10 +562,11 @@ function zeichneAenderungen(c,teil){
     // Pfeile Aufnahme -> v10 je Silbe
     if(Z.sch.original){c.strokeStyle=FB['c-orig'];c.lineWidth=1.2;for(const i of ORD){const s=SIL[i],xa=xz(s.b_roh),xb=xz(s.b);if(Math.max(xa,xb)<0)continue;if(Math.min(xa,xb)>W)break;
       if(Math.abs(xb-xa)<2)continue;c.beginPath();c.moveTo(xa,ym+7);c.lineTo(xb,ym+7);c.stroke();const dir=xb>xa?1:-1;c.beginPath();c.moveTo(xb,ym+7);c.lineTo(xb-dir*4,ym+4);c.lineTo(xb-dir*4,ym+10);c.closePath();c.fillStyle=FB['c-orig'];c.fill()}}
-    // Prüfstellen
-    for(const p of LIED.pruefstellen){const xa=xz(p.von_s),xb=xz(p.bis_s);if(xb<-10||xa>W+10)continue;c.fillStyle=FB['c-pruef'];c.globalAlpha=.25;c.fillRect(xa,L.yW,Math.max(2,xb-xa),L.wav);c.globalAlpha=1;
-      c.font='700 13px -apple-system,system-ui,sans-serif';c.fillText('?',(xa+xb)/2-3,y0+h-8);markBox.push({x:(xa+xb)/2,art:'pruef',d:p})}
   }
+  // Lauf 6: Prüfstellen als dezente Marken am oberen und unteren Rand der Welle (nie über die Mitte), ? im Streifen unten
+  if(PRUEF)for(const p of PRUEF.stellen){const xa=xz(p.zeit_s),xb=xz(p.bis_s);if(xb<-10||xa>W+10)continue;const w=Math.max(4,xb-xa);
+    c.fillStyle=FB['c-pruef'];c.globalAlpha=p.schwere>=3?.95:p.schwere>=2?.8:.6;c.fillRect(xa,L.yW+1,w,3);c.fillRect(xa,L.yM-4,w,3);c.globalAlpha=1;
+    c.font='700 13px -apple-system,system-ui,sans-serif';c.textBaseline='middle';c.fillText('?',(xa+xb)/2-3,y0+h-8);markBox.push({x:(xa+xb)/2,art:'pruef',d:p})}
   // Reinigung (zur Schicht gereinigt)
   if(Z.sch.gereinigt){const E=LIED.ereignisse;c.fillStyle=FB['c-rein'];
     for(const [a,b] of E.atmer){const xa=xz(a),xb=xz(b);if(xb<0||xa>W)continue;c.globalAlpha=.25;c.fillRect(xa,L.yW+L.wav-10,xb-xa,10);c.globalAlpha=1;markBox.push({x:(xa+xb)/2,art:'atmer',d:{t:a,bis:b}})}
@@ -511,6 +602,33 @@ function zeichneUeber(){
   const a=Math.max(0,Z.t0)/DAUER*UW,b=Math.min(DAUER,Z.t0+Z.dur)/DAUER*UW;c.strokeStyle=FB.gold;c.lineWidth=2;c.strokeRect(a+1,1,Math.max(3,b-a-2),UH-2);
   const xp=Z.pos/DAUER*UW;c.fillStyle=FB.fg;c.fillRect(xp-.75,0,1.5,UH);
 }
+// ---------------- Zwiebel (Lauf 6): Spuren, Abweichung zur Schicht darüber
+const ZW_ORD=['original','gereinigt','timing','ende'],ZW_FARBE={original:'c-orig',gereinigt:'c-rein',timing:'c-tim',ende:'welle'},ZW_NAME={original:'Original',gereinigt:'gereinigt',timing:'Timing',ende:'v11'};
+function zwSichtbar(){return ZW_ORD.filter(k=>k==='ende'?(Z.sch.ende||Z.sch.neu)&&SCH.ende:Z.sch[k]&&SCH[k])}
+function lanes(){const v=zwSichtbar(),n=v.length,s=Z.staffel,o={};if(!n)return o;const u=L.wav/n;
+  v.forEach((k,i)=>{o[k]={yc:L.yW+L.wav/2+s*(i-(n-1)/2)*u,half:(L.wav/2-4)*(1-s)+(u/2-3)*s,i,n}});return o}
+// Hülle je 10 ms in dB (aus den Spitzenwerten), ±20 ms Maximum
+function envDb(k){const s=SCH[k];if(!s)return null;if(s.db)return s.db;const n=s.n,d=new Float32Array(n),m=new Float32Array(n);
+  for(let i=0;i<n;i++){const a=Math.max(-s.w[2*i],s.w[2*i+1],1);d[i]=40*Math.log10(a/127)}
+  for(let i=0;i<n;i++){let v=-200;for(let j=Math.max(0,i-2);j<=Math.min(n-1,i+2);j++)if(d[j]>v)v=d[j];m[i]=v}return s.db=m}
+// Stärke der Abweichung 0..255: ab 5 dB Unterschied, voll ab 12 dB; Einzelrahmen (unter 30 ms) zählen nicht
+const DIFF=new Map();
+function diffI(a,b){const key=a+'|'+b;let r=DIFF.get(key);if(r)return r;const A=envDb(a),B=envDb(b);if(!A||!B)return null;const n=Math.min(A.length,B.length),raw=new Uint8Array(n);
+  for(let i=0;i<n;i++){if(Math.max(A[i],B[i])<-36)continue;const d=Math.abs(A[i]-B[i]);if(d>5)raw[i]=Math.max(1,Math.min(255,Math.round((d-5)/7*255)))}
+  r=new Uint8Array(n);for(let i=1;i<n-1;i++){const m=Math.min(raw[i-1],raw[i],raw[i+1]);if(m)for(let j=i-1;j<=i+1;j++)if(r[j]<m)r[j]=m}
+  DIFF.set(key,r);return r}
+function zeichneZwiebel(c,LN){const v=Object.keys(LN).sort((a,b)=>LN[a].i-LN[b].i);if(!v.length)return;
+  const cols=Math.round(W*DPR),cw=W/cols,dtc=Z.dur/cols;
+  for(let q=1;q<v.length;q++){const k=v[q],I=diffI(v[q-1],k);if(!I)continue;const ln=LN[k],rate=SCH[k].rate,amp=ln.half/127,farbe=FB[ZW_FARBE[k]],bk=[[],[],[]];
+    for(let s=0;s<cols;s++){const ta=Z.t0+s*dtc,tb=ta+dtc;let i0=Math.floor(ta*rate),i1=Math.ceil(tb*rate);if(i1<=0||i0>=I.length)continue;i0=Math.max(0,i0);i1=Math.min(I.length,Math.max(i1,i0+1));
+      let mx=0;for(let i=i0;i<i1;i++)if(I[i]>mx)mx=I[i];if(!mx||!mm(k,ta,tb,MM))continue;bk[mx>170?2:mx>85?1:0].push(s*cw,ln.yc-MM[1]*amp,Math.max(MM[1]-MM[0],1)*amp)}
+    for(let st=0;st<3;st++){const a=bk[st];if(!a.length)continue;c.fillStyle=farbe;c.globalAlpha=[.35,.6,.85][st];c.beginPath();for(let j=0;j<a.length;j+=3)c.rect(a[j],a[j+1],cw,a[j+2]);c.fill();
+      c.globalAlpha=[.5,.75,1][st];c.beginPath();for(let j=0;j<a.length;j+=3)c.rect(a[j],ln.yc-ln.half-3,cw,3);c.fill()}
+    c.globalAlpha=1}
+  if(Z.staffel>=.5&&v.length>1){c.font='600 10px -apple-system,system-ui,sans-serif';c.textBaseline='middle';
+    for(const k of v){const ln=LN[k],t=ZW_NAME[k],w=breite(c,t)+6,y=ln.yc-ln.half+6;c.fillStyle=FB.bg;c.globalAlpha=.8;c.fillRect(2,y-6,w,12);c.globalAlpha=1;c.fillStyle=k==='ende'?FB.fg:FB[ZW_FARBE[k]];c.fillText(t,5,y)}}}
+function laneBei(y){const LN=lanes();let best=null,bd=1e9;for(const k in LN){const l=LN[k],d=Math.abs(y-l.yc);if(d<bd){bd=d;best=k}}if(!best)return null;
+  return best==='ende'?(Z.sch.neu&&Object.keys(ZG.d).length?'neu':'v10'):best}
 // Oberleiste: nur die Streifen löschen, die im letzten Bild bemalt wurden (spart Pixel beim Abspielen)
 let OBEN_ALT=[],OBEN_NEU=[];
 function merke(x,y,w,h){OBEN_NEU.push([Math.floor(x)-2,Math.floor(y)-2,Math.ceil(w)+4,Math.ceil(h)+4])}
@@ -542,7 +660,7 @@ function zeichneLupe(LO){
   const t0=G.ziel-R,t1=G.ziel+R,P=aktPlan(),yc=h/2+6,amp=(h/2-12)/127,cols=w,dt=(t1-t0)/cols;
   c.fillStyle=FB.welle;c.beginPath();let j=0;
   for(let k=0;k<cols;k++){const ta=t0+k*dt,tb=ta+dt;let mn=127,mx=-127,ok=false;while(j<P.length&&P[j].d1<=ta)j++;
-    for(let q=j;q<P.length&&P[q].d0<tb;q++){const p=P[q],a=Math.max(ta,p.d0),b=Math.min(tb,p.d1);if(b<=a)continue;if(mm('neu',a-p.off,b-p.off,MM)){ok=true;if(MM[0]<mn)mn=MM[0];if(MM[1]>mx)mx=MM[1]}}
+    for(let q=j;q<P.length&&P[q].d0<tb;q++){const p=P[q],a=Math.max(ta,p.d0),b=Math.min(tb,p.d1);if(b<=a)continue;if(mm('neu',qz(p,a),qz(p,b),MM)){ok=true;if(MM[0]<mn)mn=MM[0];if(MM[1]>mx)mx=MM[1]}}
     if(ok)c.rect(k,yc-mx*amp,1,Math.max(1,(mx-mn)*amp))}
   c.fill();
   const rs=rasterSchritt();if(rs){c.fillStyle=FB.blau;const a=Math.ceil((t0-T1)/rs),b=Math.floor((t1-T1)/rs);for(let k=a;k<=b;k++){const xg=(T1+k*rs-t0)/(t1-t0)*w;c.fillRect(xg-1,12,2,h-12)}}
@@ -639,7 +757,7 @@ function vorladen(){const tp=clamp(Z.pos,0,DAUER-.1),tm=clamp(Z.t0+Z.dur/2,0,DAU
 // Abspiel-Läufe: je Lauf Spuren (Stimme, Musik, Klick) mit eigenem Zeiger; gleiche Schleifenlogik -> bleiben synchron
 const LOOK=.5,XO=.006,FI=.004,FO=.010,FL=.008;let BLENDE=1;   // BLENDE=0 nur für die Messung „ohne Blenden“
 let HAUPT=null,VOR=null;
-function planFuer(h){if(h==='neu')return PLAN_TEMP||PLAN;return [{d0:0,d1:DAUER,off:0,stem:HOEREN[h],sil:[],fi:true,fo:true,ende:'natur'}]}
+function planFuer(h){if(h==='neu')return PLAN_TEMP||PLAN;if(h==='timing')return timingPlan();return [{d0:0,d1:DAUER,off:0,stem:HOEREN[h],sil:[],fi:true,fo:true,ende:'natur'}]}
 function neueSpur(art,lauf,tl,ct,planFn,bus){return {art,lauf,tl,ct,planFn,bus,nodes:new Set(),segs:[],letzt:null,fertig:false}}
 function knoten(sp,buf,when,off,dur,fin,fout,ext){
   if(BLENDE!==1){fin*=BLENDE;fout*=BLENDE;ext*=BLENDE}
@@ -660,27 +778,26 @@ function spurSchritt(sp){
     sp.ct+=e-sp.tl;sp.tl=e;return 'ok'}
   const P=sp.planFn();let j=stueckBei(P,sp.tl);
   if(j<0){const nx=-1-j,g=nx<P.length?P[nx].d0:DAUER,e=Math.min(g,grenze);sp.ct+=e-sp.tl;sp.tl=e;sp.letzt=null;return 'ok'}
-  const p=P[j],src=sp.tl-p.off,q=stueckBereit(p.stem,src);
-  if(!q)return 'warte';
-  const sl=q.st,sEnd=sl.bis_s-.25+p.off;
-  let e=Math.min(p.d1,grenze),grund=e===p.d1?'stueck':'grenze';
-  if(sEnd<e){e=sEnd;grund='scheibe'}
+  const p=P[j];let e=Math.min(p.d1,grenze),grund=e===p.d1?'stueck':'grenze',buf,boff;
+  if(p.k&&p.k!==1){const r=dehnung(p);if(!r)return 'warte';buf=r.buf;boff=sp.tl-p.d0+r.vor}   // gedehntes Stück: fertig gerechnet
+  else{const src=sp.tl-p.off,q=stueckBereit(p.stem,src);if(!q)return 'warte';const sl=q.st,sEnd=sl.bis_s-.25+p.off;if(sEnd<e){e=sEnd;grund='scheibe'}buf=q.e.buf;boff=src-sl.von_s+q.e.vs}
   const dur=e-sp.tl;if(dur<=1e-5){sp.tl=e;return 'ok'}
   // Blenden: Anfang
   let fin=0;const l=sp.wrap?null:sp.letzt;
   if(!l)fin=(Math.abs(sp.tl-p.d0)<1e-6&&p.fi&&!sp.wrap)?FI:FL;
-  else if(l.grund==='scheibe')fin=XO;
-  else if(l.grund==='stueck')fin=p.fi?FI:0;
+  else if(l.grund==='scheibe'||l.x)fin=XO;
+  else if(l.grund==='stueck')fin=p.fi?FI:p.xi?XO:0;
   else fin=FL;
   sp.wrap=false;
   // Ende
-  let fout=0,ext=0;
+  let fout=0,ext=0,x=false;
   if(grund==='scheibe'){fout=XO;ext=XO}
   else if(grund==='grenze'){fout=lauf.bis!=null&&!lp?.02:FL}
   else if(p.fo){if(p.ende==='kurz'){fout=FO;ext=.008}else fout=FO}
-  knoten(sp,q.e.buf,sp.ct,src-sl.von_s+q.e.vs,dur,fin,fout,ext);
+  else if(p.xo){fout=XO;ext=XO;x=true}   // Übergang gedehnt <-> starr: 6-ms-Überblendung
+  knoten(sp,buf,sp.ct,boff,dur,fin,fout,ext);
   if(sp.art==='stimme'){sp.segs.push({ct0:sp.ct,tl0:sp.tl,dur});if(sp.segs.length>60)sp.segs.shift()}
-  sp.ct+=dur;sp.tl=e;sp.letzt={grund};return 'ok';
+  sp.ct+=dur;sp.tl=e;sp.letzt={grund,x};return 'ok';
 }
 function laufTick(lauf){
   if(!lauf||!lauf.an)return;const now=AE.ctx.currentTime;
@@ -690,7 +807,7 @@ function laufTick(lauf){
           if(sp.art==='stimme'&&lauf===HAUPT){AE.wartet=true;MESS.aussetzer++}sp.ct=now+.03;sp.letzt=null}break}
       if(sp.art==='stimme'&&lauf===HAUPT)AE.wartet=false}
     // vorausladen
-    if(sp.art!=='klick'&&!sp.fertig){const P=sp.planFn(),j=stueckBei(P,sp.tl+6),p=j>=0?P[j]:null;if(p)stueckBereit(p.stem,clamp(sp.tl+6-p.off,0,DAUER-.1))}}
+    if(sp.art!=='klick'&&!sp.fertig){const P=sp.planFn(),j=stueckBei(P,sp.tl+6),p=j>=0?P[j]:null;if(p)stueckBereit(p.stem,clamp(qz(p,sp.tl+6),0,DAUER-.1))}}
   if(lauf.spuren.every(s=>s.fertig)&&now>Math.max(...lauf.spuren.map(s=>s.ct))+.05){lauf.an=false;if(lauf===HAUPT)hauptFertig();if(lauf===VOR)VOR=null}
 }
 setInterval(()=>{laufTick(HAUPT);laufTick(VOR)},40);
@@ -704,7 +821,38 @@ function laufStart(opt){
   lauf.spuren.push(spurNeu(lauf,'stimme',opt.von,ct));if(opt.musik)lauf.spuren.push(spurNeu(lauf,'musik',opt.von,ct));if(opt.klick)lauf.spuren.push(spurNeu(lauf,'klick',opt.von,ct));
   for(const sp of lauf.spuren){sp.letzt=null;sp.wrap=true}
   laufTick(lauf);return lauf}
-function laufPos(lauf){if(!lauf||!AE.ctx)return null;const sp=lauf.spuren[0],now=AE.ctx.currentTime-(AE.ctx.outputLatency||0);
+// Lauf 6: Uhr für den Cursor = Zeit, die gerade aus dem Lautsprecher kommt (Ausgabe-Zeitstempel des AudioContext),
+// sonst currentTime minus Ausgabe- und Grund-Latenz. Gleiche Uhr wie das Audio, kein eigener Timer.
+function hoerZeit(){const c=AE.ctx;if(!c)return 0;
+  if(c.getOutputTimestamp){try{const ts=c.getOutputTimestamp();if(ts&&ts.contextTime>0&&ts.performanceTime>0){const t=ts.contextTime+(performance.now()-ts.performanceTime)/1000;if(t<=c.currentTime+.01&&t>c.currentTime-.6)return t}}catch(e){}}
+  return c.currentTime-(c.outputLatency||0)-(c.baseLatency||0)}
+// ---------------- Dehnen: WSOLA (Überlappen und Addieren mit Ähnlichkeits-Suche) – gleiche Tonhöhe, nur die Länge ändert sich
+const HANN=new Map();
+function hann(N){let w=HANN.get(N);if(!w){w=new Float32Array(N);for(let i=0;i<N;i++)w[i]=.5-.5*Math.cos(2*Math.PI*i/N);HANN.set(N,w)}return w}
+function wsola(x,start,k,nOut,sr){
+  let N=Math.round(.03*sr);N+=N&1;const H=N/2,tol=Math.round(.008*sr),win=hann(N),y=new Float32Array(nOut),X=x.length;let prev=null;
+  const kor=(a,b)=>{let s=0;for(let j=0;j<H;j+=2)s+=x[a+j]*x[b+j];return s};
+  for(let m=-1;m*H<nOut;m++){const to=m*H;let pos=Math.round(start+to*k);
+    const tl=prev==null?0:Math.min(tol,Math.max(0,Math.floor((nOut-to-N)/2)));   // zum Ende hin genau auf der Karte landen
+    if(tl>0){const nat=prev+H;if(nat>=0&&nat+H<X){let best=-Infinity,bd=0;
+      for(let dl=-tl;dl<=tl;dl+=2){const a=pos+dl;if(a<0||a+H>=X)continue;const s=kor(a,nat);if(s>best){best=s;bd=dl}}
+      for(const dl of [bd-1,bd+1]){const a=pos+dl;if(a<0||a+H>=X||Math.abs(dl)>tl)continue;const s=kor(a,nat);if(s>best){best=s;bd=dl}}pos+=bd}}
+    for(let j=0;j<N;j++){const o=to+j;if(o<0)continue;if(o>=nOut)break;const si=pos+j;if(si>=0&&si<X)y[o]+=x[si]*win[j]}
+    prev=pos}
+  return y}
+function dehnQuelle(p){const S=AE.stem[p.stem].stuecke,s1=p.s0+(p.d1-p.d0)*p.k,a=p.s0-.06*p.k-.03,b=s1+.06*p.k+.03;let best=-1;
+  for(let i=0;i<S.length;i++)if(S[i].von_s<=Math.max(0,a)&&S[i].bis_s-.05>=Math.min(DAUER,b)){const e=AE.puf[p.stem][i];if(e&&e.status==='ok')return i;if(best<0)best=i}
+  return best>=0?best:stueckIndex(p.stem,clamp((p.s0+s1)/2,0,DAUER-.1))}
+const DEHN=new Map();
+function dehnung(p){
+  const key=p.stem+'|'+p.s0.toFixed(4)+'|'+p.k.toFixed(6)+'|'+p.d0.toFixed(4)+'|'+p.d1.toFixed(4);let r=DEHN.get(key);if(r)return r;
+  const kk=dehnQuelle(p),e=AE.puf[p.stem][kk];if(!e||e.status!=='ok'){ladeStueck(p.stem,kk).catch(()=>{});return null}
+  e.zuletzt=performance.now();const st=AE.stem[p.stem].stuecke[kk],x=e.buf.getChannelData(0),sr=e.buf.sampleRate,vor=.012,nach=.03;
+  const nOut=Math.ceil((p.d1-p.d0+vor+nach)*sr),start=(p.s0-vor*p.k-st.von_s+e.vs)*sr,t0=performance.now();
+  const y=wsola(x,start,p.k,nOut,sr),c=AE.ctx||ctx(),buf=c.createBuffer(1,nOut,sr);buf.getChannelData(0).set(y);
+  r={buf,vor,ms:performance.now()-t0};DEHN.set(key,r);if(DEHN.size>60)DEHN.delete(DEHN.keys().next().value);
+  (MESS.dehn||(MESS.dehn=[])).push(+r.ms.toFixed(1));if(MESS.dehn.length>200)MESS.dehn.shift();return r}
+function laufPos(lauf){if(!lauf||!AE.ctx)return null;const sp=lauf.spuren[0],now=hoerZeit();
   for(let i=sp.segs.length-1;i>=0;i--){const s=sp.segs[i];if(now>=s.ct0-1e-4)return now<=s.ct0+s.dur+.05?s.tl0+(now-s.ct0):s.tl0+s.dur}return lauf.tl0}
 function vorhoerPos(){return VOR&&VOR.an?laufPos(VOR):null}
 // Stimme neu ansetzen (Hören umgeschaltet, Zug während des Spielens)
@@ -717,10 +865,11 @@ function musikSchalten(){if(!HAUPT||!HAUPT.an)return;const c=AE.ctx,now=c.curren
   const k=HAUPT.spuren.findIndex(s=>s.art==='klick');if(k>=0){for(const n of HAUPT.spuren[k].nodes){try{n.s.stop()}catch(e){}}HAUPT.spuren.splice(k,1)}
   if(Z.klick){const t=laufPos(HAUPT);HAUPT.spuren.push(spurNeu(HAUPT,'klick',t,now+.03))}laufTick(HAUPT)}
 async function bereitFuer(t,hoeren,musik){const ps=[];const P=planFuer(hoeren),j=stueckBei(P,t),p=j>=0?P[j]:P[Math.min(P.length-1,-1-j)];
-  if(p){const k=stueckIndex(p.stem,clamp(t-p.off,0,DAUER-.1));ps.push(ladeStueck(p.stem,k))}
+  if(p){const k=p.k&&p.k!==1?dehnQuelle(p):stueckIndex(p.stem,clamp(qz(p,t),0,DAUER-.1));ps.push(ladeStueck(p.stem,k))}
   if(musik)ps.push(ladeStueck('mix',stueckIndex('mix',clamp(t,0,DAUER-.1))));await Promise.all(ps)}
 async function spielen(){
   if(Z.spielt){pause();return}
+  masterPause();
   await STEMS_P;
   wecken();laufStop(VOR);VOR=null;
   const b=Z.bereich;if(Z.schleife&&b&&(Z.pos<b.von-.01||Z.pos>=b.bis-.02))Z.pos=b.von;if(Z.pos>=DAUER-.05)Z.pos=0;
@@ -739,16 +888,20 @@ function spielKnopf(){$('iSpiel').setAttribute('d',Z.spielt?'M7 5h3.5v14H7zM13.5
 function springe(t){Z.pos=clamp(t,0,DAUER);folgen=true;if(Z.spielt){laufStop(HAUPT,.01);HAUPT=null;Z.spielt=false;spielen()}ueberDirty=true;anfordern();sichernSpaeter()}
 // Vorhören (beim Ziehen/Loslassen/Antippen): kurzes Stück mit weichen Blenden, ersetzt das vorige
 let VORNR=0;
-async function vorhoeren(von,bis,dT){
+async function vorhoeren(von,bis,dT,opt){
   wecken();const c=ctx();if(!c)return;von=clamp(von,0,DAUER);bis=clamp(bis,von+.05,DAUER);
   const nr=++VORNR,hoe=dT?'neu':Z.hoeren,P=dT?plan(dT):planFuer(hoe);
   await STEMS_P;if(nr!==VORNR)return;
   if(Z.spielt)pause();
+  masterPause();
   laufStop(VOR,.010);VOR=null;
-  const fehlt=()=>{for(const t of [von,(von+bis)/2,bis-.01]){const j=stueckBei(P,t),p=j>=0?P[j]:null;if(p&&!stueckBereit(p.stem,clamp(t-p.off,0,DAUER-.1)))return true}return false};
+  const fehlt=()=>{for(const t of [von,(von+bis)/2,bis-.01]){const j=stueckBei(P,t),p=j>=0?P[j]:null;if(p&&!(p.k&&p.k!==1?dehnung(p):stueckBereit(p.stem,clamp(qz(p,t),0,DAUER-.1))))return true}return false};
+  // Lauf 6: Züge hört man immer mit der Musik (Taktgefühl); beim ersten Mal kurz auf das Musikstück warten
+  const mitMusik=Z.musik||!!(opt&&opt.musik);
+  if(mitMusik&&!stueckBereit('mix',von)){try{await ladeStueck('mix',stueckIndex('mix',clamp(von,0,DAUER-.1)))}catch(e){}if(nr!==VORNR)return}
   if(fehlt()){try{await bereitFuer(von,hoe,false);await bereitFuer(Math.min(bis,von+(bis-von)/2),hoe,false)}catch(e){return}if(nr!==VORNR)return}
   MESS.vorhoeren++;
-  VOR=laufStart({von,bis,hoeren:hoe,plan:P,musik:Z.musik&&!!stueckBereit('mix',von),klick:Z.klick,vorlauf:.02});
+  VOR=laufStart({von,bis,hoeren:hoe,plan:P,musik:mitMusik&&!!stueckBereit('mix',von),klick:Z.klick,vorlauf:.02});
   anfordern();
 }
 
@@ -765,6 +918,7 @@ function grenzen(gr,d){ // erlaubte Verschiebung (delta) der Gruppe
   if(kmin>0){const p=ORD[kmin-1];lo=Math.max(lo,(SIL[p].b+offOf(d,p)+.04)-(SIL[f].a+offOf(d,f)))}
   if(kmax<ORD.length-1){const nx=ORD[kmax+1];hi=Math.min(hi,(SIL[nx].a+offOf(d,nx)-.06)-(SIL[l].a+offOf(d,l)))}
   return [lo,hi]}
+let LETZT=null;   // letzter Zug: Zustand vorher/nachher für A/B
 function aendern(fn,meldung){HIST.push(JSON.stringify(ZG));if(HIST.length>80)HIST.shift();REDO=[];fn();nachZug();if(meldung)status(meldung)}
 function nachZug(){for(const k in ZG.d)if(Math.abs(ZG.d[k])<5e-4){delete ZG.d[k];delete ZG.q[k]}PLAN=plan(ZG.d);sichern();listen();sendeZustand();basisNeu();undoKnoepfe();if(Z.spielt&&Z.hoeren==='neu')stimmeNeu();infoZeigen()}
 function undoKnoepfe(){$('bUndo').disabled=!HIST.length;$('bRedo').disabled=!REDO.length}
@@ -781,8 +935,11 @@ function einrasten(){
   const d=Object.assign({},ZG.d),q=Object.assign({},ZG.q);let n=0;
   for(const i of ziel){const bA=SIL[i].b+offOf(d,i),zz=einrastZiel(i,bA);let delta=zz-bA;const [lo,hi]=grenzen([i],d);delta=clamp(delta,lo,hi);
     const neu=offOf(d,i)+delta;if(Math.abs(delta)>=5e-4){n++}d[i]=neu;q[i]=Z.raster}
+  const vorD=JSON.parse(JSON.stringify(ZG.d));
   aendern(()=>{ZG.d=d;ZG.q=q},n?n+(n===1?' Silbe':' Silben')+' auf '+Z.raster+' eingerastet.':'Liegt schon auf dem Raster.');
-  const a=SIL[ziel[0]].a+offOf(ZG.d,ziel[0]),e=bNeu(ziel[ziel.length-1]);vorhoeren(a-.35,Math.max(e+.9,a+1.2),ZG.d);
+  const a=SIL[ziel[0]].a+offOf(ZG.d,ziel[0]),e=bNeu(ziel[ziel.length-1]);
+  if(n){LETZT={vor:vorD,nach:JSON.parse(JSON.stringify(ZG.d)),von:a-.8,bis:Math.max(e+1.1,a+1.6),zeig:'nach'};infoVorher()}
+  if(Z.vorspiel)vorhoeren(a-.6,Math.max(e+.9,a+1.2),ZG.d,{musik:true});
 }
 $('bEinrasten').onclick=einrasten;
 
@@ -830,7 +987,7 @@ buehne.addEventListener('pointermove',e=>{
 function zugStart(i){
   const d0=Object.assign({},ZG.d),gr=gruppe(i);
   G.art='zieht';G.i=i;G.gr=gr;G.d0=d0;G.b0=SIL[i].b+offOf(d0,i);G.acc=0;G.lx=G.x0;G.ly=G.y0;G.ziel=G.b0;G.delta=0;G.temp=d0;G.grenz=grenzen(gr,d0);G.letztVor=0;G.vorZiel=null;
-  Z.wahl=i;infoZeigen();PLAN_TEMP=plan(d0);basisNeu();
+  Z.wahl=i;infoZeigen();PLAN_TEMP=plan(d0);basisNeu();stueckBereit('mix',clamp(SIL[i].a,0,DAUER-.1));
 }
 function ziehen(x,y,auto){
   if(!auto){const fein=y-G.y0>56;G.fein=fein;G.acc+=(x-G.lx)*(fein?.25:1)*Z.dur/W;G.lx=x;G.x=x;G.y=y;G.rand=randFaktor(x)}
@@ -841,14 +998,15 @@ function ziehen(x,y,auto){
   basisDirty=true;anfordern();infoZiehen();
   // Vorhören beim Ziehen: neues Rasterziel oder 25 ms bewegt, frühestens alle 170 ms
   const now=performance.now();
-  if((G.vorZiel==null||Math.abs(ziel-G.vorZiel)>.02)&&now-G.letztVor>170){G.letztVor=now;G.vorZiel=ziel;const s=SIL[G.i];vorhoeren(s.a+offOf(t,G.i)-.12,ziel+.45,t)}
+  if((G.vorZiel==null||Math.abs(ziel-G.vorZiel)>.02)&&now-G.letztVor>170){G.letztVor=now;G.vorZiel=ziel;const s=SIL[G.i];vorhoeren(s.a+offOf(t,G.i)-.35,ziel+.5,t,{musik:true})}
 }
 function zugEnde(g){
   PLAN_TEMP=null;
   if(Math.abs(g.delta)<5e-4){PLAN=plan(ZG.d);basisNeu();status('Nicht verschoben.');return}
   const t=g.temp,i=g.i,rs=Z.raster;
   aendern(()=>{ZG.d=t;for(const j of g.gr)ZG.q[j]=g.snap?rs:'frei'},silbeName(i)+' → '+rasterName(g.ziel)+' ('+msT(g.delta*1000)+')');
-  const s=SIL[i];vorhoeren(s.a+offOf(ZG.d,i)-.6,g.ziel+1.0,ZG.d);
+  const s=SIL[i];LETZT={vor:g.d0,nach:JSON.parse(JSON.stringify(ZG.d)),von:s.a+offOf(ZG.d,i)-1.0,bis:g.ziel+1.2,zeig:'nach'};infoVorher();
+  if(Z.vorspiel)vorhoeren(s.a+offOf(ZG.d,i)-.8,g.ziel+1.0,ZG.d,{musik:true});
 }
 function ende(e,abbruch){
   if(!P.has(e.pointerId))return;P.delete(e.pointerId);if(!G)return;
@@ -876,14 +1034,15 @@ function tippen(g){
   if(h&&h.art==='marke'){markeInfo(h.m);return}
   if(h&&h.art==='rand')return;
   if(Z.wahl!=null){Z.wahl=null;infoZeigen();basisNeu()}
+  if(Z.staffel>=.5&&g.y0>=L.yW&&g.y0<L.yM){const sh=laneBei(g.y0),t=tz(g.x0);if(sh){if(sh!==Z.hoeren)hoerenSetzen(sh);springe(t);if(!Z.spielt)vorhoeren(t-.15,t+2.2);return}}
   springe(tz(g.x0));
 }
 function markeInfo(m){const d=m.d;let t='';
   if(m.art==='schnitt')t='<b>✂︎ '+esc(sek(d.t))+'</b> · '+esc(d.art)+' · '+msT(d.sprung_ms)+' <small>('+esc(d.quelle==='G4'?'v10-Neuschnitt Strophe 2':'v7-Zeitkorrektur')+')</small>';
-  else if(m.art==='pruef')t='<b>? Prüfstelle '+esc(sek(d.von_s))+'–'+esc(sek(d.bis_s))+'</b> · Ende ist hier '+Math.abs(d.db)+' dB '+(d.art==='Loch'?'leiser':'lauter')+' als die verschobene Aufnahme <small>(Vermutung: hier hat eine Korrektur etwas verändert – bitte anhören)</small>';
+  else if(m.art==='pruef')t='<b>? '+esc(d.titel)+'</b> · '+esc(mmss(d.zeit_s))+' · '+esc(SCHWERE[d.schwere]||'')+'<br><small>'+esc(d.was)+'</small>';
   else if(m.art==='atmer')t='<b>Atmer '+esc(sek(d.t))+'</b> · 8 dB leiser gemacht (G1)';
   else if(m.art==='plopp')t='<b>Plopp '+esc(sek(d.t))+'</b> · Tiefen abgesenkt (G1)';
-  $('infoText').innerHTML=t;$('bSilbeHoer').hidden=false;$('bSilbeWeg').hidden=true;INFO_HOER=[(d.t!=null?d.t:d.von_s)-.6,(d.t!=null?d.t:d.bis_s)+.8];
+  $('infoText').innerHTML=t;$('bSilbeHoer').hidden=false;$('bSilbeWeg').hidden=true;const a0=d.t!=null?d.t:d.von_s!=null?d.von_s:d.zeit_s,b0=d.t!=null?d.t:d.bis_s;INFO_HOER=[a0-.6,b0+.8];
 }
 let INFO_HOER=null;
 // Lauf 5 (Prüfung): die Info-Zeile zeigt beim Ziehen Ziel, Abstand zum Raster und Verschiebung mit
@@ -892,6 +1051,7 @@ function infoZiehen(){const rs=rasterSchritt(),g=rs?raster(G.ziel):null,o=offOf(
   const t='<b>'+esc(silbeName(G.i))+'</b> → '+esc(rasterName(G.ziel))+(g!=null?' · zum Raster '+esc(msT((G.ziel-g)*1000)):' · frei')+' · <b style="color:var(--gold)">'+esc(msT(o*1000))+'</b> gegen v11'+(G.fein?' · fein':'');
   if(t!==INFO_ZIEH){INFO_ZIEH=t;$('infoText').innerHTML=t}}
 function infoZeigen(){INFO_ZIEH='';
+  infoVorher();
   const i=Z.wahl;if(i==null){$('infoText').innerHTML='Silbe antippen zum Hören, ziehen zum Verschieben.';$('bSilbeHoer').hidden=true;$('bSilbeWeg').hidden=true;INFO_HOER=null;return}
   const s=SIL[i],o=offOf(ZG.d,i),b=s.b+o,rs=rasterSchritt(),g=rs?raster(b):null;
   const zum=g!=null?' · zum Raster '+msT((b-g)*1000):'';
@@ -901,6 +1061,10 @@ function infoZeigen(){INFO_ZIEH='';
   $('bSilbeHoer').hidden=false;$('bSilbeWeg').hidden=!o;INFO_HOER=[s.a+o-.25,b+.8];
 }
 $('bSilbeHoer').onclick=()=>{if(INFO_HOER)vorhoeren(INFO_HOER[0],INFO_HOER[1])};
+// A/B vorher/nachher für den letzten Zug (mit Musik)
+function infoVorher(){const b=$('bVorher');b.hidden=!LETZT;if(LETZT)b.textContent=LETZT.zeig==='vor'?'A/B nachher':'A/B vorher'}
+$('bVorher').onclick=()=>{if(!LETZT)return;LETZT.zeig=LETZT.zeig==='vor'?'nach':'vor';const vor=LETZT.zeig==='vor';
+  vorhoeren(LETZT.von,LETZT.bis,vor?LETZT.vor:LETZT.nach,{musik:true});infoVorher();status(vor?'Vorher: ohne den letzten Zug.':'Nachher: mit dem letzten Zug.')};
 $('bSilbeWeg').onclick=()=>{const i=Z.wahl;if(i==null||!ZG.d[i])return;aendern(()=>{delete ZG.d[i];delete ZG.q[i]},silbeName(i)+' wieder wie Ende.');const s=SIL[i];vorhoeren(s.a-.4,s.b+.8,ZG.d)};
 // Übersicht
 let ueZug=null;
@@ -926,15 +1090,28 @@ function segZeigen(){
   $('bAB').textContent='A/B';$('bAB').setAttribute('aria-label','A/B: '+Z.hoeren+' ↔ '+Z.ab);
   $('segRaster').innerHTML=RASTER.map(r=>'<button data-r="'+r.id+'" aria-pressed="'+(r.id===Z.raster)+'">'+r.id+'</button>').join('');
   for(const b of $('segZieht').children)b.setAttribute('aria-pressed',b.dataset.z===Z.zieht);
-  $('schichtLeiste').innerHTML=SCHICHTEN.map(s=>'<button class="schicht" data-s="'+s.id+'" style="--c:var('+s.c+')" aria-pressed="'+!!Z.sch[s.id]+'"><i></i>'+esc(s.name)+'</button>').join('');
+  $('schichtLeiste').innerHTML=SCHICHTEN.map(s=>s.h?'<span class="zw'+(Z.sch[s.id]?' an':'')+'" style="--c:var('+s.c+')"><button class="zAug" data-s="'+s.id+'" aria-pressed="'+!!Z.sch[s.id]+'" aria-label="'+esc(s.name)+' zeigen"><i></i></button><button class="zHoer" data-h="'+s.h+'" aria-pressed="'+(Z.hoeren===s.h)+'" aria-label="'+esc(s.name)+' hören"><svg viewBox="0 0 24 24"><path d="M7 4.5v15l12.5-7.5z"/></svg>'+esc(s.name)+'</button></span>'
+    :'<button class="schicht" data-s="'+s.id+'" style="--c:var('+s.c+')" aria-pressed="'+!!Z.sch[s.id]+'"><i></i>'+esc(s.name)+'</button>').join('');
   $('bMusik').setAttribute('aria-pressed',Z.musik);$('bKlick').setAttribute('aria-pressed',Z.klick);$('bSchleife').setAttribute('aria-pressed',Z.schleife);
+  $('bDehnen').setAttribute('aria-pressed',Z.dehnen);$('bVorspiel').setAttribute('aria-pressed',Z.vorspiel);
 }
-function hoerenSetzen(h){if(h===Z.hoeren)return;Z.ab=Z.hoeren;Z.hoeren=h;segZeigen();sichernSpaeter();vorladen();if(Z.spielt)stimmeNeu();status('Hören: '+({original:'Original (Aufnahme)',gereinigt:'gereinigt',v10:'v11',neu:'Neu (v11 + deine Züge)'})[h]+'.')}
+function hoerenSetzen(h){if(h===Z.hoeren)return;Z.ab=Z.hoeren;Z.hoeren=h;segZeigen();sichernSpaeter();vorladen();if(Z.spielt)stimmeNeu();status('Hören: '+({original:'Original (Aufnahme)',gereinigt:'gereinigt',timing:'Timing (gereinigt, verschoben wie v11)',v10:'v11',neu:'Neu (v11 + deine Züge)'})[h]+'.')}
+// Legende: Namen antippen = genau diese Schicht hören (an der Silbe oder am Cursor)
+function schichtHoeren(h){const sk={original:'original',gereinigt:'gereinigt',timing:'timing',v10:'ende',neu:'neu'}[h];if(sk&&!Z.sch[sk]){Z.sch[sk]=true;basisNeu();sichernSpaeter()}
+  if(h!==Z.hoeren)hoerenSetzen(h);else segZeigen();
+  if(!Z.spielt){const a=Z.wahl!=null?SIL[Z.wahl].a+offOf(ZG.d,Z.wahl)-.3:Z.pos;vorhoeren(a,a+2.5)}}
+function staffelSetzen(v,still){Z.staffel=clamp(+v||0,0,1);const r=$('staffel');if(+r.value!==Z.staffel)r.value=Z.staffel;$('staffelWert').textContent=Z.staffel<.05?'übereinander':Z.staffel>.95?'getrennt':'gestaffelt';
+  const quer=matchMedia('(orientation:landscape) and (max-height:560px)').matches;buehne.style.setProperty('--zusatz',quer?'0px':Math.round(Z.staffel*Math.min(200,innerHeight*.22))+'px');basisNeu();if(!still)sichernSpaeter()}
+$('staffel').addEventListener('input',e=>staffelSetzen(e.target.value));
+$('bDehnen').onclick=()=>{Z.dehnen=!Z.dehnen;segZeigen();PLAN=plan(ZG.d);basisNeu();sichernSpaeter();sendeZustand();if(Z.spielt&&Z.hoeren==='neu')stimmeNeu();
+  status(Z.dehnen?'Dehnen an: das Stück davor und danach wird gedehnt, gleiche Tonhöhe.':'Dehnen aus: Lücke bleibt still, die Silbe davor wird gekürzt.')};
+$('bVorspiel').onclick=()=>{Z.vorspiel=!Z.vorspiel;segZeigen();sichernSpaeter();status(Z.vorspiel?'Nach dem Loslassen wird die Stelle vorgespielt.':'Nach dem Loslassen bleibt es still – „A/B vorher“ oder ▶ zum Hören.')};
 $('segHoeren').addEventListener('click',e=>{const b=e.target.closest('button');if(b)hoerenSetzen(b.dataset.h)});
 $('bAB').onclick=()=>hoerenSetzen(Z.ab);
 $('segRaster').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;Z.raster=b.dataset.r;segZeigen();basisNeu();infoZeigen();sichernSpaeter();status(Z.raster==='frei'?'Ziehen ohne Einrasten.':'Rastet auf '+Z.raster+' ein.')});
 $('segZieht').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;Z.zieht=b.dataset.z;segZeigen();sichernSpaeter();status(({silbe:'Nur die Silbe geht mit.',wort:'Das ganze Wort geht mit.',zeile:'Die Silbe und der Rest der Zeile gehen mit.'})[Z.zieht])});
-$('schichtLeiste').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const k=b.dataset.s;Z.sch[k]=!Z.sch[k];b.setAttribute('aria-pressed',Z.sch[k]);if(k==='original'||k==='gereinigt')vorladen();basisNeu();sichernSpaeter()});
+$('schichtLeiste').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.h){schichtHoeren(b.dataset.h);return}
+  const k=b.dataset.s;Z.sch[k]=!Z.sch[k];b.setAttribute('aria-pressed',Z.sch[k]);const z=b.closest('.zw');if(z)z.classList.toggle('an',Z.sch[k]);if(k==='original'||k==='gereinigt')vorladen();basisNeu();sichernSpaeter()});
 $('bMusik').onclick=()=>{Z.musik=!Z.musik;segZeigen();sichernSpaeter();if(Z.musik){stueckBereit('mix',clamp(Z.pos,0,DAUER-.1));status(AE.stem&&AE.stem.mix&&AE.stem.mix.mit_gesang?'Musik an (der Mix enthält noch Gesang).':'Musik an (ohne Gesang).')}musikSchalten()};
 $('bKlick').onclick=()=>{Z.klick=!Z.klick;segZeigen();sichernSpaeter();musikSchalten()};
 function bereichsleiste(zeigen){const b=Z.bereich,l=$('bereichsleiste');l.hidden=!b;if(b)$('bereichText').textContent=tpos(b.von)+' – '+tpos(b.bis)+' · '+(b.bis-b.von).toFixed(1).replace('.',',')+' s';if(HAUPT)HAUPT.bereich=b}
@@ -953,11 +1130,16 @@ function zugListe(){
       b_v10_s:+s.b.toFixed(3),b_neu_s:+(s.b+o).toFixed(3),versatz_ms:Math.round(o*1000),takt_neu:rasterName(s.b+o),raster:ZG.q[k]||'frei',
       a_v10_s:+s.a.toFixed(3),anlauf_ms:Math.round((s.b-s.a)*1000),beginn_art:s.b_art,
       b_aufnahme_s:s.b_roh,a_aufnahme_s:s.a_roh,neu_gegen_aufnahme_ms:Math.round((s.b+o-s.b_roh)*1000),
-      vorsilbe_gekuerzt_ms:Math.max(0,Math.round((op-o)*1000)),luecke_davor_ms:Math.max(0,Math.round((o-op)*1000)),luecke_danach_ms:nx!=null?Math.max(0,Math.round((on-o)*1000)):0})}
+      vorsilbe_gekuerzt_ms:Math.max(0,Math.round((op-o)*1000)),luecke_davor_ms:Math.max(0,Math.round((o-op)*1000)),luecke_danach_ms:nx!=null?Math.max(0,Math.round((on-o)*1000)):0,
+      ...(Z.dehnen?dehnProzent(kk,op,o,on):{})})}
   return out}
-function zugText(z){return z.teil+', „'+z.zeile+'“: '+'„'+z.text+'“'+(z.wort!==z.text?' ('+z.wort+')':'')+' '+msT(z.versatz_ms)+' → '+z.takt_neu+(z.raster!=='frei'?' ('+z.raster+')':' (frei)')+
-  (z.vorsilbe_gekuerzt_ms?' · Vorsilbe '+z.vorsilbe_gekuerzt_ms+' ms gekürzt':'')+(z.luecke_davor_ms?' · Lücke davor '+z.luecke_davor_ms+' ms':'')}
-let AEND=null;
+// gedehnt/gestaucht in Prozent: Stück vor der Silbe (vom vorigen Silbenanfang bis hier) und Stück ab der Silbe (bis zur nächsten)
+function dehnProzent(kk,op,o,on){const A=k=>k<0?0:k>=ORD.length?DAUER:SIL[ORD[k]].a,pz=(len,dl)=>{const L2=len>3?1.5:len;return Math.round(((L2+dl)/L2-1)*100)};
+  return {dehnung_davor_pct:pz(A(kk)-A(kk-1),o-op),dehnung_ab_silbe_pct:pz(A(kk+1)-A(kk),(kk+1<ORD.length?on:o)-o)}}
+function zugText(z){const pc=v=>(v>0?'gedehnt +':'gestaucht −')+Math.abs(v)+' %';return z.teil+', „'+z.zeile+'“: '+'„'+z.text+'“'+(z.wort!==z.text?' ('+z.wort+')':'')+' '+msT(z.versatz_ms)+' → '+z.takt_neu+(z.raster!=='frei'?' ('+z.raster+')':' (frei)')+
+  (z.dehnung_davor_pct!=null?(z.dehnung_davor_pct?' · davor '+pc(z.dehnung_davor_pct):'')+(z.dehnung_ab_silbe_pct?' · ab hier '+pc(z.dehnung_ab_silbe_pct):'')
+   :(z.vorsilbe_gekuerzt_ms?' · Vorsilbe '+z.vorsilbe_gekuerzt_ms+' ms gekürzt':'')+(z.luecke_davor_ms?' · Lücke davor '+z.luecke_davor_ms+' ms':''))}
+let AEND=null,PRUEF=null,PRUEF_AKT=null;
 function listen(){
   const zl=zugListe();
   $('listeZ').innerHTML=(zl.length?zl.map(z=>'<div class="karte" data-s="'+z.silbe+'"><div class="kopf"><b>'+esc(z.takt_neu)+'</b><span>'+esc(z.teil)+'</span><span class="marke">'+esc(z.raster)+'</span></div><div class="text">'+esc(zugText(z))+'</div>'+
@@ -965,19 +1147,45 @@ function listen(){
     '<label for="notiz" style="display:block;margin-top:10px;font-size:13px;color:var(--mut)">Notiz an Claude (geht mit beim Senden)</label><textarea id="notiz" placeholder="z. B. „hyp“ klingt jetzt zu spät, das s von „see“ zu lang …">'+esc(NOTIZ)+'</textarea>';
   $('anzZ').textContent=zl.length?' '+zl.length:'';
   const n=$('notiz');n.oninput=()=>{NOTIZ=n.value;sichernSpaeter();sendeZustand()};
-  let h='';
-  if(LIED.pruefstellen.length)h+=LIED.pruefstellen.map(p=>'<div class="zeile"><button data-hin="'+p.von_s+'" data-bis="'+p.bis_s+'">Hin</button><span class="wann">'+esc(tpos(p.von_s))+'<br><small>'+esc(mmss(p.von_s))+'</small></span><span class="was">Prüfstelle (Vermutung): Ende '+Math.abs(p.db)+' dB '+(p.art==='Loch'?'leiser':'lauter')+' als die verschobene Aufnahme</span></div>').join('');
-  if(AEND)h+=AEND.slice().sort((a,b)=>(a.fassung==='v10'?0:1)-(b.fassung==='v10'?0:1)||a.zeit_s-b.zeit_s).map(a=>'<div class="zeile">'+(a.ganz?'<span class="wann">ganzes<br>Lied</span>':'<button data-hin="'+a.zeit_s+'"'+(a.bis_s?' data-bis="'+a.bis_s+'"':'')+'>Hin</button><span class="wann">'+esc(tpos(a.zeit_s))+'<br><small>'+esc(mmss(a.zeit_s))+'</small></span>')+'<span class="was">'+esc(a.was)+' <span class="marke">'+esc(a.fassung)+'</span></span></div>').join('');
-  $('listeA').innerHTML=h||'<p class="leer">Liste lädt …</p>';$('anzA').textContent=AEND?' '+(AEND.length+LIED.pruefstellen.length):'';
+  const RANG={v11:0,v10:1,v7:2},f=Z.aendFilter;
+  let h='<div class="filter" role="group" aria-label="Fassung">'+[['alle','Neueste zuerst'],['v11','v11'],['v10','v10'],['v7','v7']].map(([k,n])=>'<button data-f="'+k+'" aria-pressed="'+(f===k)+'">'+n+'</button>').join('')+'</div>';
+  if(AEND){const L2=AEND.filter(a=>f==='alle'||a.fassung===f).sort((a,b)=>((RANG[a.fassung]??3)-(RANG[b.fassung]??3))||a.zeit_s-b.zeit_s);
+    h+=L2.map(a=>'<div class="zeile">'+(a.ganz?'<span class="wann">ganzes<br>Lied</span>':'<button data-hin="'+a.zeit_s+'"'+(a.bis_s?' data-bis="'+a.bis_s+'"':'')+'>Hin</button><span class="wann">'+esc(tpos(a.zeit_s))+'<br><small>'+esc(mmss(a.zeit_s))+'</small></span>')+
+      '<span class="was">'+esc(a.was)+' <span class="marke">'+esc(a.fassung)+'</span>'+(a.beleg==='Beschreibung'?' <span class="marke">laut Beschreibung</span>':'')+
+      (a.master?'<span class="knoepfe"><button data-master="'+a.zeit_s+'">v10 ↔ v11 im Master</button></span>':'')+'</span></div>').join('')||'<p class="leer">Keine Einträge.</p>'}
+  else h+='<p class="leer">Liste lädt …</p>';
+  $('listeA').innerHTML=h;$('anzA').textContent=AEND?' '+AEND.length:'';
+  let hp='<p class="leer">Liste lädt …</p>';
+  if(PRUEF)hp=PRUEF.stellen.length?'<p class="leer">Hier könnte ich Fehler gemacht haben: gemessen (v11 gegen deine Aufnahme), nicht gehört. Deutlichste zuerst.</p>'+
+    PRUEF.stellen.slice().sort((a,b)=>b.schwere-a.schwere||a.zeit_s-b.zeit_s).map(p=>'<div class="zeile pz" data-p="'+esc(p.id)+'"><button data-tu="hin">Hin</button><span class="wann">'+esc(tpos(p.zeit_s))+'<br><small>'+esc(mmss(p.zeit_s))+'</small></span><span class="was"><b>'+esc(p.titel)+'</b> <span class="marke s'+p.schwere+'">'+esc(SCHWERE[p.schwere]||'')+'</span> <span class="marke">'+esc(p.art)+'</span><br>'+esc(p.was)+
+      '<span class="knoepfe"><button data-tu="ab">A/B</button><button data-tu="notiz">Als Notiz</button></span></span></div>').join(''):'<p class="leer">Keine Prüfstellen.</p>';
+  $('listeP').innerHTML=hp;$('anzP').textContent=PRUEF&&PRUEF.stellen.length?' '+PRUEF.stellen.length:'';
 }
 $('listeZ').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const k=b.closest('.karte');if(!k)return;const i=+k.dataset.s;
   if(b.dataset.tu==='hin'){Z.wahl=i;const t=bNeu(i);if(Z.dur>8)Z.dur=6;Z.t0=t-Z.dur*.4;clampView();infoZeigen();basisNeu();vorladen();buehne.scrollIntoView({behavior:'smooth',block:'center'})}
   else if(b.dataset.tu==='hoer'){const s=SIL[i];vorhoeren(s.a+offOf(ZG.d,i)-.6,bNeu(i)+1)}
   else if(b.dataset.tu==='weg'){aendern(()=>{delete ZG.d[i];delete ZG.q[i]},silbeName(i)+' wieder wie Ende.')}});
-$('listeA').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.dataset.hin==null)return;const t=+b.dataset.hin,bis=b.dataset.bis?+b.dataset.bis:null;
+$('listeA').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.f){Z.aendFilter=b.dataset.f;listen();sichernSpaeter();return}
+  if(b.dataset.master!=null){MW.wahl='v11';masterKnopf();masterSpielen(Math.max(0,+b.dataset.master-.5));return}
+  if(b.dataset.hin==null)return;const t=+b.dataset.hin,bis=b.dataset.bis?+b.dataset.bis:null;
   if(bis!=null&&bis-t<20){Z.bereich={von:t,bis};bereichsleiste(true);if(bis-t>Z.dur*.9)Z.dur=clamp((bis-t)*1.2,DMIN,DMAX)}Z.t0=t-Z.dur*.15;clampView();springe(t);basisNeu();vorladen();buehne.scrollIntoView({behavior:'smooth',block:'center'})});
-function zeigeTab(t){Z.tab=t;for(const [k,id] of [['Z','tabZ'],['A','tabA'],['H','tabH']]){$(id).setAttribute('aria-selected',k===t);$('liste'+k).hidden=k!==t}sichernSpaeter()}
-$('tabZ').onclick=()=>zeigeTab('Z');$('tabA').onclick=()=>zeigeTab('A');$('tabH').onclick=()=>zeigeTab('H');
+function zeigeTab(t){if(!['Z','A','P','H'].includes(t))t='Z';Z.tab=t;for(const [k,id] of [['Z','tabZ'],['A','tabA'],['P','tabP'],['H','tabH']]){$(id).setAttribute('aria-selected',k===t);$('liste'+k).hidden=k!==t}sichernSpaeter()}
+$('tabZ').onclick=()=>zeigeTab('Z');$('tabA').onclick=()=>zeigeTab('A');$('tabP').onclick=()=>zeigeTab('P');$('tabH').onclick=()=>zeigeTab('H');
+// Prüfstellen: Hin = Stelle in v11 im Kreis spielen (A/B gegen Original), Als Notiz = in die Notiz an Claude
+function pruefHin(p,orig){PRUEF_AKT=p.id;const von=Math.max(0,p.zeit_s-.6),bis=Math.min(DAUER,Math.max(p.bis_s+.6,von+1.6)),span=bis-von;
+  Z.bereich={von,bis};Z.schleife=true;bereichsleiste(true);Z.dur=clamp(Math.max(3,span*1.6),DMIN,DMAX);Z.t0=von-(Z.dur-span)/2;clampView();
+  if(p.silbe!=null)Z.wahl=p.silbe;infoZeigen();
+  Z.hoeren=orig?'original':'v10';Z.ab=orig?'v10':'original';segZeigen();
+  if(Z.spielt){laufStop(HAUPT,.01);HAUPT=null;Z.spielt=false;spielKnopf()}
+  Z.pos=von;folgen=true;basisNeu();vorladen();sichernSpaeter();spielen();
+  status('Prüfstelle '+mmss(p.zeit_s)+': '+(orig?'deine Aufnahme':'v11')+' im Kreis – „A/B“ wechselt.');buehne.scrollIntoView({behavior:'smooth',block:'center'})}
+function pruefNotiz(p){NOTIZ=(NOTIZ.trim()?NOTIZ.replace(/\s+$/,'')+'\n':'')+'Prüfstelle '+mmss(p.zeit_s)+' ('+p.titel+'): ';sichern();zeigeTab('Z');listen();sendeZustand();
+  const n=$('notiz');if(n){n.focus();try{n.setSelectionRange(n.value.length,n.value.length)}catch(e){}n.scrollIntoView({block:'center'})}status('In deine Notiz geschrieben – ergänze, was du hörst, dann Senden.')}
+$('listeP').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const r=b.closest('.zeile');const p=r&&PRUEF&&PRUEF.stellen.find(x=>x.id===r.dataset.p);if(!p)return;
+  if(b.dataset.tu==='hin')pruefHin(p,false);
+  else if(b.dataset.tu==='ab'){if(Z.spielt&&PRUEF_AKT===p.id)hoerenSetzen(Z.hoeren==='original'?'v10':'original');else pruefHin(p,true)}
+  else if(b.dataset.tu==='notiz')pruefNotiz(p)});
 
 // ---------------- Status + Senden
 let statusUhr=0,unterwegs=false;
@@ -993,7 +1201,8 @@ function bauSendung(stempel){
   const zl=zugListe(),geraet={breite:innerWidth,hoehe:innerHeight,dpr:window.devicePixelRatio||1,quer:innerWidth>innerHeight};
   return [{lied:LIED.lied,fassung:(STEMS&&STEMS.fassung)||'v11',daten:{seite:'gesang-werkstatt-2',seite_stand:LIED.gebaut,gesendet_um:stempel,geraet,quelle:'Ende = '+((STEMS&&STEMS.ende_quelle)||'v11-Hauptstimme trocken')+'; Zeiten ab Takt 1 (Timing gleich v10, b_v10_s/a_v10_s = Zeit in der Ende-Fassung); b = Wortbeginn (Fahne/Vokal), a = Anlauf-Beginn',
     zuege:zl,notiz:NOTIZ.trim(),bereich:Z.bereich?{von_s:+Z.bereich.von.toFixed(3),bis_s:+Z.bereich.bis.toFixed(3)}:null,
-    regeln:{luecke:'still (Vorschau); beim Neurechnen wie v10 füllen',ueberlappung:'Vorsilbe mit 10-ms-Blende gekürzt',raster_ziel:'Rasterlinie nächst dem Wortbeginn; Melodie-Note, wenn sie auf dem Raster liegt'},
+    vorschau:Z.dehnen?'gedehnt (Time-Stretching, gleiche Tonhöhe)':'geschnitten (Lücke still, Vorsilbe gekürzt)',
+    regeln:{luecke:Z.dehnen?'kein Loch: Stück davor gedehnt':'still (Vorschau); beim Neurechnen wie v10 füllen',ueberlappung:Z.dehnen?'Stück davor gestaucht':'Vorsilbe mit 10-ms-Blende gekürzt',dehnen:'Stück zwischen zwei Silbenanfängen auf die neue Länge gedehnt/gestaucht (WSOLA, gleiche Tonhöhe); Stücke über 3 s nur in den letzten 1,5 s',raster_ziel:'Rasterlinie nächst dem Wortbeginn; Melodie-Note, wenn sie auf dem Raster liegt'},
     text:zl.map(zugText).join('\n')+(NOTIZ.trim()?'\nNotiz: '+NOTIZ.trim():'')}}]}
 async function senden(){
   if(unterwegs)return;if(!offen()){status('Alles schon gesendet.');return}
@@ -1013,16 +1222,34 @@ $('bKopie').onclick=async()=>{const t='The Wall – Gesang-Werkstatt 2\n'+bauSen
   if(!ok){const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{ok=document.execCommand('copy')}catch(e){}ta.remove()}
   status(ok?'Text kopiert. Bitte an Claude schicken.':'Kopieren ging nicht.',ok?'gut':'fehler')};
 
+// ---------------- Master v10/v11 (ganze Fassung über <audio>; Umschalten geht an derselben Stelle weiter)
+const MA={v10:$('aV10'),v11:$('aV11')},MW={wahl:'v11',spielt:false};
+function mZeit(t){t=Math.max(0,t||0);const m=Math.floor(t/60),s=Math.floor(t-m*60);return m+':'+(s<10?'0':'')+s}
+function masterKnopf(){$('iMaster').setAttribute('d',MW.spielt?'M7 5h3.5v14H7zM13.5 5H17v14h-3.5z':'M7 4.5v15l12.5-7.5z');$('bMaster').setAttribute('aria-label',MW.spielt?'Master anhalten':'Master '+MW.wahl+' abspielen');
+  for(const b of $('segMaster').children)b.setAttribute('aria-pressed',b.dataset.m===MW.wahl)}
+function setzeZeit(a,t){try{if(a.readyState>=1)a.currentTime=t;else{a.preload='auto';a.addEventListener('loadedmetadata',()=>{try{a.currentTime=t}catch(e){}},{once:true});a.currentTime=t}}catch(e){}}
+function masterSpielen(t){if(Z.spielt)pause();laufStop(VOR);VOR=null;const a=MA[MW.wahl];for(const k in MA)if(MA[k]!==a)MA[k].pause();
+  if(t!=null)setzeZeit(a,t);MW.spielt=true;masterKnopf();const pr=a.play();if(pr&&pr.catch)pr.catch(()=>{MW.spielt=false;masterKnopf();status('Master lädt nicht – Netz prüfen.','fehler')});
+  status('Master '+MW.wahl+' ab '+mZeit(t!=null?t:a.currentTime)+' – v10/v11 umschalten geht an derselben Stelle weiter.')}
+function masterPause(){for(const k in MA){try{MA[k].pause()}catch(e){}}if(MW.spielt){MW.spielt=false;masterKnopf()}}
+$('bMaster').onclick=()=>{if(MW.spielt){masterPause();return}const a=MA[MW.wahl];masterSpielen(a.currentTime>0&&!a.ended?null:Z.pos)};
+$('segMaster').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.dataset.m===MW.wahl)return;const alt=MA[MW.wahl],t=alt.currentTime||0,lief=MW.spielt;MW.wahl=b.dataset.m;masterKnopf();
+  if(lief){alt.pause();masterSpielen(t)}else setzeZeit(MA[MW.wahl],t)});
+for(const k in MA){const a=MA[k];a.addEventListener('timeupdate',()=>{if(k===MW.wahl)$('masterZeit').textContent=mZeit(a.currentTime)});a.addEventListener('ended',()=>{if(k===MW.wahl){MW.spielt=false;masterKnopf()}})}
+// quer: Master-Zeile in die rechte Spalte (oben), hochkant: unter die Überschrift
+function fassungPlatz(){const f=$('fassung'),quer=matchMedia('(orientation:landscape) and (max-height:560px)').matches;
+  if(quer){if(f.parentNode!==$('steuer'))$('steuer').prepend(f)}else if(f.previousElementSibling!==$('kopf'))$('kopf').after(f)}
 // ---------------- Start
 addEventListener('pagehide',sichern);
 document.addEventListener('visibilitychange',()=>{if(document.hidden){sichern();if(Z.spielt)pause()}});
 addEventListener('keydown',e=>{if(/TEXTAREA|INPUT/.test(document.activeElement.tagName))return;if(e.code==='Space'){e.preventDefault();spielen()}else if((e.metaKey||e.ctrlKey)&&e.key==='z'){e.preventDefault();(e.shiftKey?$('bRedo'):$('bUndo')).click()}});
 try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',farben)}catch(e){}
-chipsZeigen();segZeigen();spielKnopf();bereichsleiste(false);undoKnoepfe();farben();groesse();listen();sendeZustand();zeigeTab(Z.tab);infoZeigen();
-new ResizeObserver(()=>groesse()).observe(buehne);addEventListener('resize',()=>groesse());
+fassungPlatz();chipsZeigen();segZeigen();spielKnopf();masterKnopf();bereichsleiste(false);undoKnoepfe();farben();staffelSetzen(Z.staffel,true);groesse();listen();sendeZustand();zeigeTab(Z.tab);infoZeigen();
+new ResizeObserver(()=>groesse()).observe(buehne);addEventListener('resize',()=>{fassungPlatz();staffelSetzen(Z.staffel,true);groesse()});
 ladeSchichten().then(()=>{$('laden').hidden=true;ueberStatisch=null;THEMAVER++;basisNeu();performance.mark('wellen-gezeichnet');
   const idle=window.requestIdleCallback||(f=>setTimeout(f,60));STEMS_P.then(()=>idle(()=>{ctx();vorladen()}))}).catch(()=>{$('laden').textContent='Wellen konnten nicht laden.'});
-fetch('daten/aenderungen.json?cabbccfe').then(r=>r.ok?r.json():[]).then(a=>{AEND=Array.isArray(a)?a:[];listen()}).catch(()=>{AEND=[];listen()});
+fetch('daten/aenderungen.json?2aec398b').then(r=>r.ok?r.json():[]).then(a=>{AEND=Array.isArray(a)?a:[];listen()}).catch(()=>{AEND=[];listen()});
+fetch('daten/pruefstellen.json?a4a4d433').then(r=>r.ok?r.json():null).then(j=>{PRUEF=j&&Array.isArray(j.stellen)?j:{stellen:[]};THEMAVER++;listen();basisNeu()}).catch(()=>{PRUEF={stellen:[]};listen()});
 // Zeitmessung je Funktion (für Test und Fehlersuche, kostet fast nichts)
 const PROF={};
 function wrap(n,f){return function(){const t=performance.now();try{return f.apply(this,arguments)}finally{const d=performance.now()-t,p=PROF[n]||(PROF[n]={n:0,max:0,sum:0});p.n++;p.sum+=d;if(d>p.max)p.max=d}}}
@@ -1032,7 +1259,8 @@ versatzMessen=wrap('versatzMessen',versatzMessen);listen=wrap('listen',listen);i
 // Prüf-Haken: denselben Plan offline rendern (gleiche Stücke, gleiche Blenden) – für die Knackser-Messung im Test
 async function renderOffline(von,bis,dT,ohneBlenden){
   const sr=48000,n=Math.ceil((bis-von)*sr),P=plan(dT||{});
-  for(const t of [von,(von+bis)/2,bis-.02]){const j=stueckBei(P,t),p=j>=0?P[j]:P[Math.min(P.length-1,-1-j)];await ladeStueck(p.stem,stueckIndex(p.stem,clamp(t-p.off,0,DAUER-.1)))}
+  for(const t of [von,(von+bis)/2,bis-.02]){const j=stueckBei(P,t),p=j>=0?P[j]:P[Math.min(P.length-1,-1-j)];await ladeStueck(p.stem,p.k&&p.k!==1?dehnQuelle(p):stueckIndex(p.stem,clamp(qz(p,t),0,DAUER-.1)))}
+  for(const p of P)if(p.k&&p.k!==1&&p.d1>von&&p.d0<bis)await ladeStueck(p.stem,dehnQuelle(p));
   const off=new OfflineAudioContext(1,n,sr),bus=off.createGain();bus.connect(off.destination);
   const mc=AE.ctx,mb=AE.bus;AE.ctx=off;AE.bus={stimme:bus};BLENDE=ohneBlenden?0:1;
   try{const lauf={an:true,von,bis,schleife:false,bereich:null,hoeren:'neu',plan:P,spuren:[],ct0:0,tl0:von};const sp=spurNeu(lauf,'stimme',von,0);sp.wrap=true;lauf.spuren.push(sp);
@@ -1041,9 +1269,17 @@ async function renderOffline(von,bis,dT,ohneBlenden){
   const buf=await off.startRendering();const gr=[];for(let j=1;j<P.length;j++){const a=P[j-1],b=P[j];if(!(a.fo||b.fi))continue;if(b.d0>von+.003&&b.d0<bis-.003)gr.push({t:b.d0,src:[b.d0-b.off,Math.min(a.d1,b.d0)-a.off]});if(a.d1<b.d0-1e-6&&a.d1>von+.003)gr.push({t:a.d1,src:[a.d1-a.off]})}
   return {x:Array.from(buf.getChannelData(0)),grenzen:gr};
 }
+// Prüf-Haken (Lauf 6): Musik und Klick genau wie beim Abspielen offline rendern – für die Messung „Klick gegen Kick/Snare“
+async function renderOfflineMusik(von,bis,mitKlick){
+  const sr=48000,n=Math.ceil((bis-von)*sr);ctx();await ladeStueck('mix',stueckIndex('mix',von));await ladeStueck('mix',stueckIndex('mix',Math.min(bis,DAUER-.1)));
+  const off=new OfflineAudioContext(1,n,sr),bus=off.createGain();bus.connect(off.destination);const mc=AE.ctx,mb=AE.bus;AE.ctx=off;AE.bus={musik:bus,klick:bus,stimme:bus};
+  try{const lauf={an:true,von,bis,schleife:false,bereich:null,hoeren:'neu',plan:null,spuren:[],ct0:0,tl0:von};const sp=spurNeu(lauf,mitKlick?'klick':'musik',von,0);sp.wrap=true;lauf.spuren.push(sp);
+    let g=0;while(!sp.fertig&&g++<4000){if(spurSchritt(sp)==='warte')throw new Error('Stück fehlt')}}
+  finally{AE.ctx=mc;AE.bus=mb}
+  const buf=await off.startRendering();return Array.from(buf.getChannelData(0))}
 function ansicht(t0,dur){Z.t0=t0;Z.dur=dur;clampView();basisNeu()}
 window.__ws2={renderOffline,PROF,ansicht,Z,get ZG(){return ZG},get PLAN(){return PLAN},MESS,LIED,AE,SIL,ORD,xz,tz,L:()=>L,sylBox:()=>sylBox,markBox:()=>markBox,plan,bauSendung,laufPos:()=>laufPos(HAUPT),vorhoerPos,
-  einrastZiel,get HAUPT(){return HAUPT},get VOR(){return VOR},grenzen};
+  einrastZiel,get HAUPT(){return HAUPT},get VOR(){return VOR},grenzen,renderOfflineMusik,hoerZeit,dehnung,wsola,timingPlan,lanes,diffI,get PRUEF(){return PRUEF},get AEND(){return AEND},MA,MW,get LETZT(){return LETZT},staffelSetzen,qz};
 </script>
 </body>
 </html>
