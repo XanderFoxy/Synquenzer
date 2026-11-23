@@ -1,10 +1,14 @@
-# Stand 23.11.16:19 UTC
+# Stand 23.11.16:21 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
 - apply.py + block.js geschrieben (a,b,d,e); c in Prüfung
 - (a) echt: 3/4+6/8 alt 1. Note 67 (falsch), neu 60; 4/4 gleich
 - (b) echt: alt 0 Stimmen nach Arp aus (Taste/Clip), neu 3/3; (e) echt: alt 4/33 falsch, neu 0/33
+## bm1
+# BM1 – Stand (in Arbeit)
+- apply.py + block.js gebaut: 8 Haken im Bit-Mask-Kern (fq je Stimme), 4 im Hauptfaden, Block BM1 vor bmEnd.
+- Nächster Schritt: Tests (Kern-Test bm1-test.mjs).
 ## drum1
 # DRUM1 – Stand
 - Kern-Test-Datei: **kern.mjs** (Browser, 428×926 Touch: Lied laden → Zerlegen schnell → Drum-Ebene → Kit-Erkennung; Lieder songs.mjs,
