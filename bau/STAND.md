@@ -1,4 +1,4 @@
-# Stand 23.11.16:23 UTC
+# Stand 23.11.16:25 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -6,9 +6,11 @@
 - (a) echt: 3/4+6/8 alt 1. Note 67 (falsch), neu 60; 4/4 gleich
 - (b) echt: alt 0 Stimmen nach Arp aus (Taste/Clip), neu 3/3; (e) echt: alt 4/33 falsch, neu 0/33
 ## bm1
-# BM1 – Stand (in Arbeit)
-- apply.py + block.js gebaut: 8 Haken im Bit-Mask-Kern (fq je Stimme), 4 im Hauptfaden, Block BM1 vor bmEnd.
-- Nächster Schritt: Tests (Kern-Test bm1-test.mjs).
+# BM1 – Stand (fertig)
+- Ausgang: index.html = python3 apply.py ../rel-4860/index.html index.html (md5 e9f11848d2050250ff5fa59723e314b5).
+- Kern-Test: **bm1-test.mjs** (node bm1-test.mjs <port>, Server im Ordner srv mit index.html = neu, base.html = 4.86.0) → OK BM1 12/12, Protokoll bm1-test.log.
+- Aufbau: Block BM1-BEGIN/-END im Hauptskript direkt vor lkNoteX (BM1_WI, bm1Is, bm1LkAdd, bm1On), 12 Haken /*BM1*/:
+  - Bit-Mask-Kern (Worklet-Text BM_WK, ASCII): Note-an liest fc (Halbtöne) → fq = 2^(fc/12); Stimme fq (Start 1); newVoice, takeKey
 ## drum1
 # DRUM1 – Stand
 - Kern-Test-Datei: **kern.mjs** (Browser, 428×926 Touch: Lied laden → Zerlegen schnell → Drum-Ebene → Kit-Erkennung; Lieder songs.mjs,
