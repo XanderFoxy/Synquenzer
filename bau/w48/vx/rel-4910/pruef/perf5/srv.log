@@ -1,2 +1,6 @@
 Serving HTTP on 127.0.0.1 port 9212 (http://127.0.0.1:9212/) ...
 127.0.0.1 - - [23/Nov/2026 19:25:03] "GET /b/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 19:28:48] "GET /a/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 19:28:52] "GET /a/version.json?t=1795462132776 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 19:29:28] "GET /b/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 19:29:32] "GET /b/version.json?t=1795462172757 HTTP/1.1" 200 -
