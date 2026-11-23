@@ -1,4 +1,4 @@
-# Stand 23.11.20:41 UTC
+# Stand 23.11.20:43 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -224,6 +224,10 @@ als Nächstes: nichts – bereit zur Übergabe
 - 16:3x: block.js+apply.py v1 (Plopps 2. Durchgang, Raumton-Farbverlauf). Plopp-Test w/pt.mjs: 90/120 -> 107/120, fehl 0, sauber 0. Offen: tiefe Takes A/A2.
 - 16:4x: v2 (Dominanz-Regel für tiefe Stimmen): 113/120, fehl 0, sauber 0.
 - 16:5x: Raumton-Test w/rt.mjs: Farbfehler Mittel 2,05 -> 1,27 dB, max 4,25 -> 2,44, beide Enden <=2 dB 8/20 -> 13/20.
+## vtrim
+fertig: Code-Erkundung (Clip-Audio in/out/at, Vorlauf g3/VL2/VL3, Nachlauf = take.post, Wiedergabe-Kern tkPlace, Mixdown = vvRenderAudio über tkPlace, Clip-WAV = Vorlage sq-vl2x-src)
+als Nächstes: vtrim-block.js + apply.py schreiben, dann Kern-Test
+Plan: a.vt={k:take,e:Ende-s,a:Anfang-s} am Clip-Audio; Weiche in tkPlace (vtrStart) nur wenn a.vt; g3PostOf kappt; vtrData für Clip-WAV/Faltplan; Ende-Fähnchen-Overlay im vl3Tick
 ## vxrr
 # VXRR – Gesang reinigen: Regler (fertig)
 
