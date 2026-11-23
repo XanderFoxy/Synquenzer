@@ -9,12 +9,12 @@
    "R3": -0.87
   },
   "v12": {
-   "S1": -0.86,
-   "R1": -1.15,
-   "S2": -0.83,
-   "R2": -1.32,
-   "ZT": -0.08,
-   "R3": -1.26
+   "S1": -0.73,
+   "R1": -0.97,
+   "S2": -0.67,
+   "R2": -1.13,
+   "ZT": -0.06,
+   "R3": -1.21
   }
  },
  "dynamik_gesangsbus": {
@@ -50,11 +50,11 @@
   },
   "v12": {
    "S1": {
-    "spreizung50": 13.2,
+    "spreizung50": 13.1,
     "silben_p90_p10": 5.9
    },
    "R1": {
-    "spreizung50": 10.4,
+    "spreizung50": 10.3,
     "silben_p90_p10": 8.5
    },
    "S2": {
@@ -62,19 +62,19 @@
     "silben_p90_p10": 7.7
    },
    "R2": {
-    "spreizung50": 10.8,
-    "silben_p90_p10": 5.5
+    "spreizung50": 10.5,
+    "silben_p90_p10": 5.2
    },
    "ZT": {
     "spreizung50": 13.5,
     "silben_p90_p10": 14.8
    },
    "R3": {
-    "spreizung50": 8.8,
-    "silben_p90_p10": 3.4
+    "spreizung50": 8.7,
+    "silben_p90_p10": 3.3
    },
    "mittel": {
-    "spreizung50": 11.7,
+    "spreizung50": 11.6,
     "silben_p90_p10": 7.6
    }
   }
@@ -85,16 +85,16 @@
    "strophe": -14.4
   },
   "v12": {
-   "refrain": -11.1,
+   "refrain": -10.2,
    "strophe": -15.9
   }
  },
  "gruppen_gegen_lead_db_refrain": {
-  "gegengesang": -4.6,
-  "chor": -15.5,
+  "gegengesang": -4.3,
+  "chor": -15.4,
   "doppel": -11.2,
-  "hall": -8.3,
-  "begleitung_ohne_doppel": -4.3
+  "hall": -8.1,
+  "begleitung_ohne_doppel": -4.0
  },
  "sprechstelle_dbfs": {
   "lead": -27.2,
@@ -113,7 +113,7 @@
   "gegengesang": -200.0,
   "chor": -200.0,
   "doppel": -200.0,
-  "hall": -74.6
+  "hall": -74.3
  },
  "knackser": {
   "gegengesang_quelle": 25,
@@ -146,8 +146,8 @@
   },
   "v12": {
    "lufs": -10.0,
-   "tp": -0.86,
-   "plr": 9.1
+   "tp": -1.07,
+   "plr": 8.9
   }
  }
 }

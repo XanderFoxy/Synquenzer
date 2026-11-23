@@ -1,0 +1,153 @@
+{
+ "musik_faktor_db": {
+  "v11": {
+   "S1": -0.74,
+   "R1": -0.72,
+   "S2": -0.77,
+   "R2": -0.87,
+   "ZT": -0.3,
+   "R3": -0.87
+  },
+  "v12": {
+   "S1": -0.73,
+   "R1": -0.97,
+   "S2": -0.67,
+   "R2": -1.13,
+   "ZT": -0.06,
+   "R3": -1.21
+  }
+ },
+ "dynamik_gesangsbus": {
+  "v11": {
+   "S1": {
+    "spreizung50": 11.2,
+    "silben_p90_p10": 4.9
+   },
+   "R1": {
+    "spreizung50": 10.0,
+    "silben_p90_p10": 6.4
+   },
+   "S2": {
+    "spreizung50": 11.8,
+    "silben_p90_p10": 6.2
+   },
+   "R2": {
+    "spreizung50": 9.8,
+    "silben_p90_p10": 3.6
+   },
+   "ZT": {
+    "spreizung50": 11.6,
+    "silben_p90_p10": 13.2
+   },
+   "R3": {
+    "spreizung50": 8.8,
+    "silben_p90_p10": 5.0
+   },
+   "mittel": {
+    "spreizung50": 10.5,
+    "silben_p90_p10": 6.5
+   }
+  },
+  "v12": {
+   "S1": {
+    "spreizung50": 13.1,
+    "silben_p90_p10": 5.9
+   },
+   "R1": {
+    "spreizung50": 10.3,
+    "silben_p90_p10": 8.5
+   },
+   "S2": {
+    "spreizung50": 13.5,
+    "silben_p90_p10": 7.7
+   },
+   "R2": {
+    "spreizung50": 10.5,
+    "silben_p90_p10": 5.2
+   },
+   "ZT": {
+    "spreizung50": 13.5,
+    "silben_p90_p10": 14.8
+   },
+   "R3": {
+    "spreizung50": 8.7,
+    "silben_p90_p10": 3.3
+   },
+   "mittel": {
+    "spreizung50": 11.6,
+    "silben_p90_p10": 7.6
+   }
+  }
+ },
+ "side_mid_db": {
+  "v11": {
+   "refrain": -12.5,
+   "strophe": -14.4
+  },
+  "v12": {
+   "refrain": -10.2,
+   "strophe": -15.9
+  }
+ },
+ "gruppen_gegen_lead_db_refrain": {
+  "gegengesang": -4.3,
+  "chor": -15.4,
+  "doppel": -11.2,
+  "hall": -8.1,
+  "begleitung_ohne_doppel": -4.0
+ },
+ "sprechstelle_dbfs": {
+  "lead": -27.2,
+  "gegengesang": -200.0,
+  "chor": -200.0,
+  "doppel": -200.0,
+  "hall": -47.2
+ },
+ "sprechstelle_eyes_kamm_db_rel": {
+  "v11": -19.6,
+  "v12": -18.7,
+  "v12_lead_stem": -18.9
+ },
+ "luecke_217_9_219_7_dbfs": {
+  "lead": -130.3,
+  "gegengesang": -200.0,
+  "chor": -200.0,
+  "doppel": -200.0,
+  "hall": -74.3
+ },
+ "knackser": {
+  "gegengesang_quelle": 25,
+  "lead_quelle": 3,
+  "gegengesang_v12": 11,
+  "chor_v12": 0,
+  "doppel_v12": 0
+ },
+ "knackser_zeiten_chor_gegen": {
+  "chor": [],
+  "gegen": [
+   65.52,
+   71.9,
+   73.41,
+   129.52,
+   135.9,
+   154.75,
+   209.56,
+   225.52,
+   231.9,
+   233.41,
+   250.75
+  ]
+ },
+ "master": {
+  "v11": {
+   "lufs": -10.04,
+   "tp": -1.15,
+   "plr": 8.9
+  },
+  "v12": {
+   "lufs": -10.0,
+   "tp": -1.07,
+   "plr": 8.9
+  }
+ }
+}
