@@ -71,12 +71,16 @@ const PB=[
  {name:'Silben mit Pausen',soll:3,ph:[{typ:'ton',dur:.5,m0:60},{typ:'pause',dur:.25},{typ:'ton',dur:.5,m0:62},{typ:'pause',dur:.25},{typ:'ton',dur:.6,m0:64}]},
  {name:'Wiederanschlag gleicher Ton (Tal −25 dB)',soll:2,ph:[{typ:'ton',dur:1.4,m0:62,dip:{at:.7,w:.04,db:25}}]},
 ];
-const SRB=48000;NOISE=0.0003;let n0=0,n1=0,ns=0,ok0=0,ok1=0,same=0;
-console.log('(B) Marken im Gesang-Editor (Soll = echte Einsätze)');
-for(const p of PB){const {x}=synth(p.ph,SRB,11,0.3);
+const SRB=48000;NOISE=0.0003;let n0=0,n1=0,ns=0,ok0=0,ok1=0,same=0,h0=0,h1=0,f0=0,f1=0;
+console.log('(B) Marken im Gesang-Editor: Soll-Einsätze = jeder neue Ton/Vokal/Wiederanschlag; Treffer = Soll-Einsatz mit Marke (±80 ms, Konsonant-Beginn zählt), Fehlmarken = Marken mitten in einem gehaltenen Ton');
+for(const p of PB){const {x,on}=synth(p.ph,SRB,11,0.3);
+const ends=[];{let t=0.3;on.length=0;for(const s of p.ph){if(s.typ==='ton'){on.push(t);if(s.dip)on.push(t+s.dip.at);}t+=s.dur;if(s.typ==='ton')ends.push(t);}}
 const m0=M0.detectMarks(x,SRB),m1=M1.detectMarks(x,SRB,{g3:1}),mo=M1.detectMarks(x,SRB,{});
 const bit=JSON.stringify(m0)===JSON.stringify(mo);if(bit)same++;
-n0+=m0.length;n1+=m1.length;ns+=p.soll;ok0+=m0.length===p.soll?1:0;ok1+=m1.length===p.soll?1:0;
-console.log('  '+(m1.length===p.soll?'OK    ':'FEHLER')+' '+p.name+': Soll '+p.soll+' | vorher '+m0.length+' | nachher '+m1.length+'  ['+m1.map(m=>m.src+'@'+m.t.toFixed(2)).join(' ')+']'+(bit?'':' ALT≠'));
+const ev=ms=>{const hit=on.filter(o=>ms.some(m=>m.t>o-0.08&&m.t<o+0.04)).length;
+const fehl=ms.filter(m=>!on.some(o=>m.t>o-0.08&&m.t<o+0.04)&&!ends.some(e=>m.t>e-0.08&&m.t<e+0.05)).length;return{hit,fehl};};
+const e0=ev(m0),e1=ev(m1);h0+=e0.hit;h1+=e1.hit;f0+=e0.fehl;f1+=e1.fehl;ns+=on.length;n0+=m0.length;n1+=m1.length;
+const ok=e1.hit===on.length&&e1.fehl===0;ok1+=ok?1:0;ok0+=(e0.hit===on.length&&e0.fehl===0)?1:0;
+console.log('  '+(ok?'OK    ':'FEHLER')+' '+p.name+': Einsätze '+on.length+' | vorher Treffer '+e0.hit+' Fehlmarken '+e0.fehl+' (Marken '+m0.length+') | nachher Treffer '+e1.hit+' Fehlmarken '+e1.fehl+' (Marken '+m1.length+')'+(bit?'':' ALT≠'));
 }
-console.log('  GESAMT B: Phrasen richtig vorher '+ok0+'/'+PB.length+' → nachher '+ok1+'/'+PB.length+', Marken '+n0+' → '+n1+' (Soll '+ns+'); alte Takes (ohne g3) bitgleich '+same+'/'+PB.length);
+console.log('  GESAMT B: Phrasen richtig '+ok0+'/'+PB.length+' → '+ok1+'/'+PB.length+'; Treffer '+h0+' → '+h1+' von '+ns+'; Fehlmarken '+f0+' → '+f1+'; Marken gesamt '+n0+' → '+n1+'; alte Takes (ohne g3) bitgleich '+same+'/'+PB.length);
