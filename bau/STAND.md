@@ -1,8 +1,10 @@
-# Stand 23.11.15:24 UTC
+# Stand 23.11.15:26 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
 - apply.py + block.js geschrieben (a,b,d,e); c in Prüfung
+- (a) echt: 3/4+6/8 alt 1. Note 67 (falsch), neu 60; 4/4 gleich
+- (b) echt: alt 0 Stimmen nach Arp aus (Taste/Clip), neu 3/3; (e) echt: alt 4/33 falsch, neu 0/33
 ## ent1a
 # ENT1A Stand
 - Start: Analyse Arp/Stopp. stop() kehrt bei !R.playing früh zurück -> arpEndAll fehlt (Verdacht).
@@ -27,6 +29,10 @@
 - 13:00 Sonde vorher: ✕/Kopf/Reiter sichtbar, ≥44 px, keine Überlappung; ↶ nach Übernehmen sichtbar. Mängel: ✕ 6 px (hoch) bzw. 25 px (quer) anders als in den übrigen Blättern; langer Name 2 Zeilen.
 - apply.py geschrieben (3 Haken), jetzt Test.
 - 13:05 FERTIG: Sonde nachher 24/24 OK (hoch+quer), Pflichtprüfungen ok. Ausgang: ausgang.html (md5 ffc7f9a61c3ee41c671ff55ba2124d13).
+## ges2
+# GES2 Stand
+- Start: Code gefunden: Stufensuche = segment() in vsDspMake (Worker-Text via toString!), Gesang-Editor = vx2Pick/vx2AnLead/vx3Lead.
+- Plan: (1) Glätten Gleiten+Vibrato in segment (Block innerhalb vsDspMake), (2) Anlauf, (3) Marken.
 ## kmp1
 fertig: KMP1 gebaut und getestet (index.html md5 b4943476ff3b5bc6951d20cbf9d37914, apply.py, block.js, kern.js, hoch.png, quer.png, KURZ.md, CHANGES.md)
 als Nächstes: nichts – bereit zur Übernahme
