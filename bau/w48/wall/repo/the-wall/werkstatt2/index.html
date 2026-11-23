@@ -321,9 +321,11 @@ function planSchnitt(d){
 // (gleiche Tonhöhe, WSOLA im Browser). Gleich verschobene Nachbarn bleiben starr. Stücke über 3 s: nur die letzten 1,5 s.
 // Quellzeit eines Plan-Stücks: starr t-off, gedehnt s0+(t-d0)*k
 const qz=(p,t)=>p.k&&p.k!==1?p.s0+(t-p.d0)*p.k:t-p.off;
+// Lauf 7: zwei Anker je Silbe (Anlauf-Beginn a und Wortbeginn b, gleiche Verschiebung) – der Anlauf geht starr mit, gedehnt wird
+// nur zwischen Wortbeginn und nächstem Anlauf. So liegt der Wortbeginn in Ton und Welle genau dort, wo Fahne und Raster ihn zeigen.
 function planDehnen(d){
-  const n=ORD.length,A=k=>SIL[ORD[k]].a,O=k=>offOf(d,ORD[k]),P=[];
-  const anc=[{s:0,o:0,i:-1}];for(let k=0;k<n;k++)anc.push({s:A(k),o:O(k),i:ORD[k]});anc.push({s:DAUER,o:n?O(n-1):0,i:-1});
+  const n=ORD.length,A=k=>SIL[ORD[k]].a,B=k=>Math.max(SIL[ORD[k]].a,Math.min(SIL[ORD[k]].b,k+1<n?SIL[ORD[k+1]].a-.002:DAUER)),O=k=>offOf(d,ORD[k]),P=[];
+  const anc=[{s:0,o:0,i:-1}];for(let k=0;k<n;k++){anc.push({s:A(k),o:O(k),i:ORD[k]});if(B(k)-A(k)>=5e-4)anc.push({s:B(k),o:O(k),i:-1})}anc.push({s:DAUER,o:n?O(n-1):0,i:-1});
   const add=(s0,s1,o0,o1,sil)=>{const d0=s0+o0,d1=s1+o1;if(d1-d0<5e-4||s1-s0<5e-4)return;
     if(Math.abs(o1-o0)<5e-4){const q=P[P.length-1];
       if(q&&q.k===1&&Math.abs(q.off-o0)<1e-6&&Math.abs(q.d1-d0)<1e-6){q.d1=d1;if(sil>=0)q.sil.push(sil);return}
@@ -808,10 +810,13 @@ function laufTick(lauf){
   for(const sp of lauf.spuren){let n=0;
     while(!sp.fertig&&sp.ct<now+LOOK&&n++<40){const r=spurSchritt(sp);
       if(r==='warte'){if(sp.ct<now+.02){ // Stück noch nicht da und schon spät: kurze Lücke statt Versatz
-          if(sp.art==='stimme'&&lauf===HAUPT){AE.wartet=true;MESS.aussetzer++}sp.ct=now+.03;sp.letzt=null}break}
+          if(sp.art==='stimme'&&lauf===HAUPT){AE.wartet=true;MESS.aussetzer++}
+          // Lauf 7: laufen Musik/Klick mit, rückt die Zeitachse mit vor – lieber kurz still als gegen die Musik verrutscht
+          const neu=now+.03;if(lauf.spuren.some(s=>s!==sp&&!s.fertig))sp.tl+=neu-sp.ct;sp.ct=neu;sp.letzt=null;MESS.luecken=(MESS.luecken||0)+1}break}
       if(sp.art==='stimme'&&lauf===HAUPT)AE.wartet=false}
-    // vorausladen
-    if(sp.art!=='klick'&&!sp.fertig){const P=sp.planFn(),j=stueckBei(P,sp.tl+6),p=j>=0?P[j]:null;if(p)stueckBereit(p.stem,clamp(qz(p,sp.tl+6),0,DAUER-.1))}}
+    // vorausladen (Audio 6 s voraus, gedehnte Stücke 5 s voraus und am Schleifenanfang)
+    if(sp.art!=='klick'&&!sp.fertig){const P=sp.planFn(),j=stueckBei(P,sp.tl+6),p=j>=0?P[j]:null;if(p)stueckBereit(p.stem,clamp(qz(p,sp.tl+6),0,DAUER-.1));
+      if(sp.art==='stimme'){dVoraus(P,sp.tl,sp.tl+5,1);const lp=lauf.schleife&&lauf.bereich;if(lp)dVoraus(P,lp.von,Math.min(lp.bis,lp.von+2),1)}}}
   if(lauf.spuren.every(s=>s.fertig)&&now>Math.max(...lauf.spuren.map(s=>s.ct))+.05){lauf.an=false;if(lauf===HAUPT)hauptFertig();if(lauf===VOR)VOR=null}
 }
 setInterval(()=>{laufTick(HAUPT);laufTick(VOR)},40);
@@ -847,15 +852,53 @@ function wsola(x,start,k,nOut,sr){
 function dehnQuelle(p){const S=AE.stem[p.stem].stuecke,s1=p.s0+(p.d1-p.d0)*p.k,a=p.s0-.06*p.k-.03,b=s1+.06*p.k+.03;let best=-1;
   for(let i=0;i<S.length;i++)if(S[i].von_s<=Math.max(0,a)&&S[i].bis_s-.05>=Math.min(DAUER,b)){const e=AE.puf[p.stem][i];if(e&&e.status==='ok')return i;if(best<0)best=i}
   return best>=0?best:stueckIndex(p.stem,clamp((p.s0+s1)/2,0,DAUER-.1))}
-const DEHN=new Map();
-function dehnung(p){
-  const key=p.stem+'|'+p.s0.toFixed(4)+'|'+p.k.toFixed(6)+'|'+p.d0.toFixed(4)+'|'+p.d1.toFixed(4);let r=DEHN.get(key);if(r)return r;
-  const kk=dehnQuelle(p),e=AE.puf[p.stem][kk];if(!e||e.status!=='ok'){ladeStueck(p.stem,kk).catch(()=>{});return null}
-  e.zuletzt=performance.now();const st=AE.stem[p.stem].stuecke[kk],x=e.buf.getChannelData(0),sr=e.buf.sampleRate,vor=.012,nach=.03;
-  const nOut=Math.ceil((p.d1-p.d0+vor+nach)*sr),start=(p.s0-vor*p.k-st.von_s+e.vs)*sr,t0=performance.now();
-  const y=wsola(x,start,p.k,nOut,sr),c=AE.ctx||ctx(),buf=c.createBuffer(1,nOut,sr);buf.getChannelData(0).set(y);
-  r={buf,vor,ms:performance.now()-t0};DEHN.set(key,r);if(DEHN.size>60)DEHN.delete(DEHN.keys().next().value);
-  (MESS.dehn||(MESS.dehn=[])).push(+r.ms.toFixed(1));if(MESS.dehn.length>200)MESS.dehn.shift();return r}
+// Lauf 7: WSOLA im Hintergrund (Web Worker), damit Ziehen, Zeichnen und Abspielen nicht ruckeln. Jedes gedehnte Stück wird einmal
+// gerechnet und gemerkt (Schlüssel = Quelle, Faktor, Lage); nach einem Zug ändern sich nur die Stücke neben der Silbe – nur die
+// werden neu gerechnet. Reihenfolge: Vorhören (0) vor Abspielen (1) vor Vorrat im Bild/Bereich (2). Ohne Worker: wie bisher direkt.
+const DEHN=new Map(),DJOB=new Map(),DQ=[];let DWORK=null,DLAEUFT=null,DNR=0;
+const dKey=p=>p.stem+'|'+p.s0.toFixed(4)+'|'+p.k.toFixed(6)+'|'+p.d0.toFixed(4)+'|'+p.d1.toFixed(4);
+const gedehnt=p=>!!(p.k&&p.k!==1);
+function dWorker(){if(DWORK===null){try{
+    const src='"use strict";const HANN=new Map();'+hann+'\n'+wsola+'\nonmessage=e=>{const m=e.data,t=performance.now(),y=wsola(m.x,m.start,m.k,m.nOut,m.sr);postMessage({nr:m.nr,y,ms:performance.now()-t},[y.buffer])};';
+    DWORK=new Worker(URL.createObjectURL(new Blob([src],{type:'text/javascript'})));DWORK.onmessage=dFertig;
+    DWORK.onerror=e=>{try{e.preventDefault()}catch(_){}DWORK=false;const j=DLAEUFT;DLAEUFT=null;if(j)DQ.unshift(j);dPumpe()}}catch(e){DWORK=false}}
+  return DWORK||null}
+// Quelle für ein gedehntes Stück; null, solange das Audio-Stück noch lädt
+function dQuelle(p){const kk=dehnQuelle(p),e=AE.puf[p.stem][kk];if(!e||e.status!=='ok'){ladeStueck(p.stem,kk).then(dPumpe,()=>{});return null}
+  e.zuletzt=performance.now();const st=AE.stem[p.stem].stuecke[kk],sr=e.buf.sampleRate,vor=.012,nach=.03;
+  return {x:e.buf.getChannelData(0),sr,vor,nOut:Math.ceil((p.d1-p.d0+vor+nach)*sr),start:(p.s0-vor*p.k-st.von_s+e.vs)*sr}}
+function dMerken(key,r){DEHN.set(key,r);if(DEHN.size>90)DEHN.delete(DEHN.keys().next().value);(MESS.dehn||(MESS.dehn=[])).push(+r.ms.toFixed(1));if(MESS.dehn.length>200)MESS.dehn.shift();return r}
+function dDirekt(key,p,q){const t0=performance.now(),y=wsola(q.x,q.start,p.k,q.nOut,q.sr),buf=(AE.ctx||ctx()).createBuffer(1,q.nOut,q.sr);buf.getChannelData(0).set(y);
+  return dMerken(key,{buf,vor:q.vor,ms:performance.now()-t0,direkt:true})}
+function dehnung(p,prio){const key=dKey(p),r=DEHN.get(key);if(r)return r;
+  if(!dWorker()){const q=dQuelle(p);return q?dDirekt(key,p,q):null}
+  dAuftrag(p,prio==null?1:prio,key);return null}
+function dehnungP(p,prio,gruppe){const key=dKey(p),r=DEHN.get(key);if(r)return Promise.resolve(r);
+  if(!dWorker()){const q=dQuelle(p);return q?Promise.resolve(dDirekt(key,p,q)):ladeStueck(p.stem,dehnQuelle(p)).then(()=>dehnungP(p,prio,gruppe))}
+  return new Promise(res=>dAuftrag(p,prio==null?1:prio,key,gruppe).warte.push(res))}
+function dAuftrag(p,prio,key,gruppe){let j=DJOB.get(key);
+  if(j){if(prio<j.prio)j.prio=prio;j.gruppe=gruppe||'';return j}   // ohne Gruppe (Abspielen/Vorrat) wird der Auftrag nicht mehr verworfen
+  j={key,p,prio,gruppe:gruppe||'',warte:[],t:performance.now()};DJOB.set(key,j);DQ.push(j);dPumpe();return j}
+// gedehnte Stücke eines Plans in [von,bis) vormerken (für Abspielen und Vorrat)
+function dVoraus(P,von,bis,prio){if(!P||!dWorker())return;let j=stueckBei(P,von);if(j<0)j=-1-j;
+  for(;j<P.length&&P[j].d0<bis;j++){const p=P[j];if(gedehnt(p)){const key=dKey(p);if(!DEHN.has(key))dAuftrag(p,prio,key)}}}
+// Vorhör-Aufträge eines älteren Zwischenstands, die noch nicht laufen, fallen weg (beim Ziehen zählt nur der neueste)
+function dVerwerfen(gruppe){for(let i=DQ.length-1;i>=0;i--){const j=DQ[i];if(j.gruppe&&j.gruppe!==gruppe){DQ.splice(i,1);DJOB.delete(j.key);for(const f of j.warte)f(null)}}}
+function dPumpe(){if(DLAEUFT||!DQ.length)return;const w=dWorker();if(!w)return;
+  DQ.sort((a,b)=>a.prio-b.prio||a.t-b.t);
+  for(let i=0;i<DQ.length;i++){const j=DQ[i],q=dQuelle(j.p);if(!q)continue;
+    DQ.splice(i,1);DLAEUFT=j;j.vor=q.vor;j.sr=q.sr;j.nOut=q.nOut;
+    // nur den Ausschnitt schicken, den die Rechnung liest (mit Rand – Ergebnis gleich wie mit dem ganzen Stück)
+    const N=Math.round(.03*q.sr)+2,tol=Math.round(.008*q.sr),X=q.x.length,i0=Math.max(0,Math.floor(q.start-N*Math.max(1,j.p.k)-tol)-N),i1=Math.min(X,Math.ceil(q.start+q.nOut*j.p.k)+2*N+tol);
+    const x=q.x.slice(i0,i1);j.nr=++DNR;w.postMessage({nr:j.nr,x,start:q.start-i0,k:j.p.k,nOut:q.nOut,sr:q.sr},[x.buffer]);return}}
+function dFertig(e){const m=e.data,j=DLAEUFT;DLAEUFT=null;
+  if(j&&j.nr===m.nr){const buf=(AE.ctx||ctx()).createBuffer(1,j.nOut,j.sr);buf.getChannelData(0).set(m.y);
+    const r=dMerken(j.key,{buf,vor:j.vor,ms:m.ms});if(DJOB.get(j.key)===j)DJOB.delete(j.key);for(const f of j.warte)f(r)}
+  dPumpe()}
+// gedehnte Stücke in [von,bis) abwarten (höchstens ms) – Vorhören und Abspielen beginnen ohne Loch
+function dAbwarten(P,von,bis,prio,ms,gruppe){const ps=[];let j=stueckBei(P,von);if(j<0)j=-1-j;
+  for(;j<P.length&&P[j].d0<bis;j++)if(gedehnt(P[j]))ps.push(dehnungP(P[j],prio,gruppe));
+  if(!ps.length)return Promise.resolve();return Promise.race([Promise.all(ps),new Promise(r=>setTimeout(r,ms))])}
 function laufPos(lauf){if(!lauf||!AE.ctx)return null;const sp=lauf.spuren[0],now=hoerZeit();
   for(let i=sp.segs.length-1;i>=0;i--){const s=sp.segs[i];if(now>=s.ct0-1e-4)return now<=s.ct0+s.dur+.05?s.tl0+(now-s.ct0):s.tl0+s.dur}return lauf.tl0}
 function vorhoerPos(){return VOR&&VOR.an?laufPos(VOR):null}
@@ -879,7 +922,9 @@ async function spielen(){
   const b=Z.bereich;if(Z.schleife&&b&&(Z.pos<b.von-.01||Z.pos>=b.bis-.02))Z.pos=b.von;if(Z.pos>=DAUER-.05)Z.pos=0;
   Z.spielt=true;folgen=true;spielKnopf();AE.wartet=true;anfordern();
   try{await bereitFuer(Z.pos,Z.hoeren,Z.musik)}catch(e){Z.spielt=false;spielKnopf();AE.wartet=false;status('Audio lädt nicht. Netz prüfen und nochmal tippen.','fehler');return}
-  if(!Z.spielt)return;AE.wartet=false;
+  if(!Z.spielt)return;
+  await dAbwarten(planFuer(Z.hoeren),Z.pos,Z.pos+1.5,1,1500);   // Lauf 7: gedehnte Stücke am Anfang sind fertig gerechnet
+  if(!Z.spielt||HAUPT)return;AE.wartet=false;
   HAUPT=laufStart({von:Z.pos,schleife:Z.schleife,bereich:Z.bereich,hoeren:Z.hoeren,musik:Z.musik,klick:Z.klick});
   if(!HAUPT){Z.spielt=false;spielKnopf();status('Dieses Gerät kann hier kein Audio abspielen.','fehler')}
   anfordern();
@@ -919,8 +964,13 @@ function einrastZiel(i,bAkt){const s=rasterSchritt();if(!s)return bAkt;const g1=
 function grenzen(gr,d){ // erlaubte Verschiebung (delta) der Gruppe
   const ks=gr.map(i=>POS[i]),kmin=Math.min(...ks),kmax=Math.max(...ks);let lo=-10,hi=10;
   const f=gr[ks.indexOf(kmin)],l=gr[ks.indexOf(kmax)];
-  if(kmin>0){const p=ORD[kmin-1];lo=Math.max(lo,(SIL[p].b+offOf(d,p)+.04)-(SIL[f].a+offOf(d,f)))}
-  if(kmax<ORD.length-1){const nx=ORD[kmax+1];hi=Math.min(hi,(SIL[nx].a+offOf(d,nx)-.06)-(SIL[l].a+offOf(d,l)))}
+  // Lauf 7: der Anlauf geht starr mit; das gedehnte Stück zwischen Wortbeginn und nächstem Anlauf bleibt mindestens 40 ms
+  // und höchstens 16-fach gestaucht lang (Stücke über 3 s: nur die letzten 1,5 s werden gedehnt)
+  const rest=Ls=>Ls>3?Ls-1.5+Math.max(.04,1.5/16):Math.max(.04,Ls/16);
+  if(kmin>0){const p=ORD[kmin-1],bp=SIL[p].b+offOf(d,p);lo=Math.max(lo,(bp+.04)-(SIL[f].a+offOf(d,f)));
+    if(Z.dehnen)lo=Math.max(lo,bp+rest(SIL[f].a-SIL[p].b)-(SIL[f].a+offOf(d,f)))}
+  if(kmax<ORD.length-1){const nx=ORD[kmax+1],an=SIL[nx].a+offOf(d,nx);hi=Math.min(hi,(an-.06)-(SIL[l].a+offOf(d,l)));
+    if(Z.dehnen)hi=Math.min(hi,an-rest(SIL[nx].a-SIL[l].b)-(SIL[l].b+offOf(d,l)))}
   return [lo,hi]}
 let LETZT=null;   // letzter Zug: Zustand vorher/nachher für A/B
 function aendern(fn,meldung){HIST.push(JSON.stringify(ZG));if(HIST.length>80)HIST.shift();REDO=[];fn();nachZug();if(meldung)status(meldung)}
@@ -1137,9 +1187,9 @@ function zugListe(){
       vorsilbe_gekuerzt_ms:Math.max(0,Math.round((op-o)*1000)),luecke_davor_ms:Math.max(0,Math.round((o-op)*1000)),luecke_danach_ms:nx!=null?Math.max(0,Math.round((on-o)*1000)):0,
       ...(Z.dehnen?dehnProzent(kk,op,o,on):{})})}
   return out}
-// gedehnt/gestaucht in Prozent: Stück vor der Silbe (vom vorigen Silbenanfang bis hier) und Stück ab der Silbe (bis zur nächsten)
-function dehnProzent(kk,op,o,on){const A=k=>k<0?0:k>=ORD.length?DAUER:SIL[ORD[k]].a,pz=(len,dl)=>{const L2=len>3?1.5:len;return Math.round(((L2+dl)/L2-1)*100)};
-  return {dehnung_davor_pct:pz(A(kk)-A(kk-1),o-op),dehnung_ab_silbe_pct:pz(A(kk+1)-A(kk),(kk+1<ORD.length?on:o)-o)}}
+// gedehnt/gestaucht in Prozent: Stück vor der Silbe (vom vorigen Wortbeginn bis zum Anlauf hier) und Stück ab dem Wortbeginn (bis zum nächsten Anlauf)
+function dehnProzent(kk,op,o,on){const A=k=>k<0?0:k>=ORD.length?DAUER:SIL[ORD[k]].a,B=k=>k<0?0:SIL[ORD[k]].b,pz=(len,dl)=>{const L2=len>3?1.5:len;return Math.round(((L2+dl)/L2-1)*100)};
+  return {dehnung_davor_pct:pz(A(kk)-B(kk-1),o-op),dehnung_ab_silbe_pct:pz(A(kk+1)-B(kk),(kk+1<ORD.length?on:o)-o)}}
 function zugText(z){const pc=v=>(v>0?'gedehnt +':'gestaucht −')+Math.abs(v)+' %';return z.teil+', „'+z.zeile+'“: '+'„'+z.text+'“'+(z.wort!==z.text?' ('+z.wort+')':'')+' '+msT(z.versatz_ms)+' → '+z.takt_neu+(z.raster!=='frei'?' ('+z.raster+')':' (frei)')+
   (z.dehnung_davor_pct!=null?(z.dehnung_davor_pct?' · davor '+pc(z.dehnung_davor_pct):'')+(z.dehnung_ab_silbe_pct?' · ab hier '+pc(z.dehnung_ab_silbe_pct):'')
    :(z.vorsilbe_gekuerzt_ms?' · Vorsilbe '+z.vorsilbe_gekuerzt_ms+' ms gekürzt':'')+(z.luecke_davor_ms?' · Lücke davor '+z.luecke_davor_ms+' ms':''))}
@@ -1208,7 +1258,7 @@ function bauSendung(stempel){
   return [{lied:LIED.lied,fassung:(STEMS&&STEMS.fassung)||'v11',daten:{seite:'gesang-werkstatt-2',seite_stand:LIED.gebaut,gesendet_um:stempel,geraet,quelle:'Ende = '+((STEMS&&STEMS.ende_quelle)||'v11-Hauptstimme trocken')+'; Zeiten ab Takt 1 (Timing gleich v10, b_v10_s/a_v10_s = Zeit in der Ende-Fassung); b = Wortbeginn (Fahne/Vokal), a = Anlauf-Beginn',
     zuege:zl,notiz:NOTIZ.trim(),bereich:Z.bereich?{von_s:+Z.bereich.von.toFixed(3),bis_s:+Z.bereich.bis.toFixed(3)}:null,
     vorschau:Z.dehnen?'gedehnt (Time-Stretching, gleiche Tonhöhe)':'geschnitten (Lücke still, Vorsilbe gekürzt)',
-    regeln:{luecke:Z.dehnen?'kein Loch: Stück davor gedehnt':'still (Vorschau); beim Neurechnen wie v10 füllen',ueberlappung:Z.dehnen?'Stück davor gestaucht':'Vorsilbe mit 10-ms-Blende gekürzt',dehnen:'Stück zwischen zwei Silbenanfängen auf die neue Länge gedehnt/gestaucht (WSOLA, gleiche Tonhöhe); Stücke über 3 s nur in den letzten 1,5 s',raster_ziel:'Rasterlinie nächst dem Wortbeginn; Melodie-Note, wenn sie auf dem Raster liegt'},
+    regeln:{luecke:Z.dehnen?'kein Loch: Stück davor gedehnt':'still (Vorschau); beim Neurechnen wie v10 füllen',ueberlappung:Z.dehnen?'Stück davor gestaucht':'Vorsilbe mit 10-ms-Blende gekürzt',dehnen:'Anlauf (a bis b) geht starr mit; das Stück vom Wortbeginn bis zum nächsten Anlauf wird auf die neue Länge gedehnt/gestaucht (WSOLA, gleiche Tonhöhe); Stücke über 3 s nur in den letzten 1,5 s',raster_ziel:'Rasterlinie nächst dem Wortbeginn; Melodie-Note, wenn sie auf dem Raster liegt'},
     text:zl.map(zugText).join('\n')+(NOTIZ.trim()?'\nNotiz: '+NOTIZ.trim():'')}}]}
 async function senden(){
   if(unterwegs)return;if(!offen()){status('Alles schon gesendet.');return}
