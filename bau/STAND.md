@@ -1,4 +1,4 @@
-# Stand 23.11.16:11 UTC
+# Stand 23.11.16:13 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -41,6 +41,12 @@
 - Plan: (1) Glätten Gleiten+Vibrato in segment (Block innerhalb vsDspMake), (2) Anlauf, (3) Marken.
 - apply.py + seg-block.js gebaut (Block GES2-SEG in vsDspMake vor segment, 1 Haken vor minF). Kern-Test 17/18 -> 18/18 (Noten 56 -> 53, Soll 53).
 - Anlauf lagefest / Konsonant über stimmhafte Rahmen: nicht angefasst (VX3 macht Letzteres schon bis 3 Rahmen).
+## imp4
+# IMP4 – Stand
+- apply.py <eingang> <ausgang> baut (bitgleich wiederholbar). Blöcke: xla-block.js (IMP4-XLA, im Import-Kern), block.js (IMP4, Hauptskript).
+- (a) im Import-Kern: gleichzeitige Drum-Schläge auf demselben Pad → ein Schlag mit v = √(Σv²) (Pegel ~ v²), max 1.
+- (b) Engine hat EIN Echo je Projekt (Anteil je Spur gibt es schon) → nicht gebaut, nur im Bericht benannt.
+- (c) Bericht je Spur: bei „Klänge aus der DAW“ Status/Liste aus dem übernommenen Klang (EQ, Echo).
 ## ke2
 # KE2 Stand (FERTIG, kleiner geliefert als bestellt)
 - Eingang 4.86.0 (md5 a7515b980ddc423e84f9d5cdf8f132a6). Ausgang `out.html` = `python3 apply.py <eingang> <ausgang>` (md5 851db9d4df97e9ec25438604d6dd730b).
