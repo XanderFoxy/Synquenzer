@@ -43,3 +43,15 @@ const hi=Math.max(p1,p2)+0.7,lw=Math.min(p1,p2)-0.7;
 return v>hi?hi:v<lw?lw:v;
 }"""
 open('var/spl.mjs','w').write('export default '+json.dumps([[OLD,NEW],[HEAD,HEAD+"\n"+fn],[SPL_OLD,SPL_NEW]])+';\n')
+def lz(name, up, dn, mix):
+    w(name, """function chr6Lm(LM,Hk,lo,t){
+const p1=LM[lo],p2=LM[Math.min(Hk+1,lo+1)],l=p1+(p2-p1)*t;
+if(lo>=Hk||t<=0)return l;
+const x=lo+t;let s=0,ws=0;
+for(let k=lo-2;k<=lo+3;k++){const d=x-k,kk=Math.min(Hk,Math.max(1,k)),w=3*Math.sin(Math.PI*d)*Math.sin(Math.PI*d/3)/(Math.PI*Math.PI*d*d);s+=w*LM[kk];ws+=w;}
+let v=l+%s*(s/ws-l);const hi=Math.max(p1,p2)+%s,lw=Math.min(p1,p2)-%s;
+return v>hi?hi:v<lw?lw:v;
+}""" % (mix, up, dn))
+lz('lzA','0.7','0','1')
+lz('lzB','0.7','0.7','0.5')
+lz('lzC','0.7','0.12','1')

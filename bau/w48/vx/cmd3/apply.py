@@ -34,8 +34,6 @@ EDITS = [
    "if(typeof mlg2Echo==='function')mlg2Echo(c,p);\nif(typeof cmd3Echo==='function')cmd3Echo(c,p);/* CMD3 */\n", 1),
   # Bericht je Spur: eigenes Echo statt „→ Projekt-Echo (eins für alle Spuren)“
   (ECH, "const ech=typeof cmd3Ech==='function'?cmd3Ech(e,E)/* CMD3 */:!e?'':same?'Echo '+e.divL+' wie in der DAW':'eigenes Delay '+e.divL+' → Projekt-Echo '+(E?E.divL:'')+' (eins für alle Spuren)';", 1),
-  ("ok:v.rep.ok.slice(),appr:v.rep.appr.filter(",
-   "ok:typeof cmd3Ok==='function'?cmd3Ok(v.rep.ok,e,E)/* CMD3 */:v.rep.ok.slice(),appr:v.rep.appr.filter(", 1),
   # Block nach IMP4
   (IMP4END, IMP4END + blk, 1),
 ]
@@ -43,7 +41,7 @@ for a, b, n in EDITS:
     c = s.count(a)
     if c != n: sys.exit('CMD3: Anker %r: %d Treffer statt %d' % (a[:60], c, n))
     s = s.replace(a, b)
-for w, n in (('MS 2000', 1), ('CMD3-BEGIN', 1), ('CMD3-END', 1), ('/* CMD3 */', 7)):
+for w, n in (('MS 2000', 1), ('CMD3-BEGIN', 1), ('CMD3-END', 1), ('/* CMD3 */', 6)):
     if s.count(w) != n: sys.exit('CMD3: %s %d statt %d' % (w, s.count(w), n))
 if sum(1 for l in s.split('\n') if l.startswith('  live: true,')) != 1: sys.exit('CMD3: live')
 for w in ('0.00537728', '0.19492', '413.56', '0.193046', 'xander-krypto'):
@@ -52,5 +50,6 @@ out = s.encode('utf-8')
 d = os.path.dirname(os.path.abspath(dst)) or '.'
 fd, tmp = tempfile.mkstemp(dir=d, prefix='.cmd3-')
 with os.fdopen(fd, 'wb') as f: f.write(out)
+os.chmod(tmp, 0o644)
 os.replace(tmp, dst)
 print('CMD3 ok', hashlib.md5(out).hexdigest(), len(out))

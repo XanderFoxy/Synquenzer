@@ -1,10 +1,14 @@
-# Stand 23.11.17:39 UTC
+# Stand 23.11.17:41 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
 - apply.py + block.js geschrieben (a,b,d,e); c in Prüfung
 - (a) echt: 3/4+6/8 alt 1. Note 67 (falsch), neu 60; 4/4 gleich
 - (b) echt: alt 0 Stimmen nach Arp aus (Taste/Clip), neu 3/3; (e) echt: alt 4/33 falsch, neu 0/33
+## arpg
+# ARPG – Stand (Zwischenstand)
+- apply.py + block.js fertig, Bau ok (Eingang 4.88.0 md5 695af050…). Pflicht-grep + doppelt.js ok.
+- Offen: Browser-Test (arpg-test.cjs), Fotos.
 ## bm1
 # BM1 – Stand (fertig)
 - Ausgang: index.html = python3 apply.py ../rel-4860/index.html index.html (md5 e9f11848d2050250ff5fa59723e314b5).
@@ -88,6 +92,9 @@ Block `block.js` (/* IMPS-BEGIN/-END */ direkt vor `function imp1Geo`), Haken mi
 - Änderung: EINE Zeile im stillen Block sq-ke1-src: `const CAL = /*KE2*/ {...}` – nur die Gewichte `mk` (Engine 3) neu (aus `cal.json`), `va`/`fm` unverändert.
   Ansicht, Texte, Erkennung (Welle, Filter, Suche) bitgleich; nur die angezeigten Gewissheits-Werte/Wörter der Engine-3-Karte ändern sich.
 - Kern-Test: `w/kt.mjs` (Node; Kern direkt aus der HTML über `w/kern.mjs`, Testtöne per renderH der App-Engine 3, Mikro-Simulation; Vorlagen `w/tpl.json` aus `w/tpl.cjs`),
+## kks
+# KKS – Stand (in Arbeit)
+Bau: `python3 apply.py <eingang 4.88.0> <ausgang>`; Block `block.js` (KKS-BEGIN/-END vor `function spk7NormWt`), Haken in pageWt, subTabsFor (Reiter KORN), SPK7_ROW=true.
 ## kmp1
 fertig: KMP1 gebaut und getestet (index.html md5 b4943476ff3b5bc6951d20cbf9d37914, apply.py, block.js, kern.js, hoch.png, quer.png, KURZ.md, CHANGES.md)
 als Nächstes: nichts – bereit zur Übernahme

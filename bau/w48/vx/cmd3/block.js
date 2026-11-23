@@ -67,8 +67,4 @@ if(!e)return'';
 if(!cmd3Own(e,E))return'Echo '+e.divL+' wie in der DAW';
 return'eigenes Echo '+e.divL+(e.divR&&e.divR!==e.divL?' | '+e.divR:'')+' wie in der DAW';
 }
-function cmd3Ok(L,e,E){
-const own=cmd3Own(e,E);
-return(L||[]).map(s=>own?String(s).replace('(Projekt-Echo st, ','(eigenes Echo der Spur, '):s);
-}
 /* CMD3-END */
