@@ -119,7 +119,7 @@ async function layoutCheck(page, name) {
     return { hz: +(z / (20000 / sr)).toFixed(1), spitze: +mx.toFixed(3), huelle_min: +Math.min(...env).toFixed(3), huelle_max: +Math.max(...env).toFixed(3) };
   });
   // Ziehen mit dem Finger: Silbe „hyp“ fassen und 60 px nach rechts
-  await page.evaluate(() => { window.__ws2.ansicht(110.5, 7) }); await sleep(500);
+  await page.evaluate(() => { window.__ws2.ansicht(110.5, 7); document.getElementById('buehne').scrollIntoView({ block: 'start' }) }); await sleep(800);
   const box = await page.evaluate(() => { const w = window.__ws2, i = w.ORD.find(j => w.SIL[j].text.toLowerCase().startsWith('hyp')), b = w.sylBox().find(s => s.i === i), r = document.getElementById('buehne').getBoundingClientRect(); return b ? { x: r.left + b.x + b.w / 2, y: r.top + b.y + b.h / 2 } : null });
   if (box) {
     const cdp = await ctx.newCDPSession(page);
@@ -129,8 +129,9 @@ async function layoutCheck(page, name) {
     await page.screenshot({ path: OUT + '/hoch-ziehen.png' });
     await tp('touchEnd'); await sleep(700);
     erg.ziehen = await page.evaluate(() => ({ zuege: Object.keys(window.__ws2.ZG.d).length, letzt: !!window.__ws2.LETZT, vorherKnopf: !document.getElementById('bVorher').hidden, vorspiel: !!(window.__ws2.VOR), status: document.getElementById('sendeStatus').textContent }));
-    await page.click('#bVorher'); await sleep(400);
-    erg.vorherAB = await page.evaluate(() => ({ zeig: window.__ws2.LETZT.zeig, knopf: document.getElementById('bVorher').textContent, vor: !!(window.__ws2.VOR && window.__ws2.VOR.an) }));
+    erg.ziehen.box = box; erg.ziehen.wahl = await page.evaluate(() => window.__ws2.Z.wahl);
+    if (erg.ziehen.vorherKnopf) { await page.click('#bVorher'); await sleep(400) }
+    erg.vorherAB = await page.evaluate(() => window.__ws2.LETZT && ({ zeig: window.__ws2.LETZT.zeig, knopf: document.getElementById('bVorher').textContent, vor: !!(window.__ws2.VOR && window.__ws2.VOR.an) }));
     await page.screenshot({ path: OUT + '/hoch-nach-zug.png' });
     erg.sendung = await page.evaluate(() => { const s = window.__ws2.bauSendung('test')[0].daten; return { vorschau: s.vorschau, text: s.text, z: s.zuege.map(z => ({ v: z.versatz_ms, d: z.dehnung_davor_pct, a: z.dehnung_ab_silbe_pct })) } });
     await page.click('#bUndo'); await sleep(200);

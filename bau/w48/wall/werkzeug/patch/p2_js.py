@@ -91,7 +91,8 @@ R.append(("""    // Prüfstellen
 """  }
   // Lauf 6: Prüfstellen als dezente Marken am oberen und unteren Rand der Welle (nie über die Mitte), ? im Streifen unten
   if(PRUEF)for(const p of PRUEF.stellen){const xa=xz(p.zeit_s),xb=xz(p.bis_s);if(xb<-10||xa>W+10)continue;const w=Math.max(4,xb-xa);
-    c.fillStyle=FB['c-pruef'];c.globalAlpha=p.schwere>=3?.95:p.schwere>=2?.8:.6;c.fillRect(xa,L.yW+1,w,3);c.fillRect(xa,L.yM-4,w,3);c.globalAlpha=1;
+    c.fillStyle=FB['c-pruef'];c.globalAlpha=p.schwere>=3?.95:p.schwere>=2?.8:.6;c.fillRect(xa,L.yW+1,w,2);c.fillRect(xa,L.yM-3,w,2);
+    c.beginPath();c.moveTo(xa,L.yW+1);c.lineTo(xa+9,L.yW+1);c.lineTo(xa,L.yW+9);c.closePath();c.moveTo(xa,L.yM-1);c.lineTo(xa+9,L.yM-1);c.lineTo(xa,L.yM-9);c.closePath();c.fill();c.globalAlpha=1;   // Fähnchen: anders als die Zwiebel-Striche
     c.font='700 13px -apple-system,system-ui,sans-serif';c.textBaseline='middle';c.fillText('?',(xa+xb)/2-3,y0+h-8);markBox.push({x:(xa+xb)/2,art:'pruef',d:p})}"""))
 R.append(("""    for(let q=j;q<P.length&&P[q].d0<tb;q++){const p=P[q],a=Math.max(ta,p.d0),b=Math.min(tb,p.d1);if(b<=a)continue;if(mm('neu',a-p.off,b-p.off,MM)){""",
           """    for(let q=j;q<P.length&&P[q].d0<tb;q++){const p=P[q],a=Math.max(ta,p.d0),b=Math.min(tb,p.d1);if(b<=a)continue;if(mm('neu',qz(p,a),qz(p,b),MM)){"""))
@@ -346,6 +347,8 @@ R.append(("fetch('daten/aenderungen.json?cabbccfe').then(r=>r.ok?r.json():[]).th
 # Test-Haken
 R.append(("  for(const t of [von,(von+bis)/2,bis-.02]){const j=stueckBei(P,t),p=j>=0?P[j]:P[Math.min(P.length-1,-1-j)];await ladeStueck(p.stem,stueckIndex(p.stem,clamp(t-p.off,0,DAUER-.1)))}",
           "  for(const t of [von,(von+bis)/2,bis-.02]){const j=stueckBei(P,t),p=j>=0?P[j]:P[Math.min(P.length-1,-1-j)];await ladeStueck(p.stem,p.k&&p.k!==1?dehnQuelle(p):stueckIndex(p.stem,clamp(qz(p,t),0,DAUER-.1)))}\n  for(const p of P)if(p.k&&p.k!==1&&p.d1>von&&p.d0<bis)await ladeStueck(p.stem,dehnQuelle(p));"))
+R.append(("async function renderOffline(von,bis,dT,ohneBlenden){\n  const sr=48000,n=Math.ceil((bis-von)*sr),P=plan(dT||{});",
+          "async function renderOffline(von,bis,dT,ohneBlenden,planX){\n  const sr=48000,n=Math.ceil((bis-von)*sr),P=planX||plan(dT||{});"))
 R.append(("function ansicht(t0,dur){Z.t0=t0;Z.dur=dur;clampView();basisNeu()}",
 r"""// Prüf-Haken (Lauf 6): Musik und Klick genau wie beim Abspielen offline rendern – für die Messung „Klick gegen Kick/Snare“
 async function renderOfflineMusik(von,bis,mitKlick){
