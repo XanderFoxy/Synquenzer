@@ -1,0 +1,61 @@
+{
+ "lead_spitzen_gr": {
+  "anteil_ueber_1dB": 0.44,
+  "max": 4.3
+ },
+ "lead_gr": {
+  "median_singen": 0.88,
+  "p95": 3.27,
+  "max": 7.8,
+  "stufe1_p95": 0.98,
+  "stufe2_median": 0.87,
+  "entzischer_p95": 3.51
+ },
+ "gegen_gr_median": 3.09,
+ "fader_db": {
+  "G": -7.4,
+  "GA_L": -15.5,
+  "GA_R": -15.5,
+  "D": -7.3,
+  "OB_L": -16.1,
+  "OB_R": -16.0,
+  "UN": -18.1
+ },
+ "pegel_rel_lead_nachher": {
+  "G": -5.5,
+  "GA_L": -13.5,
+  "GA_R": -13.5,
+  "D": -11.0,
+  "OB_L": -15.5,
+  "OB_R": -15.5,
+  "UN": -18.0
+ },
+ "chorbus_gr_median": 5.04,
+ "gesang_angleich_db": 10.16,
+ "gesang_bus_spitzen_gr_p99": 0.0,
+ "gesang_lufs": {
+  "S1": -13.8,
+  "R1": -11.1,
+  "S2": -14.4,
+  "R2": -11.2,
+  "ZT": -13.2,
+  "R3": -11.1
+ },
+ "v11bus_lufs": {
+  "S1": -14.1,
+  "R1": -11.9,
+  "S2": -14.3,
+  "R2": -11.7,
+  "ZT": -13.4,
+  "R3": -11.5
+ },
+ "musik_limiter_gr": {
+  "p95": 0.02,
+  "p99": 0.36,
+  "max": 1.0
+ },
+ "musik_duck_db": {
+  "median_refrain": 0.84,
+  "max": 1.0
+ }
+}
