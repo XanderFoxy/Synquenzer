@@ -1,4 +1,4 @@
-# Stand 23.11.16:35 UTC
+# Stand 23.11.16:37 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -54,10 +54,11 @@ Blöcke: `xla-block.js` (/* IMP4-XLA-BEGIN/-END */ im Import-Kern sq-xla-src, vo
 Haken (je eine Stelle, Kommentar `/* IMP4 */`): notesIn → `imp4Stack` (nur Drums), toProject → Bericht-Zeile „DRUMS: n Schläge gleichzeitig …“ in `al.merged`,
 xlaHtml → `res.report.tracks.map(r=>imp4Rep(c,res,r))` vor dem vorhandenen Zeilen-Template.
 ## imps
-# IMPS – Stand
-- Bau: `python3 apply.py <eingang> <ausgang>` (Eingang md5 a7515b98…). Block `block.js` (/* IMPS-BEGIN/-END */ vor `function imp1Geo`), Haken `/* IMPS */` in imp1Run (Analyse, Teile) und imp1Geo (Auftakt-Zahl k).
-- Idee: führende Null-Proben vor der Analyse abschneiden (Analyse sieht genau denselben Inhalt), Ergebnis-Zeiten um z/sr verschieben; Auftakt k ab der ersten hörbaren Probe → Take probengleich.
-- In Arbeit: Kern-Test.
+# IMPS – Stand (fertig)
+Bau: `python3 apply.py <eingang> <ausgang>` (Eingang md5 a7515b98…, Ausgang hier `index.html`, md5 74e7f025a65581cc38f5ea7a9ef8d53d).
+Block `block.js` (/* IMPS-BEGIN/-END */ direkt vor `function imp1Geo`), Haken mit `/* IMPS */`:
+- imp1Run: Analyse über `impsAnalyse(c,…)` statt `imp1Analyse(c.x.slice(),…)`; Teile über `impsSeg(r,c)` statt `spk11Seg(r,c.x,c.sr)`.
+- imp1Geo: Auftakt-Zahl k ab der ersten hörbaren Probe (`zs = impsZs(c)`); ohne Stille vorn (zs = 0) Rechnung wie bisher.
 ## ke2
 # KE2 Stand (FERTIG, kleiner geliefert als bestellt)
 - Eingang 4.86.0 (md5 a7515b980ddc423e84f9d5cdf8f132a6). Ausgang `out.html` = `python3 apply.py <eingang> <ausgang>` (md5 851db9d4df97e9ec25438604d6dd730b).
