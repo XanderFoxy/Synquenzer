@@ -1,3 +1,11 @@
+## 4.85.0 — Video-Takt im Projekt, Video-Spur gut tippbar, Klang erkennen aufgeräumt · 23.11.2026
+
+- **Bildwechsel-Takt gehört zum Projekt:** Die Wahl „1 · 2 · 4 · 8 Takte / Musik folgt“ wird jetzt im Projekt gespeichert – gleiches Video auf jedem Gerät und nach dem Laden. Die letzte Wahl auf dem Gerät ist nur noch der Vorschlag für neue Projekte; alte Projekte verhalten sich wie bisher. Mit ↶ rücknehmbar.
+- **Video-Spur im Song gut tippbar:** Auf dem Handy ist die Video-Spur jetzt 40 px hoch – jeder Chip lässt sich sicher antippen, hochkant und quer. Passt der Name nicht, wird er mit „…“ gekürzt, nie übereinander.
+- **Klang erkennen – Kopf wie überall:** Das ✕ sitzt hochkant und quer rechts oben an derselben Stelle wie in den anderen Blättern; ein langer Aufnahmename wird mit „…“ gekürzt, der Kopf bleibt einzeilig.
+- **Arpeggiator und ■:** geprüft – nach ■ klingt kein Arp-Ton nach, auch mit Latch; nichts zu ändern.
+Tests: Video-Takt im Projekt 18/18 · Video-Spur 12/12 (16 Teile à 1 Takt, Tippziel 42 px statt 26/22 px) · Klang erkennen 6/6 + 26/26 · Arp und ■ geprüft (0 Stimmen 200 ms nach ■, auch mit Latch) · alles per Touch hochkant und quer auf der fertigen Datei · ohne Rückschritt: Gesang-Auftakt 9/9, Retro-Ansicht 11/11 + 1/1, Kompakt-Platte 10/10 · Rauchtest 7/7, 0 Seitenfehler, keine doppelten Namen, App 1,5 KB größer als 4.84.
+
 ## 4.84.0 — Gesang-Auftakt mit Fähnchen, Retro-Ansicht, Kompakt-Platte · 23.11.2026
 
 - **Gesang-Auftakt im Loop mit Fähnchen:** Singst du vor der 1 an, erkennt die App den Einsatz und legt den Auftakt von selbst ans Loop-Ende („↻ gefaltet“) – ein Atmer weit davor zählt nicht mit. Im **Gesang-Editor** zeigt ein grünes **Fähnchen** mit getönter Zone, wo der Auftakt beginnt: ziehen verschiebt den Start (1/16-Raster), antippen wählt **„▸ einmal · ↻ gefaltet · aus“**, ↶ macht es rückgängig. Hochkant liegt das Fähnchen beim Öffnen gut sichtbar vom Rand entfernt, Ziehen rollt die Ansicht nicht weg. Matrix, Song und Export nutzen denselben Startpunkt. Behoben: ↶ hat den Modus „einmal / gefaltet / aus“ verloren.
