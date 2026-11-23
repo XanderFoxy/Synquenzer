@@ -1,4 +1,4 @@
-# Stand 23.11.15:30 UTC
+# Stand 23.11.15:32 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -33,6 +33,8 @@
 # GES2 Stand
 - Start: Code gefunden: Stufensuche = segment() in vsDspMake (Worker-Text via toString!), Gesang-Editor = vx2Pick/vx2AnLead/vx3Lead.
 - Plan: (1) Glätten Gleiten+Vibrato in segment (Block innerhalb vsDspMake), (2) Anlauf, (3) Marken.
+- apply.py + seg-block.js gebaut (Block GES2-SEG in vsDspMake vor segment, 1 Haken vor minF). Kern-Test 17/18 -> 18/18 (Noten 56 -> 53, Soll 53).
+- Anlauf lagefest / Konsonant über stimmhafte Rahmen: nicht angefasst (VX3 macht Letzteres schon bis 3 Rahmen).
 ## kmp1
 fertig: KMP1 gebaut und getestet (index.html md5 b4943476ff3b5bc6951d20cbf9d37914, apply.py, block.js, kern.js, hoch.png, quer.png, KURZ.md, CHANGES.md)
 als Nächstes: nichts – bereit zur Übernahme
