@@ -1,4 +1,4 @@
-# Stand 23.11.16:03 UTC
+# Stand 23.11.16:05 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -7,10 +7,10 @@
 - (b) echt: alt 0 Stimmen nach Arp aus (Taste/Clip), neu 3/3; (e) echt: alt 4/33 falsch, neu 0/33
 ## drum1
 # DRUM1 – Stand
-- Kern-Test: kern.mjs (Lieder: songs.mjs, lieder-pruef.mjs, hart.mjs).
-- Basis 4.86.0: SUMME kick 515/528 +93 · snare 342/344 +82 · hihat 1546/1768 +1. Alte Lieder schon fast 100 % (SPK11B). Schwach: neues Lied „hart“
-  (harter Bass, mittenreicher Kick, Snare mit tiefem Körper): kick 72/80 +93, snare 48/48 +79.
-- Nächster Schritt: Drum-Ebenen dumpen (DUMP=dump), offline Vorlagen-Klassifikation entwickeln.
+- Kern-Test-Datei: **kern.mjs** (Browser, 428×926 Touch: Lied laden → Zerlegen schnell → Drum-Ebene → Kit-Erkennung; Lieder songs.mjs,
+  lieder-pruef.mjs, hart.mjs). Offline-Gegenprobe off.mjs auf dump/*.f32 (alt-hits.js = alter Code, neu-off.js = mit DRUM1).
+- Bau: apply.py <eingang> <ausgang> (md5 a7515b98…, Anker = Zeile `try{window.__spk11b=…}catch(e){}` 1×, Block block.js dahinter).
+- Basis 4.86.0: SUMME kick 515/528 +93 · snare 342/344 +82 · hihat 1546/1768 +1 (Fehler fast nur im Lied „hart“).
 ## ent1a
 # ENT1A Stand
 - Start: Analyse Arp/Stopp. stop() kehrt bei !R.playing früh zurück -> arpEndAll fehlt (Verdacht).
