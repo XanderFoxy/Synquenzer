@@ -1,2 +1,25 @@
-/bin/bash: line 2: /usr/bin/time: No such file or directory
-exit 127
+OK     Schritte 1 und 5 per Tipp gesetzt (GM 42)  [[0,42],[1,42]]
+OK     FOLGEN-Chip im Kopf: hält nach dem Bearbeiten, danach FOLGT  ["⏸︎ HÄLTgerade bearbeitetbearbeitet","⟶ FOLGT"]
+OK     Länge-Knopf zeigt 16, Trefferfläche >= 32 px  {"lenB":{"x":313.8125,"y":682.5,"l":291.8125,"t":664.5,"r":335.8125,"b":700.5,"w":44,"h":36},"lenTx":"16"}
+OK     Länge-Blatt öffnet per Tipp
+OK     ×2: Clip 2 Takte, Schritte verdoppelt, 2 Seiten  {"len":2,"n":[0,1,4,5],"pages":2}
+OK     FOLGEN: Ansicht blättert mit (Seite 1 und 2, passend zur Abspielmarke)  {"seiten":[0,1],"falsch":0,"von":316}
+OK     Länge 12 per Regler: lanes {42:{len:12}}, Knopf 12, Zellen 13–16 gedimmt  {"kt":"Länge 12 Schr.","lanes":{"42":{"len":12}},"btn":"12","dim":"0000000000001111","undo":null}
+OK     Polymetrie: HH ZU (12) auf Schritt 0/4 mod 12, Kick (DRUMS 16) auf 0 mod 16  {"hh":[0,4,12,16,24,28,36,40,48,52,60,64,72,76,84,88],"kick":[0,16,32,48,64,80]}
+OK     Lauflicht bleibt in Schritt 1–12, Seite 1  {"max":11,"n":625}
+OK     Lange drücken: Lock-Blatt mit Drum-Reglern (Tune/Decay/Pegel/Drive)  {"h":"HH ZU · Schritt 1","knobs":["Tune","Decay","Pegel","Drive"],"all":false}
+OK     Lock gesetzt: nur Schritt 1 Tune +7, Punkt an der Zelle  {"tt":"Tune +7 HT","lk":[7,0,0,0],"dot":"1000000000000000"}
+OK     Lock in der Wiedergabe: Schritt 1 mit Tune, Schritt 5 ohne  [[0,7],[4,0],[0,7],[4,0],[0,7],[4,0]]
+FEHLER Render: Lock hörbar (mit ↔ ohne deutlich anders, mit ↔ mit gleich)  {"mitOhne":-30.7,"mitMit":-139.3,"peak":"0.354"}
+OK     keine Seitenfehler (neu, hochkant)  []
+OK     quer: FOLGEN, Leiste, ✕, Länge, Pad-Klang ohne Überlappung, im Bild, Text nicht abgeschnitten  {"fol":{"x":838.8984375,"y":62.5,"l":797.796875,"t":46.5,"r":880,"b":78.5,"w":82.203125,"h":32},"x":{"x":904,"y":62.5,"l":884,"t":46.5,"r":924,"b":78.5,"w":40,"h":32},"bar":{"x":456.46875,"y":62.5,"l":119.140625,"t":44.5,"r":793.796875,"b":80.5,"w":674.65625,"h":36},"len":{"x":811.8125,"y":410.5,"l":789.8125,"t":392.5,"r":833.8125,"b":428.5,"w":44,"h":36},"pad":{"x":881.90625,"y":410.5,"l":843.8125,"t":392.5,"r":920,"b":428.5,"w":76.1875,"h":36},"lab":{"x":395.90625,"y":410.5,"l":6,"t":403.90625,"r":785.8125,"b":417.09375,"w":779.8125,"h":13.1875},"labOv":false,"vw":926,"vh":428}
+OK     quer: Schritt per Tipp
+OK     keine Seitenfehler (quer)  []
+OK     hochkant: FOLGEN, Titel, ✕, Länge, Pad-Klang ohne Überlappung, Text nicht abgeschnitten  {"fol":{"x":332.8984375,"y":74.5,"l":291.796875,"t":54.5,"r":374,"b":94.5,"w":82.203125,"h":40},"x":{"x":402,"y":74.5,"l":380,"t":54.5,"r":424,"b":94.5,"w":44,"h":40},"ht":{"x":147.8984375,"y":74.5,"l":10,"t":53,"r":285.796875,"b":96,"w":275.796875,"h":43},"len":{"x":313.8125,"y":682.5,"l":291.8125,"t":664.5,"r":335.8125,"b":700.5,"w":44,"h":36},"pad":{"x":383.90625,"y":682.5,"l":345.8125,"t":664.5,"r":422,"b":700.5,"w":76.1875,"h":36},"lab":{"x":146.90625,"y":682.5,"l":6,"t":675.90625,"r":287.8125,"b":689.09375,"w":281.8125,"h":13.1875},"labOv":false,"titOv":false}
+OK     keine Seitenfehler (hochkant Lage)  []
+OK     ohne Bedienung: Clips gleich wie Basis
+OK     ohne Bedienung: Schläge (Spur, Pad, Schritt) gleich wie Basis  {"n":31}
+OK     ohne Bedienung: Einstellungen gleich (FOLGEN-Standard an)  ["null","null"]
+OK     keine Seitenfehler (Basis/neu)  [[],[]]
+FEHLER 1/23
+exit 1 (79 s)

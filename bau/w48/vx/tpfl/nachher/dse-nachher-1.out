@@ -1,0 +1,11 @@
+OK     Schritte 1 und 5 per Tipp gesetzt (GM 42)  [[0,42],[1,42]]
+OK     FOLGEN-Chip im Kopf: hält nach dem Bearbeiten, danach FOLGT  ["⏸︎ HÄLTgerade bearbeitetbearbeitet","⟶ FOLGT"]
+OK     Länge-Knopf zeigt 16, Trefferfläche >= 32 px  {"lenB":{"x":313.8125,"y":682.5,"l":291.8125,"t":664.5,"r":335.8125,"b":700.5,"w":44,"h":36},"lenTx":"16"}
+OK     Länge-Blatt öffnet per Tipp
+OK     ×2: Clip 2 Takte, Schritte verdoppelt, 2 Seiten  {"len":2,"n":[0,1,4,5],"pages":2}
+OK     FOLGEN: Ansicht blättert mit (Seite 1 und 2, passend zur Abspielmarke)  {"seiten":[0,1],"falsch":0,"von":317}
+OK     Länge 12 per Regler: lanes {42:{len:12}}, Knopf 12, Zellen 13–16 gedimmt  {"kt":"Länge 12 Schr.","lanes":{"42":{"len":12}},"btn":"12","dim":"0000000000001111","undo":null}
+OK     Polymetrie: HH ZU (12) auf Schritt 0/4 mod 12, Kick (DRUMS 16) auf 0 mod 16  {"hh":[0,4,12,16,24,28,36,40,48,52,60,64,72,76,84,88],"kick":[0,16,32,48,64,80]}
+OK     Lauflicht bleibt in Schritt 1–12, Seite 1  {"max":11,"n":634}
+OK     Lange drücken: Lock-Blatt mit Drum-Reglern (Tune/Decay/Pegel/Drive)  {"h":"HH ZU · Schritt 1","knobs":["Tune","Decay","Pegel","Drive"],"all":false}
+OK     Lock gesetzt: nur Schritt 1 Tune +7, Punkt an der Zelle  {"tt":"Tune +7 HT","lk":[7,0,0,0],"dot":"1000000000000000"}
