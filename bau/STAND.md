@@ -1,4 +1,4 @@
-# Stand 23.11.15:38 UTC
+# Stand 23.11.15:40 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -61,6 +61,7 @@ als Nächstes: nichts – bereit zur Übergabe
 - Start: Eingang 4.85.0 geprüft (md5 9c7f63cf…). Keine echten Takes vorhanden (realvox fehlt) -> synthetische Testsignale.
 - Plan: (1) Klicks in lauten tiefen Vokalen: puls-synchroner Vergleich in clickScan.test; (2) Plopps messen; (3) Raumton nur wenn Zeit.
 - 20 min: Test-Gerüst w/ (gen.mjs synth. Gesang, kt.mjs Klick-Test) fertig; Basis: Treffer 76–80/80, Fehlalarme sauberer tiefer Take A2: 3 (letzter Stimmlippen-Puls am Notenende). block.js Entwurf.
+- FERTIG (Endfassung md5 a40c87ea50c3b8dcdbb75647e1e72158 = out.html aus apply.py):
 ## werkzeug
 # STAND werkzeug (Grundlage)
 - [ ] pflicht.py
