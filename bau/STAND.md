@@ -1,4 +1,4 @@
-# Stand 23.11.16:13 UTC
+# Stand 23.11.16:15 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -77,6 +77,8 @@ als Naechstes: nichts – bereit zur Uebernahme
 - 4 Haken (/*TON2*/) + Block TON2-BEGIN/-END vor tkLoad:
   1. tkPcm: Stücke mit Vorab-Fenster (TON2_W=6) parallel anfordern, weiter in Reihenfolge einsetzen (gilt für alle Leser von tkPcm).
   2. tkLoad: ton2Load = tkPcm + gemerkte Analyse (<take>:lv1 im Audio-Speicher, ArrayBuffer: Kopf-JSON + Float32-Hüllkurve nur in Begrenzer-Abschnitten) gleichzeitig.
+## trp2
+- 16:14 apply.py + block.js gebaut (2 Haken: clipNoteFor, Takt-Planung), Test folgt
 ## vl3
 fertig: VL3 gebaut + Kern-Test 10/10 grün, KURZ.md + CHANGES.md geschrieben (Ausgang md5 9bb6ee81)
 als Nächstes: nichts – bereit zur Übergabe
