@@ -1,0 +1,18 @@
+(A) Gesang→Noten – Einsatz-Fehler (ms), je Phrase 5 Lagen im 5-ms-Raster (0/1/2/3/4 ms Vorlauf)
+  3 Töne nach Pause: Einsätze 15 | vorher mittel 4.7 max 9.0 Streuung über Lage 6.0 | nachher mittel 0.9 max 1.1 Streuung 0.0
+  Konsonant vor Vokal (4 Silben): Einsätze 20 | vorher mittel 2.0 max 5.0 Streuung über Lage 6.0 | nachher mittel 2.9 max 3.8 Streuung 0.0
+  weicher Einsatz 60 ms: Einsätze 10 | vorher mittel 6.0 max 9.0 Streuung über Lage 7.0 | nachher mittel 1.7 max 2.1 Streuung 0.1
+  harter Einsatz 5 ms, tief: Einsätze 15 | vorher mittel 4.3 max 9.0 Streuung über Lage 9.0 | nachher mittel 0.4 max 0.8 Streuung 0.0
+  Einsatz mit Tremolo ±6 dB: Einsätze 10 | vorher mittel 5.0 max 9.0 Streuung über Lage 7.0 | nachher mittel 1.3 max 2.0 Streuung 0.4
+  GESAMT A: 70 Einsätze, mittl. Fehler vorher 4.1 ms (max 9.0) → nachher 1.5 ms (max 3.8); größte Streuung über die Lage 9.0 → 0.4 ms
+(B) Marken im Gesang-Editor: Soll-Einsätze = jeder neue Ton/Vokal/Wiederanschlag; Treffer = Soll-Einsatz mit Marke (±80 ms, Konsonant-Beginn zählt), Fehlmarken = Marken mitten in einem gehaltenen Ton
+  OK     gehaltener Vokal ±6 dB Tremolo 4 Hz: Einsätze 1 | vorher Treffer 1 Fehlmarken 0 (Marken 2) | nachher Treffer 1 Fehlmarken 0 (Marken 2)
+  FEHLER gehaltener Vokal ±6 dB unregelmäßig + Vibrato: Einsätze 1 | vorher Treffer 1 Fehlmarken 25 (Marken 26) | nachher Treffer 1 Fehlmarken 1 (Marken 2)
+  FEHLER gehaltener Vokal ±6 dB 6 Hz, tief: Einsätze 1 | vorher Treffer 1 Fehlmarken 11 (Marken 13) | nachher Treffer 1 Fehlmarken 1 (Marken 3)
+  OK     gehaltener Vokal ±4 dB 5 Hz, hoch: Einsätze 1 | vorher Treffer 1 Fehlmarken 2 (Marken 4) | nachher Treffer 1 Fehlmarken 0 (Marken 2)
+  OK     3 Silben mit Konsonant, Tremolo ±6 dB: Einsätze 3 | vorher Treffer 3 Fehlmarken 4 (Marken 8) | nachher Treffer 3 Fehlmarken 0 (Marken 4)
+  FEHLER Legato 60-62-64 mit Tremolo (Tonhöhe): Einsätze 3 | vorher Treffer 3 Fehlmarken 2 (Marken 6) | nachher Treffer 3 Fehlmarken 1 (Marken 5)
+  OK     gleicher Ton, Vokalwechsel a-i-u: Einsätze 3 | vorher Treffer 3 Fehlmarken 0 (Marken 4) | nachher Treffer 3 Fehlmarken 0 (Marken 4)
+  OK     Silben mit Pausen: Einsätze 3 | vorher Treffer 3 Fehlmarken 0 (Marken 5) | nachher Treffer 3 Fehlmarken 0 (Marken 5)
+  OK     Wiederanschlag gleicher Ton (Tal −25 dB): Einsätze 2 | vorher Treffer 2 Fehlmarken 0 (Marken 3) | nachher Treffer 2 Fehlmarken 0 (Marken 3)
+  GESAMT B: Phrasen richtig 4/9 → 6/9; Treffer 18 → 18 von 18; Fehlmarken 44 → 3; Marken gesamt 71 → 30; alte Takes (ohne g3) bitgleich 9/9

@@ -60,7 +60,7 @@ async function applyWait(p, id) {
   const t0 = Date.now(); while (Date.now() - t0 < 40000) {
     const r = await p.run(async o => { try { window.__vr1.proc(window.__tk0.id, null); } catch (e) {} const v = SYNQUENZER.vr1Ver(window.__tk0.id); if (!v.ready || v.busy || v.renders <= o) return null;
       const id = window.__tk0.id, c = window.__vr1.st.ver.get(id), y = c.buf.getChannelData(0), x = tkBuffer(id).getChannelData(0), M = window.__vxm, sr = c.buf.sampleRate;
-      return {hash: M.h(y), same: M.h(y) === M.h(x), click: M.click(y, o.C), plop: M.plop(y, o.P, sr), hum: M.hum(y, sr), diff: M.diff(y, x), cl: S.takes[id].cl | 0, vr1: JSON.parse(JSON.stringify(S.takes[id].vr1)), ap: document.querySelector('[data-vr1a="ap"]').textContent}; }, {C: T.clicks, P: T.plops, n: r0});
+      return {hash: M.h(y), same: M.h(y) === M.h(x), click: M.click(y, o.C), plop: M.plop(y, o.P, sr), hum: M.hum(y, sr), diff: M.diff(y, x), weg: (() => { const w = c.wg; if (!w) return null; let e = 0; for (let i = 0; i < w.q.length; i++) { const v = w.q[i] / w.s; e += v * v; } return e / w.q.length; })(), cl: S.takes[id].cl | 0, vr1: JSON.parse(JSON.stringify(S.takes[id].vr1)), ap: document.querySelector('[data-vr1a="ap"]').textContent}; }, {C: T.clicks, P: T.plops, n: r0});
     if (r) return r; await p.waitForTimeout(300);
   }
   return null;
@@ -100,13 +100,14 @@ async function applyWait(p, id) {
     if (FOTO) { await probe(pa); await tapSel(pa, '[data-vr1a="more"]'); await center(pa, '.vr1'); await pa.screenshot({path: path.join(D, 'foto-vorher.png')}); }
     else await probe(pa);
     const s1 = await probe(pn);
+    if (FOTO) { await tapSel(pn, '[data-vr1a="more"]'); await center(pn, '.vr1'); await pn.screenshot({path: path.join(D, 'foto-nachher.png')}); await tapSel(pn, '[data-vr1a="more"]'); }
     const G = await pn.run(async () => { const p = UI.pop.el, r = p.querySelector('input.vxrrr[data-vxrr="g"]'), lab = r && r.closest('.clrow').querySelector('.cllab'); const b = r && r.getBoundingClientRect();
       return {da: !!r, wert: r && +r.value, text: lab && lab.textContent, h: b && Math.round(b.height), schritte: [...p.querySelectorAll('input.vxrrr')].length}; });
     ok(G.da && G.wert === 100 && G.text === 'Gesamt 100 %' && G.h >= 32 && G.schritte === 8, 'Blatt: Regler „Gesamt 100 %“ + 7 Schritt-Regler, Trefferhöhe ≥ 32 px', G);
     const aA = await applyWait(pa), aN = await applyWait(pn);
     ok(aA && aN && aA.hash === aN.hash && !aN.vr1.vxrr && JSON.stringify(aA.vr1) === JSON.stringify(aN.vr1) && aA.cl === aN.cl, 'App: Anwenden mit Standard-Reglern = 4.88 (Fassung bitgleich, gespeicherter Stand gleich)', {alt: aA && aA.hash, neu: aN && aN.hash, cl: [aA && aA.cl, aN && aN.cl]});
     // B2: Gesamt per Tipp auf 0 % → Anwenden → Fassung = Roh (Säubern bleibt aus)
-    await pn.run(async () => { const id = window.__tk0.id; clSet(id, 0); await wait(200); });
+    await pn.run(async () => { const id = window.__tk0.id; clSet(id, 0); await wait(200); for (let i = 0; i < 200; i++) { try { window.__vr1.proc(id, null); } catch (e) {} const v = SYNQUENZER.vr1Ver(id); if (v.ready && !v.busy) break; await wait(150); } });
     const v0 = await tapRange(pn, 'input.vxrrr[data-vxrr="g"]', 0);
     const lab0 = await pn.run(async () => ({ap: document.querySelector('[data-vr1a="ap"]').textContent, lab: document.querySelector('b.vxrrv[data-vxrr="g"]').textContent}));
     ok(v0 === 0 && lab0.lab === '0 %' && lab0.ap === 'Anwenden', 'Tipp auf den Regler: Gesamt 0 %, Knopf zeigt wieder „Anwenden“', {wert: v0, lab0});
@@ -116,7 +117,7 @@ async function applyWait(p, id) {
     await pn.run(async () => { clSet(window.__tk0.id, 0); await wait(200); });
     const v50 = await tapRange(pn, 'input.vxrrr[data-vxrr="g"]', 50);
     const g5 = await applyWait(pn);
-    ok(v50 === 50 && g5 && g5.click > aN.click + 3 && g5.click < cn.raw.click - 1 && g5.diff > 0.1 * aN.diff && g5.diff < 0.9 * aN.diff && g5.cl === 30, 'App Gesamt 50 %: Fassung messbar zwischen roh und voll (Säubern 60 → 30 %)', g5 && {wert: v50, klick: [cn.raw.click, g5.click, aN.click], abweichungAnteil: +(g5.diff / aN.diff).toFixed(3), cl: g5.cl});
+    ok(v50 === 50 && g5 && g5.click > aN.click + 3 && g5.click < cn.raw.click - 1 && g5.weg > 0.1 * aN.weg && g5.weg < 0.6 * aN.weg && g5.cl === 30, 'App Gesamt 50 %: Fassung messbar zwischen roh und voll (Entferntes kleiner, Säubern 60 → 30 %)', g5 && {wert: v50, klick: [cn.raw.click, g5.click, aN.click], entferntesAnteil: +(g5.weg / aN.weg).toFixed(3), cl: g5.cl});
     // B4: Mehr ▾ → Klicks 0 % (Gesamt zurück auf 100 %)
     await tapRange(pn, 'input.vxrrr[data-vxrr="g"]', 100);
     await pn.run(async () => { clSet(window.__tk0.id, 0); await wait(200); });
@@ -136,7 +137,6 @@ async function applyWait(p, id) {
       return {zeilen: rows.length, bad, popIn: pr.left >= 0 && pr.right <= innerWidth + 1, scrollX: document.documentElement.scrollWidth > innerWidth + 1}; });
     const g1 = await geo();
     ok(g1.bad.length === 0 && g1.popIn && !g1.scrollX && g1.zeilen >= 10, 'Hochkant 428×926: alles im Rahmen, nichts überlappt/abgeschnitten', g1);
-    if (FOTO) { await center(pn, '.vr1'); await pn.screenshot({path: path.join(D, 'foto-nachher.png')}); }
     await pn.setViewportSize({width: 926, height: 428}); await pn.waitForTimeout(600); await sheet(pn); await pn.run(async () => { await wait(300); });
     if (!(await pn.run(async () => { const m = document.querySelector('.vr1more'); return m && !m.hidden; }))) await tapSel(pn, '[data-vr1a="more"]');
     const g2 = await geo();
