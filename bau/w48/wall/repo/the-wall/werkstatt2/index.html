@@ -909,18 +909,21 @@ function dFertig(e){const m=e.data,j=DLAEUFT;DLAEUFT=null;
 function dAbwarten(P,von,bis,prio,ms,gruppe){const ps=[];let j=stueckBei(P,von);if(j<0)j=-1-j;
   for(;j<P.length&&P[j].d0<bis;j++)if(gedehnt(P[j]))ps.push(dehnungP(P[j],prio,gruppe));
   if(!ps.length)return Promise.resolve();return Promise.race([Promise.all(ps),new Promise(r=>setTimeout(r,ms))])}
-function laufPos(lauf){if(!lauf||!AE.ctx)return null;const sp=lauf.spuren[0],now=hoerZeit();
-  for(let i=sp.segs.length-1;i>=0;i--){const s=sp.segs[i];if(now>=s.ct0-1e-4)return now<=s.ct0+s.dur+.05?s.tl0+(now-s.ct0):s.tl0+s.dur}return lauf.tl0}
+function laufPos(lauf){if(!lauf||!AE.ctx)return null;return laufPosBei(lauf,hoerZeit())}
+// Liedzeit, die zur Kontext-Zeit c gespielt wird (Lauf 7: zum Neu-Ansetzen die Zeit des Ansetzens, nicht die gerade gehörte –
+// sonst lag die Stimme nach A/B oder einem Zug beim Spielen um die Ausgabe-Latenz + 12 ms hinter der Musik)
+function laufPosBei(lauf,c){const sp=lauf.spuren[0];
+  for(let i=sp.segs.length-1;i>=0;i--){const s=sp.segs[i];if(c>=s.ct0-1e-4)return c<=s.ct0+s.dur+.05?s.tl0+(c-s.ct0):s.tl0+s.dur}return lauf.tl0}
 function vorhoerPos(){return VOR&&VOR.an?laufPos(VOR):null}
 // Stimme neu ansetzen (Hören umgeschaltet, Zug während des Spielens)
-function stimmeNeu(){if(!HAUPT||!HAUPT.an)return;const c=AE.ctx,now=c.currentTime,t=laufPos(HAUPT);const alt=HAUPT.spuren[0];
+function stimmeNeu(){if(!HAUPT||!HAUPT.an)return;const c=AE.ctx,now=c.currentTime,t=laufPosBei(HAUPT,now+.012);const alt=HAUPT.spuren[0];
   for(const n of alt.nodes){try{n.g.gain.cancelScheduledValues(now);n.g.gain.setValueAtTime(n.g.gain.value,now);n.g.gain.linearRampToValueAtTime(0,now+.015);n.s.stop(now+.02)}catch(e){}}
   HAUPT.hoeren=Z.hoeren;const sp=spurNeu(HAUPT,'stimme',t,now+.012);sp.letzt=null;sp.wrap=true;HAUPT.spuren[0]=sp;laufTick(HAUPT)}
 function musikSchalten(){if(!HAUPT||!HAUPT.an)return;const c=AE.ctx,now=c.currentTime;const i=HAUPT.spuren.findIndex(s=>s.art==='musik');
   if(i>=0){const sp=HAUPT.spuren[i];for(const n of sp.nodes){try{n.g.gain.setTargetAtTime(0,now,.005);n.s.stop(now+.05)}catch(e){}}HAUPT.spuren.splice(i,1)}
-  if(Z.musik){const t=laufPos(HAUPT);const sp=spurNeu(HAUPT,'musik',t,now+.03);sp.wrap=true;HAUPT.spuren.push(sp)}
+  if(Z.musik){const t=laufPosBei(HAUPT,now+.03);const sp=spurNeu(HAUPT,'musik',t,now+.03);sp.wrap=true;HAUPT.spuren.push(sp)}
   const k=HAUPT.spuren.findIndex(s=>s.art==='klick');if(k>=0){for(const n of HAUPT.spuren[k].nodes){try{n.s.stop()}catch(e){}}HAUPT.spuren.splice(k,1)}
-  if(Z.klick){const t=laufPos(HAUPT);HAUPT.spuren.push(spurNeu(HAUPT,'klick',t,now+.03))}laufTick(HAUPT)}
+  if(Z.klick){const t=laufPosBei(HAUPT,now+.03);HAUPT.spuren.push(spurNeu(HAUPT,'klick',t,now+.03))}laufTick(HAUPT)}
 async function bereitFuer(t,hoeren,musik){const ps=[];const P=planFuer(hoeren),j=stueckBei(P,t),p=j>=0?P[j]:P[Math.min(P.length-1,-1-j)];
   if(p){const k=p.k&&p.k!==1?dehnQuelle(p):stueckIndex(p.stem,clamp(qz(p,t),0,DAUER-.1));ps.push(ladeStueck(p.stem,k))}
   if(musik)ps.push(ladeStueck('mix',stueckIndex('mix',clamp(t,0,DAUER-.1))));await Promise.all(ps)}

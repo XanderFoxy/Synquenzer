@@ -1,0 +1,16 @@
+OK     T1 Basis: Klangkorn-Klang zeigt die Wavetable-Seite (Ausgangslage)  ["WT","STIMME"]
+OK     T2 neu: Klangkorn-Klang zeigt Seite KORN mit 15 Reglern + Modus  {"subs":["KORN","STIMME"],"knobs":15}
+OK     T3 Öffnen ändert den Klang nicht (p.wt.h gleich)
+OK     T4 hochkant: im Bild, ≥ 32 px, keine Überlappung, nichts abgeschnitten  {"n":15,"out":[],"small":[],"ov":[],"cut":[],"vis":15,"body":{"h":454,"sh":454,"ch":454}}
+OK     T5 quer: im Bild, ≥ 32 px, keine Überlappung, nichts abgeschnitten  {"n":15,"out":[],"small":[],"ov":[],"cut":[],"vis":15,"body":{"h":199,"sh":199,"ch":199}}
+OK     T6 Touch-Ziehen Breite + Korngröße ändert die Werte (Anzeige folgt)  {"cmp":[[0.5,0.9300000000000004],[0.08,0.4301769032570436]],"txt":["93 %","430 ms"]}
+OK     T7 Render-Vergleich: Klang ändert sich (Seitenanteil Breite, Spektrum Korngröße)  {"br":[0.5,0.9300000000000004],"gs":[0.08,0.4301769032570436],"side":[0.1438,0.3633],"rms":[0.0391,0.0391],"specDist":0.125,"kind":"worklet"}
+OK     T8 live: gehaltener Ton – Spur-Engine bekommt die neuen Werte  {"vor":{"br":0.5,"gs":0.08,"v":1},"nach":{"br":0.9300000000000004,"gs":0.4301769032570436,"v":1}}
+OK     T9 Modus Schleife per Tipp: art frz, Korn-Regler ruhen, Klang anders; ↶ stellt alles her  {"frz":{"art":"frz","inert":["kks.gs","kks.dc","kks.form","kks.spt"]},"d":0.35,"undo":true}
+OK     T10 andere Klänge: VA- und WT-Seiten wie in der Basis  {"va":["OSZ 1","OSZ 2","OSZ 3","MIX","STIMME"],"wt":["WT","STIMME"]}
+OK     T11 spk-hoch: Basis ohne Knopf, neu Knopf als eigene Zeile im Aktionsfeld, sauber  {"basis":{"ly":180,"mn":446},"neu":{"n":8,"ab":{"x":6,"y":750,"w":416,"h":44,"inAc":true,"inVp":true,"dis":false,"cut":false},"ov":[],"small":[],"cut":[],"ly":129,"mn":446}}
+OK     T12 spk-hoch: Tipp „Als Klangkorn“ holt die Quelle, Blatt offen  {"dd":true,"src":true,"mode":"korn"}
+OK     T11 spk-quer: Basis ohne Knopf, neu Knopf als eigene Zeile im Aktionsfeld, sauber  {"basis":{"ly":284,"mn":292},"neu":{"n":7,"ab":{"x":667,"y":382,"w":255,"h":44,"inAc":true,"inVp":true,"dis":false,"cut":false},"ov":[],"small":[],"cut":[],"ly":236,"mn":292}}
+OK     T12 spk-quer: Tipp „Als Klangkorn“ holt die Quelle, Blatt offen  {"dd":true,"src":true,"mode":"korn"}
+OK     T13 keine Seitenfehler/console.error  [[],[]]
+ALLE OK
