@@ -1,7 +1,7 @@
-# Stand 23.11.12:25 UTC
+# Stand 23.11.12:27 UTC
 ## kmp1
-fertig: gebaut, Kern-Test läuft (Klang-Variation ◆ war Ursache für "keine Änderung" im Test, UI.vvOff im Test)
-als Nächstes: Pflicht-Prüfung, KURZ.md, CHANGES.md
+fertig: KMP1 gebaut und getestet (index.html md5 b4943476ff3b5bc6951d20cbf9d37914, apply.py, block.js, kern.js, hoch.png, quer.png, KURZ.md, CHANGES.md)
+als Nächstes: nichts – bereit zur Übernahme
 ## mlg3
 fertig: MLG3 gebaut und getestet (index.html, apply.py, block.js, kern.js, quer.js, KURZ.md, CHANGES.md)
 als Naechstes: nichts – bereit zur Uebernahme
