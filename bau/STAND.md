@@ -1,4 +1,4 @@
-# Stand 23.11.17:45 UTC
+# Stand 23.11.17:46 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -94,8 +94,11 @@ Block `block.js` (/* IMPS-BEGIN/-END */ direkt vor `function imp1Geo`), Haken mi
   Ansicht, Texte, Erkennung (Welle, Filter, Suche) bitgleich; nur die angezeigten Gewissheits-Werte/Wörter der Engine-3-Karte ändern sich.
 - Kern-Test: `w/kt.mjs` (Node; Kern direkt aus der HTML über `w/kern.mjs`, Testtöne per renderH der App-Engine 3, Mikro-Simulation; Vorlagen `w/tpl.json` aus `w/tpl.cjs`),
 ## kks
-# KKS – Stand (in Arbeit)
-Bau: `python3 apply.py <eingang 4.88.0> <ausgang>`; Block `block.js` (KKS-BEGIN/-END vor `function spk7NormWt`), Haken in pageWt, subTabsFor (Reiter KORN), SPK7_ROW=true.
+# KKS – Stand (fertig)
+Bau: `python3 apply.py <eingang> <ausgang>` (Eingang 4.88.0, md5 695af0504463a6385e21dc94e55b00c9; Ausgang hier `index.html`, md5 bd0d0ab9a14eeb310630fad54c2f67bf).
+Änderungen (je Anker genau 1×):
+1. Block `block.js` (`/* KKS-BEGIN … KKS-END */`, JS + kleines CSS per `<style id="kks-css">`) direkt vor `function spk7NormWt(w,base){` (gleicher Skript-Block wie der Klangkorn-Kern).
+2. `function pageWt(pg,i){` + Haken `if(typeof kksPage==='function'&&kksPage(pg,i))return;/*KKS*/` – Klangkorn-Klang (engine wt mit `p.wt.h.take`) → Seite KORN.
 ## kmp1
 fertig: KMP1 gebaut und getestet (index.html md5 b4943476ff3b5bc6951d20cbf9d37914, apply.py, block.js, kern.js, hoch.png, quer.png, KURZ.md, CHANGES.md)
 als Nächstes: nichts – bereit zur Übernahme

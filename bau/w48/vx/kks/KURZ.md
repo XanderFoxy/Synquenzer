@@ -1,0 +1,1 @@
+KKS: Klangkorn-Klänge bekommen im Klang-Editor die Seite KORN (Modus + 15 echte Klangkorn-Regler, live wirksam); Knopf „Als Klangkorn“ als 3. Zeile im Spektral-Aktionsfeld eingeschaltet – Kern-Test 15/15 OK.
