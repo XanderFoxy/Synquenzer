@@ -1,4 +1,4 @@
-# Stand 23.11.18:06 UTC
+# Stand 23.11.18:08 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -65,6 +65,10 @@ Block `block.js` (/* DSE-BEGIN/-END */ direkt hinter `Object.assign(SYNQUENZER,{
 - 13:00 Sonde vorher: ✕/Kopf/Reiter sichtbar, ≥44 px, keine Überlappung; ↶ nach Übernehmen sichtbar. Mängel: ✕ 6 px (hoch) bzw. 25 px (quer) anders als in den übrigen Blättern; langer Name 2 Zeilen.
 - apply.py geschrieben (3 Haken), jetzt Test.
 - 13:05 FERTIG: Sonde nachher 24/24 OK (hoch+quer), Pflichtprüfungen ok. Ausgang: ausgang.html (md5 ffc7f9a61c3ee41c671ff55ba2124d13).
+## farb
+# FARB – Stand
+- apply.py + block.css fertig (CSS-Block nach der Alias-Zeile --t9..--t24). Ausgang index.html gebaut.
+- Offen: Pflicht-Pruefung, Browser-Kern-Test, Fotos.
 ## fok4
 # FOK4 – Stand: fertig (gebaut, gemessen; Grenzen unten)
 Ausgang `index.html` md5 496e9d9d146f8bd7d48c2e61f0e04caf (Eingang 4.88.0 695af0504463a6385e21dc94e55b00c9).
@@ -155,6 +159,8 @@ Ausgang `index.html` md5 2b2ae4e36cd18528b270f499a3465ae3 (Eingang 695af0504463a
 apply.py ersetzt den ganzen SPKV-Block (`alt.js`, 1 Treffer, liegt in spk1DspMake → Worker) durch `block.js` (SPKV2-BEGIN/-END,
 gleicher Funktionsname spkvFix, kein neuer Top-Level-Name). `SPKV2_DEV=1` baut eine Dev-Fassung mit Debug-Haken (nur für test/dev-spkv2.mjs, Hauptfaden).
 
+## szn
+# SZN – Stand: apply.py/block.js/block.css gebaut, Test folgt
 ## ton1
 # TON1 – Stand (fertig)
 - Ausgang: index.html = python3 apply.py ../rel-4850/index.html index.html (md5 125767aed0f89918371d0729d07a6f82).

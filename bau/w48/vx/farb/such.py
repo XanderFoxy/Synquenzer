@@ -1,33 +1,41 @@
-import random, math
+# FARB: schnelle Suche 8 neuer Spurfarben (OKLab-Abstand maximieren, Helligkeit/Saettigung wie 1-8)
+import random, math, numpy as np
 from farbwahl import *
-random.seed(7)
-def cand():
-    while True:
-        L=random.uniform(0.71,0.85); C=random.uniform(0.12,0.20); H=random.uniform(0,360)
-        rgb=fromlab(L,C*math.cos(math.radians(H)),C*math.sin(math.radians(H)))
-        if all(-0.001<=c<=1.001 for c in rgb):
-            rgb=[delin(max(0,min(1,c))) for c in rgb]
-            rgb=hx(tohex(rgb))
-            if cr(rgb,hx(BG))>=7.2: return rgb
-P=[cand() for _ in range(6000)]
-O=[hx(h) for h in OLD]; U=[hx(UI['amber']),hx(UI['rec']),hx(UI['play'])]
+random.seed(11)
+P=[];seen=set()
+while len(P)<4000:
+    L=random.uniform(0.72,0.85); C=random.uniform(0.12,0.20); H=random.uniform(0,360)
+    rgb=fromlab(L,C*math.cos(math.radians(H)),C*math.sin(math.radians(H)))
+    if not all(-0.001<=c<=1.001 for c in rgb): continue
+    h=tohex([delin(max(0,min(1,c))) for c in rgb])
+    if h in seen: continue
+    if cr(hx(h),hx(BG))<7.2: continue
+    seen.add(h);P.append(h)
+lab=np.array([oklab(hx(h)) for h in P])
+O=np.array([oklab(hx(h)) for h in OLD]); U=np.array([oklab(hx(UI[k])) for k in ('amber','rec','play')])
+D=np.sqrt(((lab[:,None,:]-lab[None,:,:])**2).sum(-1))
+dO=np.sqrt(((lab[:,None,:]-O[None])**2).sum(-1)).min(1)
+dU=np.sqrt(((lab[:,None,:]-U[None])**2).sum(-1)).min(1)
+base=np.minimum(dO,1.5*dU)
 def score(S):
-    allc=O+S; m=min(dist(a,b) for i,a in enumerate(allc) for b in allc[i+1:])
-    mu=min(dist(a,u) for a in S for u in U)
-    return min(m, mu*1.6)
+    s=base[S].min()
+    for i in range(len(S)):
+        for j in range(i+1,len(S)): s=min(s,D[S[i],S[j]])
+    return s
 best=None;bs=-1
-for rep in range(30):
-    S=random.sample(P,8)
-    for it in range(25):
+for rep in range(60):
+    S=random.sample(range(len(P)),8)
+    for it in range(30):
         imp=False
         for k in range(8):
-            cur=score(S)
-            for c in random.sample(P,400):
-                T=S[:k]+[c]+S[k+1:]; s=score(T)
-                if s>cur: S=T;cur=s;imp=True
+            rest=S[:k]+S[k+1:]
+            rs=score(rest)
+            v=np.minimum(base,D[:,rest].min(1)); v=np.minimum(v,rs)
+            c=int(v.argmax())
+            if v[c]>score(S)+1e-9: S[k]=c;imp=True
         if not imp: break
     s=score(S)
-    if s>bs: bs=s;best=S;print(rep,round(s,4),[tohex(x) for x in S],flush=True)
-print('BEST',[tohex(x) for x in best])
-for x in sorted(best,key=lambda r:lch(r)[2]):
-    L,C,H=lch(x); print(tohex(x),'L=%.3f C=%.3f H=%.0f cr=%.2f'%(L,C,H,cr(x,hx(BG))))
+    if s>bs: bs=s;best=list(S);print(rep,round(s,4),[P[x] for x in S],flush=True)
+print('BEST',round(bs,4))
+for x in sorted(best,key=lambda r:lch(hx(P[r]))[2]):
+    L,C,H=lch(hx(P[x])); print(P[x],'L=%.3f C=%.3f H=%.0f cr=%.2f dOld=%.3f dUI=%.3f'%(L,C,H,cr(hx(P[x]),hx(BG)),dO[x],dU[x]))
