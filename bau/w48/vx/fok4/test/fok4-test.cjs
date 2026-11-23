@@ -55,6 +55,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     // Fall G: Nur Gefundenes
     await mark(); await p.evaluate(() => __fokus1.mode('gef')); await ruhe();
     out.G = Object.assign(await lt(), { hash: await img() });
+    out.fok4 = await p.evaluate(() => typeof FOK4 === 'object' ? { nNew: FOK4.nNew, nSub: FOK4.nSub, nSame: FOK4.nSame, nCol: FOK4.nCol, nWait: FOK4.nWait, nDrop: FOK4.nDrop, err: FOK4.err, on: FOK4.on } : null);
     await ctx.close(); return out;
   }
   const res = {}; for (const w of names) res[w] = [];

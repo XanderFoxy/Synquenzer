@@ -69,7 +69,7 @@ async function lauf(which) {
       const fr = t => { let bi = 0, bd = 1e9; for (let i = 0; i < g.cen.length; i++) { const dd = Math.abs(g.cen[i] / sr - t); if (dd < bd) { bd = dd; bi = i; } } return bi; };
       out.dbg = {fit: g.fit, useG: g.useG, ks: g.ks.length};
       out.noten = B.map((q, j) => { const i = fr(q.t), st = Math.round((q.t - t0) / st0) % 16, kk = K.some(t => Math.abs(t - q.t) < 0.03);
-        const row = []; for (let u = i - 2; u <= i + 3; u++) row.push([u - i, +g.flux[u].toFixed(1), Math.round(g.bF[u]), g.sgA[u], +g.kW[u].toFixed(2), g.aT[u], g.hm[u], Math.round(g.f0[u]), g.ks.includes(u) ? 'K' : '', g.rs ? +g.rs[u].toFixed(2):'']);
+        const row = []; for (let u = i - 2; u <= i + 3; u++) row.push([u - i, +g.flux[u].toFixed(1), Math.round(g.bF[u]), g.sgA[u], +g.kW[u].toFixed(2), g.aT[u], g.hm[u], Math.round(g.f0[u]), g.ks.includes(u) ? 'K' : '', g.rs ? +g.rs[u].toFixed(2):'', g.sfl ? +g.sfl[u].toFixed(1) : '']);
         return {j, st, m: q.m, f: +q.f.toFixed(1), kick: kk, asKick: +proj(DL, bL, q.t, q.t + 0.1).toFixed(2), inBass: +proj(BL, bL, q.t, q.t + q.d).toFixed(2), row}; });
     }
     t = performance.now(); await __spk.verfeinern('drums', {art: 'freq', f0: 20, f1: 300}); ms.push(Math.round(performance.now() - t));

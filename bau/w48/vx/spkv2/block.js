@@ -1,5 +1,5 @@
 /* SPKV2-BEGIN (ersetzt SPKV) Verfeinern Bass/Drums: Kick über Anschläge im Takt-Raster, Bass-Anschläge mit Tonverlauf nicht als Kick, Grundton-Lage, Sinus-Bass, Drums nach Bass gleich geteilt */
-const spkvO={on:1,N:8192,fa:27,fb:300,fT:300,fK:200,kLen:0.22,dg:0.035,alt:1,sin:1,sub:1,dr:1,dbg:null};
+const spkvO={on:1,N:8192,fa:27,fb:300,fT:300,fK:200,kLen:0.22,dg:0.035,alt:1,sin:1,sub:1,dr:1,ref:1,wk:1,dbg:null};
 function spkvFix(d,ziel,box,E){
 if(!spkvO.on||(ziel!=='bass'&&ziel!=='drums')||!d||!d.mid)return null;
 const sr=d.meta.sr,N=d.meta.base.N,hop=d.meta.base.hop,NB=N/2+1,df=sr/N,N8=spkvO.N,d8=sr/N8,K8=Math.min(N8/2+1,Math.ceil(1300/d8)+3);
@@ -25,6 +25,12 @@ if(c<2&&spkvO.alt){let b2=-1,f2=0;for(const f of C){if(5*f/d8>=K8-2)break;let s=
 while(f2>0&&2*f2<=spkvO.fb&&pk(o,f2/d8)+pk(o,3*f2/d8)<0.25*(pk(o,2*f2/d8)+pk(o,4*f2/d8)))f2*=2;
 if(f2>0){let c2=0;const pr=Math.max(pk(o,f2/d8),pk(o,2*f2/d8));for(let h=2;h<=4;h++){const a=pk(o,h*f2/d8),m=0.5*(pk(o,(h-0.5)*f2/d8)+pk(o,(h+0.5)*f2/d8));if(a>2.5*m&&a>0.05*pr)c2++;}if(c2>=2){f0[i]=f2;hm[i]=c2;}}}
 }
+/* SPKV2: Grundton fein nachstellen (Teiltöne 1-4, parabolische Spitze, nach Leistung gewichtet) */
+if(spkvO.ref)for(let i=0;i<n;i++){if(hm[i]<2||!(f0[i]>0))continue;const o=i*K8,f=f0[i];let sw=0,sf=0;
+for(let h=1;h<=4;h++){const kc=Math.round(h*f/d8);if(kc<2||kc>=K8-2)break;let kb=kc;for(let k=kc-1;k<=kc+1;k++)if(X[o+k]>X[o+kb])kb=k;
+const y0=X[o+kb-1],y1=X[o+kb],y2=X[o+kb+1],dn=y0-2*y1+y2,dl=dn<0?Math.max(-0.5,Math.min(0.5,0.5*(y0-y2)/dn)):0,w=y1*y1,fh=(kb+dl)*d8/h;
+if(Math.abs(12*Math.log2(fh/f))<=0.7){sw+=w;sf+=w*fh;}}
+if(sw>0)f0[i]=sf/sw;}
 /* Ton-Abschnitte: stetiger Grundton mit Obertönen über mindestens 3 Rahmen */
 const bF=new Float32Array(n),sgA=new Int32Array(n).fill(-1);
 for(let a=0;a<n;){
@@ -70,13 +76,13 @@ if(spkvO.sub){let sf=-99,sx=0;for(let j=i;j<=Math.min(n-1,i+1);j++){sf=Math.max(
 ks.push(i);
 for(let j=i-1;j<=Math.min(n-1,i+kL+2);j++)kW[j]=Math.max(kW[j],j<i?0.5:j<=i+kL?1:1-(j-i-kL)/3);
 }
-if(spkvO.dbg)spkvO.dbg({f0,hm,bF,kW,ks,fit,useG,cen,flux,aT,sgA});
+if(spkvO.dbg){const rs=new Float32Array(n),sfl=new Float32Array(n);for(let i=2;i<n-1;i++){rs[i]=Math.max(resid(i),resid(i+1));sfl[i]=ls[i]-Math.max(ls[i-1],ls[i-2]);}spkvO.dbg({f0,hm,bF,kW,ks,fit,useG,cen,flux,aT,sgA,rs,sfl});}
 const kT=Math.min(box.k1,NB-1,Math.floor(spkvO.fT/df)),kK=Math.floor(spkvO.fK/df);
 for(let m=box.m0;m<=box.m1;m++){
 const i=m-a0,B=bF[i]>0,Kw=kW[i];if(!B&&!Kw&&!aT[i])continue;
 const o=i*K8,e0=(m-box.m0)*NB;
 for(let k=0;k<=kT;k++){
-let num=0,den=0;for(let t=-1;t<=1;t++){const kk=2*k+t;if(kk<0||kk>=K8)continue;const w=t?0.5:1,p=X[o+kk]*X[o+kk]*w;num+=p*cb(i,kk);den+=p;}
+let num=0,den=0;const tw=spkvO.wk?3:1;for(let t=-tw;t<=tw;t++){const kk=2*k+t;if(kk<0||kk>=K8)continue;const w=spkvO.wk?[1,0.72,0.25,0.03][t<0?-t:t]:t?0.5:1,p=X[o+kk]*X[o+kk]*w;num+=p*cb(i,kk);den+=p;}
 const sh=B&&den>0?num/den:0,e=E[e0+k],kq=k<=kK?Kw:0,at=aT[i]&&!Kw&&k<=kK;
 let v=e;
 if(at)v=ziel==='bass'?1:0;

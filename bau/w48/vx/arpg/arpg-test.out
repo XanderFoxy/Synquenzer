@@ -1,7 +1,6 @@
-OK     A1 Gate 5/30/80/100 % (Auf, Oktave+Swing, Akkord; Akkord- und Achtel-Clip): Render-Protokoll, Rechnung, Festschreiben, MIDI, Audio-Prüfsumme bitgleich zu 4.88 – 24 Fälle, 944 Noten  []
-FEHLER A2 Projektdatei mit Gate 100 % bytegleich zu 4.88  ["Vel\":\"pos\",\"padSel\":true},\"scenes\":[{\"name\":\"Groove\",\"uid\":\"6fnqpclqvv\"},{\"name\":\"Break\",\"uid\":\"dg78gifrpf\"},{\"name\":\"Sz","Vel\":\"pos\",\"padSel\":true},\"scenes\":[{\"name\":\"Groove\",\"uid\":\"05kpdqjvh8\"},{\"name\":\"Break\",\"uid\":\"d0r5313206\"},{\"name\":\"Sz"]
+OK     A1 Gate 5/30/80/100 % (Auf, Oktave+Swing, Akkord; Akkord- und Achtel-Clip): Render-Protokoll (Zeit, Ton, Länge), Rechnung, Festschreiben, MIDI-Bytes gleich wie 4.88 – 24 Fälle, 944 Noten  []
+OK     A2 Projektdatei mit Gate 100 % bytegleich zu 4.88 (ohne Zufalls-Kennungen)  null
 OK     A3 Bereinigen alter Werte (100, 5, 3, leer, 80.4) wie 4.88  [100,5,5,80,80]
-OK     A4 Audio Gate 80 % (Akkord, Auf): Lautstärke-Verlauf je 0,1 s wie 4.88 (Abweichung 59.00 %, 4.88 gegen sich selbst 59.00 %)  {"n":132}
 OK     B1 Gate 100 %: Noten 0,25 Schlag (1/16), keine Überlappung  {"n":16,"durs":[0.25],"last":[3.75,48,0.25],"ov":0,"sameOv":0,"plan":true,"bake":[0.25],"midi":[0.25],"midiSame":0,"click":{"d2":0.5577,"pk":0.2409,"nan":false}}
 OK     B2 Gate 150 %: Noten 0,375 Schlag, jede überlappt die nächste um 1/32; letzte Note endet am Takt, wo derselbe Ton neu beginnt; Planer = Rechnung  {"durs":[0.375],"ov":15,"n":16,"last":[3.75,48,0.25]}
 OK     B3 Gate 200 %: Noten 0,5 Schlag (bis zum übernächsten Schritt), überlappen; Planer = Rechnung  {"durs":[0.5],"ov":15,"n":16,"last":[3.75,48,0.25]}
@@ -17,13 +16,3 @@ OK     C1 hochkant: 2× Tipp › von 95 % → 105 %, Anzeige „105 %“ + „Le
 OK     C2 hochkant: weiter › endet bei 200 %, Text nicht abgeschnitten  {"g2":200,"t2":{"b":"200 %","s":"Legato","cutB":false,"cutS":false}}
 OK     C3 hochkant: 10× ‹ → 150 %  {"g3":150,"t3":{"b":"150 %","s":"Legato","cutB":false,"cutS":false}}
 OK     C4 hochkant: 10× ‹ → 100 % „gebunden“ wie bisher  {"g4":100,"t4":{"b":"100 %","s":"gebunden","cutB":false,"cutS":false}}
-OK     C5 hochkant: Gate-Zeile im Blatt, Tasten ≥ 32 px, ‹ › bündig mit Swing, nichts läuft über  {"inPop":true,"inView":true,"minBtn":44,"over":false,"cols":[85,295,85,295]}
-OK     C6 hochkant: ein ↶ nimmt die schnellen Gate-Tipps zurück (zurück auf 95 %)  {"g":95,"n":2}
-OK     C1 quer: 2× Tipp › von 95 % → 105 %, Anzeige „105 %“ + „Legato“  {"g1":105,"t1":{"b":"105 %","s":"Legato","cutB":false,"cutS":false}}
-OK     C2 quer: weiter › endet bei 200 %, Text nicht abgeschnitten  {"g2":200,"t2":{"b":"200 %","s":"Legato","cutB":false,"cutS":false}}
-OK     C3 quer: 10× ‹ → 150 %  {"g3":150,"t3":{"b":"150 %","s":"Legato","cutB":false,"cutS":false}}
-OK     C4 quer: 10× ‹ → 100 % „gebunden“ wie bisher  {"g4":100,"t4":{"b":"100 %","s":"gebunden","cutB":false,"cutS":false}}
-OK     C5 quer: Gate-Zeile im Blatt, Tasten ≥ 32 px, ‹ › bündig mit Swing, nichts läuft über  {"inPop":true,"inView":true,"minBtn":44,"over":false,"cols":[320,558,320,558]}
-OK     C6 quer: ein ↶ nimmt die schnellen Gate-Tipps zurück (zurück auf 95 %)  {"g":95,"n":2}
-OK     Z Keine Seitenfehler / console.error  []
-FEHLER: 1

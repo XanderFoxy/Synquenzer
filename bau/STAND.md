@@ -1,4 +1,4 @@
-# Stand 23.11.17:48 UTC
+# Stand 23.11.17:51 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -57,6 +57,10 @@ Block `block.js` (/* CMD3-BEGIN/-END */, im Hauptskript direkt nach /* IMP4-END 
 - 13:00 Sonde vorher: ✕/Kopf/Reiter sichtbar, ≥44 px, keine Überlappung; ↶ nach Übernehmen sichtbar. Mängel: ✕ 6 px (hoch) bzw. 25 px (quer) anders als in den übrigen Blättern; langer Name 2 Zeilen.
 - apply.py geschrieben (3 Haken), jetzt Test.
 - 13:05 FERTIG: Sonde nachher 24/24 OK (hoch+quer), Pflichtprüfungen ok. Ausgang: ausgang.html (md5 ffc7f9a61c3ee41c671ff55ba2124d13).
+## fok4
+# FOK4 – Stand: gebaut, Test läuft
+Bau: `python3 apply.py <eingang 4.88.0> <ausgang.html>` (block.js mit FOK4-BEGIN/-END vor `function fokus1Post`, 2 Haken `/*FOK4*/` in fokus1Pre).
+Kern-Test: `node test/fok4-test.cjs <neu.html> <basis.html> [RUNS]` (A = neu, B = basis, abwechselnd; 60-s-Lied, 428×926 Touch).
 ## ges2
 # GES2 Stand
 - Start: Code gefunden: Stufensuche = segment() in vsDspMake (Worker-Text via toString!), Gesang-Editor = vx2Pick/vx2AnLead/vx3Lead.
