@@ -127,7 +127,7 @@ UN = zusammensetzen(P + 'unter.txt', {-3.0: lade('lead_m3'), -4.0: lade('lead_m4
 UN = verz(UN, 9.0)
 
 # ===================== Pegel (gegen Lead, aktive Frames, R1–R3) =====================
-ZIEL = dict(G=-5.5, GA_L=-15.0, GA_R=-15.0, D=-11.0, OB_L=-15.5, OB_R=-15.5, UN=-18.0)   # Chor ohne Doppel zusammen ≈ −4 dB
+ZIEL = dict(G=-5.5, GA_L=-13.5, GA_R=-13.5, D=-11.0, OB_L=-15.5, OB_R=-15.5, UN=-18.0)   # Chor ohne Doppel zusammen ≈ −4 dB
 SP = dict(G=G, GA_L=GA_L, GA_R=GA_R, D=D, OB_L=OB_L, OB_R=OB_R, UN=UN)
 FADER = {}
 for k, x in SP.items():
@@ -138,7 +138,7 @@ LOG['fader_db'] = {k: round(v, 1) for k, v in FADER.items()}
 LOG['pegel_rel_lead_nachher'] = {k: round(pegel_rel(SP[k], L), 1) for k in SP}
 
 # ===================== Chor-Bus (Ober + Unter) =====================
-chor = pan(SP['OB_L'], -0.6) + pan(SP['OB_R'], 0.6) + pan(SP['UN'], 0.0)
+chor = pan(SP['OB_L'], -0.85) + pan(SP['OB_R'], 0.85) + pan(SP['UN'], 0.0)
 chor = hp(chor, 190.0, 2)
 chor = eq(chor, [('peak', 3000.0, 1.0, -2.5), ('highshelf', 10000.0, 0.7, -1.0)])
 chor, _ = entzischer(chor, 5000.0, np.percentile(rms_db(hp_zp(chor, 5000.0), 3.0)[rms_db(chor, 50) > -60], 70), 7.0, 0.8)
@@ -154,8 +154,8 @@ duck = glaetten(duck, 10.0, 150.0, 2.0)
 mitte = bp_zp(chor, 1000.0, 4000.0, 2)
 chor = chor - mitte * (1 - undb(-duck))[:, None]
 
-# Gegengesang-Gruppe (Mitte + ADT L70/R70)
-gegen = pan(SP['G'], 0.0) + pan(SP['GA_L'], -0.7) + pan(SP['GA_R'], 0.7)
+# Gegengesang-Gruppe (Mitte + ADT L85/R85)
+gegen = pan(SP['G'], 0.0) + pan(SP['GA_L'], -0.85) + pan(SP['GA_R'], 0.85)
 doppel = pan(SP['D'], 0.0)
 lead_st = pan(L, 0.0)
 
@@ -225,9 +225,9 @@ LOG['gesang_lufs'] = {nm: round(lufs_teile(vox, [r]), 1) for nm, r in dict(S1=(3
 LOG['v11bus_lufs'] = {nm: round(lufs_teile(v11bus, [r]), 1) for nm, r in dict(S1=(32, 64), R1=(64, 96), S2=(96, 128), R2=(128, 160), ZT=(192, 224), R3=(224, 256)).items()}
 sf.write(STEMS + 'gesang_summe.wav', vox.astype(np.float32), SR, subtype='FLOAT')
 
-# Musik: im Refrain sanft bis −1,3 dB unter den Gesang (v11: −0,8…−1,1 dB)
+# Musik: im Refrain sanft bis −1,0 dB unter den Gesang (v11: −0,8…−1,1 dB)
 vs = rms_db(vox, 50)
-md_ = glaetten(np.clip((vs - (np.percentile(vs, 90) - 12)) / 12, 0, 1) * 1.3, 50.0, 400.0, 1.3)
+md_ = glaetten(np.clip((vs - (np.percentile(vs, 90) - 12)) / 12, 0, 1) * 1.0, 50.0, 400.0, 1.0)
 musik_d = musik * undb(-md_)[:, None]
 # „Master nur auf der Musik“ (wie v11): Spitzen der fertigen v5-Musik (−0,4 dBTP) sanft auf −1,5 dBTP, schafft Platz für den Gesang
 musik_d, grm = limiter(musik_d, -1.5, 3.0, 40.0)
@@ -237,33 +237,8 @@ mix = musik_d + vox
 del SP, G, GA_L, GA_R, D, OB_L, OB_R, UN, chor, gegen, doppel, h_lead, h_dop, h_ch, h_ge, dly, musik, v11bus, lead_send, mitte
 import gc; gc.collect()
 ziel = -10.0; g = 0.0
-CLIP = {}
-def master(x):
-    """Weicher Clipper (4x, Knie ab −3 dBFS) für kurze Spitzen, dann Limiter schnell (−0,6 dBTP) und ruhig (−1,5 dBTP)."""
-    y, CLIP['anteil_prozent'], CLIP['max_db'] = softclip(x, -3.0, -0.8)
-    y, g1 = limiter(y, -0.6, 1.5, 200.0)
-    y, g2 = limiter(y, -1.5, 5.0, 25.0)
-    return y, g1 + g2
-for it in range(4):
-    y, grl = master(mix * undb(g))
-    lu = meter.integrated_loudness(y)
-    g += ziel - lu
-y, grl = master(mix * undb(g))
-lu = meter.integrated_loudness(y)
 LOG['musik_duck_db'] = dict(median_refrain=round(float(np.median(np.concatenate([md_[int(a * SR):int(b_ * SR)] for a, b_ in R123]))), 2), max=round(float(md_.max()), 2))
-LOG['clipper'] = {k: round(v, 3) for k, v in CLIP.items()}
-LOG['master'] = dict(gain_db=round(g, 2), lufs=round(lu, 2), tp_48k=round(true_peak(y), 2),
-                     limiter_gr_p95=round(float(np.percentile(grl, 95)), 2), limiter_gr_p99=round(float(np.percentile(grl, 99)), 2), limiter_gr_max=round(float(grl.max()), 2),
-                     limiter_gr_anteil_ueber_0_5dB=round(float(np.mean(grl > 0.5) * 100), 2))
-np.save(B + 'master_v12_48k.npy', y.astype(np.float32))
-
-# ===================== Ausgabe =====================
-wav48 = B + 'tmp/The-Wall_A_v12_48k.wav'
-sf.write(wav48, y.astype(np.float32), SR, subtype='FLOAT')
-y44 = resample_poly(y, 147, 160, axis=0)
-tp44 = true_peak(y44)
-if tp44 > -1.2: y44 *= undb(-1.2 - tp44)
-sf.write(OUTD + 'The-Wall_A_v12.wav', y44, 44100, subtype='PCM_24')
-subprocess.run(['ffmpeg', '-y', '-v', 'error', '-i', wav48, '-c:a', 'libmp3lame', '-b:a', '320k', '-ar', '48000', OUTD + 'The-Wall_A_v12.mp3'], check=True)
+np.save(B + 'mix_vor_master.npy', mix.astype(np.float32))
 json.dump(LOG, open(B + 'mix_log.json', 'w'), indent=1)
 print(json.dumps(LOG, indent=1))
+# weiter mit master_v12.py

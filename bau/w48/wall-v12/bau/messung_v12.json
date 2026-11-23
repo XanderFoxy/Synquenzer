@@ -9,12 +9,12 @@
    "R3": -0.87
   },
   "v12": {
-   "S1": -0.87,
-   "R1": -1.22,
-   "S2": -0.81,
-   "R2": -1.3,
-   "ZT": 0.26,
-   "R3": -1.39
+   "S1": -0.86,
+   "R1": -1.15,
+   "S2": -0.83,
+   "R2": -1.32,
+   "ZT": -0.08,
+   "R3": -1.26
   }
  },
  "dynamik_gesangsbus": {
@@ -50,32 +50,32 @@
   },
   "v12": {
    "S1": {
-    "spreizung50": 11.5,
-    "silben_p90_p10": 5.1
+    "spreizung50": 13.2,
+    "silben_p90_p10": 5.9
    },
    "R1": {
-    "spreizung50": 8.5,
-    "silben_p90_p10": 6.2
+    "spreizung50": 10.4,
+    "silben_p90_p10": 8.5
    },
    "S2": {
-    "spreizung50": 12.2,
-    "silben_p90_p10": 5.7
+    "spreizung50": 13.5,
+    "silben_p90_p10": 7.7
    },
    "R2": {
-    "spreizung50": 8.8,
-    "silben_p90_p10": 2.8
+    "spreizung50": 10.8,
+    "silben_p90_p10": 5.5
    },
    "ZT": {
-    "spreizung50": 11.2,
-    "silben_p90_p10": 12.1
+    "spreizung50": 13.5,
+    "silben_p90_p10": 14.8
    },
    "R3": {
-    "spreizung50": 7.1,
-    "silben_p90_p10": 3.7
+    "spreizung50": 8.8,
+    "silben_p90_p10": 3.4
    },
    "mittel": {
-    "spreizung50": 9.9,
-    "silben_p90_p10": 5.9
+    "spreizung50": 11.7,
+    "silben_p90_p10": 7.6
    }
   }
  },
@@ -85,8 +85,8 @@
    "strophe": -14.4
   },
   "v12": {
-   "refrain": -10.7,
-   "strophe": -15.8
+   "refrain": -11.1,
+   "strophe": -15.9
   }
  },
  "gruppen_gegen_lead_db_refrain": {
@@ -97,28 +97,28 @@
   "begleitung_ohne_doppel": -4.3
  },
  "sprechstelle_dbfs": {
-  "lead": -29.4,
+  "lead": -27.2,
   "gegengesang": -200.0,
   "chor": -200.0,
   "doppel": -200.0,
-  "hall": -49.3
+  "hall": -47.2
  },
  "sprechstelle_eyes_kamm_db_rel": {
   "v11": -19.6,
-  "v12": -18.0,
-  "v12_lead_stem": -17.9
+  "v12": -18.7,
+  "v12_lead_stem": -18.9
  },
  "luecke_217_9_219_7_dbfs": {
   "lead": -130.3,
   "gegengesang": -200.0,
   "chor": -200.0,
   "doppel": -200.0,
-  "hall": -76.0
+  "hall": -74.6
  },
  "knackser": {
   "gegengesang_quelle": 25,
   "lead_quelle": 3,
-  "gegengesang_v12": 10,
+  "gegengesang_v12": 11,
   "chor_v12": 0,
   "doppel_v12": 0
  },
@@ -134,6 +134,7 @@
    209.56,
    225.52,
    231.9,
+   233.41,
    250.75
   ]
  },
@@ -144,9 +145,9 @@
    "plr": 8.9
   },
   "v12": {
-   "lufs": -10.01,
-   "tp": -1.08,
-   "plr": 8.9
+   "lufs": -10.0,
+   "tp": -0.86,
+   "plr": 9.1
   }
  }
 }
