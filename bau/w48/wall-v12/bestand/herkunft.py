@@ -1,13 +1,13 @@
 import subprocess, numpy as np, sys
-R=sys.argv[1]; SR=48000
+R=sys.argv[1]; SR=8000
 def lade(p):
-    b=subprocess.run(['ffmpeg','-v','error','-i',R+'/'+p,'-f','f32le','-ac','1','-'],capture_output=True).stdout
+    b=subprocess.run(['ffmpeg','-v','error','-i',R+'/'+p,'-f','f32le','-ac','1','-ar','8000','-'],capture_output=True).stdout
     return np.frombuffer(b,dtype=np.float32).astype(np.float64)
 def suche(x, a, b, ausschl=1.0):
     q=x[int(a*SR):int(b*SR)]
     n=1<<int(np.ceil(np.log2(len(x)+len(q))))
     c=np.fft.irfft(np.fft.rfft(x,n)*np.conj(np.fft.rfft(q,n)),n)[:len(x)-len(q)]
-    e=np.sqrt(np.convolve(x*x,np.ones(len(q)),'valid')[:len(c)]+1e-12)
+    cs=np.concatenate([[0],np.cumsum(x*x)]); e=np.sqrt((cs[len(q):]-cs[:-len(q)])[:len(c)]+1e-12)
     r=c/(e*np.sqrt((q*q).sum()))
     i0=int(a*SR); r[max(0,i0-int(ausschl*SR)):i0+int(ausschl*SR)]=-1
     top=[]
