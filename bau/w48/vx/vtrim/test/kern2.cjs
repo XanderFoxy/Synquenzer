@@ -186,7 +186,7 @@ const flagGeo = p => p.evaluate(() => {
     const gn = await p.evaluate(async ({st}) => {
       const a0 = S.tracks[st].clips[0].audio, id = a0.take, mt = MEL_T; a0.vt = {k: id, e: a0.out - 1.5};
       S.tracks[mt].clips[0] = {len: 2, key: S.key, notes: [{t: 1, d: .5, n: 60, v: .8}, {t: 6, d: .5, n: 64, v: .8}], take: id};
-      clipChanged(mt, 0);
+      clipChanged(mt, 0); SYNQUENZER.songFromChain([{scene: 0, bars: 2}]);
       const log = []; const sv0 = spawnClipVoice; spawnClipVoice = function (i, out, v, t) { if (i === mt) log.push(+(t).toFixed(3)); return sv0.apply(this, arguments); };
       try {
         VV.cancel = false; await vvRenderAudio({range: {a: 0, b: S.song.bars, sel: false}});

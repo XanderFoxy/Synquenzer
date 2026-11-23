@@ -21,13 +21,13 @@
   }
  },
  "ohne Beschnitt: Mix innerhalb der Eigen-Streuung von 4.91 (4.91 selbst ist von Render zu Render nicht bitgleich)": {
-  "ok": true,
+  "ok": false,
   "x": {
    "neuGegenBasis": 2.384185791015625e-7,
-   "basisGegenBasis": 2.384185791015625e-7,
-   "hashNeu": "cb52da4b:256672|27c9d48e:256672",
+   "basisGegenBasis": 0,
+   "hashNeu": "59adaf1b:256672|9ee65136:256672",
    "hashBasis": [
-    "7b5c68cb:256672|af2a45e:256672",
+    "d0654f0b:256672|61a00596:256672",
     "d0654f0b:256672|61a00596:256672"
    ]
   }
@@ -70,11 +70,11 @@
   "ok": true,
   "x": {
    "vt": {
-    "k": "85n48g5lgm",
+    "k": "8qnp85ilq3",
     "e": 4.5
    },
    "out": 6,
-   "take": "85n48g5lgm",
+   "take": "8qnp85ilq3",
    "undo": "Gesang-Ende verschoben",
    "txt": "Ende −1,50 s",
    "zone": 128.03125,
@@ -185,18 +185,18 @@
   "x": {
    "sv": {
     "live": {
-     "k": "85n48g5lgm",
+     "k": "8qnp85ilq3",
      "e": 4.5
     },
     "saved": {
-     "k": "85n48g5lgm",
+     "k": "8qnp85ilq3",
      "e": 4.5
     },
     "loaded": {
-     "k": "85n48g5lgm",
+     "k": "8qnp85ilq3",
      "e": 4.5
     },
-    "take": "85n48g5lgm"
+    "take": "8qnp85ilq3"
    },
    "R3": "45f702bb:196768",
    "R1": "45f702bb:196768"
@@ -220,7 +220,7 @@
     "label": "Gesang-Ende: ganze Länge",
     "menu": false,
     "back": {
-     "k": "85n48g5lgm",
+     "k": "8qnp85ilq3",
      "e": 4.5
     }
    }
@@ -246,10 +246,15 @@
   }
  },
  "Gesang→Noten: Note im weggeschnittenen Teil schweigt, Note davor spielt, nichts gelöscht": {
-  "ok": false,
+  "ok": true,
   "x": {
-   "mit": [],
-   "ohne": [],
+   "mit": [
+    0.56
+   ],
+   "ohne": [
+    0.56,
+    3.06
+   ],
    "notes": 2
   }
  },
@@ -340,7 +345,7 @@
    },
    "q": {
     "vt": {
-     "k": "9r3la24ov4",
+     "k": "3vi7ke2pn8",
      "e": 4.5
     },
     "out": 6,
@@ -411,7 +416,7 @@
   "x": {
    "c1": {
     "vt": {
-     "k": "al78nekcfl",
+     "k": "a2lv06n6vb",
      "e": 6
     },
     "out": 6,

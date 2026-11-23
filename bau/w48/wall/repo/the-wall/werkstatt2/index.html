@@ -430,7 +430,7 @@ function welle(c,lage,stil,farbe,alpha,plan,ln,rec){
 }
 // Hintergrund (alles, was sich beim Ziehen nicht bewegt) wird in ein eigenes Bild gezeichnet und nur bei Bedarf neu gebaut;
 // je Bild kommen nur noch die Schicht „Neu“, die Silben und deine Züge dazu.
-let HINTER=null,HINTER_KEY='',LETZTER_KEY='',FEINVER=0,THEMAVER=0,NEU_MESS=false;
+let HINTER=null,HINTER_KEY='',LETZTER_KEY='',LETZTE_ANSICHT='',FEINVER=0,THEMAVER=0,NEU_MESS=false;
 function hinterKey(bearb){return [Z.t0,Z.dur,W,H,DPR,Z.sch.original,Z.sch.gereinigt,Z.sch.timing,Z.sch.ende,Z.sch.neu,Z.sch.ton,Z.sch.aend,Z.staffel,bearb,Z.bereich?Z.bereich.von+'/'+Z.bereich.bis:'',Z.raster,G&&G.art==='zieht'?1:0,FEINVER,THEMAVER,!!SCH.ende].join('|')}
 function zeichneHinter(c,bearb){
   c.fillStyle=FB.bg;c.fillRect(0,0,W,H);
@@ -467,9 +467,11 @@ function zeichneVorne(c,direkt,key){
   c.setTransform(1,0,0,1,0,0);c.drawImage(VORNE,0,0);c.setTransform(DPR,0,0,DPR,0,0)}
 function zeichneBasis(){
   const t0=performance.now(),c=cxB;
-  const P=aktPlan(),bearb=P.length>1||P[0].off!==0,key=hinterKey(bearb);
-  // Ansicht ändert sich gerade (Schieben, Zoomen): direkt zeichnen. Steht sie (Ziehen, Abspielen): Hintergrundbild bauen und wiederverwenden.
-  const direkt=window.__ohneHinter||key!==LETZTER_KEY;LETZTER_KEY=key;
+  // Lauf 7: während eine Silbe gezogen wird, gilt das Bild als bearbeitet (Schatten + „Neu“) – kein Neubau beim ersten Millimeter
+  const P=aktPlan(),bearb=P.length>1||P[0].off!==0||!!(G&&G.art==='zieht'),key=hinterKey(bearb),ansicht=Z.t0+'|'+Z.dur+'|'+W+'|'+H;
+  // Ansicht ändert sich gerade (Schieben, Zoomen): direkt zeichnen. Steht sie (Ziehen, Abspielen): Hintergrundbild bauen und wiederverwenden
+  // (Lauf 7: ändert sich nur der Inhalt, nicht die Ansicht, wird das Bild sofort gebaut – ein teures Bild statt zwei).
+  const direkt=window.__ohneHinter||key!==LETZTER_KEY&&ansicht!==LETZTE_ANSICHT;LETZTER_KEY=key;LETZTE_ANSICHT=ansicht;
   if(direkt){c.setTransform(DPR,0,0,DPR,0,0);zeichneHinter(c,bearb)}
   else if(key!==HINTER_KEY||!HINTER){if(!HINTER)HINTER=document.createElement('canvas');if(HINTER.width!==cb.width||HINTER.height!==cb.height){HINTER.width=cb.width;HINTER.height=cb.height}
     const h=HINTER.getContext('2d');h.setTransform(DPR,0,0,DPR,0,0);zeichneHinter(h,bearb);HINTER_KEY=key;MESS.hinter=(MESS.hinter||0)+1}
