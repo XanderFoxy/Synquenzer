@@ -19,7 +19,7 @@ async function lauf(which) {
   await p.goto('http://127.0.0.1:' + port + '/' + which + '.html'); await p.waitForFunction(() => window.__spk && typeof spk1Call === 'function', null, {timeout: 90000}); await p.waitForTimeout(500);
   const r = await p.evaluate(async () => {
     const sr = 44100, bpm = 112, beat = 60 / bpm, st = beat / 4, t0 = 0.25, BARS = 6, n = Math.round((t0 + BARS * 4 * beat + 0.6) * sr);
-    const kick = new Float32Array(n), snare = new Float32Array(n), bass = new Float32Array(n);
+    const kick = new Float32Array(n), snare = new Float32Array(n), bass = new Float32Array(n), hat = new Float32Array(n);
     let seed = 12345; const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647 * 2 - 1; };
     const hz = m => 440 * Math.pow(2, (m - 69) / 12);
     const pat = [
@@ -34,8 +34,9 @@ async function lauf(which) {
     }
     for (const t of K) { const a = Math.round(t * sr); let ph = 0; for (let i = 0; i < 0.45 * sr && a + i < n; i++) { const u = i / sr, f = 49 + 120 * Math.exp(-u / 0.025); ph += 2 * Math.PI * f / sr; kick[a + i] += 0.8 * Math.exp(-u / 0.22) * Math.min(1, u / 0.001) * Math.sin(ph) + (i < 90 ? 0.3 * rnd() * (1 - i / 90) : 0); } }
     for (const t of SN) { const a = Math.round(t * sr); let pv = 0; for (let i = 0; i < 0.3 * sr && a + i < n; i++) { const u = i / sr, w = rnd(), hp = w - pv; pv = w; snare[a + i] += 0.3 * Math.exp(-u / 0.06) * Math.sin(2 * Math.PI * 185 * u) + 0.35 * Math.exp(-u / 0.09) * hp; } }
+    for (let j = 0; j < BARS * 8; j++) { const a = Math.round((t0 + j * 2 * st) * sr); let pv = 0; for (let i = 0; i < 0.05 * sr && a + i < n; i++) { const w = rnd(), h1 = w - pv; pv = w; hat[a + i] += 0.12 * Math.exp(-i / sr / 0.015) * h1; } }
     for (const q of B) { const a = Math.round(q.t * sr), L = Math.round(q.d * sr); let ph = 0, y = 0; for (let i = 0; i < L && a + i < n; i++) { const u = i / sr; ph += q.f / sr; ph -= Math.floor(ph); const saw = 2 * ph - 1, fc = 300 + 2500 * Math.exp(-u / 0.04), al = 1 - Math.exp(-2 * Math.PI * fc / sr); y += al * (saw - y); const env = Math.min(1, u / 0.003, (q.d - u) / 0.02); bass[a + i] += 0.35 * env * y; } }
-    const mix = new Float32Array(n); for (let i = 0; i < n; i++) mix[i] = kick[i] + snare[i] + bass[i];
+    const mix = new Float32Array(n); for (let i = 0; i < n; i++) mix[i] = kick[i] + snare[i] + bass[i] + hat[i];
     const r0 = await __spk.load({name: 'SPKV-Test', sr, ch: [mix, mix.slice()]}); await __spk.open(r0.meta.id);
     const grid = r0.meta.grid;
     const z = await __spk.zerlegen(); const lid = z.lids;
@@ -44,7 +45,7 @@ async function lauf(which) {
     const kL = lp(kick), bL = lp(bass);
     const proj = (y, s, ta, tb) => { let a = 0, c = 0; for (let i = Math.max(0, Math.round(ta * sr)); i < Math.min(n, Math.round(tb * sr)); i++) { a += y[i] * s[i]; c += s[i] * s[i]; } return c > 0 ? a / c : 0; };
     const sdr = (y, s) => { let e = 0, p = 0; for (let i = 0; i < n; i++) { p += s[i] * s[i]; e += (y[i] - s[i]) ** 2; } return 10 * Math.log10(p / Math.max(e, 1e-12)); };
-    const drums = new Float32Array(n); for (let i = 0; i < n; i++) drums[i] = kick[i] + snare[i];
+    const drums = new Float32Array(n); for (let i = 0; i < n; i++) drums[i] = kick[i] + snare[i] + hat[i];
     const mess = async () => {
       const D = (await __spk.render(lid.drums, 0, n)).ch[0], Bs = (await __spk.render(lid.bass, 0, n)).ch[0], DL = lp(D), BL = lp(Bs);
       const kHit = K.filter(t => proj(DL, kL, t, t + 0.15) >= 0.5).length;
