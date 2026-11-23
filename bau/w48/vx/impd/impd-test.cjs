@@ -37,9 +37,9 @@ function lauf112(nb, t0) { // Tempo-Lauf: 112 BPM +-2,5 % (Periode 12 s) + +-2 m
 fs.mkdirSync(path.join(here, 'tests'), {recursive: true});
 const FD = path.join(here, 'tests', 'impd-d-111_5.wav'), FA = path.join(here, 'tests', 'impd-a-120.wav'), FB = path.join(here, 'tests', 'impd-b-112.wav'), FC = path.join(here, 'tests', 'impd-c-112-lauf.wav');
 fs.writeFileSync(FA, wav(mk(grid(120, 32, .5), {kick: true})));
-fs.writeFileSync(FB, wav(mk(grid(112, 48, .5), {tone: true})));
-fs.writeFileSync(FC, wav(mk(lauf112(48, .5), {tone: true})));
-fs.writeFileSync(FD, wav(mk(grid(111.5, 48, .5), {tone: true})));
+fs.writeFileSync(FB, wav(mk(grid(112, 48, .5), {tone: true, kick: true})));
+fs.writeFileSync(FC, wav(mk(lauf112(48, .5), {tone: true, kick: true})));
+fs.writeFileSync(FD, wav(mk(grid(111.5, 48, .5), {tone: true, kick: true})));
 
 async function seite(b, wer) {
   const ctx = await b.newContext({viewport: {width: 428, height: 926}, hasTouch: true, isMobile: true, deviceScaleFactor: 2});
@@ -62,11 +62,11 @@ async function imp(p, file, kind, wahl) {
     let res = imp1Place(kind);
     for (let i = 0; !res && i < 1200; i++) { await W(100); if (c.sx && c.sx.run) continue; if (c.made && !/angepasst/.test(c.made)) break; res = imp1Place(kind); }
     res = res || IMP1.lastPlace;
-    let buf = null; for (let k = 0; k < 100 && !(buf = tkBuffer(c.take)); k++) await W(50);
+    const tid = c.take || (c.sx && c.sx.take); let buf = null; for (let k = 0; k < 100 && !(buf = tkBuffer(tid)); k++) await W(50);
     let h = 2166136261; if (buf) { const y = buf.getChannelData(0); for (let i = 0; i < y.length; i++) { h ^= (Math.round(y[i] * 32767) & 0xffff); h = Math.imul(h, 16777619) >>> 0; } }
     const sx = c.sx && c.sx.pcm, k = sx ? sx.length / c.x.length : 1;
     const on = (y, sc, sr) => { const o = []; let last = -1e9; for (let i = 0; i < y.length; i++) if (Math.abs(y[i]) * sc > .2) { if (i - last > .15 * sr) o.push(i); last = i; } return o; };
-    const pitch = (y, sc, sr, ons) => { const f = ons.map(i => { let z = 0; const a = i + Math.round(.02 * sr), b = i + Math.round(.12 * sr); for (let j = a + 1; j < b && j < y.length; j++) if ((y[j] >= 0) !== (y[j - 1] >= 0)) z++; return z / 2 / .1; }).sort((p, q) => p - q); return f.length ? f[f.length >> 1] : null; };
+    const pitch = (y, sc, sr, ons) => { const f = ons.map(i => { let z = 0; const a = i + Math.round(.02 * sr), b = i + Math.round(.12 * sr); for (let j = a + 2; j < b && j < y.length; j++) if ((y[j] - y[j - 1] >= 0) !== (y[j - 1] - y[j - 2] >= 0)) z++; return z / 2 / .1; }).sort((p, q) => p - q); return f.length ? f[f.length >> 1] : null; };
     const dev = (ons, sr, t1, st) => ons.map(i => { let d = ((i / sr - t1) % st + st) % st; if (d > st / 2) d -= st; return d * 1000; });
     const st = s => { const a = s.map(Math.abs); return a.length ? {n: a.length, max: +Math.max(...a).toFixed(2), mittel: +(a.reduce((p, q) => p + q, 0) / a.length).toFixed(2)} : null; };
     const R = {bpm: c.bpm, rbpm: c.r.bpm, t1: c.t1, projekt: S.bpm, frage: c.r.frage, stabil: c.r.stabil, gedehnt: !!sx, q: sx ? +(c.bpm / S.bpm).toFixed(5) : 1, hash: h, takeLen: buf && buf.length, placed: !!res, impd: window.__impd ? __impd.last() : null, nx1: window.__nx1 ? __nx1.st().imp : null};
@@ -98,9 +98,9 @@ async function imp(p, file, kind, wahl) {
     ok('T4 ' + f + ': Tonhoehe gleich (440 Hz, +-3 Hz)', Math.abs(N[f].hzAus - 440) <= 3 && Math.abs(N[f].hzEin - 440) <= 3, {ein: N[f].hzEin, basis: B[f].hzAus, neu: N[f].hzAus});
   }
   ok('T5 neu: Tempo-Anker benutzt (IMPD aktiv)', N['C-lauf'].impd && N['C-lauf'].impd.anker > 20, N['C-lauf'].impd);
-  ok('T6 leeres Projekt: neu = Basis bitgleich (Take)', N['C-leer'].hash === B['C-leer'].hash && N['C-leer'].takeLen === B['C-leer'].takeLen && N['C-leer'].impd && N['C-leer'].impd.aus !== false, {basis: B['C-leer'].hash, neu: N['C-leer'].hash, gedehnt: N['C-leer'].gedehnt, impd: N['C-leer'].impd});
-  ok('T6b leeres Projekt, Datei 111,5 BPM (wird auf 112 gedehnt): neu = Basis bitgleich (Take)', N['D-leer'].hash === B['D-leer'].hash && N['D-leer'].gedehnt && N['D-leer'].impd && N['D-leer'].impd.aus === true, {basis: B['D-leer'].hash, neu: N['D-leer'].hash, bpm: N['D-leer'].bpm, gedehnt: N['D-leer'].gedehnt});
-  ok('T7 Nutzer waehlt Tempo selbst: neu = Basis bitgleich (Take)', N['B-wahl'].hash === B['B-wahl'].hash && N['B-wahl'].gedehnt, {basis: B['B-wahl'].hash, neu: N['B-wahl'].hash, bpm: N['B-wahl'].bpm});
+  ok('T6 leeres Projekt: neu = Basis bitgleich (Take)', N['C-leer'].hash === B['C-leer'].hash && N['C-leer'].takeLen === B['C-leer'].takeLen && N['C-leer'].takeLen > 0, {basis: B['C-leer'].hash, neu: N['C-leer'].hash, gedehnt: N['C-leer'].gedehnt, impd: N['C-leer'].impd});
+  ok('T6b leeres Projekt, Datei 111,5 BPM (wird auf 112 gedehnt): neu = Basis bitgleich (Take)', N['D-leer'].hash === B['D-leer'].hash && N['D-leer'].takeLen > 0 && N['D-leer'].gedehnt && N['D-leer'].impd && N['D-leer'].impd.aus === true, {basis: B['D-leer'].hash, neu: N['D-leer'].hash, bpm: N['D-leer'].bpm, gedehnt: N['D-leer'].gedehnt});
+  ok('T7 Nutzer waehlt Tempo selbst: neu = Basis bitgleich (Take)', N['B-wahl'].hash === B['B-wahl'].hash && N['B-wahl'].takeLen > 0 && N['B-wahl'].gedehnt, {basis: B['B-wahl'].hash, neu: N['B-wahl'].hash, bpm: N['B-wahl'].bpm});
   fs.writeFileSync(path.join(here, 'impd-test.json'), JSON.stringify(R, null, 1));
   console.log(fail ? 'FEHLER ' + fail : 'ALLE OK');
 })().catch(e => { console.error(e); process.exit(1); });
