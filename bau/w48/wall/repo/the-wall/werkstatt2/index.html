@@ -1174,7 +1174,7 @@ function schichtHoeren(h){const sk={original:'original',gereinigt:'gereinigt',ti
   // Fassung mit Musik ab Silbe/Cursor (im Bereich als Schleife) – gleiche Zeitkarte wie die gezeichnete Welle. ▶ hält an.
   if(h==='neu'){if(!Z.musik){Z.musik=true;segZeigen();sichernSpaeter();if(Z.spielt)musikSchalten()}
     if(!Z.spielt){laufStop(VOR);VOR=null;VORNR++;if(Z.wahl!=null)Z.pos=clamp(SIL[Z.wahl].a+offOf(ZG.d,Z.wahl)-.6,0,DAUER);spielen()}
-    status(Object.keys(ZG.d).length?'Neu: alle '+Object.keys(ZG.d).length+' Züge zusammen, mit Musik'+(Z.schleife&&Z.bereich?' – Bereich im Kreis':'')+'. ▶ hält an, A/B vergleicht an derselben Stelle.':'Neu = v11, noch ohne Züge.');return}
+    status(Object.keys(ZG.d).length?'Neu: alle '+Object.keys(ZG.d).length+' Züge zusammen, mit Musik'+(Z.schleife&&Z.bereich?' – Bereich im Kreis':'')+'. ▶ hält an, A/B vergleicht an derselben Stelle.':'Neu = v11, noch ohne Züge.','',8000);return}   // langer Hinweis: 8 s lesbar, erst dann „… noch nicht gesendet.“
   if(!Z.spielt){const a=Z.wahl!=null?SIL[Z.wahl].a+offOf(ZG.d,Z.wahl)-.3:Z.pos;vorhoeren(a,a+2.5)}}
 function staffelSetzen(v,still){Z.staffel=clamp(+v||0,0,1);const r=$('staffel');if(+r.value!==Z.staffel)r.value=Z.staffel;$('staffelWert').textContent=Z.staffel<.05?'übereinander':Z.staffel>.95?'getrennt':'gestaffelt';
   const quer=matchMedia('(orientation:landscape) and (max-height:560px)').matches;buehne.style.setProperty('--zusatz',quer?'0px':Math.round(Z.staffel*Math.min(200,innerHeight*.22))+'px');basisNeu();if(!still)sichernSpaeter()}
@@ -1267,7 +1267,7 @@ $('listeP').addEventListener('click',e=>{const b=e.target.closest('button');if(!
 
 // ---------------- Status + Senden
 let statusUhr=0,unterwegs=false;
-function status(t,art){const s=$('sendeStatus');s.textContent=t;s.className=art||'';clearTimeout(statusUhr);if(art!=='fehler'&&!unterwegs)statusUhr=setTimeout(sendeZustand,3500)}
+function status(t,art,ms){const s=$('sendeStatus');s.textContent=t;s.className=art||'';clearTimeout(statusUhr);if(art!=='fehler'&&!unterwegs)statusUhr=setTimeout(sendeZustand,ms||3500)}   // ms: wie lange der Hinweis steht, danach die Erinnerung
 function signatur(){return JSON.stringify([ZG.d,NOTIZ.trim()])}
 function offen(){return (Object.keys(ZG.d).length||NOTIZ.trim()||(GESENDET&&GESENDET.sig!=='[{},""]'))&&(!GESENDET||GESENDET.sig!==signatur())}
 function sendeZustand(){clearTimeout(statusUhr);const s=$('sendeStatus'),n=Object.keys(ZG.d).length;
