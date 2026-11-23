@@ -20,7 +20,7 @@ async function seite(browser, vp) {
   let { ctx, page } = await seite(browser, { width: 428, height: 926 });
   // Foto oben: Kopf + neue Zeile
   const fb = await page.evaluate(() => { scrollTo(0, 0); const r = document.getElementById('fassung').getBoundingClientRect(); return { y: r.bottom } });
-  await page.screenshot({ path: W + '/foto-oben.png', clip: { x: 0, y: 0, width: 428, height: Math.ceil(fb.y + 12) } });
+  await page.screenshot({ path: W + '/foto-oben.png', clip: { x: 0, y: 0, width: 428, height: Math.ceil(fb.y + 5) } });
   erg.oben = await page.evaluate(async () => { const a = document.getElementById('lMaster'); return { text: document.getElementById('fassung').innerText.replace(/\s+/g, ' '), href: a.getAttribute('href'), status: (await fetch(a.href, { method: 'HEAD' })).status } });
   // Sprung-Stichproben: 2× „Was geändert wurde“, 1× Prüfstelle
   await page.click('#tabA'); await sleep(100); await page.click('#listeA .filter button[data-f="v11"]'); await sleep(100);
@@ -28,7 +28,9 @@ async function seite(browser, vp) {
   for (const k of [0, 2]) {
     const r = await page.evaluate(k => { const b = document.querySelectorAll('#listeA button[data-hin]')[k]; const z = b.closest('.zeile'); const eintrag = +b.dataset.hin; b.click(); const w = window.__ws2, Z = w.Z;
       return { liste: 'Was geändert wurde', eintrag, zeile: z.querySelector('.wann').innerText.replace(/\s+/g, ' '), pos: +Z.pos.toFixed(3), anzeige: document.getElementById('zeit') ? document.getElementById('zeit').innerText : null, sichtbar: [+Z.t0.toFixed(2), +(Z.t0 + Z.dur).toFixed(2)], bereich: Z.bereich } }, k);
-    r.abw = +(r.pos - r.eintrag).toFixed(3); erg.spruenge.push(r); await sleep(300);
+    r.abw = +(r.pos - r.eintrag).toFixed(3); await sleep(200); r.anzeige = await page.evaluate(() => document.getElementById('zeit').innerText.replace(/\s+/g, ' '));
+    await page.click('#bSpiel'); await sleep(900); r.nachPlay900ms = await page.evaluate(() => ({ lauf: +window.__ws2.laufPos().toFixed(3), spielt: window.__ws2.Z.spielt })); await page.click('#bSpiel'); await sleep(200);
+    erg.spruenge.push(r);
   }
   await page.click('#tabP'); await sleep(100);
   const rp = await page.evaluate(() => { const z = document.querySelectorAll('#listeP .zeile')[1], p = window.__ws2.PRUEF.stellen.find(x => x.id === z.dataset.p); z.querySelector('button[data-tu="hin"]').click(); const Z = window.__ws2.Z;

@@ -1173,7 +1173,9 @@ $('listeA').addEventListener('click',e=>{const b=e.target.closest('button');if(!
   if(b.dataset.f){Z.aendFilter=b.dataset.f;listen();sichernSpaeter();return}
   if(b.dataset.master!=null){MW.wahl='v11';masterKnopf();masterSpielen(Math.max(0,+b.dataset.master-.5));return}
   if(b.dataset.hin==null)return;const t=+b.dataset.hin,bis=b.dataset.bis?+b.dataset.bis:null;
-  if(bis!=null&&bis-t<20){Z.bereich={von:t,bis};bereichsleiste(true);if(bis-t>Z.dur*.9)Z.dur=clamp((bis-t)*1.2,DMIN,DMAX)}Z.t0=t-Z.dur*.15;clampView();springe(t);basisNeu();vorladen();buehne.scrollIntoView({behavior:'smooth',block:'center'})});
+  if(bis!=null&&bis-t<20){Z.bereich={von:t,bis};bereichsleiste(true);if(bis-t>Z.dur*.9)Z.dur=clamp((bis-t)*1.2,DMIN,DMAX)}
+  else if(Z.bereich&&(t<Z.bereich.von||t>=Z.bereich.bis)){Z.bereich=null;bereichsleiste()}   // Prüfung: alter Bereich hätte ▶ woandershin springen lassen
+  Z.t0=t-Z.dur*.15;clampView();springe(t);basisNeu();vorladen();buehne.scrollIntoView({behavior:'smooth',block:'center'})});
 function zeigeTab(t){if(!['Z','A','P','H'].includes(t))t='Z';Z.tab=t;for(const [k,id] of [['Z','tabZ'],['A','tabA'],['P','tabP'],['H','tabH']]){$(id).setAttribute('aria-selected',k===t);$('liste'+k).hidden=k!==t}sichernSpaeter()}
 $('tabZ').onclick=()=>zeigeTab('Z');$('tabA').onclick=()=>zeigeTab('A');$('tabP').onclick=()=>zeigeTab('P');$('tabH').onclick=()=>zeigeTab('H');
 // Prüfstellen: Hin = Stelle in v11 im Kreis spielen (A/B gegen Original), Als Notiz = in die Notiz an Claude

@@ -1,0 +1,1 @@
+- FARB: Spuren 9–16 bekommen 8 eigene, gut unterscheidbare Farben statt die Farben 1–8 zu wiederholen (nur CSS, Spuren 1–8 bitgleich).
