@@ -1,0 +1,1 @@
+CMD3: DAW-Import übernimmt das Delay je Synth-Spur als eigenes Echo. Das Echo der 1/8-Spur kam vorher nach 750 ms, jetzt nach 240 ms (Soll 250 ms). Der Bericht sagt „eigenes Echo … wie in der DAW“. Doppelschläge laut wie in der DAW (seit 4.88, nachgemessen); ohne solche Spuren bitgleich.

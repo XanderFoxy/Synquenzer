@@ -1,4 +1,4 @@
-# Stand 23.11.17:41 UTC
+# Stand 23.11.17:43 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -16,16 +16,17 @@
 - Aufbau: Block BM1-BEGIN/-END im Hauptskript direkt vor lkNoteX (BM1_WI, bm1Is, bm1LkAdd, bm1On), 12 Haken /*BM1*/:
   - Bit-Mask-Kern (Worklet-Text BM_WK, ASCII): Note-an liest fc (Halbtöne) → fq = 2^(fc/12); Stimme fq (Start 1); newVoice, takeKey
 ## chr6
-# CHR6 – Stand
-- Eingang 4.88.0 (md5 695af0504463a6385e21dc94e55b00c9), Chor-Weg = g6pDspMake → renderMulti → setS (Hüllen-Abtastung der neuen Teiltöne).
-- Kern-Test: kern-test.mjs (synthetische Vokale, ±4/7/12 HT). Vorher: Formant 4,23 % (−12: 6,41 · −7: 6,36 · −4: 5,43 · +4: 4,62 · +7: 2,54 · +12: 0), Hülle 2,83 dB, Ton 0 ct.
-- In Arbeit: Interpolation der Log-Hülle zwischen Teiltönen (linear → kubisch) testen (var/*.mjs).
+# CHR6 – Stand (fertig)
+Eingang 4.88.0 (md5 695af0504463a6385e21dc94e55b00c9) → `out.html` (md5 61d55dd9f17fef78c397b762f5b89e26) per
+`python3 apply.py <eingang> <ausgang>` (block.js im selben Ordner).
+
+## Änderung
 ## cmd3
-# CMD3 – Stand (in Arbeit)
-Bau: `python3 apply.py <eingang 4.88.0 md5 695af050…> <ausgang>` → hier `index.html`.
-Block `block.js` (/* CMD3-BEGIN/-END */ nach IMP4-END), 7 Haken `/* CMD3 */`: normTrack (Feld `ech`), applyTrackParams (Send umlegen),
-applyEcho (Tempo), echoKill (Stopp), xlaProject (eigenes Echo je Spur setzen), imp4Rep (Bericht: Status + ok-Zeile).
-Befund: (a) Doppelschläge und (c) Bericht sind schon in 4.88 (Paket IMP4). Neu ist (b) Echo je Spur.
+# CMD3 – Stand (fertig)
+Bau: `python3 apply.py <eingang> <ausgang>`. Erlaubter Eingang ist nur 4.88.0 (md5 695af0504463a6385e21dc94e55b00c9). Der Bau ist bitgleich wiederholbar.
+Ausgang hier `index.html`, md5 58e7776394b54e05e5e9ebb907813ec1 (7 304 062 B, +3 487 B).
+Block `block.js` (/* CMD3-BEGIN/-END */, im Hauptskript direkt nach /* IMP4-END */). Dazu kommen 6 Haken, je einzeilig mit `/* CMD3 */`:
+- normTrack: Das Feld `ech` (eigenes Echo einer Synth-Spur, normiert wie fxBus.echo) bleibt beim Speichern, Laden und Rückgängigmachen erhalten.
 ## drum1
 # DRUM1 – Stand
 - Kern-Test-Datei: **kern.mjs** (Browser, 428×926 Touch: Lied laden → Zerlegen schnell → Drum-Ebene → Kit-Erkennung; Lieder songs.mjs,

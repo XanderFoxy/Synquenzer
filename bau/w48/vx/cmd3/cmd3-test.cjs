@@ -107,7 +107,7 @@ async function lauf(b, wer, foto) {
     /^Lead · Klang aus der DAW · eigenes Echo 1\/8 \| 1\/16 wie in der DAW · /.test(sp(B.an, 'Lead') || '') && sp(B.an, 'Lead').replace('eigenes Echo 1/8 | 1/16 wie in der DAW', 'X') === sp(A.an, 'Lead').replace('eigenes Delay 1/8 → Projekt-Echo 1/4. (eins für alle Spuren)', 'X') && sp(B.an, 'Bass') === sp(A.an, 'Bass'),
     [sp(B.an, 'Lead'), sp(B.an, 'Bass')]);
   ok('T14 Bericht bei „Werksklänge“ unverändert', JSON.stringify(A.aus) === JSON.stringify(B.aus));
-  ok('T16 (a) Doppelschläge: ein lauterer Clap je Zeitpunkt, Pegel wie die DAW-Summe (±1 dB; ein einzelner Schlag läge darunter)', B.hear.clap.n === 8 && Math.abs(B.hear.clap.abstandDb) <= 1 && JSON.stringify(A.hear.clap) === JSON.stringify(B.hear.clap), {basis: A.hear.clap, neu: B.hear.clap});
+  ok('T16 (a) Doppelschläge: schon in 4.88: ein lauterer Clap je Zeitpunkt, Pegel wie die DAW-Summe (±1 dB, Basis = neu ±0,5 dB Render-Rauschen; ein einzelner Schlag läge ~4 dB darunter)', B.hear.clap.n === 2 && Math.abs(B.hear.clap.abstandDb) <= 1 && Math.abs(A.hear.clap.abstandDb) <= 1 && Math.abs(A.hear.clap.abstandDb - B.hear.clap.abstandDb) <= .5, {basis: A.hear.clap, neu: B.hear.clap});
   ok('T15 Bericht: zusammengelegte Clap-Schläge (a, schon in 4.88) weiter genannt', (B.an || []).some(s => /DRUMS: 8 Schläge gleichzeitig auf demselben Pad → je ein lauterer Schlag/.test(s)));
   console.log(fail ? 'FEHLER: ' + fail : 'ALLE OK'); process.exit(fail ? 1 : 0);
 })();

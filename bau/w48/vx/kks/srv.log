@@ -1,0 +1,16 @@
+Serving HTTP on 127.0.0.1 port 9090 (http://127.0.0.1:9090/) ...
+127.0.0.1 - - [23/Nov/2026 17:42:14] "GET /neu/version.json HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 17:42:17] "GET /basis/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 17:42:26] "GET /basis/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 17:42:29] "GET /basis/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 17:42:33] "GET /basis/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 17:42:38] "GET /basis/version.json?t=1795455758283 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 17:42:39] "GET /basis/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 17:42:44] "GET /basis/version.json?t=1795455764169 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 17:42:45] "GET /neu/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 17:42:50] "GET /neu/version.json?t=1795455770245 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 17:42:53] "GET /neu/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 17:42:56] "GET /neu/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 17:43:01] "GET /neu/version.json?t=1795455781112 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 17:43:03] "GET /neu/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 17:43:08] "GET /neu/version.json?t=1795455788160 HTTP/1.1" 200 -

@@ -1,0 +1,1 @@
+CHR6: Chor-Kern tastet die Stimm-Hülle zwischen den Teiltönen mit Lanczos-3 (Log-Bereich, begrenzt) statt linear ab – Hülle 2,83 → 2,34 dB, Formant 1,69 → 1,60 %, Ton unverändert; nur Chor-Weg, Rest bitgleich.
