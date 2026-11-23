@@ -25,9 +25,9 @@ const exportRms = (p, t0, t1) => p.evaluate(async ({t0, t1}) => {
 
 async function swipeToEnd(p, T) {
   // Wischen auf der Takt-Leiste nach links, bis das Ende-Fähnchen im Bild ist
-  for (let k = 0; k < 6; k++) {
+  for (let k = 0; k < 10; k++) {
     const g = await geo(p); if (g.eF && g.eF.r <= g.cM.r - 4 && g.eF.l >= g.cM.l) return {g, k};
-    const y = g.cM.t - 12, x0 = g.cM.r - 30, x1 = g.cM.l + 60; // Takt-Leiste: dort wischt man in der Rolle seitwärts
+    const y = g.cM.t - 12, x0 = g.cM.r - 30, x1 = x0 - Math.min(260, g.cM.w * .4); // Takt-Leiste: dort wischt man in der Rolle seitwärts
     await T.down(x0, y); for (let s = 1; s <= 10; s++) { await T.move(x0 + (x1 - x0) * s / 10, y); await sleep(16); } await T.up(); await sleep(500);
   }
   return {g: await geo(p), k: -1};

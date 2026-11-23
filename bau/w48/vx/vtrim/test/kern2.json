@@ -24,22 +24,22 @@
   "ok": true,
   "x": {
    "gleich": [
-    "cb52da4b:256672|27c9d48e:256672"
+    "bdb018cb:256672|739dbdd6:256672"
    ],
    "neu": [
     "bdb018cb:256672|739dbdd6:256672",
-    "bdb018cb:256672|739dbdd6:256672",
-    "bdb018cb:256672|739dbdd6:256672",
-    "cb52da4b:256672|27c9d48e:256672"
+    "59adaf1b:256672|9ee65136:256672",
+    "59adaf1b:256672|9ee65136:256672",
+    "7b5c68cb:256672|af2a45e:256672"
    ],
    "basis": [
-    "59adaf1b:256672|9ee65136:256672",
-    "cb52da4b:256672|27c9d48e:256672",
-    "d0654f0b:256672|61a00596:256672",
     "2d0d72bb:256672|aa3ef146:256672",
+    "bdb018cb:256672|739dbdd6:256672",
+    "cb52da4b:256672|27c9d48e:256672",
+    "cb52da4b:256672|27c9d48e:256672",
     "d0654f0b:256672|61a00596:256672"
    ],
-   "maxAbweichungNeuBasis": 2.384185791015625e-7,
+   "maxAbweichungNeuBasis": 0,
    "maxAbweichungBasisBasis": 2.384185791015625e-7
   }
  },
@@ -81,11 +81,11 @@
   "ok": true,
   "x": {
    "vt": {
-    "k": "90ehmeq1vj",
+    "k": "08osqp030b",
     "e": 4.5
    },
    "out": 6,
-   "take": "90ehmeq1vj",
+   "take": "08osqp030b",
    "undo": "Gesang-Ende verschoben",
    "txt": "Ende −1,50 s",
    "zone": 128.03125,
@@ -196,18 +196,18 @@
   "x": {
    "sv": {
     "live": {
-     "k": "90ehmeq1vj",
+     "k": "08osqp030b",
      "e": 4.5
     },
     "saved": {
-     "k": "90ehmeq1vj",
+     "k": "08osqp030b",
      "e": 4.5
     },
     "loaded": {
-     "k": "90ehmeq1vj",
+     "k": "08osqp030b",
      "e": 4.5
     },
-    "take": "90ehmeq1vj"
+    "take": "08osqp030b"
    },
    "R3": "45f702bb:196768",
    "R1": "45f702bb:196768"
@@ -231,7 +231,7 @@
     "label": "Gesang-Ende: ganze Länge",
     "menu": false,
     "back": {
-     "k": "90ehmeq1vj",
+     "k": "08osqp030b",
      "e": 4.5
     }
    }
@@ -256,7 +256,7 @@
    },
    "an": {
     "vt": {
-     "k": "90ehmeq1vj",
+     "k": "08osqp030b",
      "e": 4.5,
      "a": 2.5
     },
@@ -387,7 +387,7 @@
    },
    "q": {
     "vt": {
-     "k": "02l5hqo21r",
+     "k": "6ou0k2rct9",
      "e": 4.5
     },
     "out": 6,
@@ -458,7 +458,7 @@
   "x": {
    "c1": {
     "vt": {
-     "k": "8o2fd8bsn0",
+     "k": "1t2ac0rd7h",
      "e": 6
     },
     "out": 6,
