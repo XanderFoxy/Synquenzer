@@ -1,0 +1,33 @@
+(A) Gesang→Noten – Einsatz-Fehler (ms), je Phrase 5 Lagen im 5-ms-Raster (0/1/2/3/4 ms Vorlauf); vorher = 4.88 (Raster + GES3), nachher = Datei 2
+  3 Töne nach Pause: Einsätze 15 | vorher mittel 0.9 max 1.1 Streuung über Lage 0.0 | nachher mittel 0.9 max 1.1 Streuung 0.0 | Noten-Zahl falsch (von 5 Lagen) 0 → 0
+  K: Konsonant vor Vokal (4 Silben): Einsätze 20 | vorher mittel 2.9 max 3.8 Streuung über Lage 0.0 | nachher mittel 0.3 max 0.6 Streuung 0.0 | Noten-Zahl falsch (von 5 Lagen) 0 → 0
+  weicher Einsatz 60 ms: Einsätze 10 | vorher mittel 1.7 max 2.1 Streuung über Lage 0.1 | nachher mittel 1.7 max 2.1 Streuung 0.1 | Noten-Zahl falsch (von 5 Lagen) 0 → 0
+  harter Einsatz 5 ms, tief: Einsätze 15 | vorher mittel 0.4 max 0.8 Streuung über Lage 0.0 | nachher mittel 0.4 max 0.8 Streuung 0.0 | Noten-Zahl falsch (von 5 Lagen) 0 → 0
+  Einsatz mit Tremolo ±6 dB: Einsätze 10 | vorher mittel 1.3 max 2.0 Streuung über Lage 0.4 | nachher mittel 1.3 max 2.0 Streuung 0.4 | Noten-Zahl falsch (von 5 Lagen) 5 → 5
+  K: Konsonant tief (m48, 5 Silben): Einsätze 25 | vorher mittel 6.4 max 56.2 Streuung über Lage 66.1 | nachher mittel 3.5 max 56.2 Streuung 66.1 | Noten-Zahl falsch (von 5 Lagen) 0 → 0
+  K: Konsonant hoch (m72, 4 Silben): Einsätze 20 | vorher mittel 3.1 max 3.6 Streuung über Lage 0.0 | nachher mittel 0.4 max 0.8 Streuung 0.0 | Noten-Zahl falsch (von 5 Lagen) 0 → 0
+  K: Plosiv (Verschluss + Knall + Hauch): Einsätze 15 | vorher mittel 6.0 max 49.9 Streuung über Lage 53.4 | nachher mittel 3.5 max 49.9 Streuung 49.5 | Noten-Zahl falsch (von 5 Lagen) 0 → 0
+  K: Reibelaut reicht 15 ms in den Vokal: Einsätze 15 | vorher mittel 11.2 max 26.0 Streuung über Lage 4.0 | nachher mittel 11.2 max 26.0 Streuung 4.0 | Noten-Zahl falsch (von 5 Lagen) 0 → 0
+  GESAMT A: 145 Einsätze, mittl. Fehler vorher 4.0 ms (max 56.2) → nachher 2.6 ms (max 56.2); größte Streuung über die Lage 66.1 → 66.1 ms
+  Konsonant-Fälle: 95 Einsätze, mittl. Fehler 5.65 → 3.39 ms (max 56.2 → 56.2), Streuung über Lage 66.1 → 66.1 ms
+  Einsätze nach Pause: 50 Einsätze, mittl. Fehler 0.98 → 0.98 ms (max 2.1 → 2.1), Streuung über Lage 0.4 → 0.4 ms
+(B) Marken im Gesang-Editor: Soll-Einsätze = jeder neue Ton/Vokal/Wiederanschlag; Treffer = Soll-Einsatz mit Marke (±80 ms, Konsonant-Beginn zählt), Fehlmarken = Marken mitten in einem gehaltenen Ton
+  OK     gehaltener Vokal ±6 dB Tremolo 4 Hz: Einsätze 1 | vorher Treffer 1 Fehlmarken 0 (Marken 2) | nachher Treffer 1 Fehlmarken 0 (Marken 2)
+  FEHLER gehaltener Vokal ±6 dB unregelmäßig + Vibrato: Einsätze 1 | vorher Treffer 1 Fehlmarken 25 (Marken 26) | nachher Treffer 1 Fehlmarken 1 (Marken 2)
+  FEHLER gehaltener Vokal ±6 dB 6 Hz, tief: Einsätze 1 | vorher Treffer 1 Fehlmarken 11 (Marken 13) | nachher Treffer 1 Fehlmarken 1 (Marken 3)
+  OK     gehaltener Vokal ±4 dB 5 Hz, hoch: Einsätze 1 | vorher Treffer 1 Fehlmarken 2 (Marken 4) | nachher Treffer 1 Fehlmarken 0 (Marken 2)
+  OK     3 Silben mit Konsonant, Tremolo ±6 dB: Einsätze 3 | vorher Treffer 3 Fehlmarken 4 (Marken 8) | nachher Treffer 3 Fehlmarken 0 (Marken 4)
+  FEHLER Legato 60-62-64 mit Tremolo (Tonhöhe): Einsätze 3 | vorher Treffer 3 Fehlmarken 2 (Marken 6) | nachher Treffer 3 Fehlmarken 1 (Marken 5)
+  OK     gleicher Ton, Vokalwechsel a-i-u: Einsätze 3 | vorher Treffer 3 Fehlmarken 0 (Marken 4) | nachher Treffer 3 Fehlmarken 0 (Marken 4)
+  OK     Silben mit Pausen: Einsätze 3 | vorher Treffer 3 Fehlmarken 0 (Marken 5) | nachher Treffer 3 Fehlmarken 0 (Marken 5)
+  OK     Wiederanschlag gleicher Ton (Tal −25 dB): Einsätze 2 | vorher Treffer 2 Fehlmarken 0 (Marken 3) | nachher Treffer 2 Fehlmarken 0 (Marken 3)
+  GESAMT B: Phrasen richtig 4/9 → 6/9; Treffer 18 → 18 von 18; Fehlmarken 44 → 3; Marken gesamt 71 → 30; alte Takes (ohne g3) bitgleich 9/9
+(C) Vibrato-Ton ±50 ct, 5,5 Hz (Soll = Zahl der gesungenen Töne; Fehler = Tonhöhe der Note gegen den gesungenen Ton, Einsatz gegen Soll)
+  FEHLER Gleiten +3 in Vibrato-Ton m48: Noten 2 → 2 (Soll 1) | nachher 45.30@0.101 47.96@0.254
+  OK     Gleiten +3 in Vibrato-Ton m52: Noten 2 → 1 (Soll 1) | nachher 51.97@0.101
+  OK     Gleiten +3 in Vibrato-Ton m57: Noten 2 → 1 (Soll 1) | nachher 56.93@0.102
+  OK     Vibrato m67 → +2 legato: Noten 6 → 2 (Soll 2) | nachher 67.00@0.101 68.91@1.140
+  OK     Vibrato-Ton m69: Noten 8 → 1 (Soll 1) | nachher 68.90@0.101
+  OK     Gleiten +3 in Vibrato-Ton m69: Noten 8 → 1 (Soll 1) | nachher 68.89@0.101
+  OK     Vibrato m69 → +2 legato: Noten 6 → 2 (Soll 2) | nachher 68.93@0.101 71.02@1.140
+  GESAMT C: Phrasen mit richtiger Noten-Zahl 29/36 → 35/36; Noten 79 → 55 (Soll 54); mittl. Tonhöhen-Fehler (richtige Phrasen) 3.7 → 4.1 ct; erster Einsatz mittl. 0.9 → 0.9 ms
