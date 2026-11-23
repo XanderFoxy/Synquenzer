@@ -1,4 +1,4 @@
-# Stand 23.11.18:04 UTC
+# Stand 23.11.18:06 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -35,6 +35,12 @@ Block `block.js` (/* CMD3-BEGIN/-END */, im Hauptskript direkt nach /* IMP4-END 
   lieder-pruef.mjs, hart.mjs). Offline-Gegenprobe off.mjs auf dump/*.f32 (alt-hits.js = alter Code, neu-off.js = mit DRUM1).
 - Bau: apply.py <eingang> <ausgang> (md5 a7515b98…, Anker = Zeile `try{window.__spk11b=…}catch(e){}` 1×, Block block.js dahinter).
 - Basis 4.86.0: SUMME kick 515/528 +93 · snare 342/344 +82 · hihat 1546/1768 +1 (Fehler fast nur im Lied „hart“).
+## dse
+# DSE – Stand (fertig)
+Bau: `python3 apply.py <eingang> <ausgang>` (Eingang 4.88.0 md5 695af0504463a6385e21dc94e55b00c9, Ausgang hier `index.html`, md5 c52c7093241d6e85a349b7d088dfb828).
+Block `block.js` (/* DSE-BEGIN/-END */ direkt hinter `Object.assign(SYNQUENZER,{mtx3b:MTX3B_API});`), 9 Haken mit `/*DSE*/` bzw. tg.dse:
+- mtx3bDrumView: FOLGEN-Chip vor ✕ (`folChip('steps')`, gleiche Einstellung wie DRUMS › SCHRITTE), `reg:folReg('steps')` (Finger hält),
+  `pl1Deco` in decorate (Lock-Punkt/Bedingung), `dseView` (Länge-Knopf ┃n vor [Pad-Klang], Lock-Halten 480 ms, Blättern = „von Hand“, Edit = „bearbeitet“).
 ## ent1a
 # ENT1A Stand
 - Start: Analyse Arp/Stopp. stop() kehrt bei !R.playing früh zurück -> arpEndAll fehlt (Verdacht).
@@ -60,10 +66,11 @@ Block `block.js` (/* CMD3-BEGIN/-END */, im Hauptskript direkt nach /* IMP4-END 
 - apply.py geschrieben (3 Haken), jetzt Test.
 - 13:05 FERTIG: Sonde nachher 24/24 OK (hoch+quer), Pflichtprüfungen ok. Ausgang: ausgang.html (md5 ffc7f9a61c3ee41c671ff55ba2124d13).
 ## fok4
-# FOK4 – Stand: gebaut, Test läuft
-Bau: `python3 apply.py <eingang 4.88.0> <ausgang.html>` (block.js mit FOK4-BEGIN/-END vor `function fokus1Post`, 2 Haken `/*FOK4*/` in fokus1Pre).
-Kern-Test: `node test/fok4-test.cjs <neu.html> <basis.html> [RUNS]` (A = neu, B = basis, abwechselnd; 60-s-Lied, 428×926 Touch).
-Zwischenstand: index.html md5 22ab2c830720f2b66264382eea08eb61 (Zaun-Wartegrenze ≈ 60 ms). Erste A/B-Läufe (4 Runden, vorige Fassung): Bilder 16/16 gleich, F 0 Long Tasks (Basis 2 von 4 Läufen), G 0 (Basis 2 von 4).
+# FOK4 – Stand: fertig (gebaut, gemessen; Grenzen unten)
+Ausgang `index.html` md5 496e9d9d146f8bd7d48c2e61f0e04caf (Eingang 4.88.0 695af0504463a6385e21dc94e55b00c9).
+Bau: `python3 apply.py <eingang> <ausgang.html>` – Block `block.js` (FOK4-BEGIN/-END) direkt vor `function fokus1Post`; 3 Haken `/*FOK4*/`:
+fokus1Pre (Hochladen → fok4Up), fokus1Pre (Tönung aus, solange ein Stück im Hintergrund lädt – wie bisher bei „more“), fokus1Load/onChunk (fok4Next).
+Diff: 84 Zeilen neu, 3 geändert (Block 81 Zeilen + 3 Haken-Zeilen). Pflicht: `pflicht.out`.
 ## ges2
 # GES2 Stand
 - Start: Code gefunden: Stufensuche = segment() in vsDspMake (Worker-Text via toString!), Gesang-Editor = vx2Pick/vx2AnLead/vx3Lead.
