@@ -29,20 +29,28 @@ let b=a;while(b+1<n&&hm[b+1]>=2&&f0[b+1]>0&&Math.abs(12*Math.log2(f0[b+1]/f0[b])
 if(b-a+1>=3){const v=[];for(let i=a;i<=b;i++)v.push(f0[i]);v.sort((x,y)=>x-y);const fm=v[v.length>>1];for(let i=Math.max(0,a-1);i<=b;i++)if(!bF[i]){bF[i]=fm;sgA[i]=a;}}
 a=b+1;
 }
-const cb=(i,kk)=>{const f=bF[i];if(!(f>0))return 0;const h=Math.max(1,Math.round(kk*d8/f)),u=Math.abs(kk-h*f/d8);return Math.max(0,1-u/1.4);};
+/* Anschlag vor dem Ton-Abschnitt: der folgende stetige Ton bestimmt den Anschlag (Wechsel-Rahmen behalten den alten Ton dazu) */
+const flux=new Float32Array(n),bP=new Float32Array(n);for(let i=2;i<n;i++)flux[i]=ld[i]-Math.max(ld[i-1],ld[i-2]);
+for(let i=2;i<n-1;i++){
+if(!(flux[i]>=4&&flux[i]>=flux[i-1]&&flux[i]>=flux[i+1]))continue;
+let a=-1;for(let j=Math.max(0,i-2);j<=Math.min(n-1,i+5);j++)if(sgA[j]>=i-2){a=sgA[j];break;}
+if(a<0)continue;const fa=bF[a];
+for(let j=Math.max(0,i-1);j<a;j++){if(bF[j]&&Math.abs(12*Math.log2(bF[j]/fa))>0.6)bP[j]=bF[j];bF[j]=fa;sgA[j]=a;}
+}
+const cb1=(f,kk)=>{if(!(f>0))return 0;const h=Math.max(1,Math.round(kk*d8/f)),u=Math.abs(kk-h*f/d8);return Math.max(0,1-u/1.4);};
+const cb=(i,kk)=>Math.max(cb1(bF[i],kk),cb1(bP[i],kk));
 const resid=i=>{const o=i*K8;let t=0,on=0;for(let k=Math.floor(30/d8);k<=Math.ceil(200/d8);k++){const p=X[o+k]*X[o+k];t+=p;on+=p*Math.max(cb(i,k),i>1?cb(i-2,k):0);}return t>0?1-on/t:1;};
 /* Takt-Raster: Nähe zu Viertel/Achtel/Sechzehntel; ein Raster, das nicht zu den Anschlägen passt, zählt nicht */
 const g=d.meta.grid||{},bpm=+g.bpm,goff=+g.off||0,stp=bpm>=40&&bpm<=240?60/bpm/4:0;
-const flux=new Float32Array(n);for(let i=2;i<n;i++)flux[i]=ld[i]-Math.max(ld[i-1],ld[i-2]);
 const lvl=i=>{if(!stp)return 3;const t=cen[i]/sr,q=(t-goff)/stp,j=Math.round(q);if(Math.abs(q-j)*stp>spkvO.dg)return 3;return j%4===0?0:j%2===0?1:2;};
 let fit=1;if(stp){let a=0,c=0;for(let i=2;i<n-1;i++)if(flux[i]>=6&&flux[i]>=flux[i-1]&&flux[i]>=flux[i+1]){c++;if(lvl(i)<3)a++;}fit=c>=4?a/c:1;}
-const useG=stp&&fit>=0.6,kW=new Float32Array(n),kL=Math.max(2,Math.round(spkvO.kLen*sr/hop)),ks=[];
+const useG=stp&&fit>=0.6,kW=new Float32Array(n),aT=new Uint8Array(n),kL=Math.max(2,Math.round(spkvO.kLen*sr/hop)),ks=[];
 for(let i=2;i<n-1;i++){
 if(!(flux[i]>=flux[i-1]&&flux[i]>=flux[i+1]))continue;
 const L=useG?lvl(i):3,thr=[3,4,5,8][L];if(flux[i]<thr)continue;
 const tonal=bF[i]>0&&bF[Math.min(n-1,i+2)]>0&&sgA[Math.min(n-1,i+2)]===sgA[i];
 const rq=[0.3,0.38,0.45,0.55][L],r=Math.max(resid(i),resid(Math.min(n-1,i+1)));
-if(tonal&&r<rq)continue;
+if(tonal&&r<rq){for(let j=Math.max(0,i-1);j<=Math.min(n-1,i+3);j++)aT[j]=1;continue;}
 if(!tonal&&lo[i]<emax*1e-3)continue;
 ks.push(i);
 for(let j=i-1;j<=Math.min(n-1,i+kL+2);j++)kW[j]=Math.max(kW[j],j<i?0.5:j<=i+kL?1:1-(j-i-kL)/3);
@@ -50,13 +58,14 @@ for(let j=i-1;j<=Math.min(n-1,i+kL+2);j++)kW[j]=Math.max(kW[j],j<i?0.5:j<=i+kL?1
 if(spkvO.dbg)spkvO.dbg({f0,hm,bF,kW,ks,fit,useG,cen,flux});
 const kT=Math.min(box.k1,NB-1,Math.floor(spkvO.fT/df)),kK=Math.floor(spkvO.fK/df);
 for(let m=box.m0;m<=box.m1;m++){
-const i=m-a0,B=bF[i]>0,Kw=kW[i];if(!B&&!Kw)continue;
+const i=m-a0,B=bF[i]>0,Kw=kW[i];if(!B&&!Kw&&!aT[i])continue;
 const o=i*K8,e0=(m-box.m0)*NB;
 for(let k=0;k<=kT;k++){
 let num=0,den=0;for(let t=-1;t<=1;t++){const kk=2*k+t;if(kk<0||kk>=K8)continue;const w=t?0.5:1,p=X[o+kk]*X[o+kk]*w;num+=p*cb(i,kk);den+=p;}
-const sh=B&&den>0?num/den:0,e=E[e0+k],kq=k<=kK?Kw:0;
+const sh=B&&den>0?num/den:0,e=E[e0+k],kq=k<=kK?Kw:0,at=aT[i]&&!Kw&&k<=kK;
 let v=e;
-if(ziel==='bass'){if(B)v=kq>0?(1-kq)*Math.max(e,sh)+kq*sh:Math.max(e,sh);else if(kq>0)v=e*(1-kq);}
+if(at)v=ziel==='bass'?1:0;
+else if(ziel==='bass'){if(B)v=kq>0?(1-kq)*Math.max(e,sh)+kq*sh:Math.max(e,sh);else if(kq>0)v=e*(1-kq);}
 else{if(kq>0)v=Math.max(e,kq*(B?1-sh:1));else if(B)v=Math.min(e,1-sh);}
 E[e0+k]=v<0?0:v>1?1:v;
 }

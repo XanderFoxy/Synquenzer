@@ -1,6 +1,6 @@
 // SPKV Kern-Test: synthetischer Song (Kick/Snare/Bass bekannt) -> Spektral laden -> Zerlegen -> Verfeinern Bass -> Verfeinern Drums.
 // Misst je Ereignis, wie viel der bekannten Spur in der Ziel-Ebene landet (Projektion, Tiefpass 160 Hz bzw. Bandpass am Grundton).
-// Aufruf: node kern-spkv.mjs <neu.html> [basis.html]   (A = neu, B = basis; ohne basis nur A)
+// Aufruf: [RASTER=1] node kern-spkv.mjs <neu.html> [basis.html]   (A = neu, B = basis; ohne basis nur A)
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process'; import fs from 'node:fs'; import path from 'node:path';
 const { chromium } = createRequire(import.meta.url)('playwright');
@@ -17,7 +17,8 @@ async function lauf(which) {
   const ctx = await b.newContext({viewport: {width: 428, height: 926}, hasTouch: true, isMobile: true}); const p = await ctx.newPage(); const errs = [];
   p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errs.push(m.text()); });
   await p.goto('http://127.0.0.1:' + port + '/' + which + '.html'); await p.waitForFunction(() => window.__spk && typeof spk1Call === 'function', null, {timeout: 90000}); await p.waitForTimeout(500);
-  const r = await p.evaluate(async () => {
+  const r = await p.evaluate(async RASTER => {
+    if (RASTER) { S.bpm = 112; window.imp1Analyse = undefined; }  // RASTER=1: Projekt-Raster 112 BPM (bekannt) statt Erkennung
     const sr = 44100, bpm = 112, beat = 60 / bpm, st = beat / 4, t0 = 0.25, BARS = 6, n = Math.round((t0 + BARS * 4 * beat + 0.6) * sr);
     const kick = new Float32Array(n), snare = new Float32Array(n), bass = new Float32Array(n), hat = new Float32Array(n);
     let seed = 12345; const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647 * 2 - 1; };
@@ -66,7 +67,7 @@ async function lauf(which) {
     out.verfDrums = await mess();
     out.ms = ms;
     return out;
-  });
+  }, !!process.env.RASTER);
   r.errs = errs; await ctx.close(); return r;
 }
 const res = {};

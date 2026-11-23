@@ -1,0 +1,1 @@
+- SPKV: Spektral-Verfeinern Bass/Drums mit Kick-Erkennung im Takt-Raster, Bass-Anschlag mit Tonverlauf nicht als Kick, Grundton-Oktave geprüft (Bass 2,1 → 4,0 dB, Kick im Bass 6/16 → 2/16).

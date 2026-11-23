@@ -1,4 +1,4 @@
-# Stand 23.11.17:09 UTC
+# Stand 23.11.17:11 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -47,6 +47,10 @@
 - Plan: (1) Glätten Gleiten+Vibrato in segment (Block innerhalb vsDspMake), (2) Anlauf, (3) Marken.
 - apply.py + seg-block.js gebaut (Block GES2-SEG in vsDspMake vor segment, 1 Haken vor minF). Kern-Test 17/18 -> 18/18 (Noten 56 -> 53, Soll 53).
 - Anlauf lagefest / Konsonant über stimmhafte Rahmen: nicht angefasst (VX3 macht Letzteres schon bis 3 Rahmen).
+## ges3
+# GES3 Stand
+- Start 17:0x. Code: Gesang→Noten = vsNotesOf (VSD.segment, t0 = Rahmen*hop + 12 ms), Marken = detectMarks in vsMarksMake (Worker, Op 'det' über wpDetect/vxr2Det).
+- Plan: (A) ges3Onset nach segment in vsNotesOf: Einsatz-Noten auf die echte Onset-Probe (A.x). (B) ges3Echt in detectMarks: 'onset'-Marken in durchgehend stimmhaftem Vokal ohne Tonhöhen-Sprung, ohne tiefes Pegel-Tal und ohne Klangfarben-Wechsel fallen weg – nur für Takes ab GES3_AB (neu).
 ## imp4
 # IMP4 – Stand (fertig)
 Bau: `python3 apply.py <eingang> <ausgang>` (Eingang md5 a7515b98…, bitgleich wiederholbar; Ausgang hier `index.html`, md5 4e8506a9d44f95f4a1f6b67ff093e27c).
@@ -90,10 +94,11 @@ je version.json {"version":"4.87.0"}; Ergebnis tests/kern.out „ERGEBNIS bitgle
 erkennen a/b/a, tests/ke1-*.json), rauch.js `<port> b` (tests/rauch-b.out), tests/doppelt.out.
 
 ## spkv
-# SPKV – Stand
-- Auftrag: Spektral „Verfeinern“ (Bass/Drums): Kick-Erkennung über Anschläge im Takt-Raster, Bass-Anschläge mit tonalem Verlauf nicht als Kick, Bass-Grundton-Lage prüfen.
-- Ansatz: Nachbearbeitung der Verfeinern-Schätzung (nur Ziel bass/drums) als Block in spk1DspMake vor `async function verfeinern` + 1 Haken nach `refineEst(...)` in verfeinern. Läuft im Worker (toString).
-- Kern-Test-Datei: test/kern-spkv.mjs (in Arbeit)
+# SPKV auf 4.87.0 – Stand: fertig (gebaut, gemessen; Grenzen unten)
+Ausgang `index.html` md5 81347f5bb25e53205c248fa1e4b6eaeb (Eingang 280c5b0b6a9ed1f8ac77868fb8d5d38f). Bau: `python3 apply.py <eingang> <ausgang>`
+(Block `block.js` mit SPKV-BEGIN/-END direkt vor `async function verfeinern` in spk1DspMake → läuft im Worker, kein neuer Top-Level-Name;
+1 Haken `/*SPKV*/` nach `refineEst(...)` in verfeinern). Diff zur Basis: 1 Zeile ersetzt + Block.
+
 ## ton1
 # TON1 – Stand (fertig)
 - Ausgang: index.html = python3 apply.py ../rel-4850/index.html index.html (md5 125767aed0f89918371d0729d07a6f82).
