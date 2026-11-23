@@ -1,2 +1,5 @@
 Serving HTTP on 127.0.0.1 port 9537 (http://127.0.0.1:9537/) ...
 127.0.0.1 - - [23/Nov/2026 20:45:40] "GET /neu/version.json HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 20:46:09] "GET /neu/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 20:46:14] "GET /neu/version.json?t=1795466774385 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Nov/2026 20:46:34] "GET /neu/index.html HTTP/1.1" 200 -
