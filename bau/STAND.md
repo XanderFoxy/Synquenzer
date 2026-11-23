@@ -1,4 +1,4 @@
-# Stand 23.11.15:18 UTC
+# Stand 23.11.15:20 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -53,3 +53,6 @@ als Nächstes: nichts – bereit zur Übergabe
 - [ ] rauch.mjs
 - [ ] KARTE.md
 - [ ] base geprüft
+## zrl2
+# STAND
+- apply.py + block-lo.js + block-q.js gebaut (Tiefband-Rand + Quantisierung ohne log10). Tests laufen.
