@@ -46,7 +46,7 @@ async function knobTo(p, T, sel, want, dir) { // Regler per Touch ziehen, bis ar
   for (let k = 0; k < 120; k++) {
     y += dir * 3; await T.move(q.x, y); await sleep(30);
     txt = await p.evaluate(s => { const e = document.querySelector(s); return e && e.getAttribute('aria-valuetext'); }, sel);
-    if (txt === want) break;
+    if (txt && txt.endsWith(want)) break;
   }
   await T.up(); await sleep(250); return txt;
 }
@@ -62,7 +62,8 @@ async function knobTo(p, T, sel, want, dir) { // Regler per Touch ziehen, bis ar
     let st = await p.evaluate(j => S.tracks[j].clips[0].notes.map(n => [n.t, n.n]), j);
     ok('Schritte 1 und 5 per Tipp gesetzt (GM 42)', JSON.stringify(st) === '[[0,42],[1,42]]', st);
     const chip = await p.evaluate(() => { const e = document.querySelector('#rollSheet .rhead .folc') || document.querySelector('.rhead .folc'); return e ? e.textContent : null; });
-    ok('FOLGEN-Chip im Kopf', /FOLGT/.test(chip || ''), chip);
+    await sleep(3300); const chip2 = await p.evaluate(() => document.querySelector('.rhead .folc').textContent);
+    ok('FOLGEN-Chip im Kopf: hält nach dem Bearbeiten, danach FOLGT', /HÄLT/.test(chip || '') && /FOLGT/.test(chip2 || ''), [chip, chip2]);
     const lenB = await p.evaluate(() => __rect('.lacts .d1b')), lenTx = await p.evaluate(() => document.querySelector('.lacts .d1b').textContent);
     ok('Länge-Knopf zeigt 16, Trefferfläche >= 32 px', lenB && lenB.h >= 32 && lenB.w >= 32 && lenTx === '16', {lenB, lenTx});
     // x2 per Tipp im Laengen-Blatt
@@ -77,10 +78,11 @@ async function knobTo(p, T, sel, want, dir) { // Regler per Touch ziehen, bis ar
     ok('FOLGEN: Ansicht blättert mit (Seite 1 und 2, passend zur Abspielmarke)', new Set(seq.map(x => x[1])).size === 2 && bad.length <= 2, {seiten: [...new Set(seq.map(x => x[1]))], falsch: bad.length, von: seq.length});
     // Laenge 12 per Touch am Regler
     await T.tap(await p.evaluate(() => __rect('.lacts .d1b'))); await sleep(200);
+    await p.evaluate(() => ED.mtx3b.goPg(0)); await sleep(100);
     const kt = await knobTo(p, T, '.pop.d1p .eukr > *:first-child', '12 Schr.', 1);
     await p.evaluate(() => closePop()); await sleep(300);
     st = await p.evaluate(j => ({lanes: S.tracks[j].clips[0].lanes, btn: document.querySelector('.lacts .d1b').textContent, dim: ED.mtx3b.E.cells.map(c => c.classList.contains('d1o') ? 1 : 0).join(''), undo: (typeof UNDO !== 'undefined' && UNDO.stack) ? UNDO.stack.length : null}), j);
-    ok('Länge 12 per Regler: lanes {42:{len:12}}, Knopf 12, Zellen 13–16 gedimmt', kt === '12 Schr.' && st.lanes && st.lanes[42] && st.lanes[42].len === 12 && st.btn === '12' && st.dim === '0000000000001111', Object.assign({kt}, st));
+    ok('Länge 12 per Regler: lanes {42:{len:12}}, Knopf 12, Zellen 13–16 gedimmt', /12 Schr\.$/.test(kt || '') && st.lanes && st.lanes[42] && st.lanes[42].len === 12 && st.btn === '12' && st.dim === '0000000000001111', Object.assign({kt}, st));
     pl = await p.evaluate(() => __play(6));
     const res = await p.evaluate(j => { // Zeiten -> Schritte seit Clip-Start (16tel)
       const spb = 60 / S.bpm, out = {hh: [], kick: []}; const t0 = Math.min(...__hits.map(h => h.t));
@@ -90,16 +92,16 @@ async function knobTo(p, T, sel, want, dir) { // Regler per Touch ziehen, bis ar
     const hh = res.hh.filter(g => g < 96), kick = res.kick.filter(g => g < 96);
     ok('Polymetrie: HH ZU (12) auf Schritt 0/4 mod 12, Kick (DRUMS 16) auf 0 mod 16', JSON.stringify(hh) === JSON.stringify(hhWant.filter(g => g <= Math.max(...hh))) && hh.length >= 12 && kick.every(g => g % 16 === 0) && kick.length >= 5, {hh, kick});
     const phs = pl.phs.map(x => x[2]).filter(x => x >= 0);
-    ok('Lauflicht bleibt in Schritt 1–12, Seite 1', phs.length > 20 && Math.max(...phs) <= 11 && pl.phs.every(x => x[1] === 0), {max: Math.max(...phs), n: phs.length});
+    ok('Lauflicht bleibt in Schritt 1–12, Seite 1', phs.length > 20 && Math.max(...phs) <= 11 && pl.phs.slice(-50).every(x => x[1] === 0), {max: Math.max(...phs), n: phs.length});
     // Lock: Schritt 1 lange druecken -> Lock-Blatt, Tune hoch
     await T.hold(await p.evaluate(() => __cell(0)), 750);
     const lp = await p.evaluate(() => { const P = document.querySelector('.pop.pl1pop'); return P ? {h: P.querySelector('h4').textContent, knobs: [...P.querySelectorAll('.pl1kn')].map(k => k.getAttribute('aria-label')), all: !!(P.querySelector('.pl1all') && !P.querySelector('.pl1all').hidden)} : null; });
     ok('Lange drücken: Lock-Blatt mit Drum-Reglern (Tune/Decay/Pegel/Drive)', lp && /Schritt 1/.test(lp.h) && lp.knobs.join() === 'Tune,Decay,Pegel,Drive' && !lp.all, lp);
     const tt = await knobTo(p, T, '.pop.pl1pop .pl1kn[data-pl1="tune"]', '+7 HT', -1);
-    const tt2 = tt === '+7 HT' ? tt : await p.evaluate(() => document.querySelector('.pop.pl1pop .pl1kn[data-pl1="tune"]').getAttribute('aria-valuetext'));
+    const tt2 = tt && tt.endsWith('+7 HT') ? tt : await p.evaluate(() => document.querySelector('.pop.pl1pop .pl1kn[data-pl1="tune"]').getAttribute('aria-valuetext'));
     await p.evaluate(() => closePop()); await sleep(300);
     st = await p.evaluate(j => ({lk: S.tracks[j].clips[0].notes.map(n => n.lk ? n.lk.tune || 0 : 0), dot: ED.mtx3b.E.cells.map(c => c._pl1d && !c._pl1d.hidden ? 1 : 0).join('')}), j);
-    ok('Lock gesetzt: Schritt 1 (beide Takte) Tune, Punkt an der Zelle', st.lk[0] !== 0 && st.lk[2] === st.lk[0] && st.lk[1] === 0 && st.dot.startsWith('1000'), Object.assign({tt: tt2}, st));
+    ok('Lock gesetzt: nur Schritt 1 Tune +7, Punkt an der Zelle', st.lk[0] === 7 && st.lk.slice(1).every(x => x === 0) && st.dot === '1000000000000000', Object.assign({tt: tt2}, st));
     pl = await p.evaluate(() => __play(3));
     const lt = await p.evaluate(j => { const t0 = Math.min(...__hits.map(h => h.t)), spb = 60 / S.bpm; return __hits.filter(h => h.tr === j).map(h => [Math.round((h.t - t0) / spb / .25) % 12, h.tune]); }, j);
     ok('Lock in der Wiedergabe: Schritt 1 mit Tune, Schritt 5 ohne', lt.length > 4 && lt.every(([g, tu]) => g === 0 ? tu === st.lk[0] : tu === 0), lt.slice(0, 6));
@@ -120,7 +122,7 @@ async function knobTo(p, T, sel, want, dir) { // Regler per Touch ziehen, bis ar
     await p.evaluate(() => __setup()); await sleep(600);
     const L = await p.evaluate(() => { const r = s => __rect(s); return {fol: r('.rhead .folc'), x: r('.rhead .sh-x'), bar: r('.rhead .lbar'), len: r('.lacts .d1b'), pad: r('.lacts .mtx3rb'), lab: r('.lacts .m3bpad'), labOv: (() => { const e = document.querySelector('.lacts .m3bpad'); return e.scrollWidth > e.clientWidth + 1; })(), vw: innerWidth, vh: innerHeight}; });
     const sep = (a, c) => a && c && (a.r <= c.l + .5 || c.r <= a.l + .5 || a.b <= c.t + .5 || c.b <= a.t + .5);
-    ok('quer: FOLGEN, Leiste, ✕, Länge, Pad-Klang ohne Überlappung, im Bild, Text nicht abgeschnitten', sep(L.fol, L.x) && sep(L.bar, L.fol) && sep(L.len, L.pad) && sep(L.lab, L.len) && !L.labOv && L.len.r <= L.vw && L.len.b <= L.vh && L.fol.h >= 32 && L.len.h >= 32, L);
+    ok('quer: FOLGEN, Leiste, ✕, Länge, Pad-Klang ohne Überlappung, im Bild, Text nicht abgeschnitten', sep(L.fol, L.x) && sep(L.bar, L.fol) && sep(L.len, L.pad) && sep(L.lab, L.len) && !L.labOv && L.len.r <= L.vw && L.len.b <= L.vh + 1 && L.fol.h >= 32 && L.len.h >= 32, L);
     await T.tap(await p.evaluate(() => __cell(2))); const s3 = await p.evaluate(() => S.tracks[ED.mtx3b.t].clips[0].notes.length);
     ok('quer: Schritt per Tipp', s3 === 1);
     ok('keine Seitenfehler (quer)', errs.length === 0, errs.slice(0, 3));

@@ -1,0 +1,371 @@
+{
+ "neu": {
+  "hoch": {
+   "eng": {
+    "eng0": "analog",
+    "plain": "230a60ab230a60ab",
+    "ks": "ccf6096dccf6096d",
+    "lock": {
+     "ksF2c": {
+      "pair": [
+       -9013,
+       299.9369671004747
+      ],
+      "dB": -5.7,
+      "gleich": false
+     },
+     "ksF2r": {
+      "pair": [
+       -9014,
+       0.95
+      ],
+      "dB": -15,
+      "gleich": false
+     },
+     "ksF2e": {
+      "pair": [
+       -9015,
+       -0.8
+      ],
+      "dB": -13.4,
+      "gleich": false
+     },
+     "ksF2m": {
+      "pair": [
+       -9016,
+       0.15
+      ],
+      "dB": -20,
+      "gleich": false
+     },
+     "ksPe": {
+      "pair": [
+       -9017,
+       12
+      ],
+      "dB": 2.5,
+      "gleich": false
+     },
+     "ksR1": {
+      "pair": [
+       -9009,
+       16
+      ],
+      "dB": -6.3,
+      "gleich": false
+     },
+     "ksG1": {
+      "pair": [
+       -9010,
+       1
+      ],
+      "dB": -0.1,
+      "gleich": false
+     },
+     "ksAa": {
+      "pair": [
+       -9000,
+       1
+      ],
+      "dB": -8.5,
+      "gleich": false
+     },
+     "ksAr": {
+      "pair": [
+       -9002,
+       2
+      ],
+      "dB": -18.1,
+      "gleich": false
+     },
+     "ksFa": {
+      "pair": [
+       -9003,
+       0.5
+      ],
+      "dB": -6,
+      "gleich": false
+     },
+     "ksMd": {
+      "pair": [
+       -9007,
+       2
+      ],
+      "dB": 2.2,
+      "gleich": false
+     },
+     "ksR2": {
+      "pair": [
+       -9011,
+       8
+      ],
+      "dB": -30.1,
+      "gleich": false
+     },
+     "ksG2": {
+      "pair": [
+       -9012,
+       0.5
+      ],
+      "dB": -17.6,
+      "gleich": false
+     }
+    },
+    "mod": {
+     "pe": {
+      "kept": true,
+      "dB": 4.4,
+      "gleich": false
+     },
+     "f2cut": {
+      "kept": true,
+      "dB": -15.4,
+      "gleich": false
+     },
+     "f2res": {
+      "kept": true,
+      "dB": -10.4,
+      "gleich": false
+     },
+     "f2amt": {
+      "kept": true,
+      "dB": -21.3,
+      "gleich": false
+     },
+     "f2mix": {
+      "kept": true,
+      "dB": -45.4,
+      "gleich": false
+     },
+     "ras1": {
+      "kept": true,
+      "dB": -6.2,
+      "gleich": false
+     },
+     "ras2": {
+      "kept": true,
+      "dB": -23.7,
+      "gleich": false
+     },
+     "takt": {
+      "kept": true,
+      "dB": -0.4,
+      "gleich": false
+     }
+    }
+   },
+   "ui": {
+    "pv": true,
+    "linien0": 0,
+    "tabs": [
+     "LFO",
+     "LFO 1"
+    ],
+    "linien": 15,
+    "pvBox": {
+     "x": 255,
+     "y": 335,
+     "w": 150,
+     "h": 56
+    },
+    "ziele": [
+     "pitch",
+     "o2pitch",
+     "pw",
+     "o1lvl",
+     "o2lvl",
+     "o3lvl",
+     "noise",
+     "unidet",
+     "pe",
+     "cutoff",
+     "res",
+     "drive",
+     "fenv",
+     "f2cut",
+     "f2res",
+     "f2amt",
+     "f2mix",
+     "amp",
+     "pan",
+     "ras1",
+     "ras2",
+     "takt",
+     "fx.rev",
+     "fx.dly",
+     "fx.pan",
+     "fx.vol"
+    ],
+    "popup": {
+     "ueberlapp": 0,
+     "klein": 0,
+     "raus": 0,
+     "abgeschnitten": 0
+    },
+    "mods": [
+     "vel>cutoff",
+     "lfo1>f2cut"
+    ]
+   },
+   "errs": []
+  },
+  "quer": {
+   "ui": {
+    "pv": true,
+    "linien0": 0,
+    "tabs": [
+     "LFO",
+     "LFO 1"
+    ],
+    "linien": 15,
+    "pvBox": {
+     "x": 255,
+     "y": 201,
+     "w": 117.703125,
+     "h": 56
+    },
+    "ziele": [
+     "pitch",
+     "o2pitch",
+     "pw",
+     "o1lvl",
+     "o2lvl",
+     "o3lvl",
+     "noise",
+     "unidet",
+     "pe",
+     "cutoff",
+     "res",
+     "drive",
+     "fenv",
+     "f2cut",
+     "f2res",
+     "f2amt",
+     "f2mix",
+     "amp",
+     "pan",
+     "ras1",
+     "ras2",
+     "takt",
+     "fx.rev",
+     "fx.dly",
+     "fx.pan",
+     "fx.vol"
+    ],
+    "popup": {
+     "ueberlapp": 0,
+     "klein": 0,
+     "raus": 0,
+     "abgeschnitten": 0
+    },
+    "mods": [
+     "vel>cutoff",
+     "lfo1>f2cut"
+    ]
+   },
+   "errs": []
+  }
+ },
+ "basis": {
+  "hoch": {
+   "eng": {
+    "eng0": "analog",
+    "plain": "230a60ab230a60ab",
+    "ks": "ccf6096dccf6096d"
+   },
+   "ui": {
+    "pv": true,
+    "linien0": null,
+    "tabs": [
+     "LFO",
+     "LFO 1"
+    ],
+    "linien": null,
+    "pvBox": {
+     "x": 255,
+     "y": 335,
+     "w": 150,
+     "h": 56
+    },
+    "ziele": [
+     "pitch",
+     "o2pitch",
+     "pw",
+     "o1lvl",
+     "o2lvl",
+     "o3lvl",
+     "noise",
+     "unidet",
+     "cutoff",
+     "res",
+     "drive",
+     "fenv",
+     "amp",
+     "pan",
+     "fx.rev",
+     "fx.dly",
+     "fx.pan",
+     "fx.vol"
+    ],
+    "popup": {
+     "ueberlapp": 0,
+     "klein": 0,
+     "raus": 0,
+     "abgeschnitten": 0
+    },
+    "mods": [
+     "vel>cutoff"
+    ]
+   },
+   "errs": []
+  },
+  "quer": {
+   "ui": {
+    "pv": true,
+    "linien0": null,
+    "tabs": [
+     "LFO",
+     "LFO 1"
+    ],
+    "linien": null,
+    "pvBox": {
+     "x": 255,
+     "y": 201,
+     "w": 117.703125,
+     "h": 56
+    },
+    "ziele": [
+     "pitch",
+     "o2pitch",
+     "pw",
+     "o1lvl",
+     "o2lvl",
+     "o3lvl",
+     "noise",
+     "unidet",
+     "cutoff",
+     "res",
+     "drive",
+     "fenv",
+     "amp",
+     "pan",
+     "fx.rev",
+     "fx.dly",
+     "fx.pan",
+     "fx.vol"
+    ],
+    "popup": {
+     "ueberlapp": 0,
+     "klein": 0,
+     "raus": 0,
+     "abgeschnitten": 0
+    },
+    "mods": [
+     "vel>cutoff"
+    ]
+   },
+   "errs": []
+  }
+ }
+}
+ALLE OK

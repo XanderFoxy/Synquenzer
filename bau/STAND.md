@@ -1,4 +1,4 @@
-# Stand 23.11.18:02 UTC
+# Stand 23.11.18:04 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -80,6 +80,8 @@ Zwischenstand: index.html md5 22ab2c830720f2b66264382eea08eb61 (Zaun-Wartegrenze
 # GES4 Stand
 - Start 17:5x. Eingang 4.88.0 (695af…). Plan: Konsonant-Anlauf in ges3Onset genauer + Vibrato-Glätten vor Stufensuche (VSD.segment).
 - 18:3x: apply.py + block.js (Vibrato-Tal + Gleit-Lücke, nur o.ges4) + kons-block.js (ges4Kons). Kern-Test kern-test.cjs läuft (A/B/C).
+- FERTIG. Ausgang index.html (md5 cd3fe9bb41a0cb43c37cb0d38981f3c6). Bau: python3 apply.py <eingang 4.88.0> <ausgang> (braucht block.js, kons-block.js im selben Ordner).
+- Was: (A) kons-block.js = ges4Kons vor ges3Onset: schmales (≤ 6 ms), tiefes Pegel-Tal mit Konsonant-Pegel davor und ≥ 25 dB Anstieg danach → Einsatz = Tal-Boden (sonst GES3-Regel). (B) block.js in VSD.segment, nur mit o.ges4 (nur vsNotesOf übergibt ges4:1): Pegel-Tal < 12 dB mitten im Vibrato (Tonhöhe schwingt 0,2–2,5 HT, ≥ 2 Umkehrpunkte in ±150 ms, keine Stufe) schneidet nicht; stimmlose Lücke ≤ 45 ms mitten in einem Gleiten (Steigung ≥ 0,25 HT/20 ms, Ziel passt ±1 HT, kein Pegel-Tal > 3 dB) wird überbrückt.
 ## imp4
 # IMP4 – Stand (fertig)
 Bau: `python3 apply.py <eingang> <ausgang>` (Eingang md5 a7515b98…, bitgleich wiederholbar; Ausgang hier `index.html`, md5 4e8506a9d44f95f4a1f6b67ff093e27c).
@@ -113,6 +115,12 @@ Bau: `python3 apply.py <eingang> <ausgang>` (Eingang 4.88.0, md5 695af0504463a63
 ## kmp1
 fertig: KMP1 gebaut und getestet (index.html md5 b4943476ff3b5bc6951d20cbf9d37914, apply.py, block.js, kern.js, hoch.png, quer.png, KURZ.md, CHANGES.md)
 als Nächstes: nichts – bereit zur Übernahme
+## ksm
+# KSM – Stand (fertig, kleiner Umfang ehrlich unten)
+Bau: `python3 apply.py <eingang> <ausgang>` (Eingang 4.88.0 md5 695af0504463a6385e21dc94e55b00c9; Ausgang hier `index.html`, md5 171211a57a73f348b5823c45c677ac1f).
+Quellen: `block-wk.js` (Worklet, ASCII, /* KSM-BEGIN (worklet) */ vor `function ks4Def(){`), `block.js` (Hauptskript, /* KSM-BEGIN */ vor `function ks4PageLfo(pg,i,n){`).
+Haken (Code-Anker, je feste Trefferzahl): Worklet `startVoice` → `this.ksmV(v,this.lkEv)` nach lkStart; lkStart überspringt Paare -9000…-9017 (kein lkBad);
+`ks4Lfo`/`ks4Ctl`-Aufruf → `ksmLfo`/`ksmCtl` (ohne v.ksm exakt alter Aufruf); `ks4Post` m/k je Stimme (v.ksmF); `ks4Der` liest Takt-Schläge aus P statt Q (gleiche Werte)
 ## lt2
 # LT2 STAND
 - 15:2x block.js + apply.py gebaut (Stückweise-Vorzeichnen bei Tönung), Test folgt

@@ -1,0 +1,1 @@
+GES4: Gesang→Noten – Konsonant-Silben setzen am Vokalbeginn ein (Fehler 2,9 → 0,3 ms, lagefest), Vibrato-Ton zerfällt nicht mehr (richtige Noten-Zahl 29/36 → 35/36, Noten 79 → 55 bei Soll 54); Pause-Einsätze, Gleit- und Marken-Test unverändert.
