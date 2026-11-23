@@ -1,202 +1,292 @@
 {
-  "stand": "2026-11-22",
-  "haupt": [
-    {
-      "id": "synq",
-      "name": "Synquenzer",
-      "link": "../",
-      "version": "4.82.0",
-      "kurz": "Die Musik-App: Clips, Szenen, Song, Gesang, Mischen und Video – bis 16 Spuren.",
-      "ausprobieren": [
-        "Im Vorzähler singen: Der Auftakt bleibt drin, der Clip startet trotzdem auf der 1.",
-        "Gesang ausrichten ohne Stottern – Tonhöhe einrasten: Aus, Weich oder Hart.",
-        "Im Gesang-Editor stehen Bereinigen und Chor jetzt direkt oben.",
-        "Chorstimmen einzeln anhören (S) oder stumm schalten (M)."
-      ],
-      "in_arbeit": [
-        "4.83 im Test: Arp auf jeder Synth-Spur, Klangschule, Klang erkennen, DAW-Projekt öffnen, Video mit richtigem Ton.",
-        "Danach 4.84: Gesang-Auftakt im Loop mit Fähnchen, dazu leichtere Bedienung.",
-        "Geplant: eigene Ansicht für die Synth-Klänge aus der DAW.",
-        "Geplant: Song als DAW-Projekt speichern."
-      ],
-      "brauche": [
-        "Fotos deiner Effekt-Listen in der DAW – damit ich die Synth-Klänge mit allen Effekten genau ausmessen kann.",
-        "Eine kleine DAW-Datei (.cbp) mit einer Automations-Kurve – damit ich Songs als DAW-Projekt speichern kann."
-      ]
-    },
-    {
-      "id": "mischpult",
-      "name": "Mischpult",
-      "link": "../mischpult/",
-      "version": "0.2",
-      "kurz": "Spuren mischen und mastern, fertige Datei auf Lautheit prüfen.",
-      "ausprobieren": [
-        "Messwerte an mich schicken – ohne Ton."
-      ],
-      "in_arbeit": [],
-      "brauche": []
-    },
-    {
-      "id": "wall",
-      "name": "The Wall – Ablage",
-      "link": "../the-wall/",
-      "version": "v10",
-      "kurz": "Alles zum Song: Master, Projekte, Gesang, Noten, Video – mit der Gesang-Werkstatt.",
-      "ausprobieren": [
-        "v10 anhören: Gesang bearbeitet, mit Vergleich v7 gegen v10.",
-        "Gesang-Werkstatt (in der Ablage bei v10): Silben auf der Welle, Stellen markieren, Notiz an mich schicken.",
-        "Projekt v8: ein ZIP mit Master-Presets und Bass-Hörprobe."
-      ],
-      "in_arbeit": [
-        "v11: deine eigene zweite Stimme nach vorn, keine schiefen Reibungen, Gesang offener.",
-        "Werkstatt 2: Schichten übereinander wie Zwiebelschalen, Silben hörbar ziehen."
-      ],
-      "brauche": [
-        "Ein Preset aus deinem Master-Effekt: Presets › Save › Share › an die Ton-Post."
-      ]
-    },
-    {
-      "id": "mv",
-      "name": "Mein Vorteil",
-      "link": "../mein-vorteil/",
-      "version": "Fassung 13",
-      "kurz": "Deals, Wochenangebote, Filme, Konzerte und Spartricks auf einer Seite – mit Push.",
-      "ausprobieren": [
-        "Produkte merken: deine Merkliste.",
-        "Angebote nach Tag sortiert.",
-        "Push genau am ersten Tag eines Angebots."
-      ],
-      "in_arbeit": [],
-      "brauche": []
-    },
-    {
-      "id": "atem",
-      "name": "Atem",
-      "link": "../atem/",
-      "version": "0.2.2",
-      "kurz": "Ruhige Atemübungen und Meditationen mit Ansage – alles bleibt auf deinem Gerät.",
-      "ausprobieren": [
-        "Die Figur hat jetzt Hände aus Glas.",
-        "Bei kurzen Atemstößen bleibt das Bild ruhig.",
-        "Die Namen an der Figur springen nicht mehr."
-      ],
-      "in_arbeit": [],
-      "brauche": [
-        "Kurze Antwort: Soll das Einzählen 3-2-1 bleiben?"
-      ]
-    },
-    {
-      "id": "foto",
-      "name": "Bildwerk",
-      "link": "../foto/",
-      "version": "0.5.0",
-      "kurz": "Fotos bearbeiten auf dem Gerät – auch mehrere auf einmal.",
-      "ausprobieren": [
-        "Große Fotos brauchen weniger Speicher.",
-        "Öffnet ohne Warten."
-      ],
-      "in_arbeit": [],
-      "brauche": []
-    },
-    {
-      "id": "ticke",
-      "name": "Wie ich ticke",
-      "link": "../ticke/",
-      "version": "0.2.1",
-      "kurz": "Dich selbst besser verstehen – mit Fragebögen und Spiel, ehrlich und ohne Diagnose.",
-      "ausprobieren": [
-        "Neues Spiel „Entweder-oder“ – mit Kontrollfragen, ob du aufmerksam antwortest.",
-        "Dein Profil sagt ehrlich, wie sicher es ist."
-      ],
-      "in_arbeit": [],
-      "brauche": []
-    },
-    {
-      "id": "tiktok",
-      "name": "TikTok-Ideenbuch",
-      "link": "https://claude.ai/artifact/3NTW2KyXoKJxFLfRtNNmyN",
-      "version": "",
-      "kurz": "Unsinn-Fragen zum Vorlesen und alle Video-Ideen an einem Ort – eigene Seite.",
-      "ausprobieren": [
-        "Mischmaschine: neue Unsinn-Fragen mischen und groß zeigen.",
-        "Eigene Ideen speichern, Favoriten markieren, suchen."
-      ],
-      "in_arbeit": [
-        "Neue Ideen aus dem Chat trage ich laufend ein."
-      ],
-      "brauche": []
-    },
-    {
-      "id": "c2",
-      "name": "Feinschliff",
-      "link": "../c2/",
-      "version": "0.6.0",
-      "kurz": "Deutsch auf C2-Niveau in 10-Minuten-Runden: Hören, Lesen, Grammatik, Schreiben, Sprechen.",
-      "ausprobieren": [
-        "176 Übungen auf C1- und C2-Niveau.",
-        "Zwei neue Lesetexte.",
-        "Auswählen statt Eintippen."
-      ],
-      "in_arbeit": [
-        "Die nächste Runde kommt, sobald neue Wünsche da sind."
-      ],
-      "brauche": []
-    },
-    {
-      "id": "dmx",
-      "name": "Deutsch mit Xander",
-      "link": "https://xanderfoxy.github.io/Deutsch-Mit-Xander/",
-      "version": "Fassung 888",
-      "kurz": "Deutsch lernen: Grammatik üben, Wörter lernen und Deutschland entdecken.",
-      "ausprobieren": [
-        "Übungen öffnen beim ersten Mal schneller."
-      ],
-      "in_arbeit": [],
-      "brauche": []
-    },
-    {
-      "id": "kb",
-      "name": "Kaninchenbau",
-      "link": "../kaninchenbau/",
-      "version": "0.1.0",
-      "kurz": "Lernen, was dich interessiert – von Einsteiger bis Profi, mit echten Quellen.",
-      "ausprobieren": [
-        "Startfragen: Was interessiert dich?",
-        "4 Gebiete mit je 3 Stufen – Einsteiger, Fortgeschritten, Profi.",
-        "Ein Baum zeigt, wie die Themen zusammenhängen."
-      ],
-      "in_arbeit": [
-        "0.2: Antworten korrigieren, Fortschritt in Prozent, Karte."
-      ],
-      "brauche": []
-    }
-  ],
-  "werkzeuge": [
-    {
-      "id": "tonpost",
-      "name": "Ton-Post",
-      "link": "../ton-post/",
-      "wofuer": "Dateien sicher an mich schicken – gerade für das Master-Preset von The Wall."
-    }
-  ],
-  "weg": [
-    { "name": "Gesang-Werkstatt", "link": "../the-wall/werkstatt/", "grund": "Teil von The Wall – in der Ablage bei v10 verlinkt." },
-    { "name": "Akkorde ziehen", "link": "../the-wall/noten/AKKORDE-ZIEHEN.html", "grund": "Teil von The Wall – in der Ablage bei den Noten." },
-    { "name": "Mein Vorteil – Deals", "link": "../mein-vorteil/#deals", "grund": "Abschnitt von Mein Vorteil." },
-    { "name": "Mein Vorteil – Woche", "link": "../mein-vorteil/#woche", "grund": "Abschnitt von Mein Vorteil." },
-    { "name": "Mein Vorteil – Filme", "link": "../mein-vorteil/#filme", "grund": "Abschnitt von Mein Vorteil." },
-    { "name": "Mein Vorteil – Konzerte", "link": "../mein-vorteil/#konzerte", "grund": "Abschnitt von Mein Vorteil." },
-    { "name": "Im Synquenzer finden (Wege)", "link": "#finden", "grund": "Teil des Synquenzers – steht in der App unter ≡ Menü › Wo finde ich …?" },
-    { "name": "Messung", "link": "../messung/", "grund": "Erledigt: Dein Handy schafft 16 Spuren ohne Aussetzer – ist so eingebaut." },
-    { "name": "Gesang-Vorschau", "link": "../vorschau-gesang/", "grund": "Alte Testfassung (4.23) – alles davon steckt im Synquenzer." },
-    { "name": "Geräte-Probe", "link": "../probe-g9/", "grund": "Erledigt – das Ergebnis ist im Synquenzer eingebaut." },
-    { "name": "Probe Audio-Interface", "link": "../probe-interface/", "grund": "Erledigt – alle Varianten getestet." },
-    { "name": "Probe Audio-Interface – Ausgang 2", "link": "../probe-interface/v2.html", "grund": "Teil der erledigten Interface-Probe." },
-    { "name": "Probe Audio-Interface – Ausgang 3", "link": "../probe-interface/v3.html", "grund": "Teil der erledigten Interface-Probe." },
-    { "name": "Probe Audio-Interface – Ausgang 4", "link": "../probe-interface/v4.html", "grund": "Teil der erledigten Interface-Probe." },
-    { "name": "Schnäppchen (alte Adresse)", "link": "../schnaeppchen/", "grund": "Leitet nur zu Mein Vorteil weiter." },
-    { "name": "Vorteile (alte Adresse)", "link": "../vorteile/", "grund": "Leitet nur zu Mein Vorteil weiter." },
-    { "name": "Konzerte (alte Adresse)", "link": "../konzerte/", "grund": "Leitet nur zu Mein Vorteil weiter." },
-    { "name": "Spar-Tipps (alt)", "link": "../vorteile/spartipps.html", "grund": "Alte Seite – die Spartricks sind jetzt in Mein Vorteil." }
-  ]
+ "stand": "2026-11-23",
+ "haupt": [
+  {
+   "id": "synq",
+   "name": "Synquenzer",
+   "link": "../",
+   "version": "4.82.0",
+   "kurz": "Die Musik-App: Clips, Szenen, Song, Gesang, Mischen und Video – bis 16 Spuren.",
+   "ausprobieren": [
+    "Im Vorzähler singen: Der Auftakt bleibt drin, der Clip startet trotzdem auf der 1.",
+    "Gesang ausrichten ohne Stottern – Tonhöhe einrasten: Aus, Weich oder Hart.",
+    "Im Gesang-Editor stehen Bereinigen und Chor jetzt direkt oben.",
+    "Chorstimmen einzeln anhören (S) oder stumm schalten (M)."
+   ],
+   "in_arbeit": [
+    "4.83 im Test: Arp auf jeder Synth-Spur, Klangschule, Klang erkennen, DAW-Projekt öffnen, Video mit richtigem Ton.",
+    "Danach 4.84: Gesang-Auftakt im Loop mit Fähnchen, dazu leichtere Bedienung.",
+    "Geplant: eigene Ansicht für die Synth-Klänge aus der DAW.",
+    "Geplant: Song als DAW-Projekt speichern."
+   ],
+   "brauche": [
+    "Fotos deiner Effekt-Listen in der DAW – damit ich die Synth-Klänge mit allen Effekten genau ausmessen kann.",
+    "Eine kleine DAW-Datei (.cbp) mit einer Automations-Kurve – damit ich Songs als DAW-Projekt speichern kann."
+   ]
+  },
+  {
+   "id": "mischpult",
+   "name": "Mischpult",
+   "link": "../mischpult/",
+   "version": "0.2",
+   "kurz": "Spuren mischen und mastern, fertige Datei auf Lautheit prüfen.",
+   "ausprobieren": [
+    "Messwerte an mich schicken – ohne Ton."
+   ],
+   "in_arbeit": [],
+   "brauche": []
+  },
+  {
+   "id": "wall",
+   "name": "The Wall – Ablage",
+   "link": "../the-wall/",
+   "version": "v10",
+   "kurz": "Alles zum Song: Master, Projekte, Gesang, Noten, Video – mit der Gesang-Werkstatt.",
+   "ausprobieren": [
+    "v10 anhören: Gesang bearbeitet, mit Vergleich v7 gegen v10.",
+    "Gesang-Werkstatt (in der Ablage bei v10): Silben auf der Welle, Stellen markieren, Notiz an mich schicken.",
+    "Projekt v8: ein ZIP mit Master-Presets und Bass-Hörprobe."
+   ],
+   "in_arbeit": [
+    "v11: deine eigene zweite Stimme nach vorn, keine schiefen Reibungen, Gesang offener.",
+    "Werkstatt 2: Schichten übereinander wie Zwiebelschalen, Silben hörbar ziehen."
+   ],
+   "brauche": [
+    "Ein Preset aus deinem Master-Effekt: Presets › Save › Share › an die Ton-Post."
+   ]
+  },
+  {
+   "id": "songs",
+   "name": "Meine Songs",
+   "link": "https://claude.ai/artifact/SzZJqjqN6g6hRsbgGNLygn",
+   "version": "",
+   "kurz": "Alle Songs zum Mastern an einem Ort: was fertig ist, was noch fehlt, dein Lautheits-Ziel.",
+   "ausprobieren": [
+    "Song antippen: Stand je Schritt (Spuren, Gesang, Mix, Master, Streaming, Live).",
+    "„Brauche ich von dir“ oben zeigt, was du mir schicken sollst.",
+    "Neuen Song anlegen oder „Als Nächstes mastern“ antippen – ich lese das bei jeder Runde."
+   ],
+   "in_arbeit": [
+    "The Wall v11 und der Instrumental-Master werden eingetragen, sobald sie fertig sind."
+   ],
+   "brauche": [
+    "So schön ist die Weihnacht: Spuren trocken über die Ton-Post und die Cubasis-Datei (.cbp)."
+   ]
+  },
+  {
+   "id": "mv",
+   "name": "Mein Vorteil",
+   "link": "../mein-vorteil/",
+   "version": "Fassung 13",
+   "kurz": "Deals, Wochenangebote, Filme, Konzerte und Spartricks auf einer Seite – mit Push.",
+   "ausprobieren": [
+    "Produkte merken: deine Merkliste.",
+    "Angebote nach Tag sortiert.",
+    "Push genau am ersten Tag eines Angebots."
+   ],
+   "in_arbeit": [],
+   "brauche": []
+  },
+  {
+   "id": "atem",
+   "name": "Atem",
+   "link": "../atem/",
+   "version": "0.2.2",
+   "kurz": "Ruhige Atemübungen und Meditationen mit Ansage – alles bleibt auf deinem Gerät.",
+   "ausprobieren": [
+    "Die Figur hat jetzt Hände aus Glas.",
+    "Bei kurzen Atemstößen bleibt das Bild ruhig.",
+    "Die Namen an der Figur springen nicht mehr."
+   ],
+   "in_arbeit": [],
+   "brauche": [
+    "Kurze Antwort: Soll das Einzählen 3-2-1 bleiben?"
+   ]
+  },
+  {
+   "id": "foto",
+   "name": "Bildwerk",
+   "link": "../foto/",
+   "version": "0.5.0",
+   "kurz": "Fotos bearbeiten auf dem Gerät – auch mehrere auf einmal.",
+   "ausprobieren": [
+    "Große Fotos brauchen weniger Speicher.",
+    "Öffnet ohne Warten."
+   ],
+   "in_arbeit": [],
+   "brauche": []
+  },
+  {
+   "id": "ticke",
+   "name": "Wie ich ticke",
+   "link": "../ticke/",
+   "version": "0.2.1",
+   "kurz": "Dich selbst besser verstehen – mit Fragebögen und Spiel, ehrlich und ohne Diagnose.",
+   "ausprobieren": [
+    "Neues Spiel „Entweder-oder“ – mit Kontrollfragen, ob du aufmerksam antwortest.",
+    "Dein Profil sagt ehrlich, wie sicher es ist."
+   ],
+   "in_arbeit": [],
+   "brauche": []
+  },
+  {
+   "id": "tiktok",
+   "name": "TikTok-Ideenbuch",
+   "link": "https://claude.ai/artifact/3NTW2KyXoKJxFLfRtNNmyN",
+   "version": "",
+   "kurz": "Unsinn-Fragen zum Vorlesen und alle Video-Ideen an einem Ort – eigene Seite.",
+   "ausprobieren": [
+    "Mischmaschine: neue Unsinn-Fragen mischen und groß zeigen.",
+    "Eigene Ideen speichern, Favoriten markieren, suchen."
+   ],
+   "in_arbeit": [
+    "Neue Ideen aus dem Chat trage ich laufend ein."
+   ],
+   "brauche": []
+  },
+  {
+   "id": "c2",
+   "name": "Feinschliff",
+   "link": "../c2/",
+   "version": "0.6.0",
+   "kurz": "Deutsch auf C2-Niveau in 10-Minuten-Runden: Hören, Lesen, Grammatik, Schreiben, Sprechen.",
+   "ausprobieren": [
+    "176 Übungen auf C1- und C2-Niveau.",
+    "Zwei neue Lesetexte.",
+    "Auswählen statt Eintippen."
+   ],
+   "in_arbeit": [
+    "Die nächste Runde kommt, sobald neue Wünsche da sind."
+   ],
+   "brauche": []
+  },
+  {
+   "id": "dmx",
+   "name": "Deutsch mit Xander",
+   "link": "https://xanderfoxy.github.io/Deutsch-Mit-Xander/",
+   "version": "Fassung 888",
+   "kurz": "Deutsch lernen: Grammatik üben, Wörter lernen und Deutschland entdecken.",
+   "ausprobieren": [
+    "Übungen öffnen beim ersten Mal schneller."
+   ],
+   "in_arbeit": [],
+   "brauche": []
+  },
+  {
+   "id": "kb",
+   "name": "Kaninchenbau",
+   "link": "../kaninchenbau/",
+   "version": "0.1.0",
+   "kurz": "Lernen, was dich interessiert – von Einsteiger bis Profi, mit echten Quellen.",
+   "ausprobieren": [
+    "Startfragen: Was interessiert dich?",
+    "4 Gebiete mit je 3 Stufen – Einsteiger, Fortgeschritten, Profi.",
+    "Ein Baum zeigt, wie die Themen zusammenhängen."
+   ],
+   "in_arbeit": [
+    "0.2: Antworten korrigieren, Fortschritt in Prozent, Karte."
+   ],
+   "brauche": []
+  }
+ ],
+ "werkzeuge": [
+  {
+   "id": "tonpost",
+   "name": "Ton-Post",
+   "link": "../ton-post/",
+   "wofuer": "Dateien sicher an mich schicken – gerade für das Master-Preset von The Wall."
+  }
+ ],
+ "weg": [
+  {
+   "name": "Gesang-Werkstatt",
+   "link": "../the-wall/werkstatt/",
+   "grund": "Teil von The Wall – in der Ablage bei v10 verlinkt."
+  },
+  {
+   "name": "Akkorde ziehen",
+   "link": "../the-wall/noten/AKKORDE-ZIEHEN.html",
+   "grund": "Teil von The Wall – in der Ablage bei den Noten."
+  },
+  {
+   "name": "Mein Vorteil – Deals",
+   "link": "../mein-vorteil/#deals",
+   "grund": "Abschnitt von Mein Vorteil."
+  },
+  {
+   "name": "Mein Vorteil – Woche",
+   "link": "../mein-vorteil/#woche",
+   "grund": "Abschnitt von Mein Vorteil."
+  },
+  {
+   "name": "Mein Vorteil – Filme",
+   "link": "../mein-vorteil/#filme",
+   "grund": "Abschnitt von Mein Vorteil."
+  },
+  {
+   "name": "Mein Vorteil – Konzerte",
+   "link": "../mein-vorteil/#konzerte",
+   "grund": "Abschnitt von Mein Vorteil."
+  },
+  {
+   "name": "Im Synquenzer finden (Wege)",
+   "link": "#finden",
+   "grund": "Teil des Synquenzers – steht in der App unter ≡ Menü › Wo finde ich …?"
+  },
+  {
+   "name": "Messung",
+   "link": "../messung/",
+   "grund": "Erledigt: Dein Handy schafft 16 Spuren ohne Aussetzer – ist so eingebaut."
+  },
+  {
+   "name": "Gesang-Vorschau",
+   "link": "../vorschau-gesang/",
+   "grund": "Alte Testfassung (4.23) – alles davon steckt im Synquenzer."
+  },
+  {
+   "name": "Geräte-Probe",
+   "link": "../probe-g9/",
+   "grund": "Erledigt – das Ergebnis ist im Synquenzer eingebaut."
+  },
+  {
+   "name": "Probe Audio-Interface",
+   "link": "../probe-interface/",
+   "grund": "Erledigt – alle Varianten getestet."
+  },
+  {
+   "name": "Probe Audio-Interface – Ausgang 2",
+   "link": "../probe-interface/v2.html",
+   "grund": "Teil der erledigten Interface-Probe."
+  },
+  {
+   "name": "Probe Audio-Interface – Ausgang 3",
+   "link": "../probe-interface/v3.html",
+   "grund": "Teil der erledigten Interface-Probe."
+  },
+  {
+   "name": "Probe Audio-Interface – Ausgang 4",
+   "link": "../probe-interface/v4.html",
+   "grund": "Teil der erledigten Interface-Probe."
+  },
+  {
+   "name": "Schnäppchen (alte Adresse)",
+   "link": "../schnaeppchen/",
+   "grund": "Leitet nur zu Mein Vorteil weiter."
+  },
+  {
+   "name": "Vorteile (alte Adresse)",
+   "link": "../vorteile/",
+   "grund": "Leitet nur zu Mein Vorteil weiter."
+  },
+  {
+   "name": "Konzerte (alte Adresse)",
+   "link": "../konzerte/",
+   "grund": "Leitet nur zu Mein Vorteil weiter."
+  },
+  {
+   "name": "Spar-Tipps (alt)",
+   "link": "../vorteile/spartipps.html",
+   "grund": "Alte Seite – die Spartricks sind jetzt in Mein Vorteil."
+  }
+ ]
 }
