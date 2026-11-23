@@ -1,4 +1,4 @@
-# Stand 23.11.17:05 UTC
+# Stand 23.11.17:07 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -89,6 +89,11 @@ Kern-Test-Datei: **kern-test.cjs** (`node kern-test.cjs <port>`; Server-Ordner m
 je version.json {"version":"4.87.0"}; Ergebnis tests/kern.out „ERGEBNIS bitgleich“). Dazu ke1-test.cjs (voller Zustand Klang
 erkennen a/b/a, tests/ke1-*.json), rauch.js `<port> b` (tests/rauch-b.out), tests/doppelt.out.
 
+## spkv
+# SPKV – Stand
+- Auftrag: Spektral „Verfeinern“ (Bass/Drums): Kick-Erkennung über Anschläge im Takt-Raster, Bass-Anschläge mit tonalem Verlauf nicht als Kick, Bass-Grundton-Lage prüfen.
+- Ansatz: Nachbearbeitung der Verfeinern-Schätzung (nur Ziel bass/drums) als Block in spk1DspMake vor `async function verfeinern` + 1 Haken nach `refineEst(...)` in verfeinern. Läuft im Worker (toString).
+- Kern-Test-Datei: test/kern-spkv.mjs (in Arbeit)
 ## ton1
 # TON1 – Stand (fertig)
 - Ausgang: index.html = python3 apply.py ../rel-4850/index.html index.html (md5 125767aed0f89918371d0729d07a6f82).
