@@ -1,0 +1,125 @@
+{
+ "kern": {
+  "alt": {
+   "line": "10 Klicks · 5 Plopps · Brumm 50 Hz · Raumton -42 dB",
+   "found": [
+    "click",
+    "plop",
+    "hum"
+   ],
+   "steps": [
+    "click",
+    "plop",
+    "hum",
+    "hp",
+    "room"
+   ],
+   "raw": {
+    "click": -11.13,
+    "plop": 22.97,
+    "hum": -46.07
+   },
+   "std": {
+    "hash": "2b41e1e9",
+    "same": false,
+    "click": -54.25,
+    "plop": -5.2,
+    "hum": -87.87,
+    "diff": 0.0021051268502218644,
+    "wg": "9aed3203"
+   }
+  },
+  "neu": {
+   "line": "10 Klicks · 5 Plopps · Brumm 50 Hz · Raumton -42 dB",
+   "found": [
+    "click",
+    "plop",
+    "hum"
+   ],
+   "steps": [
+    "click",
+    "plop",
+    "hum",
+    "hp",
+    "room"
+   ],
+   "raw": {
+    "click": -11.13,
+    "plop": 22.97,
+    "hum": -46.07
+   },
+   "std": {
+    "hash": "2b41e1e9",
+    "same": false,
+    "click": -54.25,
+    "plop": -5.2,
+    "hum": -87.87,
+    "diff": 0.0021051268502218644,
+    "wg": "9aed3203"
+   },
+   "g0": {
+    "hash": "273e24e8",
+    "same": true,
+    "click": -11.13,
+    "plop": 22.97,
+    "hum": -46.07,
+    "diff": 0,
+    "wg": "df1c74c5"
+   },
+   "g50": {
+    "hash": "74aa04cf",
+    "same": false,
+    "click": -17.15,
+    "plop": 11.56,
+    "hum": -56.61,
+    "diff": 0.0010875009360995919,
+    "wg": "1b1bd1a2"
+   },
+   "g100": {
+    "hash": "2b41e1e9",
+    "same": false,
+    "click": -54.25,
+    "plop": -5.2,
+    "hum": -87.87,
+    "diff": 0.0021051268502218644,
+    "wg": "9aed3203"
+   },
+   "k0": {
+    "hash": "94cc9043",
+    "same": false,
+    "click": -11.12,
+    "plop": -5.2,
+    "hum": -87.87,
+    "diff": 0.002103010046045618,
+    "wg": "4ffc266c"
+   },
+   "ohneHp": {
+    "hash": "ba28085b",
+    "same": false,
+    "click": -54.24,
+    "plop": 0.61,
+    "hum": -70.29,
+    "diff": 0.0018695860763729088,
+    "wg": "2deec475"
+   },
+   "p0": {
+    "hash": "e5bcc034",
+    "same": false,
+    "click": -54.23,
+    "plop": 22.97,
+    "hum": -70.17,
+    "diff": 0.00020015981745549348,
+    "wg": "388dcef6"
+   },
+   "h0": {
+    "hash": "e6869094",
+    "same": false,
+    "click": -56.2,
+    "plop": 0.43,
+    "hum": -46.29,
+    "diff": 0.0016716377806501872,
+    "wg": "f153af6d"
+   }
+  }
+ }
+}
