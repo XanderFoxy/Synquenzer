@@ -140,3 +140,14 @@ Eigene Werkstatt und Sonden; diese Liste nur zur Übersicht (Quelle `MODULE-PLAN
 - **Kritisches CSS nach Bereichen** (vorher Pixelvergleich je Ansicht). §4 „parallel“ · M · — · nein.
 - **Platz auf Pages fast voll (≈ 954 von 1 000 MB):** `werkzeug/backup` (234 MB) aus der Veröffentlichung nehmen. §6 Nr. 6, M3 Offen 3 · S · **wartet auf Xander: Ja** · nein. **Dringend.**
 - **Vorschläge §6 (brauchen Xanders Ja):** ältere Chatzeilen erst beim Hochrollen laden · Deko-Animationen im Klassenzimmer pausieren · halb so große Auto-Blätter für Telefone · keine Vollbild-Unschärfe auf schwachen Geräten · Sprechring mit Mindesthaltezeit. §6 Nr. 1–5 · je S–M · **wartet auf Xander: Ja** · teils ja → Funk.
+
+---
+
+## Entscheidungen Xander 23.11.2026 (Auswahl Abschnitt C)
+- **Bauen (Welle 5, sichtbar):** Klangkorn-Seite + Knopf „Als Klangkorn“ (KKS), Arp Gate > 100 % (ARPG), Klangschule modulierbar/lockbar (KSM),
+  Drum-Schritt-Editor Einzelspur (DSE), Farben Spuren 9–16 (FARB), Szenen-Namen im Matrix-Kopf (SZN), Gesang-reinigen-Regler (VXRR).
+- **Nicht gewählt (nicht bauen, nicht erneut vorschlagen ohne neuen Anlass):** Quer-Knöpfe höher, Loop-Zeile quer, Transponieren „nur“,
+  Import-Blatt neu, Loop → Matrix Audio.
+- **Mein Vorteil Push-Link:** Xander „Ja“. Befund: schon seit 31.10. (89b4a7ca) in `sw.js` (nur `''`/`index.html`); nur die Notiz in
+  `mein-vorteil/README.md` war veraltet → mit dem nächsten Release als erledigt markieren.
+- **Welle 4 (unsichtbar) läuft:** CHR6, CMD3, FOK4, SPKV2, GES4, PERF5 → 4.89. Danach 4.90 = 4.88 + Welle 4 (ohne PERF5) + Welle 5 + PERF5 zuletzt.

@@ -1,4 +1,4 @@
-# Stand 23.11.17:35 UTC
+# Stand 23.11.17:37 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen
@@ -11,6 +11,11 @@
 - Kern-Test: **bm1-test.mjs** (node bm1-test.mjs <port>, Server im Ordner srv mit index.html = neu, base.html = 4.86.0) → OK BM1 12/12, Protokoll bm1-test.log.
 - Aufbau: Block BM1-BEGIN/-END im Hauptskript direkt vor lkNoteX (BM1_WI, bm1Is, bm1LkAdd, bm1On), 12 Haken /*BM1*/:
   - Bit-Mask-Kern (Worklet-Text BM_WK, ASCII): Note-an liest fc (Halbtöne) → fq = 2^(fc/12); Stimme fq (Start 1); newVoice, takeKey
+## chr6
+# CHR6 – Stand
+- Eingang 4.88.0 (md5 695af0504463a6385e21dc94e55b00c9), Chor-Weg = g6pDspMake → renderMulti → setS (Hüllen-Abtastung der neuen Teiltöne).
+- Kern-Test: kern-test.mjs (synthetische Vokale, ±4/7/12 HT). Vorher: Formant 4,23 % (−12: 6,41 · −7: 6,36 · −4: 5,43 · +4: 4,62 · +7: 2,54 · +12: 0), Hülle 2,83 dB, Ton 0 ct.
+- In Arbeit: Interpolation der Log-Hülle zwischen Teiltönen (linear → kubisch) testen (var/*.mjs).
 ## drum1
 # DRUM1 – Stand
 - Kern-Test-Datei: **kern.mjs** (Browser, 428×926 Touch: Lied laden → Zerlegen schnell → Drum-Ebene → Kit-Erkennung; Lieder songs.mjs,

@@ -13,7 +13,9 @@ const a = html.indexOf('function g6pDspMake(){');
 const endTok = 'return{modelRuns,renderMulti,sibGain,kCoef,lufs,anN:0};\n}';
 const b = html.indexOf(endTok, a);
 if (a < 0 || b < 0) { console.error('g6pDspMake nicht gefunden'); process.exit(2); }
-const src = html.slice(a, b + endTok.length);
+let src = html.slice(a, b + endTok.length);
+// Versuche: CHR6_PATCH=<datei.mjs> (export default [[alt, neu], …]) – nur für Messreihen, nicht für den Kern-Test
+if (process.env.CHR6_PATCH) { const P = (await import(process.env.CHR6_PATCH)).default; for (const [o, nw] of P) { if (src.split(o).length !== 2) { console.error('Patch-Anker nicht eindeutig'); process.exit(2); } src = src.replace(o, nw); } }
 const D = new Function(src + '\nreturn g6pDspMake();')();
 
 const SR = 48000, HOP = 0.01, DUR = 1.2;
