@@ -20,4 +20,8 @@ Ausgang: index.html (md5 siehe unten) = rel-4910/index.html (4.91.0, md5 44fa0f1
 - Gesang→Noten: Noten, die vor dem Ende beginnen, klingen bis zu ihrem Notenende (werden nicht gekürzt).
 - Die Werkstatt (Wellenform/Warp) zeigt den Schnitt nicht – bewusst getrennt (Sequencer ≠ Werkstatt).
 - Nachlauf länger als 4 Schläge hinter dem Loop-Ende: Ansicht rollt nur 4 Schläge über das Clip-Ende (PianoRoll), Knopf „Ende auf Loop-Ende“ reicht trotzdem.
-b433f7591f64f85bf14c7a701e62c6ae  index.html
+eced0dc7bd2b4ce7cd5fb344a2322e06  index.html
+
+## Xander-Prüfung (unabhängig, test/xp/xander.cjs, 38/38, hochkant + quer, echte Touch-Ereignisse)
+Weg über die Oberfläche: Clip-Blatt → ✎ Bearbeiten → Takt-Leiste wischen → Ende ziehen → „Ende auf Loop-Ende“ (Knopf + Menü) → ↶ ↶ (Editor-Leiste) → ▶ Loop → Song (kein g3p-Nachlauf hinter dem Ende) → Export (Ende 1 s vor Loop-Ende: danach −41,6 statt −23,8 dB) → Speichern + Seite neu laden (Schnitt bleibt).
+Behoben: (1) Ende-Fähnchen ganz nah am Vorlauf-/Anfang-Fähnchen (< 64 px, z. B. weit gezoomt und Gesang fast ganz gekürzt) überdeckte dessen Griff und Text → Ende-Griff rückt dann nach unten (top 112 px), Text rechts vom Pol. (2) Knopf „Ende auf Loop-Ende“ verschwand, wenn das Loop-Ende in den ersten 24 px der Ansicht lag → sichtbar, solange das Loop-Ende im Bild ist. Kern-Test danach wieder 29/29, Pflicht unverändert erfüllt.

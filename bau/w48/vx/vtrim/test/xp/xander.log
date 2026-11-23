@@ -18,3 +18,23 @@ OK     [hoch] Ende ganz vorn (nah, ppb 97): Vorlauf- und Ende-Fähnchen getrennt
 OK     [hoch] Ende ganz vorn (weit, ppb 43): Vorlauf- und Ende-Fähnchen getrennt greifbar, nichts überlappt  {"ueber":[],"eF":{"l":91,"r":119,"t":282,"b":304,"w":28,"h":22},"eT":{"l":125,"r":179.6,"t":309,"b":320,"w":54.6,"h":11},"eTx":"Ende −5,08 s","vF":{"l":65.6,"r":93.6,"t":170,"b":192,"w":28,"h":22},"vT":{"l":71.6,"r":108.5,"t":197,"b":208,"w":36.9,"h":11},"eH":{"l":85,"r":133,"t":279,"b":327,"w":48,"h":48},"vH":{"l":51.6,"r":99.6,"t":167,"b":215,"w":48,"h":48}}
 OK     [hoch] keine Seitenfehler  []
 OK     [quer] Editor über „✎ Bearbeiten“ offen, Vorlauf-Fähnchen sichtbar + greifbar  {"vH":{"l":106,"r":154,"t":107,"b":155,"w":48,"h":48},"vTx":"▸ einmal"}
+OK     [quer] nach Wischen: Ende-Fähnchen im Bild, Griff ≥ 32 px, Finger trifft den Griff  {"wisch":7,"eH":{"l":791.1,"r":839.1,"t":107,"b":155,"w":48,"h":48},"eF":{"l":797.1,"r":825.1,"t":110,"b":132,"w":28,"h":22},"f":{"x0":6.855530474040633,"ppb":221.5,"W":886},"cM":{"l":40,"r":926,"t":107,"b":392,"w":886,"h":285}}
+OK     [quer] Nachlauf über das Loop-Ende getönt + Knopf „Ende auf Loop-Ende“ (≥ 32 px, trifft)  {"nz":{"l":293.5,"r":825.1,"t":107,"b":392,"w":531.6,"h":285},"chip":{"l":159.5,"r":287.5,"t":219,"b":255,"w":128,"h":36}}
+OK     [quer] nichts überlappt (Fähnchen, Texte, Knopf), alles im Bild  {"ueber":[],"eT":{"l":797.3,"r":819.1,"t":137,"b":148,"w":21.8,"h":11},"chip":{"l":159.5,"r":287.5,"t":219,"b":255,"w":128,"h":36}}
+OK     [quer] Ende gezogen: Nachlauf ~1 Schlag kürzer (Raster 1/16, Take bleibt ganz), Text zeigt das Minus  {"vt":{"k":"6geu6n2shi","e":6.75},"txt":"Ende −0,45 s"}
+OK     [quer] nach dem Ziehen nichts überlappt  {"ueber":[]}
+OK     [quer] Tipp „Ende auf Loop-Ende“: Gesang endet genau am Loop-Ende, Knopf + Tönung weg  {"vt":{"k":"6geu6n2shi","e":6},"chip":null,"nz":null,"eTx":"Ende −1,20 s"}
+OK     [quer] ↶ (Touch): erst der gezogene Stand, dann die ganze Länge (kein vt mehr, Fähnchen hohl)  {"u1":{"k":"6geu6n2shi","e":6.75},"u2":null,"ub":{"x":274,"y":62.5,"w":40,"h":30,"aus":false},"full":true}
+OK     [quer] Tippen aufs Ende-Fähnchen: Menü mit „ganze Länge“ und „Ende auf Loop-Ende“ (≥ 44 px, im Bild)  [{"t":"ganze Länge","x":628.859375,"y":188,"h":44,"l":578.09375,"r":679.625},{"t":"Ende auf Loop-Ende","x":758.0546875,"y":188,"h":44,"l":685.625,"r":830.484375}]
+OK     [quer] Menü „Ende auf Loop-Ende“ wirkt  {"k":"6geu6n2shi","e":6}
+OK     [quer] ▶ Loop: Gesang klingt nie hinter dem Loop-Ende (alle Stücke enden ≤ 6 s im Take)  [{"when":18.2,"off":1.5,"end":22.7,"fo":0.005,"fi":0.005,"key":"c1:6:0:4.0000","stopAt":6},{"when":22.7,"off":2,"end":26.7,"fo":0.005,"fi":0.005,"key":"c1:6:0:12.0000","stopAt":6}]
+OK     [quer] Song: kein Nachlauf hinter dem Ende (Loop-Klammer gilt auch im Song)  [{"when":27.6308,"off":1.5,"end":32.1308,"fo":0.005,"fi":0.005,"key":"c2:6:0:0.0000","stopAt":6}]
+OK     [quer] Export: Ende 1 s vor dem Loop-Ende gezogen → danach ≥ 12 dB leiser als ohne Schnitt, davor gleich  {"vt":{"k":"6geu6n2shi","e":5.125},"mit":{"len":5.45,"vor":-24.3,"nach":-41.6},"ohne":{"len":6.45,"vor":-24.3,"nach":-23.8},"eTx":"Ende −2,08 s"}
+OK     [quer] Menü am gekürzten Fähnchen: „Ende auf Loop-Ende“ holt den Nachlauf bis zur Klammer zurück  {"menue":["ganze Länge","Ende auf Loop-Ende"],"vt":{"k":"6geu6n2shi","e":6}}
+OK     [quer] Speichern + neu laden: Schnitt bleibt (vt.e = Loop-Ende)  {"sv":true,"ld":{"vt":{"k":"6geu6n2shi","e":6},"take":true,"post":{"out":6,"sec":1.2}}}
+OK     [quer] nach dem Laden: Ende-Fähnchen am Loop-Ende, Text „Ende −0,60 s“… (1,2 s weg), kein Knopf  {"eTx":"Ende −1,20 s","chip":null}
+OK     [quer] Ende ganz vorn (nah, ppb 222): Vorlauf- und Ende-Fähnchen getrennt greifbar, nichts überlappt  {"ueber":[],"eF":{"l":421.8,"r":449.8,"t":110,"b":132,"w":28,"h":22},"eT":{"l":389.2,"r":443.8,"t":137,"b":148,"w":54.6,"h":11},"eTx":"Ende −5,08 s","vF":{"l":172.9,"r":200.9,"t":110,"b":132,"w":28,"h":22},"vT":{"l":178.9,"r":215.8,"t":137,"b":148,"w":36.9,"h":11},"eH":{"l":415.8,"r":463.8,"t":107,"b":155,"w":48,"h":48},"vH":{"l":158.9,"r":206.9,"t":107,"b":155,"w":48,"h":48}}
+OK     [quer] Ende ganz vorn (weit, ppb 97): Vorlauf- und Ende-Fähnchen getrennt greifbar, nichts überlappt  {"ueber":[],"eF":{"l":192.3,"r":220.3,"t":110,"b":132,"w":28,"h":22},"eT":{"l":159.7,"r":214.3,"t":137,"b":148,"w":54.6,"h":11},"eTx":"Ende −5,08 s","vF":{"l":98.5,"r":126.5,"t":110,"b":132,"w":28,"h":22},"vT":{"l":104.5,"r":141.4,"t":137,"b":148,"w":36.9,"h":11},"eH":{"l":186.3,"r":234.3,"t":107,"b":155,"w":48,"h":48},"vH":{"l":84.5,"r":132.5,"t":107,"b":155,"w":48,"h":48}}
+OK     [quer] keine Seitenfehler  []
+{"gesamt":38,"fehler":0}
+x exit 0
