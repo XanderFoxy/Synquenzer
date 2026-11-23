@@ -1,4 +1,4 @@
-# Stand 23.11.15:14 UTC
+# Stand 23.11.15:16 UTC
 ## ent1a
 # ENT1A Stand
 - Start: Analyse Arp/Stopp. stop() kehrt bei !R.playing früh zurück -> arpEndAll fehlt (Verdacht).
@@ -31,15 +31,16 @@ als Nächstes: nichts – bereit zur Übernahme
 - 15:2x block.js + apply.py gebaut (Stückweise-Vorzeichnen bei Tönung), Test folgt
 - 15:3x erster Lauf: Endbild/Bildschirm gleich (926x428), basis bei Last <1 ohne LT; großer Lauf run1.out läuft
 - 15:4x Blit durch Kopier-Shader ersetzt + Zaun (fenceSync) vor dem Zeigen; Schnelltest: Bilder gleich, Bildabstand alles 23/19 statt 31/39 ms; großer A/B-Lauf run2.out läuft (index md5 43e05a35…)
+## Aufbau (index md5 43e05a3592d31884bf73f8e2eb67d3c8, Eingang 9c7f63cf…)
 ## mlg3
 fertig: MLG3 gebaut und getestet (index.html, apply.py, block.js, kern.js, quer.js, KURZ.md, CHANGES.md)
 als Naechstes: nichts – bereit zur Uebernahme
 ## ton1
-# TON1 – Stand
-- Ziel: erster Ton nach Laden nicht still (Takes/Klangkorn), Nachfüttern im Worklet.
-- Befund bisher: Audio-Clips (Original/Stimme) steigen nach dem Laden schon versetzt mit 5-ms-Blende ein (tkPlace joined);
-  Klangkorn-Worklet übernimmt Quelle für gehaltene Stimmen, aber Hüllkurve startet neu ab 0 und Stimmen, die vor Ankunft losgelassen wurden, bleiben still.
-- Nächster Schritt: Sonde (Reload + sofort ▶, Pegel 0–300 ms).
+# TON1 – Stand (fertig)
+- Ausgang: index.html = python3 apply.py ../rel-4850/index.html index.html (md5 125767aed0f89918371d0729d07a6f82).
+- 9 Haken (/*TON1*/) + Block TON1-BEGIN/-END vor spk7TrE. Worklet-Kern: wartende Stimmen laufen weiter (Hüllkurve, Wartezeit),
+  bei Ankunft Einstieg an der richtigen Stelle + 5-ms-Blende; Vorab-Quelle (ohne Spektren) wird bei der vollen Quelle übernommen.
+  Hauptfaden: ton1Got (PCM gelesen → sofort an wartende Engines), ton1Pre (Engine wartet, PCM schon da → sofort füttern).
 ## vl3
 fertig: VL3 gebaut + Kern-Test 10/10 grün, KURZ.md + CHANGES.md geschrieben (Ausgang md5 9bb6ee81)
 als Nächstes: nichts – bereit zur Übergabe
