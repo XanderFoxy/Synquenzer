@@ -24,23 +24,23 @@
   "ok": true,
   "x": {
    "gleich": [
-    "d0654f0b:256672|61a00596:256672"
+    "cb52da4b:256672|27c9d48e:256672"
    ],
    "neu": [
-    "59adaf1b:256672|9ee65136:256672",
-    "7b5c68cb:256672|af2a45e:256672",
-    "d0654f0b:256672|61a00596:256672",
-    "d0654f0b:256672|61a00596:256672"
+    "bdb018cb:256672|739dbdd6:256672",
+    "bdb018cb:256672|739dbdd6:256672",
+    "bdb018cb:256672|739dbdd6:256672",
+    "cb52da4b:256672|27c9d48e:256672"
    ],
    "basis": [
-    "cb52da4b:256672|27c9d48e:256672",
+    "59adaf1b:256672|9ee65136:256672",
     "cb52da4b:256672|27c9d48e:256672",
     "d0654f0b:256672|61a00596:256672",
-    "bdb018cb:256672|739dbdd6:256672",
+    "2d0d72bb:256672|aa3ef146:256672",
     "d0654f0b:256672|61a00596:256672"
    ],
    "maxAbweichungNeuBasis": 2.384185791015625e-7,
-   "maxAbweichungBasisBasis": 0
+   "maxAbweichungBasisBasis": 2.384185791015625e-7
   }
  },
  "ohne Beschnitt: Clip-WAV (mit Vorlauf / Loop rund) bitgleich zu 4.91": {
@@ -81,11 +81,11 @@
   "ok": true,
   "x": {
    "vt": {
-    "k": "bn1e8p21j6",
+    "k": "90ehmeq1vj",
     "e": 4.5
    },
    "out": 6,
-   "take": "bn1e8p21j6",
+   "take": "90ehmeq1vj",
    "undo": "Gesang-Ende verschoben",
    "txt": "Ende −1,50 s",
    "zone": 128.03125,
@@ -196,18 +196,18 @@
   "x": {
    "sv": {
     "live": {
-     "k": "bn1e8p21j6",
+     "k": "90ehmeq1vj",
      "e": 4.5
     },
     "saved": {
-     "k": "bn1e8p21j6",
+     "k": "90ehmeq1vj",
      "e": 4.5
     },
     "loaded": {
-     "k": "bn1e8p21j6",
+     "k": "90ehmeq1vj",
      "e": 4.5
     },
-    "take": "bn1e8p21j6"
+    "take": "90ehmeq1vj"
    },
    "R3": "45f702bb:196768",
    "R1": "45f702bb:196768"
@@ -231,7 +231,7 @@
     "label": "Gesang-Ende: ganze Länge",
     "menu": false,
     "back": {
-     "k": "bn1e8p21j6",
+     "k": "90ehmeq1vj",
      "e": 4.5
     }
    }
@@ -242,6 +242,37 @@
   "x": {
    "e": 4,
    "beat": 4
+  }
+ },
+ "Anfang-Fähnchen: Touch-Ziehen schneidet 0,50 s vom Beginn (Quelle startet 0,5 s später, Blende 10 ms), ↶ zurück": {
+  "ok": true,
+  "x": {
+   "ga": {
+    "hx": 56,
+    "hy": 181,
+    "w": 48,
+    "h": 48,
+    "ppb": 42.68
+   },
+   "an": {
+    "vt": {
+     "k": "90ehmeq1vj",
+     "e": 4.5,
+     "a": 2.5
+    },
+    "in": 2,
+    "label": "Gesang-Anfang verschoben",
+    "txt": "Anfang +0,50 s"
+   },
+   "cap": [
+    {
+     "when": 0.56,
+     "off": 2.5,
+     "end": 2.56,
+     "fi": 0.01,
+     "fo": 0.01
+    }
+   ]
   }
  },
  "Nachlauf hinter dem Loop-Ende: Fähnchen kürzt ihn (0,25 → 0,10 s, davor 0), Griff reicht bis ganz hinten": {
@@ -356,7 +387,7 @@
    },
    "q": {
     "vt": {
-     "k": "fhr1krrer4",
+     "k": "02l5hqo21r",
      "e": 4.5
     },
     "out": 6,
@@ -427,7 +458,7 @@
   "x": {
    "c1": {
     "vt": {
-     "k": "d9dfh66qor",
+     "k": "8o2fd8bsn0",
      "e": 6
     },
     "out": 6,
