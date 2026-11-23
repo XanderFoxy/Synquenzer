@@ -3,9 +3,9 @@
   {
    "errs": [],
    "Z": {
-    "n": 1,
-    "max": 67,
-    "sum": 67,
+    "n": 0,
+    "max": 0,
+    "sum": 0,
     "gl": {
      "inF": 0,
      "fr": 2,
@@ -25,12 +25,12 @@
     "sum": 0,
     "gl": {
      "inF": 0,
-     "fr": 21,
-     "img": 1.4,
+     "fr": 22,
+     "img": 1.9,
      "nImg": 6,
-     "sub": 2.5,
+     "sub": 0.8,
      "nSub": 5,
-     "mip": 0.1,
+     "mip": 0,
      "nMip": 11
     },
     "hash": "63217d30",
@@ -46,7 +46,7 @@
     "sum": 0,
     "gl": {
      "inF": 1,
-     "fr": 5,
+     "fr": 7,
      "img": 0,
      "nImg": 1,
      "sub": 0,
@@ -62,8 +62,8 @@
     "sum": 0,
     "gl": {
      "inF": 1,
-     "fr": 15,
-     "img": 1.3,
+     "fr": 13,
+     "img": 1.2,
      "nImg": 7,
      "sub": 0,
      "nSub": 0,
@@ -73,12 +73,112 @@
     "hash": "f6f5d4"
    },
    "S": {
+    "n": 0,
+    "max": 0,
+    "sum": 0,
+    "gl": {
+     "inF": 0,
+     "fr": 12,
+     "img": 1.2,
+     "nImg": 6,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 6
+    },
+    "hash": "b23ecab7"
+   },
+   "fok4": {
+    "nNew": 18,
+    "nSub": 5,
+    "nSame": 0,
+    "nCol": 5120,
+    "nWait": 0,
+    "nDrop": 0,
+    "err": "",
+    "on": true
+   },
+   "last": 2.03
+  },
+  {
+   "errs": [],
+   "Z": {
+    "n": 1,
+    "max": 70,
+    "sum": 70,
+    "gl": {
+     "inF": 0,
+     "fr": 2,
+     "img": 0.2,
+     "nImg": 2,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 0
+    },
+    "layers": 3,
+    "hash": "ddf507e3"
+   },
+   "F": {
     "n": 1,
     "max": 58,
     "sum": 58,
     "gl": {
      "inF": 0,
-     "fr": 14,
+     "fr": 22,
+     "img": 1.2,
+     "nImg": 6,
+     "sub": 1.9,
+     "nSub": 5,
+     "mip": 0,
+     "nMip": 11
+    },
+    "hash": "63217d30",
+    "info": {
+     "n": 6,
+     "tex": 6,
+     "ap": 0
+    }
+   },
+   "A": {
+    "n": 0,
+    "max": 0,
+    "sum": 0,
+    "gl": {
+     "inF": 1,
+     "fr": 6,
+     "img": 0.1,
+     "nImg": 1,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 0
+    },
+    "hash": "ddf507e3"
+   },
+   "G": {
+    "n": 0,
+    "max": 0,
+    "sum": 0,
+    "gl": {
+     "inF": 0,
+     "fr": 10,
+     "img": 1.2,
+     "nImg": 6,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 6
+    },
+    "hash": "f6f5d4"
+   },
+   "S": {
+    "n": 0,
+    "max": 0,
+    "sum": 0,
+    "gl": {
+     "inF": 0,
+     "fr": 12,
      "img": 1.4,
      "nImg": 6,
      "sub": 0,
@@ -98,7 +198,107 @@
     "err": "",
     "on": true
    },
-   "last": 1.18
+   "last": 1.75
+  },
+  {
+   "errs": [],
+   "Z": {
+    "n": 1,
+    "max": 66,
+    "sum": 66,
+    "gl": {
+     "inF": 0,
+     "fr": 2,
+     "img": 0.5,
+     "nImg": 2,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 0
+    },
+    "layers": 3,
+    "hash": "ddf507e3"
+   },
+   "F": {
+    "n": 3,
+    "max": 53,
+    "sum": 156,
+    "gl": {
+     "inF": 0,
+     "fr": 22,
+     "img": 1.6,
+     "nImg": 6,
+     "sub": 0.9,
+     "nSub": 5,
+     "mip": 0.1,
+     "nMip": 11
+    },
+    "hash": "63217d30",
+    "info": {
+     "n": 6,
+     "tex": 6,
+     "ap": 0
+    }
+   },
+   "A": {
+    "n": 0,
+    "max": 0,
+    "sum": 0,
+    "gl": {
+     "inF": 1,
+     "fr": 9,
+     "img": 0,
+     "nImg": 1,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 0
+    },
+    "hash": "ddf507e3"
+   },
+   "G": {
+    "n": 2,
+    "max": 90,
+    "sum": 153,
+    "gl": {
+     "inF": 1,
+     "fr": 19,
+     "img": 0.9,
+     "nImg": 7,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 6
+    },
+    "hash": "f6f5d4"
+   },
+   "S": {
+    "n": 3,
+    "max": 64,
+    "sum": 179,
+    "gl": {
+     "inF": 0,
+     "fr": 12,
+     "img": 1,
+     "nImg": 6,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 6
+    },
+    "hash": "b23ecab7"
+   },
+   "fok4": {
+    "nNew": 18,
+    "nSub": 5,
+    "nSame": 0,
+    "nCol": 5120,
+    "nWait": 0,
+    "nDrop": 0,
+    "err": "",
+    "on": true
+   },
+   "last": 1.39
   }
  ],
  "B": [
@@ -106,8 +306,8 @@
    "errs": [],
    "Z": {
     "n": 1,
-    "max": 55,
-    "sum": 55,
+    "max": 65,
+    "sum": 65,
     "gl": {
      "inF": 0,
      "fr": 2,
@@ -127,12 +327,103 @@
     "sum": 0,
     "gl": {
      "inF": 22,
-     "fr": 14,
-     "img": 2.2,
+     "fr": 13,
+     "img": 2.4,
      "nImg": 11,
      "sub": 0,
      "nSub": 0,
-     "mip": 0.1,
+     "mip": 0,
+     "nMip": 11
+    },
+    "hash": "63217d30",
+    "info": {
+     "n": 6,
+     "tex": 6,
+     "ap": 0
+    }
+   },
+   "A": {
+    "n": 0,
+    "max": 0,
+    "sum": 0,
+    "gl": {
+     "inF": 0,
+     "fr": 1,
+     "img": 0,
+     "nImg": 0,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 0
+    },
+    "hash": "ddf507e3"
+   },
+   "G": {
+    "n": 0,
+    "max": 0,
+    "sum": 0,
+    "gl": {
+     "inF": 12,
+     "fr": 8,
+     "img": 1,
+     "nImg": 6,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 6
+    },
+    "hash": "f6f5d4"
+   },
+   "S": {
+    "n": 0,
+    "max": 0,
+    "sum": 0,
+    "gl": {
+     "inF": 12,
+     "fr": 12,
+     "img": 1.4,
+     "nImg": 6,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 6
+    },
+    "hash": "b23ecab7"
+   },
+   "fok4": null,
+   "last": 2.05
+  },
+  {
+   "errs": [],
+   "Z": {
+    "n": 1,
+    "max": 51,
+    "sum": 51,
+    "gl": {
+     "inF": 0,
+     "fr": 2,
+     "img": 0.3,
+     "nImg": 2,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 0
+    },
+    "layers": 3,
+    "hash": "ddf507e3"
+   },
+   "F": {
+    "n": 0,
+    "max": 0,
+    "sum": 0,
+    "gl": {
+     "inF": 22,
+     "fr": 13,
+     "img": 1.9,
+     "nImg": 11,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
      "nMip": 11
     },
     "hash": "63217d30",
@@ -164,12 +455,103 @@
     "sum": 0,
     "gl": {
      "inF": 13,
-     "fr": 12,
-     "img": 1,
+     "fr": 13,
+     "img": 1.4,
      "nImg": 7,
      "sub": 0,
      "nSub": 0,
+     "mip": 0,
+     "nMip": 6
+    },
+    "hash": "f6f5d4"
+   },
+   "S": {
+    "n": 1,
+    "max": 51,
+    "sum": 51,
+    "gl": {
+     "inF": 12,
+     "fr": 11,
+     "img": 1,
+     "nImg": 6,
+     "sub": 0,
+     "nSub": 0,
      "mip": 0.1,
+     "nMip": 6
+    },
+    "hash": "b23ecab7"
+   },
+   "fok4": null,
+   "last": 1.92
+  },
+  {
+   "errs": [],
+   "Z": {
+    "n": 1,
+    "max": 100,
+    "sum": 100,
+    "gl": {
+     "inF": 0,
+     "fr": 2,
+     "img": 0.4,
+     "nImg": 2,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 0
+    },
+    "layers": 3,
+    "hash": "ddf507e3"
+   },
+   "F": {
+    "n": 0,
+    "max": 0,
+    "sum": 0,
+    "gl": {
+     "inF": 22,
+     "fr": 13,
+     "img": 4.8,
+     "nImg": 11,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 11
+    },
+    "hash": "63217d30",
+    "info": {
+     "n": 6,
+     "tex": 6,
+     "ap": 0
+    }
+   },
+   "A": {
+    "n": 0,
+    "max": 0,
+    "sum": 0,
+    "gl": {
+     "inF": 1,
+     "fr": 7,
+     "img": 0,
+     "nImg": 1,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
+     "nMip": 0
+    },
+    "hash": "ddf507e3"
+   },
+   "G": {
+    "n": 0,
+    "max": 0,
+    "sum": 0,
+    "gl": {
+     "inF": 13,
+     "fr": 15,
+     "img": 4.7,
+     "nImg": 7,
+     "sub": 0,
+     "nSub": 0,
+     "mip": 0,
      "nMip": 6
     },
     "hash": "f6f5d4"
@@ -181,17 +563,17 @@
     "gl": {
      "inF": 12,
      "fr": 12,
-     "img": 1,
+     "img": 1.3,
      "nImg": 6,
      "sub": 0,
      "nSub": 0,
-     "mip": 0,
+     "mip": 0.1,
      "nMip": 6
     },
     "hash": "b23ecab7"
    },
    "fok4": null,
-   "last": 1.05
+   "last": 1.98
   }
  ]
 }

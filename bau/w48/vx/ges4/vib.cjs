@@ -11,7 +11,7 @@ for(const m of [52,57,62,67,72])for(const vr of [5.5])for(const vib of [50]){
 }
 let nn=0,ns=0,okc=0,pe=[];
 for(const p of PV){const {x}=synth(p.ph,16000,5,0.1);
- const tr=V.pyin(x,{fs:16000,hop:80,fmin:55,fmax:1050});const sg=V.segment(tr,{snap:false,tuning:0,attack:false});
+ const tr=V.pyin(x,{fs:16000,hop:80,fmin:55,fmax:1050});const sg=V.segment(tr,{snap:false,tuning:0,attack:false,ges4:1});
  const ms=sg.notes.filter(n=>n.t1-n.t0>=0.06);const ok=ms.length===p.soll.length;okc+=ok?1:0;nn+=ms.length;ns+=p.soll.length;
  if(ok)ms.forEach((n,k)=>pe.push(Math.abs(n.raw!=null?n.raw-p.soll[k]:n.m-p.soll[k])*100));
  if(process.argv[3]||!ok)console.log((ok?'OK ':'FEHLER ')+p.name+': '+ms.map(n=>n.m+'('+(n.raw!=null?n.raw.toFixed(2):'')+') '+n.t0.toFixed(3)+'-'+n.t1.toFixed(3)).join(' | '));

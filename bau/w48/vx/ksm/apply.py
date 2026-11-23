@@ -23,11 +23,7 @@ rep(A,"if(i<=-9000&&i>-9018)continue;"+A)
 rep("if(this.ks4L)this.ks4Lfo(v,P,src,step,r1,r2);","if(this.ks4L||v.ksm)this.ksmLfo(v,P,src,step,r1,r2);")
 rep("if(this.ks4P)this.ks4Ctl(v,P,src,dst,step);","if(this.ks4P||v.ksm)this.ksmCtl(v,P,src,dst,step);")
 rep("m=clamp(+P.ksF2m,0,1),k=2-1.95*clamp(+P.ksF2r||0,0,1),z=v.ks4;","m=v.ksmF?v.ksmF[0]:clamp(+P.ksF2m,0,1),k=v.ksmF?v.ksmF[1]:2-1.95*clamp(+P.ksF2r||0,0,1),z=v.ks4;")
-for x in ('A.t(P.aA,Q.ksAa),t(P.aD,Q.ksAd)','F.t(P.fA,Q.ksFa),t(P.fD,Q.ksFd)','M.t(P.mA,Q.ksMa),t(P.mD,Q.ksMd)'):
-    pre,rest=x.split('.',1)
-    a='envCoefs(D.'+pre+','+rest
-    rep(a,a.replace('Q.ks','P.ks'))
-for x in ('P.aS,t(P.aR,Q.ksAr)','P.fS,t(P.fR,Q.ksFr)','P.mS,t(P.mR,Q.ksMr)'):
+for x in ('envCoefs(D.A,t(P.aA,Q.ksAa),t(P.aD,Q.ksAd),P.aS,t(P.aR,Q.ksAr),P.aCurve);','envCoefs(D.F,t(P.fA,Q.ksFa),t(P.fD,Q.ksFd),P.fS,t(P.fR,Q.ksFr),P.fCurve);','envCoefs(D.M,t(P.mA,Q.ksMa),t(P.mD,Q.ksMd),P.mS,t(P.mR,Q.ksMr),P.mCurve);'):
     rep(x,x.replace('Q.ks','P.ks'))
 rep("if(!this.ks4T)return;","if(!this.ks4T&&!(P!==Q&&KS4T(P)))return;")
 rep("this.deriveInto(v.Dv,VP);v.D=v.Dv;","if(v.ksm&&v.ksm.t)this.ksmVP(v,VP);this.deriveInto(v.Dv,VP);v.D=v.Dv;",2)
