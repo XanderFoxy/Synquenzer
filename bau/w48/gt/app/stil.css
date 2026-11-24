@@ -371,3 +371,34 @@ details.ueb .pfeil { transition: transform .2s ease; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---------- Eignung (Ampel), Weg, Auseinandernehmen ---------- */
+.karte.eignung { position: relative; overflow: hidden; padding-top: 22px; border: 1px solid color-mix(in srgb, var(--e1) 45%, transparent);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--e1) 16%, var(--karte)) 0%, var(--karte) 60%); }
+.karte.eignung .band { position: absolute; inset: 0 0 auto 0; height: 6px; background: linear-gradient(90deg, var(--e1), var(--e2)); }
+.karte.eignung.frisch { animation: eg-pop .7s cubic-bezier(.2, .9, .25, 1.2) both; }
+@keyframes eg-pop { from { opacity: 0; transform: scale(.94) translateY(10px); } to { opacity: 1; transform: none; } }
+.eg-kopf { display: flex; gap: 14px; align-items: center; }
+.eg-kopf h3 { font-size: 23px; margin: 2px 0 0; }
+.ampel { display: flex; flex-direction: column; gap: 5px; padding: 7px; border-radius: 16px; background: rgba(0, 0, 0, .28); flex: none; }
+.ampel i { width: 16px; height: 16px; border-radius: 50%; background: var(--f); opacity: .22; }
+.ampel i.an { opacity: 1; box-shadow: 0 0 14px var(--f); animation: knopfpuls 1.8s ease-in-out infinite; }
+.eg-satz { margin-top: 12px; font-weight: 600; }
+.eg-gruende { margin: 8px 0 0; padding-left: 20px; color: var(--leise); }
+.eg-gruende li + li { margin-top: 4px; }
+.eignung details summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; color: var(--leise); }
+.eg-trans { margin-top: 14px; padding: 12px; border-radius: 16px; background: color-mix(in srgb, var(--e1) 14%, transparent); }
+.eg-trans .knopf { margin-top: 10px; }
+.bau-titel { margin: 14px 0 6px; font-weight: 700; font-size: 15px; }
+.bau-liste { display: flex; flex-direction: column; gap: 6px; }
+.bau-schritt { display: flex; align-items: center; gap: 12px; min-height: 52px; width: 100%; padding: 8px 12px; border-radius: 16px; border: 1px solid var(--linie);
+  background: var(--karte2); color: var(--text); text-align: left; font: inherit; cursor: pointer; transition: transform .15s ease, background .2s ease; }
+.bau-schritt:active { transform: scale(.98); }
+.bau-schritt.an { background: var(--verlauf); color: #fff; border-color: transparent; }
+.bau-schritt .ic { flex: none; width: 20px; height: 20px; }
+.bau-nr { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 14px; background: color-mix(in srgb, var(--akzent) 25%, transparent); }
+.bau-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.bau-text .klein { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bau-schritt.an .leise { color: rgba(255, 255, 255, .85); }
+.kette .kugel-wort.aus { opacity: .28; transition: opacity .25s ease; }
+@media (prefers-reduced-motion: reduce) { .karte.eignung.frisch, .ampel i.an { animation: none; } }
