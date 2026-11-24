@@ -264,7 +264,7 @@ export function setze(stück, opts = {}) {
       if (a.system === 'oben') { obO = Math.max(obO, ob); unO = Math.max(unO, un); fiO ||= a.noten.some((n) => n.finger); }
       else { obU = Math.max(obU, ob); unU = Math.max(unU, un); fiU ||= a.noten.some((n) => n.finger); }
     }
-    const oberRand = SP * 1.4 + Math.max(SP * 1.2, obO + SP * 0.6) + (fiO ? SP * 1.2 : 0);
+    const oberRand = (opts.kopfRaum || 0) + SP * 1.4 + Math.max(SP * 1.2, obO + SP * 0.6) + (fiO ? SP * 1.2 : 0);
     const zwischen = Math.max(SP * 6, unO + obU + SP * 1.6);
     const unterRand = Math.max(SP * 1.6, unU + SP * 0.8) + (fiU ? SP * 2.2 : 0);
     const yO = y + oberRand, yU = yO + SP * 4 + zwischen, yEnde = yU + SP * 4;

@@ -209,13 +209,19 @@
  "lead_spitzen": {
   "schwelle_db": -11.56,
   "aktiv_db": -23.56,
-  "anteil_ueber_1db": 0.01746,
+  "anteil_ueber_1db": 0.01745,
   "max_db": 7.38
  },
  "doppel_2_durchgang": {
-  "gemessen": 64,
-  "zusaetzlich_verankert": 10,
+  "gemessen": 68,
+  "zusaetzlich_verankert": 13,
   "silben": [
+   [
+    "D-011",
+    "sake",
+    "S1",
+    -48
+   ],
    [
     "D-036",
     "this",
@@ -271,18 +277,31 @@
     55
    ],
    [
+    "D-148",
+    "the",
+    "R3",
+    12
+   ],
+   [
     "D-152",
     "o",
     "R3",
     -33
+   ],
+   [
+    "D-154",
+    "your",
+    "R3",
+    94
    ]
   ]
  },
  "doppel_spitzen": {
   "schwelle_db": -14.66,
   "aktiv_db": -26.66,
-  "anteil_ueber_1db": 0.02712,
+  "anteil_ueber_1db": 0.02714,
   "max_db": 10.2
  },
- "laufzeit_s": 23.8
+ "terzen": "neu aus v13-Lead: lead_p3/p4/p5(+_adt), lead_m3/m4; ober.wav, ober_adt.wav, unter.wav (Gate wie mix_v12, ohne Verzögerung/Pegel)",
+ "laufzeit_s": 124.4
 }
