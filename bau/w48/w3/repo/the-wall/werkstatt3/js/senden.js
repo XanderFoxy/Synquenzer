@@ -79,7 +79,8 @@ export function zeitText(s) {
   const z = Math.max(0, Math.round((+s || 0) * 10)), m = Math.floor(z / 600), r = z % 600;
   return m + ':' + String(Math.floor(r / 10)).padStart(2, '0') + ',' + (r % 10);
 }
-const UNSICHTBAR = /[\u0000-\u001f\u007f-\u009f​-‏ -‮⁠-⁯﻿￹-￻]/g;
+const UNSICHTBAR = new RegExp('[' + [[0x00, 0x1f], [0x7f, 0x9f], [0x200b, 0x200f], [0x2028, 0x202e], [0x2060, 0x206f], [0xfeff, 0xfeff], [0xfff9, 0xfffb]]
+  .map(([a, b]) => String.fromCharCode(a) + '-' + String.fromCharCode(b)).join('') + ']', 'g'); // wie ton-ticket
 function sauberName(n, ersatz) {
   n = String(n || '').replace(UNSICHTBAR, ' ').replace(/\s+/g, ' ').trim() || ersatz;
   if (n.length <= 120) return n;
@@ -213,7 +214,14 @@ const merk = { sha: new WeakMap(), laeuft: new WeakMap(), auftrag: new Map(), fe
 const merkSetzen = (m, k, v, max) => { m.delete(k); m.set(k, v); while (m.size > max) m.delete(m.keys().next().value); };
 async function pruefsumme(blob, fort, signal) {
   if (merk.sha.has(blob)) { fort(blob.size); return merk.sha.get(blob); }
-  const h = new Sha256(), S = 4 << 20; // 4 MiB je Schritt, dazwischen Luft für die Oberfläche
+  if (blob.size <= 64 << 20 && G.crypto?.subtle) { // bis 64 MiB: eingebaut und ~10× schneller (kurz eine Kopie im Speicher)
+    try {
+      const d = new Uint8Array(await G.crypto.subtle.digest('SHA-256', await blob.arrayBuffer()));
+      const hex = Array.from(d, (x) => x.toString(16).padStart(2, '0')).join('');
+      merk.sha.set(blob, hex); fort(blob.size); return hex;
+    } catch { /* weiter stückweise */ }
+  }
+  const h = new Sha256(), S = 4 << 20; // darüber stückweise (schont den Speicher), dazwischen Luft für die Oberfläche
   for (let a = 0; a < blob.size; a += S) {
     abbruch(signal);
     h.update(new Uint8Array(await blob.slice(a, Math.min(blob.size, a + S)).arrayBuffer()));

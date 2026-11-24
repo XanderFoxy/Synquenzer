@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="de" data-thema="konsole">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#04050a">
+<title>Konsole – Muster</title>
+<script>try{var t=localStorage.getItem('w3-thema');if(t)document.documentElement.dataset.thema=t}catch(e){}</script>
+<link rel="stylesheet" href="thema-konsole.css">
+<style>
+/* Klassisch-Grundwerte (wie Werkstatt 2) – nur damit das Muster auch im Schema „Klassisch“ etwas zeigt */
+:root{--bg:#fbfaf7;--fg:#1d1c1a;--mut:#857f75;--lin:#e7e3db;--lin2:#cfc9be;--gold:#a87908;--goldfg:#fff;--hi:#f5e3ad;--bar:#fffdf8;--rot:#b03a2e;--welle:#4f5b67;--warn:#b25d12;--blau:#2c69ad;--band1:#f4f1eb;--band2:#ebe7df;--bereich:rgba(168,121,8,.13);--ok:#2b7a4b;--karte:#fffdf8;
+  --c-orig:#7c4ddb;--c-rein:#0d8f7c;--c-tim:#d07a12;--c-ton:#c8322f;--c-ende:#8d97a2;--c-neu:#3b4652;--c-spaet:#2c69ad;--c-frueh:#c8322f;--c-pruef:#e07b00}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--grund);color:var(--text)}
+body{font:16px/1.35 -apple-system,system-ui,"Segoe UI",sans-serif;padding:10px max(12px,env(safe-area-inset-right)) calc(96px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));max-width:560px;margin:0 auto;-webkit-user-select:none;user-select:none}
+/* schlichte Klassisch-Formen (die echte Seite bringt ihre eigenen) */
+.rahmen{position:relative;border:1px solid var(--linie);border-radius:12px;background:var(--flaeche);padding:34px 12px 12px;margin:0 0 12px}
+.rahmen-titel,.rahmen-info{position:absolute;top:10px;margin:0;font:650 13px/16px -apple-system,system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--akzent)}
+.rahmen-titel{left:12px}.rahmen-info{right:12px;color:var(--text-leise);text-transform:none;letter-spacing:0}
+button,.pille{font:500 15px -apple-system,system-ui,sans-serif;color:var(--text);background:var(--flaeche);border:1px solid var(--linie2);border-radius:10px;min-height:44px;min-width:44px;padding:0 12px;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.pille svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.pille svg.voll{fill:currentColor;stroke:none}
+[aria-pressed=true],.aktiv,.gewaehlt,[aria-selected=true]{background:var(--text);color:var(--grund)}
+.haupt,.laeuft{background:var(--akzent);color:var(--text-auf-farbe);border-color:var(--akzent)}.fehler{color:var(--z-fehler);border-color:var(--z-fehler)}
+.seg{display:inline-flex;border:1px solid var(--linie2);border-radius:10px;overflow:hidden}.seg>button{border:0;border-radius:0}
+.leiste{display:flex;flex-wrap:wrap;align-items:center;gap:6px}.leiste+.leiste{margin-top:8px}
+.fahne{display:inline-flex;align-items:center;height:24px;padding:0 8px;border-radius:6px;font:700 12px -apple-system,system-ui,sans-serif;background:var(--flaeche2);border:1px solid var(--linie2)}
+.anzeige{display:inline-flex;flex-direction:column;align-items:center;font:600 16px ui-monospace,Menlo,monospace}.anzeige small{font-size:11px;color:var(--text-leise)}
+.meldung{font-size:14px;color:var(--text-leise)}.titel{font-size:12px;color:var(--text-leise);font-weight:600}
+.buehne{border:1px solid var(--linie);border-radius:10px;background:var(--rolle-grund)}
+.layer-1{--farbe:var(--layer-1)}.layer-2{--farbe:var(--layer-2)}.layer-3{--farbe:var(--layer-3)}.layer-4{--farbe:var(--layer-4)}.layer-5{--farbe:var(--layer-5)}.layer-6{--farbe:var(--layer-6)}
+
+/* Muster-Aufbau */
+.hinweis{color:var(--text-leise);font-size:14px;margin:8px 0 0}
+.fahnen{position:relative;height:36px;z-index:2;margin-left:30px}
+.fahnen .fahne{position:absolute;top:0}
+.buehne{position:relative;overflow:hidden;touch-action:none}
+.buehne canvas{display:block;width:100%}
+#rolle{height:236px}#welle{height:58px;border-top:1px solid var(--linie)}
+.raster3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.raster3 .pille{width:100%;padding:0 8px}
+#staffel{flex:1 1 140px;min-width:120px}
+/* Gestaffelte Versions-Layer: jede Fassung eine Lasche, ältere liegen dahinter, versetzt */
+.stapel{position:relative;height:calc(46px + 5 * 18px);margin-top:12px}
+.lage{position:absolute;left:calc((5 - var(--i)) * 14px);right:calc(var(--i) * 6px);bottom:calc(var(--i) * 18px);height:46px;z-index:calc(10 - var(--i));
+  display:flex;align-items:center;gap:10px;padding:0 16px;border-radius:999px 14px 14px 999px;background:var(--flaeche2);
+  box-shadow:inset 6px 0 0 var(--farbe),0 -3px 0 var(--grund);opacity:var(--a,1);font-size:14px}
+.lage b{font-size:16px;color:var(--farbe)}.lage span{color:var(--text-leise)}.lage .fahne{margin-left:auto}
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;align-items:center;gap:10px;background:var(--flaeche);border-top:1px solid var(--linie);
+  padding:10px max(12px,env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+.dock .meldung{flex:1;min-width:0}
+</style>
+</head>
+<body>
+
+<header class="rahmen f-pfirsich">
+  <h1 class="rahmen-titel">Gesang-Werkstatt 3</h1><span class="rahmen-info">Muster</span>
+  <div class="leiste">
+    <div class="seg" role="group" aria-label="Farbschema">
+      <button type="button" data-thema-wahl="klassisch" aria-pressed="false">Klassisch</button>
+      <button type="button" data-thema-wahl="konsole" aria-pressed="true">Konsole</button>
+    </div>
+    <span class="anzeige"><small>Fassung</small>v12</span>
+  </div>
+</header>
+
+<section class="rahmen">
+  <h2 class="rahmen-titel">Pianorolle</h2><span class="rahmen-info">Takt 9–12</span>
+  <div class="fahnen" aria-hidden="true">
+    <span class="fahne info stab" style="left:0;--stab:32px">Strophe 2</span>
+    <span class="fahne notiz stab" style="left:47%;--stab:32px">Notiz</span>
+    <span class="fahne fehler stab" style="left:73%;--stab:32px">Zu tief</span>
+  </div>
+  <div class="buehne zieht" id="buehne">
+    <canvas id="rolle"></canvas>
+    <canvas id="welle"></canvas>
+  </div>
+  <div class="leiste" style="margin-top:10px">
+    <button class="pille haupt rund laeuft" type="button" aria-label="Pause"><svg class="voll" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></svg></button>
+    <button class="pille rund f-hellblau" type="button" aria-pressed="true" aria-label="Schleife"><svg viewBox="0 0 24 24"><path d="M4 12a6 6 0 0 1 6-6h8M15 3l3 3-3 3M20 12a6 6 0 0 1-6 6H6M9 21l-3-3 3-3"/></svg></button>
+    <button class="pille rund" type="button" aria-label="Rückgängig"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>
+    <button class="pille rund" type="button" disabled aria-label="Wiederholen"><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5M20 9H10a6 6 0 0 0 0 12h3"/></svg></button>
+    <span class="anzeige dehnen"><small>Takt 10 · 2</small>0:42.18</span>
+  </div>
+  <div class="leiste">
+    <div class="seg" role="group" aria-label="Raster">
+      <button type="button" aria-pressed="false">1/4</button>
+      <button type="button" aria-pressed="true">1/8</button>
+      <button type="button" aria-pressed="false">1/16</button>
+    </div>
+    <div class="seg" role="group" aria-label="Ziehen ändert">
+      <button type="button" aria-pressed="true">Ton</button>
+      <button type="button" aria-pressed="false">Zeit</button>
+    </div>
+  </div>
+</section>
+
+<section class="rahmen unten f-flieder">
+  <h2 class="rahmen-titel">Versionen</h2><span class="rahmen-info">6 Lagen</span>
+  <div class="leiste">
+    <button class="pille klein layer-1" type="button" aria-pressed="true">v12</button>
+    <button class="pille klein layer-2" type="button" aria-pressed="true">v11</button>
+    <button class="pille klein layer-3" type="button" aria-pressed="true">v10</button>
+    <button class="pille klein layer-4" type="button" aria-pressed="false">v9</button>
+    <button class="pille klein layer-5" type="button" aria-pressed="false">v8</button>
+    <button class="pille klein layer-6" type="button" aria-pressed="false">v7</button>
+  </div>
+  <div class="leiste">
+    <span class="titel">Staffel</span>
+    <input id="staffel" type="range" min="0" max="100" value="40" aria-label="Staffel-Abstand" style="--wert:40%">
+  </div>
+  <div class="stapel" aria-label="Gestaffelte Fassungen">
+    <div class="lage layer-6" style="--i:5;--a:.55"><b>v7</b><span>12.11.</span></div>
+    <div class="lage layer-5" style="--i:4;--a:.65"><b>v8</b><span>14.11.</span></div>
+    <div class="lage layer-4" style="--i:3;--a:.75"><b>v9</b><span>17.11.</span></div>
+    <div class="lage layer-3" style="--i:2;--a:.85"><b>v10</b><span>19.11.</span></div>
+    <div class="lage layer-2" style="--i:1;--a:.93"><b>v11</b><span>21.11.</span></div>
+    <div class="lage layer-1" style="--i:0"><b>v12</b><span>23.11.</span><span class="fahne neu">Neu</span></div>
+  </div>
+</section>
+
+<section class="rahmen rechts f-hellblau">
+  <h2 class="rahmen-titel">Zustände</h2><span class="rahmen-info">Tippen</span>
+  <div class="raster3">
+    <button class="pille" type="button">Normal</button>
+    <button class="pille" type="button" aria-pressed="true">Aktiv</button>
+    <button class="pille gewaehlt" type="button">Gewählt</button>
+    <button class="pille laeuft" type="button">Läuft</button>
+    <button class="pille fehler" type="button">Fehler</button>
+    <button class="pille" type="button" disabled>Aus</button>
+    <button class="pille" type="button" aria-pressed="false">Schalter</button>
+    <button class="pille umriss f-pfirsich" type="button">Umriss</button>
+    <button class="pille gedrueckt f-orange" type="button">Gedrückt</button>
+  </div>
+  <div class="leiste" style="margin-top:12px">
+    <span class="fahne neu">Neu</span><span class="fahne notiz">Notiz</span><span class="fahne info">Info</span>
+    <span class="fahne gut">Gut</span><span class="fahne warn">Prüfen</span><span class="fahne fehler">Fehler</span>
+  </div>
+  <div style="margin-top:12px;display:grid;gap:6px">
+    <span class="meldung gut">Gespeichert · v12 liegt im Funk</span>
+    <span class="meldung laeuft">Verbunden · Xander hört mit</span>
+    <span class="meldung fehler">Senden ging nicht – nochmal tippen</span>
+  </div>
+  <p class="hinweis">Jede Fläche ist mindestens 44 px hoch. Tippen: kurzes Leuchten. Ziehen: Bühnenrand leuchtet hellblau.</p>
+</section>
+
+<footer class="dock">
+  <span class="meldung laeuft">Bereit – 3 Änderungen</span>
+  <button class="pille haupt" type="button">Senden</button>
+</footer>
+
+<script>
+// Thema-Umschalter (dasselbe Snippet wie in THEMA.md)
+(function(){const K='w3-thema',H=document.documentElement;
+function setze(t){H.dataset.thema=t;try{localStorage.setItem(K,t)}catch(e){}
+  document.querySelectorAll('[data-thema-wahl]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.themaWahl===t)));
+  const m=document.querySelector('meta[name=theme-color]');if(m)m.content=getComputedStyle(H).getPropertyValue('--grund').trim()||m.content;
+  document.dispatchEvent(new CustomEvent('thema',{detail:t}))}
+let t='konsole';try{t=localStorage.getItem(K)||t}catch(e){}
+setze(t==='klassisch'?'klassisch':'konsole');
+document.addEventListener('click',e=>{const b=e.target.closest('[data-thema-wahl]');if(b)setze(b.dataset.themaWahl)});
+document.addEventListener('touchstart',()=>{},{passive:true}); // iOS: sonst kein :active-Leuchten
+})();
+
+// Pianorolle-Attrappe: liest nur CSS-Variablen – so soll es auch die echte Bühne tun
+(function(){
+const rolle=document.getElementById('rolle'),welle=document.getElementById('welle');
+const NAMEN=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','H'],SCHWARZ=[1,3,6,8,10];
+const TIEF=58,HOCH=69,SCHLAEGE=16,SPIEL=5.3,TASTEN=30,LINEAL=22;
+// [Start in Schlägen, Länge, Ton (MIDI), Silbe]
+const NOTEN=[[0,1.5,62,'Wir'],[1.5,.5,64,'sin'],[2,1,65,'gen'],[3.5,.5,64,'im'],[4,2,67,'Takt'],[6.5,1,65,'nach'],
+             [8,1.5,64,'vorn'],[10,1,62,'und'],[11,1,60,'nie'],[12,3,62,'mehr']];
+const GEWAEHLT=4,GEZOGEN=6,ZIEL=67;
+let F={};
+function farben(){const s=getComputedStyle(document.documentElement);
+  for(const k of ['rolle-grund','rolle-zeile','rolle-zeile-dunkel','raster-fein','raster','taktstrich','lineal','lineal-text','tasten','tasten-text',
+    'note','note-rand','note-text','note-gewaehlt','note-ziehen','note-ziehen-rand','tonlinie','spielkopf','bereich','bereich-rand',
+    'welle','welle-fuell','welle-mitte','layer-1','layer-2','layer-3','layer-4','layer-5','layer-6',
+    'layer-alpha-2','layer-alpha-3','layer-alpha-4','layer-alpha-5','layer-alpha-6','schrift'])F[k]=s.getPropertyValue('--'+k).trim()}
+function flaeche(c){const r=c.getBoundingClientRect(),d=Math.min(2,devicePixelRatio||1);c.width=Math.round(r.width*d);c.height=Math.round(r.height*d);
+  const x=c.getContext('2d');x.setTransform(d,0,0,d,0,0);return [x,r.width,r.height]}
+function rr(x,a,b,w,h,r){r=Math.min(r,h/2,w/2);x.beginPath();x.moveTo(a+r,b);x.arcTo(a+w,b,a+w,b+h,r);x.arcTo(a+w,b+h,a,b+h,r);x.arcTo(a,b+h,a,b,r);x.arcTo(a,b,a+w,b,r);x.closePath()}
+function zeichne(){
+  farben();
+  const [c,W,H]=flaeche(rolle),n=HOCH-TIEF+1,zh=(H-LINEAL)/n,bw=(W-TASTEN)/SCHLAEGE;
+  const X=s=>TASTEN+s*bw,Y=m=>LINEAL+(HOCH-m)*zh,schrift=F.schrift||'sans-serif';
+  c.fillStyle=F['rolle-grund'];c.fillRect(0,0,W,H);
+  for(let m=TIEF;m<=HOCH;m++){c.fillStyle=SCHWARZ.includes(m%12)?F['rolle-zeile-dunkel']:F['rolle-zeile'];c.fillRect(TASTEN,Y(m),W-TASTEN,zh)}
+  // Bereich (Auswahl)
+  c.fillStyle=F.bereich;c.fillRect(X(8),LINEAL,X(12)-X(8),H-LINEAL);
+  // Raster: Sechzehntel, Schläge, Taktstriche
+  for(let i=0;i<=SCHLAEGE*4;i++){const x=Math.round(X(i/4))+.5;c.fillStyle=i%16===0?F.taktstrich:i%4===0?F.raster:F['raster-fein'];
+    c.fillRect(i%16===0?x-1:x-.5,LINEAL,i%16===0?2:1,H-LINEAL)}
+  c.fillStyle=F['bereich-rand'];c.fillRect(X(8)-1,LINEAL,2,H-LINEAL);c.fillRect(X(12)-1,LINEAL,2,H-LINEAL);
+  // Tasten
+  c.fillStyle=F.tasten;c.fillRect(0,LINEAL,TASTEN,H-LINEAL);
+  c.font='600 10px '+schrift;c.textBaseline='middle';
+  for(let m=TIEF;m<=HOCH;m++){const sw=SCHWARZ.includes(m%12);if(sw){c.fillStyle=F['rolle-zeile-dunkel'];c.fillRect(0,Y(m)+1,TASTEN*.62,zh-2)}
+    if(!sw){c.fillStyle=F['tasten-text'];c.fillText(NAMEN[m%12]+(Math.floor(m/12)-1),4,Y(m)+zh/2+.5)}}
+  // Lineal
+  c.fillStyle=F.lineal;rr(c,0,0,W,LINEAL-3,9);c.fill();c.fillRect(0,0,W,6);
+  c.fillStyle=F['lineal-text'];c.font='700 13px '+schrift;
+  for(let t=0;t<4;t++){c.fillText(String(9+t),X(t*4)+5,(LINEAL-3)/2+1);for(let b=1;b<4;b++)c.fillRect(Math.round(X(t*4+b)),LINEAL-9,1,6)}
+  // ältere Versions-Layer (gestaffelt, dahinter)
+  for(let L=6;L>=2;L--){c.globalAlpha=+F['layer-alpha-'+L]||.4;c.fillStyle=F['layer-'+L];
+    NOTEN.forEach((nn,i)=>{const dm=((i*7+L*3)%5===0)?(L%2?1:-1):0,ds=((i+L)%3-1)*.12*(L-1)/2;
+      rr(c,X(nn[0]+ds)+1,Y(nn[2]+dm)+2+(L-1)*1.5,nn[1]*bw-2,zh-4,4);c.fill()})}
+  c.globalAlpha=1;
+  // Layer 1 (aktuelle Fassung) mit Silben
+  NOTEN.forEach((nn,i)=>{const x=X(nn[0])+1,y=Y(nn[2])+1,w=nn[1]*bw-2,h=zh-2;
+    if(i===GEZOGEN){c.globalAlpha=.35}
+    c.fillStyle=F.note;rr(c,x,y,w,h,5);c.fill();c.globalAlpha=1;
+    c.strokeStyle=F['note-rand'];c.lineWidth=1;c.stroke();
+    if(i===GEWAEHLT){c.save();c.shadowColor=F['note-gewaehlt'];c.shadowBlur=10;c.strokeStyle=F['note-gewaehlt'];c.lineWidth=2;rr(c,x-2,y-2,w+4,h+4,7);c.stroke();c.restore()}
+    c.font='700 11px '+schrift;const tw=c.measureText(nn[3]).width;
+    if(tw+8<w&&i!==GEZOGEN){c.fillStyle=F['note-text'];c.fillText(nn[3],x+5,y+h/2+.5)}});
+  // gezogene Note (Geist am Ziel)
+  {const nn=NOTEN[GEZOGEN],x=X(nn[0])+1,y=Y(ZIEL)+1,w=nn[1]*bw-2,h=zh-2;
+    c.fillStyle=F['note-ziehen'];rr(c,x,y,w,h,5);c.fill();c.save();c.setLineDash([4,3]);c.strokeStyle=F['note-ziehen-rand'];c.lineWidth=2;c.stroke();c.restore();
+    c.fillStyle=F['note-ziehen-rand'];c.font='700 11px '+schrift;c.fillText('↑ G4',x+w+5,y+h/2+.5)}
+  // gesungene Tonhöhe (Linie)
+  c.save();c.strokeStyle=F.tonlinie;c.lineWidth=1.6;c.lineJoin='round';c.beginPath();
+  for(let s=0;s<=SPIEL;s+=.05){let m=62;for(const nn of NOTEN)if(s>=nn[0]&&s<nn[0]+nn[1]){m=nn[2];break}
+    const y=Y(m)+zh/2-(Math.sin(s*9)*.35+Math.sin(s*2.3)*.25)*zh*.6;s===0?c.moveTo(X(s),y):c.lineTo(X(s),y)}
+  c.stroke();c.restore();
+  // Spielkopf (läuft)
+  const xs=Math.round(X(SPIEL));c.save();c.shadowColor=F.spielkopf;c.shadowBlur=12;c.fillStyle=F.spielkopf;c.fillRect(xs-1,LINEAL-2,2,H-LINEAL+2);
+  c.beginPath();c.moveTo(xs-7,0);c.lineTo(xs+7,0);c.lineTo(xs,10);c.closePath();c.fill();c.restore();
+  // Welle
+  const [v,VW,VH]=flaeche(welle),mi=VH/2;v.fillStyle=F['rolle-grund'];v.fillRect(0,0,VW,VH);
+  v.fillStyle=F['welle-mitte'];v.fillRect(TASTEN,Math.round(mi),VW-TASTEN,1);
+  v.beginPath();const pts=[];for(let x=TASTEN;x<=VW;x+=2){const s=(x-TASTEN)/bw;let a=.1;for(const nn of NOTEN)if(s>=nn[0]&&s<nn[0]+nn[1]){const p=(s-nn[0])/nn[1];a=.25+.7*Math.sin(Math.PI*Math.min(1,p*1.2+.1));break}
+    pts.push([x,a*(.55+.45*Math.abs(Math.sin(x*.9)*Math.cos(x*.31)))*(mi-3)])}
+  pts.forEach(([x,a],i)=>i?v.lineTo(x,mi-a):v.moveTo(x,mi-a));for(let i=pts.length-1;i>=0;i--)v.lineTo(pts[i][0],mi+pts[i][1]);v.closePath();
+  v.fillStyle=F['welle-fuell'];v.fill();v.strokeStyle=F.welle;v.lineWidth=1.2;v.stroke();
+  v.fillStyle=F.tasten;v.fillRect(0,0,TASTEN,VH);v.fillStyle=F['tasten-text'];v.font='700 10px '+schrift;v.textBaseline='middle';v.fillText('Gs',6,mi);
+  v.save();v.shadowColor=F.spielkopf;v.shadowBlur=12;v.fillStyle=F.spielkopf;v.fillRect(xs-1,0,2,VH);v.restore();
+}
+document.addEventListener('thema',()=>requestAnimationFrame(zeichne));
+addEventListener('resize',()=>requestAnimationFrame(zeichne));
+zeichne();
+// Schieberegler: Füllstand für WebKit
+const st=document.getElementById('staffel');st.addEventListener('input',()=>st.style.setProperty('--wert',st.value+'%'));
+})();
+</script>
+</body>
+</html>

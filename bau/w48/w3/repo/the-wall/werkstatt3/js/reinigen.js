@@ -41,7 +41,7 @@ export function reinigen(x, sr, opt = {}) {
   const melde = typeof opt.fortschritt === 'function' ? opt.fortschritt : (typeof opt.stand === 'function' ? opt.stand : null);
   const y = new Float32Array(x.length);
   for (let i = 0; i < x.length; i++) { const v = x[i]; y[i] = Number.isFinite(v) ? v : 0; }
-  const bericht = {};
+  const bericht = {}, ctx = { atem: [] };
   let fertig = 0;
   for (const s of SCHRITTE) {
     const st = teil(opt, s);
@@ -51,7 +51,7 @@ export function reinigen(x, sr, opt = {}) {
     if (!st.an || st.staerke <= 0 || y.length < sr * 0.1) {
       bericht[s] = { an: false, anzahl: 0, db: 0 };
     } else {
-      try { bericht[s] = { an: true, staerke: st.staerke, ...FUNK[s](y, sr, st, sub) }; }
+      try { bericht[s] = { an: true, staerke: st.staerke, ...FUNK[s](y, sr, st, sub, ctx) }; }
       catch (e) { bericht[s] = { an: true, fehler: String((e && e.message) || e), anzahl: 0, db: 0 }; }
     }
     bericht[s].ms = Math.round(jetzt() - ts);
@@ -357,7 +357,10 @@ function harmonische(P, df, base, sr) {
     const al = dbP(P[pb - 1]), be = dbP(P[pb]), ga = dbP(P[pb + 1]);
     const nn = al - 2 * be + ga;
     const d = nn !== 0 ? clamp(0.5 * (al - ga) / nn, -0.5, 0.5) : 0;
-    out.push({ k, f: (pb + d) * df, bin: pb, prom: dbP(pv) - dbP(med) });
+    // Schmal? Echtes Netzbrummen ist ein reiner Sinus → ±4 Bins daneben ≥ 12 dB tiefer
+    const sm = Math.max(P[Math.max(0, pb - 4)], P[Math.min(P.length - 1, pb + 4)]);
+    const schmal = dbP(pv) - dbP(sm) >= 12;
+    out.push({ k, f: (pb + d) * df, bin: pb, prom: schmal ? dbP(pv) - dbP(med) : Math.min(5, dbP(pv) - dbP(med)), schmal });
   }
   return out;
 }
@@ -408,16 +411,23 @@ function rauschen(y, sr, st, sub) {
   const alpha = 0.98;
   const bN = new Float64Array(K); for (let k = 0; k < K; k++) bN[k] = beta * Nk[k] + EPS;
   const Pprev = new Float64Array(K), Gprev = new Float64Array(K).fill(1);
-  const Pa = new Float64Array(K), Pb = new Float64Array(K), Ga = new Float64Array(K), Gb = new Float64Array(K), G0 = new Float64Array(K);
+  const Pa = new Float64Array(K), Pb = new Float64Array(K), Ga = new Float64Array(K), Gb = new Float64Array(K), G0 = new Float64Array(K), Gam = new Float64Array(K);
   const gewinn = (P, G) => {
     for (let k = 0; k < K; k++) {
       const gam = P[k] / bN[k];
       const xi = alpha * Gprev[k] * Gprev[k] * Pprev[k] / bN[k] + (1 - alpha) * (gam > 1 ? gam - 1 : 0);
-      G0[k] = xi / (1 + xi);
+      let g = xi / (1 + xi);
+      // klar über dem Rauschen (γ > 8): nicht von der DD-Trägheit an Einsätzen ausbremsen lassen
+      if (gam > 8) { const gp = (gam - 1) / gam; if (gp > g) g = gp; }
+      G0[k] = g; Gam[k] = gam;
     }
     G[0] = Math.max(gmin, 0.75 * G0[0] + 0.25 * G0[1]);
     G[K - 1] = Math.max(gmin, 0.75 * G0[K - 1] + 0.25 * G0[K - 2]);
-    for (let k = 1; k < K - 1; k++) { const g = 0.25 * G0[k - 1] + 0.5 * G0[k] + 0.25 * G0[k + 1]; G[k] = g > gmin ? g : gmin; }
+    for (let k = 1; k < K - 1; k++) {
+      let g = 0.25 * G0[k - 1] + 0.5 * G0[k] + 0.25 * G0[k + 1];   // glättet Einzel-Spitzen (Musical Noise)
+      if (Gam[k] > 8 && G0[k] > g) g = G0[k];                       // echte Teiltöne behalten ihre Spitze
+      G[k] = g > gmin ? g : gmin;
+    }
     for (let k = 0; k < K; k++) { Gprev[k] = G[k]; Pprev[k] = P[k]; }
   };
   const out = new Float32Array(len);
@@ -553,7 +563,7 @@ function schmatzer(y, sr, st, sub) {
 // (wenig > 5 kHz) Stellen deutlich unter dem Gesangspegel, 150 ms – 1,5 s lang.
 // Nur absenken (Std. −6 dB) mit weichen 20-ms-Blenden.
 
-function atmer(y, sr, st, sub) {
+function atmer(y, sr, st, sub, ctx) {
   const len = y.length, s = st.staerke;
   const bs = Math.max(16, Math.round(sr / 100)), nb = Math.ceil(len / bs);
   const lpk = koeff('lp', 600, 0.707, sr), hpk = koeff('hp', 5000, 0.707, sr);
@@ -615,6 +625,7 @@ function atmer(y, sr, st, sub) {
       else if (i1 - 1 - i < fade) g = 1 - (1 - att) * (0.5 - 0.5 * Math.cos(Math.PI * (i1 - 1 - i) / fade));
       y[i] *= g;
     }
+    ctx.atem.push([i0, i1]);
     anzahl++; gesamtMs += lenB * 10;
   }
   sub(1);
@@ -656,7 +667,7 @@ function periodizitaet(y, sr, mitte) {
 // (d) Sanfte Transienten-Angleichung: überstehende Anschläge (Spitze/RMS) leicht absenken,
 //     zu schwache leicht anheben (max. −6/+2 dB, 2 ms Anlauf, 15 ms Rücklauf).
 
-function ausgleich(y, sr, st, sub) {
+function ausgleich(y, sr, st, sub, ctx) {
   const len = y.length, s = st.staerke;
   const bs = Math.max(8, Math.round(sr / 1000)), nb = Math.ceil(len / bs);   // 1-ms-Blöcke
   const hpk = koeff('hp', 120, 0.707, sr);
@@ -729,8 +740,13 @@ function ausgleich(y, sr, st, sub) {
     else { a = peaks[i]; while (a > 0 && L[a - 1] >= gate - 6) a--; }
     if (i < n - 1) { let mn = Infinity; b = peaks[i]; for (let q = peaks[i]; q <= peaks[i + 1]; q++) if (L[q] < mn) { mn = L[q]; b = q; } }
     else { b = peaks[i]; while (b < nt - 1 && L[b + 1] >= gate - 6) b++; }
-    // Lücke unter dem Gate zwischen Silben = Pause → 0 dB (Rauschen nicht anheben)
-    for (let q = a; q <= b; q++) gT[q] = L[q] >= gate - 6 ? g[i] : Math.min(0, g[i]);
+    // Anheben nur im Silbenkörper: 12–24 dB unter der Silbenspitze (Ausklang, Atmer, Rauschen)
+    // läuft die Anhebung stetig auf 0 dB aus; Absenkungen gelten überall.
+    for (let q = a; q <= b; q++) gT[q] = g[i] > 0 ? g[i] * clamp((L[q] - (Ls[i] - 24)) / 12, 0, 1) : g[i];
+  }
+  // Atemzonen (aus Schritt „atmer“) nie anheben
+  for (const [i0, i1] of (ctx && ctx.atem) || []) {
+    for (let t = Math.floor(i0 / bs / ts); t <= Math.min(nt - 1, Math.ceil(i1 / bs / ts)); t++) if (gT[t] > 0) gT[t] = 0;
   }
   // weiche Übergänge (±20 ms)
   const gS = new Float64Array(nt);
