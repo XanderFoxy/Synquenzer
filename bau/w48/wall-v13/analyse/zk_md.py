@@ -71,9 +71,11 @@ for n, s in enumerate(kand[:30], 1):
     i = s['id'][2:]
     her = ''
     if s['stimme'] == 'haupt':
-        her = ', '.join('%s %+d ms' % (a, b) for a, b in s['herkunft']['sprung']) or 'kleine Abweichungen über mehrere Fassungen'
+        if abs(s['abw_v12_ms']) < 40: her = 'so gesungen (v12 = Original %+d ms); Ziel nach Muster' % s['abw_v12_ms']
+        else: her = 'Bearbeitung: ' + (', '.join('%s %+d ms' % (a, b) for a, b in s['herkunft']['sprung']) or 'mehrere kleine Schritte')
     else:
-        her = 'Doppel v12 (v7-Doppel, auf Haupt gestimmt) %+d ms gegen Doppel-Original' % s['abw_v12_ms']
+        if abs(s['abw_v12_ms']) < 40: her = 'Doppel so gesungen (v12 = Doppel-Original %+d ms, zur Haupt %+d ms)' % (s['abw_v12_ms'], s['abw_zur_haupt_ms'])
+        else: her = 'v12-Doppel %+d ms gegen Doppel-Original' % s['abw_v12_ms']
     rv = s.get('raster16_v12') or rstr(s['t_v12'])
     rz = s['raster16']['text']
     L.append('| %d | %s Z%d | %s | %s | %s | %s | %s | %s ms | %s → %s | %s |' % (n, s['teil'], s['zeile'], s['text'], s['stimme'], f(s['t_orig']), f(s['t_v12']), f(s['ziel_t']),

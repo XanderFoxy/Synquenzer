@@ -68,7 +68,7 @@ def env_db(x, win_ms=5.0, hop_ms=1.0):
 
 
 def takt_von(t):
-    return int(np.floor(t / TAKT + 1e-6)) + 1
+    return int(np.floor(round(float(t), 3) / TAKT + 1e-9)) + 1
 
 
 def raster16(t):

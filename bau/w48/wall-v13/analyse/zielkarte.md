@@ -42,7 +42,7 @@ Parallelen: „everything we (~) do“ bzw. „in a world of (~) sheep“ – St
 
 | Silbe | Stimme | Anlaut ab | Vokal | **Spitze Original** | Raster Original | **v12** | Raster v12 | **Ziel** | Raster Ziel | v12 → Ziel | Original → Ziel | Regel |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Are | Haupt | 111,946 | 111,966 | 112,006 | T57+0,05 | 112,000 | T56+16,00 | 112,000 | T57+0,00 | +0 ms | -6 ms | strophe1 |
+| Are | Haupt | 111,946 | 111,966 | 112,006 | T57+0,05 | 112,000 | T57+0,00 | 112,000 | T57+0,00 | +0 ms | -6 ms | strophe1 |
 | Are | Doppel | 111,997 | 111,997 | 112,007 | T57+0,06 | — | — | 112,000 | T57+0,00 | — ms | -7 ms | strophe1 |
 | we | Haupt | 112,822 | 112,822 | 112,830 | T57+6,64 | 112,780 | T57+6,24 | 112,750 | T57+6,00 | +30 ms | -80 ms | strophe1 |
 | we | Doppel | 112,755 | 112,755 | 112,795 | T57+6,36 | — | — | 112,750 | T57+6,00 | — ms | -45 ms | strophe1 |
@@ -61,36 +61,36 @@ Sortiert nach |v12 − Ziel|. Doppel nur dort, wo es in v12 hörbar ist (Refrain
 
 | # | Stelle | Silbe | Stimme | Original | v12 | Ziel | v12 → Ziel | Raster v12 → Ziel | Woher (Messung) |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | R2 Z13 | is | doppel | 138,665 | 138,684 | 138,500 | +184 ms | T70+5,47 → T70+4,00 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) +19 ms gegen Doppel-Original |
-| 2 | S1 Z2 | world | haupt | 50,185 | 50,174 | 50,000 | +174 ms | T26+1,39 → T26+0,00 | kleine Abweichungen über mehrere Fassungen |
-| 3 | R1 Z4 | It | doppel | 67,383 | 67,420 | 67,250 | +170 ms | T34+11,36 → T34+10,00 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) +37 ms gegen Doppel-Original |
-| 4 | S2 Z10 | ti | haupt | 115,352 | 115,420 | 115,250 | +170 ms | T58+11,36 → T58+10,00 | v6 +84 ms |
-| 5 | S2 Z9 | see | haupt | 110,001 | 110,167 | 110,000 | +167 ms | T56+1,33 → T56+0,00 | v10 +178 ms |
-| 6 | R1 Z7 | eyes | doppel | 91,892 | 91,835 | 92,000 | -165 ms | T46+14,68 → T47+0,00 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) -57 ms gegen Doppel-Original |
-| 7 | R2 Z12 | It | doppel | 131,368 | 131,396 | 131,250 | +146 ms | T66+11,17 → T66+10,00 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) +28 ms gegen Doppel-Original |
-| 8 | R1 Z4 | know | doppel | 66,581 | 66,627 | 66,500 | +127 ms | T34+5,02 → T34+4,00 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) +46 ms gegen Doppel-Original |
-| 9 | R3 Z23 | low | doppel | 242,499 | 242,498 | 242,625 | -127 ms | T122+3,98 → T122+5,00 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) -1 ms gegen Doppel-Original |
-| 10 | R2 Z13 | see | doppel | 136,100 | 136,117 | 136,000 | +117 ms | T69+0,94 → T69+0,00 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) +17 ms gegen Doppel-Original |
-| 11 | R1 Z5 | is | haupt | 74,576 | 74,613 | 74,500 | +113 ms | T38+4,90 → T38+4,00 | kleine Abweichungen über mehrere Fassungen |
-| 12 | S1 Z0 | to | haupt | 34,047 | 34,112 | 34,000 | +112 ms | T18+0,90 → T18+0,00 | v7 +58 ms |
-| 13 | R1 Z5 | is | doppel | 74,595 | 74,605 | 74,500 | +105 ms | T38+4,84 → T38+4,00 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) +10 ms gegen Doppel-Original |
-| 14 | R1 Z7 | eyes | haupt | 91,893 | 91,900 | 92,000 | -100 ms | T46+15,20 → T47+0,00 | kleine Abweichungen über mehrere Fassungen |
-| 15 | S2 Z8 | we | haupt | 97,988 | 97,906 | 98,000 | -94 ms | T49+15,24 → T50+0,00 | v6 -59 ms |
-| 16 | R3 Z22 | see | doppel | 232,067 | 232,092 | 232,000 | +92 ms | T117+0,74 → T117+0,00 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) +25 ms gegen Doppel-Original |
-| 17 | R2 Z13 | be | doppel | 139,603 | 139,590 | 139,500 | +90 ms | T70+12,72 → T70+12,00 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) -13 ms gegen Doppel-Original |
-| 18 | R3 Z21 | all | doppel | 228,030 | 228,086 | 228,000 | +86 ms | T115+0,69 → T115+0,00 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) +56 ms gegen Doppel-Original |
-| 19 | R3 Z21 | It | doppel | 227,275 | 227,334 | 227,250 | +84 ms | T114+10,67 → T114+10,00 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) +59 ms gegen Doppel-Original |
-| 20 | S1 Z0 | li | haupt | 41,963 | 41,925 | 42,000 | -75 ms | T21+15,40 → T22+0,00 | kleine Abweichungen über mehrere Fassungen |
-| 21 | S2 Z11 | to | haupt | 124,040 | 124,073 | 124,000 | +73 ms | T63+0,58 → T63+0,00 | kleine Abweichungen über mehrere Fassungen |
-| 22 | S1 Z3 | we | haupt | 58,737 | 58,679 | 58,750 | -71 ms | T30+5,43 → T30+6,00 | v6 -58 ms |
-| 23 | R2 Z13 | hind | doppel | 140,076 | 140,070 | 140,000 | +70 ms | T71+0,56 → T71+0,00 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) -6 ms gegen Doppel-Original |
-| 24 | R1 Z7 | your | doppel | 91,335 | 91,324 | 91,255 | +69 ms | T46+10,59 → T46+10,04 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) -11 ms gegen Doppel-Original |
-| 25 | S2 Z8 | Why | haupt | 95,977 | 95,934 | 96,000 | -66 ms | T48+15,47 → T49+0,00 | v10 -40 ms |
-| 26 | ZT Z18 | see | haupt | 200,064 | 200,064 | 200,000 | +64 ms | T101+0,51 → T101+0,00 | kleine Abweichungen über mehrere Fassungen |
-| 27 | R2 Z13 | Can’t | doppel | 135,570 | 135,563 | 135,500 | +63 ms | T68+12,50 → T68+12,00 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) -7 ms gegen Doppel-Original |
-| 28 | R1 Z5 | see | haupt | 72,054 | 72,061 | 72,000 | +61 ms | T37+0,48 → T37+0,00 | kleine Abweichungen über mehrere Fassungen |
-| 29 | R2 Z13 | see | haupt | 136,063 | 136,060 | 136,000 | +60 ms | T69+0,48 → T69+0,00 | kleine Abweichungen über mehrere Fassungen |
-| 30 | R1 Z4 | all | doppel | 68,037 | 68,058 | 68,000 | +58 ms | T35+0,46 → T35+0,00 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) +21 ms gegen Doppel-Original |
+| 1 | R2 Z13 | is | doppel | 138,665 | 138,684 | 138,500 | +184 ms | T70+5,47 → T70+4,00 | Doppel so gesungen (v12 = Doppel-Original +19 ms, zur Haupt +81 ms) |
+| 2 | S1 Z2 | world | haupt | 50,185 | 50,174 | 50,000 | +174 ms | T26+1,39 → T26+0,00 | so gesungen (v12 = Original -11 ms); Ziel nach Muster |
+| 3 | R1 Z4 | It | doppel | 67,383 | 67,420 | 67,250 | +170 ms | T34+11,36 → T34+10,00 | Doppel so gesungen (v12 = Doppel-Original +37 ms, zur Haupt +83 ms) |
+| 4 | S2 Z10 | ti | haupt | 115,352 | 115,420 | 115,250 | +170 ms | T58+11,36 → T58+10,00 | Bearbeitung: v6 +84 ms |
+| 5 | S2 Z9 | see | haupt | 110,001 | 110,167 | 110,000 | +167 ms | T56+1,33 → T56+0,00 | Bearbeitung: v10 +178 ms |
+| 6 | R1 Z7 | eyes | doppel | 91,892 | 91,835 | 92,000 | -165 ms | T46+14,68 → T47+0,00 | v12-Doppel -57 ms gegen Doppel-Original |
+| 7 | R2 Z12 | It | doppel | 131,368 | 131,396 | 131,250 | +146 ms | T66+11,17 → T66+10,00 | Doppel so gesungen (v12 = Doppel-Original +28 ms, zur Haupt +77 ms) |
+| 8 | R1 Z4 | know | doppel | 66,581 | 66,627 | 66,500 | +127 ms | T34+5,02 → T34+4,00 | v12-Doppel +46 ms gegen Doppel-Original |
+| 9 | R3 Z23 | low | doppel | 242,499 | 242,498 | 242,625 | -127 ms | T122+3,98 → T122+5,00 | Doppel so gesungen (v12 = Doppel-Original -1 ms, zur Haupt -3 ms) |
+| 10 | R2 Z13 | see | doppel | 136,100 | 136,117 | 136,000 | +117 ms | T69+0,94 → T69+0,00 | Doppel so gesungen (v12 = Doppel-Original +17 ms, zur Haupt +37 ms) |
+| 11 | R1 Z5 | is | haupt | 74,576 | 74,613 | 74,500 | +113 ms | T38+4,90 → T38+4,00 | so gesungen (v12 = Original +37 ms); Ziel nach Muster |
+| 12 | S1 Z0 | to | haupt | 34,047 | 34,112 | 34,000 | +112 ms | T18+0,90 → T18+0,00 | Bearbeitung: v7 +58 ms |
+| 13 | R1 Z5 | is | doppel | 74,595 | 74,605 | 74,500 | +105 ms | T38+4,84 → T38+4,00 | Doppel so gesungen (v12 = Doppel-Original +10 ms, zur Haupt +19 ms) |
+| 14 | R1 Z7 | eyes | haupt | 91,893 | 91,900 | 92,000 | -100 ms | T46+15,20 → T47+0,00 | so gesungen (v12 = Original +7 ms); Ziel nach Muster |
+| 15 | S2 Z8 | we | haupt | 97,988 | 97,906 | 98,000 | -94 ms | T49+15,24 → T50+0,00 | Bearbeitung: v6 -59 ms |
+| 16 | R3 Z22 | see | doppel | 232,067 | 232,092 | 232,000 | +92 ms | T117+0,74 → T117+0,00 | Doppel so gesungen (v12 = Doppel-Original +25 ms, zur Haupt +17 ms) |
+| 17 | R2 Z13 | be | doppel | 139,603 | 139,590 | 139,500 | +90 ms | T70+12,72 → T70+12,00 | Doppel so gesungen (v12 = Doppel-Original -13 ms, zur Haupt +65 ms) |
+| 18 | R3 Z21 | all | doppel | 228,030 | 228,086 | 228,000 | +86 ms | T115+0,69 → T115+0,00 | v12-Doppel +56 ms gegen Doppel-Original |
+| 19 | R3 Z21 | It | doppel | 227,275 | 227,334 | 227,250 | +84 ms | T114+10,67 → T114+10,00 | v12-Doppel +59 ms gegen Doppel-Original |
+| 20 | S1 Z0 | li | haupt | 41,963 | 41,925 | 42,000 | -75 ms | T21+15,40 → T22+0,00 | so gesungen (v12 = Original -38 ms); Ziel nach Muster |
+| 21 | S2 Z11 | to | haupt | 124,040 | 124,073 | 124,000 | +73 ms | T63+0,58 → T63+0,00 | so gesungen (v12 = Original +33 ms); Ziel nach Muster |
+| 22 | S1 Z3 | we | haupt | 58,737 | 58,679 | 58,750 | -71 ms | T30+5,43 → T30+6,00 | Bearbeitung: v6 -58 ms |
+| 23 | R2 Z13 | hind | doppel | 140,076 | 140,070 | 140,000 | +70 ms | T71+0,56 → T71+0,00 | Doppel so gesungen (v12 = Doppel-Original -6 ms, zur Haupt +71 ms) |
+| 24 | R1 Z7 | your | doppel | 91,335 | 91,324 | 91,255 | +69 ms | T46+10,59 → T46+10,04 | Doppel so gesungen (v12 = Doppel-Original -11 ms, zur Haupt +65 ms) |
+| 25 | S2 Z8 | Why | haupt | 95,977 | 95,934 | 96,000 | -66 ms | T48+15,47 → T49+0,00 | Bearbeitung: v10 -40 ms |
+| 26 | ZT Z18 | see | haupt | 200,064 | 200,064 | 200,000 | +64 ms | T101+0,51 → T101+0,00 | so gesungen (v12 = Original +0 ms); Ziel nach Muster |
+| 27 | R2 Z13 | Can’t | doppel | 135,570 | 135,563 | 135,500 | +63 ms | T68+12,50 → T68+12,00 | Doppel so gesungen (v12 = Doppel-Original -7 ms, zur Haupt +63 ms) |
+| 28 | R1 Z5 | see | haupt | 72,054 | 72,061 | 72,000 | +61 ms | T37+0,48 → T37+0,00 | so gesungen (v12 = Original +7 ms); Ziel nach Muster |
+| 29 | R2 Z13 | see | haupt | 136,063 | 136,060 | 136,000 | +60 ms | T69+0,48 → T69+0,00 | so gesungen (v12 = Original -3 ms); Ziel nach Muster |
+| 30 | R1 Z4 | all | doppel | 68,037 | 68,058 | 68,000 | +58 ms | T35+0,46 → T35+0,00 | Doppel so gesungen (v12 = Doppel-Original +21 ms, zur Haupt +11 ms) |
 
 ## Raster-Muster
 
@@ -112,7 +112,7 @@ Sortiert nach |v12 − Ziel|. Doppel nur dort, wo es in v12 hörbar ist (Refrain
 
 ## Zuordnung „are we hypnotized“ ↔ „everything we do believe“
 
-Xander nennt „are we hypnotized“ ↔ „everything we do believe“ (EV/ARE, ERY/WE, THING/HYP, NO/WE, TIZED/DO) und „there is so much more to see“ ↔ „in a world of sheep“. Nach Takt und Akkord liegen die Zeilen anders: „there is so much more to see“ steht über Ab–Fm wie „zombies living for Gods sake“, „are we hypnotised“ über Bbm–Gb wie „in a world of sheep“, „what does it need to realise“ wie „everything we do believe“. Mathematisch ist es egal: alle acht 4-Takt-Phrasen beider Strophen benutzen dasselbe Silben-Raster 0 / 6 / 16 / 22 / 32 / 38 / 48 (16tel ab Takt 1 der Phrase; gemessene Mediane {'0': -0.04, '1': 6.26, '2': 16.14, '3': 22.02, '4': 32.2, '5': 38.23, '6': 47.98, 'b': 26.31}). Mittlere Abweichung Silbe-für-Silbe: Xanders Paare 0.41 16tel, Takt/Akkord-Paare 0.42 16tel – praktisch gleich. Beide Zuordnungen ergeben deshalb dieselben Ziele: ARE 0, WE 6, HYP 16, NO 22, TIZED 32 – genau Xanders Rechnung (EV 0, ERY 6, THING 16, WE 22, DO 32). Am Audio singt er „hyp-no-ti-sed“ mit vier Tönen: „ti“ ist ein eigener Ton mit t-Anlaut (115,35 s), „-sed“ mit dem s ab 115,93 s und dem Vokal auf 116,0 (= sein „TIZED auf DO“). Strophe 1 hat an derselben Stelle (Platz ~26) ebenfalls einen neuen Ton ohne neue Silbe (51,26 s „of~“, 59,29 s „we~“) – deshalb Ziel „ti“ = 26.
+Xander nennt „are we hypnotized“ ↔ „everything we do believe“ (EV/ARE, ERY/WE, THING/HYP, NO/WE, TIZED/DO) und „there is so much more to see“ ↔ „in a world of sheep“. Nach Takt und Akkord liegen die Zeilen anders: „there is so much more to see“ steht über Ab–Fm wie „zombies living for Gods sake“, „are we hypnotised“ über Bbm–Gb wie „in a world of sheep“, „what does it need to realise“ wie „everything we do believe“. Mathematisch ist es egal: alle acht 4-Takt-Phrasen beider Strophen benutzen dasselbe Silben-Raster 0 / 6 / 16 / 22 / 32 / 38 / 48 (16tel ab Takt 1 der Phrase; gemessene Mediane -0,0 / 6,3 / 16,1 / 22,0 / (26,3) / 32,2 / 38,2 / 48,0). Mittlere Abweichung Silbe-für-Silbe: Xanders Paare 0,41 16tel, Takt/Akkord-Paare 0,42 16tel – praktisch gleich. Beide Zuordnungen ergeben deshalb dieselben Ziele: ARE 0, WE 6, HYP 16, NO 22, TIZED 32 – genau Xanders Rechnung (EV 0, ERY 6, THING 16, WE 22, DO 32). Am Audio singt er „hyp-no-ti-sed“ mit vier Tönen: „ti“ ist ein eigener Ton mit t-Anlaut (115,35 s), „-sed“ mit dem s ab 115,93 s und dem Vokal auf 116,0 (= sein „TIZED auf DO“). Strophe 1 hat an derselben Stelle (Platz ~26) ebenfalls einen neuen Ton ohne neue Silbe (51,26 s „of~“, 59,29 s „we~“) – deshalb Ziel „ti“ = 26.
 
 ## Woher die v12-Fehler kommen
 
@@ -122,7 +122,7 @@ Xander nennt „are we hypnotized“ ↔ „everything we do believe“ (EV/ARE,
 - **v10/G4**: Haupt-3_g4 (v10): Strophe 2 Zeilen 2+3 neu geschnitten (16 Schnitte), „see“ s von 191 auf 408 ms verlängert (+166…+177 ms für den Rest von „see“), „so“ −115 ms, Stille vor „no“ verdoppelt.
 - **MP3**: v12-Lead = v11-Haupt aus 128-kbit-MP3 (wall/roh/ende.npy). Zeitlich kein Versatz messbar (unbearbeitete Stellen ±10 ms zum Original), aber schlechtere Klangquelle – für v13 aus dem 24-bit-Original neu schneiden.
 - **see**: „see“ (S2) ist im Original genau wie „sake“ (S1, gleiche Stelle): s ab 16tel 13 (109,63 / 45,62), Vokal setzt 1,35 16tel vor dem Takt ein (109,83 / 45,83), kurzer Einbruch, Akzent genau auf dem Taktstrich (110,00 / 46,00). Das ist schon Xanders Muster – Ziel = Original (Verschiebung 0). v12 hat das s auf ~0,43 s verlängert (Anfang 109,58), den ersten Vokal-Teil durch Rauschen ersetzt und den ganzen Rest von „see“ um +166 ms nach hinten geschoben (Akzent 110,17); danach wird bei 111,13 s ein Stück ausgelassen. Ursache: v10 („s etwa 0,2 s länger, damit der Vokal genau auf dem Schlag kommt“, Haupt-3_g4), unverändert in v11/v12.
-- **hypnotised**: Original: hyp 113,98 (15,8) · no 114,66 (21,3) · ti 115,35 (26,8) · sed 116,02 (32,1). v12: hyp 114,00 · no 114,74 (+80) · ti 115,42 (+68) · sed 115,98 (−34). Schon die v6-Datei (projekt/Gesang-Platzhalter-3.wav, „getunt v6“) hat no und ti um +84 ms verschoben und sed um −98 ms; v7 („silbenweise auf die Plätze von In a world of sheep gerückt“) und v10/G4 haben das beibehalten und zusätzlich vor „no“ 3×24 ms Stille verdoppelt – das n ist in v12 durch Stille ersetzt (114,63–114,72), ebenso der t-Verschluss von „ti“ (115,36–115,40). Ziel: hyp 16 (114,00, +21 ms), no 22 (114,75, +90 ms – der Vokal liegt damit da, wo v12 ihn hat, aber MIT dem originalen n davor ab 114,66), ti 26 (115,25, −102 ms), sed 32 (116,00, −16 ms). Die hörbare Schieflage in v12 kommt also vor allem von „ti“ (1,4 16tel zu spät gegenüber Strophe 1), vom fehlenden n und von der gestauchten Lücke ti→sed (Original 0,66 s, v12 0,56 s).
+- **hypnotised**: Original: hyp 113,98 (15,8) · no 114,66 (21,3) · ti 115,35 (26,8) · sed 116,02 (32,1). v12: hyp 114,00 · no 114,74 (+80) · ti 115,42 (+68) · sed 115,98 (−34). Schon die v6-Datei (projekt/Gesang-Platzhalter-3.wav, „getunt v6“) hat no und ti um +84 ms verschoben und sed um −98 ms; v7 („silbenweise auf die Plätze von In a world of sheep gerückt“) und v10/G4 haben das beibehalten und zusätzlich vor „no“ 3×24 ms Stille verdoppelt – das n ist in v12 durch Stille ersetzt (114,63–114,72), ebenso der t-Verschluss von „ti“ (115,36–115,40). Ziel: hyp 16 (114,00, +21 ms), no 22 (114,75, +90 ms – der Vokal liegt damit da, wo v12 ihn hat, aber MIT dem originalen n davor ab 114,66), ti 26 (115,25, −102 ms), sed 32 (116,00, −16 ms). Die hörbare Schieflage in v12 kommt also vor allem von „ti“ (1,1–1,4 16tel später als die Töne an derselben Stelle in Strophe 1), vom fehlenden n und von der gestauchten Lücke ti→sed (Original 0,66 s, v12 0,56 s).
 
 ## Unsicher / offen
 
