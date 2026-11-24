@@ -3,11 +3,12 @@
 // einfachen Ersatz statt abzustürzen. Alles bleibt auf dem Gerät (IndexedDB/localStorage über speicher.js).
 import * as speicher from './speicher.js';
 
-const M = { ph: {}, ton: {}, ue: {} };
+const M = { ph: {}, ton: {}, ue: {}, eg: {} };
 const bereit = Promise.all([
   import('./phonetik.js').then((m) => { M.ph = m; }).catch((e) => console.warn('phonetik.js fehlt', e)),
   import('./ton.js').then((m) => { M.ton = m; }).catch((e) => console.warn('ton.js fehlt', e)),
   import('./uebungen.js').then((m) => { M.ue = m; }).catch((e) => console.warn('uebungen.js fehlt', e)),
+  import('./eignung.js').then((m) => { M.eg = m; }).catch((e) => console.warn('eignung.js fehlt', e)),
 ]);
 
 // ================================================================ kleine Helfer
@@ -134,6 +135,24 @@ const grundton = (st = stimme()) => (st && st.kern && isFinite(st.kern[0]) ? Mat
 const zeilenVon = (lied, teil) => lied.zeilen.filter((z) => z.teil === teil && z.text);
 const gesungeneTeile = (lied) => lied.teile.filter((t) => zeilenVon(lied, t.id).length);
 
+// Transposition je Lied (Knopf in der Eignungs-Karte, Tonart-Regler der Zeile): Übungen, Lernweg und Warm-up folgen ihr.
+const transVon = (id) => { const a = speicher.hole('trans', {}) || {}; const x = Number(a[id]); return isFinite(x) ? Math.max(-12, Math.min(12, Math.round(x))) : 0; };
+function setzeTrans(id, x) { const a = { ...(speicher.hole('trans', {}) || {}) }; a[id] = x; speicher.merke('trans', a); }
+const transCache = new Map();
+function liedFuer(lied) {
+  const t = transVon(lied.id); if (!t) return lied;
+  const k = lied.id + ':' + t; if (transCache.has(k)) return transCache.get(k);
+  const sh = (m) => (isFinite(m) && m > 0 ? m + t : m);
+  const c = { ...lied, transponiert: t,
+    zeilen: lied.zeilen.map((z) => ({ ...z, silben: (z.silben || []).map((s) => ({ ...s, midi: sh(s.midi), ...(Array.isArray(s.noten) ? { noten: s.noten.map((n) => ({ ...n, midi: sh(n.midi) })) } : {}) })) })),
+    umfang: lied.umfang ? { tief: lied.umfang.tief + t, hoch: lied.umfang.hoch + t } : null,
+    umfangTeile: Object.fromEntries(Object.entries(lied.umfangTeile || {}).map(([k2, u]) => [k2, { tief: u.tief + t, hoch: u.hoch + t }])) };
+  transCache.set(k, c); return c;
+}
+const eignungVon = (lied) => (istFn(M.eg.eignung) ? versuch(() => M.eg.eignung(lied, stimme()), null) : null);
+const bibliothek = () => (istFn(M.ue.fuerStimme) ? versuch(() => M.ue.fuerStimme(stimme()), null) : null) || uebungsListe();
+let frisch = '';
+
 /** Noten einer Zeile mit Vokalen. t ab 0, in Sekunden bei Originaltempo. */
 function zeilenNoten(z, P) {
   const D = (z.silben || []).filter((s) => s && isFinite(s.midi) && s.midi > 0);
@@ -151,7 +170,7 @@ function zeilenNoten(z, P) {
 
 function planVon(lied) {
   const st = stimme();
-  if (istFn(M.ue.plan)) { const r = versuch(() => M.ue.plan(lied, st), null); if (Array.isArray(r)) return r; }
+  if (istFn(M.ue.plan)) { const r = versuch(() => M.ue.plan(liedFuer(lied), st), null); if (Array.isArray(r)) return r; }
   // Ersatz-Lernweg
   const stufen = ['Melodie auf Lippenflattern oder Summen', 'Nur die Vokale singen', 'Vokal-Übergänge der schweren Stellen langsam', 'Silben auf „da“ im Rhythmus', 'Text im halben Tempo', 'Text im Originaltempo', 'Mit Musik'];
   return gesungeneTeile(lied).map((t) => ({ teil: t.id, name: t.name, schwierig: [], schritte: stufen.map((s) => ({ uebung: '', text: s, zeilen: zeilenVon(lied, t.id).map((z) => z.id) })) }));
@@ -275,9 +294,10 @@ function stoppeKlang() {
   ctxA = null;
 }
 let micAn = false;
-async function starteMikro(onTon) {
+async function starteMikro(onTon, onFehler) {
   if (!istFn(M.ton.mikrofon)) throw new Error('Die Tonhöhen-Erkennung ist noch nicht geladen.');
-  const r = await M.ton.mikrofon({ onTon });
+  // kein await davor: iOS erlaubt AudioContext + Mikrofon nur direkt im Tipp
+  const r = await M.ton.mikrofon({ onTon, onFehler: onFehler || ((e) => meldung(String(e && e.message || e), 4500)) });
   micAn = true;
   const stop = istFn(r) ? r : (r && (r.stop || r.stopp)) || (() => {});
   return () => { micAn = false; try { stop(); } catch (e) { /* egal */ } };
@@ -344,14 +364,16 @@ async function zeige() {
   raeumeAuf();
   const roh = location.hash.replace(/^#\/?/, '');
   if (roh.startsWith('profil=')) { liesProfilLink(); return zeige(); }
-  const [seite = 'start', a, b, c] = roh.split('/').map((x) => { try { return decodeURIComponent(x); } catch (e) { return x; } });
+  const [seite = 'start', a, b, c, d] = roh.split('/').map((x) => { try { return decodeURIComponent(x); } catch (e) { return x; } });
   const v = ansicht();
   let inhalt;
   try {
     await bereit;
     if (seite === 'lied' && a && b === 'teil' && c) inhalt = await seiteTeil(a, c);
-    else if (seite === 'lied' && a && b === 'zeile' && c) inhalt = await seiteZeile(a, c);
+    else if (seite === 'lied' && a && b === 'zeile' && c) inhalt = await seiteZeile(a, c, d === 'bau');
+    else if (seite === 'lied' && a && b === 'weg') inhalt = await seiteWeg(a);
     else if (seite === 'lied' && a) inhalt = await seiteLied(a);
+    else if (seite === 'mitsingen') inhalt = await seiteMitsingen(a || speicher.hole('letztesLied', 'the-wall'));
     else if (seite === 'warmup') inhalt = await seiteWarmup(a || speicher.hole('letztesLied', 'the-wall'));
     else if (seite === 'stimme') inhalt = seiteStimme();
     else if (seite === 'neu') inhalt = seiteNeu();
@@ -435,7 +457,8 @@ async function seiteLied(id) {
   const kopf = h('section', { class: 'held' },
     h('h1', null, lied.titel || 'Ohne Titel'),
     h('p', null, [lied.kuenstler, lied.bpm ? `${lied.bpm} BPM` : null, lied.tonart].filter(Boolean).join(' · ')),
-    h('div', { class: 'knopf-reihe', style: { marginTop: '16px' } },
+    h('a', { class: 'knopf weiss breit', href: `#mitsingen/${enc(id)}`, style: { marginTop: '16px', minHeight: '56px' } }, ic('play'), 'Mitsingen mit Instrumental'),
+    h('div', { class: 'knopf-reihe', style: { marginTop: '10px' } },
       h('a', { class: 'knopf weiss', href: `#warmup/${enc(id)}` }, ic('warm'), 'Warm-up für dieses Lied'),
       naechster ? h('a', { class: 'knopf weiss', href: `#lied/${enc(id)}/teil/${enc(naechster.id)}` }, ic('pfad'), 'Lernweg') : null));
 
@@ -479,11 +502,109 @@ async function seiteLied(id) {
     await speicher.loescheLied(id); liedCache.delete(id); meldung('Lied gelöscht'); location.hash = '#start';
   } }, ic('loeschen'), 'Lied löschen'));
 
-  return [kopf, umfKarte, h('h2', null, 'Dein Lernweg'),
+  const eg = eignungVon(lied);
+  const egKarte = eg ? eignungsKarte(lied, eg) : null;
+  if (egKarte && frisch === id) { egKarte.classList.add('frisch'); frisch = ''; }
+  return [kopf, egKarte, umfKarte, h('h2', null, 'Dein Lernweg'),
     h('p', { class: 'leise klein', style: { marginTop: '-4px' } }, 'Teil für Teil: erst Melodie und Vokale, dann Übergänge, dann Text. Tippe einen Teil an.'),
     pfad,
     ohneGesang.length ? h('p', { class: 'leise klein' }, `Ohne Gesang: ${ohneGesang.map((t) => t.name).join(', ')} – Zeit zum Atmen.`) : null,
     ...extra];
+}
+// ================================================================ Eignung (Ampel-Karte) und „Weg zu diesem Lied“
+const AMPEL = { passt: ['#6fe3a8', '#1fb5c9'], 'mit Übung': ['#ffd36e', '#ff9a3d'], 'noch weit': ['#ff8a9a', '#d9367a'] };
+const STUFE_TITEL = { passt: 'Passt zu deiner Stimme', 'mit Übung': 'Mit Übung erreichbar', 'noch weit': 'Noch ein weiter Weg' };
+const ohneStufe = (t) => String(t || '').replace(/^[^.]*\(Schätzung\)\.\s*/, '');
+const vz = (t) => (t > 0 ? '+' : t < 0 ? '−' : '±') + Math.abs(t);
+function eignungsKarte(lied, e) {
+  const id = lied.id, ton = lied.tonart, tAkt = transVon(id);
+  const [f1, f2] = e.ohneMelodie ? ['#cdbdc8', '#9d8c99'] : AMPEL[e.stufe] || AMPEL['mit Übung'];
+  const ampel = h('div', { class: 'ampel', 'aria-hidden': 'true' }, ['passt', 'mit Übung', 'noch weit'].map((x) => h('i', { class: x === e.stufe && !e.ohneMelodie ? 'an' : '', style: `--f:${AMPEL[x][0]}` })));
+  const gr = e.gruende || [];
+  const transReihe = [];
+  if (e.transponieren) {
+    const an = tAkt === e.transponieren;
+    transReihe.push(h('div', { class: 'eg-trans' },
+      h('p', null, h('b', null, `Transponieren um ${vz(e.transponieren)}`), ` – dann liegt die Kernlage bei ${nName(e.kern[0] + e.transponieren, ton)}–${nName(e.kern[1] + e.transponieren, ton)}, höchster Ton ${nName(e.umfang.hoch + e.transponieren, ton)}.`),
+      h('button', { class: `knopf ${an ? '' : 'haupt'} breit`, 'aria-pressed': String(an), onclick: () => {
+        setzeTrans(id, an ? 0 : e.transponieren);
+        meldung(an ? 'Übungen wieder in der Originaltonart' : `Alle Übungen um ${vz(e.transponieren)} transponiert`); zeige();
+      } }, ic(an ? 'haken' : 'klavier'), an ? `Übungen sind transponiert (${vz(tAkt)}) – zurück zum Original` : `Übungen um ${vz(e.transponieren)} transponieren`)));
+  } else if (tAkt) {
+    transReihe.push(h('button', { class: 'knopf breit', onclick: () => { setzeTrans(id, 0); meldung('Übungen wieder in der Originaltonart'); zeige(); } }, ic('klavier'), `Übungen laufen um ${vz(tAkt)} – zurück zum Original`));
+  }
+  const stellen = (e.schwierig || []).slice(0, 4).map((x) => h('a', { class: 'chip', href: `#lied/${enc(id)}/zeile/${enc(x.zeile)}`, style: { minHeight: '44px' }, title: x.warum }, ic('play'), `„${kurz(x.silbe, 14)}“ ${nName(x.midi, ton)}`));
+  return h('section', { class: 'karte eignung', style: `--e1:${f1};--e2:${f2}` },
+    h('span', { class: 'band' }),
+    h('div', { class: 'eg-kopf' }, ampel, h('div', null,
+      h('p', { class: 'leise klein' }, e.ohneStimme ? 'Eignung · Schätzung mit Annahme' : 'Eignung für deine Stimme · Schätzung'),
+      h('h3', null, e.ohneMelodie ? 'Tonlage noch offen' : STUFE_TITEL[e.stufe] || e.stufe))),
+    h('p', { class: 'eg-satz' }, ohneStufe(e.text)),
+    h('ul', { class: 'eg-gruende' }, gr.slice(0, 4).map((g) => h('li', null, g))),
+    gr.length > 4 ? h('details', null, h('summary', { class: 'klein' }, `${gr.length - 4} weitere Gründe`), h('ul', { class: 'eg-gruende' }, gr.slice(4).map((g) => h('li', null, g)))) : null,
+    ...transReihe,
+    stellen.length ? h('div', null, h('p', { class: 'klein leise', style: { marginTop: '12px' } }, 'Schwierigste Stellen'), h('div', { class: 'chips', style: { marginTop: '6px' } }, stellen)) : null,
+    h('div', { class: 'knopf-reihe', style: { marginTop: '14px' } },
+      h('a', { class: 'knopf haupt', href: `#lied/${enc(id)}/weg` }, ic('pfad'), 'Weg zu diesem Lied'),
+      e.ohneStimme ? h('a', { class: 'knopf', href: '#stimme' }, ic('stimme'), 'Stimmlage ermitteln') : null));
+}
+
+/** Tonfolge einer Bibliotheks-Übung (ab Startton aus dem Profil) vorspielen. */
+function spieleUebung(u, folge, gleiten) {
+  folge = (folge || u.folge || []).filter(isFinite);
+  if (!folge.length) { meldung('Für diese Übung erst die Stimmlage ermitteln – dann gibt es einen Startton.'); return; }
+  stoppeKlang();
+  const d = gleiten ? 1.3 : 0.45; let t = 0;
+  const vok = u.vokal || (/(summen|ng-)/.test(u.id) ? 'u' : 'a');
+  spieleFolge(folge.map((m) => { const n = { t, dauer: d * 0.95, midi: m, vokal: vok }; t += d; return n; }), { art: 'klavier' });
+}
+function uebungsDetails(u, extra) {
+  const folge = extra && extra.folge ? extra.folge : u.folge;
+  return h('details', { class: 'karte ueb' },
+    h('summary', null, uebSymbol(u), h('div', { style: { flex: '1', minWidth: '0' } }, h('h3', null, u.titel),
+      h('p', { class: 'leise klein' }, [u.startName ? `Start ${u.startName}` : null, u.grund || null, u.dauerMin ? `${minText(u.dauerMin)} Min.` : null].filter(Boolean).join(' · ') || u.ziel || '')),
+      h('span', { class: 'pfeil' }, ic('weiter'))),
+    h('div', { class: 'ueb-inhalt' }, u.ziel ? h('p', { class: 'leise' }, u.ziel) : null,
+      u.anleitung && u.anleitung.length ? h('ol', { class: 'anleitung' }, u.anleitung.map((a) => h('li', null, a))) : null,
+      folge && folge.length ? h('button', { class: 'knopf breit', style: { marginTop: '10px' }, onclick: () => spieleUebung(u, folge, extra && extra.gleiten != null ? extra.gleiten : u.gleiten) }, ic('play'),
+        `Vorspielen (${nName(Math.min(...folge))}–${nName(Math.max(...folge))})`) : null));
+}
+
+async function seiteWeg(id) {
+  const lied = await holeLied(id);
+  if (!lied) return nichtGefunden();
+  setzeKopf('Weg zu diesem Lied', `#lied/${enc(id)}`); setzeNav('start');
+  const e = eignungVon(lied);
+  if (!e) return h('div', { class: 'karte leer' }, h('p', null, 'Die Eignungs-Schätzung ist gerade nicht verfügbar.'));
+  const bib = bibliothek(), ton = lied.tonart;
+  const finde = (uid) => bib.find((u) => u.id === uid) || uebungVon(uid);
+  const f = speicher.fortschritt(id);
+  const erste = e.weg.findIndex((w) => !(f.weg && f.weg[w.woche]));
+  const pfad = h('ol', { class: 'pfad' }, e.weg.map((w, i) => {
+    const fertig = !!(f.weg && f.weg[w.woche]);
+    const ueb = w.uebungen.map(finde).filter(Boolean);
+    return h('li', { class: `station ${fertig ? 'erledigt' : ''} ${i === erste ? 'naechste' : ''}` },
+      h('span', { class: 'punkt' }, fertig ? ic('haken') : String(w.woche)),
+      h('div', { class: 'inhalt' }, h('div', { class: 'karte' },
+        h('div', { class: 'station-kopf' }, h('div', null, h('p', { class: 'leise klein' }, `Woche ${w.woche}`), h('h3', null, w.ziel)),
+          h('button', { class: `haken-knopf ${fertig ? 'an' : ''}`, 'aria-label': `Woche ${w.woche} geschafft`, 'aria-pressed': String(fertig), onclick: () => { speicher.setzeFortschritt(id, 'weg', w.woche, !fertig); zeige(); } }, ic('haken'))),
+        h('p', { style: { marginTop: '6px' } }, w.text),
+        isFinite(w.trans) ? h('button', { class: 'knopf klein', style: { marginTop: '10px' }, onclick: () => { setzeTrans(id, w.trans); meldung(`Übungen auf ${vz(w.trans)} gestellt`); } }, ic('klavier'), `Übungen auf ${vz(w.trans)} stellen`) : null,
+        h('div', { style: { marginTop: '10px' } }, ueb.map((u) => uebungsDetails(u, w.ton && /sirene|glissando/.test(u.id) ? { folge: [w.ton.von, w.ton.bis, w.ton.von], gleiten: true } : null))))));
+  }));
+  const stellen = (e.schwierig || []).map((x) => h('a', { class: 'karte hinweis-karte', href: `#lied/${enc(id)}/zeile/${enc(x.zeile)}/bau` },
+    h('span', { class: 'pfeil', style: { color: 'var(--sanft)' } }, ic('hinweis')),
+    h('div', null, h('p', null, h('b', null, `„${x.silbe}“ · ${nName(x.midi, ton)}`), ' – ', x.warum), h('p', { class: 'leise klein' }, x.zeilenText || ''))));
+  const egF = AMPEL[e.stufe] || AMPEL['mit Übung'];
+  return [h('section', { class: 'held' }, h('h1', null, `Weg zu „${lied.titel || 'diesem Lied'}“`), h('p', null, ohneStufe(e.text)),
+      h('div', { class: 'chips', style: { marginTop: '12px' } }, h('span', { class: 'chip', style: { background: `linear-gradient(90deg, ${egF[0]}, ${egF[1]})`, color: '#2b1d24' } }, STUFE_TITEL[e.stufe] || e.stufe),
+        h('span', { class: 'chip', style: { background: 'rgba(255,255,255,.22)', color: '#fff' } }, `${e.weg.length} Wochen · Schätzung`))),
+    e.ohneStimme ? h('a', { class: 'karte hinweis-karte', href: '#stimme' }, h('span', { class: 'pfeil' }, ic('hinweis')), h('p', { class: 'klein' }, 'Stimmlage ermitteln – bis dahin gilt der Weg für einen typischen Bariton (Annahme).')) : null,
+    h('h2', null, 'Woche für Woche'),
+    h('p', { class: 'leise klein', style: { marginTop: '-4px' } }, 'Täglich 15–20 Minuten. Erst weiter, wenn sich die Woche leicht anfühlt – Tempo bestimmst du.'),
+    pfad,
+    stellen.length ? h('h2', null, 'Diese Stellen auseinandernehmen') : null, ...stellen,
+    h('p', { class: 'leise klein', style: { textAlign: 'center', marginTop: '18px' } }, 'Bei Kratzen, Schmerz oder Heiserkeit: aufhören und Pause machen.')];
 }
 function kurzMerkmal(m) {
   const s = typeof m === 'string' ? m : (m && (m.text || m.name)) || '';
@@ -529,7 +650,8 @@ async function seiteTeil(id, tid) {
   const pfad = h('ol', { class: 'pfad' }, schritte.map((s, i) => {
     const key = `${tid}:${i}`, fertig = !!(f.stufen && f.stufen[key]);
     const u = uebungVon(s.uebung);
-    const zl = (s.zeilen || []).slice(0, 3).map(zeilenLink);
+    const zl = s.bau ? (s.zeilen || []).map((zid) => { const z = lied.zeilen.find((x) => x.id === zid); return z ? h('a', { class: 'chip warm', href: `#lied/${enc(id)}/zeile/${enc(z.id)}/bau`, style: { minHeight: '44px' } }, ic('schleife'), kurz(z.text, 26)) : null; })
+      : (s.zeilen || []).slice(0, 3).map(zeilenLink);
     return h('li', { class: `station ${fertig ? 'erledigt' : ''} ${i === erste ? 'naechste' : ''}` },
       h('span', { class: 'punkt' }, fertig ? ic('haken') : String(i + 1)),
       h('div', { class: 'inhalt' }, h('div', { class: 'karte' },
@@ -564,7 +686,7 @@ async function seiteTeil(id, tid) {
 const kurz = (s, n) => { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
 
 // ================================================================ #lied/<id>/zeile/<zid>
-async function seiteZeile(id, zid) {
+async function seiteZeile(id, zid, bauZiel = false) {
   const lied = await holeLied(id);
   if (!lied) return nichtGefunden();
   const z = lied.zeilen.find((x) => x.id === zid);
@@ -576,7 +698,8 @@ async function seiteZeile(id, zid) {
   const P = silbenVon(z.text, sprache);
   const noten = zeilenNoten(z, P);
   const ein = Object.assign({ stufe: 'vokale', art: 'stimme', tempo: 0.8, trans: 0, schleife: false }, speicher.hole('einst', {}) || {});
-  const merkeEin = () => speicher.merke('einst', { stufe: ein.stufe, art: ein.art, tempo: ein.tempo, trans: ein.trans, schleife: ein.schleife });
+  ein.trans = transVon(id);
+  const merkeEin = () => { speicher.merke('einst', { stufe: ein.stufe, art: ein.art, tempo: ein.tempo, schleife: ein.schleife }); setzeTrans(id, ein.trans); };
   const span = noten.length ? Math.max(...noten.map((n) => n.t + n.dauer)) : 1;
 
   // --- Bühne: Vokal-Kugeln
@@ -599,7 +722,11 @@ async function seiteZeile(id, zid) {
     });
     unter.textContent = ein.stufe === 'vokale' ? z.text : ein.stufe === 'da' ? `${kettenText(P)}  ·  ${z.text}` : kettenText(P);
     kugelIndex = ein.stufe === 'text' && quelle !== P ? noten.map((_, i) => i) : noten.map((n) => n.pi);
+    const ab = abIdx > 0 ? kugelIndex[abIdx] : 0;
+    kugelEls.forEach((el, i) => el.classList.toggle('aus', ab > 0 && i < ab));
   }
+  let abIdx = 0; // Bau-Schritt: ab dieser Note spielen
+  const versatzT = () => (abIdx > 0 && noten[abIdx] ? noten[abIdx].t : 0);
   let kugelIndex = [];
 
   // --- Steuerung
@@ -616,7 +743,10 @@ async function seiteZeile(id, zid) {
     return box;
   };
   const stufenSeg = seg([['vokale', 'Vokale'], ['da', 'Silben „da“'], ['text', 'Text']], 'stufe', () => { baueKette(); if (spielt) neuStart(); });
-  const artSeg = seg([['stimme', 'Vokalstimme', 'welle'], ['klavier', 'Klavier', 'klavier']], 'art', () => { if (spielt) neuStart(); });
+  const artSeg = seg([['stimme', 'Vokalstimme', 'welle'], ['klavier', 'Klavier', 'klavier']], 'art', () => {
+    if (spielt) { neuStart(); return; }
+    stoppeKlang(); spieleFolge([{ t: 0, dauer: 0.6, midi: (noten[0] ? noten[0].midi : grundton()) + ein.trans, vokal: (noten[0] && noten[0].vokal) || 'a' }], { art: ein.art }); // Klangprobe
+  });
 
   const tempoOut = h('output', null, `${Math.round(ein.tempo * 100)} %`);
   const tempoIn = h('input', { type: 'range', min: '50', max: '100', step: '5', value: String(Math.round(ein.tempo * 100)), 'aria-label': 'Tempo',
@@ -644,7 +774,7 @@ async function seiteZeile(id, zid) {
     const ms = noten.map((n) => n.midi + ein.trans);
     return { lo: Math.min(...ms) - 3, hi: Math.max(...ms) + 3 };
   };
-  const pos = () => (spielt && ctxA ? (ctxA.currentTime - t0) * ein.tempo : micStop ? (((performance.now() - micStart) / 1000) * ein.tempo) % span : -1);
+  const pos = () => (spielt && ctxA ? (ctxA.currentTime - t0) * ein.tempo + versatzT() : micStop ? (((performance.now() - micStart) / 1000) * ein.tempo) % span : -1);
   function zeichne() {
     const dpr = window.devicePixelRatio || 1, w = cv.clientWidth || 300, hh = cv.clientHeight || 160;
     if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(hh * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(hh * dpr); }
@@ -692,7 +822,8 @@ async function seiteZeile(id, zid) {
   }
   function start() {
     stoppeKlang(); clearTimeout(wiederTimer);
-    const nn = ein.stufe === 'da' ? noten.map((n) => ({ ...n, vokal: 'a', gleit: '' })) : noten;
+    const v0 = versatzT();
+    const nn = (ein.stufe === 'da' ? noten.map((n) => ({ ...n, vokal: 'a', gleit: '' })) : noten).slice(abIdx).map((n) => ({ ...n, t: n.t - v0 }));
     const r = spieleFolge(nn, { art: ein.art, tempo: ein.tempo, trans: ein.trans });
     t0 = r.t0; endeZeit = r.ende; spielt = true;
     punkte.length = 0;
@@ -767,10 +898,36 @@ async function seiteZeile(id, zid) {
       h('button', { 'aria-label': 'Einen Halbton höher', onclick: () => transSchritt(1) }, '+')), h('span')),
     noten[0] && noten[0].ohneMelodie ? h('p', { class: 'leise klein', style: { marginTop: '10px' } }, `Ohne Melodie: die Vokale klingen auf ${nName(noten[0].midi, ton)}.`) : null);
 
+  // --- Auseinandernehmen und zusammenbauen: Rückwärts-Aufbau und Vorwärts-Kette als abspielbare Schritte
+  const wiVon = (i) => (P[noten[i] && noten[i].pi] || {}).wi;
+  const textAb = (k) => { let out = '', vw = null; for (let i = k; i < noten.length; i++) { const w = wiVon(i); out += (vw != null && w !== vw ? ' ' : '') + (noten[i].text || ''); vw = w; } return out.trim(); };
+  let starts = noten.map((_, i) => i);
+  if (noten.length > 8) starts = starts.filter((i) => i === noten.length - 1 || i === 0 || wiVon(i) !== wiVon(i - 1));
+  starts = [...new Set(starts)].sort((a, b) => b - a);
+  const bauKnoepfe = [];
+  const bauSchritt = (nr, titel, unterzeile, f) => {
+    const b = h('button', { class: 'bau-schritt', onclick: () => { bauKnoepfe.forEach((x) => x.classList.toggle('an', x === b)); f(); } },
+      h('span', { class: 'bau-nr' }, String(nr)), h('span', { class: 'bau-text' }, h('b', null, titel), unterzeile ? h('span', { class: 'leise klein' }, unterzeile) : null), ic('play'));
+    bauKnoepfe.push(b); return b;
+  };
+  const setzeStufe = (wert) => { ein.stufe = wert; merkeEin(); stufenSeg.querySelectorAll('button').forEach((x, k) => { const an = ['vokale', 'da', 'text'][k] === wert; x.classList.toggle('an', an); x.setAttribute('aria-pressed', String(an)); }); };
+  const spieleBau = (ab, stufe) => { abIdx = ab; setzeStufe(stufe); baueKette(); start(); };
+  const rw = starts.map((k, n) => bauSchritt(n + 1, k === 0 ? 'Ganze Zeile' : `Ab „${kurz(noten[k].text, 14)}“`, kurz(textAb(k), 40), () => spieleBau(k, 'text')));
+  const vw = [['vokale', 'Nur Vokale', kettenText(P)], ['da', 'Silben auf „da“', 'gleicher Rhythmus, nur „da“'], ['text', 'Mit Text', z.text]]
+    .map(([st, titel, unterzeile], n) => bauSchritt(n + 1, titel, kurz(unterzeile, 40), () => spieleBau(0, st)));
+  const bauKarte = noten.length ? h('section', { class: 'karte bau', id: 'bau' },
+    h('h3', null, 'Auseinandernehmen und zusammenbauen'),
+    h('p', { class: 'leise klein', style: { marginTop: '4px' } }, 'Rückwärts: von der letzten Silbe bis zur ganzen Zeile – das Ende sitzt immer zuerst. Vorwärts: erst Vokale, dann „da“, dann Text.'),
+    h('p', { class: 'bau-titel' }, 'Rückwärts-Aufbau'), h('div', { class: 'bau-liste' }, rw),
+    h('p', { class: 'bau-titel' }, 'Vorwärts-Kette'), h('div', { class: 'bau-liste' }, vw)) : null;
+  if (bauZiel && bauKarte) setTimeout(() => { try { bauKarte.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { /* egal */ } }, 450);
+  const ganz = () => { abIdx = 0; bauKnoepfe.forEach((x) => x.classList.remove('an')); baueKette(); };
+  playKnopf.addEventListener('dblclick', ganz);
+
   return [h('div', { class: 'zwei-spalten' },
     h('div', null, buehne, h('div', { style: { marginTop: '12px' } }, leinwand),
       h('p', { class: 'leise klein', style: { marginTop: '8px', textAlign: 'center' } }, 'Mikrofon an: deine Linie gegen die Notenbalken – nur zur Orientierung.')),
-    h('div', null, regler,
+    h('div', null, regler, bauKarte,
       ueKarten.length ? h('h2', null, 'Übergänge in dieser Zeile') : null, ...ueKarten)),
     nav];
 }
@@ -782,7 +939,7 @@ async function seiteWarmup(id) {
   if (!lied) return nichtGefunden();
   setzeKopf(`Warm-up · ${lied.titel}`, `#lied/${enc(lied.id)}`);
   const st = stimme(), ton = lied.tonart;
-  let schritte = istFn(M.ue.warmup) ? versuch(() => M.ue.warmup(lied, st), []) : [];
+  let schritte = istFn(M.ue.warmup) ? versuch(() => M.ue.warmup(liedFuer(lied), st), []) : [];
   if (!Array.isArray(schritte) || !schritte.length) {
     const u = lied.umfang || { tief: grundton() - 5, hoch: grundton() + 5 };
     schritte = [
@@ -851,7 +1008,7 @@ async function seiteWarmup(id) {
     const versatz = () => (starts ? starts[durchgang] - (s.ton.start ?? starts[0]) : 0);
     const nn0 = notenAus(s.ton, s);
     const artSeg = h('div', { class: 'segment' }, [['klavier', 'Klavier', 'klavier'], ['stimme', 'Vokalstimme', 'welle']].map(([w, txt, icn]) => {
-      const b = h('button', { class: ein.art === w ? 'an' : '', onclick: () => { ein.art = w; speicher.merke('warmEin', ein); artSeg.querySelectorAll('button').forEach((x) => x.classList.toggle('an', x === b)); } }, ic(icn), txt);
+      const b = h('button', { class: ein.art === w ? 'an' : '', onclick: () => { ein.art = w; speicher.merke('warmEin', ein); artSeg.querySelectorAll('button').forEach((x) => x.classList.toggle('an', x === b)); if (nn0.length) { stoppeKlang(); spieleFolge([{ ...nn0[0], t: 0, dauer: 0.6 }], { art: w }); } } }, ic(icn), txt);
       return b;
     }));
     const bereichText = () => { const nn = notenAus(s.ton, s, versatz()); const ms = nn.map((n) => n.midi); return nName(Math.min(...ms), ton) + (Math.max(...ms) > Math.min(...ms) ? '–' + nName(Math.max(...ms), ton) : ''); };
@@ -892,24 +1049,46 @@ async function seiteWarmup(id) {
   h('p', { class: 'leise klein', style: { textAlign: 'center' } }, 'Bei Schmerz, Kratzen oder Heiserkeit: aufhören und Pause machen.')];
 }
 
+// ================================================================ #mitsingen/<id>
+async function seiteMitsingen(id) {
+  const lied = await holeLied(id);
+  if (!lied) return nichtGefunden();
+  setzeKopf(`Mitsingen · ${lied.titel || 'Lied'}`, `#lied/${enc(id)}`); setzeNav('start');
+  const box = h('div', { class: 'mitsingen' });
+  let mod = null;
+  try { mod = await import('./mitsingen.js'); } catch (e) { mod = null; }
+  if (mod && istFn(mod.zeige)) {
+    try {
+      const r = await mod.zeige(box, liedFuer(lied), { stimme: stimme(), trans: transVon(id), meldung });
+      if (istFn(r)) aufraeumen.push(r); else if (r && istFn(r.stopp || r.stop)) aufraeumen.push(() => (r.stopp || r.stop)());
+      return box;
+    } catch (e) { console.warn(e); }
+  }
+  return [h('section', { class: 'held' }, h('h1', null, 'Mitsingen'), h('p', null, `Mit Instrumental zu „${lied.titel || 'deinem Lied'}“ singen.`)),
+    h('div', { class: 'karte leer' }, h('p', null, 'Das Mitsingen mit Instrumental wird gerade gebaut und kommt mit der nächsten Fassung.'),
+      h('p', { class: 'leise klein', style: { marginTop: '8px' } }, 'Bis dahin: Zeilen einzeln mit Vokalstimme oder Klavier üben.'),
+      h('a', { class: 'knopf haupt', href: `#lied/${enc(id)}`, style: { marginTop: '14px' } }, ic('pfad'), 'Zum Lernweg'))];
+}
+
 // ================================================================ #stimme
 function seiteStimme() {
   setzeKopf('Meine Stimmlage'); setzeNav('stimme');
   const box = h('div');
   const SCHRITTE = [
-    { titel: 'Tiefster bequemer Ton', text: 'Sing auf „a“ oder „u“ langsam von der Mitte nach unten – nur so tief, wie es ohne Knarren geht. Halte den tiefsten bequemen Ton kurz.', sek: 8 },
-    { titel: 'Höchster bequemer Ton', text: 'Jetzt langsam nach oben gleiten – so hoch, wie es ohne Druck geht. Den höchsten bequemen Ton kurz halten.', sek: 8 },
-    { titel: 'Eine Zeile', text: 'Sing eine Zeile aus einem Lied, ganz normal in deiner Lage.', sek: 10 },
+    { titel: 'Tiefster bequemer Ton', text: 'Sing auf „a“ oder „u“ langsam von der Mitte nach unten – nur so tief, wie es ohne Knarren geht. Den tiefsten bequemen Ton 2–3 Sekunden halten.', sek: 8 },
+    { titel: 'Höchster bequemer Ton', text: 'Jetzt langsam nach oben gleiten – so hoch, wie es ohne Druck geht. Den höchsten bequemen Ton 2–3 Sekunden halten.', sek: 8 },
+    { titel: 'Sirene', text: 'Auf „u“ oder „ng“ einmal von ganz unten nach ganz oben und zurück gleiten – wie eine Sirene, leicht und leise.', sek: 10 },
   ];
   let stufe = 0, stopFn = null, timer = 0;
   let spur = [];
-  aufraeumen.push(() => { clearInterval(timer); if (stopFn) stopFn(); stopFn = null; });
+  const stoppeAlles = () => { clearInterval(timer); if (stopFn) stopFn(); stopFn = null; };
+  aufraeumen.push(stoppeAlles);
 
   function ergebnis(st) {
     const baender = [{ ...BAND_GANZ, lo: st.tief, hi: st.hoch, name: `Bequem ${nName(st.tief)}–${nName(st.hoch)}` }];
     if (st.kern && isFinite(st.kern[0])) baender.push({ ...BAND_KERN, lo: st.kern[0], hi: st.kern[1], name: `Kern ${nName(st.kern[0])}–${nName(st.kern[1])}` });
     return h('section', { class: 'karte' },
-      h('p', { class: 'leise klein' }, st.quelle === 'profil' ? 'Aus deinem Stimmprofil' : 'Schätzung aus deiner Aufnahme'),
+      h('p', { class: 'leise klein' }, st.quelle === 'profil' ? 'Aus deinem Stimmprofil' : st.quelle === 'hand' ? 'Von Hand gewählt' : 'Schätzung aus deiner Aufnahme'),
       h('h3', { style: { fontSize: '24px', margin: '2px 0 8px' } }, st.typ ? `Eher ${st.typ}` : 'Deine Lage'),
       isFinite(st.tief) ? klaviatur(baender.filter((b) => isFinite(b.lo) && isFinite(b.hi)), st.uebergaenge || []) : null,
       legende(baender.filter((b) => isFinite(b.lo)), st.uebergaenge || []),
@@ -917,29 +1096,43 @@ function seiteStimme() {
       h('p', { class: 'leise klein', style: { marginTop: '8px' } }, 'Eine Schätzung, kein Urteil – die Lage ändert sich mit Übung, Tagesform und Aufwärmen.'));
   }
   function zeigeUebersicht() {
+    stoppeAlles();
     const st = stimme();
     box.replaceChildren(
-      h('section', { class: 'held' }, h('h1', null, 'Meine Stimmlage'), h('p', null, 'Sing kurz ins Mikrofon oder lade eine Gesangsaufnahme. Alles bleibt auf diesem Gerät.')),
+      h('section', { class: 'held' }, h('h1', null, 'Meine Stimmlage'), h('p', null, 'Sing kurz ins Mikrofon, lade eine Gesangsaufnahme oder wähle deine Töne von Hand. Alles bleibt auf diesem Gerät.')),
       st && (isFinite(st.tief) || st.kern) ? ergebnis(st) : h('div', { class: 'karte leer' }, h('p', null, 'Noch keine Stimmlage gespeichert.')),
-      h('button', { class: 'knopf haupt breit', onclick: geführt }, ic('stimme'), st ? 'Neu ermitteln (singen)' : 'Jetzt singen – 3 kurze Schritte'),
+      h('button', { class: 'knopf haupt breit', onclick: gefuehrt }, ic('stimme'), st ? 'Neu ermitteln (singen)' : 'Jetzt singen – 3 kurze Schritte'),
+      h('button', { class: 'knopf breit', style: { marginTop: '10px' }, onclick: vonHand }, ic('klavier'), 'Ton von Hand wählen (Klaviatur)'),
       h('label', { class: 'datei-feld' }, ic('datei'), h('span', null, h('b', null, 'Gesangsdatei laden'), h('br'), h('span', { class: 'leise klein' }, 'WAV, MP3, M4A – am besten nur Gesang')),
         h('input', { type: 'file', accept: 'audio/*,.wav,.mp3,.m4a,.aif,.aiff,.flac', onchange: (e) => e.target.files[0] && ausDatei(e.target.files[0]) })),
       st ? h('button', { class: 'knopf klein', onclick: () => { speicher.loescheStimme(); meldung('Stimmlage gelöscht'); zeigeUebersicht(); } }, ic('loeschen'), 'Gespeicherte Stimmlage löschen') : null);
   }
+  const typVon = (lo, hi) => { const m = (lo + hi) / 2; return m < 51 ? 'Bass' : m < 55.5 ? 'Bariton' : m < 60 ? 'Tenor' : m < 64 ? 'Alt' : m < 68 ? 'Mezzosopran' : 'Sopran'; };
+  // Ersatz, falls stimmlage() aus den Live-Meldungen nichts Sicheres findet: Quantile der klar erkannten Töne
+  function ausMeldungen(sp) {
+    const ms = sp.filter((e) => e.hz > 0 && e.sicher >= 0.5).map((e) => 69 + 12 * Math.log2(e.hz / 440)).sort((a, b) => a - b);
+    if (ms.length < 15) return null;
+    const q = (p) => Math.round(ms[Math.min(ms.length - 1, Math.floor(p * (ms.length - 1)))]);
+    const tief = q(0.04), hoch = q(0.96), kern = [q(0.2), q(0.8)], typ = typVon(kern[0], kern[1]);
+    return { tief, hoch, kern, typ: `${typ} (Schätzung)`, sicherheit: 0.3,
+      text: `Schätzung aus ${Math.round(ms.length / 30)} s klar erkannten Tönen: sicher ${nName(tief)}–${nName(hoch)}, am wohlsten ${nName(kern[0])}–${nName(kern[1])}. Das passt am ehesten zu ${typ}.` };
+  }
   function auswerten(sp) {
     let st = istFn(M.ton.stimmlage) ? versuch(() => M.ton.stimmlage(sp), null) : null;
+    if (!st || !isFinite(st.tief)) st = ausMeldungen(sp) || st;
     fertig(st);
   }
-  function fertig(st) {
+  function fertig(st, quelle = 'aufnahme') {
     if (!st || !isFinite(st.tief)) {
       box.replaceChildren(h('div', { class: 'karte leer' }, h('p', null, (st && st.text) || 'Es wurden zu wenige klare Töne erkannt. Bitte noch einmal – etwas lauter, näher am Mikrofon, Töne kurz halten.')),
-        h('button', { class: 'knopf haupt breit', onclick: geführt }, 'Noch einmal'), h('button', { class: 'knopf breit', onclick: zeigeUebersicht }, 'Zurück'));
+        h('button', { class: 'knopf haupt breit', onclick: gefuehrt }, 'Noch einmal singen'), h('button', { class: 'knopf breit', style: { marginTop: '10px' }, onclick: vonHand }, ic('klavier'), 'Ton von Hand wählen'),
+        h('button', { class: 'knopf breit', style: { marginTop: '10px' }, onclick: zeigeUebersicht }, 'Zurück'));
       return;
     }
     const alt = stimme();
-    const neu = { tief: st.tief, hoch: st.hoch, kern: st.kern, typ: st.typ, sicherheit: st.sicherheit, text: st.text, uebergaenge: (alt && alt.uebergaenge) || [], quelle: 'aufnahme', datum: Date.now() };
+    const neu = { tief: st.tief, hoch: st.hoch, kern: st.kern, typ: st.typ, sicherheit: st.sicherheit, text: st.text, uebergaenge: st.uebergaenge || (alt && alt.uebergaenge) || [], quelle, datum: Date.now() };
     speicher.speichereStimme(neu);
-    meldung('Deine Stimmlage ist gespeichert');
+    meldung('Deine Stimmlage ist gespeichert – Übungen und Eignung nutzen sie jetzt');
     zeigeUebersicht();
   }
   async function ausDatei(datei) {
@@ -950,37 +1143,81 @@ function seiteStimme() {
       fertig(r && r.stimme ? r.stimme : r);
     } catch (e) { meldung('Datei ließ sich nicht lesen: ' + (e && e.message || e), 5000); zeigeUebersicht(); }
   }
-  function geführt() { stufe = 0; spur = []; zeigeStufe(); }
+  function gefuehrt() { stoppeAlles(); stufe = 0; spur = []; zeigeStufe(); }
   function zeigeStufe() {
     const s = SCHRITTE[stufe];
     const blase = h('div', { class: 'ton-blase' }, '–');
+    const pegelBalken = h('i'); const pegel = h('div', { class: 'zeit-balken', 'aria-hidden': 'true' }, pegelBalken);
+    const bisher = h('p', { class: 'leise klein', style: { marginTop: '8px' } }, '');
     const ring = h('div', { class: 'mic-ring' }, h('span', { class: 'welle' }), h('span', { class: 'welle' }), h('button', { class: 'rund-knopf', 'aria-label': 'Aufnahme starten', onclick: () => los() }, ic('stimme')));
     const info = h('p', { class: 'leise' }, 'Tippe auf das Mikrofon, wenn du bereit bist.');
     const leiste = h('div', { class: 'stufen-leiste' }, SCHRITTE.map((x, k) => h('div', { class: k === stufe ? 'an' : k < stufe ? 'fertig' : '' }, h('b', null, k < stufe ? '✓' : String(k + 1)), x.titel)));
     box.replaceChildren(h('section', { class: 'karte' }, leiste),
-      h('section', { class: 'karte mic-buehne' }, h('h3', { style: { fontSize: '22px' } }, s.titel), h('p', null, s.text), ring, blase, info),
-      h('div', { class: 'knopf-reihe' }, h('button', { class: 'knopf', onclick: () => { clearInterval(timer); if (stopFn) stopFn(); stopFn = null; weiter(); } }, stufe < SCHRITTE.length - 1 ? 'Schritt überspringen' : 'Auswerten'),
-        h('button', { class: 'knopf', onclick: () => { clearInterval(timer); if (stopFn) stopFn(); stopFn = null; zeigeUebersicht(); } }, 'Abbrechen')));
+      h('section', { class: 'karte mic-buehne' }, h('h3', { style: { fontSize: '22px' } }, s.titel), h('p', null, s.text), ring, blase, pegel, bisher, info),
+      h('div', { class: 'knopf-reihe' }, h('button', { class: 'knopf', onclick: () => { stoppeAlles(); weiter(); } }, stufe < SCHRITTE.length - 1 ? 'Schritt überspringen' : 'Auswerten'),
+        h('button', { class: 'knopf', onclick: zeigeUebersicht }, 'Abbrechen')));
+    const klar = () => spur.filter((e) => e.hz > 0).map((e) => 69 + 12 * Math.log2(e.hz / 440));
     async function los() {
       if (stopFn) return;
+      info.textContent = 'Mikrofon wird gestartet …';
       try {
         stopFn = await starteMikro((e) => {
-          if (e) spur.push({ hz: e.hz > 0 ? e.hz : 0, sicher: typeof e.sicher === 'number' ? e.sicher : e.hz > 0 ? 1 : 0, pegel: isFinite(e.pegel) ? e.pegel : -100 });
+          if (!e) return;
+          spur.push({ hz: e.hz > 0 ? e.hz : 0, sicher: typeof e.sicher === 'number' ? e.sicher : e.hz > 0 ? 1 : 0, pegel: isFinite(e.pegel) ? e.pegel : -100 });
           const m = tonAusEreignis(e);
           blase.textContent = m == null ? '…' : nName(m);
-        });
-      } catch (err) { meldung(String(err && err.message || err), 5000); return; }
+          blase.classList.toggle('an', m != null);
+          pegelBalken.style.transform = `scaleX(${Math.max(0, Math.min(1, ((isFinite(e.pegel) ? e.pegel : -100) + 70) / 60))})`;
+          if (m != null && spur.length % 6 === 0) { const k = klar(); if (k.length > 5) bisher.textContent = `Erkannt bisher: ${nName(Math.min(...k))} bis ${nName(Math.max(...k))}`; }
+        }, (err) => { info.textContent = String(err && err.message || err); });
+      } catch (err) { info.textContent = String(err && err.message || err); meldung(String(err && err.message || err), 6000); return; }
       ring.classList.add('aktiv');
       let r = s.sek; info.textContent = `Noch ${r} s …`;
       timer = setInterval(() => {
         r--; info.textContent = r > 0 ? `Noch ${r} s …` : 'Danke!';
-        if (r <= 0) { clearInterval(timer); if (stopFn) stopFn(); stopFn = null; ring.classList.remove('aktiv'); setTimeout(weiter, 500); }
+        if (r <= 0) { stoppeAlles(); ring.classList.remove('aktiv'); setTimeout(weiter, 500); }
       }, 1000);
     }
   }
   function weiter() {
     if (stufe < SCHRITTE.length - 1) { stufe++; zeigeStufe(); return; }
     auswerten(spur);
+  }
+  // Ausweg ohne Mikrofon: tiefsten und höchsten bequemen Ton auf der Klaviatur antippen
+  function vonHand() {
+    stoppeAlles();
+    const alt = stimme();
+    const wahl = { tief: alt && isFinite(alt.tief) ? alt.tief : null, hoch: alt && isFinite(alt.hoch) ? alt.hoch : null };
+    let ziel = 'tief';
+    const anzeige = h('p', { class: 'hand-anzeige' });
+    const tasten = h('div', { class: 'hand-tasten' });
+    const zielSeg = h('div', { class: 'segment', role: 'group' });
+    const speichern = h('button', { class: 'knopf haupt breit', style: { marginTop: '12px' }, onclick: () => {
+      const lo = Math.min(wahl.tief, wahl.hoch), hi = Math.max(wahl.tief, wahl.hoch);
+      const kern = hi - lo >= 8 ? [lo + 2, hi - 2] : [lo, hi], typ = typVon(kern[0], kern[1]);
+      fertig({ tief: lo, hoch: hi, kern, typ: `${typ} (Schätzung)`, sicherheit: 0.2, text: `Von Hand gewählt: bequem ${nName(lo)}–${nName(hi)}, Kernbereich angenommen ${nName(kern[0])}–${nName(kern[1])}. Das passt am ehesten zu ${typ} – eine grobe Schätzung; mit dem Mikrofon wird sie genauer.` }, 'hand');
+    } }, ic('haken'), 'Diese Lage speichern');
+    const male = () => {
+      anzeige.textContent = `Tiefster: ${wahl.tief != null ? nName(wahl.tief) : '–'}   ·   Höchster: ${wahl.hoch != null ? nName(wahl.hoch) : '–'}`;
+      tasten.querySelectorAll('button').forEach((b) => { const m = Number(b.dataset.m); b.classList.toggle('an', m === wahl.tief || m === wahl.hoch); b.classList.toggle('drin', wahl.tief != null && wahl.hoch != null && m > Math.min(wahl.tief, wahl.hoch) && m < Math.max(wahl.tief, wahl.hoch)); });
+      zielSeg.querySelectorAll('button').forEach((b) => { const an = b.dataset.z === ziel; b.classList.toggle('an', an); b.setAttribute('aria-pressed', String(an)); });
+      speichern.disabled = !(wahl.tief != null && wahl.hoch != null && wahl.tief !== wahl.hoch);
+    };
+    for (const [z, t] of [['tief', 'Tiefsten wählen'], ['hoch', 'Höchsten wählen']]) zielSeg.append(h('button', { 'data-z': z, onclick: () => { ziel = z; male(); } }, t));
+    for (let m = 38; m <= 76; m++) {
+      const schwarz = [1, 3, 6, 8, 10].includes(m % 12);
+      tasten.append(h('button', { class: `hand-taste ${schwarz ? 'schwarz' : ''}`, 'data-m': String(m), 'aria-label': nName(m), onclick: () => {
+        stoppeKlang(); spieleFolge([{ t: 0, dauer: 0.9, midi: m, vokal: 'a' }], { art: 'klavier' });
+        wahl[ziel] = m; if (ziel === 'tief') ziel = 'hoch'; male();
+      } }, nName(m)));
+    }
+    box.replaceChildren(
+      h('section', { class: 'held' }, h('h1', null, 'Ton von Hand wählen'), h('p', null, 'Tippe eine Taste: sie klingt. Sing sie nach – geht sie bequem? Dann ist sie dein tiefster bzw. höchster Ton.')),
+      h('section', { class: 'karte' }, zielSeg, anzeige, tasten, speichern),
+      h('button', { class: 'knopf breit', onclick: zeigeUebersicht }, ic('zurueck'), 'Zurück'));
+    male();
+    const start = tasten.querySelector(`[data-m="${wahl.tief != null ? wahl.tief : 45}"]`);
+    if (start) setTimeout(() => { try { tasten.scrollLeft = start.offsetLeft - 20; } catch (e) { /* egal */ } }, 50);
   }
   zeigeUebersicht();
   return box;
@@ -1045,9 +1282,7 @@ function seiteNeu() {
         } catch (e) { console.warn(e); meldung('Audio ließ sich nicht auswerten – das Lied wird ohne Melodie gespeichert', 4500); }
       }
       if (noten && noten.length) {
-        // Silben der Reihe nach auf die erkannten Töne verteilen (grobe Zuordnung)
-        const alle = zeilen.flatMap((z) => z.silben), S = alle.length, N = noten.length;
-        alle.forEach((s, k) => { const n = noten[Math.min(N - 1, Math.floor((k * N) / S))]; s.t = n.t; s.dauer = Math.max(0.15, n.dauer || 0.4); s.midi = Math.round(n.midi); });
+        verteileSilben(zeilen, noten);
         for (const z of zeilen) { const ss = z.silben.filter((s) => isFinite(s.t)); if (ss.length) { z.start = ss[0].t; z.ende = ss[ss.length - 1].t + ss[ss.length - 1].dauer; } }
         const ms = noten.map((n) => Math.round(n.midi)).sort((a, b) => a - b);
         const q = (p) => ms[Math.min(ms.length - 1, Math.max(0, Math.round(p * (ms.length - 1))))];
@@ -1056,8 +1291,8 @@ function seiteNeu() {
       }
       const lied = { id, titel: titel.value.trim() || 'Mein Lied', kuenstler: 'eigenes Lied', sprache: sp, teile, zeilen, umfang: umfang || null, erstellt: Date.now(), mitAudio: !!datei };
       const dauerhaft = await speicher.speichereLied(lied);
-      liedCache.delete(id);
-      meldung(dauerhaft ? 'Lied gespeichert – nur auf diesem Gerät' : 'Gespeichert bis zum Neuladen (Speicher hier nicht verfügbar)', 3500);
+      liedCache.delete(id); frisch = id;
+      meldung(dauerhaft ? 'Gespeichert – hier ist die Eignung für deine Stimme' : 'Gespeichert bis zum Neuladen (Speicher hier nicht verfügbar)', 3500);
       location.hash = `#lied/${enc(id)}`;
     } finally { speichernKnopf.disabled = false; status.textContent = ''; }
   }
@@ -1075,10 +1310,48 @@ function seiteNeu() {
     h('p', { class: 'leise klein', style: { textAlign: 'center' } }, 'Text und Audio bleiben auf diesem Gerät. Es wird nichts gesendet.')];
 }
 
+/** Silben auf erkannte Noten: Noten nach Pausen in Phrasen = Zeilen teilen, in jeder Zeile die Silben gleichmäßig verteilen. */
+function verteileSilben(zeilen, noten0) {
+  const noten = noten0.slice().sort((a, b) => a.t - b.t).map((n) => ({ t: n.t, dauer: Math.max(0.05, n.dauer || 0.3), midi: n.midi }));
+  const Z = zeilen.length; if (!Z || !noten.length) return;
+  const luecke = (a, b) => b.t - (a.t + a.dauer);
+  let phr = [[noten[0]]];
+  for (let i = 1; i < noten.length; i++) { if (luecke(noten[i - 1], noten[i]) > 0.3) phr.push([noten[i]]); else phr[phr.length - 1].push(noten[i]); }
+  while (phr.length > Z) { // zu viele Phrasen: die mit der kleinsten Pause zusammenlegen
+    let bi = 1, bl = Infinity;
+    for (let i = 1; i < phr.length; i++) { const l = luecke(phr[i - 1][phr[i - 1].length - 1], phr[i][0]); if (l < bl) { bl = l; bi = i; } }
+    phr.splice(bi - 1, 2, phr[bi - 1].concat(phr[bi]));
+  }
+  while (phr.length < Z) { // zu wenige: an der größten Pause innerhalb einer Phrase teilen
+    let pi = -1, best = -Infinity, at = -1;
+    phr.forEach((p, i) => { for (let k = 1; k < p.length; k++) { const l = luecke(p[k - 1], p[k]) + 0.0005 * p.length; if (l > best) { best = l; pi = i; at = k; } } });
+    if (pi < 0) break;
+    phr.splice(pi, 1, phr[pi].slice(0, at), phr[pi].slice(at));
+  }
+  zeilen.forEach((z, zi) => {
+    const N = phr[Math.min(zi, phr.length - 1)], S = z.silben.length;
+    if (!S || !N || !N.length) return;
+    if (N.length >= S) {
+      z.silben.forEach((s, k) => {
+        const a = Math.floor((k * N.length) / S), b = Math.max(a + 1, Math.floor(((k + 1) * N.length) / S)), g = N.slice(a, b);
+        const lang = g.reduce((x, y) => (y.dauer > x.dauer ? y : x)), e = g[g.length - 1];
+        s.t = g[0].t; s.dauer = Math.max(0.15, e.t + e.dauer - g[0].t); s.midi = Math.round(lang.midi);
+        if (g.length > 1) s.noten = g.map((n) => ({ t: n.t, dauer: n.dauer, midi: Math.round(n.midi) }));
+      });
+    } else {
+      const ni = (k) => Math.min(N.length - 1, Math.floor((k * N.length) / S));
+      z.silben.forEach((s, k) => {
+        const n = N[ni(k)], gruppe = z.silben.filter((_, j) => ni(j) === ni(k)), p = gruppe.indexOf(s);
+        s.dauer = Math.max(0.12, n.dauer / gruppe.length); s.t = n.t + (p * n.dauer) / gruppe.length; s.midi = Math.round(n.midi);
+      });
+    }
+  });
+}
+
 // ================================================================ #uebungen
 function seiteUebungen() {
   setzeKopf('Übungen'); setzeNav('uebungen');
-  const liste = uebungsListe();
+  const liste = bibliothek(), st = stimme();
   if (!liste.length) return h('div', { class: 'karte leer' }, h('p', null, 'Die Übungs-Bibliothek wird gerade vorbereitet.'));
   const NAMEN = { hoehe: 'Höhe', tiefe: 'Tiefe', uebergang: 'Übergang', diphthong: 'Diphthonge', atem: 'Atem', rhythmus: 'Rhythmus', lockerung: 'Lockerung', sovt: 'Halb-geschlossen (SOVT)', vokale: 'Vokale', resonanz: 'Resonanz', text: 'Text', konsonanten: 'Konsonanten' };
   const alleSw = [...new Set(liste.flatMap((u) => u.stichworte || []))];
@@ -1087,13 +1360,18 @@ function seiteUebungen() {
   const chips = h('div', { class: 'chips', style: { overflowX: 'auto', flexWrap: 'nowrap', paddingBottom: '4px' } });
   function male() {
     chips.replaceChildren(...[''].concat(alleSw).map((sw) => h('button', { class: `chip ${filter === sw ? 'an' : ''}`, style: { flex: 'none' }, onclick: () => { filter = sw; speicher.merke('uebFilter', sw); male(); } }, sw ? (NAMEN[sw] || sw) : 'Alle')));
-    karten.replaceChildren(...liste.filter((u) => !filter || (u.stichworte || []).includes(filter)).map((u) => h('details', { class: 'karte ueb' },
-      h('summary', null, uebSymbol(u), h('div', { style: { flex: '1', minWidth: '0' } }, h('h3', null, u.titel), h('p', { class: 'leise klein' }, [u.dauerMin ? `${minText(u.dauerMin)} Min.` : null, u.ziel].filter(Boolean).join(' · '))), h('span', { class: 'pfeil' }, ic('weiter'))),
-      h('div', { class: 'ueb-inhalt' }, u.anleitung && u.anleitung.length ? h('ol', { class: 'anleitung' }, u.anleitung.map((a) => h('li', null, a))) : null,
-        (u.stichworte || []).length ? h('div', { class: 'chips', style: { marginTop: '10px' } }, u.stichworte.map((s) => h('span', { class: 'chip' }, NAMEN[s] || s))) : null))));
+    const sicht = liste.filter((u) => !filter || (u.stichworte || []).includes(filter));
+    const karte = (u) => { const d = uebungsDetails(u); d.querySelector('.ueb-inhalt').append((u.stichworte || []).length ? h('div', { class: 'chips', style: { marginTop: '10px' } }, u.stichworte.map((s) => h('span', { class: 'chip' }, NAMEN[s] || s))) : ''); return d; };
+    const zuerst = sicht.filter((u) => u.fuerDich), rest = sicht.filter((u) => !u.fuerDich);
+    karten.replaceChildren(
+      zuerst.length ? h('h2', null, 'Für deine Stimme zuerst') : null,
+      zuerst.length ? h('p', { class: 'leise klein', style: { marginTop: '-4px' } }, `Passend zu deinem Kernbereich ${nName(st.kern[0])}–${nName(st.kern[1])}${(st.uebergaenge || []).length ? ` und deinem Übergang um ${st.uebergaenge.map((m) => nName(m)).join(', ')}` : ''}. Startton jeweils aus deinem Profil.`) : null,
+      ...zuerst.map(karte), zuerst.length && rest.length ? h('h2', null, 'Alle weiteren') : null, ...rest.map(karte));
   }
   male();
-  return [h('section', { class: 'held' }, h('h1', null, 'Übungen'), h('p', null, `${liste.length} bewährte Übungen – tippe eine an für die Anleitung.`)), chips, karten];
+  return [h('section', { class: 'held' }, h('h1', null, 'Übungen'), h('p', null, `${liste.length} bewährte Übungen – tippe eine an für Anleitung und Vorspielen.`)),
+    st && st.kern ? null : h('a', { class: 'karte hinweis-karte', href: '#stimme' }, h('span', { class: 'pfeil' }, ic('hinweis')), h('p', { class: 'klein' }, 'Stimmlage ermitteln – dann sortiert sich die Bibliothek nach deiner Stimme und jede Übung bekommt deinen Startton.')),
+    chips, karten];
 }
 
 // ================================================================ Start

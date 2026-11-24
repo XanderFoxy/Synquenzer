@@ -629,21 +629,32 @@ export function einzelTon(buf, sr, opt = {}) {
   return { hz: sr / (best + dt), sicher, pegel };
 }
 
-export async function mikrofon({ onTon, onFehler, ctx, fmin = 65, fmax = 1100, minPegel = -58, rate = 30 } = {}) {
+export async function mikrofon({ onTon, onFehler, ctx, fmin = 65, fmax = 1100, minPegel = -62, rate = 30 } = {}) {
   const md = G.navigator && G.navigator.mediaDevices;
   if (!md || !md.getUserMedia) throw new Error('Mikrofon ist hier nicht verfügbar (die Seite braucht https und einen Browser mit Mikrofon-Zugriff).');
+  // iOS Safari: AudioContext MUSS noch im Tipp (vor dem ersten await) entstehen bzw. fortgesetzt werden.
+  const AC = G.AudioContext || G.webkitAudioContext;
+  if (!AC) throw new Error('Dieser Browser kann kein Audio auswerten.');
+  try { if (G.navigator.audioSession) G.navigator.audioSession.type = 'play-and-record'; } catch (e) { /* egal */ }
+  const eigen = !ctx || ctx.state === 'closed';
+  const ac = eigen ? new AC() : ctx;
+  let weckt = null;
+  try { weckt = ac.resume(); } catch (e) { /* egal */ }
   let stream;
   try {
     stream = await md.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } });
   } catch (e) {
-    const t = e && e.name === 'NotAllowedError' ? 'Mikrofon-Zugriff wurde nicht erlaubt. In den Einstellungen für diese Seite erlauben und noch einmal tippen.'
-      : 'Mikrofon konnte nicht gestartet werden: ' + (e && e.message || e);
+    if (eigen) { try { ac.close(); } catch (e2) { /* egal */ } }
+    const n = e && e.name;
+    const t = n === 'NotAllowedError' || n === 'SecurityError'
+      ? 'Mikrofon-Zugriff wurde nicht erlaubt. iPhone: Einstellungen › Safari › Mikrofon › „Erlauben“ (oder aA › Website-Einstellungen), dann noch einmal tippen.'
+      : n === 'NotFoundError' ? 'Kein Mikrofon gefunden.'
+        : n === 'NotReadableError' ? 'Das Mikrofon wird gerade von einer anderen App benutzt (z. B. Anruf, Sprachmemo). Dort beenden und noch einmal tippen.'
+          : 'Mikrofon konnte nicht gestartet werden: ' + (e && e.message || e);
     throw new Error(t);
   }
-  const AC = G.AudioContext || G.webkitAudioContext;
-  const eigen = !ctx;
-  const ac = ctx || new AC();
-  if (ac.state === 'suspended') { try { await ac.resume(); } catch (e) { /* egal */ } }
+  try { await weckt; } catch (e) { /* egal */ }
+  if (ac.state !== 'running') { try { await ac.resume(); } catch (e) { /* egal */ } }
   const quelle = ac.createMediaStreamSource(stream);
   const an = ac.createAnalyser(); an.fftSize = 2048; an.smoothingTimeConstant = 0;
   const still = ac.createGain(); still.gain.value = 0; // Safari rechnet Analyser nur, wenn sie am Ausgang hängen
@@ -652,12 +663,16 @@ export async function mikrofon({ onTon, onFehler, ctx, fmin = 65, fmax = 1100, m
   const D = ac.sampleRate >= 32000 ? 2 : 1, srd = ac.sampleRate / D;
   const klein = new Float32Array(Math.floor(roh.length / D));
   const verlauf = [];
-  let vorher = 0, vorherZeit = -1, aus = false;
+  let vorher = 0, vorherZeit = -1, aus = false, letzte = 0, stummSeit = performance.now(), gewarnt = false;
   const t0 = performance.now();
   const schritt = () => {
     if (aus) return;
     try {
+      if (ac.state !== 'running' && ac.state !== 'closed') { try { ac.resume(); } catch (e) { /* egal */ } }
       an.getFloatTimeDomainData(roh);
+      let spitze = 0; for (let i = 0; i < roh.length; i += 4) { const v = Math.abs(roh[i]); if (v > spitze) spitze = v; }
+      if (spitze > 1e-6) stummSeit = performance.now();
+      else if (!gewarnt && performance.now() - stummSeit > 2500 && onFehler) { gewarnt = true; onFehler(new Error('Vom Mikrofon kommt kein Signal. Einmal auf den Bildschirm tippen oder das Mikrofon neu starten.')); }
       if (D === 2) for (let i = 0, j = 0; j < klein.length; i += 2, j++) klein[j] = 0.25 * (roh[i > 0 ? i - 1 : 0]) + 0.5 * roh[i] + 0.25 * roh[i + 1];
       else klein.set(roh.subarray(0, klein.length));
       const zeit = (performance.now() - t0) / 1000;
@@ -677,13 +692,19 @@ export async function mikrofon({ onTon, onFehler, ctx, fmin = 65, fmax = 1100, m
       if (onTon) onTon(ereignis);
     } catch (e) { if (onFehler) onFehler(e); }
   };
-  const uhr = setInterval(schritt, Math.round(1000 / rate));
+  // Auswertung im requestAnimationFrame (auf ~rate/s gedrosselt); Ersatz-Uhr, falls die Seite im Hintergrund ist
+  const abstand = 1000 / rate;
+  let raf = 0;
+  const bild = (jetzt) => { if (aus) return; if (jetzt - letzte >= abstand - 2) { letzte = jetzt; schritt(); } raf = G.requestAnimationFrame(bild); };
+  if (G.requestAnimationFrame) raf = G.requestAnimationFrame(bild);
+  const uhr = setInterval(() => { if (performance.now() - letzte > 250) { letzte = performance.now(); schritt(); } }, 250);
   const stop = () => {
     if (aus) return; aus = true;
-    clearInterval(uhr);
+    clearInterval(uhr); if (raf && G.cancelAnimationFrame) G.cancelAnimationFrame(raf);
     try { quelle.disconnect(); an.disconnect(); still.disconnect(); } catch (e) { /* egal */ }
     for (const tr of stream.getTracks()) tr.stop();
     if (eigen) { try { ac.close(); } catch (e) { /* egal */ } }
+    try { if (G.navigator.audioSession) G.navigator.audioSession.type = 'auto'; } catch (e) { /* egal */ }
   };
   stop.ctx = ac; stop.stream = stream;
   return stop;

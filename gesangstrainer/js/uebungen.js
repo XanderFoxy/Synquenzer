@@ -867,6 +867,7 @@ export function plan(lied, stimme) {
     const schwerste = t.zeilen.slice().sort((a, b) => (gew[b.id] || 0) - (gew[a.id] || 0))[0];
     const rw = schwerste && rueckwaertsFolge(schwerste);
     if (rw && (gew[schwerste.id] || 0) > 0) S(5, 'rueckwaerts', `Schwerste Zeile „${schwerste.text}“ rückwärts aufbauen: ${rw}.`, [schwerste.id]);
+    S(5, 'rueckwaerts', 'Auseinandernehmen und zusammenbauen, Zeile für Zeile: rückwärts von der letzten Silbe bis zur ganzen Zeile, dann vorwärts Vokale → „da“ → Text. Jeder Schritt lässt sich einzeln abspielen.', zids, { bau: true });
 
     // (6) Originaltempo, (7) mit Musik
     S(6, 'originaltempo', `Originaltempo${voll} ohne Musik, mit Klavier oder Vokalstimme als Stütze.`, zids);
@@ -1000,4 +1001,53 @@ export function schwersteUebergaenge(lied, stimme, anzahl = 3) {
   const alle = A.zeilen.flatMap(z => zeilenUebergaenge(A, z)).sort((a, b) => b.gewicht - a.gewicht);
   const gesehen = new Set();
   return alle.filter(u => { const k = u.art + u.wortA + '>' + u.wortB; if (gesehen.has(k)) return false; gesehen.add(k); return true; }).slice(0, anzahl);
+}
+
+// ---------------------------------------------------------------------------
+// 6. Bibliothek nach Stimme: „Für deine Stimme zuerst“, Startton aus dem Profil
+// ---------------------------------------------------------------------------
+const MUSTER = {
+  sirene: { m: [0, 12, 0], gleiten: true }, glissando: { m: [0, 12, 0], gleiten: true },
+  dreiklang: { m: [0, 4, 7, 12, 7, 4, 0] }, leiter5: { m: [0, 2, 4, 5, 7, 5, 4, 2, 0] },
+  ton: { m: [0, 0, 0, 0, 0] }, staccato: { m: [0, 4, 7, 4, 0] }, sprung: { m: [0, 7, 0, 9, 0] },
+};
+function musterVon(u) {
+  const id = u.id;
+  if (/sirene|glissando|seufzer/.test(id)) return MUSTER.sirene;
+  if (/arpeggio|register/.test(id)) return MUSTER.dreiklang;
+  if (/spruenge/.test(id)) return MUSTER.sprung;
+  if (/staccato/.test(id)) return MUSTER.staccato;
+  if (/vokal-leiter|messa|diphthong|vokal-uebergang/.test(id)) return MUSTER.ton;
+  return MUSTER.leiter5;
+}
+// Wie wichtig eine Übung für diese Stimme ist (Übergang im Kernbereich, Höhe am Rand …)
+function stimmGewicht(u, st) {
+  const sw = u.stichworte || [];
+  let g = 0;
+  const kern = kernVon(st);
+  const ue = st && Array.isArray(st.uebergaenge) ? st.uebergaenge.filter(Number.isFinite) : [];
+  if (kern && ue.some(p => p >= kern[0] && p <= kern[1] + 1)) { if (sw.includes('uebergang')) g += 3; if (u.id === 'register-ausgleich' || u.id === 'messa-di-voce') g += 1; }
+  if (kern && st && Number.isFinite(st.hoch) && st.hoch - kern[1] <= 2) { if (sw.includes('hoehe')) g += 2; if (sw.includes('sovt')) g += 1.5; }
+  if (sw.includes('sovt') || sw.includes('lockerung')) g += 1;
+  if (sw.includes('tiefe') && kern && st && Number.isFinite(st.tief) && kern[0] - st.tief <= 2) g += 1;
+  return g;
+}
+/** Bibliothek für eine Stimme: sortiert („Für deine Stimme zuerst“), je Übung Startton + Tonfolge aus dem Profil. */
+export function fuerStimme(stimme) {
+  const kern = kernVon(stimme);
+  return UEBUNGEN.map((u, i) => {
+    const mu = musterVon(u), sw = u.stichworte || [];
+    let start = null, grund = '';
+    if (kern) {
+      const ue = (stimme.uebergaenge || []).filter(Number.isFinite);
+      if (sw.includes('uebergang') && ue.length) { start = Math.max(kern[0], ue[0] - 4); grund = 'führt durch deinen Übergang'; }
+      else if (sw.includes('hoehe')) { start = Math.max(kern[0], kern[1] - 7); grund = 'oberer Kernbereich'; }
+      else if (sw.includes('tiefe')) { start = kern[0]; grund = 'unterer Kernbereich'; }
+      else { start = Math.round((kern[0] + kern[1]) / 2) - (mu.m.length > 5 ? 3 : 0); grund = 'Mitte deines Kernbereichs'; }
+      const oben = Number.isFinite(stimme.hoch) ? stimme.hoch + 1 : kern[1] + 2;
+      while (start > kern[0] - 3 && start + Math.max(...mu.m) > oben) start--;
+    }
+    const g = kern ? stimmGewicht(u, stimme) : 0;
+    return { ...u, start, startName: start != null ? nn(start) : null, grund, gewicht: g, fuerDich: g >= 2, folge: start != null ? mu.m.map(x => start + x) : null, gleiten: !!mu.gleiten, nr: i };
+  }).sort((a, b) => b.gewicht - a.gewicht || a.nr - b.nr);
 }
