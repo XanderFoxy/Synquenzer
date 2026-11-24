@@ -31,7 +31,8 @@ a.pa-ri:active{background:var(--fl2)}
 .pa-merk{margin-top:1rem}
 .pa-alltag .pa-frage{border-top:1px solid var(--rand);padding-top:.5rem;margin-top:.6rem}
 .pa-alltag .pa-frage>p{margin:.2rem 0}
-.pa-bezug{font-size:.9rem;color:var(--leise);line-height:1.4}
+.pa-bezug{font-size:.9rem;color:var(--leise);line-height:1.4;margin:.3rem 0 0}
+.pa-mehr{margin-bottom:.2rem}
 .pa-bei{color:var(--leise)}
 .pa-wahl h4{margin-top:.8rem}
 .pa-aufgaben{padding-left:1.2rem}.pa-aufgaben li{margin:.5rem 0}

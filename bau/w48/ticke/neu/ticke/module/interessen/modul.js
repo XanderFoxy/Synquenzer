@@ -286,8 +286,9 @@ function riasecBogen({ el, titel, param, zurueckZu }) {
   const a0 = { ...(st.antworten || {}) };
   const genauer = param.genauer === '1' && gueltig(vorher) && D.RIASEC_KURZ.every((f) => num(a0[f.id]));
   const liste = genauer ? D.RIASEC_REST : D.RIASEC_KURZ;
-  // Korrektur: Ergebnis da, kein Durchgang läuft, diese Liste ist ganz beantwortet → jede Änderung rechnet sofort neu (ersetzt das Ergebnis).
-  const korrektur = gueltig(vorher) && !(st.laeuft && !st.genauer) && liste.every((f) => num(a0[f.id])) && (!st.laeuft || !genauer);
+  // Korrektur: Ergebnis da und kein Durchgang läuft (für die 24 weiteren: nur wenn „Genauer“ schon fertig ist) → jede Änderung
+  // rechnet sofort neu und ersetzt das Ergebnis; offene Fragen (z. B. gelöschte Antworten) lassen sich hier auch wieder beantworten.
+  const korrektur = gueltig(vorher) && (genauer ? !st.laeuft && vorher.form === 'voll' : !(st.laeuft && !st.genauer));
   st = korrektur ? { ...st, antworten: a0 } : { antworten: a0, laeuft: true, genauer };
   schreib('riasec', st);
   const fb = ui.fragebogen(el, {
@@ -369,7 +370,7 @@ function riasecErgebnis({ el }, e, genauerOffen) {
     ${e.hoehe > 75 ? '<p class="hinweis">Dich zieht vieles an. Dann hilft die Reihenfolge, Schwerpunkte zu setzen.</p>' : ''}
     ${e.spreizung < 15 ? `<p class="hinweis">Deine sechs Bereiche liegen nah beieinander – ein klarer Schwerpunkt zeigt sich noch nicht. Auch das ist ein Muster: Dich spricht vieles ähnlich an.${kurz ? ' Mit „Genauer machen“ wird das Bild schärfer.' : ''}</p>` : ''}
     <h3>Alle sechs Bereiche</h3>
-    <p class="leise klein">Geordnet nach dem, was dich am meisten anzieht – in Worten, ohne Punkte. Tipp auf einen Bereich, um mehr darüber zu lernen.</p>
+    <p class="leise klein">Geordnet nach dem, was dich am meisten anzieht – nur in Worten. Tipp auf einen Bereich, um mehr darüber zu lernen.</p>
     <ul class="zeilen ia-bereiche">${reihe.map((t) => { const g = R.interesseRichtung(e.typen[t]);
       return `<li><a class="zeile" href="${ast('interessen.' + t)}"><span><b>${esc(T[t].name)}</b><span class="ia-wort">${esc(g.wort)}</span><small>${esc(T[t].kurz)}</small></span><span class="rechts">${sym('weiter')}</span></a></li>`; }).join('')}</ul>
     <p class="leise klein">Zu „Forschend“: Die Fragen dazu drehen sich fast nur um Natur und Medizin. Wer lieber Technik, Physik, Informatik oder Musik untersucht, findet sich darin weniger wieder. ${marke('abgeleitet', ['armstrong2008'])}</p>
@@ -437,7 +438,7 @@ function ehrlichBogen({ el, titel, zurueckZu, param }) {
   titel('Ehrlichkeit'); if (wegZiel()) zurueckZu(wegZiel());
   let st = lies('ehrlichkeit', {}) || {};
   const a0 = { ...(st.antworten || {}) };
-  const korrektur = gueltig(S.ergebnis(K.E)) && !st.laeuft && D.EHRLICHKEIT.every((f) => num(a0[f.id]));
+  const korrektur = gueltig(S.ergebnis(K.E)) && !st.laeuft;      // Ergebnis da, kein Durchgang läuft → Antworten ändern
   st = { antworten: a0, laeuft: !korrektur };
   schreib('ehrlichkeit', st);
   const fb = ui.fragebogen(el, {

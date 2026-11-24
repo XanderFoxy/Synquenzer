@@ -1,0 +1,38 @@
+/* M2 interessen – Modul-Stil (Präfix ia-). Farben nur über Tokens aus stil.css, Maße in rem. */
+.ia-code{font-size:2.1rem;font-weight:750;letter-spacing:.08em;margin:.1rem 0 .4rem;line-height:1.15}
+.ia-gross{font-size:1.2rem;font-weight:650;margin:.1rem 0 .5rem}
+.ia-typ-kurz{margin:-.75rem 0 .95rem;color:var(--leise);font-size:.86rem;line-height:1.35}
+.ia-ideen{margin:.3rem 0 .2rem}.ia-ideen li{margin:.4rem 0}
+.ia-tipps{list-style:none;padding:0}.ia-tipps li{margin:.65rem 0}
+
+/* Sechseck */
+.ia-hex{display:block;width:100%;max-width:24rem;height:auto;margin:.4rem auto .2rem;overflow:visible}
+.ia-hex-linie{fill:none;stroke:var(--rand);stroke-width:2}
+.ia-hex-p circle{fill:var(--fl);stroke:var(--leise);stroke-width:1.5}
+.ia-hex-p .ia-hex-b{fill:var(--text);font-size:14px;font-weight:700}
+.ia-hex-p.an circle{fill:var(--akzent);stroke:var(--akzent)}
+.ia-hex-p.an .ia-hex-b{fill:var(--auf-akzent)}
+.ia-hex-name{fill:var(--leise);font-size:12px}
+.ia-hex-p.an .ia-hex-name{fill:var(--text);font-weight:650}
+
+/* Tagesrhythmus: Eingabe */
+.ia-zahlen .chip{min-width:2.75rem;justify-content:center;padding-left:.5rem;padding-right:.5rem}
+.ia-zeiten{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.6rem;margin:.4rem 0 .8rem}
+.ia-zeit{min-width:0;display:flex;flex-direction:column;gap:.3rem;font-weight:600;font-size:.95rem}
+.ia-zeit input{min-height:2.9rem;font-size:1.1rem;min-width:0;width:100%;max-width:100%}
+
+/* Tagesbild: 0–24 Uhr */
+.ia-tag{margin:.6rem 0 1rem}
+.ia-zeile{display:grid;grid-template-columns:6.2rem minmax(0,1fr);align-items:center;gap:.5rem;margin:.4rem 0}
+.ia-zeile>span{font-size:.82rem;color:var(--leise);line-height:1.2}
+.ia-spur{position:relative;height:1.55rem;border-radius:.5rem;background:var(--fl2);border:1px solid var(--rand);overflow:hidden}
+.ia-stueck{position:absolute;top:.15rem;bottom:.15rem;border-radius:.35rem;min-width:.3rem}
+.ia-schlaf{background:var(--band);border:2px solid var(--band-rand)}
+.ia-fokus{background:var(--gruen-hg);border:2px solid var(--gruen)}
+.ia-tief{background:var(--gelb-hg);border:2px dashed var(--gelb)}
+.ia-einfall{background:var(--idee-hg);border:2px dotted var(--idee)}
+.ia-uhr>div{position:relative;height:1.1rem}
+.ia-uhr i{position:absolute;top:0;transform:translateX(-50%);font-style:normal;font-size:.75rem;color:var(--leise)}
+.ia-uhr i:first-child{transform:none}.ia-uhr i:last-child{transform:translateX(-100%)}
+.ia-legende{display:flex;flex-wrap:wrap;gap:.3rem 1rem;font-size:.82rem;color:var(--leise);margin:.2rem 0 0}
+.ia-legende i{display:inline-block;width:1.1rem;height:.75rem;border-radius:.2rem;vertical-align:-.05rem;margin-right:.35rem}

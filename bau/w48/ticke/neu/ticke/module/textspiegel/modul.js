@@ -299,7 +299,7 @@ function richtungHtml(r) {
     : r.seite === 'beide' ? 'Beides gehört zu deinen Texten.' : `${r.deutlich === 'klar' ? 'Deutlich' : 'Eher'} in Richtung „${r.pole[r.seite === 'a' ? 0 : 1].name}“.`;
   return `<div class="ts-richtung" data-deutlich="${esc(r.deutlich || 'offen')}">
       <span class="ts-pol${an(0) ? ' an' : ''}">${esc(r.pole[0].name)}</span><span class="ts-linie" aria-hidden="true"></span><span class="ts-pol${an(1) ? ' an' : ''}">${esc(r.pole[1].name)}</span></div>
-    <p class="klein ts-wort">${esc(wort)}</p>`;
+    <p class="klein ts-wort${r.satz ? ' sr' : ''}">${esc(wort)}</p>`;
 }
 function belegeHtml(r) {
   const zeile = (name, b) => `<p class="klein ts-beleg"><b>${esc(name)}:</b> ${b && b.length ? esc(X.belegListe(b, 6)) : 'kaum Wörter dafür'}</p>`;

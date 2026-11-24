@@ -67,11 +67,11 @@ console.log('1. Alte Daten (Vorlage 0.2.1) laden');
   for (const [id, k] of eIds) {
     await p.click(`[data-bf-frage="${id}"]`); await p.waitForSelector('dialog.blatt .antwort');
     if (id === eIds[0][0]) { await tipp(p, 'dialog.blatt .antwort, dialog.blatt .knopf', 'Blatt'); await p.screenshot({ path: foto + '-blatt.png' }); }
-    await p.click(`dialog.blatt .antwort[data-w="${k > 0 ? 5 : 1}"]`); await p.waitForTimeout(200);
+    await p.click(`dialog.blatt .antwort[data-w="${k > 0 ? 1 : 5}"]`); await p.waitForTimeout(200);
   }
   const nachE = await p.locator('#bf-jetzt-liste li:nth-child(3)').innerText();
   console.log('  Extraversion vorher:', vorE, '| nachher:', nachE);
-  ok(nachE !== vorE && nachE.includes('klar in Richtung „Kontakt und Schwung“'), 'Muster ändert sich sofort nach Änderung');
+  ok(nachE !== vorE && nachE.includes('klar in Richtung „Ruhe und Tiefe“'), 'Muster ändert sich sofort nach Änderung');
   const sp = await p.evaluate(() => { const S = window.__ticke.speicher; return { v: S.lies('bigfive', 'vorher', {}), e: S.ergebnis('bigfive'), n: S.verlauf('bigfive').length }; });
   ok(Object.keys(sp.v).length >= 1 && Object.values(sp.v).every((l) => l.length <= 5 && l[0].anzeige && l[0].zeit), '„vorher“ gespeichert: ' + Object.keys(sp.v).length + ' Sätze');
   ok(sp.e.bereiche.extraversion.eigen && sp.e.bereiche.extraversion.eigen.deutlich === 'klar' && sp.e.facettenEigen, 'Ergebnis neu gerechnet (mit Richtung in Worten)');
@@ -85,7 +85,7 @@ console.log('1. Alte Daten (Vorlage 0.2.1) laden');
   ok((await p.locator(`[data-bf-frage="${weg}"] small`).innerText()).includes('noch offen'), 'Antwort entfernt → „noch offen“');
   // Ergebnis-Seite zeigt die Änderung
   await geh(p, 'fragen/bigfive'); await pruefeErgebnis(p, 'nach Änderung');
-  ok((await p.locator('#bf-extraversion .bf-richtung').innerText()).includes('Kontakt und Schwung'), 'Ergebnis-Seite zeigt neue Richtung');
+  ok((await p.locator('#bf-extraversion .bf-richtung').innerText()).includes('Ruhe und Tiefe'), 'Ergebnis-Seite zeigt neue Richtung');
   // Seiten Methode, Einstieg-Links
   await geh(p, 'fragen/bigfive/methode'); await p.waitForSelector('#inhalt h2');
   const tm = await inhaltText(p); const mm = tm.match(VERBOTEN); ok(!mm, 'Methode: keine Bewertungs-Wörter (' + (mm && mm[0]) + ')');

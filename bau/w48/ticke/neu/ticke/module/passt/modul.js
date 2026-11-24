@@ -224,7 +224,7 @@ function alltagHtml(R) {
     <p class="klein">Fünf kleine Situationen. Es gibt kein richtig oder falsch – wähl, was du eher tun würdest. Umwählen geht jederzeit.</p>
     ${R.alltag.map((x, i) => `<div class="pa-frage"><p id="pa-f${i}"><b>${esc(x.frage)}</b></p>
       <div class="chips" role="radiogroup" aria-labelledby="pa-f${i}">${['a', 'b'].map((w) => `<button type="button" class="chip" role="radio" aria-checked="${x.wahl === w}" tabindex="${(x.wahl ? x.wahl === w : w === 'a') ? 0 : -1}" data-probe="${x.bereich}" data-wahl="${w}" data-fokus="p-${x.bereich}-${w}">${esc(x[w])}</button>`).join('')}</div>
-      ${x.wahl ? `<p class="pa-bezug">${esc(bezugText(x))} ${ALLTAG_AST[x.bereich] ? `<a class="link" href="${astLink(ALLTAG_AST[x.bereich])}">Mehr dazu</a>` : ''}</p>` : ''}</div>`).join('')}
+      ${x.wahl ? `<p class="pa-bezug">${esc(bezugText(x))}</p>${ALLTAG_AST[x.bereich] ? `<a class="link klein pa-mehr" href="${astLink(ALLTAG_AST[x.bereich])}">Mehr dazu: ${esc(AESTE.find((a) => a.id === ALLTAG_AST[x.bereich]).titel)}</a>` : ''}` : ''}</div>`).join('')}
     <p class="klein leise">Konkrete Situationen statt allgemeiner Sätze – so prüfst du selbst, ob eine Beschreibung zu dir passt. ${marke('belegt', ['forer1949'])}</p></section>`;
 }
 

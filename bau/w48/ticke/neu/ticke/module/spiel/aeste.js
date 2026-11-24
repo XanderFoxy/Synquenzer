@@ -44,7 +44,7 @@ export const AESTE = [
       'Wie gehst du damit um, wenn jemand in dieser Richtung ganz anders tickt als du?'
     ],
     ueben: [{ titel: 'Warum-Fragen stellen', route: 'training/uebung/l-warum' }, { titel: 'Eine kleine Mutprobe', route: 'training/uebung/w-mutprobe' }],
-    verwandt: ['bigfive.offenheit', 'muster.neugier_denken', 'muster.ungewissheit', 'muster.werte_wandel', 'spiel.interessen'],
+    verwandt: ['bigfive.offenheit', 'muster.neugier_denken', 'muster.ungewissheit', 'muster.werte_wandel', 'interessen.A', 'interessen.I', 'spiel.interessen'],
     unteraeste: [
       { id: 'spiel.offenheit.fantasie', titel: 'Fantasie', text: 'Wie gern du in Gedanken eigene Welten baust, träumst und dir Dinge ausmalst. Dazu gehören hier Aussagen wie „Ich habe eine lebhafte Fantasie.“ und „Ich träume gern vor mich hin.“' },
       { id: 'spiel.offenheit.schoenheit', titel: 'Kunst und Schönheit', text: 'Wie stark dich Musik, Bilder, Sprache oder Natur berühren. Wer hier stark anspricht, bleibt an Dingen hängen, die anderen vielleicht gar nicht auffallen.' },
@@ -91,7 +91,7 @@ export const AESTE = [
       'Wo könnte dir ein kleines Stück der anderen Seite gerade guttun?'
     ],
     ueben: [{ titel: 'Wenn-dann-Plan', route: 'training/uebung/z-wenndann' }, { titel: 'So klein, dass es fast lächerlich ist', route: 'training/uebung/g-mini' }],
-    verwandt: ['bigfive.gewissenhaftigkeit', 'muster.kontrolle', 'muster.entscheiden', 'muster.lernen', 'interessen.rhythmus'],
+    verwandt: ['bigfive.gewissenhaftigkeit', 'muster.gewohnheiten', 'muster.kontrolle', 'muster.entscheiden', 'training.ziele', 'interessen.rhythmus'],
     unteraeste: [
       { id: 'spiel.gewissenhaftigkeit.ordnung', titel: 'Ordnung', text: 'Wie wichtig es dir ist, dass Dinge ihren Platz haben. Aussagen wie „Ich räume gern auf.“ gegen „Ich lasse meine Sachen herumliegen.“ gehören hierher.' },
       { id: 'spiel.gewissenhaftigkeit.vorbereitet', titel: 'Vorbereitet sein', text: 'Ob du lieber gut vorbereitet in eine Lage gehst oder dich auf deine Fähigkeit verlässt, im Moment etwas daraus zu machen.' },
@@ -137,7 +137,7 @@ export const AESTE = [
       'Wie sagst du anderen, was du gerade brauchst: Gesellschaft oder Ruhe?'
     ],
     ueben: [{ titel: 'Einfach mal melden', route: 'training/uebung/a-melden' }, { titel: 'Echte Mini-Pause', route: 'training/uebung/f-pause' }],
-    verwandt: ['bigfive.extraversion', 'muster.werte_ich_wir', 'interessen.riasec', 'spiel.vertraeglichkeit'],
+    verwandt: ['bigfive.extraversion', 'muster.naehe', 'muster.werte_ich_wir', 'muster.kommunikation', 'interessen.S', 'interessen.E', 'spiel.vertraeglichkeit'],
     unteraeste: [
       { id: 'spiel.extraversion.gesellig', titel: 'Geselligkeit', text: 'Wie gern du unter Menschen bist und große Runden magst. Manche lieben Feiern mit vielen Leuten, andere ein Gespräch zu zweit.' },
       { id: 'spiel.extraversion.fuehren', titel: 'Vorangehen', text: 'Ob du in einer Gruppe gern die Führung übernimmst oder lieber andere vorgehen lässt. Beides kann eine Gruppe tragen.' },
@@ -147,7 +147,7 @@ export const AESTE = [
     wissen: 'Extraversion ist einer der fünf großen Bereiche im Fünf-Faktoren-Modell der Persönlichkeit; die Begriffe „extravertiert“ und „introvertiert“ gehen auf den Psychiater C. G. Jung (1921) zurück. Heute beschreibt die Forschung Extraversion als ein Bündel aus Geselligkeit, Durchsetzungsfreude, Aktivität, Lust auf Anregung und Fröhlichkeit. ' + WISSEN_PAARE
   },
   {
-    id: 'spiel.vertraeglichkeit', titel: 'Direkt oder rücksichtsvoll', bereich: 'Beziehungen',
+    id: 'spiel.vertraeglichkeit', titel: 'Direkt oder rücksichtsvoll', bereich: 'Persönlichkeit',
     pole: [
       { name: 'direkt, kritisch', text: 'Du sagst, was du denkst, prüfst, bevor du vertraust, und stehst für dich und deine Sicht ein. Das macht dich klar, ehrlich und schwer zu täuschen.' },
       { name: 'rücksichtsvoll, mitfühlend', text: 'Du achtest darauf, wie es anderen geht, hilfst gern und gehst davon aus, dass andere es gut meinen. Das macht dich warm und verbindend.' }
@@ -182,7 +182,7 @@ export const AESTE = [
       'Wo hat dir deine direkte oder deine rücksichtsvolle Seite schon einmal sehr geholfen?'
     ],
     ueben: [{ titel: 'Ich-Botschaft statt Vorwurf', route: 'training/uebung/a-ich' }, { titel: 'Freundlich Nein sagen', route: 'training/uebung/a-grenze' }],
-    verwandt: ['bigfive.vertraeglichkeit', 'interessen.ehrlichkeit', 'muster.werte_ich_wir', 'spiel.extraversion'],
+    verwandt: ['bigfive.vertraeglichkeit', 'interessen.ehrlichkeit', 'muster.konflikt', 'muster.grenzen', 'muster.werte_ich_wir', 'spiel.extraversion'],
     unteraeste: [
       { id: 'spiel.vertraeglichkeit.vertrauen', titel: 'Vertrauen', text: 'Ob du zuerst das Gute in anderen siehst oder erst einmal prüfst. Aussagen wie „Ich vertraue anderen.“ und „Ich misstraue Menschen.“ gehören hierher.' },
       { id: 'spiel.vertraeglichkeit.mitgefuehl', titel: 'Mitgefühl', text: 'Wie sehr dich das Schicksal anderer berührt, auch von Menschen, die du nicht kennst.' },
@@ -229,7 +229,7 @@ export const AESTE = [
       'Wann warst du zuletzt überraschend gelassen, und was war da anders?'
     ],
     ueben: [{ titel: 'Langsam atmen', route: 'training/uebung/h-atem' }, { titel: 'Gefühl benennen', route: 'training/uebung/k-benennen' }, { titel: 'Feste Grübel-Zeit', route: 'training/uebung/k-sorgen-zeit' }],
-    verwandt: ['bigfive.stabilitaet', 'muster.ungewissheit', 'muster.kontrolle', 'muster.stress', 'muster.selbstmitgefuehl'],
+    verwandt: ['bigfive.stabilitaet', 'muster.stress', 'muster.gefuehle', 'muster.selbstmitgefuehl', 'muster.ungewissheit', 'muster.kontrolle', 'training.gefuehle'],
     unteraeste: [
       { id: 'spiel.stabilitaet.sorgen', titel: 'Sorgen', text: 'Wie viel Raum Gedanken an mögliche Probleme bei dir bekommen. Sorgen sind ein Versuch des Kopfes, vorzubeugen – manchmal hilfreich, manchmal laut.' },
       { id: 'spiel.stabilitaet.aerger', titel: 'Ärger', text: 'Wie schnell dich etwas reizt oder nervt. Ärger zeigt oft, dass dir etwas wichtig ist oder eine Grenze berührt wird.' },
@@ -271,7 +271,7 @@ export const AESTE = [
       'Was hast du als Kind gern gemacht, und passt das noch zu deinem Muster?'
     ],
     ueben: [{ titel: 'Interessen genauer erkunden', route: 'fragen/interessen/riasec' }, { titel: 'Eine Stärke neu einsetzen', route: 'training/uebung/w-staerke' }],
-    verwandt: ['interessen.riasec', 'spiel.offenheit', 'spiel.extraversion', 'muster.sinn'],
+    verwandt: ['interessen.R', 'interessen.I', 'interessen.A', 'interessen.S', 'interessen.E', 'interessen.C', 'muster.sinn', 'spiel.offenheit'],
     unteraeste: [
       { id: 'spiel.interessen.R', titel: 'Praktisch-technisch', text: 'Mit Händen, Werkzeug, Maschinen, Pflanzen oder Tieren arbeiten – etwas reparieren, bauen, anpacken.' },
       { id: 'spiel.interessen.I', titel: 'Forschend', text: 'Verstehen und untersuchen: Fragen stellen, beobachten, Zusammenhänge herausfinden.' },

@@ -53,7 +53,7 @@ async function ohneWertung(page, name) {
       ziffern: t.split('\n').filter((z) => /\d/.test(z)).map((z) => z.trim()).filter(Boolean),
       extern: [...document.querySelectorAll('#inhalt a[href]')].map((a) => a.getAttribute('href')).filter((h) => /^https?:|^\/\//.test(h)),
       blank: document.querySelectorAll('#inhalt [target=_blank]').length,
-      klein: [...el.querySelectorAll('button, a.knopf, a.zeile, .chip, .antwort')].filter((b) => { const q = b.getBoundingClientRect(); return q.width && q.height < 44; }).map((b) => b.textContent.trim().slice(0, 30)),
+      klein: [...el.querySelectorAll('button:not(.marke), a.knopf, a.zeile, a.link, .chip, .antwort')].filter((b) => { const q = b.getBoundingClientRect(); return q.width && q.height < 44; }).map((b) => b.textContent.trim().slice(0, 30)),
       boese: (t.match(/\d+\s?%|Platz \d|\bPunkte?\b|von 100|Perzentil|überdurchschnittlich|unterdurchschnittlich|Typ-Prozent|\bRang\b/g) || []) };
   });
   pruef(r.band === 0, `${name}: kein Balken/Band/Messleiste (${r.band})`);

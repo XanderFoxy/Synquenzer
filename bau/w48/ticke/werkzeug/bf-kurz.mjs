@@ -1,0 +1,13 @@
+import { createRequire } from 'module'; const require = createRequire(import.meta.url);
+const { chromium } = require('playwright'); const fs = require('fs');
+const [basis, datei] = process.argv.slice(2); const D = JSON.parse(fs.readFileSync(datei, 'utf8'));
+const b = await chromium.launch(); const c = await b.newContext({ viewport: { width: 428, height: 926 }, hasTouch: true, isMobile: true, serviceWorkers: 'block' });
+await c.addInitScript((d) => { if (!sessionStorage.getItem('x')) { localStorage.clear(); for (const [k, v] of Object.entries(d)) localStorage.setItem(k, v); sessionStorage.setItem('x', 1); } }, D);
+const p = await c.newPage(); const F = []; p.on('pageerror', (e) => F.push(String(e))); p.on('console', (m) => { if (m.type() === 'error') F.push(m.text()); });
+await p.goto(basis + '?test=1#fragen/bigfive'); await p.waitForSelector('.bf-bereich', { timeout: 10000 });
+const n = await p.locator('.bf-bereich').count();
+await p.evaluate(() => { location.hash = 'fragen/bigfive/antworten'; }); await p.waitForSelector('.bf-antw');
+const z = await p.locator('.bf-antw').count();
+const m = await p.evaluate(() => window.__bigfive ? window.__bigfive.muster(window.__ticke).length : -1);
+console.log(JSON.stringify({ bereiche: n, antwortZeilen: z, muster: m, fehler: F }));
+await b.close();

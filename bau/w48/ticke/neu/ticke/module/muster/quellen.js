@@ -1,0 +1,27 @@
+// muster – Quellen als reiner Text (ohne Links). Format wie quellen.js im App-Ordner: id → { text, notiz, erklaerung }.
+export const QUELLEN = {
+  cacioppo1982: { text: 'Cacioppo, J. T., & Petty, R. E. (1982). The need for cognition. Journal of Personality and Social Psychology, 42(1), 116–131.',
+    notiz: 'Beschreibt das „Bedürfnis nach Kognition“: die Freude am anstrengenden Denken.',
+    erklaerung: 'Die Autoren beschreiben, dass Menschen sich darin unterscheiden, wie gern sie sich mit schwierigen Denkaufgaben beschäftigen. Manche suchen solche Aufgaben, andere setzen ihr Denken lieber sparsam ein. Das ist keine Frage der Klugheit, sondern der Vorliebe.' },
+  frenkel1949: { text: 'Frenkel-Brunswik, E. (1949). Intolerance of ambiguity as an emotional and perceptual personality variable. Journal of Personality, 18(1), 108–143.',
+    notiz: 'Frühe Arbeit dazu, wie unterschiedlich Menschen mit Mehrdeutigem umgehen.',
+    erklaerung: 'Else Frenkel-Brunswik beschrieb, dass manche Menschen Mehrdeutiges schwer aushalten und schnell nach eindeutigen Antworten suchen, andere damit gelassener umgehen. Daraus entstand später der Begriff Ambiguitätstoleranz.' },
+  dweck1988: { text: 'Dweck, C. S., & Leggett, E. L. (1988). A social-cognitive approach to motivation and personality. Psychological Review, 95(2), 256–273.',
+    notiz: 'Implizite Theorien: Fähigkeiten als wachsend oder als eher fest.',
+    erklaerung: 'Die Arbeit beschreibt zwei Sichtweisen auf Fähigkeiten – als etwas, das wächst, oder als etwas eher Festes – und wie sie mit Zielen und Ausdauer zusammenhängen. Spätere große Studien fanden die Wirkung kurzer Trainings dazu eher klein.' },
+  rotter1966: { text: 'Rotter, J. B. (1966). Generalized expectancies for internal versus external control of reinforcement. Psychological Monographs, 80(1), 1–28.',
+    notiz: 'Kontrollüberzeugung: Erlebe ich Ereignisse als Folge meines Tuns oder der Umstände?',
+    erklaerung: 'Julian Rotter beschrieb, dass Menschen Ereignisse unterschiedlich erklären: eher durch das eigene Handeln oder eher durch Umstände, Zufall und andere. Beide Sichtweisen sehen einen Teil der Wirklichkeit.' },
+  kahneman2011: { text: 'Kahneman, D. (2011). Thinking, Fast and Slow. New York: Farrar, Straus and Giroux. Deutsch: Schnelles Denken, langsames Denken (2012).',
+    notiz: 'Zwei Denkweisen: schnell und intuitiv, langsam und überlegt.',
+    erklaerung: 'Daniel Kahneman fasst Jahrzehnte Forschung mit Amos Tversky zusammen. Er beschreibt ein schnelles, müheloses und ein langsames, anstrengendes Denken, die in allen Menschen zusammenarbeiten, und typische Denkfallen.' },
+  schwartz1992: { text: 'Schwartz, S. H. (1992). Universals in the content and structure of values. Advances in Experimental Social Psychology, 25, 1–65.',
+    notiz: 'Zehn grundlegende Werte, angeordnet in einem Kreis.',
+    erklaerung: 'Shalom Schwartz zeigt, dass sich menschliche Werte in vielen Ländern ähnlich ordnen: wie in einem Kreis, mit den Spannungen „Offenheit für Wandel – Bewahrung“ und „Selbst-Erhöhung – Selbst-Überwindung“.' },
+  deci2000: { text: 'Deci, E. L., & Ryan, R. M. (2000). The „what“ and „why“ of goal pursuits: Human needs and the self-determination of behavior. Psychological Inquiry, 11(4), 227–268.',
+    notiz: 'Selbstbestimmungstheorie: Autonomie, Kompetenz und Eingebundenheit als Grundbedürfnisse.',
+    erklaerung: 'Die Autoren beschreiben drei psychische Grundbedürfnisse: selbst bestimmen, etwas können und mit anderen verbunden sein. Alle drei gehören zusammen; Menschen gewichten sie unterschiedlich.' },
+  frankl1946: { text: 'Frankl, V. E. (1946). … trotzdem Ja zum Leben sagen. Ein Psychologe erlebt das Konzentrationslager. Wien.',
+    notiz: 'Sinn als menschliches Grundanliegen; drei Wege zum Sinn.',
+    erklaerung: 'Viktor Frankl beschreibt seine Zeit in Konzentrationslagern und seine Überzeugung, dass Menschen vor allem nach Sinn suchen. Er nennt drei Wege: etwas schaffen, etwas oder jemanden erleben und eine Haltung zu dem finden, was sich nicht ändern lässt.' }
+};

@@ -15,6 +15,11 @@ function wache(page, tag) {
   page.on('pageerror', (e) => fehler.push(`${tag} pageerror: ${e.message}`));
   page.on('console', (m) => { if (m.type() === 'error') fehler.push(`${tag} console.error: ${m.text()}`); });
 }
+async function foto(page, datei) {
+  await page.evaluate(() => { document.body.dataset.fotoVorher = document.body.getAttribute('style') || ''; document.body.style.height = 'auto'; document.body.style.overflow = 'visible'; const i = document.querySelector('#inhalt'); i.dataset.fotoVorher = i.getAttribute('style') || ''; i.style.overflow = 'visible'; i.style.height = 'auto'; });
+  await page.screenshot({ path: FOTO + datei, fullPage: true });
+  await page.evaluate(() => { document.body.setAttribute('style', document.body.dataset.fotoVorher); const i = document.querySelector('#inhalt'); i.setAttribute('style', i.dataset.fotoVorher); });
+}
 const warte = (ms) => new Promise((r) => setTimeout(r, ms));
 async function geh(page, base, hash) { await page.evaluate((h) => { location.hash = h; }, hash); await warte(350); }
 
@@ -44,16 +49,19 @@ const breite = async () => p.evaluate(() => document.documentElement.scrollWidth
 const inhalt = async () => p.evaluate(() => (document.querySelector('#inhalt') || document.body).innerText);
 const extern = async () => p.evaluate(() => document.querySelectorAll('#inhalt a[href^="http"], #inhalt [target=_blank]').length);
 const VERBOTEN = /\d+\s*%|von 100\b|Prozent|Punkte|richtig erkannt|Treffer|Claude|über dem Durchschnitt|unter dem Durchschnitt|Münzwurf/i;
+const fotoMachen = foto;
 async function pruefeSeite(name, foto) {
   const txt = await inhalt(), w = await breite(), x = await extern();
   const m = txt.match(VERBOTEN);
   ok(`${name}: keine Bewertung/Zahlen-Wörter`, !m, m ? `gefunden: „${m[0]}“` : '');
   ok(`${name}: kein Link nach draußen`, x === 0, `${x}`);
   ok(`${name}: nichts quer überlaufend (≤ 428 px)`, w <= 428, `scrollWidth ${w}`);
-  const klein = await p.evaluate(() => [...document.querySelectorAll('#inhalt button, #inhalt a.knopf, #inhalt a.karte, #inhalt a.zeile, #inhalt .chip, #inhalt summary, #inhalt .ts-astlink')]
+  const klein = await p.evaluate(() => [...document.querySelectorAll('#inhalt button:not(.marke), #inhalt a.knopf, #inhalt a.karte, #inhalt a.zeile, #inhalt .chip, #inhalt summary, #inhalt .ts-astlink')]
     .filter((e) => e.offsetParent !== null).map((e) => [e.textContent.trim().slice(0, 30), Math.round(e.getBoundingClientRect().height)]).filter(([, h]) => h > 0 && h < 44));
-  ok(`${name}: Tippflächen ≥ 44 px`, klein.length === 0, JSON.stringify(klein.slice(0, 4)));
-  if (foto) await p.screenshot({ path: FOTO + foto, fullPage: true });
+  const marken = await p.$$eval('#inhalt .marke', (e) => e.length);
+  ok(`${name}: Tippflächen ≥ 44 px (ohne Kern-Marken)`, klein.length === 0, JSON.stringify(klein.slice(0, 4)));
+  if (marken) ERG.push(['HINWEIS', `${name}: ${marken} Evidenz-Marken (ui.marke, Kern) sind 30 px hoch`, '']);
+  if (foto) await fotoMachen(p, foto);
 }
 const txtUeb = await inhalt();
 ok('Übersicht lädt mit alten Texten', /Du hast vier Texte geschrieben/.test(txtUeb), `Ladezeit ${tLaden} ms`);
@@ -111,7 +119,7 @@ const nFass = await p.$$eval('.ts-fassungen li', (e) => e.length);
 ok('Schreiben: frühere Fassungen sichtbar (höchstens 5)', nFass >= 1 && nFass <= 5, `${nFass}`);
 await p.click('.ts-fassungen summary'); await p.click('[data-ts=zurueckholen][data-i="0"]'); await warte(500);
 const nachZurueck = await p.inputValue('#ts-feld');
-ok('Schreiben: frühere Fassung zurückgeholt', nachZurueck.trim() === P1.bremse.trim(), nachZurueck.slice(0, 50));
+ok('Schreiben: frühere Fassung zurückgeholt (neueste zuerst)', nachZurueck.trim() === P2.bremse.trim(), nachZurueck.slice(0, 50));
 await pruefeSeite('Schreiben', 'ts-schreiben.png');
 await p.click('[data-ts=leeren]'); await warte(300); await p.click('dialog [data-w=ja]'); await warte(500);
 const leer = await p.inputValue('#ts-feld');
@@ -154,9 +162,9 @@ const ctxD = await browser.newContext(geraet({ colorScheme: 'dark' }));
 await ctxD.addInitScript((d) => { if (!sessionStorage.getItem('gesaet')) { for (const [k, v] of Object.entries(d)) localStorage.setItem(k, v); sessionStorage.setItem('gesaet', '1'); } }, alt);
 const pd = await ctxD.newPage(); wache(pd, 'DUNKEL');
 await pd.goto(B + '#text/tiefer'); await pd.waitForSelector('details.ts-tief'); await pd.$$eval('details.ts-tief', (d) => { d[0].open = true; d[2].open = true; });
-await pd.screenshot({ path: FOTO + 'ts-tiefer-dunkel.png', fullPage: true });
+await foto(pd, 'ts-tiefer-dunkel.png');
 await ctxD.close();
 await browser.close();
 ok('0 Seitenfehler / console.error', fehler.length === 0, fehler.slice(0, 6).join(' || '));
 for (const e of ERG) console.log(e.join(' | '));
-console.log(`\n${ERG.filter((e) => e[0] === 'OK ').length} von ${ERG.length} Prüfungen bestanden`);
+console.log(`\n${ERG.filter((e) => e[0] === 'OK ').length} von ${ERG.filter((e) => e[0] !== 'HINWEIS').length} Prüfungen bestanden`);

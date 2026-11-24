@@ -1,0 +1,83 @@
+/* muster – Dein Muster, Baum, Ast-Seiten, Denkweise. Nur Klassen mit Präfix mu-, Farben nur über die Tokens aus stil.css
+   (hell/dunkel automatisch). Tippflächen ≥ 2.75rem (44 px). */
+
+/* ---------- Zusammenschau ---------- */
+.mu-zusammen h3{margin-top:0}
+.mu-saetze{list-style:none;margin:0;padding:0}
+.mu-saetze>li{margin:0;padding:.55rem 0;border-top:1px solid var(--rand)}
+.mu-saetze>li:first-child{border-top:0;padding-top:0}
+.mu-saetze p{margin:0 0 .3rem}
+.mu-zu{display:flex;flex-wrap:wrap;gap:.4rem}
+.mu-chip{display:inline-flex;align-items:center;min-height:2.75rem;padding:.25rem .85rem;border-radius:1.4rem;border:1px solid var(--rand);background:var(--fl2);color:var(--text);text-decoration:none;font-size:.88rem;line-height:1.2}
+.mu-chip:active{background:var(--akzent-weich)}
+.mu-knoepfe>.knopf{flex:1 1 12rem}
+.mu-spur{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem;margin:.75rem 0}
+
+/* ---------- Baum (SVG) ---------- */
+.mu-huelle{width:100%;margin:.4rem 0 1rem;min-height:4rem}
+.mu-baum{display:block;width:100%;height:auto;overflow:visible;-webkit-user-select:none;user-select:none}
+.mu-baum text{font-family:inherit}
+.mu-baum .mu-k{cursor:pointer;outline:none}
+.mu-baum .mu-stamm{stroke:var(--rand-bed);stroke-width:6;stroke-linecap:round;fill:none;opacity:.75}
+.mu-baum .mu-zweig{fill:none;stroke-linecap:round}
+.mu-baum .mu-zweig.da{stroke:var(--akzent);stroke-width:2.6}
+.mu-baum .mu-zweig.offen{stroke:var(--rand-bed);stroke-width:1.5;stroke-dasharray:2 5;opacity:.8}
+.mu-baum .mu-zweig.lernen{stroke:var(--rand-bed);stroke-width:1.6;opacity:.75}
+.mu-baum .mu-du circle{fill:var(--akzent);stroke:var(--akzent);stroke-width:2}
+.mu-baum .mu-du-t{fill:var(--auf-akzent);font-weight:700}
+.mu-baum .mu-bereich rect{fill:var(--fl);stroke:var(--rand-bed);stroke-width:1.5}
+.mu-baum .mu-bereich.hat rect{stroke:var(--akzent);stroke-width:2}
+.mu-baum .mu-bt{fill:var(--text);font-weight:700}
+.mu-baum .mu-bs{fill:var(--leise)}
+.mu-baum .mu-pfeil{fill:none;stroke:var(--leise);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mu-baum .mu-ast rect{stroke-width:1.5}
+.mu-baum .mu-ast.da rect{fill:var(--akzent-weich);stroke:var(--akzent);stroke-width:2}
+.mu-baum .mu-ast.offen rect{fill:var(--fl);stroke:var(--rand);stroke-dasharray:4 4}
+.mu-baum .mu-ast.lernen rect{fill:var(--fl);stroke:var(--rand-bed)}
+.mu-baum .mu-t1{fill:var(--text);font-weight:650}
+.mu-baum .mu-t2{fill:var(--akzent);font-weight:600}
+.mu-baum .offen .mu-t1{fill:var(--leise);font-weight:600}
+.mu-baum .offen .mu-t2,.mu-baum .lernen .mu-t2{fill:var(--leise);font-weight:400;font-style:italic}
+.mu-baum .mu-k:focus-visible rect,.mu-baum .mu-k:focus-visible circle{stroke:var(--akzent);stroke-width:3.5;stroke-dasharray:none}
+.mu-baum .mu-k:active rect,.mu-baum .mu-k:active circle{opacity:.82}
+.mu-b-t{display:flex;flex-wrap:wrap;align-items:baseline;gap:.2rem .6rem;margin:1.1rem 0 .3rem;font-size:1rem}
+.mu-liste .zeile b{display:block;font-weight:650}
+.mu-z-offen small,.mu-z-lernen small{font-style:italic}
+
+/* ---------- Ast-Seite ---------- */
+.mu-krumen{display:flex;flex-wrap:wrap;align-items:center;gap:0 .35rem;margin:-.25rem 0 .25rem;font-size:.92rem;color:var(--leise)}
+.mu-krumen a{display:inline-flex;align-items:center;min-height:2.75rem;padding:0 .15rem}
+.mu-krumen [aria-current]{color:var(--text);font-weight:600;overflow-wrap:anywhere}
+.mu-richtung h3{margin-top:0}
+.mu-r-satz{font-size:1.05rem;font-weight:600}
+.mu-pole{display:grid;grid-template-columns:minmax(0,1fr) .9rem minmax(0,1fr);gap:.5rem;align-items:stretch;margin:1rem 0 .3rem}
+.mu-pole.drei{grid-template-columns:minmax(0,1fr)}
+@media (min-width:38rem){.mu-pole.drei{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.mu-pol{background:var(--fl);border:1px solid var(--rand);border-radius:var(--rund);padding:.75rem .8rem;box-shadow:var(--schatten);min-width:0}
+.mu-pol b{display:block;font-size:1rem;line-height:1.25;margin-bottom:.3rem;overflow-wrap:anywhere;hyphens:auto}
+.mu-pol p{margin:0;font-size:.9rem;line-height:1.4;overflow-wrap:anywhere;hyphens:auto}
+.mu-pol.deins{border-color:var(--akzent);border-width:2px}
+.mu-deins{display:inline-block;margin-top:.5rem;padding:.1rem .55rem;border-radius:1rem;background:var(--akzent-weich);color:var(--text);font-size:.8rem;font-weight:600}
+.mu-pol-band{display:flex;align-items:center;justify-content:center}
+.mu-pol-band span{display:block;width:2px;height:70%;border-radius:2px;background:linear-gradient(var(--rand-bed),var(--rand),var(--rand-bed))}
+.mu-punkte{padding-left:1.2rem;margin:.3rem 0 .6rem}
+.mu-punkte li{margin:.3rem 0}
+.mu-weiterdenken{list-style:none;padding-left:0}
+.mu-weiterdenken li{padding:.5rem .8rem;margin:.4rem 0;background:var(--fl2);border-radius:var(--rund-k);font-style:italic}
+details.mu-unter{padding:.25rem 1rem;margin:.5rem 0}
+details.mu-unter p{margin:.2rem 0 .7rem}
+.mu-spruenge{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,10rem),1fr));gap:.55rem;margin:.4rem 0 .8rem}
+.mu-spruenge.breit{grid-template-columns:repeat(auto-fill,minmax(min(100%,17rem),1fr))}
+.mu-sprung{display:flex;flex-direction:column;gap:.15rem;min-height:4rem;padding:.65rem .8rem;border:1px solid var(--rand);border-radius:var(--rund);background:var(--fl);color:var(--text);text-decoration:none;box-shadow:var(--schatten);min-width:0}
+.mu-sprung small{color:var(--leise);font-size:.78rem}
+.mu-sprung b{font-size:.96rem;line-height:1.25;overflow-wrap:anywhere}
+.mu-sprung span{font-size:.86rem;color:var(--akzent);line-height:1.3}
+.mu-sprung.mu-z-da{border-color:var(--akzent)}
+.mu-sprung.mu-z-offen span,.mu-sprung.mu-z-lernen span{color:var(--leise);font-style:italic}
+.mu-sprung:active{background:var(--akzent-weich)}
+.mu-lern{margin-top:.5rem}
+
+/* ---------- Denkweise ---------- */
+.mu-antworten .zeile{align-items:flex-start}
+.mu-aussage{display:block;font-weight:500;line-height:1.35}
+.mu-blatt-frage{font-size:1.05rem;font-weight:600}

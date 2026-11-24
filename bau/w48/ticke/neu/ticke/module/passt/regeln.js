@@ -28,6 +28,8 @@ export function uhrText(h) { if (!zahl(h)) return '–'; let m = Math.round((((h
 // deutlich: 'klar' (ganzes Band auf einer Seite) | 'leicht' (Richtung zeigt sich, Band reicht in die Mitte) | 'beides'
 export const deutlichAus = (l) => (!l || !l.pol ? 'beides' : l.sicher === 'klar' ? 'klar' : 'leicht');
 export const DEUTLICH_WORT = { klar: 'klar', leicht: 'leicht', beides: 'beides' };
+// Verträglichkeit mit älteren Aufrufern: Stufe → Wort (ohne Zahl, ohne Vergleich mit anderen)
+export const wortT = (s) => (Math.abs(s) >= 2 ? 'klar' : s ? 'leicht' : 'beides gehört zu dir');
 export function poleVon(id) {
   if (BEREICH[id]) return [BEREICH[id].links, BEREICH[id].rechts];
   if (id === 'ehrlichkeit') return ['Eigener Vorteil im Blick', 'Fair und bescheiden'];
@@ -349,25 +351,28 @@ export function musterAus(R, wahl = null) {
     }
     if (!l && !seiteA && !(ast.id === 'passt.andere_streit' && R.streit)) continue;
     const pol = (s) => ast.pole[s > 0 ? 1 : 0];
-    let richtung, deutlich;
+    let richtung, deutlich, seite = 0;
     const woher = [quelleB ? `aus ${quelleB}` : '', seiteA ? `aus deiner Wahl im Alltag („${ALLTAG_TEXT(x)}“)` : ''].filter(Boolean).join(' und ');
     if (dB !== null && seiteA) {
-      if (seiteB && seiteB === seiteA) { deutlich = dB; richtung = `${gross(dB)} in Richtung „${pol(seiteB).name}“ – im Fragebogen wie im Alltag. ${pol(seiteB).text}`; }
+      if (seiteB && seiteB === seiteA) { deutlich = dB; seite = seiteB; richtung = `${gross(dB)} in Richtung „${pol(seiteB).name}“ – im Fragebogen wie im Alltag. ${pol(seiteB).text}`; }
       else if (seiteB) { deutlich = 'beides'; richtung = `Beides gehört zu dir: im Fragebogen eher „${pol(seiteB).name}“, im Alltag eher „${pol(seiteA).name}“.`; }
       else { deutlich = 'beides'; richtung = `Beides gehört zu dir – „${ast.pole[0].name}“ und „${ast.pole[1].name}“; im Alltag wählst du hier eher „${pol(seiteA).name}“.`; }
     } else if (dB !== null) {
-      deutlich = dB;
+      deutlich = dB; seite = seiteB;
       richtung = seiteB ? `${gross(dB)} in Richtung „${pol(seiteB).name}“. ${pol(seiteB).text}` : `Beides gehört zu dir – „${ast.pole[0].name}“ und „${ast.pole[1].name}“, je nach Lage.`;
-    } else { deutlich = 'leicht'; richtung = `Leicht in Richtung „${pol(seiteA).name}“ – so wählst du im Alltag. ${pol(seiteA).text}`; }
-    out.push({ ast: ast.id, titel: ast.titel, richtung, deutlich, woher: gross(woher) + '.' });
+    } else { deutlich = 'leicht'; seite = seiteA; richtung = `Leicht in Richtung „${pol(seiteA).name}“ – so wählst du im Alltag. ${pol(seiteA).text}`; }
+    if (deutlich === 'beides') seite = 0;
+    // zusätzlich (über den Vertrag hinaus, wie im Modul muster): wort = kurzes Richtungs-Wort, pol = Index des Pols (0|1) oder null
+    out.push({ ast: ast.id, titel: ast.titel, richtung, deutlich, woher: gross(woher) + '.', wort: seite ? pol(seite).name : 'beides', pol: seite ? (seite > 0 ? 1 : 0) : null });
   }
   const E = R.eingaben;
   if (E.riasec) {
     const top = E.riasec.top.slice(0, 3).filter((t) => RIASEC[t]), s0 = Math.round((E.riasec.typen[top[0]] || {}).stufe || 0);
     if (top.length) out.push({ ast: 'passt.geeignet', titel: AST['passt.geeignet'].titel, deutlich: s0 >= 2 ? 'klar' : s0 >= 1 ? 'leicht' : 'beides',
-      richtung: `Am meisten ziehen dich ${liste(top.map((t) => RIASEC[t].adj))} Tätigkeiten an – eine passende Rolle im Team: ${RIASEC[top[0]].rolle}.`, woher: 'Aus deinen Antworten zu den Interessen.' });
+      richtung: `Am meisten ziehen dich ${liste(top.map((t) => RIASEC[t].adj))} Tätigkeiten an – eine passende Rolle im Team: ${RIASEC[top[0]].rolle}.`, woher: 'Aus deinen Antworten zu den Interessen.',
+      wort: RIASEC[top[0]].name, pol: null });
   }
   if (wahl && wahl.titel) out.push({ ast: 'passt.wachstum', titel: AST['passt.wachstum'].titel, deutlich: 'klar',
-    richtung: `Du möchtest gerade in Richtung „${wahl.titel}“ üben${wahl.warum ? ` – ${wahl.warum}` : ''}.`, woher: 'Aus deiner Wahl unter „Wachsen“.' });
+    richtung: `Du möchtest gerade in Richtung „${wahl.titel}“ üben${wahl.warum ? ` – ${wahl.warum}` : ''}.`, woher: 'Aus deiner Wahl unter „Wachsen“.', wort: wahl.titel, pol: null });
   return out;
 }
