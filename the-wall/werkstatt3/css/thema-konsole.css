@@ -1,0 +1,282 @@
+/* Werkstatt 3 – Farbschema „Konsole“ (das andere heißt „Klassisch“)
+   Eigene Gestaltung mit Bedienpult-Gefühl: dunkler Grund, Pastell-Balken mit Ellbogen, Pillen-Knöpfe.
+   Wirkt nur mit <html data-thema="konsole">. Ohne das Attribut ändert diese Datei nichts am Aussehen.
+   Alle Regeln hängen an :root[data-thema=konsole] (Spezifität 0,2,0) und gewinnen so gegen :root{…}
+   und einfache Klassenregeln der Seite, egal in welcher Reihenfolge geladen.
+   Bewegung: nur transform/opacity/filter animiert (billig); prefers-reduced-motion schaltet sie ab.
+   Liste aller Variablen und Klassen: ../THEMA.md · Muster: muster-konsole.html */
+
+/* ---------- Brücke für „Klassisch“ (Spezifität 0): neue Namen zeigen auf die alten Werkstatt-2-Namen.
+   Ändert nichts Sichtbares; jede :root-Regel der Seite gewinnt dagegen. */
+:where(:root){
+  --grund:var(--bg,#fbfaf7);--flaeche:var(--karte,#fffdf8);--flaeche2:var(--band1,#f4f1eb);--flaeche3:var(--band2,#ebe7df);
+  --text:var(--fg,#1d1c1a);--text-leise:var(--mut,#857f75);--text-auf-farbe:var(--goldfg,#fff);
+  --linie:var(--lin,#e7e3db);--linie2:var(--lin2,#cfc9be);--akzent:var(--gold,#a87908);
+  --z-aktiv:var(--fg,#1d1c1a);--z-gewaehlt:var(--gold,#a87908);--z-laeuft:var(--ok,#2b7a4b);
+  --z-fehler:var(--rot,#b03a2e);--z-warn:var(--warn,#b25d12);--z-ok:var(--ok,#2b7a4b);
+  --rolle-grund:var(--bg,#fbfaf7);--rolle-zeile:var(--band1,#f4f1eb);--rolle-zeile-dunkel:var(--band2,#ebe7df);
+  --raster-fein:var(--lin,#e7e3db);--raster:var(--lin2,#cfc9be);--taktstrich:var(--mut,#857f75);
+  --lineal:var(--band1,#f4f1eb);--lineal-text:var(--mut,#857f75);--tasten:var(--band2,#ebe7df);--tasten-text:var(--mut,#857f75);
+  --note:var(--c-neu,#3b4652);--note-rand:var(--bg,#fbfaf7);--note-text:var(--bg,#fbfaf7);--note-gewaehlt:var(--gold,#a87908);
+  --note-ziehen:var(--hi,#f5e3ad);--note-ziehen-rand:var(--gold,#a87908);--tonlinie:var(--rot,#b03a2e);
+  --spielkopf:var(--gold,#a87908);--bereich-rand:var(--gold,#a87908);--welle-fuell:var(--band2,#ebe7df);--welle-mitte:var(--lin,#e7e3db);
+  --layer-1:var(--c-orig,#7c4ddb);--layer-2:var(--c-rein,#0d8f7c);--layer-3:var(--c-tim,#d07a12);
+  --layer-4:var(--c-ton,#c8322f);--layer-5:var(--c-spaet,#2c69ad);--layer-6:var(--c-ende,#8d97a2);
+  --layer-alpha-1:1;--layer-alpha-2:.7;--layer-alpha-3:.55;--layer-alpha-4:.42;--layer-alpha-5:.32;--layer-alpha-6:.24;
+}
+
+/* ---------- Konsole: Farben und Maße */
+:root[data-thema=konsole]{
+  color-scheme:dark;
+  /* Grundpalette (eigene Werte) */
+  --k-orange:#ff9f45;--k-flieder:#c3a2f2;--k-hellblau:#8ec5ff;--k-pfirsich:#ffbf9b;
+  --k-sand:#ecd28c;--k-mint:#76e2b3;--k-rosa:#f59cc2;--k-rot:#ff6e5f;--k-cyan:#62d8ff;--k-sonne:#ffd65e;
+  /* Flächen und Schrift */
+  --grund:#04050a;--flaeche:#0e1019;--flaeche2:#181a28;--flaeche3:#232639;
+  --linie:#2a2d43;--linie2:#3f4363;
+  --text:#f2eee6;--text-leise:#a9a5c0;--text-auf-farbe:#07070d;--akzent:var(--k-orange);
+  /* Zustände */
+  --z-aktiv:var(--k-cyan);--z-gewaehlt:var(--k-sonne);--z-laeuft:#6be3a4;--z-fehler:var(--k-rot);
+  --z-warn:#ffb04a;--z-ok:#6be3a4;--z-aus:#2a2c3c;--z-aus-text:#9a97b1;--z-fokus:#fff;
+  --leuchten-aktiv:0 0 0 2px var(--grund),0 0 14px rgba(98,216,255,.55);
+  --leuchten-gewaehlt:0 0 0 2px var(--grund),0 0 0 4px var(--k-sonne),0 0 18px rgba(255,214,94,.4);
+  --leuchten-laeuft:0 0 0 2px var(--grund),0 0 18px rgba(107,227,164,.6);
+  --leuchten-fehler:0 0 0 2px var(--grund),0 0 16px rgba(255,110,95,.6);
+  /* Rahmen (Ellbogen) */
+  --rahmen-arm:16px;--rahmen-balken:16px;--rahmen-ellbogen:34px;--rahmen-fuge:5px;--rahmen-kappe:30px;--rahmen-innen:10px;
+  /* Bedienflächen */
+  --tipp:48px;--tipp-klein:44px;--pille-pad:18px;--knopf-schreibweise:uppercase;
+  /* Schrift: schmale Systemschrift, wo vorhanden (iOS/macOS, Windows, Android, Linux) */
+  --schrift:"Avenir Next Condensed","Bahnschrift SemiCondensed","Roboto Condensed","sans-serif-condensed","Arial Narrow","DejaVu Sans Condensed","Liberation Sans Narrow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --schrift-zahl:var(--schrift);
+  /* Bewegung */
+  --dauer-kurz:80ms;--dauer:160ms;--kurve:cubic-bezier(.2,.8,.2,1);
+  /* Pianorolle, Raster, Wellen (Canvas liest diese per getComputedStyle) */
+  --rolle-grund:#07080f;--rolle-zeile:#0e1020;--rolle-zeile-dunkel:#090a13;
+  --raster-fein:rgba(142,160,220,.08);--raster:rgba(142,160,220,.2);--taktstrich:rgba(255,159,69,.62);
+  --lineal:var(--k-pfirsich);--lineal-text:var(--text-auf-farbe);--tasten:#121423;--tasten-text:var(--text-leise);
+  --note:var(--layer-1);--note-rand:rgba(255,255,255,.45);--note-text:var(--text-auf-farbe);--note-gewaehlt:#fff;
+  --note-ziehen:rgba(98,216,255,.28);--note-ziehen-rand:var(--k-cyan);--tonlinie:rgba(255,255,255,.85);
+  --spielkopf:var(--z-laeuft);--bereich:rgba(255,214,94,.12);--bereich-rand:var(--k-sonne);
+  --welle:var(--k-hellblau);--welle-fuell:rgba(142,197,255,.2);--welle-mitte:rgba(142,197,255,.28);
+  /* Versions-Layer 1 (neueste) … 6 (älteste) */
+  --layer-1:var(--k-orange);--layer-2:var(--k-flieder);--layer-3:var(--k-hellblau);
+  --layer-4:var(--k-mint);--layer-5:var(--k-rosa);--layer-6:var(--k-sand);
+  --layer-alpha-1:1;--layer-alpha-2:.72;--layer-alpha-3:.56;--layer-alpha-4:.44;--layer-alpha-5:.34;--layer-alpha-6:.26;
+  /* Alte Namen aus Werkstatt 2 – damit übernommener Code sofort passt */
+  --bg:var(--grund);--fg:var(--text);--mut:var(--text-leise);--lin:var(--linie);--lin2:var(--linie2);
+  --gold:var(--k-orange);--goldfg:var(--text-auf-farbe);--hi:#3a3016;--bar:var(--flaeche);--karte:var(--flaeche);
+  --warn:var(--z-warn);--blau:var(--k-hellblau);--band1:#0b0c15;--band2:#161827;--ok:var(--z-ok);--rot:var(--z-fehler);
+  --c-orig:var(--k-flieder);--c-rein:var(--k-mint);--c-tim:var(--k-orange);--c-ton:var(--k-rot);--c-ende:#6f7490;
+  --c-neu:#ece8f4;--c-spaet:var(--k-hellblau);--c-frueh:var(--k-rosa);--c-pruef:var(--z-warn);
+  background:var(--grund);color:var(--text);-webkit-tap-highlight-color:transparent;
+}
+:root[data-thema=konsole] body{background:var(--grund);color:var(--text);font-family:var(--schrift);font-stretch:semi-condensed;letter-spacing:.01em}
+:root[data-thema=konsole] h1{color:var(--akzent);font-family:var(--schrift);font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+:root[data-thema=konsole] ::selection{background:rgba(98,216,255,.35);color:#fff}
+:root[data-thema=konsole] :focus-visible{outline:3px solid var(--z-fokus);outline-offset:2px}
+:root[data-thema=konsole] a{color:var(--k-hellblau)}
+
+/* ---------- Rahmen: Balken oben + Arm links mit runder Ecke (Ellbogen), Kappe rechts, Titel im Balken */
+/* Anordnung (position, display, margin …) steht in :where() mit Spezifität 0 – die Seite darf sie jederzeit
+   überschreiben (z. B. position:sticky oder absolute Fähnchen); Aussehen und Maße haben die starke Spezifität. */
+:where(:root[data-thema=konsole] .rahmen){position:relative;margin:0 0 14px;min-width:0}
+:root[data-thema=konsole] .rahmen{
+  --farbe:var(--k-orange);
+  isolation:isolate;border:0;border-radius:0;background:transparent;box-shadow:none;
+  padding:calc(var(--rahmen-balken) + var(--rahmen-innen)) 0 var(--rahmen-innen) calc(var(--rahmen-arm) + var(--rahmen-innen));
+}
+:root[data-thema=konsole] .rahmen::before{
+  content:"";position:absolute;z-index:-1;left:0;top:0;bottom:0;right:calc(var(--rahmen-kappe) + var(--rahmen-fuge));
+  border:solid var(--farbe);border-width:var(--rahmen-balken) 0 0 var(--rahmen-arm);
+  border-radius:var(--rahmen-ellbogen) 0 0 0;pointer-events:none;
+}
+:root[data-thema=konsole] .rahmen::after{
+  content:"";position:absolute;z-index:-1;top:0;right:0;width:var(--rahmen-kappe);height:var(--rahmen-balken);
+  background:var(--farbe);border-radius:0 999px 999px 0;pointer-events:none;
+}
+:root[data-thema=konsole] .rahmen-titel,:root[data-thema=konsole] .rahmen-info{
+  position:absolute;top:0;margin:0;height:var(--rahmen-balken);padding:0 8px;background:var(--grund);
+  border:0;color:var(--farbe);font:700 15px/var(--rahmen-balken) var(--schrift);letter-spacing:.1em;text-transform:uppercase;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%;
+}
+:root[data-thema=konsole] .rahmen-titel{left:calc(var(--rahmen-ellbogen) + 6px)}
+:root[data-thema=konsole] .rahmen-info{right:calc(var(--rahmen-kappe) + var(--rahmen-fuge) + 10px);color:var(--text-leise);font-weight:600;letter-spacing:.06em;max-width:38%}
+/* Ellbogen unten links */
+:root[data-thema=konsole] .rahmen.unten{padding:var(--rahmen-innen) 0 calc(var(--rahmen-balken) + var(--rahmen-innen)) calc(var(--rahmen-arm) + var(--rahmen-innen))}
+:root[data-thema=konsole] .rahmen.unten::before{border-width:0 0 var(--rahmen-balken) var(--rahmen-arm);border-radius:0 0 0 var(--rahmen-ellbogen)}
+:root[data-thema=konsole] .rahmen.unten::after,:root[data-thema=konsole] .rahmen.unten>.rahmen-titel,:root[data-thema=konsole] .rahmen.unten>.rahmen-info{top:auto;bottom:0}
+/* Ellbogen oben rechts (gespiegelt) */
+:root[data-thema=konsole] .rahmen.rechts{padding:calc(var(--rahmen-balken) + var(--rahmen-innen)) calc(var(--rahmen-arm) + var(--rahmen-innen)) var(--rahmen-innen) 0}
+:root[data-thema=konsole] .rahmen.rechts::before{left:calc(var(--rahmen-kappe) + var(--rahmen-fuge));right:0;border-width:var(--rahmen-balken) var(--rahmen-arm) 0 0;border-radius:0 var(--rahmen-ellbogen) 0 0}
+:root[data-thema=konsole] .rahmen.rechts::after{right:auto;left:0;border-radius:999px 0 0 999px}
+:root[data-thema=konsole] .rahmen.rechts>.rahmen-titel{left:auto;right:calc(var(--rahmen-ellbogen) + 6px)}
+:root[data-thema=konsole] .rahmen.rechts>.rahmen-info{right:auto;left:calc(var(--rahmen-kappe) + var(--rahmen-fuge) + 10px)}
+/* Nur Balken, ohne Arm (für kleine Bereiche) */
+:root[data-thema=konsole] .rahmen.flach{padding-left:0}
+:root[data-thema=konsole] .rahmen.flach::before{border-left-width:0;border-radius:999px 0 0 999px;bottom:auto;height:var(--rahmen-balken);border-top-width:0;background:var(--farbe)}
+:root[data-thema=konsole] .rahmen.flach>.rahmen-titel{left:12px}
+
+/* ---------- Pillen (gefüllte Knöpfe). Farbe über --farbe, „an“-Farbe über --farbe-an */
+:where(:root[data-thema=konsole] .pille){position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;flex:0 0 auto;margin:0}
+:root[data-thema=konsole] .pille{
+  --farbe:var(--k-flieder);--ring:var(--farbe);
+  min-height:var(--tipp);min-width:var(--tipp);padding:0 var(--pille-pad);
+  border:0;border-radius:999px;background:var(--farbe);color:var(--text-auf-farbe);box-shadow:none;
+  font:600 16px/1.05 var(--schrift);letter-spacing:.07em;text-transform:var(--knopf-schreibweise);text-decoration:none;
+  cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;
+  transition:background-color var(--dauer) var(--kurve),color var(--dauer) var(--kurve),box-shadow var(--dauer) var(--kurve),transform var(--dauer-kurz) var(--kurve),filter var(--dauer-kurz) linear;
+}
+:root[data-thema=konsole] .pille svg{width:22px;height:22px;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+:root[data-thema=konsole] .pille svg.voll{fill:currentColor;stroke:none}
+/* Leuchtring: nur opacity wird animiert */
+:root[data-thema=konsole] .pille::after{
+  content:"";position:absolute;inset:-4px;border-radius:inherit;pointer-events:none;opacity:0;
+  box-shadow:0 0 0 3px var(--ring),0 0 20px 3px var(--ring);transition:opacity 220ms ease-out;
+}
+:root[data-thema=konsole] .pille:active,:root[data-thema=konsole] .pille.gedrueckt{transform:scale(.95);filter:brightness(1.18)}
+:root[data-thema=konsole] .pille:active::after,:root[data-thema=konsole] .pille.gedrueckt::after{opacity:.7;transition-duration:0s}
+:root[data-thema=konsole] .pille.blitz::after{animation:k-blitz 700ms ease-out 1}
+/* Größen und Formen */
+:root[data-thema=konsole] .haupt{--farbe:var(--k-orange)}
+:root[data-thema=konsole] .pille.haupt{min-height:52px;padding:0 26px;font-size:18px;font-weight:700}
+:root[data-thema=konsole] .pille.klein{min-height:var(--tipp-klein);padding:0 14px;font-size:14px}
+:root[data-thema=konsole] .pille.rund{width:var(--tipp);padding:0}
+:root[data-thema=konsole] .pille.rund[aria-pressed]::before,:root[data-thema=konsole] .pille.rund.schalter::before{display:none}
+:root[data-thema=konsole] .pille.haupt.rund{width:56px;min-height:56px}
+:root[data-thema=konsole] .pille.ende-links{border-radius:999px 8px 8px 999px}
+:root[data-thema=konsole] .pille.ende-rechts{border-radius:8px 999px 999px 8px}
+:root[data-thema=konsole] .pille.umriss{background:transparent;color:var(--farbe);box-shadow:inset 0 0 0 2px var(--farbe)}
+/* Schalter (aria-pressed oder .schalter): Lämpchen links, aus = hohl, an = gefüllt + Leuchten */
+:root[data-thema=konsole] .pille[aria-pressed]::before,:root[data-thema=konsole] .pille.schalter::before{
+  content:"";width:10px;height:10px;flex:0 0 auto;border-radius:50%;box-shadow:inset 0 0 0 2px currentColor;margin-left:-2px;
+}
+:root[data-thema=konsole] .pille[aria-pressed=false],:root[data-thema=konsole] .pille.schalter:not(.aktiv){background:var(--flaeche);color:var(--farbe);box-shadow:inset 0 0 0 2px var(--farbe)}
+:root[data-thema=konsole] .pille[aria-pressed=true],:root[data-thema=konsole] .pille.aktiv{--ring:var(--farbe-an,var(--z-aktiv));background:var(--farbe-an,var(--z-aktiv));color:var(--text-auf-farbe);box-shadow:var(--leuchten-aktiv)}
+:root[data-thema=konsole] .pille[aria-pressed=true]::before,:root[data-thema=konsole] .pille.schalter.aktiv::before{background:currentColor;box-shadow:none}
+:root[data-thema=konsole] .pille[aria-pressed=true][class*="layer-"],:root[data-thema=konsole] .pille.aktiv[class*="layer-"]{box-shadow:0 0 0 2px var(--grund),0 0 14px var(--farbe-an)}
+/* Gewählt (eine Wahl aus mehreren), läuft, Fehler, aus */
+:root[data-thema=konsole] .pille.gewaehlt,:root[data-thema=konsole] .pille[aria-selected=true],:root[data-thema=konsole] .pille[aria-current]:not([aria-current=false]){--ring:var(--z-gewaehlt);background:var(--z-gewaehlt);color:var(--text-auf-farbe);box-shadow:var(--leuchten-gewaehlt)}
+:root[data-thema=konsole] .pille.laeuft{--ring:var(--z-laeuft);background:var(--z-laeuft);color:var(--text-auf-farbe);box-shadow:var(--leuchten-laeuft)}
+:root[data-thema=konsole] .pille.laeuft::after{opacity:.5;animation:k-puls 1.4s ease-in-out infinite}
+:root[data-thema=konsole] .pille.fehler,:root[data-thema=konsole] .pille[aria-invalid=true]{--ring:var(--z-fehler);background:var(--z-fehler);color:var(--text-auf-farbe);box-shadow:var(--leuchten-fehler);animation:k-ruck 380ms ease-out 1}
+:root[data-thema=konsole] .pille:disabled,:root[data-thema=konsole] .pille[aria-disabled=true]{background:var(--z-aus);color:var(--z-aus-text);box-shadow:none;transform:none;filter:none;cursor:default}
+:root[data-thema=konsole] .pille:disabled::after,:root[data-thema=konsole] .pille[aria-disabled=true]::after{display:none}
+
+/* ---------- Alle übrigen <button> (ohne .pille): hohle Pille, gleiche Zustände */
+:root[data-thema=konsole] button:not(.pille){
+  --farbe:var(--k-pfirsich);
+  border:2px solid var(--linie2);border-radius:999px;background:var(--flaeche);color:var(--farbe);
+  font-family:var(--schrift);font-weight:600;letter-spacing:.04em;
+  transition:background-color var(--dauer) var(--kurve),color var(--dauer) var(--kurve),border-color var(--dauer) var(--kurve),box-shadow var(--dauer) var(--kurve),transform var(--dauer-kurz) var(--kurve),filter var(--dauer-kurz) linear;
+}
+:root[data-thema=konsole] button:not(.pille):active{transform:scale(.95);border-color:var(--farbe);box-shadow:0 0 0 2px var(--grund),0 0 14px var(--farbe);transition-duration:0s}
+:root[data-thema=konsole] button:not(.pille)[aria-pressed=true],:root[data-thema=konsole] button:not(.pille).aktiv,:root[data-thema=konsole] button:not(.pille).an{background:var(--farbe-an,var(--z-aktiv));border-color:var(--farbe-an,var(--z-aktiv));color:var(--text-auf-farbe);box-shadow:var(--leuchten-aktiv)}
+:root[data-thema=konsole] button:not(.pille)[aria-selected=true],:root[data-thema=konsole] button:not(.pille).gewaehlt{background:var(--z-gewaehlt);border-color:var(--z-gewaehlt);color:var(--text-auf-farbe);box-shadow:var(--leuchten-gewaehlt)}
+:root[data-thema=konsole] button:not(.pille).laeuft{background:var(--z-laeuft);border-color:var(--z-laeuft);color:var(--text-auf-farbe);box-shadow:var(--leuchten-laeuft)}
+:root[data-thema=konsole] button:not(.pille).fehler{background:var(--z-fehler);border-color:var(--z-fehler);color:var(--text-auf-farbe);box-shadow:var(--leuchten-fehler)}
+:root[data-thema=konsole] button:not(.pille):disabled{background:var(--z-aus);border-color:var(--z-aus);color:var(--z-aus-text);box-shadow:none;transform:none;opacity:1}
+
+/* ---------- Leisten und Segmente */
+:where(:root[data-thema=konsole] .leiste){display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0}
+:where(:root[data-thema=konsole] .leiste+.leiste){margin-top:8px}
+:where(:root[data-thema=konsole] .leiste .dehnen){flex:1 1 auto;min-width:0}
+:where(:root[data-thema=konsole] .seg){display:inline-flex;align-items:stretch;gap:3px;max-width:100%}
+:root[data-thema=konsole] .seg{border:0;border-radius:999px;overflow:visible;background:transparent}
+:root[data-thema=konsole] .seg>button,:root[data-thema=konsole] .seg>.pille{
+  --farbe:var(--k-hellblau);
+  min-height:var(--tipp-klein);border:0;border-radius:6px;background:var(--flaeche3);color:var(--farbe);
+  box-shadow:none;padding:0 12px;flex:1 1 auto;min-width:44px;font:600 15px/1 var(--schrift);letter-spacing:.05em;
+}
+:root[data-thema=konsole] .seg>button:first-child,:root[data-thema=konsole] .seg>.pille:first-child{border-radius:999px 6px 6px 999px;padding-left:16px}
+:root[data-thema=konsole] .seg>button:last-child,:root[data-thema=konsole] .seg>.pille:last-child{border-radius:6px 999px 999px 6px;padding-right:16px}
+:root[data-thema=konsole] .seg>button:only-child,:root[data-thema=konsole] .seg>.pille:only-child{border-radius:999px}
+:root[data-thema=konsole] .seg>[aria-pressed]::before{display:none}
+:root[data-thema=konsole] .seg>button[aria-pressed=true],:root[data-thema=konsole] .seg>button[aria-selected=true],:root[data-thema=konsole] .seg>button.gewaehlt,:root[data-thema=konsole] .seg>.pille[aria-pressed=true],:root[data-thema=konsole] .seg>.pille[aria-selected=true],:root[data-thema=konsole] .seg>.pille.gewaehlt{--ring:var(--z-gewaehlt);background:var(--z-gewaehlt);color:var(--text-auf-farbe);box-shadow:0 0 16px rgba(255,214,94,.45)}
+:root[data-thema=konsole] .seg .titel,:root[data-thema=konsole] .leiste .titel{color:var(--text-leise);font:700 12px/1 var(--schrift);letter-spacing:.14em;text-transform:uppercase}
+
+/* ---------- Fähnchen: Marke/Etikett, mit .stab als Fahne an einer Stange (z. B. über der Pianorolle) */
+:where(:root[data-thema=konsole] .fahne){position:relative;display:inline-flex;align-items:center;gap:5px}
+:root[data-thema=konsole] .fahne{
+  --farbe:var(--k-pfirsich);
+  height:26px;padding:0 11px 0 8px;
+  border:0;border-radius:4px 999px 999px 4px;background:var(--farbe);color:var(--text-auf-farbe);box-shadow:none;
+  font:700 13px/1 var(--schrift);letter-spacing:.07em;text-transform:uppercase;white-space:nowrap;
+}
+:root[data-thema=konsole] .fahne.stab{border-top-left-radius:0;border-bottom-left-radius:0}
+:root[data-thema=konsole] .fahne.stab::after{content:"";position:absolute;left:0;top:100%;width:2px;height:var(--stab,30px);background:var(--farbe);pointer-events:none}
+:root[data-thema=konsole] .fahne.stab::before{content:"";position:absolute;inset:-9px -4px;}/* Tippfläche ≥ 44 px */
+:root[data-thema=konsole] .fahne.notiz{--farbe:var(--k-flieder)}
+:root[data-thema=konsole] .fahne.info{--farbe:var(--k-hellblau)}
+:root[data-thema=konsole] .fahne.neu,:root[data-thema=konsole] .fahne.gewaehlt{--farbe:var(--z-gewaehlt)}
+:root[data-thema=konsole] .fahne.gut{--farbe:var(--z-ok)}
+:root[data-thema=konsole] .fahne.warn{--farbe:var(--z-warn)}
+:root[data-thema=konsole] .fahne.fehler{--farbe:var(--z-fehler)}
+:root[data-thema=konsole] .fahne.gewaehlt{box-shadow:0 0 0 2px var(--grund),0 0 12px rgba(255,214,94,.6)}
+
+/* ---------- Anzeigen, Meldungen, Lämpchen */
+:where(:root[data-thema=konsole] .anzeige){display:inline-flex;flex-direction:column;justify-content:center;align-items:center}
+:root[data-thema=konsole] .anzeige{
+  min-height:var(--tipp);padding:3px 16px;
+  border:0;border-radius:999px;background:var(--flaeche2);box-shadow:inset 0 0 0 1px var(--linie2);color:var(--k-orange);
+  font:600 21px/1.05 var(--schrift-zahl);font-variant-numeric:tabular-nums;letter-spacing:.05em;white-space:nowrap;
+}
+:root[data-thema=konsole] .anzeige small{color:var(--text-leise);font:700 11px/1.2 var(--schrift);letter-spacing:.14em;text-transform:uppercase}
+:root[data-thema=konsole] .zeit{color:var(--k-orange);font-family:var(--schrift-zahl);font-variant-numeric:tabular-nums}
+:where(:root[data-thema=konsole] .meldung){display:flex;align-items:center;gap:8px}
+:root[data-thema=konsole] .meldung{background:transparent;border:0;box-shadow:none;min-height:24px;font-size:14px;line-height:1.25;color:var(--text-leise)}
+:root[data-thema=konsole] .meldung::before,:root[data-thema=konsole] .led{content:"";display:inline-block;width:10px;height:10px;flex:0 0 auto;border-radius:50%;background:var(--linie2)}
+:root[data-thema=konsole] .meldung.gut{color:var(--z-ok)}:root[data-thema=konsole] .meldung.gut::before,:root[data-thema=konsole] .led.gut{background:var(--z-ok);box-shadow:0 0 8px var(--z-ok)}
+:root[data-thema=konsole] .meldung.warn{color:var(--z-warn)}:root[data-thema=konsole] .meldung.warn::before,:root[data-thema=konsole] .led.warn{background:var(--z-warn);box-shadow:0 0 8px var(--z-warn)}
+:root[data-thema=konsole] .meldung.fehler{color:var(--z-fehler)}:root[data-thema=konsole] .meldung.fehler::before,:root[data-thema=konsole] .led.fehler{background:var(--z-fehler);box-shadow:0 0 8px var(--z-fehler)}
+:root[data-thema=konsole] .meldung.laeuft{color:var(--z-laeuft)}:root[data-thema=konsole] .meldung.laeuft::before,:root[data-thema=konsole] .led.laeuft{background:var(--z-laeuft);box-shadow:0 0 8px var(--z-laeuft);animation:k-puls 1.4s ease-in-out infinite}
+:root[data-thema=konsole] .led.aktiv{background:var(--z-aktiv);box-shadow:0 0 8px var(--z-aktiv)}
+
+/* ---------- Eingaben */
+:root[data-thema=konsole] input[type=text],:root[data-thema=konsole] input[type=search],:root[data-thema=konsole] input[type=number],:root[data-thema=konsole] textarea,:root[data-thema=konsole] select{
+  background:var(--flaeche2);color:var(--text);border:2px solid var(--linie2);border-radius:14px;min-height:var(--tipp-klein);
+  font:16px/1.3 var(--schrift);padding:8px 12px;transition:border-color var(--dauer) var(--kurve),box-shadow var(--dauer) var(--kurve);
+}
+:root[data-thema=konsole] input:focus,:root[data-thema=konsole] textarea:focus,:root[data-thema=konsole] select:focus{outline:0;border-color:var(--z-aktiv);box-shadow:var(--leuchten-aktiv)}
+:root[data-thema=konsole] ::placeholder{color:var(--text-leise);opacity:1}
+/* Schieberegler: Füllstand optional per JS: el.style.setProperty('--wert', prozent+'%') */
+:root[data-thema=konsole] input[type=range]{-webkit-appearance:none;appearance:none;height:var(--tipp-klein);background:transparent;accent-color:var(--k-orange);touch-action:none;cursor:pointer}
+:root[data-thema=konsole] input[type=range]::-webkit-slider-runnable-track{height:10px;border-radius:999px;background:linear-gradient(90deg,var(--k-orange) var(--wert,0%),var(--flaeche3) var(--wert,0%));box-shadow:inset 0 0 0 1px var(--linie2)}
+:root[data-thema=konsole] input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:36px;height:28px;margin-top:-9px;border:0;border-radius:999px;background:var(--k-orange);box-shadow:0 0 0 3px var(--grund),0 0 12px rgba(255,159,69,.55)}
+:root[data-thema=konsole] input[type=range]:active::-webkit-slider-thumb{background:var(--z-aktiv);box-shadow:0 0 0 3px var(--grund),0 0 18px rgba(98,216,255,.8)}
+:root[data-thema=konsole] input[type=range]::-moz-range-track{height:10px;border-radius:999px;background:var(--flaeche3);box-shadow:inset 0 0 0 1px var(--linie2)}
+:root[data-thema=konsole] input[type=range]::-moz-range-progress{height:10px;border-radius:999px;background:var(--k-orange)}
+:root[data-thema=konsole] input[type=range]::-moz-range-thumb{width:36px;height:28px;border:0;border-radius:999px;background:var(--k-orange);box-shadow:0 0 0 3px var(--grund),0 0 12px rgba(255,159,69,.55)}
+:root[data-thema=konsole] input[type=range]:active::-moz-range-thumb{background:var(--z-aktiv)}
+
+/* ---------- Bühne (Canvas-Behälter), Karten, schwebende Felder, Andock-Leiste */
+/* Rand liegt als ::after über dem Canvas (ein inset-Schatten am Behälter wäre unter dem Canvas unsichtbar) */
+:where(:root[data-thema=konsole] .buehne){position:relative}
+:root[data-thema=konsole] .buehne{background:var(--rolle-grund);border:0;border-radius:14px;box-shadow:none;transition:box-shadow var(--dauer) var(--kurve)}
+:root[data-thema=konsole] .buehne::after{content:"";position:absolute;z-index:2;inset:0;border-radius:inherit;pointer-events:none;box-shadow:inset 0 0 0 1px var(--linie2);transition:box-shadow var(--dauer) var(--kurve)}
+:root[data-thema=konsole] .buehne.zieht{box-shadow:0 0 24px rgba(98,216,255,.32)}
+:root[data-thema=konsole] .buehne.zieht::after{box-shadow:inset 0 0 0 2px var(--z-aktiv),inset 0 0 22px rgba(98,216,255,.3)}
+:root[data-thema=konsole] .buehne.fehler{box-shadow:0 0 24px rgba(255,110,95,.32)}
+:root[data-thema=konsole] .buehne.fehler::after{box-shadow:inset 0 0 0 2px var(--z-fehler),inset 0 0 22px rgba(255,110,95,.3)}
+:root[data-thema=konsole] .karte{background:var(--flaeche);border:0;border-radius:18px;box-shadow:inset 0 0 0 1px var(--linie)}
+:root[data-thema=konsole] .schwebe{background:var(--flaeche2);color:var(--text);border:2px solid var(--k-orange);border-radius:18px;box-shadow:0 12px 32px rgba(0,0,0,.7)}
+:root[data-thema=konsole] .dock{background:var(--grund);border-top:0;box-shadow:0 -1px 0 var(--linie),0 -14px 28px rgba(0,0,0,.65)}
+
+/* ---------- Farb-Helfer (setzen --farbe am selben Element; nach den Bausteinen, damit sie gewinnen) */
+:root[data-thema=konsole] .f-orange{--farbe:var(--k-orange)}:root[data-thema=konsole] .f-flieder{--farbe:var(--k-flieder)}:root[data-thema=konsole] .f-hellblau{--farbe:var(--k-hellblau)}
+:root[data-thema=konsole] .f-pfirsich{--farbe:var(--k-pfirsich)}:root[data-thema=konsole] .f-sand{--farbe:var(--k-sand)}:root[data-thema=konsole] .f-mint{--farbe:var(--k-mint)}
+:root[data-thema=konsole] .f-rosa{--farbe:var(--k-rosa)}:root[data-thema=konsole] .f-rot{--farbe:var(--k-rot)}
+:root[data-thema=konsole] .layer-1{--farbe:var(--layer-1);--farbe-an:var(--layer-1)}:root[data-thema=konsole] .layer-2{--farbe:var(--layer-2);--farbe-an:var(--layer-2)}
+:root[data-thema=konsole] .layer-3{--farbe:var(--layer-3);--farbe-an:var(--layer-3)}:root[data-thema=konsole] .layer-4{--farbe:var(--layer-4);--farbe-an:var(--layer-4)}
+:root[data-thema=konsole] .layer-5{--farbe:var(--layer-5);--farbe-an:var(--layer-5)}:root[data-thema=konsole] .layer-6{--farbe:var(--layer-6);--farbe-an:var(--layer-6)}
+
+/* ---------- Bewegung */
+@keyframes k-puls{0%,100%{opacity:.25}50%{opacity:.85}}
+@keyframes k-blitz{0%{opacity:.95}100%{opacity:0}}
+@keyframes k-ruck{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}45%{transform:translateX(4px)}70%{transform:translateX(-2px)}}
+@media (hover:hover){:root[data-thema=konsole] .pille:not(:disabled):hover,:root[data-thema=konsole] button:not(.pille):not(:disabled):hover{filter:brightness(1.12)}}
+@media (prefers-reduced-motion:reduce){
+  :root[data-thema=konsole] *,:root[data-thema=konsole] *::before,:root[data-thema=konsole] *::after{transition-duration:0s!important;animation-duration:0s!important;animation-iteration-count:1!important}
+  :root[data-thema=konsole] .pille:active,:root[data-thema=konsole] .pille.gedrueckt,:root[data-thema=konsole] button:not(.pille):active{transform:none}
+  :root[data-thema=konsole] .pille.laeuft::after{opacity:.6}
+}
