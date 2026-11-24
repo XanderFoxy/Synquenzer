@@ -26,13 +26,23 @@ function vorbereiten(x, sr) {
       h[k] = si * w; s += h[k];
     }
     for (let k = 0; k < T; k++) h[k] /= s;
-    const n = Math.floor(x.length / D); y = new Float32Array(n);
-    for (let j = 0; j < n; j++) {
+    // symmetrisches FIR: je zwei Abgriffe zusammenfassen
+    const n = Math.floor(x.length / D), L = x.length; y = new Float32Array(n);
+    const j0 = Math.ceil(c / D), j1 = Math.min(n - 1, Math.floor((L - T + c) / D)), hc = h[c];
+    const rand = j => {
       const a = j * D - c; let acc = 0;
-      if (a >= 0 && a + T <= x.length) for (let k = 0; k < T; k++) acc += h[k] * x[a + k];
-      else for (let k = 0; k < T; k++) { const q = a + k; if (q >= 0 && q < x.length) acc += h[k] * x[q]; }
-      y[j] = fin(acc) ? acc : 0;
+      for (let k = 0; k < T; k++) { const q = a + k; if (q >= 0 && q < L) acc += h[k] * x[q]; }
+      return acc;
+    };
+    for (let j = 0; j < Math.min(j0, n); j++) y[j] = rand(j);
+    for (let j = j0; j <= j1; j++) {
+      const a = j * D - c, e = a + T - 1;
+      let acc = hc * x[a + c];
+      for (let k = 0; k < c; k++) acc += h[k] * (x[a + k] + x[e - k]);
+      y[j] = acc;
     }
+    for (let j = Math.max(j0, j1 + 1); j < n; j++) y[j] = rand(j);
+    for (let j = 0; j < n; j++) if (!fin(y[j])) y[j] = 0;
   }
   // Hochpass 80 Hz (Biquad, Butterworth)
   const w = 2 * Math.PI * 80 / fs, cw = Math.cos(w), al = Math.sin(w) / Math.SQRT2, a0 = 1 + al;
@@ -81,12 +91,13 @@ function merkmale(y, fs) {
   // Frequenzbänder: 24 je Oktave (100 Hz … 7 kHz), dreieckig, doppelte entfernt
   const fmax = Math.min(7000, fs * 0.45), mid = [];
   for (let f = 100; f <= fmax; f *= Math.pow(2, 1 / 24)) { const b = Math.round(f / df); if (!mid.length || b > mid[mid.length - 1]) mid.push(b); }
-  const B = mid.length - 2, bandLo = [], bandW = [];
+  const B = mid.length - 2, bLo = new Int32Array(B), bAn = new Int32Array(B + 1), wl = [];
   for (let b = 0; b < B; b++) {
-    const l = mid[b], c = mid[b + 1], h = mid[b + 2], w = [];
-    for (let k = l; k <= h; k++) w.push(k < c ? (k - l) / Math.max(1, c - l) : k === c ? 1 : (h - k) / Math.max(1, h - c));
-    bandLo.push(l); bandW.push(Float64Array.from(w));
+    const l = mid[b], c = mid[b + 1], h = mid[b + 2];
+    bLo[b] = l; bAn[b] = wl.length;
+    for (let k = l; k <= h; k++) wl.push(k < c ? (k - l) / Math.max(1, c - l) : k === c ? 1 : (h - k) / Math.max(1, h - c));
   }
+  bAn[B] = wl.length; const W = Float64Array.from(wl);
   const bHoch = mid.findIndex(b => b * df >= 4000) - 1;
   const lam = Math.pow(10, 3.5) / (N / 4);
   const kv0 = Math.round(250 / df), kv1 = Math.min(H - 1, Math.round(3000 / df));
@@ -102,8 +113,8 @@ function merkmale(y, fs) {
     Ev[f] = 10 * Math.log10(sv / N + 1e-14); Eh[f] = 10 * Math.log10(sh / N + 1e-14);
     const cur = ring[f % (MU + 1)], prv = ring[(f + 1) % (MU + 1)]; // prv = Rahmen f-MU
     for (let b = 0; b < B; b++) {
-      const lo = bandLo[b], w = bandW[b]; let s = 0;
-      for (let q = 0; q < w.length; q++) s += w[q] * mag[lo + q];
+      let s = 0, k = bLo[b];
+      for (let q = bAn[b], e = bAn[b + 1]; q < e; q++, k++) s += W[q] * mag[k];
       cur[b] = Math.log(1 + lam * s);
     }
     if (f >= MU) {
@@ -242,7 +253,11 @@ export function silben(x, sr, opt = {}) {
     hb /= Math.max(1, nb);
     const wert = 0.9 * Math.log(omax / odMed + 0.2) + 0.25 * Math.min(dR, 30) / 3 + 0.12 * Math.min(dL, 30) / 3 +
       0.5 * Math.max(lvl, -35) / 6 + 1.5 * (hb - hmin);
-    if (wert >= schwelle) kand.push({ m, wert, lvl, dR });
+    if (wert < schwelle) continue;
+    // es muss ein stimmhafter Kern folgen (Atmer, Klicks, Zischen allein zählen nicht)
+    let sth = 0; for (let j = m; j < m + ms(0.25) && j < n; j++) if (H[j] >= (opt._hv || 0.7) && Ev[j] > ref - 30) sth++;
+    if (sth < ms(opt._hd || 0.04)) continue;
+    kand.push({ m, wert, lvl, dR });
   }
   // je Umgebung (Standard 0,2 s) nur der stärkste Kandidat
   const abst = ms(opt.minAbstand != null ? +opt.minAbstand : 0.2);
