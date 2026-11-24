@@ -3,11 +3,12 @@
 // einfachen Ersatz statt abzustürzen. Alles bleibt auf dem Gerät (IndexedDB/localStorage über speicher.js).
 import * as speicher from './speicher.js';
 
-const M = { ph: {}, ton: {}, ue: {} };
+const M = { ph: {}, ton: {}, ue: {}, eg: {} };
 const bereit = Promise.all([
   import('./phonetik.js').then((m) => { M.ph = m; }).catch((e) => console.warn('phonetik.js fehlt', e)),
   import('./ton.js').then((m) => { M.ton = m; }).catch((e) => console.warn('ton.js fehlt', e)),
   import('./uebungen.js').then((m) => { M.ue = m; }).catch((e) => console.warn('uebungen.js fehlt', e)),
+  import('./eignung.js').then((m) => { M.eg = m; }).catch((e) => console.warn('eignung.js fehlt', e)),
 ]);
 
 // ================================================================ kleine Helfer
@@ -134,6 +135,24 @@ const grundton = (st = stimme()) => (st && st.kern && isFinite(st.kern[0]) ? Mat
 const zeilenVon = (lied, teil) => lied.zeilen.filter((z) => z.teil === teil && z.text);
 const gesungeneTeile = (lied) => lied.teile.filter((t) => zeilenVon(lied, t.id).length);
 
+// Transposition je Lied (Knopf in der Eignungs-Karte, Tonart-Regler der Zeile): Übungen, Lernweg und Warm-up folgen ihr.
+const transVon = (id) => { const a = speicher.hole('trans', {}) || {}; const x = Number(a[id]); return isFinite(x) ? Math.max(-12, Math.min(12, Math.round(x))) : 0; };
+function setzeTrans(id, x) { const a = { ...(speicher.hole('trans', {}) || {}) }; a[id] = x; speicher.merke('trans', a); }
+const transCache = new Map();
+function liedFuer(lied) {
+  const t = transVon(lied.id); if (!t) return lied;
+  const k = lied.id + ':' + t; if (transCache.has(k)) return transCache.get(k);
+  const sh = (m) => (isFinite(m) && m > 0 ? m + t : m);
+  const c = { ...lied, transponiert: t,
+    zeilen: lied.zeilen.map((z) => ({ ...z, silben: (z.silben || []).map((s) => ({ ...s, midi: sh(s.midi), ...(Array.isArray(s.noten) ? { noten: s.noten.map((n) => ({ ...n, midi: sh(n.midi) })) } : {}) })) })),
+    umfang: lied.umfang ? { tief: lied.umfang.tief + t, hoch: lied.umfang.hoch + t } : null,
+    umfangTeile: Object.fromEntries(Object.entries(lied.umfangTeile || {}).map(([k2, u]) => [k2, { tief: u.tief + t, hoch: u.hoch + t }])) };
+  transCache.set(k, c); return c;
+}
+const eignungVon = (lied) => (istFn(M.eg.eignung) ? versuch(() => M.eg.eignung(lied, stimme()), null) : null);
+const bibliothek = () => (istFn(M.ue.fuerStimme) ? versuch(() => M.ue.fuerStimme(stimme()), null) : null) || uebungsListe();
+let frisch = '';
+
 /** Noten einer Zeile mit Vokalen. t ab 0, in Sekunden bei Originaltempo. */
 function zeilenNoten(z, P) {
   const D = (z.silben || []).filter((s) => s && isFinite(s.midi) && s.midi > 0);
@@ -151,7 +170,7 @@ function zeilenNoten(z, P) {
 
 function planVon(lied) {
   const st = stimme();
-  if (istFn(M.ue.plan)) { const r = versuch(() => M.ue.plan(lied, st), null); if (Array.isArray(r)) return r; }
+  if (istFn(M.ue.plan)) { const r = versuch(() => M.ue.plan(liedFuer(lied), st), null); if (Array.isArray(r)) return r; }
   // Ersatz-Lernweg
   const stufen = ['Melodie auf Lippenflattern oder Summen', 'Nur die Vokale singen', 'Vokal-Übergänge der schweren Stellen langsam', 'Silben auf „da“ im Rhythmus', 'Text im halben Tempo', 'Text im Originaltempo', 'Mit Musik'];
   return gesungeneTeile(lied).map((t) => ({ teil: t.id, name: t.name, schwierig: [], schritte: stufen.map((s) => ({ uebung: '', text: s, zeilen: zeilenVon(lied, t.id).map((z) => z.id) })) }));
@@ -344,13 +363,14 @@ async function zeige() {
   raeumeAuf();
   const roh = location.hash.replace(/^#\/?/, '');
   if (roh.startsWith('profil=')) { liesProfilLink(); return zeige(); }
-  const [seite = 'start', a, b, c] = roh.split('/').map((x) => { try { return decodeURIComponent(x); } catch (e) { return x; } });
+  const [seite = 'start', a, b, c, d] = roh.split('/').map((x) => { try { return decodeURIComponent(x); } catch (e) { return x; } });
   const v = ansicht();
   let inhalt;
   try {
     await bereit;
     if (seite === 'lied' && a && b === 'teil' && c) inhalt = await seiteTeil(a, c);
-    else if (seite === 'lied' && a && b === 'zeile' && c) inhalt = await seiteZeile(a, c);
+    else if (seite === 'lied' && a && b === 'zeile' && c) inhalt = await seiteZeile(a, c, d === 'bau');
+    else if (seite === 'lied' && a && b === 'weg') inhalt = await seiteWeg(a);
     else if (seite === 'lied' && a) inhalt = await seiteLied(a);
     else if (seite === 'warmup') inhalt = await seiteWarmup(a || speicher.hole('letztesLied', 'the-wall'));
     else if (seite === 'stimme') inhalt = seiteStimme();
@@ -479,7 +499,10 @@ async function seiteLied(id) {
     await speicher.loescheLied(id); liedCache.delete(id); meldung('Lied gelöscht'); location.hash = '#start';
   } }, ic('loeschen'), 'Lied löschen'));
 
-  return [kopf, umfKarte, h('h2', null, 'Dein Lernweg'),
+  const eg = eignungVon(lied);
+  const egKarte = eg ? eignungsKarte(lied, eg) : null;
+  if (egKarte && frisch === id) { egKarte.classList.add('frisch'); frisch = ''; }
+  return [kopf, egKarte, umfKarte, h('h2', null, 'Dein Lernweg'),
     h('p', { class: 'leise klein', style: { marginTop: '-4px' } }, 'Teil für Teil: erst Melodie und Vokale, dann Übergänge, dann Text. Tippe einen Teil an.'),
     pfad,
     ohneGesang.length ? h('p', { class: 'leise klein' }, `Ohne Gesang: ${ohneGesang.map((t) => t.name).join(', ')} – Zeit zum Atmen.`) : null,
@@ -782,7 +805,7 @@ async function seiteWarmup(id) {
   if (!lied) return nichtGefunden();
   setzeKopf(`Warm-up · ${lied.titel}`, `#lied/${enc(lied.id)}`);
   const st = stimme(), ton = lied.tonart;
-  let schritte = istFn(M.ue.warmup) ? versuch(() => M.ue.warmup(lied, st), []) : [];
+  let schritte = istFn(M.ue.warmup) ? versuch(() => M.ue.warmup(liedFuer(lied), st), []) : [];
   if (!Array.isArray(schritte) || !schritte.length) {
     const u = lied.umfang || { tief: grundton() - 5, hoch: grundton() + 5 };
     schritte = [

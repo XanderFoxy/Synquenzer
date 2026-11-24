@@ -121,7 +121,7 @@ export function eignung(lied, stimme) {
   const ms = noten.map((n) => n.midi);
   const m = { tief: Math.min(...ms), hoch: Math.max(...ms), kern: [quantil(noten, 0.1), quantil(noten, 0.9)], mitte: quantil(noten, 0.5), spruenge7: 0, langePhrasen: 0, schnell: 0, imUebergang: 0 };
   const schwierig = [];
-  const stelle = (n, warum, gewicht, art) => schwierig.push({ zeile: n.zeile, zeilenText: n.zeilenText, silbe: n.silbe, midi: n.midi, warum, gewicht, art });
+  const stelle = (n, warum, gewicht, art) => schwierig.push({ zeile: n.zeile, zeilenText: n.zeilenText, silbe: n.silbe, midi: n.midi, vokal: n.vokal, warum, gewicht, art });
   let laengste = null, schnellste = null;
   for (const { z, noten: L, silben } of proZeile.values()) {
     for (let k = 1; k < L.length; k++) {
@@ -146,8 +146,8 @@ export function eignung(lied, stimme) {
     const k = n.zeile + '|' + n.i;
     if (gesehen.has(k)) continue;
     if (n.midi > st.hoch) { gesehen.add(k); stelle(n, `${nn(n.midi)} liegt ${ht(n.midi - st.hoch)} über deinem höchsten sicheren Ton (${nn(st.hoch)})`, 3 + (n.midi - st.hoch), 'hoehe'); continue; }
-    const ue = st.uebergaenge.find((p) => Math.abs(n.midi - p) <= 1);
-    if (ue != null && (n.dauer || 0) >= 0.35) { m.imUebergang++; gesehen.add(k); stelle(n, `${nn(n.midi)} gehalten, genau in deinem Stimm-Übergang (um ${nn(ue)}) – der Klang kippt hier leicht`, 1.6, 'uebergang'); continue; }
+    const ue = st.uebergaenge.find((p) => Math.round(n.midi) === p);
+    if (ue != null && (n.dauer || 0) >= 0.5) { m.imUebergang++; gesehen.add(k); stelle(n, `${nn(n.midi)} gehalten, genau in deinem Stimm-Übergang (um ${nn(ue)}) – der Klang kippt hier leicht`, 1.6, 'uebergang'); continue; }
     if (n.midi > st.kern[1] && n.vokal && AUSGLEICH[n.vokal]) { gesehen.add(k); stelle(n, `hoch (${nn(n.midi)}) auf ${n.vokal.toUpperCase()}: ${AUSGLEICH[n.vokal]}`, 2, 'vokal'); continue; }
     if (n.midi < st.tief) { gesehen.add(k); stelle(n, `${nn(n.midi)} liegt unter deinem tiefsten sicheren Ton (${nn(st.tief)})`, 1.5, 'tiefe'); }
   }
@@ -168,17 +168,18 @@ export function eignung(lied, stimme) {
   if (orig.ueberHoch) gruende.push(`Höchster Ton ${nn(m.hoch)}: ${ht(orig.ueberHoch)} über deinem höchsten sicheren Ton (${nn(st.hoch)}).`);
   if (orig.unterTief) gruende.push(`Tiefster Ton ${nn(m.tief)}: ${ht(orig.unterTief)} unter deinem tiefsten sicheren Ton (${nn(st.tief)}).`);
   if (m.imUebergang) gruende.push(`${m.imUebergang} gehaltene ${m.imUebergang === 1 ? 'Silbe liegt' : 'Silben liegen'} in deinem Stimm-Übergang.`);
-  if (m.spruenge7) gruende.push(`${m.spruenge7} große ${m.spruenge7 === 1 ? 'Sprung' : 'Sprünge'} (Quinte oder mehr).`);
+  if (m.spruenge7) gruende.push(`${m.spruenge7} ${m.spruenge7 === 1 ? 'großer Sprung' : 'große Sprünge'} (Quinte oder mehr).`);
   if (laengste && laengste.dauer > 4.5) gruende.push(`Längster Bogen ohne Pause: ${r1(laengste.dauer)} s (${zit(laengste.z.text)}).`);
   if (schnellste && schnellste.proSek > 5.5) gruende.push(`Schnellste Zeile: etwa ${r1(schnellste.proSek)} Silben pro Sekunde (${zit(schnellste.z.text)}).`);
 
   // --- Satz
   const ST = { passt: 'Passt zu deiner Stimme', 'mit Übung': 'Mit Übung erreichbar', 'noch weit': 'Noch ein weiter Weg' };
+  const ST2 = { passt: 'passt es gut', 'mit Übung': 'mit Übung erreichbar', 'noch weit': 'immer noch weit' };
   let text = `${ST[orig.stufe]} (Schätzung). `;
   if (orig.stufe === 'passt') text += `${titel} liegt dort, wo deine Stimme zu Hause ist – jetzt geht es um Vokale, Übergänge und Text.`;
   else if (orig.stufe === 'mit Übung') text += `Die meisten Töne liegen gut, einzelne Stellen brauchen gezielte Übung.`;
   else text += `In der Originaltonart liegt ${titel} deutlich außerhalb deiner sicheren Lage.`;
-  if (trans && mitT.punkte < orig.punkte) text += ` Um ${trans > 0 ? '+' : '−'}${Math.abs(trans)} transponiert: ${ST[mitT.stufe].toLowerCase()}.`;
+  if (trans && mitT.punkte < orig.punkte) text += ` Um ${trans > 0 ? '+' : '−'}${Math.abs(trans)} transponiert: ${ST2[mitT.stufe]}.`;
 
   // --- Weg in Wochen
   const weg = [];
@@ -189,14 +190,14 @@ export function eignung(lied, stimme) {
   if (nutzeTrans) add(`Transponiert singen (${trans > 0 ? '+' : '−'}${Math.abs(trans)})`, ['lippenflattern-melodie', 'vokale-melodie', 'silben-da'],
     `Sing das Lied ${ht(trans)} ${trans < 0 ? 'tiefer' : 'höher'} – höchster Ton dann ${nn(m.hoch + trans)}, Kernlage ${nn(m.kern[0] + trans)}–${nn(m.kern[1] + trans)}. Erst Melodie auf „brrr“, dann nur Vokale, dann Silben auf „da“. Der Knopf „Übungen transponieren“ stellt alles um.`, { trans });
   else add('Melodie und Vokale sicher', ['lippenflattern-melodie', 'vokale-melodie', 'silben-da'], 'Jede Zeile erst auf „brrr“, dann nur auf den Vokalen, dann auf „da“ – bis die Melodie ohne Text sitzt.');
-  const zielHoch = Math.min(m.hoch, st.hoch + 2);
+  const zielHoch = m.hoch <= st.hoch + 3 ? m.hoch : st.hoch + 2;
   if (m.hoch > st.kern[1]) add(`Höhe vorbereiten bis ${nn(zielHoch + 1)}`, ['ng-sirene', 'oktav-glissando', 'strohhalm'],
     `„Ng“-Sirenen und Oktav-Glissandi bis ${nn(zielHoch + 1)} – einen Halbton über dem Zielton ${nn(zielHoch)}, damit er im Lied Reserve hat. Leise und leicht, täglich 5 Minuten.`, { ton: { von: st.kern[0], bis: zielHoch + 1 } });
   if (hohe.length) {
     const beispiele = [...new Map(hohe.map((s) => [s.silbe.toLowerCase(), s])).values()].slice(0, 4);
     add('Vokal-Ausgleich auf hohen Tönen', ['register-ausgleich', 'naeh', 'vokal-uebergang'],
       `Die hohen Silben mit angeglichenem Vokal: ${beispiele.map((s) => `${zit(s.silbe)} (${nn(s.midi)})`).join(', ')}. ` +
-      [...new Set(hohe.map((s) => s.warum.split(': ')[1]).filter(Boolean))].slice(0, 3).join('; ') + '.');
+      ([...new Set(hohe.map((s) => AUSGLEICH[s.vokal]).filter(Boolean))].slice(0, 3).join('; ') || 'Oben den Vokal etwas abdunkeln, Kiefer nicht weiter öffnen') + '.');
   }
   if (m.imUebergang || (st.uebergaenge.some((p) => p >= m.tief && p <= m.hoch))) add('Register-Übergang glätten', ['register-ausgleich', 'messa-di-voce', 'arpeggio'],
     `Langsame Dreiklänge und an- und abschwellende Töne genau durch deinen Übergang (${st.uebergaenge.map(nn).join(', ') || 'Mitte'}) – der Klang soll ohne Bruch weitergehen.`);
