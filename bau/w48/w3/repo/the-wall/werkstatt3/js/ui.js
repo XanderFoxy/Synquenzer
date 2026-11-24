@@ -238,12 +238,12 @@ function blob(n, i, dt, dm, d, mx, art) {
   const s = Z.sicht, x0 = xOf(n.t0 + dt), x1 = xOf(n.t1 + dt);
   if (x1 < K - 2 || x0 > W + 2) return;
   const mid = n.midi + (n.cent || 0) / 100 + dm, yc = yOf(mid);
-  const hMax = Math.max(6, s.pph * 1.05), hMin = Math.max(2, s.pph * 0.16);
+  const hMax = Math.max(8, s.pph * 1.7), hMin = Math.max(2.5, s.pph * 0.22);
   const halb = (x) => {
     const c = Math.round(x - dt * s.pps) - K;
     const a = c >= 0 && c < W - K ? Math.max(-d[2 * c], d[2 * c + 1]) / mx : 0;
     const rand = Math.min(1, (x - x0) / 4, (x1 - x) / 4);
-    return Math.max(0.5, (hMin + (hMax - hMin) * Math.min(1, Math.pow(a, 0.7))) * 0.5 * Math.max(0.25, rand));
+    return Math.max(0.5, (hMin + (hMax - hMin) * Math.min(1, Math.pow(a, 0.5))) * 0.5 * Math.max(0.25, rand));
   };
   const xa = Math.max(K - 2, x0), xb = Math.min(W + 2, x1), st = Math.max(1.5, (xb - xa) / 300);
   g.beginPath();
@@ -271,7 +271,7 @@ function blob(n, i, dt, dm, d, mx, art) {
     let auf = false;
     for (let j = 0; j < L; j += schritt) {
       const v = k[j];
-      if (!(v > 0)) { auf = false; continue; }
+      if (!(v > 0) || Math.abs(v + dm - mid) > 2.5) { auf = false; continue; }
       const t = hop ? n.t0 + j * hop : n.t0 + (j + 0.5) / L * (n.t1 - n.t0);
       const x = xOf(t + dt), y = yOf(v + dm);
       if (auf) g.lineTo(x, y); else { g.moveTo(x, y); auf = true; }
@@ -619,7 +619,7 @@ async function analyse(v) {
 function ansichtPassen() {
   const v = Z.v; if (!v || !W) return;
   const s = Z.sicht, breite = W - K;
-  s.pps = breite / Math.min(v.dauer + 0.2, 12); s.t0 = -0.1;
+  s.pps = Math.max(breite / (v.dauer + 0.2), 70); s.t0 = -0.1;
   s.pph = klemm((H - R - B) / 24, 9, 22);
   tonhoeheMitte();
   begrenzen();

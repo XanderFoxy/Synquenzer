@@ -668,23 +668,31 @@ function melde(opt, a, text) { try { if (typeof opt.fortschritt === 'function') 
 
 // ---------------------------------------------------------------- Strom für das Modell: nur hörbare Strecken, 16 kHz, ≤ 30-s-Fenster
 
-const KERN = (() => { // gefensterter Sinc, 16 Nullstellen je Seite, 256 Stützstellen je Nullstelle
-  const Z = 16, R = 256, n = Z * R + 1, t = new Float32Array(n);
-  for (let i = 0; i < n; i++) { const u = i / R, s = u === 0 ? 1 : Math.sin(Math.PI * u) / (Math.PI * u), w = 0.42 + 0.5 * Math.cos(Math.PI * u / Z) + 0.08 * Math.cos(2 * Math.PI * u / Z); t[i] = s * w; }
-  return { Z, R, t };
-})();
-function zu16k(x, sr, a, b) {
-  const FS = 16000, r = sr / FS, fc = Math.min(1, 1 / r) * 0.94, n = Math.max(0, Math.floor((b - a) / r)), y = new Float32Array(n);
-  const hw = KERN.Z / fc, { R, t } = KERN, L = x.length;
-  for (let j = 0; j < n; j++) {
-    const c = a + j * r, k0 = Math.ceil(c - hw), k1 = Math.floor(c + hw);
-    let s = 0;
-    for (let k = k0; k <= k1; k++) {
-      if (k < 0 || k >= L) continue;
-      const u = Math.abs(k - c) * fc * R, i = u | 0; if (i + 1 >= t.length) continue;
-      s += x[k] * (t[i] + (t[i + 1] - t[i]) * (u - i));
+// Abtastratenwandlung auf 16 kHz: gefensterter Sinc (8 Nullstellen je Seite), vorberechnet für 128 Teilphasen
+const RS = {};
+function rsPlan(sr) {
+  if (RS[sr]) return RS[sr];
+  const r = sr / 16000, fc = Math.min(1, 1 / r) * 0.94, Z = 8, hw = Z / fc, T = 2 * Math.ceil(hw) + 1, P = 128, h = [];
+  for (let p = 0; p <= P; p++) {
+    const fr = p / P, a = new Float64Array(T), c = Math.ceil(hw);
+    for (let i = 0; i < T; i++) {
+      const d = (i - c - fr) * fc, ad = Math.abs(d);
+      if (ad >= Z) continue;
+      const si = d === 0 ? 1 : Math.sin(Math.PI * d) / (Math.PI * d), w = 0.42 + 0.5 * Math.cos(Math.PI * d / Z) + 0.08 * Math.cos(2 * Math.PI * d / Z);
+      a[i] = si * w * fc;
     }
-    y[j] = s * fc;
+    h.push(a);
+  }
+  return (RS[sr] = { r, T, P, h, c: Math.ceil(hw) });
+}
+function zu16k(x, sr, a, b) {
+  const { r, T, P, h, c } = rsPlan(sr), n = Math.max(0, Math.floor((b - a) / r)), y = new Float32Array(n), L = x.length;
+  for (let j = 0; j < n; j++) {
+    const pos = a + j * r, fl = Math.floor(pos), p = Math.round((pos - fl) * P), k0 = fl - c, w = h[p];
+    let s = 0;
+    if (k0 >= 0 && k0 + T <= L) for (let i = 0; i < T; i++) s += w[i] * x[k0 + i];
+    else for (let i = 0; i < T; i++) { const k = k0 + i; if (k >= 0 && k < L) s += w[i] * x[k]; }
+    y[j] = s;
   }
   return y;
 }
@@ -777,7 +785,9 @@ export async function woerter(x, sr, opt = {}) {
   }
   if (opt.modell && D.length) {
     if (!modellMoeglich()) return fertig(kandidaten(D), 'silben', 'Wörter ohne Text: Dieser Browser kann das Sprachmodell nicht ausführen. Gruppiert nur nach Silben und Pausen.');
-    const wie = await modellBereit(opt);
+    let wie;
+    try { wie = await modellBereit(opt); }
+    catch (e) { modellBeenden('Fehler'); return fertig(kandidaten(D), 'silben', 'Wörter ohne Text: Sprachmodell konnte nicht geladen werden (' + String((e && e.message) || e) + '). Gruppiert nur nach Silben und Pausen.'); }
     if (!wie) return fertig(kandidaten(D), 'silben', 'Wörter ohne Text: Sprachmodell nicht geladen (keine Zustimmung). Gruppiert nur nach Silben und Pausen.');
     const S = strom(x, sr, D), jeFenster = [];
     let lang = opt.sprache === 'de' || opt.sprache === 'en' ? opt.sprache : null;

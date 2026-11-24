@@ -46,7 +46,8 @@ summary{min-height:44px;display:flex;align-items:center;gap:8px;cursor:pointer;l
 summary::-webkit-details-marker{display:none}
 summary svg.ic{width:18px;height:18px;transition:transform .15s}
 details[open] summary svg.ic{transform:rotate(90deg)}
-#einstKurz{font-weight:500;color:var(--mut);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+summary .sl{white-space:nowrap}
+#einstKurz{flex:1 1 0;font-weight:500;color:var(--mut);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .feld{display:inline-flex;flex-direction:column;gap:2px;font-size:12px;color:var(--mut);font-weight:600}
 .feld input,.feld select{font:500 16px -apple-system,system-ui,sans-serif;color:var(--fg);background:var(--bar);border:1px solid var(--lin2);border-radius:10px;min-height:44px;padding:0 8px;width:84px;-webkit-user-select:text;user-select:text}
 .feld select{width:auto;min-width:72px}
@@ -122,6 +123,8 @@ button[aria-pressed=true]{background:var(--fg);color:var(--bg);border-color:var(
   #kopf h1{display:none}
   #bAuto{min-height:50px;font-size:16px}
   #stapelRahmen{max-height:none}
+  #transport{flex-wrap:wrap;overflow:visible}
+  #transport .zeit{flex:1 1 100px}
   .feld input{width:70px}
 }
 </style>
@@ -142,7 +145,7 @@ button[aria-pressed=true]{background:var(--fg);color:var(--bg);border-color:var(
         <span id="dateiInfo">WAV, MP3, M4A oder AIFF</span>
       </div>
       <details id="einst">
-        <summary><svg class="ic" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>Takt &amp; Tonart <span id="einstKurz"></span></summary>
+        <summary><svg class="ic" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg><span class="sl">Takt &amp; Tonart</span> <span id="einstKurz"></span></summary>
         <div class="felder">
           <label class="feld">BPM<input id="fBpm" type="number" inputmode="decimal" min="40" max="240" step="0.01" value="120"></label>
           <label class="feld">Taktart<select id="fTaktart"><option>4/4</option><option>3/4</option><option>2/4</option><option>6/8</option></select></label>
