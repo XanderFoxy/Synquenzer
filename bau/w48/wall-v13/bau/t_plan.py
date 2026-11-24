@@ -31,10 +31,31 @@ def haupt_anker():
             off = H_HAND.get(k, {}).get('off', e['off'])
             sp, ko = z['t_orig'] + off, z['konsonant_s'] + off; herkunft = 'Hüllkurve E5/v7 (r=%.2f)' % e['corr'] if k not in H_HAND else 'Sichtprüfung'
         ziel = H_ZIEL.get(k, z['ziel_t'])
-        out.append(dict(id=k, text=z['text'], teil=z['teil'], zeile=z['zeile'], src_peak=sp, src_kons=min(ko, sp - 0.004), tgt_peak=ziel,
+        vok = sp - (z['t_orig'] - z['vokal_t'])
+        out.append(dict(id=k, text=z['text'], teil=z['teil'], zeile=z['zeile'], src_peak=sp, src_kons_zk=min(ko, sp - 0.004), src_vokal=min(vok, sp - 0.002),
+                        akzent=z.get('erster_einsatz_t') is not None, tgt_peak=ziel,
                         ziel_zk=z['ziel_t'], t_orig=z['t_orig'], t_v12=z['t_v12'], herkunft=herkunft, art='silbe'))
     out.sort(key=lambda a: a['src_peak'])
     return out
+
+
+def anlaut(mk, a, HOP=120):
+    """Starrer Anlaut: Akzent-Silben (see, sake, your, the) behalten den ganzen Vorlauf der Zielkarte (s + erster Vokal-Teil).
+    Sonst: zusammenhängender stimmloser/zischender Teil direkt vor dem Vokal-Einsatz, mindestens 25 ms vor dem Vokal-Einsatz;
+    nie früher als der Zielkarten-Anlaut. Stimmhafte Vorläufe (l, m, n, w, Rest des Vokals davor) bleiben dehnbar."""
+    if a['akzent']: a['src_kons'] = a['src_kons_zk']; a['anlaut_art'] = 'Akzent (ganzer Vorlauf)'; return
+    r, lvl, hf = mk['r'], mk['lvl'], mk['hf']
+    kv = int(a['src_vokal'] * SR / HOP); kmin = int(a['src_kons_zk'] * SR / HOP)
+    k = kv
+    while k - 1 >= kmin:
+        f = k - 1
+        kons = lvl[f] > -62 and (r[f] < 0.55 or hf[f] - lvl[f] > -8)
+        still_kurz = lvl[f] <= -62 and k - 1 > kmin and kv - k < int(0.25 * SR / HOP)
+        if kons or still_kurz: k = f
+        else: break
+    start = min(k * HOP / SR, a['src_vokal'] - 0.025)
+    a['src_kons'] = max(start, a['src_kons_zk'])
+    a['anlaut_art'] = 'stimmlos %d ms' % round((a['src_vokal'] - k * HOP / SR) * 1000) if k < kv else 'stimmhaft (25 ms)'
 
 
 def sprech_bloecke(x_src, ref, versatz_such=0.08):
