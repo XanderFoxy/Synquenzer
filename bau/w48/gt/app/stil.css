@@ -414,3 +414,6 @@ details.ueb .pfeil { transition: transform .2s ease; }
 .hand-taste.schwarz.drin { background: color-mix(in srgb, var(--vi2) 55%, #2b1d24); }
 .hand-taste.an { background: var(--verlauf); color: #fff; border-color: transparent; }
 .knopf:disabled { opacity: .45; }
+/* Wellen liegen über dem Mikrofon-Knopf: Tipps müssen durch sie hindurch zum Knopf gehen (iPhone-Fehler „Knopf ohne Funktion“) */
+.mic-ring .welle, .held::after, .held-kugeln { pointer-events: none; }
+.mic-ring .rund-knopf { position: relative; z-index: 2; }
