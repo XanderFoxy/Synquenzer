@@ -5,7 +5,8 @@
 //
 // export function verfolgen(x, sr, hop=0.005, opt={}) → {t, f0, sicher, pegel, hop, sr}
 //        t/f0/sicher/pegel: Float32Array je Rahmen (t = i·hop). f0 in Hz, 0 = stimmlos. sicher 0–1. pegel dB.
-//        opt: fmin (70), fmax (1100), schwelle (0.15), stimmlos (0.35 = Kosten „stimmlos“, höher = mehr stimmhaft)
+//        opt: fmin (70), fmax (1100), schwelle (0.15), stimmlos (0.35 = Kosten „stimmlos“, höher = mehr stimmhaft),
+//             fortschritt(prozent) – optionaler Rückruf (z. B. im Worker für {typ:'stand'})
 // export function noten(spur, opt={})  → [{id, t0, t1, midi, cent, f0Mittel, kurve, hop, i0, i1, pegel, sicher, streuung}]
 //        kurve: Array der Tonhöhe je Rahmen als MIDI-Kommazahl (69 = A4), kurve[j] gilt bei t0 + j·hop.
 //        midi = nächste Halbtonstufe der Notenmitte, cent = Abweichung der Mitte davon (−50…+50).
@@ -14,7 +15,7 @@
 // export function korrigieren(x, sr, noten, ziel={}) → Float32Array (gleiche Länge)
 //        ziel: {skala:'chromatisch'|'dur'|'moll'|'C-Dur'|'a-Moll'|…, grundton:0–11|'C'|'Fis'|…, stufen:[0,2,4…],
 //               staerke:0–1 (1), uebergang_ms (50 = Nachstimm-Geschwindigkeit), vibratoErhalten (true),
-//               drift:0–1 (0.5 = langsames Wegdriften innerhalb der Note mit ausgleichen)}
+//               drift:0–1 (0.5 = langsames Wegdriften innerhalb der Note mit ausgleichen), fortschritt(prozent)}
 //        Je Note: note.zielMidi (feste Zielstufe, z. B. nach Ziehen) und note.zielCent (Feinversatz) haben Vorrang.
 // export function verschieben(x, sr, note, cent) → Float32Array (nur diese Note um cent verschoben, Rest unverändert)
 // export function korrigierteNoten(noten, ziel) → neue Noten so, wie sie nach korrigieren() klingen (für die Anzeige)
@@ -104,7 +105,9 @@ export function verfolgen(x, sr, hop = 0.005, opt = {}) {
   const tmpV = new Float64Array(64), tmpT = new Int32Array(64);
   let pPrev = -1e9, eAcc = 0;
 
+  const melde = typeof opt.fortschritt === 'function' ? opt.fortschritt : null;
   for (let k = 0; k < N; k++) {
+    if (melde && (k & 4095) === 0) melde(Math.round(k / N * 90));
     let p = Math.round(k * hop * srd) - off + pad;
     if (p < 0) p = 0;
     if (p + W + L >= xp.length) p = xp.length - W - L - 1;
@@ -261,6 +264,7 @@ export function verfolgen(x, sr, hop = 0.005, opt = {}) {
     if (Math.abs(mi[k] - med) > 4) weg.push(k);
   }
   for (const k of weg) { f0[k] = 0; sicher[k] = 0; }
+  if (melde) melde(100);
   return { t: tA, f0, sicher, pegel, hop, sr };
 }
 
@@ -523,7 +527,7 @@ function kurven(noten, ziel, N, hop) {
 const HANN_N = 2048;
 const HANN = (() => { const h = new Float32Array(HANN_N + 2); for (let i = 0; i <= HANN_N + 1; i++) h[i] = 0.5 * (1 + Math.cos(Math.PI * Math.min(1, i / HANN_N))); return h; })();
 
-function psola(x, sr, hop, f0g, sh) {
+function psola(x, sr, hop, f0g, sh, melde = null) {
   const n = x.length, H = hop * sr, NF = f0g.length;
   const y = new Float32Array(n);
   // stimmhafte Bereiche mit Verschiebung
@@ -577,7 +581,9 @@ function psola(x, sr, hop, f0g, sh) {
       ws[dst + i] += w;
     }
   };
+  let gemeldet = -1;
   for (let k = 0; k < K;) {
+    if (melde && ((k / K * 20) | 0) !== gemeldet) { gemeldet = (k / K * 20) | 0; melde(gemeldet * 5); }
     if (R[k] < 0) { korn(k, A[k]); k++; continue; }
     const b = R[k]; let k1 = k; while (k1 + 1 < K && R[k1 + 1] === b) k1++;
     // Synthese: Abstand = örtliche Periode / Verhältnis, Korn = nächstliegende Analyse-Marke
@@ -639,7 +645,10 @@ export function korrigieren(x, sr, nn, ziel = {}) {
   const hop = nn[0].hop ?? 0.005;
   const N = Math.ceil(x.length / sr / hop) + 2;
   const { f0g, sh } = kurven(nn, ziel, N, hop);
-  return psola(x, sr, hop, f0g, sh);
+  const melde = typeof ziel.fortschritt === 'function' ? ziel.fortschritt : null;
+  const y = psola(x, sr, hop, f0g, sh, melde);
+  if (melde) melde(100);
+  return y;
 }
 
 export function verschieben(x, sr, note, cent) {
@@ -687,4 +696,3 @@ export function noteVerschoben(note, cent) {
   const kurve = note.kurve.map((v, j) => Math.round((v + cent / 100 * Math.min(1, (j + 1) / nR, (K - j) / nR)) * 1000) / 1000);
   return baueNote({ ...note, kurve });
 }
-export const _intern = { psola: (...a) => psola(...a), kurven: (...a) => kurven(...a), marken: (...a) => marken(...a) };
