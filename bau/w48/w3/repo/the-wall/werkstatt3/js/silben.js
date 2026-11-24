@@ -346,14 +346,14 @@ function ausrichtenDP(T, D, freiRand) {
   const pause = D.map((d, j) => (j === 0 ? 9 : d.t0 - D[j - 1].t1));
   const C = new Float64Array((K + 1) * (J + 1)).fill(INF), W = new Uint8Array((K + 1) * (J + 1));
   const ix = (k, j) => k * (J + 1) + j;
-  const ueberD = j => 0.55 + 0.6 * (D[j].staerke || 0);
-  const ueberT = () => 1.0;
+  const ueberD = (j, rand) => (rand ? 0.45 : 0.5 + 0.5 * (D[j].staerke || 0));
+  const ueberT = () => 0.9;
   const passt = (k, j) => {
     let c = 0;
-    const t = T[k];
+    const t = T[k], p = pause[j];
     if (t.erw != null) c += 0.8 * Math.min(3, Math.abs(D[j].t0 - t.erw) / 0.3);
-    if (t.zs === true && pause[j] < 0.25) c += 0.35;
-    if (t.zs === false && pause[j] > 0.8) c += 0.35;
+    if (t.zs === true) c += p >= 1 ? -0.3 : p >= 0.3 ? -0.1 : 0.2;   // Zeilenanfang nach Pause
+    else if (t.zs === false && p >= 1) c += 1.5;                     // lange Pause mitten in der Zeile: unwahrscheinlich
     return c;
   };
   C[0] = 0;
@@ -361,7 +361,7 @@ function ausrichtenDP(T, D, freiRand) {
     const i = ix(k, j); if (k === 0 && j === 0) continue;
     let best = INF, w = 0;
     if (k > 0 && j > 0) { const c = C[ix(k - 1, j - 1)] + passt(k - 1, j - 1); if (c < best) { best = c; w = 1; } }
-    if (j > 0) { const c = C[ix(k, j - 1)] + ueberD(j - 1); if (c < best) { best = c; w = 2; } }
+    if (j > 0) { const c = C[ix(k, j - 1)] + ueberD(j - 1, freiRand && (k === 0 || k === K)); if (c < best) { best = c; w = 2; } }
     if (k > 0) { const c = C[ix(k - 1, j)] + ((freiRand && (j === 0 || j === J)) ? 0.001 : ueberT()); if (c < best) { best = c; w = 3; } }
     C[i] = best; W[i] = w;
   }
@@ -379,11 +379,14 @@ function zusammenbauen(quellWoerter, D, opt) {
   const deutsch = opt.deutsch;
   const T = [];
   quellWoerter.forEach((w, wi) => {
-    let teile = silbenTeilen(w.text, deutsch);
+    // Silben: vorgegeben (w.silben = [{text, t}]) oder per Faustregel geteilt
+    const vor = Array.isArray(w.silben) && w.silben.length ? w.silben : null;
+    let teile = vor ? vor.map(q => String(q.text != null ? q.text : '')) : silbenTeilen(w.text, deutsch);
     if (!teile.length) teile = [w.text];
     const zs = w.zeile != null ? (wi === 0 || quellWoerter[wi - 1].zeile !== w.zeile) : null;
+    const a = fin(w.start) ? w.start : fin(w.t0) ? w.t0 : null, e = fin(w.end) ? w.end : fin(w.t1) ? w.t1 : a != null ? a + 0.3 * teile.length : null;
     teile.forEach((tx, q) => {
-      const erw = w.start != null ? w.start + (Math.max(w.end, w.start + 0.05) - w.start) * q / teile.length : null;
+      const erw = vor && fin(+vor[q].t) ? +vor[q].t : a != null ? a + (Math.max(e, a + 0.05) - a) * q / teile.length : null;
       T.push({ wi, text: tx, zs: q === 0 ? zs : (zs == null ? null : false), erw });
     });
   });
@@ -758,10 +761,13 @@ function zurueckLegen(woerterJeFenster, S, D) {
 export async function woerter(x, sr, opt = {}) {
   const D = (opt.silben || silben(x, sr, opt)).slice().sort((a, b) => a.t0 - b.t0);
   const fertig = (arr, quelle, hinweis) => { arr.quelle = quelle; arr.hinweis = hinweis; return arr; };
-  if (opt.text && String(opt.text).trim()) {
-    const zeilen = String(opt.text).split(/\r?\n/).map(z => z.trim()).filter(Boolean), qw = [];
-    zeilen.forEach((z, zi) => z.split(/\s+/).forEach(w => { if (w.replace(/[^\p{L}\p{N}]/gu, '')) qw.push({ text: w, zeile: zi }); }));
-    const deutsch = opt.sprache === 'de' || (opt.sprache !== 'en' && istDeutsch(opt.text));
+  if (Array.isArray(opt.text) ? opt.text.length : opt.text && String(opt.text).trim()) {
+    let qw = [];
+    if (Array.isArray(opt.text)) qw = opt.text.filter(w => w && w.text != null).map(w => Object.assign({}, w, { text: String(w.text) }));
+    else String(opt.text).split(/\r?\n/).map(z => z.trim()).filter(Boolean)
+      .forEach((z, zi) => z.split(/\s+/).forEach(w => { if (w.replace(/[^\p{L}\p{N}]/gu, '')) qw.push({ text: w, zeile: zi }); }));
+    const alles = qw.map(w => w.text).join(' ');
+    const deutsch = opt.sprache === 'de' || (opt.sprache !== 'en' && istDeutsch(alles));
     const out = zusammenbauen(qw, D, { deutsch, quelle: 'text', freiRand: true });
     return fertig(out, 'text', 'Bekannter Text auf die erkannten Silben gelegt (ohne Sprachmodell). Unsichere Stellen: Silben mit geschaetzt=true oder text=null.');
   }
