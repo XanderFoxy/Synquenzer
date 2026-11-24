@@ -164,6 +164,148 @@ a.lad:focus-visible,.anh .vb:focus-visible{outline:3px solid var(--blau);outline
 #lb .lbs img{display:block;width:100%;max-width:856px;height:auto;margin:0 auto}
 .fuss{margin-top:28px;font-size:15px;color:var(--mut)}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+/* ===== Look 2 (24.11.2026): Dashboard, Ampel-Kacheln, Schritt-Häkchen, Text-Kacheln, Zeitstrahl, sanfte Animationen ===== */
+:root{--hero1:#1f4f8f;--hero2:#2a7d86;--hero-i:#fff;--sch:0 1px 2px rgba(20,30,40,.06),0 6px 20px rgba(20,30,40,.07);--r:20px;--bg:#f3f4f1}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--hero1:#1c2f4f;--hero2:#173d42;--sch:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);--bg:#111214}}
+:root[data-theme="dark"]{--hero1:#1c2f4f;--hero2:#173d42;--sch:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);--bg:#111214}
+html{scroll-padding-top:76px}
+body::before{z-index:31}
+.w{padding-top:max(12px,env(safe-area-inset-top,0px))}
+h2{display:flex;align-items:center;gap:10px;font-size:23px;letter-spacing:-.01em;margin:34px 0 14px}
+h2 .hi{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;background:var(--soft);color:var(--blau);flex:none}
+h2 .hi .i{width:20px;height:20px}
+/* Kopf */
+.hero{position:relative;overflow:hidden;border-radius:26px;padding:20px 18px 16px;color:var(--hero-i);background:linear-gradient(135deg,var(--hero1),var(--hero2));box-shadow:var(--sch)}
+.hero::after{content:"";position:absolute;right:-60px;top:-70px;width:220px;height:220px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,255,255,.18),rgba(255,255,255,0));pointer-events:none}
+.hero-in{display:flex;align-items:center;gap:14px;position:relative}
+.hero-txt{flex:1;min-width:0}
+.hero-k{margin:0 0 2px;font-size:14px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;opacity:.82}
+.hero h1{font-size:27px;letter-spacing:-.02em;margin:0 0 4px;color:#fff}
+.hero .heute-dat{font-size:17px;font-weight:600;opacity:.92}
+.ring{position:relative;width:84px;height:84px;flex:none;display:grid;place-items:center;text-align:center}
+.ring svg{position:absolute;inset:0;width:84px;height:84px;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:7}
+.ring .r0{stroke:rgba(255,255,255,.22)}
+.ring .r1{stroke:#fff;stroke-linecap:round;stroke-dasharray:213.6;stroke-dashoffset:213.6;transition:stroke-dashoffset .8s cubic-bezier(.2,.8,.2,1)}
+.ring b{display:block;font-size:22px;line-height:1;font-variant-numeric:tabular-nums}
+.ring small{display:block;font-size:12px;opacity:.85;margin-top:2px}
+.suche{position:relative;margin-top:14px}
+.suche .i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--mut);pointer-events:none}
+.suche input{width:100%;min-height:52px;border-radius:16px;border:0;padding:0 14px 0 44px;font:inherit;font-size:17px;background:var(--card);color:var(--ink);box-shadow:0 2px 10px rgba(0,0,0,.12);-webkit-appearance:none;appearance:none}
+.suche input:focus-visible{outline:3px solid #fff;outline-offset:2px}
+.qn{display:block;font-size:15px;font-weight:600;margin:8px 2px 0;min-height:0}
+.qn:empty{display:none}
+.weg{display:none!important}
+/* Sprungleiste */
+.sprung{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:12px -16px 0;padding:8px 16px;background:color-mix(in srgb,var(--bg) 95%,transparent);-webkit-backdrop-filter:saturate(1.4) blur(12px);backdrop-filter:saturate(1.4) blur(12px)}
+.sprung::-webkit-scrollbar{display:none}
+.sprung a{flex:none;display:inline-flex;align-items:center;gap:7px;min-height:44px;padding:0 15px;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--ink);text-decoration:none;font-size:16px;font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.05);transition:background .2s,color .2s,transform .15s}
+.sprung a .i{width:18px;height:18px;color:var(--blau)}
+.sprung a.akt{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.sprung a.akt .i{color:var(--bg)}
+.sprung a:active{transform:scale(.96)}
+/* Heute */
+.heute{border:0;border-radius:24px;padding:18px;box-shadow:var(--sch);position:relative;overflow:hidden;margin-top:14px}
+.heute::before{content:"";position:absolute;inset:0 0 auto;height:6px;background:var(--c,var(--blau))}
+.heute h2{display:block;font-size:23px}
+.heute ol.schritte li{background:var(--card)}
+/* Ampel-Kacheln */
+.fl{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.fl li{min-width:0}
+.fl a{position:relative;display:flex;flex-direction:column;height:100%;min-height:170px;padding:14px;border:0;border-radius:var(--r);background:var(--cb);box-shadow:var(--sch);overflow:hidden;transition:transform .2s}
+.fl a:active{transform:scale(.97)}
+.fl a::after{content:"";position:absolute;left:0;right:0;bottom:0;height:5px;background:var(--c)}
+.fl .zahl{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;color:var(--ink)}
+.fl .zahl b{display:inline;font-size:40px;line-height:1;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.fl .zahl b.wort{font-size:28px}
+.fl .zahl b .i{width:36px;height:36px;stroke-width:2.6;vertical-align:-6px}
+.fl .zahl small{font-size:15px;font-weight:700;color:var(--ink);opacity:.8}
+.fl .pkt{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--c);margin-bottom:8px;box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 25%,transparent)}
+.fl li.a-rot .pkt{animation:puls 1.8s ease-in-out infinite}
+.fl .ft{display:block;font-size:16px;font-weight:700;line-height:1.3;margin-top:8px}
+.fl .fd{display:block;font-size:14px;font-weight:600;color:var(--mut);margin-top:auto;padding-top:8px}
+.fl li.a-gy a{opacity:.7}
+.fl li.a-gy .ft{text-decoration:line-through;text-decoration-thickness:1px}
+@keyframes puls{50%{box-shadow:0 0 0 8px color-mix(in srgb,var(--c) 0%,transparent)}}
+/* Text-Kacheln */
+.txg{display:grid;gap:12px}
+.tx{background:var(--card);border-radius:var(--r);box-shadow:var(--sch);padding:14px 14px 4px;border-top:5px solid var(--c,var(--blau))}
+.tx-k{display:flex;gap:12px;align-items:center;margin-bottom:10px}
+.tx-n{width:42px;height:42px;border-radius:13px;flex:none;display:grid;place-items:center;background:var(--cb,var(--soft));color:var(--c,var(--blau))}
+.tx-n .i{width:22px;height:22px}
+.tx-k b{display:block;font-size:18px;line-height:1.25}
+.tx-k small{display:block;font-size:15px;color:var(--mut);margin-top:2px}
+.zbar{height:8px;border-radius:99px;background:var(--soft);overflow:hidden;margin:0 0 4px}
+.zbar i{display:block;height:100%;width:0;border-radius:99px;background:var(--gr);transition:width .9s cubic-bezier(.2,.8,.2,1)}
+.zbar.zu-lang i{background:var(--rot)}
+.zinfo{font-size:14px;color:var(--mut);margin:0 0 10px;font-variant-numeric:tabular-nums}
+.tx .gross{min-height:56px}
+.tx-u{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px}
+.tx-u a{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-size:16px;font-weight:600;text-decoration:none}
+.tx details{flex:1 1 100%}
+.tx details>summary{font-size:16px;color:var(--blau);min-height:44px;padding:4px 0}
+.tx .vor{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--soft);border-radius:12px;padding:12px;font-size:15px;line-height:1.55;max-height:340px;overflow:auto;margin:0 0 12px}
+/* Aufgaben-Karten */
+.k{border:0;border-radius:24px;box-shadow:var(--sch);padding:0 16px 6px;overflow:hidden;position:relative}
+.k::before{content:"";display:block;height:6px;margin:0 -16px 14px;background:var(--c,var(--line))}
+.k h3{font-size:21px;letter-spacing:-.01em}
+.blk{background:var(--soft);border-radius:16px;padding:12px 14px;margin:12px 0}
+.blk .felder li{border-color:var(--line)}
+.sbar{display:flex;align-items:center;gap:10px;margin:2px 0 10px}
+.sbar span{font-size:14px;font-weight:700;color:var(--mut);white-space:nowrap;font-variant-numeric:tabular-nums}
+.sbar>i{flex:1;height:8px;border-radius:99px;background:var(--card);overflow:hidden}
+.sbar>i>i{display:block;height:100%;width:0;background:var(--ok);border-radius:99px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+/* Schritt-Karten mit Häkchen */
+ol.schritte li{padding:12px 12px 12px 58px;min-height:58px;margin:0 0 8px;border-radius:14px;background:var(--card);border:1.5px solid var(--line);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .2s,border-color .2s,transform .12s;user-select:none;-webkit-user-select:none}
+ol.schritte li::before{left:12px;top:50%;margin-top:-17px;transition:background .2s,transform .25s}
+ol.schritte li:active{transform:scale(.985)}
+ol.schritte li.ok{background:var(--gr-b);border-color:var(--ok)}
+ol.schritte li.ok::before{content:"";background:var(--ok) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/20px no-repeat;animation:pop .35s cubic-bezier(.2,1.6,.4,1)}
+ol.schritte li.ok{color:var(--mut)}
+ol.schritte li:focus-visible{outline:3px solid var(--blau);outline-offset:2px}
+@keyframes pop{0%{transform:scale(.6)}100%{transform:scale(1)}}
+.heute ol.schritte li{font-size:17px}
+/* Knöpfe */
+.cp,.kf,.knopf{border-radius:14px;transition:background .2s,color .2s,transform .12s}
+.cp:active,.kf:active,.knopf:active{transform:scale(.97)}
+.gross{box-shadow:0 4px 14px color-mix(in srgb,var(--blau) 30%,transparent)}
+.cp.ok,.kf.ok{animation:pop .3s cubic-bezier(.2,1.6,.4,1)}
+/* Aufklappen mit Bewegung */
+details[open]>:not(summary){animation:auf .28s ease-out both}
+@keyframes auf{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+details.zu{border-top:0;background:var(--soft);border-radius:16px;padding:0 14px;margin:10px 0}
+details.zu[open]{padding-bottom:10px}
+.hg{border:0;border-radius:18px;box-shadow:var(--sch)}
+/* Anhänge als Bildkacheln */
+.anh{border:0;background:transparent;padding:0}
+.anh ol{display:grid;gap:10px}
+.anh li{grid-template-columns:96px minmax(0,1fr);background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.anh li:first-child{border-top:1px solid var(--line)}
+.anh .vb{position:relative;width:96px;height:130px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.anh .vb::after{content:"";position:absolute;right:6px;bottom:6px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.55) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='5.5'/%3E%3Cpath d='M15 15l4.5 4.5M10.5 8v5M8 10.5h5'/%3E%3C/svg%3E") center/18px no-repeat}
+@media (min-width:560px){.anh ol{grid-template-columns:1fr 1fr}.anh li{grid-template-columns:1fr}.anh .vb{width:100%;height:180px}}
+#lb:not([hidden]){animation:lbr .22s ease-out}
+#lb:not([hidden]) .lbs img{animation:lbz .3s cubic-bezier(.2,.8,.2,1)}
+@keyframes lbr{from{opacity:0}to{opacity:1}}
+@keyframes lbz{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+/* Zeitstrahl */
+.zs{list-style:none;margin:0;padding:0 0 0 6px;position:relative}
+.zs::before{content:"";position:absolute;left:17px;top:10px;bottom:10px;width:3px;border-radius:3px;background:linear-gradient(var(--line),var(--blau),var(--line))}
+.zs li{position:relative;padding:0 0 14px 42px;margin:0}
+.zs .zp{position:absolute;left:3px;top:14px;width:26px;height:26px;border-radius:50%;background:var(--card);border:4px solid var(--c,var(--blau));box-shadow:0 0 0 4px var(--bg)}
+.zs .zk{background:var(--card);border-radius:18px;box-shadow:var(--sch);padding:12px 14px}
+.zs .zd{font-size:19px;font-weight:800;letter-spacing:-.01em}
+.zs .zw{font-size:15px;color:var(--mut);margin:2px 0 6px}
+.zs .zr,.zs .zst{font-size:16px;margin:4px 0 0}
+.zs .zl{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin-right:6px}
+.zs .zst{background:var(--cb,var(--soft));border-radius:10px;padding:6px 10px;margin-top:8px}
+.ztab{margin:6px 0 0}
+/* Auftauchen beim Scrollen */
+.js [data-rein]{opacity:0;transform:translateY(16px);transition:opacity .5s ease,transform .5s cubic-bezier(.2,.8,.2,1)}
+.js [data-rein].da{opacity:1;transform:none}
+.fl li{animation:rein .5s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--n,0) * 60ms)}
+@keyframes rein{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.js [data-rein]{opacity:1;transform:none}}
 </style>
 </head>
 <body>
@@ -172,27 +314,60 @@ a.lad:focus-visible,.anh .vb:focus-visible{outline:3px solid var(--blau);outline
 <symbol id="i-ok" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
 <symbol id="i-ab" viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></symbol>
 <symbol id="i-ex" viewBox="0 0 24 24"><path d="M8 16L16 8M10 8h6v6"/></symbol>
+<symbol id="i-such" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></symbol>
+<symbol id="i-uhr" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+<symbol id="i-text" viewBox="0 0 24 24"><path d="M7 3.5h7l4 4V20a.5.5 0 0 1-.5.5h-10.5a.5.5 0 0 1-.5-.5V4a.5.5 0 0 1 .5-.5z"/><path d="M14 3.5V8h4M9 12h6M9 15.5h6"/></symbol>
+<symbol id="i-liste" viewBox="0 0 24 24"><path d="M9 6.5h11M9 12h11M9 17.5h11"/><path d="M4 6.5l1 1 2-2M4 12l1 1 2-2M4 17.5l1 1 2-2"/></symbol>
+<symbol id="i-weg" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.5 6H15a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h6.5"/></symbol>
+<symbol id="i-herz" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20z"/></symbol>
+<symbol id="i-buch" viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5zM20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z"/></symbol>
+<symbol id="i-gericht" viewBox="0 0 24 24"><path d="M12 4v16M6 20h12M5 8h14M5 8l-2.5 6h5zM19 8l-2.5 6h5z"/></symbol>
+<symbol id="i-brief" viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="M4 7l8 6 8-6"/></symbol>
+<symbol id="i-ki" viewBox="0 0 24 24"><rect x="5" y="7" width="14" height="11" rx="3"/><path d="M12 7V4M9 12h.01M15 12h.01M9.5 15h5"/></symbol>
 </svg>
 
 <div class="w">
-<header class="kopfz">
-<h1>Jobcenter – mein Überblick</h1>
-<p class="heute-dat" id="heuteDat">Texte: Stand 23.11.2026</p>
+<header class="hero">
+<div class="hero-in">
+<div class="hero-txt"><p class="hero-k">Mein Amt</p><h1>Jobcenter – mein Überblick</h1>
+<p class="heute-dat" id="heuteDat">Texte: Stand 23.11.2026</p></div>
+<div class="ring" role="img" id="ring" aria-label="Erledigt"><svg viewBox="0 0 84 84" aria-hidden="true"><circle class="r0" cx="42" cy="42" r="34"/><circle class="r1" id="ringV" cx="42" cy="42" r="34"/></svg><div><b id="ringZ">–</b><small>erledigt</small></div></div>
+</div>
+<div class="suche"><svg class="i" aria-hidden="true"><use href="#i-such"/></svg><input id="q" type="search" placeholder="Suchen: Klage, BG-Nummer, Anlage …" aria-label="Auf der Seite suchen" autocomplete="off" enterkeyhint="search"></div>
+<span class="qn" id="qn" aria-live="polite"></span>
 </header>
+<nav class="sprung" id="sprung" aria-label="Springen">
+<a href="#fristen"><svg class="i" aria-hidden="true"><use href="#i-uhr"/></svg>Fristen</a>
+<a href="#texte"><svg class="i" aria-hidden="true"><use href="#i-text"/></svg>Texte</a>
+<a href="#aufgaben"><svg class="i" aria-hidden="true"><use href="#i-liste"/></svg>Aufgaben</a>
+<a href="#zeitstrahl"><svg class="i" aria-hidden="true"><use href="#i-weg"/></svg>Termine</a>
+<a href="#hilfe"><svg class="i" aria-hidden="true"><use href="#i-herz"/></svg>Hilfe</a>
+</nav>
 
 <section id="heute" class="heute" aria-live="polite"></section>
 <noscript><p class="warn">Die Fristen-Ampel braucht JavaScript. Alle Aufgaben stehen unten.</p></noscript>
 
-<h2 id="fristen">Alle Fristen</h2>
+<h2 id="fristen"><span class="hi"><svg class="i" aria-hidden="true"><use href="#i-uhr"/></svg></span>Alle Fristen</h2>
 <ol class="fl" id="fl"></ol>
 <p class="legende" aria-label="Farben"><span class="a-rot"><i></i>heute, morgen, vorbei</span><span class="a-or"><i></i>diese Woche</span><span class="a-ge"><i></i>in 3 Wochen</span><span class="a-gr"><i></i>später</span><span class="a-gy"><i></i>erledigt</span></p>
 <p class="hilfe-link"><a href="#hilfe">Alles zu viel? Hilfe und Kontakte</a></p>
 
-<h2 id="aufgaben">Aufgaben</h2>
+<h2 id="texte"><span class="hi"><svg class="i" aria-hidden="true"><use href="#i-text"/></svg></span>Alle Texte</h2>
+<p class="klein mut">Ein Tipp kopiert den ganzen Text – dann im Formular einfügen.</p>
+<div class="txg">
+<div class="tx" data-tx="t1k" data-k="w1" data-such data-rein><div class="tx-k"><span class="tx-n"><svg class="i" aria-hidden="true"><use href="#i-brief"/></svg></span><div><b>Widerspruch 19.10.</b><small>Feld „Begründung“ · Termin 22.09.</small></div></div><div class="zbar"><i></i></div><p class="zinfo" data-zn="t1k" data-max="1000"></p><button type="button" class="cp gross" data-t="t1k"><svg class="i" aria-hidden="true"><use href="#i-cp"/></svg><span>Text kopieren</span></button><div class="tx-u"><details><summary>Text ansehen</summary><div class="vor" data-vor="t1k"></div></details><a href="#k-w1"><svg class="i" aria-hidden="true"><use href="#i-ab"/></svg>Zur Aufgabe</a></div></div>
+<div class="tx" data-tx="t2" data-k="k1" data-such data-rein><div class="tx-k"><span class="tx-n"><svg class="i" aria-hidden="true"><use href="#i-gericht"/></svg></span><div><b>Klage Sozialgericht Chemnitz</b><small>Mein Justizpostfach · Termin 06.07.</small></div></div><div class="zbar" hidden><i></i></div><p class="zinfo" data-zn="t2"></p><button type="button" class="cp gross" data-t="t2"><svg class="i" aria-hidden="true"><use href="#i-cp"/></svg><span>Text kopieren</span></button><div class="tx-u"><details><summary>Text ansehen</summary><div class="vor" data-vor="t2"></div></details><a href="#k-k1"><svg class="i" aria-hidden="true"><use href="#i-ab"/></svg>Zur Aufgabe</a></div></div>
+<div class="tx" data-tx="t3" data-k="m1" data-such data-rein><div class="tx-k"><span class="tx-n"><svg class="i" aria-hidden="true"><use href="#i-brief"/></svg></span><div><b>Nachricht Termine 16.10./03.11.</b><small>Postfach-Nachricht</small></div></div><div class="zbar" hidden><i></i></div><p class="zinfo" data-zn="t3"></p><button type="button" class="cp gross" data-t="t3"><svg class="i" aria-hidden="true"><use href="#i-cp"/></svg><span>Text kopieren</span></button><div class="tx-u"><details><summary>Text ansehen</summary><div class="vor" data-vor="t3"></div></details><a href="#k-m1"><svg class="i" aria-hidden="true"><use href="#i-ab"/></svg>Zur Aufgabe</a></div></div>
+<div class="tx" data-tx="t4k" data-k="w2" data-such data-rein><div class="tx-k"><span class="tx-n"><svg class="i" aria-hidden="true"><use href="#i-brief"/></svg></span><div><b>Widerspruch 26.10.</b><small>Feld „Begründung“ · Termin 06.07.</small></div></div><div class="zbar"><i></i></div><p class="zinfo" data-zn="t4k" data-max="1000"></p><button type="button" class="cp gross" data-t="t4k"><svg class="i" aria-hidden="true"><use href="#i-cp"/></svg><span>Text kopieren</span></button><div class="tx-u"><details><summary>Text ansehen</summary><div class="vor" data-vor="t4k"></div></details><a href="#k-w2"><svg class="i" aria-hidden="true"><use href="#i-ab"/></svg>Zur Aufgabe</a></div></div>
+<div class="tx" data-tx="t5" data-k="ueb" data-such data-rein><div class="tx-k"><span class="tx-n"><svg class="i" aria-hidden="true"><use href="#i-buch"/></svg></span><div><b>Überprüfungsantrag 2025/2026</b><small>Postfach-Nachricht · § 44 SGB X</small></div></div><div class="zbar" hidden><i></i></div><p class="zinfo" data-zn="t5"></p><button type="button" class="cp gross" data-t="t5"><svg class="i" aria-hidden="true"><use href="#i-cp"/></svg><span>Text kopieren</span></button><div class="tx-u"><details><summary>Text ansehen</summary><div class="vor" data-vor="t5"></div></details><a href="#k-ueb"><svg class="i" aria-hidden="true"><use href="#i-ab"/></svg>Zur Aufgabe</a></div></div>
+<div class="tx" data-tx="t6" data-k="" data-such data-rein><div class="tx-k"><span class="tx-n"><svg class="i" aria-hidden="true"><use href="#i-ki"/></svg></span><div><b>Für eine andere KI</b><small>Ganzer Überblick als Block</small></div></div><div class="zbar" hidden><i></i></div><p class="zinfo" data-zn="t6"></p><button type="button" class="cp gross" data-t="t6"><svg class="i" aria-hidden="true"><use href="#i-cp"/></svg><span>Text kopieren</span></button><div class="tx-u"><details><summary>Text ansehen</summary><div class="vor" data-vor="t6"></div></details><a href="#ki"><svg class="i" aria-hidden="true"><use href="#i-ab"/></svg>Mehr dazu</a></div></div>
+</div>
+
+<h2 id="aufgaben"><span class="hi"><svg class="i" aria-hidden="true"><use href="#i-liste"/></svg></span>Aufgaben</h2>
 <p class="klein mut">Jede Karte ist gleich aufgebaut: Wo · So geht’s · Felder · Text · Anhänge · Erledigt.</p>
 <div id="karten">
 
-<article class="k" id="k-w1" data-id="w1">
+<article data-such data-rein class="k" id="k-w1" data-id="w1">
 <div class="kk"><span class="ab" data-ab></span><span class="kd" data-kd>Frist: 23.11.2026, bis 24 Uhr</span></div>
 <h3>Widerspruch gegen den Bescheid vom 19.10.2026 <span class="nw">(Termin 22.09.)</span></h3>
 <p class="spaet" data-spaet hidden></p>
@@ -254,7 +429,7 @@ Anlagen: 1. Bescheidablage Seite 1 (27.03.–05.11.2026), 2. Bescheidablage Seit
 <p class="hoch"><a href="#fristen">↑ Zur Übersicht</a></p>
 </article>
 
-<article class="k" id="k-k1" data-id="k1">
+<article data-such data-rein class="k" id="k-k1" data-id="k1">
 <div class="kk"><span class="ab" data-ab></span><span class="kd" data-kd>Frist: 24.11.2026</span></div>
 <h3>Klage beim Sozialgericht Chemnitz <span class="nw">(Termin 06.07.)</span></h3>
 <p class="spaet" data-spaet hidden></p>
@@ -310,7 +485,7 @@ Alexander Fuchs</pre></details>
 <p class="hoch"><a href="#fristen">↑ Zur Übersicht</a></p>
 </article>
 
-<article class="k" id="k-m1" data-id="m1">
+<article data-such data-rein class="k" id="k-m1" data-id="m1">
 <div class="kk"><span class="ab" data-ab></span><span class="kd" data-kd>Ziel: 24.11.2026 · keine Frist</span></div>
 <h3>Nachricht: Termine 16.10./03.11., Terminpause, Gutachten</h3>
 <p class="spaet" data-spaet hidden></p>
@@ -361,7 +536,7 @@ Alexander Fuchs</pre></details>
 <p class="hoch"><a href="#fristen">↑ Zur Übersicht</a></p>
 </article>
 
-<article class="k" id="k-w2" data-id="w2">
+<article data-such data-rein class="k" id="k-w2" data-id="w2">
 <div class="kk"><span class="ab" data-ab></span><span class="kd" data-kd>Frist: ca. 26.11.2026</span></div>
 <h3>Widerspruch gegen den Überprüfungsbescheid vom 26.10.2026 <span class="nw">(Termin 06.07.)</span></h3>
 <p class="spaet" data-spaet hidden></p>
@@ -415,7 +590,7 @@ Ich beantrage, den Überprüfungsbescheid aufzuheben, den Bescheid vom 10.09.202
 <p class="hoch"><a href="#fristen">↑ Zur Übersicht</a></p>
 </article>
 
-<article class="k" id="k-wba" data-id="wba">
+<article data-such data-rein class="k" id="k-wba" data-id="wba">
 <div class="kk"><span class="ab" data-ab></span><span class="kd" data-kd>Ziel: Anfang Dezember · Frist: 31.12.2026</span></div>
 <h3>Weiterbewilligungsantrag <span class="nw">(Geld endet 31.12.2026)</span></h3>
 <p class="spaet" data-spaet hidden></p>
@@ -435,7 +610,7 @@ Ich beantrage, den Überprüfungsbescheid aufzuheben, den Bescheid vom 10.09.202
 <p class="hoch"><a href="#fristen">↑ Zur Übersicht</a></p>
 </article>
 
-<article class="k" id="k-ueb" data-id="ueb">
+<article data-such data-rein class="k" id="k-ueb" data-id="ueb">
 <div class="kk"><span class="ab" data-ab></span><span class="kd" data-kd>Frist: 31.12.2026</span></div>
 <h3>Neuer Überprüfungsantrag für 2025 und 2026</h3>
 <p class="spaet" data-spaet hidden></p>
@@ -509,10 +684,14 @@ Alexander Fuchs</pre></details>
 
 </div>
 
-<h2 id="hintergrund">Hintergrund</h2>
+<h2 id="zeitstrahl"><span class="hi"><svg class="i" aria-hidden="true"><use href="#i-weg"/></svg></span>Termine</h2>
+<ol class="zs" id="zs"></ol>
+<p class="ztab klein"><a href="#termine">Als Tabelle ansehen</a></p>
+
+<h2 id="hintergrund"><span class="hi"><svg class="i" aria-hidden="true"><use href="#i-buch"/></svg></span>Hintergrund</h2>
 <p class="klein mut">Zum Nachlesen – für die Aufgaben oben nicht nötig.</p>
 
-<details class="hg" id="hilfe"><summary>Hilfe, die zu dir kommt</summary>
+<details data-such class="hg" id="hilfe"><summary>Hilfe, die zu dir kommt</summary>
 <ul>
 <li><b>Sozialpsychiatrischer Dienst</b> (Landkreis): kostenlos, macht Hausbesuche, hilft beim Schriftverkehr, kann eine Stellungnahme schreiben und einen Arzt vermitteln. Alles freiwillig.</li>
 <li><b>Schuldnerberatung</b>: kostenlos, für die Gläubiger.</li>
@@ -525,7 +704,7 @@ Alexander Fuchs</pre></details>
 <p class="mut">Das hier ist keine Rechtsberatung, sondern Hilfe beim Ordnen.</p>
 </details>
 
-<details class="hg" id="einreichen"><summary>So reichst du was ein</summary>
+<details data-such class="hg" id="einreichen"><summary>So reichst du was ein</summary>
 <ul>
 <li><b>Widerspruch</b> → jobcenter.digital, Kachel „Widerspruch einlegen“, mit Ausweis (eID).</li>
 <li><b>Klage</b> → Mein Justizpostfach, mit Ausweis.</li>
@@ -535,7 +714,7 @@ Alexander Fuchs</pre></details>
 </ul>
 </details>
 
-<details class="hg" id="termine"><summary>Alle Termine</summary>
+<details data-such class="hg" id="termine"><summary>Alle Termine</summary>
 <div class="tw"><table class="stapel">
 <tr><th>Termin</th><th>Was kam</th><th>Deine Reaktion</th><th>Stand</th></tr>
 <tr><td data-l="Termin">16.12.2025</td><td data-l="Was kam">unbekannt</td><td data-l="Deine Reaktion">unbekannt</td><td data-l="Stand">Kürzung 10 % (56,30 €) Mai 2026, Bescheid 07.04. → <b>Überprüfungsantrag</b></td></tr>
@@ -548,7 +727,7 @@ Alexander Fuchs</pre></details>
 <p class="mut">In der Bescheidablage liegen 14 Dokumente – kein einziges Einladungsschreiben, keine Anhörung, kein Überprüfungsbescheid vom 26.10. Per Post kam laut dir nur der abgelehnte Widerspruch (gelbes Einschreiben).</p>
 </details>
 
-<details class="hg" id="ablehnungen"><summary>Was die Ablehnungen bedeuten</summary>
+<details data-such class="hg" id="ablehnungen"><summary>Was die Ablehnungen bedeuten</summary>
 <ul>
 <li><b>02.03.2026</b> (alter Überprüfungsantrag 2024/25): nur wegen Form verworfen (E-Mail ohne Unterschrift) und „zu allgemein“. Klagefrist vorbei → neuer, genauer Antrag (siehe oben).</li>
 <li><b>21.10.2026</b> (Widerspruch 06.07.): nur wegen Form verworfen. Kein Widerspruch dagegen möglich – nur <b>Klage</b>.</li>
@@ -558,7 +737,7 @@ Alexander Fuchs</pre></details>
 </ul>
 </details>
 
-<details class="hg" id="kuerzung"><summary>Droht eine Kürzung?</summary>
+<details data-such class="hg" id="kuerzung"><summary>Droht eine Kürzung?</summary>
 <ul>
 <li>Bisher: nur zwei Feststellungen (06.07., 22.09.) – <b>noch keine Kürzung</b>.</li>
 <li>Jedes <b>weitere</b> Meldeversäumnis: <b>−30 %</b> für einen Monat. Drei hintereinander: Leistungen können ganz wegfallen.</li>
@@ -567,7 +746,7 @@ Alexander Fuchs</pre></details>
 </ul>
 </details>
 
-<details class="hg" id="zeit"><summary>Zeitleiste</summary>
+<details data-such class="hg" id="zeit"><summary>Zeitleiste</summary>
 <div class="tw"><table>
 <tr><th>Datum</th><th>Was</th></tr>
 <tr><td>31.12.2025</td><td>Du: Überprüfungsantrag 2024/25 (per E-Mail)</td></tr>
@@ -599,7 +778,7 @@ Alexander Fuchs</pre></details>
 <p class="mut">Verhältnis: Du hast 24 Nachrichten geschickt, im Postfach kamen 3 Antworten zurück. Am 05.05. ging dieselbe Nachricht 3-mal in 5 Minuten raus, weil die Seite hakte.</p>
 </details>
 
-<details class="hg" id="ki"><summary>Für eine andere KI</summary>
+<details data-such class="hg" id="ki"><summary>Für eine andere KI</summary>
 <p class="mut">Den ganzen Block kopieren und als erste Nachricht in eine andere KI einfügen. Die Originale der Bescheide liegen in deiner Bescheidablage auf jobcenter.digital – die KI braucht sie nicht, hier steht alles Wichtige daraus. Welche Bildschirmfotos zu welchem Schreiben gehören, steht unten unter „ANHÄNGE“.</p>
 <pre id="t6">Du hilfst mir bei meinen Verfahren mit dem Jobcenter. Antworte kurz, ohne Fachwörter, und gib mir fertige Texte zum Kopieren. Keine Rechtsberatung, aber genaue Hilfe beim Ordnen und Formulieren.
 
@@ -668,6 +847,7 @@ var AUFGABEN = [
 
 (function () {
   'use strict';
+  document.documentElement.classList.add('js');
   var WT = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
   var WTL = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
   var $ = function (id) { return document.getElementById(id); };
@@ -718,10 +898,15 @@ var AUFGABEN = [
       return 'Frist: ' + (a.ca ? 'ca. ' : '') + datum(a.frist, j) + bis;
     }
     r.farbe = farbe; r.d = d; r.ab = ab; r.zeile = z2(1); r.kz = z2(0);
+    if (art === 'ziel' && d < 0) { r.num = '!'; r.unit = 'bald machen'; }
+    else if (d < 0) { r.num = ca + (-d); r.unit = (d === -1 ? 'Tag' : 'Tage') + ' vorbei'; }
+    else if (d === 0) { r.num = 'Heute'; r.unit = ca ? '(ca.)' : ''; r.wort = 1; }
+    else if (d === 1) { r.num = 'Morgen'; r.unit = ca ? '(ca.)' : ''; r.wort = 1; }
+    else { r.num = ca + d; r.unit = 'Tage'; }
     r.vorbei = art === 'frist' && d < 0;
     r.rang = farbe === 'rot' ? (d >= 0 ? 0 : 1) : farbe === 'or' ? 2 : farbe === 'ge' ? 3 : 4;
     r.sub = r.rang === 1 ? -d : d;
-    if (fertig[a.id]) { r.farbe = 'gy'; r.rang = 9; r.sub = 0; r.ab = 'erledigt'; r.vorbei = false; }
+    if (fertig[a.id]) { r.farbe = 'gy'; r.rang = 9; r.sub = 0; r.ab = 'erledigt'; r.vorbei = false; r.num = ''; r.unit = 'erledigt'; r.ok = 1; }
     return r;
   }
 
@@ -734,10 +919,18 @@ var AUFGABEN = [
     $('heuteDat').textContent = 'Heute ist ' + WTL[wd] + ', ' + ('0' + t[2]).slice(-2) + '.' + ('0' + t[1]).slice(-2) + '.' + t[0];
 
     // Fristen-Liste
-    $('fl').innerHTML = L.map(function (r) {
-      return '<li class="a-' + r.farbe + '"><a href="#k-' + r.a.id + '"><span class="fo"><span class="ab">' + esc(r.ab) + '</span><span class="fd">' +
-        esc(r.kz) + '</span></span><b>' + esc(r.a.titel) + '</b><span class="fk">' + esc(r.a.kanal) + '</span></a></li>';
+    $('fl').innerHTML = L.map(function (r, n) {
+      return '<li data-such class="a-' + r.farbe + '" style="--n:' + n + '"><a href="#k-' + r.a.id + '" aria-label="' + esc(r.ab + ': ' + r.a.titel) + '"><span class="pkt"></span><span class="zahl"><b' + (r.wort ? ' class="wort"' : '') + '>' +
+        (r.ok ? '<svg class="i" aria-hidden="true"><use href="#i-ok"/></svg>' : esc(r.num)) + '</b><small>' + esc(r.unit) + '</small></span><span class="ft">' + esc(r.a.titel) +
+        '</span><span class="fd">' + esc(r.kz) + '</span></a></li>';
     }).join('');
+    // Fortschrittsring + Farbe der Text-Kacheln
+    var nf = AUFGABEN.filter(function (a) { return fertig[a.id]; }).length;
+    $('ringZ').textContent = nf + '/' + AUFGABEN.length;
+    $('ring').setAttribute('aria-label', nf + ' von ' + AUFGABEN.length + ' Aufgaben erledigt');
+    $('ringV').style.strokeDashoffset = String(213.6 * (1 - nf / AUFGABEN.length));
+    L.forEach(function (r) { document.querySelectorAll('.tx[data-k="' + r.a.id + '"]').forEach(function (x) { x.className = 'tx a-' + r.farbe; }); });
+    if (Q && Q.value) suche();
 
     // Karten
     L.forEach(function (r) {
@@ -787,7 +980,88 @@ var AUFGABEN = [
     c.addEventListener('change', function () { fertig[id] = c.checked; schreib(id, c.checked); zeichne(false); });
   });
 
+  // Schritte abhaken (lokal gemerkt: jc-s-<karte>-<nr>)
+  function lsGet(k) { try { return localStorage.getItem(k) === '1'; } catch (e) { return false; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v ? '1' : '0'); } catch (e) {} }
+  function balken(k) {
+    var li = k.querySelectorAll('ol.schritte li'), n = k.querySelectorAll('ol.schritte li.ok').length, sb = k.querySelector('.sbar');
+    if (!sb) return;
+    sb.querySelector('span').textContent = n + ' von ' + li.length + ' Schritten';
+    sb.querySelector('i>i').style.width = (li.length ? 100 * n / li.length : 0) + '%';
+  }
+  document.querySelectorAll('.k[data-id]').forEach(function (k) {
+    var id = k.getAttribute('data-id'), ol = k.querySelector('ol.schritte'); if (!ol) return;
+    var sb = document.createElement('div'); sb.className = 'sbar'; sb.innerHTML = '<span></span><i><i></i></i>';
+    ol.parentNode.insertBefore(sb, ol);
+    ol.querySelectorAll('li').forEach(function (li, n) {
+      var key = id + '-' + (n + 1), on = lsGet('jc-s-' + key);
+      li.setAttribute('data-s', key); li.setAttribute('role', 'checkbox'); li.setAttribute('tabindex', '0');
+      li.setAttribute('aria-checked', on ? 'true' : 'false'); if (on) li.classList.add('ok');
+    });
+    balken(k);
+  });
+  function schritt(li) {
+    var key = li.getAttribute('data-s'), on = !li.classList.contains('ok');
+    lsSet('jc-s-' + key, on);
+    document.querySelectorAll('li[data-s="' + key + '"]').forEach(function (x) { x.classList.toggle('ok', on); x.setAttribute('aria-checked', on ? 'true' : 'false'); });
+    var k = $('k-' + key.split('-')[0]); if (k) balken(k);
+  }
+  document.addEventListener('click', function (e) { var li = e.target.closest && e.target.closest('li[data-s]'); if (li && !e.target.closest('a,button')) schritt(li); });
+  document.addEventListener('keydown', function (e) { var li = e.target.closest && e.target.closest('li[data-s]'); if (li && (e.key === ' ' || e.key === 'Enter')) { e.preventDefault(); schritt(li); } });
+
+  // Text-Kacheln: Zeichen zählen, Vorschau beim Aufklappen
+  document.querySelectorAll('[data-zn]').forEach(function (z) {
+    var p = $(z.getAttribute('data-zn')); if (!p) return;
+    var n = p.textContent.length, max = +z.getAttribute('data-max') || 0, bar = z.previousElementSibling;
+    z.textContent = max ? n + ' / ' + max + ' Zeichen' + (n <= max ? ' – passt ins Feld' : ' – zu lang') : n.toLocaleString('de-DE') + ' Zeichen';
+    if (max && bar) { bar.classList.toggle('zu-lang', n > max); setTimeout(function () { bar.firstChild.style.width = Math.min(100, 100 * n / max) + '%'; }, 250); }
+  });
+  document.querySelectorAll('.tx details').forEach(function (d) {
+    d.addEventListener('toggle', function () { var v = d.querySelector('[data-vor]'); if (d.open && v && !v.textContent) { var p = $(v.getAttribute('data-vor')); if (p) v.textContent = p.textContent; } });
+  });
+
+  // Zeitstrahl aus der Termine-Tabelle (Zellen unverändert übernommen)
+  (function () {
+    var zs = $('zs'), rows = document.querySelectorAll('#termine table.stapel tr'); if (!zs) return;
+    var h = '';
+    rows.forEach(function (tr) {
+      var td = tr.querySelectorAll('td'); if (td.length < 4) return;
+      var st = td[3].textContent, f = /erledigt/.test(st) ? 'gr' : /Klage|Widerspruch|Frist/.test(st) ? 'rot' : /Kürzung/.test(st) ? 'or' : /Nachricht|kein Bescheid/.test(st) ? 'ge' : 'gy';
+      h += '<li data-such data-rein class="a-' + f + '"><span class="zp"></span><div class="zk"><div class="zd">' + td[0].innerHTML + '</div><div class="zw">' + td[1].innerHTML +
+        '</div><p class="zr"><span class="zl">Du</span>' + td[2].innerHTML + '</p><p class="zst"><span class="zl">Stand</span>' + td[3].innerHTML + '</p></div></li>';
+    });
+    zs.innerHTML = h;
+  })();
+
+  // Suche
+  var Q = $('q');
+  function suche() {
+    var q = Q.value.trim().toLowerCase(), n = 0;
+    document.querySelectorAll('[data-such]').forEach(function (el) {
+      var hit = !q || el.textContent.toLowerCase().indexOf(q) >= 0;
+      el.classList.toggle('weg', !hit);
+      if (q && hit) { n++; el.classList.add('da'); }
+      if (el.tagName === 'DETAILS') { if (q.length >= 3 && hit && !el.open) { el.open = true; el._q = 1; } else if ((!q || !hit) && el._q) { el.open = false; el._q = 0; } }
+    });
+    $('qn').textContent = q ? (n ? n + (n === 1 ? ' Treffer' : ' Treffer') + ' – unten markiert' : 'Nichts gefunden – anderes Wort probieren') : '';
+  }
+  Q.addEventListener('input', suche);
+  Q.addEventListener('keydown', function (e) { if (e.key === 'Enter') { var t = document.querySelector('[data-such]:not(.weg):not(#fl li)'); if (t) { Q.blur(); t.scrollIntoView({ block: 'start' }); } } });
+
   zeichne(true);
+
+  // Sanft auftauchen + aktiver Punkt in der Sprungleiste
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('da'); io.unobserve(e.target); } }); }, { rootMargin: '0px 0px -8% 0px' });
+    document.querySelectorAll('[data-rein]').forEach(function (el) { io.observe(el); });
+    var nav = document.querySelectorAll('#sprung a'), ziele = [];
+    nav.forEach(function (a) { var z = $(a.getAttribute('href').slice(1)); if (z) ziele.push([z, a]); });
+    var akt = function () {
+      var best = null; ziele.forEach(function (p) { if (p[0].getBoundingClientRect().top < 140) best = p[1]; });
+      nav.forEach(function (a) { a.classList.toggle('akt', a === best); });
+    };
+    addEventListener('scroll', function () { if (!akt._r) { akt._r = requestAnimationFrame(function () { akt._r = 0; akt(); }); } }, { passive: true });
+  } else document.querySelectorAll('[data-rein]').forEach(function (el) { el.classList.add('da'); });
   // Neuer Tag (Seite bleibt offen, App kommt zurück): neu rechnen
   function pruefTag() { var t = heuteYMD(); if (nr(t[0], t[1], t[2]) !== stand) zeichne(true); }
   setInterval(pruefTag, 60000);
