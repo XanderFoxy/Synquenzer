@@ -346,12 +346,12 @@ function ausrichtenDP(T, D, freiRand) {
   const pause = D.map((d, j) => (j === 0 ? 9 : d.t0 - D[j - 1].t1));
   const C = new Float64Array((K + 1) * (J + 1)).fill(INF), W = new Uint8Array((K + 1) * (J + 1));
   const ix = (k, j) => k * (J + 1) + j;
-  const ueberD = (j, rand) => (rand ? 0.45 : 0.5 + 0.5 * (D[j].staerke || 0));
+  const ueberD = (j, rand) => (rand ? 0.1 : 0.5 + 0.5 * (D[j].staerke || 0));
   const ueberT = () => 0.9;
   const passt = (k, j) => {
-    let c = 0;
+    let c = -1; // Treffer werden belohnt
     const t = T[k], p = pause[j];
-    if (t.erw != null) c += 0.8 * Math.min(3, Math.abs(D[j].t0 - t.erw) / 0.3);
+    if (t.erw != null) c += Math.min(10, Math.abs(D[j].t0 - t.erw) / 0.25);
     if (t.zs === true) c += p >= 1 ? -0.3 : p >= 0.3 ? -0.1 : 0.2;   // Zeilenanfang nach Pause
     else if (t.zs === false && p >= 1) c += 1.5;                     // lange Pause mitten in der Zeile: unwahrscheinlich
     return c;
@@ -362,7 +362,7 @@ function ausrichtenDP(T, D, freiRand) {
     let best = INF, w = 0;
     if (k > 0 && j > 0) { const c = C[ix(k - 1, j - 1)] + passt(k - 1, j - 1); if (c < best) { best = c; w = 1; } }
     if (j > 0) { const c = C[ix(k, j - 1)] + ueberD(j - 1, freiRand && (k === 0 || k === K)); if (c < best) { best = c; w = 2; } }
-    if (k > 0) { const c = C[ix(k - 1, j)] + ((freiRand && (j === 0 || j === J)) ? 0.001 : ueberT()); if (c < best) { best = c; w = 3; } }
+    if (k > 0) { const c = C[ix(k - 1, j)] + ((freiRand && (j === 0 || j === J)) ? 0 : ueberT()); if (c < best) { best = c; w = 3; } }
     C[i] = best; W[i] = w;
   }
   const paar = new Int32Array(K).fill(-1);

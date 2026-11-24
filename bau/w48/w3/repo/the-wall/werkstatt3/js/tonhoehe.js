@@ -659,3 +659,4 @@ export function noteVerschoben(note, cent) {
   const kurve = note.kurve.map((v, j) => Math.round((v + cent / 100 * Math.min(1, (j + 1) / nR, (K - j) / nR)) * 1000) / 1000);
   return baueNote({ ...note, kurve });
 }
+export const _intern = { psola: (...a) => psola(...a), kurven: (...a) => kurven(...a), marken: (...a) => marken(...a) };
