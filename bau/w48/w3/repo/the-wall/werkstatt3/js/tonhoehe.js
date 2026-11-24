@@ -6,9 +6,10 @@
 // export function verfolgen(x, sr, hop=0.005, opt={}) → {t, f0, sicher, pegel, hop, sr}
 //        t/f0/sicher/pegel: Float32Array je Rahmen (t = i·hop). f0 in Hz, 0 = stimmlos. sicher 0–1. pegel dB.
 //        opt: fmin (70), fmax (1100), schwelle (0.15), stimmlos (0.35 = Kosten „stimmlos“, höher = mehr stimmhaft)
-// export function noten(spur, opt={})  → [{id, t0, t1, midi, cent, f0Mittel, kurve, hop, i0, i1, pegel, sicher}]
+// export function noten(spur, opt={})  → [{id, t0, t1, midi, cent, f0Mittel, kurve, hop, i0, i1, pegel, sicher, streuung}]
 //        kurve: Array der Tonhöhe je Rahmen als MIDI-Kommazahl (69 = A4), kurve[j] gilt bei t0 + j·hop.
 //        midi = nächste Halbtonstufe der Notenmitte, cent = Abweichung der Mitte davon (−50…+50).
+//        streuung = Cent-Streuung im Inneren (> 120: Gleiter/unsicher → Auto-Korrektur lässt sie in Ruhe).
 //        opt: minSicher (0.4), luecke (0.04 s), glatt (0.15 s), wechsel (5), minDauer (0.07 s), splitDb (7)
 // export function korrigieren(x, sr, noten, ziel={}) → Float32Array (gleiche Länge)
 //        ziel: {skala:'chromatisch'|'dur'|'moll'|'C-Dur'|'a-Moll'|…, grundton:0–11|'C'|'Fis'|…, stufen:[0,2,4…],
@@ -155,9 +156,14 @@ export function verfolgen(x, sr, hop = 0.005, opt = {}) {
       const y0 = dn[tau - 1], y1 = dn[tau], y2 = dn[tau + 1], den = y0 - 2 * y1 + y2;
       const dt = den > 0 ? Math.max(-0.5, Math.min(0.5, 0.5 * (y0 - y2) / den)) : 0;
       cTau[base + n] = tau + dt;
-      cCost[base + n] = y1 + (yin > 0 && tau > yin * 1.15 ? 0.12 : 0);
+      cCost[base + n] = y1;
       n++;
     }
+    // Unteroktaven leicht benachteiligen (je Oktave über dem kleinsten guten Tal +0.06); den Rest entscheidet die Stetigkeit
+    let tFirst = 0;
+    for (let i = 0; i < n; i++) if (dn[Math.round(cTau[base + i])] < 0.3 && (!tFirst || cTau[base + i] < tFirst)) tFirst = cTau[base + i];
+    if (yin > 0 && (!tFirst || yin < tFirst)) tFirst = yin;
+    if (tFirst) for (let i = 0; i < n; i++) if (cTau[base + i] > tFirst * 1.1) cCost[base + i] += 0.06 * LOG2(cTau[base + i] / tFirst);
     if (yin > 0) { // YIN-Wahl sicher dabei
       let drin = false;
       for (let i = 0; i < n; i++) if (Math.abs(cTau[base + i] - yin) < 1) drin = true;
@@ -190,7 +196,7 @@ export function verfolgen(x, sr, hop = 0.005, opt = {}) {
       const obs = cCost[base + i] + leise;
       let bv2 = prev[MAXC] + 0.25, bi2 = MAXC;
       for (let j = 0; j < prevN; j++) {
-        const st = Math.min(0.6, 0.025 * Math.abs(12 * LOG2(f / prevF[j])));
+        const st = Math.min(0.8, 0.035 * Math.abs(12 * LOG2(f / prevF[j])));
         const v = prev[j] + st;
         if (v < bv2) { bv2 = v; bi2 = j; }
       }
@@ -241,6 +247,20 @@ export function verfolgen(x, sr, hop = 0.005, opt = {}) {
     const c0 = cCost[k * MAXC + st];
     sicher[k] = Math.max(0.05, Math.min(1, 1 - c0));
   }
+  // Ausreißer (Oktavfehler, Knarren, Hauch): weit weg vom örtlichen Median (±40 ms) → stimmlos
+  const wM = Math.max(2, Math.round(0.04 / hop)), mi = new Float64Array(N), buf = new Float64Array(2 * wM + 1);
+  for (let k = 0; k < N; k++) mi[k] = f0[k] > 0 ? hzZuMidi(f0[k]) : NaN;
+  const weg = [];
+  for (let k = 0; k < N; k++) {
+    if (!(f0[k] > 0)) continue;
+    let c = 0;
+    for (let q = Math.max(0, k - wM); q <= Math.min(N - 1, k + wM); q++) if (mi[q] === mi[q]) buf[c++] = mi[q];
+    if (c < 3) continue;
+    const s = buf.subarray(0, c).sort();
+    const med = c & 1 ? s[c >> 1] : 0.5 * (s[(c >> 1) - 1] + s[c >> 1]);
+    if (Math.abs(mi[k] - med) > 4) weg.push(k);
+  }
+  for (const k of weg) { f0[k] = 0; sicher[k] = 0; }
   return { t: tA, f0, sicher, pegel, hop, sr };
 }
 
@@ -337,6 +357,7 @@ export function noten(spur, opt = {}) {
         const c = mitte(teile[ki][0], teile[ki][1]);
         const L = ki > 0 ? Math.abs(mitte(teile[ki - 1][0], teile[ki - 1][1]) - c) : 1e9;
         const R = ki < teile.length - 1 ? Math.abs(mitte(teile[ki + 1][0], teile[ki + 1][1]) - c) : 1e9;
+        if (Math.min(L, R) > 2.5) { teile.splice(ki, 1); geaendert = true; continue; } // Ausreißer: weglassen
         if (L <= R) { teile[ki - 1][1] = teile[ki][1]; } else { teile[ki + 1][0] = teile[ki][0]; }
         teile.splice(ki, 1); geaendert = true; continue;
       }
@@ -394,6 +415,11 @@ function baueNote(n, mitte) {
   n.midi = midi;
   n.cent = Math.round((c - midi) * 1000) / 10;
   n.f0Mittel = Math.round(midiZuHz(c) * 100) / 100;
+  // Streuung (Cent, Standardabweichung im Inneren): groß = Gleiten/Unsicher → Auto-Korrektur lässt die Note in Ruhe
+  const K = n.kurve.length, cut = K >= 6 ? Math.floor(K * 0.15) : 0;
+  let s2 = 0, cc = 0;
+  for (let q = cut; q < K - cut; q++) { s2 += (n.kurve[q] - c) ** 2; cc++; }
+  n.streuung = Math.round(Math.sqrt(s2 / Math.max(1, cc)) * 100);
   return n;
 }
 
@@ -460,7 +486,8 @@ function kurven(noten, ziel, N, hop) {
     const K = note.kurve.length;
     const c = note.midi + (note.cent || 0) / 100;
     const zm = (note.zielMidi ?? zielStufe(c, stufen)) + (note.zielCent || 0) / 100;
-    const stN = note.staerke ?? st;
+    // stark streuende Noten (Gleiter, Knarren) nur korrigieren, wenn ausdrücklich ein Ziel gesetzt ist
+    const stN = note.staerke ?? (note.zielMidi == null && (note.streuung ?? 0) > 120 ? 0 : st);
     const base = (zm - c) * stN;
     const slow = gleitMittel(note.kurve, nSl);
     const i0 = Math.round(note.t0 / hop);
@@ -470,7 +497,8 @@ function kurven(noten, ziel, N, hop) {
       const v = note.kurve[j];
       f0g[i] = midiZuHz(v);
       const tw = Math.max(0, Math.min(1, (j + 0.5) / nT, (K - j - 0.5) / nT));
-      sh[i] = base + stN * tw * (drift * (c - slow[j]) + (vib ? 0 : slow[j] - v));
+      const dr = Math.max(-0.6, Math.min(0.6, c - slow[j]));
+      sh[i] = base + stN * tw * (drift * dr + (vib ? 0 : slow[j] - v));
       belegt[i] = 1;
     }
   }
