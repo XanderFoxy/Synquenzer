@@ -68,13 +68,13 @@ def env_db(x, win_ms=5.0, hop_ms=1.0):
 
 
 def takt_von(t):
-    return int(np.floor(t / TAKT)) + 1
+    return int(np.floor(t / TAKT + 1e-6)) + 1
 
 
 def raster16(t):
     """(Takt, 16tel ab Taktbeginn als float)."""
     tk = takt_von(t)
-    return tk, (t - (tk - 1) * TAKT) / S16
+    return tk, max(0.0, (t - (tk - 1) * TAKT) / S16)
 
 
 def fmt16(t):

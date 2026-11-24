@@ -1,139 +1,139 @@
 # The Wall v13 – Silben-Zielkarte (Haupt + Doppel)
 
-Stand 24.11.2026. Daten: zielkarte.json (286 Einträge: 143 Haupt, 143 Doppel). Raster: T<Takt>+<16tel>. Transienten-Spitze = Vokal-Einsatz; der Vorlauf (Konsonant) bleibt in Originallänge links davon.
+Stand 24.11.2026 · Agent „zielkarte“ · Daten: `analyse/zielkarte.json` (286 Einträge: 143 Haupt, 143 Doppel) · Skripte `analyse/zk_*.py` · Bilder `analyse/bilder/par_*.png`
 
-## „there is so much more to see“ (Strophe 2, T53–56)
+Alle Zeiten in Sekunden auf der Song-Achse (Takt n beginnt bei (n−1)·2 s). „T55+14,67“ = Takt 55, 14,67 Sechzehntel nach dem Taktstrich. „Spitze“ = Transienten-Spitze = steilste Stelle des Vokal-Einsatzes. Ziel = dorthin soll die Spitze; der Anlaut (Konsonant, bei see/sake auch der erste Vokal-Teil) bleibt in Originallänge links davon. Messung, kein Hör-Urteil.
 
-| id | Teil | Silbe | Original s (Raster) | v12 s (Raster) | Ziel s (Raster) | v12−Orig ms | Ziel−Orig ms | Regel |
+## Kurz
+
+- **see**: Im Original ist „see“ schon richtig – s ab 16tel 13, Vokal 1,35 16tel vor dem Takt, Akzent genau auf Takt 56 (110,00 s), exakt wie „sake“ in Strophe 1. v12 hat das s von 0,20 auf 0,42 s gedehnt und den Rest von „see“ um **+166 ms** nach hinten geschoben (Akzent 110,17). Ziel = Original (Verschiebung 0). Ursache: v10 (G4).
+- **hypnotised** wird als **hyp-no-ti-sed** (4 Töne) gesungen. v12: no **+80 ms**, ti **+68 ms** gegenüber dem Original, n und t-Verschluss durch Stille ersetzt, Lücke ti→sed von 0,66 auf 0,56 s gestaucht. Ursache: schon die v6-Datei (no/ti +84 ms), v10 verdoppelt Stille vor „no“. Ziel: hyp 16 · no 22 · ti 26 · sed 32 (16tel ab Takt 57) = Xanders Rechnung (EV/ARE 0, ERY/WE 6, THING/HYP 16, WE/NO 22, DO/TIZED 32).
+- **Zuordnung**: Xanders Paare und die Paare nach Takt/Akkord ergeben dieselben Ziele – alle acht Strophen-Phrasen benutzen dasselbe Raster 0/6/16/22/32/38/48 (mittlere Abweichung Silbe-für-Silbe 0,41 bzw. 0,42 16tel).
+- **Refrains**: R1/R2/R3 liegen meist innerhalb ±0,4 16tel zusammen. Ziele nach Durchschnitt (Gleichstand → R3). „know“ und „It“ liegen in allen Refrains auf 20 bzw. 26 – nicht auf 22/28 wie bisher in lied.json angenommen.
+- Haupt, 143 Silben: |v12 − Ziel| Median 16 ms, 90-% 58 ms, max 174 ms; 13 Silben > 60 ms, 5 > 100 ms. Nötige Verschiebung gegenüber dem Original: Median 26 ms, 90-% 64 ms, max 185 ms.
+- Keine Warp-Marken (alle Cubasis-Clips Stretch 1,0, MusicalMode aus). Alle Timing-Fehler stecken in den bearbeiteten WAV-Dateien (v6 → v7 → v10/G4 → v11 → v12). v12-Lead kommt aus einer 128-kbit-MP3, zeitlich ohne Versatz.
+
+## „there is so much more to see“ (Strophe 2, Zeile 2, ab Takt 53) – vollständig
+
+Parallele: Strophe 1 „zombies living for Gods sake“ (gleiche Takte/Akkorde, Silbe für Silbe) bzw. nach Xander „in a world of sheep“ + „to see“ als Zusatz. Beide Wege: there 0 · is 6 · so 16 · much 22 · more 32 · to 38 · see 48 (Akzent).
+
+| Silbe | Stimme | Anlaut ab | Vokal | **Spitze Original** | Raster Original | **v12** | Raster v12 | **Ziel** | Raster Ziel | v12 → Ziel | Original → Ziel | Regel |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| there | Haupt | 103,984 | 103,984 | 104,012 | T53+0,10 | 103,996 | T52+15,97 | 104,000 | T53+0,00 | -4 ms | -12 ms | strophe1 |
+| there | Doppel | 103,963 | 103,967 | 104,007 | T53+0,06 | — | — | 104,000 | T53+0,00 | — ms | -7 ms | strophe1 |
+| is | Haupt | 104,554 | 104,732 | 104,746 | T53+5,97 | 104,749 | T53+5,99 | 104,750 | T53+6,00 | -1 ms | +4 ms | strophe1 |
+| is | Doppel | 104,693 | 104,693 | 104,733 | T53+5,86 | — | — | 104,750 | T53+6,00 | — ms | +17 ms | strophe1 |
+| so | Haupt | 105,899 | 106,077 | 106,117 | T54+0,94 | 106,002 | T54+0,02 | 106,000 | T54+0,00 | +2 ms | -117 ms | strophe1 |
+| so | Doppel | 105,898 | 106,006 | 106,046 | T54+0,37 | — | — | 106,000 | T54+0,00 | — ms | -46 ms | strophe1 |
+| much | Haupt | 106,708 | 106,774 | 106,784 | T54+6,27 | 106,725 | T54+5,80 | 106,750 | T54+6,00 | -25 ms | -34 ms | strophe1 |
+| much | Doppel | 106,777 | 106,777 | 106,807 | T54+6,46 | — | — | 106,750 | T54+6,00 | — ms | -57 ms | strophe1 |
+| more | Haupt | 107,885 | 107,955 | 107,989 | T54+15,91 | 107,993 | T54+15,94 | 108,000 | T55+0,00 | -7 ms | +11 ms | strophe1 |
+| more | Doppel | 107,960 | 107,960 | 108,000 | T55+0,00 | — | — | 108,000 | T55+0,00 | — ms | +0 ms | strophe1 |
+| to | Haupt | 108,693 | 108,743 | 108,783 | T55+6,26 | 108,742 | T55+5,94 | 108,750 | T55+6,00 | -8 ms | -33 ms | strophe1 |
+| to | Doppel | 108,726 | 108,776 | 108,816 | T55+6,53 | — | — | 108,750 | T55+6,00 | — ms | -66 ms | strophe1 |
+| see | Haupt | 109,633 | 109,819 | 110,001 | T56+0,01 | 110,167 | T56+1,33 | 110,000 | T56+0,00 | +167 ms | -1 ms | strophe1 |
+| see | Doppel | 109,631 | 109,865 | 109,905 | T55+15,24 | — | — | 109,833 | T55+14,66 | — ms | -72 ms | strophe1 |
+
+„see“: erster Vokal-Einsatz Original 109,833 (T55+14,67) → Ziel 109,832; in v12 110,002 (s davor ab 109,584 = 0,42 s s-Rauschen). „sake“ (S1) zum Vergleich: s ab 45,624, erster Vokal 45,822, Akzent 45,995.
+
+## „Are we hypnotised“ (Strophe 2, Zeile 3, ab Takt 57) – vollständig
+
+Parallelen: „everything we (~) do“ bzw. „in a world of (~) sheep“ – Strophe 1 hat auf Platz ~26 einen neuen Ton ohne neue Silbe (51,257 s / 59,289 s), daher Ziel „ti“ = 26.
+
+| Silbe | Stimme | Anlaut ab | Vokal | **Spitze Original** | Raster Original | **v12** | Raster v12 | **Ziel** | Raster Ziel | v12 → Ziel | Original → Ziel | Regel |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Are | Haupt | 111,946 | 111,966 | 112,006 | T57+0,05 | 112,000 | T56+16,00 | 112,000 | T57+0,00 | +0 ms | -6 ms | strophe1 |
+| Are | Doppel | 111,997 | 111,997 | 112,007 | T57+0,06 | — | — | 112,000 | T57+0,00 | — ms | -7 ms | strophe1 |
+| we | Haupt | 112,822 | 112,822 | 112,830 | T57+6,64 | 112,780 | T57+6,24 | 112,750 | T57+6,00 | +30 ms | -80 ms | strophe1 |
+| we | Doppel | 112,755 | 112,755 | 112,795 | T57+6,36 | — | — | 112,750 | T57+6,00 | — ms | -45 ms | strophe1 |
+| hyp | Haupt | 113,931 | 113,939 | 113,979 | T57+15,83 | 113,996 | T57+15,97 | 114,000 | T58+0,00 | -4 ms | +21 ms | strophe1 |
+| hyp | Doppel | 113,986 | 113,990 | 114,026 | T58+0,21 | — | — | 114,000 | T58+0,00 | — ms | -26 ms | strophe1 |
+| no | Haupt | 114,628 | 114,628 | 114,660 | T58+5,28 | 114,740 | T58+5,92 | 114,750 | T58+6,00 | -10 ms | +90 ms | strophe1 |
+| no | Doppel | 114,661 | 114,661 | 114,691 | T58+5,53 | — | — | 114,750 | T58+6,00 | — ms | +59 ms | strophe1 |
+| ti | Haupt | 115,310 | 115,312 | 115,352 | T58+10,82 | 115,420 | T58+11,36 | 115,250 | T58+10,00 | +170 ms | -102 ms | strophe1 |
+| ti | Doppel | 115,319 | 115,319 | 115,359 | T58+10,87 | — | — | 115,250 | T58+10,00 | — ms | -109 ms | strophe1 |
+| tised | Haupt | 115,932 | 116,012 | 116,016 | T59+0,13 | 115,982 | T58+15,86 | 116,000 | T59+0,00 | -18 ms | -16 ms | strophe1 |
+| tised | Doppel | 115,965 | 116,001 | 116,009 | T59+0,07 | — | — | 116,000 | T59+0,00 | — ms | -9 ms | strophe1 |
+
+## Die 30 auffälligsten Stellen (v12 gegen Ziel)
+
+Sortiert nach |v12 − Ziel|. Doppel nur dort, wo es in v12 hörbar ist (Refrain, Tag, Outro).
+
+| # | Stelle | Silbe | Stimme | Original | v12 | Ziel | v12 → Ziel | Raster v12 → Ziel | Woher (Messung) |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | R2 Z13 | is | doppel | 138,665 | 138,684 | 138,500 | +184 ms | T70+5,47 → T70+4,00 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) +19 ms gegen Doppel-Original |
+| 2 | S1 Z2 | world | haupt | 50,185 | 50,174 | 50,000 | +174 ms | T26+1,39 → T26+0,00 | kleine Abweichungen über mehrere Fassungen |
+| 3 | R1 Z4 | It | doppel | 67,383 | 67,420 | 67,250 | +170 ms | T34+11,36 → T34+10,00 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) +37 ms gegen Doppel-Original |
+| 4 | S2 Z10 | ti | haupt | 115,352 | 115,420 | 115,250 | +170 ms | T58+11,36 → T58+10,00 | v6 +84 ms |
+| 5 | S2 Z9 | see | haupt | 110,001 | 110,167 | 110,000 | +167 ms | T56+1,33 → T56+0,00 | v10 +178 ms |
+| 6 | R1 Z7 | eyes | doppel | 91,892 | 91,835 | 92,000 | -165 ms | T46+14,68 → T47+0,00 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) -57 ms gegen Doppel-Original |
+| 7 | R2 Z12 | It | doppel | 131,368 | 131,396 | 131,250 | +146 ms | T66+11,17 → T66+10,00 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) +28 ms gegen Doppel-Original |
+| 8 | R1 Z4 | know | doppel | 66,581 | 66,627 | 66,500 | +127 ms | T34+5,02 → T34+4,00 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) +46 ms gegen Doppel-Original |
+| 9 | R3 Z23 | low | doppel | 242,499 | 242,498 | 242,625 | -127 ms | T122+3,98 → T122+5,00 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) -1 ms gegen Doppel-Original |
+| 10 | R2 Z13 | see | doppel | 136,100 | 136,117 | 136,000 | +117 ms | T69+0,94 → T69+0,00 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) +17 ms gegen Doppel-Original |
+| 11 | R1 Z5 | is | haupt | 74,576 | 74,613 | 74,500 | +113 ms | T38+4,90 → T38+4,00 | kleine Abweichungen über mehrere Fassungen |
+| 12 | S1 Z0 | to | haupt | 34,047 | 34,112 | 34,000 | +112 ms | T18+0,90 → T18+0,00 | v7 +58 ms |
+| 13 | R1 Z5 | is | doppel | 74,595 | 74,605 | 74,500 | +105 ms | T38+4,84 → T38+4,00 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) +10 ms gegen Doppel-Original |
+| 14 | R1 Z7 | eyes | haupt | 91,893 | 91,900 | 92,000 | -100 ms | T46+15,20 → T47+0,00 | kleine Abweichungen über mehrere Fassungen |
+| 15 | S2 Z8 | we | haupt | 97,988 | 97,906 | 98,000 | -94 ms | T49+15,24 → T50+0,00 | v6 -59 ms |
+| 16 | R3 Z22 | see | doppel | 232,067 | 232,092 | 232,000 | +92 ms | T117+0,74 → T117+0,00 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) +25 ms gegen Doppel-Original |
+| 17 | R2 Z13 | be | doppel | 139,603 | 139,590 | 139,500 | +90 ms | T70+12,72 → T70+12,00 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) -13 ms gegen Doppel-Original |
+| 18 | R3 Z21 | all | doppel | 228,030 | 228,086 | 228,000 | +86 ms | T115+0,69 → T115+0,00 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) +56 ms gegen Doppel-Original |
+| 19 | R3 Z21 | It | doppel | 227,275 | 227,334 | 227,250 | +84 ms | T114+10,67 → T114+10,00 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) +59 ms gegen Doppel-Original |
+| 20 | S1 Z0 | li | haupt | 41,963 | 41,925 | 42,000 | -75 ms | T21+15,40 → T22+0,00 | kleine Abweichungen über mehrere Fassungen |
+| 21 | S2 Z11 | to | haupt | 124,040 | 124,073 | 124,000 | +73 ms | T63+0,58 → T63+0,00 | kleine Abweichungen über mehrere Fassungen |
+| 22 | S1 Z3 | we | haupt | 58,737 | 58,679 | 58,750 | -71 ms | T30+5,43 → T30+6,00 | v6 -58 ms |
+| 23 | R2 Z13 | hind | doppel | 140,076 | 140,070 | 140,000 | +70 ms | T71+0,56 → T71+0,00 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) -6 ms gegen Doppel-Original |
+| 24 | R1 Z7 | your | doppel | 91,335 | 91,324 | 91,255 | +69 ms | T46+10,59 → T46+10,04 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) -11 ms gegen Doppel-Original |
+| 25 | S2 Z8 | Why | haupt | 95,977 | 95,934 | 96,000 | -66 ms | T48+15,47 → T49+0,00 | v10 -40 ms |
+| 26 | ZT Z18 | see | haupt | 200,064 | 200,064 | 200,000 | +64 ms | T101+0,51 → T101+0,00 | kleine Abweichungen über mehrere Fassungen |
+| 27 | R2 Z13 | Can’t | doppel | 135,570 | 135,563 | 135,500 | +63 ms | T68+12,50 → T68+12,00 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) -7 ms gegen Doppel-Original |
+| 28 | R1 Z5 | see | haupt | 72,054 | 72,061 | 72,000 | +61 ms | T37+0,48 → T37+0,00 | kleine Abweichungen über mehrere Fassungen |
+| 29 | R2 Z13 | see | haupt | 136,063 | 136,060 | 136,000 | +60 ms | T69+0,48 → T69+0,00 | kleine Abweichungen über mehrere Fassungen |
+| 30 | R1 Z4 | all | doppel | 68,037 | 68,058 | 68,000 | +58 ms | T35+0,46 → T35+0,00 | Doppel v12 (v7-Doppel, auf Haupt gestimmt) +21 ms gegen Doppel-Original |
+
+## Raster-Muster
+
+**Strophen** (16tel ab Takt 1 jeder 4-Takt-Phrase, Median aller acht Phrasen, Haupt):
+
+| Silbe in der Phrase | 1 | 2 | 3 | 4 | (Bindung) | 5 | 6 | 7 |
 |---|---|---|---|---|---|---|---|---|
-| H-055 | S2 | there | 104.012 (T53+0.10) | 103.996 (T52+15.97) | 104.000 (T53+0.00) | -16 | -12 | strophe1 |
-| H-056 | S2 | is | 104.746 (T53+5.97) | 104.749 (T53+5.99) | 104.750 (T53+6.00) | +3 | +4 | strophe1 |
-| H-057 | S2 | so | 106.117 (T54+0.94) | 106.002 (T54+0.02) | 106.000 (T54+0.00) | -115 | -117 | strophe1 |
-| H-058 | S2 | much | 106.784 (T54+6.27) | 106.725 (T54+5.80) | 106.750 (T54+6.00) | -59 | -34 | strophe1 |
-| H-059 | S2 | more | 107.989 (T54+15.91) | 107.993 (T54+15.94) | 108.000 (T55+0.00) | +4 | +11 | strophe1 |
-| H-060 | S2 | to | 108.783 (T55+6.26) | 108.742 (T55+5.94) | 108.750 (T55+6.00) | -41 | -33 | strophe1 |
-| H-061 | S2 | see | 110.001 (T56+0.01) | 110.009 (T56+0.07) | 110.000 (T56+0.00) | +8 | -1 | strophe1 |
+| Ziel | 0 | 6 | 16 | 22 | 26 | 32 | 38 | 48 |
+| Median gemessen | -0,04 | 6,26 | 16,14 | 22,02 | 26,31 | 32,2 | 38,23 | 47,98 |
 
-Original: s ab 109,633 (T55+13,06), erster Vokal-Einsatz „e“ 109,833 (T55+14,67), Akzent/Transienten-Spitze 110,001 (T56+0) – gleiche Form wie „sake“ in Strophe 1 (erster Vokal 14,57, Akzent 15,96). v12: s künstlich verlängert (lied.json schnitte: „Rauschen verlängert (s nachgebildet) 191 -> 408 ms“, v10-02), Vokal erst ab 110,0 (s 109,575–110,0 = 434 ms statt 200 ms) -> das „e“ kommt ~170 ms später als im Original, der Akzent selbst liegt auf T56. Ziel = Original-Zeitlage unverändert (Verschiebung −1 ms), s in Originallänge (~200 ms).
+**Refrains** (16tel ab dem Takt der 2. Silbe; Haupt R1 / R2 / R3 → Ziel):
 
-## „Are we hypnotized“ (Strophe 2, T57–59)
+| Zeile | Silben-Ziele | Abweichende Stellen |
+|---|---|---|
+| Z1 „We claim we know it all“ | We -4 · claim 0 · we 16 · know 20 · It 26 · all 32 | claim: 0,22/0,24/-0,33 → 0 |
+| Z2 „Can’t see who is behind this wall“ | Can’t -4 · see 0 · Who 16 · is 20 · be 28 · hind 32 · this 44 · wall 48 | is: 20,61/20,67/20,22 → 20 (unsicher); this: 43,35/44,03/44,16 → 44 |
+| Z3 „Don’t wait, follow the light“ | Don’t -4 · wait 0 · fol 16 · low 21 · the 28 · light 32 | low: 20,94/21,46/20,02 → 21 (unsicher); the: 28,18/28,26/27,72 → 28 |
+| Z4 „wake up open your eyes“ | wake -4 · up 0 · o 16 · pen 22 · your 28 · eyes 32 | wake: -4,59/-4,07/-4,18 → -4; eyes: 31,14/31,86/31,43 → 32 (unsicher) |
 
-| id | Teil | Silbe | Original s (Raster) | v12 s (Raster) | Ziel s (Raster) | v12−Orig ms | Ziel−Orig ms | Regel |
-|---|---|---|---|---|---|---|---|---|
-| H-062 | S2 | Are | 112.006 (T57+0.05) | 112.000 (T56+16.00) | 112.000 (T57+0.00) | -6 | -6 | strophe1 |
-| H-063 | S2 | we | 112.830 (T57+6.64) | 112.780 (T57+6.24) | 112.750 (T57+6.00) | -50 | -80 | strophe1 |
-| H-064 | S2 | hyp | 113.979 (T57+15.83) | 113.996 (T57+15.97) | 114.000 (T58+0.00) | +17 | +21 | strophe1 |
-| H-065 | S2 | no | 114.660 (T58+5.28) | 114.740 (T58+5.92) | 114.750 (T58+6.00) | +80 | +90 | strophe1 |
-| H-065b | S2 | ti | 115.352 (T58+10.82) | 115.420 (T58+11.36) | 115.250 (T58+10.00) | +68 | -102 | strophe1 |
-| H-066 | S2 | tised | 116.016 (T59+0.13) | 115.982 (T58+15.86) | 116.000 (T59+0.00) | -34 | -16 | strophe1 |
+## Zuordnung „are we hypnotized“ ↔ „everything we do believe“
 
-Am Audio gemessen (Plätze in 16teln ab Phrasenbeginn T57 bzw. T29): Are 0,05 / Eve −0,12; we 6,64 / ry 6,36; hyp 15,83 / thing 16,72; no 21,28 / we 21,90; ti 26,82 / (Strophe 1 neuer Ton auf „we~“ 26,31; Zeile 3 „of~“ 26,06); sed 32,13 / Do 32,25; Strophe 1 hat danach noch be 38,3 + lieve 48,35. Also: EV=ARE, ERY=WE, THING=HYP, WE=NO, DO=TISED – genau Xanders Zuordnung; sie ist auch die mathematische (gleicher Platz). Ziel: 0, 6, 16, 22, 26, 32.
-
-## Strophe 2 gegen Strophe 1 (Plätze in 16teln ab Phrasenbeginn)
-
-| Strophe 1 | Platz | Strophe 2 | Platz | Diff |
-|---|---|---|---|---|
-| Wel | -0.18 | Why | -0.18 | 0.0 |
-| come | 6.34 | can’t | 6.19 | -0.14 |
-| to | 16.38 | we | 15.90 | -0.47 |
-| the | 21.66 | just | 22.34 | 0.68 |
-| fake | 31.93 | feel | 32.34 | 0.42 |
-| zom | 0.14 | there | 0.10 | -0.05 |
-| bies | 6.29 | is | 5.97 | -0.32 |
-| li | 15.7 | so | 16.94 | 1.23 |
-| ving | 22.14 | much | 22.27 | 0.13 |
-| for | 32.15 | more | 31.91 | -0.24 |
-| Gods | 38.2 | to | 38.26 | 0.06 |
-| sake | 47.96 | see | 48.01 | 0.05 |
-| In | 0.38 | Are | 0.05 | -0.34 |
-| a | 6.23 | we | 6.64 | 0.41 |
-| world | 17.48 | hyp | 15.83 | -1.65 |
-| of | 21.84 | no | 21.28 | -0.56 |
-| Sheep | 32.38 | tised | 32.13 | -0.25 |
-| Eve | -0.12 | What | -0.41 | -0.29 |
-| ry | 6.36 | does | 6.23 | -0.13 |
-| thing | 16.72 | it | 15.75 | -0.97 |
-| we | 21.9 | need | 22.30 | 0.41 |
-| Do | 32.25 | to | 32.32 | 0.07 |
-| be | 38.3 | rea | 37.86 | -0.44 |
-| lieve | 48.35 | lise | 47.66 | -0.7 |
-
-Muster aller 8 Phrasen: 0, 6, 16, 22, (26), 32, 38, 48. Xanders Paar „in a world of sheep“: In 0,38/there 0,10; a 6,23/is 5,97; world 17,48/so 16,94; of 21,84/much 22,27; Sheep 32,38/more 31,91. Danach „to“ 38,26 und „see“ 48,01 = überzählige Silben, gesungen auf denselben Plätzen wie „Gods“ 38,20 und „sake“ 47,96 in Strophe 1 Zeile 2 (gleiches Muster). Ziel: 0, 6, 16, 22, 32, 38, 48. „world“ liegt in Strophe 1 selbst 1,5 16tel zu spät (alle 7 anderen Phrasen: 16) -> Mehrheit 16.
-
-## Refrains (Plätze in 16teln ab Takt der 2. Silbe; Haupt R1/R2/R3 -> Ziel)
-
-| Zeile/Silbe | R1 | R2 | R3 | Ziel | Grund |
-|---|---|---|---|---|---|
-| Z1/0 | -4.35 | -4.50 | -4.25 | -4 | Durchschnitt -4.37 = Mehrheit |
-| Z1/1 | 0.22 | 0.24 | -0.33 | 0 | Durchschnitt 0.04 = Mehrheit |
-| Z1/2 | 15.87 | 15.94 | 15.74 | 16 | Durchschnitt 15.85 = Mehrheit |
-| Z1/3 | 20.29 | 20.62 | 20.19 | 20 | Durchschnitt 20.37 = Mehrheit |
-| Z1/4 | 26.40 | 26.33 | 26.11 | 26 | Durchschnitt 26.28 = Mehrheit |
-| Z1/5 | 32.21 | 32.34 | 32.28 | 32 | Durchschnitt 32.27 = Mehrheit |
-| Z2/0 | -3.96 | -3.94 | -3.82 | -4 | Durchschnitt -3.91 = Mehrheit |
-| Z2/1 | 0.43 | 0.50 | 0.40 | 0 | Mittel 0.45 liegt genau zwischen zwei 16teln -> R3 (sauberster) |
-| Z2/2 | 16.13 | 16.05 | 15.99 | 16 | Durchschnitt 16.06 = Mehrheit |
-| Z2/3 | 20.61 | 20.67 | 20.22 | 20 | Mittel 20.50 liegt genau zwischen zwei 16teln -> R3 (sauberster) |
-| Z2/4 | 28.51 | 28.30 | 28.18 | 28 | Durchschnitt 28.33 = Mehrheit |
-| Z2/5 | 32.30 | 32.04 | 32.45 | 32 | Durchschnitt 32.26 = Mehrheit |
-| Z2/6 | 43.35 | 44.03 | 44.16 | 44 | Durchschnitt 43.85 = Mehrheit |
-| Z2/7 | 48.17 | 48.07 | 48.38 | 48 | Durchschnitt 48.21 = Mehrheit |
-| Z3/0 | -3.74 | -3.92 | -3.94 | -4 | Durchschnitt -3.87 = Mehrheit |
-| Z3/1 | 0.07 | 0.06 | 0.03 | 0 | Durchschnitt 0.06 = Mehrheit |
-| Z3/2 | 15.99 | 16.19 | 15.90 | 16 | Durchschnitt 16.03 = Mehrheit |
-| Z3/3 | 20.94 | 21.46 | 20.02 | 21 | Durchschnitt 20.81 = Mehrheit |
-| Z3/4 | 28.18 | 28.26 | 27.72 | 28 | Durchschnitt 28.05 = Mehrheit |
-| Z3/5 | 32.23 | 32.38 | 32.16 | 32 | Durchschnitt 32.26 = Mehrheit |
-| Z4/0 | -4.59 | -4.07 | -4.18 | -4 | Durchschnitt -4.28 = Mehrheit |
-| Z4/1 | 0.10 | 0.18 | 0.38 | 0 | Durchschnitt 0.22 = Mehrheit |
-| Z4/2 | 16.09 | 15.96 | 15.91 | 16 | Durchschnitt 15.99 = Mehrheit |
-| Z4/3 | 22.11 | 22.18 | 22.08 | 22 | Durchschnitt 22.12 = Mehrheit |
-| Z4/4 | 28.12 | 28.17 | 28.33 | 28 | Durchschnitt 28.21 = Mehrheit |
-| Z4/5 | 31.14 | 31.86 | 31.43 | 32 | gerundet 31/32/31, Mittel 31.48 (genau zwischen 31 und 32); Outro/Tag „eyes“ auf dem Taktstrich -> 32 (Taktstrich) |
-
-## Die 30 auffälligsten Stellen (Haupt, |v12 − Ziel|)
-
-| id | Teil | Silbe | Original | v12 | Ziel | v12−Ziel ms | Herkunft (Sprünge ms) |
-|---|---|---|---|---|---|---|---|
-| H-014 | S1 | world | T26+1.48 | T26+1.39 | T26+0.00 | +174 | – |
-| H-065b | S2 | ti | T58+10.82 | T58+11.36 | T58+10.00 | +170 | v6 +84 |
-| H-033 | R1 | is | T38+4.61 | T38+4.90 | T38+4.00 | +113 | – |
-| H-002 | S1 | to | T18+0.38 | T18+0.90 | T18+0.00 | +112 | v7 +58 |
-| H-049 | R1 | eyes | T46+15.14 | T46+15.20 | T47+0.00 | -100 | – |
-| H-052 | S2 | we | T49+15.90 | T49+15.24 | T50+0.00 | -94 | v6 -59 |
-| H-007 | S1 | li | T21+15.70 | T21+15.40 | T22+0.00 | -75 | – |
-| H-071 | S2 | to | T63+0.32 | T63+0.58 | T63+0.00 | +73 | – |
-| H-020 | S1 | we | T30+5.90 | T30+5.43 | T30+6.00 | -71 | v6 -58 |
-| H-050 | S2 | Why | T48+15.82 | T48+15.47 | T49+0.00 | -66 | v10 -40 |
-| H-111 | ZT | see | T101+0.51 | T101+0.51 | T101+0.00 | +64 | – |
-| H-031 | R1 | see | T37+0.43 | T37+0.48 | T37+0.00 | +61 | – |
-| H-081 | R2 | see | T69+0.50 | T69+0.48 | T69+0.00 | +60 | – |
-| H-147 | R3 | low | T122+4.02 | T122+4.53 | T122+5.00 | -58 | – |
-| H-013 | S1 | a | T25+6.23 | T25+6.46 | T25+6.00 | +57 | v7 +54 |
-| H-045 | R1 | up | T45+0.10 | T45+0.45 | T45+0.00 | +56 | v6 +47 |
-| H-083 | R2 | is | T70+4.67 | T70+4.43 | T70+4.00 | +54 | – |
-| H-000 | S1 | Wel | T16+15.82 | T16+15.58 | T17+0.00 | -52 | v6 -42 |
-| H-067 | S2 | What | T60+15.59 | T60+15.60 | T61+0.00 | -50 | – |
-| H-021 | S1 | Do | T31+0.25 | T31+0.39 | T31+0.00 | +49 | – |
-| H-075 | R2 | claim | T65+0.24 | T65+0.39 | T65+0.00 | +49 | – |
-| H-037 | R1 | wall | T40+0.17 | T40+0.38 | T40+0.00 | +47 | v6 +49 |
-| H-017 | S1 | Eve | T28+15.88 | T28+15.65 | T29+0.00 | -44 | – |
-| H-028 | R1 | It | T34+10.40 | T34+10.34 | T34+10.00 | +43 | – |
-| H-012 | S1 | In | T25+0.38 | T25+0.32 | T25+0.00 | +40 | – |
-| H-036 | R1 | this | T39+11.35 | T39+11.68 | T39+12.00 | -40 | v6 +79, v7 -38 |
-| H-137 | R3 | see | T117+0.40 | T117+0.32 | T117+0.00 | +40 | – |
-| H-027 | R1 | know | T34+4.29 | T34+4.31 | T34+4.00 | +39 | – |
-| H-034 | R1 | be | T38+12.51 | T38+12.31 | T38+12.00 | +39 | – |
-| H-154 | R3 | your | T126+12.33 | T126+12.32 | T126+12.00 | +39 | – |
-
-## Zahlen
-
-Haupt v12 gegen Ziel: Median 16 ms, 90 % 56 ms, max 174 ms; 12 Silben > 60 ms. Nötige Verschiebung Original -> Ziel: Median 26 ms, 90 % 64 ms, max 185 ms.
+Xander nennt „are we hypnotized“ ↔ „everything we do believe“ (EV/ARE, ERY/WE, THING/HYP, NO/WE, TIZED/DO) und „there is so much more to see“ ↔ „in a world of sheep“. Nach Takt und Akkord liegen die Zeilen anders: „there is so much more to see“ steht über Ab–Fm wie „zombies living for Gods sake“, „are we hypnotised“ über Bbm–Gb wie „in a world of sheep“, „what does it need to realise“ wie „everything we do believe“. Mathematisch ist es egal: alle acht 4-Takt-Phrasen beider Strophen benutzen dasselbe Silben-Raster 0 / 6 / 16 / 22 / 32 / 38 / 48 (16tel ab Takt 1 der Phrase; gemessene Mediane {'0': -0.04, '1': 6.26, '2': 16.14, '3': 22.02, '4': 32.2, '5': 38.23, '6': 47.98, 'b': 26.31}). Mittlere Abweichung Silbe-für-Silbe: Xanders Paare 0.41 16tel, Takt/Akkord-Paare 0.42 16tel – praktisch gleich. Beide Zuordnungen ergeben deshalb dieselben Ziele: ARE 0, WE 6, HYP 16, NO 22, TIZED 32 – genau Xanders Rechnung (EV 0, ERY 6, THING 16, WE 22, DO 32). Am Audio singt er „hyp-no-ti-sed“ mit vier Tönen: „ti“ ist ein eigener Ton mit t-Anlaut (115,35 s), „-sed“ mit dem s ab 115,93 s und dem Vokal auf 116,0 (= sein „TIZED auf DO“). Strophe 1 hat an derselben Stelle (Platz ~26) ebenfalls einen neuen Ton ohne neue Silbe (51,26 s „of~“, 59,29 s „we~“) – deshalb Ziel „ti“ = 26.
 
 ## Woher die v12-Fehler kommen
 
-Cubasis v6/v7/v8: alle Gesangsclips Stretch 1.0, MusicalMode aus -> keine Warp-Marken. Die Fehler stammen aus Audio-Bearbeitungen: (1) v6 „getunt“ (projekt/Gesang-Platzhalter-3.wav) schiebt „no“ und „ti“ um ~+85 ms nach hinten, Rest fast gleich; (2) v7 Schnitte (lied.json schnitte quelle v7, 75 Stück): „Are we hypnotised silbenweise auf die Plätze von In a world of sheep gerückt“ – falsches Vorbild (richtig: Everything we do believe), ferner Einzelfehler z. B. „sake“, „lieve“, „light“; (3) v10 Neuschnitt G4 (16 Schnitte 103,9–117,1 s): „see“-s nachgebildet (+0,2 s) und Vokal-Beginn gelöscht, „so“ −124 ms, „much“ −101 ms; v12 übernimmt das unverändert (v12-Haupt = v11 „ende“, Zeitlage = v10). MP3-Quelle (128 kbit/s) verschiebt nichts (v10 und v12 messen gleich), kostet nur Klang.
+- **Warp-Marken**: Keine. In The-Wall-v6.cbp, The-Wall-v7.cbp und der v8-Projektdatei (148 Clips) haben alle Gesangs-Clips Stretch 1,0, Pitch 1,0, MusicalMode aus; v6/v7 sind je ein durchgehender Clip ab 0 s. Alle Timing-Änderungen stecken in den WAV-Dateien selbst.
+- **v6-Bearbeitung**: projekt/Gesang-Platzhalter-3.wav („getunt v6“) ist zeitlich schon bearbeitet: hypnotised no/ti +84 ms, sed −98 ms; Strophe 2 Zeile 1 („we just feel“) −50…−70 ms; mehrere Strophe-1-Silben −40…−80 ms.
+- **v7**: Haupt-3-trocken-v7: v7-04 „Are we hypnotised silbenweise auf die Plätze von In a world of sheep gerückt“; weitere Schnitte (lied.json schnitte, quelle v7: 75 Sprünge).
+- **v10/G4**: Haupt-3_g4 (v10): Strophe 2 Zeilen 2+3 neu geschnitten (16 Schnitte), „see“ s von 191 auf 408 ms verlängert (+166…+177 ms für den Rest von „see“), „so“ −115 ms, Stille vor „no“ verdoppelt.
+- **MP3**: v12-Lead = v11-Haupt aus 128-kbit-MP3 (wall/roh/ende.npy). Zeitlich kein Versatz messbar (unbearbeitete Stellen ±10 ms zum Original), aber schlechtere Klangquelle – für v13 aus dem 24-bit-Original neu schneiden.
+- **see**: „see“ (S2) ist im Original genau wie „sake“ (S1, gleiche Stelle): s ab 16tel 13 (109,63 / 45,62), Vokal setzt 1,35 16tel vor dem Takt ein (109,83 / 45,83), kurzer Einbruch, Akzent genau auf dem Taktstrich (110,00 / 46,00). Das ist schon Xanders Muster – Ziel = Original (Verschiebung 0). v12 hat das s auf ~0,43 s verlängert (Anfang 109,58), den ersten Vokal-Teil durch Rauschen ersetzt und den ganzen Rest von „see“ um +166 ms nach hinten geschoben (Akzent 110,17); danach wird bei 111,13 s ein Stück ausgelassen. Ursache: v10 („s etwa 0,2 s länger, damit der Vokal genau auf dem Schlag kommt“, Haupt-3_g4), unverändert in v11/v12.
+- **hypnotised**: Original: hyp 113,98 (15,8) · no 114,66 (21,3) · ti 115,35 (26,8) · sed 116,02 (32,1). v12: hyp 114,00 · no 114,74 (+80) · ti 115,42 (+68) · sed 115,98 (−34). Schon die v6-Datei (projekt/Gesang-Platzhalter-3.wav, „getunt v6“) hat no und ti um +84 ms verschoben und sed um −98 ms; v7 („silbenweise auf die Plätze von In a world of sheep gerückt“) und v10/G4 haben das beibehalten und zusätzlich vor „no“ 3×24 ms Stille verdoppelt – das n ist in v12 durch Stille ersetzt (114,63–114,72), ebenso der t-Verschluss von „ti“ (115,36–115,40). Ziel: hyp 16 (114,00, +21 ms), no 22 (114,75, +90 ms – der Vokal liegt damit da, wo v12 ihn hat, aber MIT dem originalen n davor ab 114,66), ti 26 (115,25, −102 ms), sed 32 (116,00, −16 ms). Die hörbare Schieflage in v12 kommt also vor allem von „ti“ (1,4 16tel zu spät gegenüber Strophe 1), vom fehlenden n und von der gestauchten Lücke ti→sed (Original 0,66 s, v12 0,56 s).
 
-## Offen / nicht sicher
+## Unsicher / offen
 
-Nicht sicher: „ti“ Ziel 26 (alternativ 27 = nächstes 16tel, nur +23 ms); Refrain „is“/„low“ (Schlag 2 vs 2e); Tag „pen“ (Platz 3, eigener Rhythmus); Doppel-Messungen mit abw_zur_haupt > 70 ms; Hörprobe fehlt (kein Ohr-Urteil).
+- world (S1) Ziel 16 statt eigen 17,5
+- ti Ziel 26 (Alternative 27 = nächstes 16tel des Originals)
+- is (Refrain) 20 vs. 21
+- low (Refrain) 21 vs. 20
+- eyes (Refrain) 32 vs. 31
+- Tag-Rhythmus
+- Doppel-Silben mit > 70 ms Abstand zur Haupt (Notiz am Eintrag) – Messung oder echte Abweichung?
+- Akzent-Wahl bei your/the R3
+- Strophe 1 ist Vorbild. Nur „world“ (S1, 17,5) und „thing“ (16,7) weichen selbst vom Muster aller acht Phrasen (16) ab; Ziel 16 nach Mehrheit. „world“ wird dadurch um −185 ms verschoben (w-Anlaut beginnt dann vor dem Takt) – unsicher, Alternative: 17 (nur aufs nächste 16tel).
+- Tag nach Refrain 2 („o-pen your eyes“ mit pen/your auf 3/6 statt 6/12) und „Wach auf“ im Zwischenteil (auf auf 4-und, Haupt und Doppel gleich) behalten ihren eigenen Rhythmus, nur auf das nächste 16tel. Gesprochene Zwischenteil-Wörter sind nicht in der Karte.
+- Je Silbe Rasterplatz in R1/R2/R3 (Haupt), Ziel = Durchschnitt gerundet; liegt der Durchschnitt genau zwischen zwei 16teln (±0,1) -> R3. Auffällig: die Silbe auf Schlag 2 (know/is/low) liegt in allen Refrains 40–110 ms nach Schlag 2: know 20,4 -> 20; is 20,5 (genau Mitte) -> R3 = 20; low 20,8 -> 21 (2e). „It“ liegt in allen drei Refrains auf 26 (3-und), nicht auf 28 wie in lied.json/ziel_s angenommen; „know“ auf 20, nicht 22. „eyes“ (Zeile 4) 31,1/31,9/31,4 – genau zwischen 31 und 32; Ziel 32 (Taktstrich), weil Outro und Tag „eyes“ auf dem Taktstrich singen (Ausnahme von der Rundungsregel, unsicher).

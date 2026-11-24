@@ -45,7 +45,7 @@ class M:
         kp = a0 + int(np.argmax(d[a0:a1 + 1]))
         lo = max(1, kp - 20); kv = lo + int(np.argmin(Vs[lo:kp + 1]))
         ref = Vs[min(len(Vs) - 1, kp + 10)]
-        kk = kv; still = 0
+        kk = kv; still = 0; self._leer = 0
         while kk > max(1, kv - int(0.45 / HOP)):
             q = kk - 1
             if Vs[q] < self.bV + 6 and self.HF[q] < self.bH + 6:
@@ -53,6 +53,12 @@ class M:
                 if still >= 8: kk = q + 8; break
                 kk = q; continue
             still = 0
+            # Atem/Rauschen vor dem Anlaut: weder stimmhaft-laut noch lauter Zischlaut -> Anlaut beginnt danach
+            if Vs[q] < ref - 25.0 and self.HF[q] < ref - 20.0:
+                leer = getattr(self, '_leer', 0) + 1; self._leer = leer
+                if leer >= 10: kk = q + 10; break
+                kk = q; continue
+            self._leer = 0
             leise = Vs[q] < ref - 6.0
             stl = r[q] < 0.5 or (self.HF[q] - self.V[q] > -14.0)
             if leise or stl: kk = q
