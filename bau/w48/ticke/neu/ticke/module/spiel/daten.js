@@ -13,25 +13,25 @@ export const FASSUNG = 'eo-2';
 
 // Fünf Richtungen mit zwei gleichwertigen Polen. links = Pol „weniger“ (Aussagen mit k = −1), rechts = Pol „mehr“ (k = +1).
 // id = Bereichs-ID der Vorlage (bleibt so, alte Daten laden weiter). forschung = Name des Bereichs in der Big-Five-Forschung.
-// satz: [rechts, links, beides] – je ein Satz in Worten, beide Pole mit ihren Stärken.
+// thema: worum es geht (für „woher“). satz: [rechts, links, beides] – je ein Satz in Worten, beide Pole mit ihren Stärken.
 export const BEREICHE = [
-  { id: 'offenheit', titel: 'Neues oder Vertrautes', forschung: 'Offenheit für Erfahrungen', links: 'Vertrautes', rechts: 'Neues',
+  { id: 'offenheit', titel: 'Neues oder Vertrautes', thema: 'Neues und Vertrautes', forschung: 'Offenheit für Erfahrungen', links: 'Vertrautes', rechts: 'Neues',
     satz: ['Du gehst gern auf Neues zu: Ideen, Fantasie und Abwechslung ziehen dich an.',
       'Du hältst dich gern an Vertrautes: Bewährtes gibt dir Boden, und du gehst Dingen lieber in die Tiefe als in die Breite.',
       'Neues und Vertrautes ziehen dich ähnlich an – je nach Lage nimmst du das eine oder das andere.'] },
-  { id: 'gewissenhaftigkeit', titel: 'Spontan oder geplant', forschung: 'Gewissenhaftigkeit', links: 'spontan, beweglich', rechts: 'geplant, gründlich',
+  { id: 'gewissenhaftigkeit', titel: 'Spontan oder geplant', thema: 'Spontaneität und Planung', forschung: 'Gewissenhaftigkeit', links: 'spontan, beweglich', rechts: 'geplant, gründlich',
     satz: ['Du gehst eher geplant und gründlich vor: Ordnung und ein klarer Weg geben dir Ruhe.',
       'Du gehst eher spontan und beweglich vor: Du lässt dich vom Moment leiten und kannst gut umplanen.',
       'Planen und Losgehen liegen bei dir nah beieinander – du nimmst, was die Lage braucht.'] },
-  { id: 'extraversion', titel: 'Ruhe oder Trubel', forschung: 'Extraversion', links: 'ruhig, für dich', rechts: 'gesellig, aktiv',
+  { id: 'extraversion', titel: 'Ruhe oder Trubel', thema: 'Ruhe und Geselligkeit', forschung: 'Extraversion', links: 'ruhig, für dich', rechts: 'gesellig, aktiv',
     satz: ['Du bist eher gesellig und aktiv: Menschen und Bewegung geben dir Schwung.',
       'Du bist eher ruhig und gern für dich: Stille und wenige, nahe Menschen geben dir Kraft.',
       'Trubel und Ruhe tun dir beide gut – du wechselst je nach Tag zwischen beidem.'] },
-  { id: 'vertraeglichkeit', titel: 'Direkt oder rücksichtsvoll', forschung: 'Verträglichkeit', links: 'direkt, kritisch', rechts: 'rücksichtsvoll, mitfühlend',
+  { id: 'vertraeglichkeit', titel: 'Direkt oder rücksichtsvoll', thema: 'Klartext und Rücksicht', forschung: 'Verträglichkeit', links: 'direkt, kritisch', rechts: 'rücksichtsvoll, mitfühlend',
     satz: ['Du bist eher rücksichtsvoll und mitfühlend: Du achtest darauf, wie es anderen geht.',
       'Du bist eher direkt und kritisch: Du sagst, was du denkst, und prüfst, bevor du vertraust.',
       'Rücksicht und Klartext gehören bei dir beide dazu – je nachdem, mit wem du es zu tun hast.'] },
-  { id: 'stabilitaet', titel: 'Feinfühlig oder gelassen', forschung: 'Emotionale Stabilität (umgekehrt: Neurotizismus)', links: 'feinfühlig, wachsam', rechts: 'gelassen, ruhig',
+  { id: 'stabilitaet', titel: 'Feinfühlig oder gelassen', thema: 'Feingefühl und Gelassenheit', forschung: 'Emotionale Stabilität (umgekehrt: Neurotizismus)', links: 'feinfühlig, wachsam', rechts: 'gelassen, ruhig',
     satz: ['Du bleibst eher gelassen: Vieles lässt du an dir abperlen und behältst die Ruhe.',
       'Du bist eher feinfühlig und wachsam: Du spürst Stimmungen und Anspannung früh und deutlich.',
       'Gelassenheit und Feingefühl wechseln sich bei dir ab – je nach Lage spürst du mehr oder bleibst ruhig.'] }

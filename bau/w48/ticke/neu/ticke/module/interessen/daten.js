@@ -136,10 +136,10 @@ export const ACHSEN = {
 // IPIP-Fragen zu den vier Teilen nach HEXACO (angelehnt an die IPIP-HEXACO-Skalen, Ashton, Lee & Goldberg 2007; gemeinfrei).
 // u: true = umgepolt (Zustimmung heißt weniger Ehrlichkeit-Bescheidenheit). Wortlaut-Zuordnung vor Veröffentlichung prüfen (QUELLEN.md).
 export const FACETTEN = {
-  aufrichtigkeit: { name: 'Aufrichtigkeit', kurz: 'nicht schmeicheln, nicht tricksen' },
-  fairness: { name: 'Fairness', kurz: 'nicht schummeln, nichts nehmen, was dir nicht zusteht' },
-  genuegsamkeit: { name: 'Genügsamkeit', kurz: 'Geld, Luxus und Status sind dir weniger wichtig' },
-  bescheidenheit: { name: 'Bescheidenheit', kurz: 'dich nicht über andere stellen' }
+  aufrichtigkeit: { name: 'Aufrichtigkeit', kurz: 'ob du geradeheraus bist oder auch mal schmeichelst und taktierst' },
+  fairness: { name: 'Fairness', kurz: 'wie streng du es mit Regeln nimmst, wenn es um deinen Vorteil geht' },
+  genuegsamkeit: { name: 'Genügsamkeit', kurz: 'wie wichtig dir Geld, Luxus und Status sind' },
+  bescheidenheit: { name: 'Bescheidenheit', kurz: 'ob du dich mit anderen auf eine Stufe stellst oder gern zeigst, was du kannst' }
 };
 export const EHRLICHKEIT = [
   { id: 'h1', f: 'aufrichtigkeit', text: 'Ich mache mich nicht größer, als ich bin.', en: "Don't pretend to be more than I am." },

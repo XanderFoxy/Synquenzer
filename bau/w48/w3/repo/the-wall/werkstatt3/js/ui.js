@@ -87,6 +87,14 @@ function farben() {
     ton: v('--tonlinie', v('--rot', '#b03a2e')), kopf: v('--spielkopf', v('--gold', '#a87908')), welle: v('--welle', '#4f5b67'),
     bereich: v('--bereich', 'rgba(168,121,8,.13)'), ok: v('--ok', '#2b7a4b'), warn: v('--warn', '#b25d12'), fg: v('--fg', '#1d1c1a'), mut: v('--mut', '#857f75'),
     gold: v('--gold', '#a87908'), lin: v('--lin', '#e7e3db') };
+  // Klaviertasten: im dunklen Schema nicht umkehren (weiße Tasten bleiben heller als schwarze)
+  const hell = (c) => {
+    let r = 255, gg = 255, b = 255, m = /^#([0-9a-f]{6})$/i.exec(c);
+    if (m) { const n = parseInt(m[1], 16); r = n >> 16; gg = (n >> 8) & 255; b = n & 255; } else if ((m = /rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/.exec(c))) { r = +m[1]; gg = +m[2]; b = +m[3]; }
+    return (0.299 * r + 0.587 * gg + 0.114 * b) / 255;
+  };
+  const dunkel = hell(F.bg) < 0.4;
+  F.weiss = v('--taste-weiss', dunkel ? '#45423d' : F.bg); F.schwarz = v('--taste-schwarz', dunkel ? '#0c0b0a' : F.fg); F.schwarzA = dunkel ? 1 : 0.78;
 }
 const xOf = (t) => K + (t - Z.sicht.t0) * Z.sicht.pps;
 const tOf = (x) => Z.sicht.t0 + (x - K) / Z.sicht.pps;
@@ -222,7 +230,7 @@ function zeichnen() {
   g.save(); g.beginPath(); g.rect(0, R, K, yBot - R); g.clip();
   for (let n = Math.floor(mLo) - 1; n <= Math.ceil(mHi) + 1; n++) {
     const y = yOf(n + 0.5), pc = ((n % 12) + 12) % 12, sw = [1, 3, 6, 8, 10].includes(pc);
-    g.fillStyle = sw ? F.fg : F.bg; g.globalAlpha = sw ? 0.78 : 1;
+    g.fillStyle = sw ? F.schwarz : F.weiss; g.globalAlpha = sw ? F.schwarzA : 1;
     g.fillRect(sw ? 0 : 0, y + 0.5, sw ? K * 0.62 : K - 1, s.pph - 1);
     g.globalAlpha = 1;
     if (pc === 0 && s.pph >= 9) { g.fillStyle = F.tastenText; g.font = '600 10px -apple-system,system-ui,sans-serif'; g.fillText(notenName(n), K - 24, y + s.pph / 2); }

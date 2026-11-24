@@ -80,7 +80,7 @@ export const STAERKEN = {
     '-1': { text: 'Du setzt dich für deinen eigenen Vorteil ein und lässt dich nicht mit wenig abspeisen.', stufe: 'idee', quellen: ['nettle2006'],
       kosten: { text: 'Wenn andere merken, dass du vor allem auf dich schaust, sinkt ihr Vertrauen.', stufe: 'abgeleitet', quellen: ['thielmann2020'] } }
   },
-  interesse: { text: (name) => `${name} zieht dich deutlich an. Was zu den eigenen Interessen passt, machen Menschen im Mittel besser und bleiben länger dabei.`, stufe: 'belegt', quellen: ['nye2012'],
+  interesse: { text: (name) => `${name} zieht dich an. Was zu den eigenen Interessen passt, machen Menschen im Mittel besser und bleiben länger dabei.`, stufe: 'belegt', quellen: ['nye2012'],
     kosten: { text: 'Was nicht dazu passt, fühlt sich schnell zäh an – auch wenn es nötig ist.', stufe: 'idee' } },
   spaet: { text: 'Abends bist du noch wach und klar, wenn andere müde werden.', stufe: 'abgeleitet', quellen: ['roenneberg2003'],
     kosten: { text: 'Frühe Termine kosten dich leicht Schlaf – dein Körper möchte später schlafen, als der Wecker erlaubt (Fachwort: „sozialer Jetlag“).', stufe: 'belegt', quellen: ['wittmann2006'] } },

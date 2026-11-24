@@ -288,7 +288,7 @@ async function zeigeBeleg(stufe, ids = []) {
   let Q; try { Q = await quellen(); } catch { Q = { alle: {}, STUFEN: {} }; }
   const s = (Q.STUFEN || {})[stufe] || { name: stufe, text: '' };
   await ui.blatt(`<p><span class="marke marke-${ui.esc(stufe)}" aria-hidden="true">${ui.esc(s.name)}</span> ${ui.esc(s.kurz || '')}</p><p>${ui.esc(s.text)}</p>
-    ${ids.length ? `<h3>${ids.length > 1 ? 'Quellen' : 'Quelle'}</h3><ul class="quellen">${ids.map((id) => quelleHtml(id, Q.alle[id])).join('')}</ul>` : '<p class="leise">Für diesen Punkt ist keine eigene Quelle hinterlegt.</p>'}
+    ${ids.length ? `<h3>${ids.length > 1 ? 'Quellen' : 'Quelle'}</h3><ul class="quellen">${ids.map((id) => quelleHtml(id, Q.alle[id])).join('')}</ul>` : '<p class="leise">Für diese Aussage ist keine eigene Quelle hinterlegt.</p>'}
     <p class="klein"><a class="link" href="#einstellungen/quellen" data-w="quellen">Woher das Wissen kommt – alle Quellen</a></p>`, { titel: 'Woher kommt das?' }).then((w) => { if (w === 'quellen') geh('einstellungen/quellen'); });
 }
 

@@ -84,35 +84,35 @@
   "laenge": 1584000,
   "sek": 33,
   "spitzen": {
-   "n": 84,
-   "median": 1,
-   "p90": 18.1,
-   "starkN": 76,
-   "starkMedian": 1,
-   "starkP90": 13
+   "n": 85,
+   "median": 0,
+   "p90": 4.8,
+   "starkN": 78,
+   "starkMedian": 0,
+   "starkP90": 3
   },
   "ton": {
-   "noten": 90,
-   "median": 18.1,
-   "p90": 43.5,
-   "stabilN": 77,
-   "stabilMedian": 17.6,
-   "stabilP90": 43.7,
-   "langN": 67,
-   "langMedian": 17.6,
-   "langP90": 42
+   "noten": 86,
+   "median": 14.5,
+   "p90": 43.8,
+   "stabilN": 74,
+   "stabilMedian": 13.4,
+   "stabilP90": 43.9,
+   "langN": 64,
+   "langMedian": 13.6,
+   "langP90": 44.1
   },
   "boden": {
-   "p5": -66.9,
-   "p10": -47.5,
+   "p5": -65.6,
+   "p10": -47.7,
    "p95": -19.2,
    "spitze": -4.5
   },
   "erkannt": {
-   "klicks": 2,
+   "klicks": 0,
    "brummHz": 0,
    "brummUeberBoden": null,
-   "rauschBoden": -72,
+   "rauschBoden": -71.8,
    "schmatzer": 0
   }
  },
@@ -152,6 +152,45 @@
    "brummHz": 0,
    "brummUeberBoden": null,
    "rauschBoden": -72,
+   "schmatzer": 0
+  }
+ },
+ {
+  "datei": "export-hoch-nachbearbeitet.wav",
+  "sr": 48000,
+  "bits": 24,
+  "laenge": 1584000,
+  "sek": 33,
+  "spitzen": {
+   "n": 82,
+   "median": 38,
+   "p90": 55.3,
+   "starkN": 76,
+   "starkMedian": 38.5,
+   "starkP90": 55.3
+  },
+  "ton": {
+   "noten": 84,
+   "median": 17.3,
+   "p90": 45.8,
+   "stabilN": 76,
+   "stabilMedian": 16.3,
+   "stabilP90": 45.4,
+   "langN": 58,
+   "langMedian": 12.8,
+   "langP90": 45.3
+  },
+  "boden": {
+   "p5": -67.8,
+   "p10": -48,
+   "p95": -19,
+   "spitze": -4.5
+  },
+  "erkannt": {
+   "klicks": 1,
+   "brummHz": 0,
+   "brummUeberBoden": null,
+   "rauschBoden": -72.1,
    "schmatzer": 0
   }
  }
