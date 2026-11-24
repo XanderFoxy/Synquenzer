@@ -1,0 +1,269 @@
+{
+ "tests": [
+  {
+   "test": "haupt: 1. Echo Lage (Abweichung von 0,500 s)",
+   "ist": 0.0,
+   "soll": 0.0,
+   "tol": 0,
+   "einheit": "Samples",
+   "ok": true
+  },
+  {
+   "test": "haupt: 1. Echo gesamt (Delay + Echo-Bus) rel. Direkt",
+   "ist": -12.72,
+   "soll": -12.72,
+   "tol": 1.0,
+   "einheit": "dB",
+   "ok": true
+  },
+  {
+   "test": "haupt: 2. Echo (Stereo Delay 1/2 + Rest) rel. Direkt",
+   "ist": -15.233,
+   "soll": -15.232,
+   "tol": 1.0,
+   "einheit": "dB",
+   "ok": true
+  },
+  {
+   "test": "haupt: Insert-Delay 1. Echo rel. Direkt (Ziel audio-gemessen −16,0)",
+   "ist": -16.262,
+   "soll": -16.0,
+   "tol": 1.0,
+   "einheit": "dB",
+   "ok": true
+  },
+  {
+   "test": "haupt: Insert-Delay Abfall je Echo = 20·log10(0,1506)",
+   "ist": -16.444,
+   "soll": -16.444,
+   "tol": 0.05,
+   "einheit": "dB",
+   "ok": true
+  },
+  {
+   "test": "haupt: Insert-Delay Abfall Echo 2→3",
+   "ist": -16.444,
+   "soll": -16.444,
+   "tol": 0.05,
+   "einheit": "dB",
+   "ok": true
+  },
+  {
+   "test": "haupt: Stereo Delay links bei 1,000 s rel. Direkt (Ziel −19,0)",
+   "ist": -19.096,
+   "soll": -19.0,
+   "tol": 1.0,
+   "einheit": "dB",
+   "ok": true
+  },
+  {
+   "test": "haupt: Stereo Delay rechts bei 1,000 s rel. Direkt (Ziel −19,0)",
+   "ist": -19.096,
+   "soll": -19.0,
+   "tol": 1.0,
+   "einheit": "dB",
+   "ok": true
+  },
+  {
+   "test": "haupt: Stereo Delay kein Echo bei 2,0 s (fb≈0; ≤ −120 dB)",
+   "ist": -120.0,
+   "soll": -120.0,
+   "tol": 0.5,
+   "einheit": "dB",
+   "ok": true
+  },
+  {
+   "test": "haupt: Echo-Bus 1. Echo = Send-Pegel −22,22 dB",
+   "ist": -22.222,
+   "soll": -22.222,
+   "tol": 0.05,
+   "einheit": "dB",
+   "ok": true
+  },
+  {
+   "test": "haupt: Echo-Bus Abfall je Viertel = 20·log10(0,35)",
+   "ist": -9.123,
+   "soll": -9.119,
+   "tol": 0.05,
+   "einheit": "dB",
+   "ok": true
+  },
+  {
+   "test": "haupt: Echo-Bus Abfall Echo 1→5 (4 Schritte)",
+   "ist": -36.48,
+   "soll": -36.475,
+   "tol": 0.1,
+   "einheit": "dB",
+   "ok": true
+  },
+  {
+   "test": "haupt: RoomWorks Nass/Trocken-Energie (√-Gesetz, Mix 4,5 %)",
+   "ist": -13.268,
+   "soll": -13.268,
+   "tol": 0.2,
+   "einheit": "dB",
+   "ok": true
+  },
+  {
+   "test": "haupt: RoomWorks Hallzeit T30 (Band 0,3–6 kHz)",
+   "ist": 1.555,
+   "soll": 1.569,
+   "tol": 0.1,
+   "einheit": "s",
+   "ok": true
+  },
+  {
+   "test": "doppel: 1. Echo Lage (Abweichung von 0,500 s)",
+   "ist": 0.0,
+   "soll": 0.0,
+   "tol": 0,
+   "einheit": "Samples",
+   "ok": true
+  },
+  {
+   "test": "doppel: 1. Echo gesamt (Delay + Echo-Bus) rel. Direkt",
+   "ist": -12.72,
+   "soll": -12.72,
+   "tol": 1.0,
+   "einheit": "dB",
+   "ok": true
+  },
+  {
+   "test": "doppel: 2. Echo (Stereo Delay 1/2 + Rest) rel. Direkt",
+   "ist": -15.233,
+   "soll": -15.232,
+   "tol": 1.0,
+   "einheit": "dB",
+   "ok": true
+  },
+  {
+   "test": "doppel: Insert-Delay 1. Echo rel. Direkt (Ziel audio-gemessen −16,0)",
+   "ist": -16.262,
+   "soll": -16.0,
+   "tol": 1.0,
+   "einheit": "dB",
+   "ok": true
+  },
+  {
+   "test": "doppel: Insert-Delay Abfall je Echo = 20·log10(0,1506)",
+   "ist": -16.444,
+   "soll": -16.444,
+   "tol": 0.05,
+   "einheit": "dB",
+   "ok": true
+  },
+  {
+   "test": "doppel: Insert-Delay Abfall Echo 2→3",
+   "ist": -16.444,
+   "soll": -16.444,
+   "tol": 0.05,
+   "einheit": "dB",
+   "ok": true
+  },
+  {
+   "test": "doppel: Stereo Delay links bei 1,000 s rel. Direkt (Ziel −19,0)",
+   "ist": -19.096,
+   "soll": -19.0,
+   "tol": 1.0,
+   "einheit": "dB",
+   "ok": true
+  },
+  {
+   "test": "doppel: Stereo Delay rechts bei 1,000 s rel. Direkt (Ziel −19,0)",
+   "ist": -19.096,
+   "soll": -19.0,
+   "tol": 1.0,
+   "einheit": "dB",
+   "ok": true
+  },
+  {
+   "test": "doppel: Stereo Delay kein Echo bei 2,0 s (fb≈0; ≤ −120 dB)",
+   "ist": -120.0,
+   "soll": -120.0,
+   "tol": 0.5,
+   "einheit": "dB",
+   "ok": true
+  },
+  {
+   "test": "doppel: Echo-Bus 1. Echo = Send-Pegel −22,22 dB",
+   "ist": -22.222,
+   "soll": -22.222,
+   "tol": 0.05,
+   "einheit": "dB",
+   "ok": true
+  },
+  {
+   "test": "doppel: Echo-Bus Abfall je Viertel = 20·log10(0,35)",
+   "ist": -9.123,
+   "soll": -9.119,
+   "tol": 0.05,
+   "einheit": "dB",
+   "ok": true
+  },
+  {
+   "test": "doppel: Echo-Bus Abfall Echo 1→5 (4 Schritte)",
+   "ist": -36.48,
+   "soll": -36.475,
+   "tol": 0.1,
+   "einheit": "dB",
+   "ok": true
+  },
+  {
+   "test": "doppel: RoomWorks Nass/Trocken-Energie (√-Gesetz, Mix 4,5 %)",
+   "ist": -13.268,
+   "soll": -13.268,
+   "tol": 0.2,
+   "einheit": "dB",
+   "ok": true
+  },
+  {
+   "test": "doppel: RoomWorks Hallzeit T30 (Band 0,3–6 kHz)",
+   "ist": 1.555,
+   "soll": 1.569,
+   "tol": 0.1,
+   "einheit": "s",
+   "ok": true
+  },
+  {
+   "test": "chor: kein Echo (Delay/Stereo Delay/Send aus)",
+   "ist": 0.0,
+   "soll": 0.0,
+   "tol": 1e-12,
+   "einheit": "",
+   "ok": true
+  },
+  {
+   "test": "chor: RoomWorks Nass/Trocken-Energie (Mix 12 %)",
+   "ist": -8.653,
+   "soll": -8.653,
+   "tol": 0.2,
+   "einheit": "dB",
+   "ok": true
+  },
+  {
+   "test": "Tempo 100 BPM: 1. Echo",
+   "ist": 0.6,
+   "soll": 0.6,
+   "tol": 2.0833333333333333e-05,
+   "einheit": "s",
+   "ok": true
+  },
+  {
+   "test": "Tempo 100 BPM: Stereo-Delay-Echo",
+   "ist": 1.2,
+   "soll": 1.2,
+   "tol": 1e-09,
+   "einheit": "s",
+   "ok": true
+  },
+  {
+   "test": "Linearität: Kette(2x) − 2·Kette(x)",
+   "ist": 0.0,
+   "soll": 0.0,
+   "tol": 1e-09,
+   "einheit": "",
+   "ok": true
+  }
+ ],
+ "ok": true
+}

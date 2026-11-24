@@ -51,7 +51,7 @@ def messe(x, p_k, p_next=None, vor=0.06, nach=0.40, min_t=None):
     else:
         sicher = 1.0
     rmax = max(c[1] for c in kand)
-    kc = next(c[0] for c in kand if c[1] >= 0.6 * rmax)
+    kc = next((c[0] for c in kand if c[1] >= 0.6 * rmax), kand[0][0])
     rise = dict(kand)[kc]
     a0, a1 = max(1, kc - 5), min(len(d) - 2, kc + 5)
     kp = a0 + int(np.argmax(d[a0:a1 + 1]))

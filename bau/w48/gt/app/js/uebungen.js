@@ -506,13 +506,9 @@ function zeileAnalyse(z) {
     let akt = null;
     daten.forEach((s, i) => {
       const leer = !buchst(s.text);
-      if (akt && (leer || (s.wort ? s.wort === akt.wort && !akt.zu : false))) {
-        akt.idx.push(i);
-      } else {
-        akt = { wort: s.wort || s.text, idx: [i], zu: false };
-        gruppen.push(akt);
-      }
-      if (s.wortende || !s.wort) akt.zu = !!s.wortende || !s.wort;
+      if (akt && (leer || (s.wort && s.wort === akt.wort && !akt.zu))) akt.idx.push(i);
+      else { akt = { wort: s.wort || s.text, idx: [i], zu: false }; gruppen.push(akt); }
+      if (s.wortende) akt.zu = true;
     });
     // Ohne „wort“-Feld: Silben über die Buchstaben zu Wörtern zusammensetzen
     if (!daten.some(s => s.wort)) {
@@ -528,12 +524,12 @@ function zeileAnalyse(z) {
       while (di < daten.length) { (gruppen[gruppen.length - 1] || (gruppen[0] = { wort: '', idx: [] })).idx.push(di); di++; }
     }
     const zu = new Array(daten.length).fill(null);
-    let wi = 0, passt = true;
+    let wi = 0;
     for (const g of gruppen) {
       const ziel = buchst(g.wort);
       let k = wi;
       while (k < woerter.length && buchst(woerter[k].wort) !== ziel) k++;
-      if (k >= woerter.length) { passt = false; break; }
+      if (k >= woerter.length) continue;   // Wort nicht gefunden → unten verteilt
       wi = k + 1;
       const ws = woerter[k].silben, n = ws.length, m = g.idx.length;
       g.idx.forEach((di, j) => {
@@ -541,10 +537,10 @@ function zeileAnalyse(z) {
         zu[di] = s ? { ...s, wort: woerter[k].wort } : { vokal: '', gleit: '', anzeige: '', wort: woerter[k].wort };
       });
     }
-    if (!passt || zu.some(x => !x)) {
-      // Notlösung: gleichmäßig über die Zeile verteilen
+    if (zu.some(x => !x)) {
+      // Notlösung für nicht zugeordnete Silben: gleichmäßig über die Zeile verteilen
       daten.forEach((_, j) => {
-        if (zu[j] && passt) return;
+        if (zu[j]) return;
         zu[j] = flach.length ? flach[Math.min(flach.length - 1, Math.floor(j * flach.length / daten.length))]
           : { vokal: '', gleit: '', anzeige: '', wort: sauber(daten[j].text) };
       });
@@ -554,6 +550,8 @@ function zeileAnalyse(z) {
       vokal: zu[j].vokal || '', gleit: zu[j].gleit || '', anzeige: zu[j].anzeige || G(zu[j].vokal), wort: zu[j].wort || sauber(s.text),
     }));
   }
+  // nach = gesungener Nachlaut eines echten Doppellauts (i, u …); r-Färbung „ö“ zählt nicht
+  for (const n of noten) n.nach = n.gleit && n.gleit !== 'ö' ? n.gleit.charAt(0) : '';
   const erg = { id: z.id, teil: z.teil, text: z.text, sprache, woerter, noten, kette: kette(z.text, sprache) };
   CACHE.set(z, erg);
   return erg;
@@ -569,10 +567,17 @@ function fremdeHinweise(noten) {
       if (!u || typeof u !== 'object') continue;
       const von = String(u.von || u.a || '').toLowerCase(), nach = String(u.nach || u.b || '').toLowerCase();
       const h = u.hinweis || u.tipp || u.text;
-      if (von && nach && typeof h === 'string') karte[von + '>' + nach] = h;
+      // „A → I: …“ bzw. „Ai: …“ am Anfang weglassen – die Stelle wird hier schon genannt
+      if (von && nach && typeof h === 'string' && !u.diphthong) karte[von + '>' + nach] = h.replace(/^[^:]{1,12}:\s*/, '');
     }
   } catch (e) { /* weiter */ }
   return karte;
+}
+
+// „‚fake‘ → ‚zombies‘ (Ei → O)“ bzw. „in ‚zombies‘ (O → I)“
+function stelleText(u) {
+  const paar = `(${u.anzeigeA || G(u.von)} → ${u.anzeigeB || G(u.nach)})`;
+  return u.wortA === u.wortB ? `in ${zit(u.wortA)} ${paar}` : `${zit(u.wortA)} → ${zit(u.wortB)} ${paar}`;
 }
 
 function uebergangsTipp(v1, v2) {
@@ -630,27 +635,27 @@ function zeilenUebergaenge(A, z) {
     if (!a.vokal) continue;
     const hochA = istHoch(A, a.midi);
     // Doppellaut innerhalb der Silbe (z. B. light: A → i)
-    if (a.gleit) {
+    if (a.nach) {
       let w = 1 + (hochA ? 2 : 0) + (a.dauer >= 0.6 ? 1 : 0) + (a.dauer >= 1.2 ? 0.5 : 0);
       out.push({
-        art: 'diphthong', zeile: z.id, i, von: a.vokal, nach: a.gleit, wortA: a.wort, wortB: a.wort,
+        art: 'diphthong', zeile: z.id, i, von: a.vokal, nach: a.nach, wortA: a.wort, wortB: a.wort,
         midiA: a.midi, midiB: a.midi, gewicht: w, anzeige: a.anzeige,
-        tipp: `Bei ${zit(a.wort)} auf ${G(a.vokal)} bleiben, das ${a.gleit} erst ganz am Ende${hochA ? '; ' + HOEHE_TIPP[a.vokal] : ''}.`,
+        tipp: `Bei ${zit(a.wort)} auf ${G(a.vokal)} bleiben, das ${a.nach} erst ganz am Ende${hochA && HOEHE_TIPP[a.vokal] ? '; ' + HOEHE_TIPP[a.vokal] : ''}.`,
       });
     }
     const b = n[i + 1];
     if (!b || !b.vokal) continue;
-    const von = a.gleit || a.vokal, nach = b.vokal;
+    const von = a.nach || a.vokal, nach = b.vokal;
     const sprung = Number.isFinite(a.midi) && Number.isFinite(b.midi) ? b.midi - a.midi : 0;
-    const d = vokalAbstand(von, nach);
+    const d = vokalAbstand(von, nach) * (von === 'ö' || nach === 'ö' ? 0.6 : 1);   // Murmellaut zählt weniger
     if (d < 1 && Math.abs(sprung) < 3) continue;
     const gew = d + Math.min(Math.abs(sprung), 12) / 3 + (istHoch(A, b.midi) ? 1.5 : 0);
     let tipp = fremd[von + '>' + nach] || uebergangsTipp(von, nach);
-    if (a.gleit) tipp = `Erst lange auf ${G(a.vokal)}, das ${a.gleit} nur kurz antippen, dann zum ${G(nach)}: ` + tipp.charAt(0).toLowerCase() + tipp.slice(1);
+    if (a.nach) tipp = `Erst lange auf ${G(a.vokal)}, das ${a.nach} nur kurz antippen, dann zum ${G(nach)}. ` + tipp;
     if (istHoch(A, b.midi) && HOEHE_TIPP[nach]) tipp += ` Oben: ${HOEHE_TIPP[nach]}.`;
     out.push({
       art: 'uebergang', zeile: z.id, i, von, nach, wortA: a.wort, wortB: b.wort, midiA: a.midi, midiB: b.midi,
-      anzeigeA: a.anzeige, anzeigeB: b.anzeige, gewicht: gew, tipp,
+      anzeigeA: a.anzeige || G(a.vokal), anzeigeB: b.anzeige || G(b.vokal), gewicht: gew, tipp,
     });
   }
   return out;
@@ -670,14 +675,13 @@ function stellenImTeil(A, zeilen) {
     n.forEach((a, i) => {
       if (istHoch(A, a.midi)) {
         const ueber = A.sHoch != null && a.midi > A.sHoch;
-        let tipp = a.gleit ? `Bei ${zit(a.wort)} auf ${G(a.vokal)} bleiben, das ${a.gleit} erst ganz am Ende; ` : '';
+        let tipp = a.nach ? `Bei ${zit(a.wort)} auf ${G(a.vokal)} bleiben, das ${a.nach} erst ganz am Ende; ` : '';
         tipp += (HOEHE_TIPP[a.vokal] || 'leicht und eher leiser nehmen, nicht drücken');
-        if (!a.gleit) tipp = `Bei ${zit(a.wort)}: ` + tipp;
+        if (!a.nach) tipp = `Bei ${zit(a.wort)}: ` + tipp;
         tipp += '.';
-        if (ueber) tipp += ' Dieser Ton liegt über dem höchsten Ton deiner Aufnahme – erst leise und leicht (auf „u“ oder „ng“) hinführen, nichts erzwingen.';
-        else if (A.kern) tipp += ' Er liegt über deinem Kernbereich: vorher mit Sirene und Strohhalm vorbereiten.';
+        if (ueber) tipp += ' Dieser Ton liegt über dem höchsten Ton deiner Aufnahme (Schätzung) – erst leise und leicht (auf „u“ oder „ng“) hinführen, nichts erzwingen.';
         hohe.push({
-          art: 'hoehe', zeile: z.id, i, wort: a.wort, midi: a.midi, uebung: 'register-ausgleich',
+          art: 'hoehe', zeile: z.id, i, wort: a.wort, midi: a.midi, uebung: 'register-ausgleich', ueberKern: !!A.kern, ueber,
           gewicht: 3 + (a.midi - A.schwelle) * 0.5 + (ueber ? 2 : 0),
           text: `Hoher Ton ${nn(a.midi)} auf ${zit(a.wort)} (${a.anzeige || G(a.vokal)})`, tipp,
         });
@@ -699,7 +703,7 @@ function stellenImTeil(A, zeilen) {
         spruenge.push({
           art: 'sprung', zeile: z.id, i, wort: b.wort, midi: b.midi, uebung: auf && ad >= 7 ? 'oktav-glissando' : 'spruenge',
           gewicht: 2 + ad / 3 + (auf ? 0.5 : 0),
-          text: `Sprung ${auf ? 'aufwärts' : 'abwärts'} ${nn(a.midi)} → ${nn(b.midi)} (${ad} Halbtöne${INTERVALL[ad] ? ', ' + INTERVALL[ad] : ''}) bei ${zit(a.wort)} → ${zit(b.wort)}`,
+          text: `Sprung ${auf ? 'aufwärts' : 'abwärts'} ${nn(a.midi)} → ${nn(b.midi)} (${ad} Halbtöne${INTERVALL[ad] ? ', ' + INTERVALL[ad] : ''}) ${a.wort === b.wort ? 'in ' + zit(a.wort) : 'bei ' + zit(a.wort) + ' → ' + zit(b.wort)}`,
           tipp,
         });
       }
@@ -707,7 +711,7 @@ function stellenImTeil(A, zeilen) {
         halte.push({
           art: 'halteton', zeile: z.id, i, wort: a.wort, midi: a.midi, uebung: 'messa-di-voce', gewicht: 1.5 + a.dauer / 2,
           text: `Langer Ton (${komma(a.dauer)} s) auf ${zit(a.wort)} (${a.anzeige || G(a.vokal)})`,
-          tipp: `Den Vokal ${G(a.vokal)} gleichmäßig halten${a.gleit ? `, das ${a.gleit} erst kurz vor dem Ende` : ''}; den Atem fließen lassen, nicht drücken.`,
+          tipp: `Den Vokal ${G(a.vokal)} gleichmäßig halten${a.nach ? `, das ${a.nach} erst kurz vor dem Ende` : ''}; den Atem fließen lassen, nicht drücken.`,
         });
       }
     });
@@ -769,7 +773,7 @@ function stellenImTeil(A, zeilen) {
       gewicht: u.gewicht,
       text: u.art === 'diphthong'
         ? `Doppellaut ${u.anzeige} in ${zit(u.wortA)}${Number.isFinite(u.midiA) ? ' auf ' + nn(u.midiA) : ''}`
-        : `Vokal-Wechsel ${zit(u.wortA)} → ${zit(u.wortB)} (${G(u.von)} → ${G(u.nach)})`,
+        : `Vokal-Wechsel ${stelleText(u)}`,
       tipp: u.tipp,
     });
   }
@@ -825,17 +829,20 @@ export function plan(lied, stimme) {
       + ketten.map(k => `„${k.text}“ → ${k.kette}`).join('; ') + '.', zids, { ketten });
 
     // (3) Vokal-Übergänge der schweren Stellen + passende Übungen je Stelle
-    const schwerUeb = uebergaenge.slice(0, 3);
+    const schwerUeb = uebergaenge.filter(u => u.art === 'uebergang').slice(0, 3);
     S(3, 'vokal-uebergang', schwerUeb.length
       ? 'Die schwersten Wechsel langsam, je 3× auf einem Ton, dann auf den echten Tönen: '
-        + schwerUeb.map(u => (u.art === 'diphthong' ? `${zit(u.wortA)} (${u.anzeige}): ` : `${zit(u.wortA)} → ${zit(u.wortB)} (${G(u.von)} → ${G(u.nach)}): `) + u.tipp).join(' ')
+        + schwerUeb.map(u => `${stelleText(u)}: ${u.tipp}`).join(' ')
       : 'Die Wechsel zwischen den Vokalen langsam verbinden; in diesem Teil gibt es keine besonders großen Vokal-Sprünge.',
       [...new Set(schwerUeb.map(u => u.zeile))].length ? [...new Set(schwerUeb.map(u => u.zeile))] : zids);
     const arten = [...new Set(stellen.map(s => s.art))].filter(a => a !== 'uebergang');
     for (const art of arten) {
       const liste = stellen.filter(s => s.art === art);
       const uebId = liste[0].uebung;
-      S(3, uebId, liste.map(s => `${s.text}: ${s.tipp}`).join(' '), [...new Set(liste.flatMap(s => s.zeilen || [s.zeile]))]);
+      let text = liste.map(s => `${s.text}: ${s.tipp}`).join(' ');
+      if (art === 'hoehe') text += liste.some(s => s.ueberKern) ? ' Diese Töne liegen über deinem Kernbereich: vorher mit Sirene und Strohhalm vorbereiten, oben leichter statt lauter.'
+        : ' Vorher mit Sirene und Strohhalm vorbereiten, oben leichter statt lauter.';
+      S(3, uebId, text, [...new Set(liste.flatMap(s => s.zeilen || [s.zeile]))]);
     }
 
     // (4) Silben auf „da“
@@ -843,7 +850,7 @@ export function plan(lied, stimme) {
     S(4, 'silben-da', `Alle ${nSilben} Silben auf „da“ im Rhythmus – erst halbes Tempo${halb}, dann Originaltempo${voll}.`, zids);
 
     // (5) Text halbes Tempo (+ Rückwärts-Aufbau der schwersten Zeile)
-    S(5, 'halbtempo', `Mit Text im halben Tempo${halb} (App: 50 %). Erst wenn es 3× sicher ist: 75 %.`, zids);
+    S(5, 'halbtempo', `Mit Text im halben Tempo – App auf 50 %${A.bpm ? `, also ${Math.round(A.bpm / 2)} BPM` : ''}. Erst wenn es 3× sicher ist: 75 %, dann 100 %.`, zids);
     const gew = {};
     for (const s of stellen) for (const zid of (s.zeilen || [s.zeile])) gew[zid] = (gew[zid] || 0) + s.gewicht;
     const schwerste = t.zeilen.slice().sort((a, b) => (gew[b.id] || 0) - (gew[a.id] || 0))[0];
@@ -900,7 +907,7 @@ export function warmup(lied, stimme) {
 
   // 2. SOVT: Lippenflattern / Strohhalm, 5-Ton-Leiter durch den Liedbereich
   if (hat) {
-    const start = Math.min(tief, hoch - 7 > tief ? tief : tief);
+    const start = tief;
     const bis = Math.max(start, hoch - 7);
     const muster = [0, 2, 4, 5, 7, 5, 4, 2, 0];
     W('lippenflattern', `Lippenflattern „brrr“ (oder in den Strohhalm), 5-Ton-Leiter ab ${nn(start)}, jeden Durchgang einen Halbton höher bis zum Beginn auf ${nn(bis)} (oben ${nn(bis + 7)}). Gleichmäßiger Luftstrom, nicht lauter werden.`,
@@ -943,7 +950,7 @@ export function warmup(lied, stimme) {
     const ton = m1 != null && m2 != null ? { start: m1, von: Math.min(m1, m2), bis: Math.max(m1, m2), folge: u.art === 'diphthong' ? [m1] : [m1, m2] } : null;
     const was = u.art === 'diphthong'
       ? `Doppellaut ${u.anzeige} in ${zit(u.wortA)}`
-      : `Übergang ${zit(u.wortA)} → ${zit(u.wortB)} (${G(u.von)} → ${G(u.nach)})`;
+      : `Übergang ${stelleText(u)}`;
     W(u.art === 'diphthong' ? 'diphthong' : 'vokal-uebergang',
       `${was}${ton ? ` auf ${ton.folge.map(nn).join(' → ')}` : ''}: erst langsam auf den Vokalen, 3×, dann mit den Wörtern. ${u.tipp}`,
       0.75, ton, { zeile: u.zeile, vokale: u.art === 'diphthong' ? [u.von, u.nach] : [u.von, u.nach] });

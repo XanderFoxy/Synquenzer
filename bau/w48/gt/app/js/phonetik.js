@@ -146,13 +146,13 @@ function grenzen(w, kerne, sprache, stumm) {
     let nimm = 1; // Einheiten, die zur nächsten Silbe gehen
     if (u.length >= 2 && ANLAUT.has(u.slice(-2).join(''))) nimm = 2;
     if (u.length === 1) nimm = 1;
+    // Endung Mitlaut + le (lit-tle, sim-ple): der Mitlaut vor dem l geht mit
+    if (u.length >= 2 && k === kerne.length - 1 && kerne[k].t === 'e' && kerne[k].b === w.length && u[u.length - 1] === 'l') nimm = 2;
     // stummes e im Zwischenraum (eve-ry): Grenze direkt vor dem letzten Mitlaut
     if (stumm && stumm.some((s) => s.a >= von && s.b <= bis)) nimm = 1;
     if (nimm > u.length) nimm = u.length;
     const laenge = u.slice(-nimm).join('').length;
-    let pos = bis - laenge;
-    while (pos > von && !/[a-zäöüß]/.test(w[pos - 1]) && w[pos - 1] !== "'") pos--;
-    starts.push(pos);
+    starts.push(bis - laenge);
   }
   return starts;
 }
@@ -246,12 +246,13 @@ function wortEN(w) {
   const kerne = kerneEN(w);
   if (!kerne.length) return null;
   const code = sucheEN(w);
-  const vok = code ? dekodiere(code) : regelnEN(w, kerne);
-  if (!code) { // stumme e für die Regeln entfernen (come, eyes, hoped)
-    const r = abgleichenRegel(w, kerne);
-    return baue(w, r, regelnEN(w, r), 'en', 'regel', []);
-  }
-  const ab = abgleichen(w, kerne, vok);
+  // stumme e nach den Schreibregeln entfernen (come, eyes, hoped, realise)
+  const k1 = abgleichenRegel(w, kerne);
+  if (!code) return baue(w, k1, regelnEN(w, k1), 'en', 'regel', []);
+  const vok = dekodiere(code);
+  const zweilaut = k1.some((g) => /[aeiouy]{2}/.test(g.t));
+  const basis = k1.length < vok.length && !zweilaut ? kerne : k1; // recipe: das e ist doch hörbar
+  const ab = abgleichen(w, basis, vok);
   return baue(w, ab.kerne, ab.vok, 'en', 'lexikon', ab.stumm);
 }
 function abgleichenRegel(w, kerne) {
@@ -269,13 +270,12 @@ function abgleichenRegel(w, kerne) {
 
 /* ---------- Deutsch ---------- */
 const DE_KURZ = new Set(['in', 'im', 'mit', 'an', 'am', 'um', 'ab', 'ob', 'es', 'das', 'des', 'dass', 'hat', 'man', 'ich',
-  'mich', 'dich', 'sich', 'nicht', 'wenn', 'denn', 'von', 'bis', 'und', 'doch', 'noch', 'ins', 'ist', 'bin', 'bist', 'was', 'weg', 'dann', 'wann']);
-const DE_LANG = new Set(['was', 'weg']); // in der Praxis meist lang gesungen
+  'mich', 'dich', 'sich', 'nicht', 'wenn', 'denn', 'von', 'bis', 'und', 'doch', 'noch', 'ins', 'ist', 'bin', 'bist', 'dann', 'wann']);
 function wortDE(w) {
   const kerne = kerneDE(w);
   if (!kerne.length) return null;
   const n = kerne.length;
-  const vorsilbe = n >= 2 && /^(be|ge)[^aeiouäöü]/.test(w);
+  const vorsilbe = n >= 2 && /^(be|ge)[^aeiouäöürhn]/.test(w);
   const vok = kerne.map((g, k) => {
     const t = g.t, nx = w.slice(g.b);
     let o;
@@ -286,7 +286,7 @@ function wortDE(w) {
     else if (d === 'ie') o = { vokal: 'i', gleit: '', lang: true, hinweis: 'Langes i' };
     else {
       const v = t[0] === 'y' ? 'ü' : t[0];
-      const schwa = v === 'e' && n >= 2 && (
+      const schwa = v === 'e' && t.length === 1 && n >= 2 && (
         (k === n - 1 && /^([nrlmst]|rn|ns|rt|nd)?$/.test(nx)) || (k === 0 && vorsilbe));
       if (schwa) {
         o = { ...SCHWA };
@@ -297,7 +297,7 @@ function wortDE(w) {
         if (t.length >= 2) lang = true; // aa, ee, oo, Dehnungs-h
         else if (!mitl.length) lang = true; // offene Silbe: du, so, Le-ben
         else if (/^(ch|sch|ck|tz|ng|pf)/.test(mitl) || mitl.length >= 2 && mitl !== 'ß') lang = false;
-        else lang = n === 1 ? (!DE_KURZ.has(w) || DE_LANG.has(w)) : true;
+        else lang = n === 1 ? !DE_KURZ.has(w) : true;
         o = { vokal: v, gleit: '', lang, hinweis: lang ? 'Langes ' + v : 'Kurzes ' + v };
       }
     }
@@ -317,7 +317,7 @@ function baue(w, kerne, vok, sprache, quelle, stumm) {
   return {
     sprache, quelle,
     silben: kerne.map((g, k) => {
-      const o = sprache === 'en' ? vokalEN(vok[k], g, w[g.b] === 'r' && !istV(w[g.b + 1])) : vok[k];
+      const o = sprache === 'en' ? vokalEN(vok[k], g, /^r(e|es|ed)?$|^r[^aeiouy]/.test(w.slice(g.b))) : vok[k];
       return {
         a: starts[k], b: k + 1 < starts.length ? starts[k + 1] : w.length,
         vokal: o.vokal, gleit: o.gleit || '', anzeige: anzeigeVon(o), lang: !!o.lang, hinweis: o.hinweis,
@@ -340,7 +340,7 @@ const EN_W = new Set(('the you your we i me my is are was be been don\'t can\'t 
   'for on at by up down out about into over after before again never always now then when where here love heart light night ' +
   'eyes eye wake open wait follow believe living world sheep sake fake zombies welcome do does did need realise realize ' +
   'hypnotised hypnotized behind wall can will would could should one time way life go come take make like get got let ' +
-  'oh yeah baby girl boy tonight forever'.split(' ')));
+  'oh yeah baby girl boy tonight forever').split(' '));
 const MEHRDEUTIG = new Set(['in', 'so', 'was', 'will', 'man', 'hat', 'bin', 'an', 'also', 'die', 'war', 'see', 'oh', 'um', 'am',
   'is', 'hell', 'rock', 'kind', 'gift', 'arm', 'mist', 'bald', 'fast', 'rot', 'art', 'wo', 'her', 'den', 'du', 'wand', 'fern']);
 function wortPunkte(w) {
@@ -375,13 +375,10 @@ function sprachenJeWort(woerter, vorgabe) {
 /* ---------- Öffentliche Schnittstelle ---------- */
 function zerlege(text) {
   const out = [];
-  const re = /[A-Za-zÀ-ÖØ-öø-ÿ'’]+/g;
-  let m;
-  while ((m = re.exec(String(text || '')))) {
-    const roh = m[0].replace(/^['’]+|['’]+$/g, (x) => (x.length ? '' : x));
-    const original = m[0].replace(/^['’]+/, '').replace(/['’]+$/, (x) => (/in$/i.test(m[0].replace(/['’]+$/, '')) ? x : ''));
-    if (!/[A-Za-zÀ-ÿ]/.test(roh)) continue;
-    out.push(original);
+  for (const m of String(text || '').matchAll(/[\p{L}'’]+/gu)) {
+    let t = m[0].replace(/^['’]+/, '');
+    if (!/in['’]$/i.test(t)) t = t.replace(/['’]+$/, ''); // singin' behält den Apostroph
+    if (/\p{L}/u.test(t)) out.push(t);
   }
   return out;
 }

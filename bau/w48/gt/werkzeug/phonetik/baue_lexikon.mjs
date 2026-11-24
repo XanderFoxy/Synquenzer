@@ -16,7 +16,12 @@ const top = fs.readFileSync(new URL('./top_en.txt', import.meta.url), 'utf8').sp
 const extra = (process.argv[4] ? fs.readFileSync(process.argv[4], 'utf8') : '').toLowerCase()
   .replace(/[’]/g, "'").split(/[^a-z']+/).filter(Boolean);
 const woerter = new Set();
-for (const w of extra) { if (dictionary[w]) woerter.add(w); }
+// Wörter aus den Liedtexten immer aufnehmen – britische Schreibung über die amerikanische Form (hypnotised → hypnotized)
+const BRIT = [[/is(e|es|ed|ing|er|ers|ation|ations)$/, 'iz$1'], [/ys(e|es|ed|ing)$/, 'yz$1'], [/our(s|ed|ing|ite|ites|able|ful)?$/, 'or$1'], [/tre(s)?$/, 'ter$1']];
+for (const w of extra) {
+  if (dictionary[w]) { woerter.add(w); continue; }
+  for (const [re, e] of BRIT) { const v = w.replace(re, e); if (v !== w && dictionary[v]) { woerter.add(v); break; } }
+}
 for (const w of top) {
   if (woerter.size >= ANZAHL) break;
   if (/^[a-z][a-z']*$/.test(w) && dictionary[w]) woerter.add(w);
