@@ -726,6 +726,22 @@ function formantSatz(v, f0, stimme) {
   return F;
 }
 
+// geschätzte Ausgangs-Lautstärke (RMS) eines Sägezahns durch die Formant-Filter → gleich laute Vokale und Lagen
+function bp(f, fc, q) { const a = f * fc / q; return a / Math.sqrt((fc * fc - f * f) ** 2 + a * a); }
+function tp(f, fc, q) { return fc * fc / Math.sqrt((fc * fc - f * f) ** 2 + (f * fc / q) ** 2); }
+function formantPegel(F, f0) {
+  let e = 0;
+  for (let n = 1; n * f0 < 8000; n++) {
+    const f = n * f0;
+    let h = 0;
+    for (let k = 0; k < 4; k++) h += GEWICHT[k] * 3.2 * bp(f, F[k], F[k] / Math.max(BANDBREITE[k], k === 0 ? f0 * 0.5 : 0));
+    h += 0.35 * tp(f, f0 * 1.5, 0.7);
+    const a = (0.64 / n) * h * tp(f, 5000, 0.5);
+    e += a * a;
+  }
+  return Math.sqrt(e / 2);
+}
+
 export function vokalStimme(ctx, opt = {}) {
   const ziel = opt.ziel || ctx.destination;
   const aus = ctx.createGain(); aus.gain.value = opt.lautstaerke ?? 0.8; aus.connect(ziel);
@@ -748,8 +764,10 @@ export function vokalStimme(ctx, opt = {}) {
     }
     const glatt = ctx.createBiquadFilter(); glatt.type = 'lowpass'; glatt.frequency.value = 5000; glatt.Q.value = 0.5;
     osc.connect(glatt); nodes.push(glatt);
-    const huelle = ctx.createGain(); huelle.gain.value = 0; huelle.connect(aus); nodes.push(huelle);
     const F = formantSatz(a, f0, stimme), Z = b ? formantSatz(b, f0, stimme) : null;
+    const norm = ctx.createGain(); norm.connect(aus); nodes.push(norm);
+    norm.gain.value = 0.25 / Math.max(0.02, Z ? 0.5 * (formantPegel(F, f0) + formantPegel(Z, f0)) : formantPegel(F, f0));
+    const huelle = ctx.createGain(); huelle.gain.value = 0; huelle.connect(norm); nodes.push(huelle);
     const gDauer = Math.min(0.28, Math.max(0.08, d * 0.35)), gEnde = t1 - Math.min(0.06, d * 0.1), gStart = gEnde - gDauer;
     for (let k = 0; k < 4; k++) {
       const bp = ctx.createBiquadFilter(); bp.type = 'bandpass';

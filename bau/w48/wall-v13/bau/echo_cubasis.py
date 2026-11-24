@@ -34,7 +34,7 @@ ROH = {
 NOTEN = {0: 1.0, 1: 0.5, 2: 0.25, 3: 0.125}   # Index -> Anteil einer ganzen Note (Index 2 = 1/4 audio-gemessen 0,5000 s)
 
 
-K_GEMESSEN = 1.75   # nass/trocken ≈ 1,75·m für kleine m (audio-gemessen an original/Gesang-Platzhalter-3 und Doppel-Platzhalter-4)
+K_GEMESSEN = 1.70   # nass/trocken ≈ 1,70·m für kleine m (audio-gemessen: Autokorrelation → 1,64, Echo-Zonen-Energie → 1,78; Mitte)
 
 
 def mischung(m, gesetz='gemessen'):
