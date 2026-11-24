@@ -1,0 +1,7 @@
+DEIN NAME: ton. DEIN BEREICH: app/js/ton.js (+ ggf. app/js/ton-worker.js).
+Vorlage zum Wiederverwenden: /tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/w3/repo/the-wall/werkstatt3/js/tonhoehe.js (Tonhöhen-Verfolgung, getestet) und js/io.js (Datei laden/dekodieren) – kopieren und anpassen erlaubt.
+1. tonhoehe, melodieAusAudio, stimmlage (aus einer Aufnahme: tiefster/höchster sicherer Ton mit Lautstärke- und Sicherheitsfilter, Kernbereich 10.–90. Perzentil, typ als Schätzung: Bass/Bariton/Tenor/Alt/Mezzo/Sopran nach Kernbereich, text = 1–2 Sätze „Schätzung aus deiner Aufnahme …").
+2. mikrofon({onTon}): getUserMedia, Echtzeit-Tonhöhe (YIN/MPM, ~30 Hz Aktualisierung), liefert {hz, midi, cent, sicher}.
+3. vokalStimme(ctx): einfache Formant-Synthese (Sägezahn/Puls + 3–4 Bandpässe mit Formanten je deutschem Vokal a e i o u ä ö ü, Vibrato leicht, sanfte Hüllkurve), singe(vokal, midi, start, dauer, gleit) – bei gleit am Ende der Note in den Nachlaut-Vokal gleiten (z. B. A→i). Männerstimmen-Formanten als Standard.
+4. klavier(ctx): einfacher, angenehmer Klavier-artiger Ton. midiName(n) deutsch (C, Cis/Des …, H; in b-Tonarten Es/As/B).
+5. Kurzer Test: tonhoehe auf 5 s der Hauptstimme (…/scratchpad/wall-v12/repo/the-wall/projekt7/Haupt-3-trocken-v7.wav) in Node oder Browser plausibel; vokalStimme erzeugt hörbares Signal (Offline-Render, Formant-Spitzen nachmessen).

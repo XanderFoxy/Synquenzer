@@ -1,0 +1,11 @@
+DEIN NAME: oberflaeche. DEIN BEREICH: app/index.html, app/stil.css, app/js/app.js, app/js/speicher.js, app/manifest.webmanifest, app/icon.svg (Symbol selbst zeichnen, kein Emoji). Die anderen Dateien (phonetik.js, ton.js, uebungen.js, daten/the-wall.json) bauen 4 Agenten parallel – programmiere gegen den Vertrag, fange fehlende Exporte ab (try/catch, Platzhalter-Text), und teste am Ende mit dem, was dann da ist.
+Seiten (Hash-Routen):
+- #start: „Meine Lieder" (The Wall vorinstalliert; eigene aus speicher.js), Knöpfe „Lied hinzufügen", „Meine Stimmlage", „Warm-up für heute".
+- #lied/<id>: Titel, Umfang (tiefster–höchster Ton, deutsch benannt) gegen die eigene Stimmlage (wenn ermittelt: „liegt in deinem Bereich" / „geht bis x über deinen Kernbereich"), Teile als Karten mit Merkmalen, Knopf „Warm-up für dieses Lied", „Lernweg" (plan()).
+- #lied/<id>/teil/<teil>: Lernweg-Stufen mit Übungen; je Zeile Knopf → Zeilen-Übung.
+- #lied/<id>/zeile/<zid>: GROSS die Vokalkette (Hauptvokal groß, Nachlaut klein, z. B. „Ou · Ei · O · Ou · ö · Ai"), darunter der echte Text klein; Abspielen: Melodie auf den Vokalen mit vokalStimme (oder Klavier, umschaltbar), Tempo 50–100 %, Transponieren ±6 Halbtöne, Schleife; Stufen-Schalter: Vokale / Silben „da" / Text; Mikrofon an → Tonhöhenlinie live gegen die Zielnoten (Notenbalken), sanfte Anzeige „etwas tiefer/höher", keine Punkte. Hinweise zu Übergängen (uebergaenge()).
+- #warmup/<id>: Schritt für Schritt mit Zeitanzeige, Vorspielen der Töne (Klavier/Vokalstimme), „Weiter".
+- #stimme: „Meine Stimmlage ermitteln": Sirene/Tonleiter singen ins Mikrofon (geführte Aufnahme: tiefster bequemer Ton, höchster bequemer Ton, eine Zeile) ODER Gesangsdatei laden → stimmlage() → Ergebnis in Worten + Bereich als Klaviatur-Streifen; lokal speichern (localStorage, try/catch); Hinweis „Schätzung".
+- #neu: Lied hinzufügen: Titel, Text einfügen (Zeilen), Sprache automatisch (erkenneSprache), optional Audio (Gesang oder Lied) → melodieAusAudio() für Noten und Umfang, oder ohne Audio nur Vokal-Übungen; speichern lokal (IndexedDB über speicher.js; Audio nur lokal).
+- #uebungen: Übungs-Bibliothek (UEBUNGEN) mit Anleitung.
+Aussehen: ruhig, warm, gut lesbar, große Vokale, Navigationsleiste unten (Lieder · Warm-up · Stimme · Übungen), hell/dunkel über CSS-Variablen.

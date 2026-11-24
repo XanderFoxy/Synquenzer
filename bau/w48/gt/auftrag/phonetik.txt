@@ -1,0 +1,7 @@
+DEIN NAME: phonetik. DEIN BEREICH: app/js/phonetik.js und app/js/lexikon-en.js (Daten).
+1. Englische Wörter → Laute: Hole das CMU-Aussprachewörterbuch über npm (cmu-pronouncing-dictionary, ISC, in werkzeug/phonetik/ installieren) und erzeuge lexikon-en.js: für die ~25 000 häufigsten Wörter (oder alle, wenn ≤ 400 KB) NUR die Vokal-Folge mit Betonung, kompakt kodiert (z. B. 'light':'AY1'). Fallback-Regeln für unbekannte Wörter (Buchstabenmuster → Vokal).
+2. ARPAbet → deutsche Gesangsvokale (Singpraxis: auf dem Hauptvokal halten, Nachlaut erst am Ende): AY → A + i ('Ai', light = „La-it"), EY → E + i ('Ei' wie „Eh-i", wait), OW → O + u ('Ou', don't, follow), AW → A + u, OY → O + i, IY → i (lang), IH → i (kurz, offen), EH → ä/e, AE → ä, AA → a, AH1 → a (kurz), AH0/Schwa → ö (leicht), AO → o (offen), UW → u, UH → u (kurz), ER → ö(r). Schreibe die Tabelle in den Code mit Kommentar.
+3. Deutsch: Vokale aus deutscher Schreibung (ei/ai → Ai, eu/äu → Oi, au → Au, ie → i lang, Dehnungs-h, Doppelvokal, ch/sch/ck nicht als Vokal, Endungs-e → ö).
+4. Silben: Wörter in Silben teilen (je Vokal-Kern eine Silbe), damit die Silben zur Melodie (daten/the-wall.json silben) passen.
+5. uebergaenge(): z. B. i → a (Kiefer öffnen), Diphthonge, offene/geschlossene Wechsel, Hinweis in Worten.
+6. Prüfe an „Don't wait, follow the light" → Ou · Ei · O · Ou · ö · Ai und an den Zeilen von The Wall (Text in /tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/wall/werkzeug/lied.json) – Tabelle Zeile → Vokalkette in notiz/phonetik.md.
