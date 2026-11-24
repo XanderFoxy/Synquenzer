@@ -224,7 +224,7 @@ export function silben(x, sr, opt = {}) {
   const Ev = glatt(M.Ev, 2);
   const ref = opt.bezug != null ? +opt.bezug : perzentil(Ev, 0.99);
   const laut = new Uint8Array(n); for (let i = 0; i < n; i++) laut[i] = Ev[i] > ref - 45 ? 1 : 0;
-  const { H, F0 } = stimme(y, fs, M, laut, opt._S || 4);
+  const { H, F0 } = stimme(y, fs, M, laut, 4);
   const Hs = glatt(H, 1);
   const od = glatt(Float32Array.from(M.SFv, (v, i) => v + 0.5 * M.SFh[i]), 1);
   const akt = []; for (let i = 0; i < n; i++) if (Ev[i] > ref - 40) akt.push(od[i]);
@@ -255,9 +255,9 @@ export function silben(x, sr, opt = {}) {
       0.5 * Math.max(lvl, -35) / 6 + 1.5 * (hb - hmin);
     if (wert < schwelle) continue;
     // es muss ein stimmhafter Kern folgen (Atmer, Klicks, Zischen allein zählen nicht)
-    let sth = 0; for (let j = m; j < m + ms(0.25) && j < n; j++) if (H[j] >= (opt._hv || 0.7) && Ev[j] > ref - 30) sth++;
-    if (sth < ms(opt._hd || 0.04)) continue;
-    kand.push({ m, wert, lvl, dR });
+    let sth = 0; for (let j = m; j < m + ms(0.25) && j < n; j++) if (H[j] >= 0.6 && Ev[j] > ref - 30) sth++;
+    if (sth < ms(0.03)) continue;
+    kand.push({ m, wert, lvl, tal: Math.min(dL, dR) });
   }
   // je Umgebung (Standard 0,2 s) nur der stärkste Kandidat
   const abst = ms(opt.minAbstand != null ? +opt.minAbstand : 0.2);
@@ -288,7 +288,7 @@ export function silben(x, sr, opt = {}) {
     const f0 = []; for (let j = k; j <= Math.min(b, k + ms(0.25)); j++) if (H[j] > 0.75 && F0[j] > 0) f0.push(F0[j]);
     if (f0.length >= 3) hz = Math.round(median(f0) * 10) / 10;
     const staerke = klemm((s.wert - schwelle) / 4 + 0.35, 0, 1);
-    res.push({ t0: r3(t0), t1: r3(Math.max(t1, t0 + 0.05)), kern: r3(off + M.t(k)), staerke: Math.round(staerke * 100) / 100, db: Math.round((Ev[k] - ref) * 10) / 10, hz });
+    res.push({ t0: r3(t0), t1: r3(Math.max(t1, t0 + 0.05)), kern: r3(off + M.t(k)), staerke: Math.round(staerke * 100) / 100, db: Math.round((Ev[k] - ref) * 10) / 10, hz, tal: Math.round(s.tal * 10) / 10 });
   }
   return res;
 }
