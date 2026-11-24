@@ -402,6 +402,17 @@ export const UEBUNGEN = [
   },
 ];
 
+// Stichworte auf einen kleinen, festen Wortschatz bringen (für die Filter in der Oberfläche).
+export const STICHWORTE = { lockerung: 'Lockerung', atem: 'Atem', sovt: 'Halb-geschlossen (SOVT)', resonanz: 'Resonanz',
+  vokale: 'Vokale', diphthong: 'Diphthonge', uebergang: 'Übergang', hoehe: 'Höhe', tiefe: 'Tiefe',
+  rhythmus: 'Rhythmus', konsonanten: 'Konsonanten', text: 'Text' };
+const SW_NACH = { haltung: 'lockerung', kiefer: 'lockerung', artikulation: 'konsonanten', stuetze: 'atem', phrase: 'atem',
+  einsatz: 'atem', dynamik: 'atem', halteton: 'atem', legato: 'vokale', sprung: 'uebergang', twang: 'resonanz',
+  schnell: 'rhythmus', tempo: 'rhythmus', englisch: 'diphthong', lied: 'text' };
+for (const u of UEBUNGEN) {
+  u.stichworte = [...new Set(u.stichworte.map(w => SW_NACH[w] || w).filter(w => STICHWORTE[w]))];
+}
+
 const NACH_ID = Object.fromEntries(UEBUNGEN.map(u => [u.id, u]));
 export function uebung(id) { return NACH_ID[id] || null; }
 
@@ -891,8 +902,11 @@ export function vokalStatistik(lied) {
 export function warmup(lied, stimme) {
   const A = analysiere(lied, stimme);
   const schritte = [];
-  const W = (uebungId, text, minuten, ton, extra) =>
+  // ton: {start, von, bis, folge?, noten?} – noten = die vorzuspielende Tonfolge (midi), sonst Bereich von–bis
+  const W = (uebungId, text, minuten, ton, extra) => {
+    if (ton && Array.isArray(ton.folge) && !ton.gleiten) ton.noten = ton.folge.slice();
     schritte.push({ uebung: uebungId, titel: (NACH_ID[uebungId] || {}).titel || '', text, minuten, ton: ton || null, ...(extra || {}) });
+  };
 
   // Bereich: Lied, sonst Kernbereich der Stimme
   let tief = A.tief, hoch = A.hoch;
@@ -911,7 +925,7 @@ export function warmup(lied, stimme) {
     const bis = Math.max(start, hoch - 7);
     const muster = [0, 2, 4, 5, 7, 5, 4, 2, 0];
     W('lippenflattern', `Lippenflattern „brrr“ (oder in den Strohhalm), 5-Ton-Leiter ab ${nn(start)}, jeden Durchgang einen Halbton höher bis zum Beginn auf ${nn(bis)} (oben ${nn(bis + 7)}). Gleichmäßiger Luftstrom, nicht lauter werden.`,
-      1.5, { start, von: start, bis: bis + 7, muster, folge: muster.map(x => start + x), starts: [...Array(bis - start + 1).keys()].map(k => start + k) });
+      1.5, { start, von: start, bis: bis + 7, muster, folge: muster.map(x => start + x), starts: [...Array(bis - start + 1).keys()].map(k => start + k) }, { vokal: 'u' });
   } else {
     W('lippenflattern', 'Lippenflattern „brrr“ (oder in den Strohhalm) auf einer 5-Ton-Leiter, in bequemer mittlerer Lage beginnen und halbtonweise höher, solange es leicht bleibt.', 1.5, null);
   }
@@ -921,7 +935,7 @@ export function warmup(lied, stimme) {
     let text = `„Ng“-Sirenen von ${nn(tief)} bis ${nn(hoch + 1)} – dem Umfang von ${titel} plus einem Halbton – und zurück, 4–6×. Nur so weit, wie es mühelos geht.`;
     if (A.sHoch != null && hoch + 1 > A.sHoch) text += ` Der obere Bereich liegt über dem höchsten Ton deiner Aufnahme (Schätzung): dort leise und leicht bleiben.`;
     if (A.sTief != null && tief < A.sTief) text += ' Der tiefste Ton liegt unter deiner Aufnahme: unten nicht drücken.';
-    W('ng-sirene', text, 1.5, { start: tief, von: tief, bis: hoch + 1, folge: [tief, hoch + 1, tief], gleiten: true });
+    W('ng-sirene', text, 1.5, { start: tief, von: tief, bis: hoch + 1, folge: [tief, hoch + 1, tief], gleiten: true }, { vokal: 'u' });
   } else {
     W('ng-sirene', '„Ng“-Sirenen von bequem tief nach bequem hoch und zurück, 4–6×. Nur so weit, wie es mühelos geht.', 1.5, null);
   }
@@ -934,7 +948,7 @@ export function warmup(lied, stimme) {
   W('vokal-leiter', `Vokal-Leiter auf einem Ton mit den häufigsten Vokalen von ${titel}: ${vokale.map(G).join(' – ')}, verbunden auf einem Atem; dann einen und zwei Halbtöne höher.`
     + (dl.length ? ' Danach die Doppellaute des Lieds: ' + dl.map(d => `${d.anzeige} wie in ${zit(d.beispiel)}`).join(', ') + ' – lange auf dem ersten Vokal, der Nachlaut erst am Ende.' : ''),
     1.5, mitte != null ? { start: mitte, von: mitte, bis: mitte + 2, folge: vokale.map(() => mitte), starts: [mitte, mitte + 1, mitte + 2] } : null,
-    { vokale, doppellaute: dl });
+    { vokale, doppellaute: dl, vokal: vokale[0] });
 
   // 5. die 3 schwersten Übergänge des ganzen Lieds
   const alleUeb = [];
@@ -953,7 +967,7 @@ export function warmup(lied, stimme) {
       : `Übergang ${stelleText(u)}`;
     W(u.art === 'diphthong' ? 'diphthong' : 'vokal-uebergang',
       `${was}${ton ? ` auf ${ton.folge.map(nn).join(' → ')}` : ''}: erst langsam auf den Vokalen, 3×, dann mit den Wörtern. ${u.tipp}`,
-      0.75, ton, { zeile: u.zeile, vokale: u.art === 'diphthong' ? [u.von, u.nach] : [u.von, u.nach] });
+      0.75, ton, { zeile: u.zeile, vokale: [u.von, u.nach], vokal: u.art === 'diphthong' ? u.von : u.von });
   }
 
   // 6. eine Zeile auf Vokalen – die anspruchsvollste mit Melodie
@@ -966,7 +980,7 @@ export function warmup(lied, stimme) {
     const folge = zeile.noten.map(n => n.midi).filter(Number.isFinite);
     W('vokale-melodie', `Zeile „${zeile.text}“ nur auf den Vokalen: ${zeile.kette}. Erst mit 70 % Tempo, dann im Originaltempo; verbunden singen, bei Doppellauten auf dem ersten Vokal bleiben.`,
       1.5, folge.length ? { start: folge[0], von: Math.min(...folge), bis: Math.max(...folge), folge, dauern: zeile.noten.filter(n => Number.isFinite(n.midi)).map(n => n.dauer) } : null,
-      { zeile: zeile.id, kette: zeile.kette });
+      { zeile: zeile.id, kette: zeile.kette, vokal: (zeile.noten.find(n => n.vokal) || {}).vokal || 'a' });
   }
 
   // auf 5–10 Minuten bringen

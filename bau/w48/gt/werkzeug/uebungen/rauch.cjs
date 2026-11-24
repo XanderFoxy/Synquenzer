@@ -1,0 +1,22 @@
+const { chromium } = require('playwright');
+(async () => {
+  const b = await chromium.launch();
+  const c = await b.newContext({ viewport: { width: 428, height: 926 }, hasTouch: true, isMobile: true });
+  const p = await c.newPage();
+  const fehler = [];
+  p.on('pageerror', e => fehler.push('pageerror: ' + e.message));
+  p.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') fehler.push(m.type() + ': ' + m.text()); });
+  const basis = 'http://localhost:' + process.argv[2] + '/app/';
+  await p.goto(basis + '#warmup/the-wall'); await p.waitForTimeout(1500);
+  const r = await p.evaluate(async () => { const U = await import('./js/uebungen.js'); const l = await (await fetch('./daten/the-wall.json')).json();
+    return { n: U.UEBUNGEN.length, plan: U.plan(l, null).length, warm: U.warmup(l, null).map(s => s.uebung).join(','), schwer: U.plan(l, null).map(t => t.schwierig.length).join(',') }; });
+  console.log(JSON.stringify(r));
+  console.log('WARMUP-Text:', (await p.innerText('body')).slice(0, 300).replace(/\n+/g, ' | '));
+  await p.goto(basis + '#lied/the-wall/teil/out'); await p.waitForTimeout(800);
+  console.log('TEIL-Text:', (await p.innerText('body')).slice(0, 500).replace(/\n+/g, ' | '));
+  await p.screenshot({ path: process.argv[3] + '/uebungen-teil.png' });
+  await p.goto(basis + '#uebungen'); await p.waitForTimeout(600);
+  console.log('UEB-Text:', (await p.innerText('body')).slice(0, 200).replace(/\n+/g, ' | '));
+  console.log('FEHLER:', fehler.length ? fehler.join('\n') : 'keine');
+  await b.close();
+})();

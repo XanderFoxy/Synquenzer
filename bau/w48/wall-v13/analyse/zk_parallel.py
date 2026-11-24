@@ -19,8 +19,9 @@ def bild(reihen, dauer, datei, marken, breite=22):
             st = 12 * np.log2(np.maximum(z['f0'][m], 1) / 155.56)
             ax2 = ax.twinx(); ax2.scatter(z['t'][m] - t0, st, s=1.5, c='C2'); ax2.set_ylim(-8, 20); ax2.set_yticks([])
         except Exception: pass
-        for k in range(0, int(dauer / S16) + 1):
-            t = k * S16
+        k0 = int(np.ceil((t0 - .1) / S16 - 1e-9))
+        for k in range(k0, int((t0 + dauer) / S16) + 1):
+            t = k * S16 - t0
             c = 'k' if k % 16 == 0 else ('0.5' if k % 4 == 0 else '0.87')
             ax.axvline(t, color=c, lw=1.4 if c == 'k' else .6, zorder=0)
         for (t, l, col) in marken.get('%s@%.3f' % (nm, t0), []):

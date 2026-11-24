@@ -2,9 +2,8 @@
 import json, sys
 from zk_gemein import *
 def cfg(gruppen, dauer, datei, spuren=('H_roh',)):
-    MH = {m['id']: m for m in json.load(open(CACHE + 'mess_H.json'))}
-    try: MD = {m['id']: m for m in json.load(open(CACHE + 'mess_D.json'))}
-    except Exception: MD = {}
+    MH = {m['id']: m for m in json.load(open(CACHE + 'mess_alle.json'))}
+    MD = MH
     reihen = []; marken = {}
     for zeile, t0, lab in gruppen:
         for sp in spuren:

@@ -341,7 +341,7 @@ function liesProfilLink() {
 async function zeige() {
   raeumeAuf();
   const roh = location.hash.replace(/^#\/?/, '');
-  if (roh.startsWith('profil=')) { liesProfilLink(); return; }
+  if (roh.startsWith('profil=')) { liesProfilLink(); return zeige(); }
   const [seite = 'start', a, b, c] = roh.split('/').map((x) => { try { return decodeURIComponent(x); } catch (e) { return x; } });
   const v = ansicht();
   let inhalt;
@@ -531,7 +531,7 @@ async function seiteTeil(id, tid) {
     return h('li', { class: `station ${fertig ? 'erledigt' : ''} ${i === erste ? 'naechste' : ''}` },
       h('span', { class: 'punkt' }, fertig ? ic('haken') : String(i + 1)),
       h('div', { class: 'inhalt' }, h('div', { class: 'karte' },
-        h('div', { class: 'station-kopf' }, h('h3', null, u ? u.titel : `Stufe ${i + 1}`),
+        h('div', { class: 'station-kopf' }, h('h3', null, s.titel || (u ? u.titel : `Stufe ${i + 1}`)),
           h('button', { class: `haken-knopf ${fertig ? 'an' : ''}`, 'aria-label': 'Stufe erledigt', 'aria-pressed': String(fertig), onclick: () => {
             const neu = speicher.setzeFortschritt(id, 'stufen', key, !fertig);
             const alle = schritte.every((_, k) => neu.stufen[`${tid}:${k}`]);
@@ -797,26 +797,34 @@ async function seiteWarmup(id) {
   const punkteLeiste = h('div', { class: 'schritt-punkte', 'aria-hidden': 'true' });
   aufraeumen.push(() => clearInterval(uhrTimer));
 
-  function notenAus(tonWert, schritt) {
-    const v = (schritt && (schritt.vokal || (uebungVon(schritt.uebung) || {}).vokal)) || 'u';
-    let lo, hi, liste = null;
+  function notenAus(tonWert, schritt, verschiebung = 0) {
     if (tonWert == null) return [];
-    if (typeof tonWert === 'number') lo = hi = tonWert;
-    else if (Array.isArray(tonWert)) { const z = tonWert.filter(isFinite); if (z.length > 2) liste = z; else { lo = z[0]; hi = z[z.length - 1]; } }
-    else if (typeof tonWert === 'object') {
-      if (Array.isArray(tonWert.noten)) liste = tonWert.noten.map((n) => (typeof n === 'object' ? n.midi : n)).filter(isFinite);
-      lo = tonWert.tief ?? tonWert.von ?? tonWert.start ?? tonWert.lo ?? tonWert.midi;
-      hi = tonWert.hoch ?? tonWert.bis ?? tonWert.ende ?? tonWert.hi ?? lo;
+    const u = uebungVon(schritt && schritt.uebung);
+    // Vokale: aus dem Schritt (vokale), aus der Zeile (vokale-melodie) oder sanfter Standard „u“
+    let vokale = Array.isArray(schritt && schritt.vokale) && schritt.vokale.length ? schritt.vokale.map((v) => ({ vokal: v })) : null;
+    if (!vokale && schritt && schritt.zeile) {
+      const z = lied.zeilen.find((x) => x.id === schritt.zeile);
+      if (z) vokale = silbenVon(z.text, z.sprache);
     }
-    if (liste && liste.length) return liste.map((m, k) => ({ t: k * 0.55, dauer: 0.5, midi: m, vokal: v }));
-    if (!isFinite(lo)) return [];
-    if (!isFinite(hi) || hi === lo) return [{ t: 0, dauer: 1.6, midi: lo, vokal: v }];
-    if (hi < lo) [lo, hi] = [hi, lo];
-    // Tonleiter-Muster vom tiefsten bis zum höchsten Ton und zurück (Dur-Schritte)
-    const schrittweite = [2, 2, 1, 2, 2, 2, 1], hoch = [];
-    let m = lo, k = 0; while (m < hi) { hoch.push(m); m += schrittweite[k++ % 7]; } hoch.push(hi);
-    const folge = hoch.concat(hoch.slice(0, -1).reverse());
-    return folge.map((mm, kk) => ({ t: kk * 0.42, dauer: 0.4, midi: mm, vokal: v }));
+    const vk = (k) => (vokale ? vokale[k % vokale.length] : { vokal: (u && u.vokal) || 'u' });
+    let liste = null, dauern = null, lo, hi;
+    if (typeof tonWert === 'number') liste = [tonWert];
+    else if (Array.isArray(tonWert)) liste = tonWert.filter(isFinite);
+    else if (typeof tonWert === 'object') {
+      if (Array.isArray(tonWert.folge)) liste = tonWert.folge.filter(isFinite);
+      else if (Array.isArray(tonWert.noten)) liste = tonWert.noten.map((n) => (typeof n === 'object' ? n.midi : n)).filter(isFinite);
+      if (Array.isArray(tonWert.dauern)) dauern = tonWert.dauern;
+      lo = tonWert.tief ?? tonWert.von ?? tonWert.start ?? tonWert.midi; hi = tonWert.hoch ?? tonWert.bis ?? lo;
+      if (!liste && isFinite(lo)) liste = lo === hi ? [lo] : [lo, hi, lo];
+    }
+    if (!liste || !liste.length) return [];
+    const lang = (tonWert && tonWert.gleiten) || liste.length <= 2 ? 1.2 : 0.42;
+    let t = 0;
+    return liste.map((m, k) => {
+      const d = dauern && isFinite(dauern[k]) ? dauern[k] : liste.length === 1 ? 1.8 : lang;
+      const p = vk(k), n = { t, dauer: d * 0.95, midi: m + verschiebung, vokal: p.vokal || 'u', gleit: p.gleit || '' };
+      t += d; return n;
+    });
   }
   function zeigeSchritt() {
     clearInterval(uhrTimer); laeuft = false; stoppeKlang();
@@ -836,20 +844,34 @@ async function seiteWarmup(id) {
         if (rest === 0) { clearInterval(uhrTimer); laeuft = false; startKnopf.replaceChildren(ic('haken'), 'Zeit um'); meldung(i < schritte.length - 1 ? 'Gut – weiter zum nächsten Schritt' : 'Warm-up geschafft'); }
       }, 1000);
     } }, ic('uhr'), 'Zeit starten');
-    const nn = notenAus(s.ton, s);
+    const starts = s.ton && Array.isArray(s.ton.starts) && s.ton.starts.length > 1 ? s.ton.starts : null;
+    let durchgang = 0;
+    const versatz = () => (starts ? starts[durchgang] - (s.ton.start ?? starts[0]) : 0);
+    const nn0 = notenAus(s.ton, s);
     const artSeg = h('div', { class: 'segment' }, [['klavier', 'Klavier', 'klavier'], ['stimme', 'Vokalstimme', 'welle']].map(([w, txt, icn]) => {
       const b = h('button', { class: ein.art === w ? 'an' : '', onclick: () => { ein.art = w; speicher.merke('warmEin', ein); artSeg.querySelectorAll('button').forEach((x) => x.classList.toggle('an', x === b)); } }, ic(icn), txt);
       return b;
     }));
-    const vorspielen = nn.length ? h('div', null,
-      h('button', { class: 'knopf haupt breit', onclick: () => { stoppeKlang(); spieleFolge(nn, { art: ein.art }); } }, ic('play'), `Töne vorspielen (${nName(Math.min(...nn.map((n) => n.midi)), ton)}${nn.length > 1 ? '–' + nName(Math.max(...nn.map((n) => n.midi)), ton) : ''})`),
-      h('div', { style: { marginTop: '10px' } }, artSeg)) : null;
+    const bereichText = () => { const nn = notenAus(s.ton, s, versatz()); const ms = nn.map((n) => n.midi); return nName(Math.min(...ms), ton) + (Math.max(...ms) > Math.min(...ms) ? '–' + nName(Math.max(...ms), ton) : ''); };
+    const spielKnopf = h('button', { class: 'knopf haupt breit', onclick: () => { stoppeKlang(); spieleFolge(notenAus(s.ton, s, versatz()), { art: ein.art }); } }, ic('play'), h('span', null, ''));
+    const setzeSpielText = () => { spielKnopf.lastChild.textContent = `Vorspielen (${nn0.length ? bereichText() : ''})`; };
+    const durchText = h('output', null, '');
+    const zeigeDurch = () => { durchText.textContent = `Durchgang ${durchgang + 1} von ${starts.length}`; setzeSpielText(); };
+    const durchReihe = starts ? h('div', { class: 'regler', style: { marginTop: '12px' } },
+      h('button', { class: 'knopf klein', 'aria-label': 'Einen Halbton tiefer', onclick: () => { durchgang = Math.max(0, durchgang - 1); zeigeDurch(); spielKnopf.click(); } }, '−'),
+      durchText,
+      h('button', { class: 'knopf klein', 'aria-label': 'Nächster Durchgang, einen Halbton höher', onclick: () => { durchgang = Math.min(starts.length - 1, durchgang + 1); zeigeDurch(); spielKnopf.click(); } }, '+')) : null;
+    if (starts) { durchText.style.textAlign = 'center'; zeigeDurch(); } else setzeSpielText();
+    const zeileLink = s.zeile && lied.zeilen.find((x) => x.id === s.zeile) ? h('a', { class: 'chip', href: `#lied/${enc(lied.id)}/zeile/${enc(s.zeile)}`, style: { minHeight: '44px', marginTop: '12px' } }, ic('play'), 'Diese Zeile üben') : null;
+    const vorspielen = nn0.length ? h('div', null, spielKnopf, durchReihe, h('div', { style: { marginTop: '10px' } }, artSeg)) : null;
+    const vokalReihe = Array.isArray(s.vokale) && s.vokale.length ? h('div', { class: 'kette', style: { paddingTop: '10px' } }, s.vokale.map((v) => kugel({ vokal: v, anzeige: String(v).toUpperCase() }))) : null;
     box.replaceChildren(
       h('section', { class: 'karte' },
         h('div', { class: 'ueb-kopf' }, uebSymbol(u, true), h('div', null,
           h('p', { class: 'leise klein' }, `Schritt ${i + 1} von ${schritte.length} · ${Number(s.minuten) || 1} Min.`),
-          h('h3', { style: { fontSize: '21px' } }, (u && u.titel) || s.titel || 'Übung'))),
-        s.text ? h('p', { style: { marginTop: '12px' } }, s.text) : null,
+          h('h3', { style: { fontSize: '21px' } }, s.titel || (u && u.titel) || 'Übung'))),
+        vokalReihe,
+        s.text ? h('p', { style: { marginTop: '12px' } }, s.text) : null, zeileLink,
         u && u.anleitung ? h('ol', { class: 'anleitung' }, u.anleitung.map((a) => h('li', null, a))) : null),
       h('section', { class: 'karte' }, uhr, zb, h('div', { style: { marginTop: '12px' } }, startKnopf)),
       vorspielen ? h('section', { class: 'karte' }, vorspielen) : null,
@@ -878,7 +900,7 @@ function seiteStimme() {
     { titel: 'Eine Zeile', text: 'Sing eine Zeile aus einem Lied, ganz normal in deiner Lage.', sek: 10 },
   ];
   let stufe = 0, stopFn = null, timer = 0;
-  const spur = { t: [], hz: [], sicher: [] };
+  let spur = [];
   aufraeumen.push(() => { clearInterval(timer); if (stopFn) stopFn(); stopFn = null; });
 
   function ergebnis(st) {
@@ -926,7 +948,7 @@ function seiteStimme() {
       fertig(r && r.stimme ? r.stimme : r);
     } catch (e) { meldung('Datei ließ sich nicht lesen: ' + (e && e.message || e), 5000); zeigeUebersicht(); }
   }
-  function geführt() { stufe = 0; for (const k of Object.keys(spur)) spur[k] = []; zeigeStufe(); }
+  function geführt() { stufe = 0; spur = []; zeigeStufe(); }
   function zeigeStufe() {
     const s = SCHRITTE[stufe];
     const blase = h('div', { class: 'ton-blase' }, '–');
@@ -939,13 +961,9 @@ function seiteStimme() {
         h('button', { class: 'knopf', onclick: () => { clearInterval(timer); if (stopFn) stopFn(); stopFn = null; zeigeUebersicht(); } }, 'Abbrechen')));
     async function los() {
       if (stopFn) return;
-      const tStart = performance.now(), basis = spur.t.length ? spur.t[spur.t.length - 1] + 1 : 0;
       try {
         stopFn = await starteMikro((e) => {
-          spur.t.push(basis + (performance.now() - tStart) / 1000);
-          spur.hz.push(e && e.hz > 0 ? e.hz : 0);
-          spur.sicher.push(e && typeof e.sicher === 'number' ? e.sicher : e && e.hz > 0 ? 1 : 0);
-          if (e && isFinite(e.pegel)) (spur.pegel = spur.pegel || []).push(e.pegel);
+          if (e) spur.push({ hz: e.hz > 0 ? e.hz : 0, sicher: typeof e.sicher === 'number' ? e.sicher : e.hz > 0 ? 1 : 0, pegel: isFinite(e.pegel) ? e.pegel : -100 });
           const m = tonAusEreignis(e);
           blase.textContent = m == null ? '…' : nName(m);
         });
@@ -960,7 +978,6 @@ function seiteStimme() {
   }
   function weiter() {
     if (stufe < SCHRITTE.length - 1) { stufe++; zeigeStufe(); return; }
-    if (spur.pegel && spur.pegel.length !== spur.t.length) delete spur.pegel;
     auswerten(spur);
   }
   zeigeUebersicht();
@@ -1015,7 +1032,7 @@ function seiteNeu() {
       }
       const sp = spracheWahl || spracheVon(zeilen.map((z) => z.text).join(' '));
       for (const z of zeilen) { z.sprache = sp; z.silben = silbenVon(z.text, sp).map((s) => ({ text: s.text || '' })); }
-      let noten = null;
+      let noten = null, umfang = null;
       if (datei) {
         status.textContent = 'Melodie wird aus der Aufnahme gelesen … (kann etwas dauern)';
         try {
@@ -1033,7 +1050,7 @@ function seiteNeu() {
         const ms = noten.map((n) => Math.round(n.midi)).sort((a, b) => a - b);
         const q = (p) => ms[Math.min(ms.length - 1, Math.max(0, Math.round(p * (ms.length - 1))))];
         // seltene Ausreißer (Erkennungsfehler) nicht als Umfang zählen
-        var umfang = { tief: q(0.02), hoch: q(0.98) };
+        umfang = { tief: q(0.02), hoch: q(0.98) };
       }
       const lied = { id, titel: titel.value.trim() || 'Mein Lied', kuenstler: 'eigenes Lied', sprache: sp, teile, zeilen, umfang: umfang || null, erstellt: Date.now(), mitAudio: !!datei };
       const dauerhaft = await speicher.speichereLied(lied);
@@ -1079,6 +1096,4 @@ function seiteUebungen() {
 
 // ================================================================ Start
 window.addEventListener('hashchange', zeige);
-document.addEventListener('visibilitychange', () => { if (document.hidden) stoppeKlang(); });
-if ('serviceWorker' in navigator && false) navigator.serviceWorker.register('sw.js'); // Offline kommt später
 zeige();

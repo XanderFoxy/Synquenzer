@@ -1,0 +1,16 @@
+{
+  "name": "Gesangstrainer",
+  "short_name": "Gesang",
+  "description": "Warm-up und Lernweg aus deinen eigenen Liedern – alles bleibt auf deinem Gerät.",
+  "lang": "de",
+  "start_url": "./#start",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1a1220",
+  "theme_color": "#1a1220",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
