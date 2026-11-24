@@ -30,6 +30,7 @@ const pruef = (b, t) => { if (b) { ok++; console.log('  ok  ', t); } else { fehl
     const bericht = await page.textContent('#bericht');
     console.log('  Bericht:', bericht, '(' + (Date.now() - t0) + ' ms)');
     pruef(/Anschläge auf dem Raster/.test(bericht) && /Noten/.test(bericht), 'Bericht mit Raster und Noten');
+    await page.waitForTimeout(600);
     const lagen = await page.$$eval('.lage', (els) => els.map((e) => { const r = e.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, vorne: e.classList.contains('vorne'), t: e.querySelector('.fahne').textContent }; }));
     console.log('  Lagen:', lagen.map((l) => `${l.t} @${Math.round(l.x)},${Math.round(l.y)}`).join(' | '));
     pruef(lagen.length >= 4, 'mind. 4 Versionen (Original, Gereinigt, Getimed, Auto) – ' + lagen.length);
@@ -46,13 +47,16 @@ const pruef = (b, t) => { if (b) { ok++; console.log('  ok  ', t); } else { fehl
     else { await page.screenshot({ path: S + '/ui-quer.png' }); }
     // ältere Version nach vorne (Fähnchen antippen)
     const alt = page.locator('.lage', { hasText: 'Gereinigt' });
-    await alt.tap();
+    await alt.scrollIntoViewIfNeeded();
+    const fb = await alt.locator('.fahne').boundingBox();
+    await page.touchscreen.tap(fb.x + fb.width / 2, fb.y + fb.height / 2);
     await page.waitForTimeout(400);
     const vn = await page.evaluate(() => window.werkstatt3.Z.v.name);
     pruef(vn === 'Gereinigt', 'Fähnchen antippen holt „Gereinigt“ nach vorne');
     const obenTxt = await page.$$eval('.lage', (els) => els.map((e) => [e.getBoundingClientRect().top, e.querySelector('.fahne').textContent]).sort((a, b) => a[0] - b[0])[0][1]);
     pruef(obenTxt.includes('Gereinigt'), 'gewählte Lage liegt vorne oben');
-    if (name === 'quer') { await page.evaluate(() => document.getElementById('zwiebel').scrollIntoView()); await page.screenshot({ path: S + '/ui-quer-zwiebel.png' }); }
+    await page.waitForTimeout(400);
+    if (name === 'quer') { await page.evaluate(() => document.getElementById('zwiebel').scrollIntoView()); await page.waitForTimeout(200); await page.screenshot({ path: S + '/ui-quer-zwiebel.png' }); }
     if (name === 'hoch') await page.screenshot({ path: S + '/ui-hoch-alt.png', fullPage: true });
     pruef(!(await page.isDisabled('#bAktuell')), '„Aktuell“ aktiv');
     await page.locator('#bAktuell').tap();
@@ -78,14 +82,25 @@ const pruef = (b, t) => { if (b) { ok++; console.log('  ok  ', t); } else { fehl
     pruef(/ms/.test(vz), 'Waagrecht ziehen → neue Version: ' + vz);
     const aufStrich = await page.evaluate((i) => { const w = window.werkstatt3, n = w.Z.v.noten[i], E = w.E, g = 60 / E.bpm / 4; const l = E.versatz + Math.round((n.peak - E.versatz) / g) * g; return Math.abs(n.peak - l) * 1000; }, idx);
     pruef(aufStrich < 3, 'Spitze nach dem Ziehen auf dem Strich (' + aufStrich.toFixed(2) + ' ms)');
-    // Doppeltipp auf Note → zurück auf die Stufe
+    // Fein: +30 Cent, dann Doppeltipp auf Note → zurück auf die Stufe
+    await page.locator('#bFein').tap();
+    o = await page.evaluate((i) => window.werkstatt3.ort(i), idx);
+    let vf = await page.evaluate(() => document.querySelectorAll('.lage').length);
+    await page.mouse.move(o.x, o.y); await page.mouse.down(); await page.mouse.move(o.x, o.y - 12, { steps: 3 }); await page.mouse.move(o.x, o.y - pph * 0.3, { steps: 3 }); await page.mouse.up();
+    await page.waitForFunction((n) => document.querySelectorAll('.lage').length > n && !window.werkstatt3.Z.beschaeftigt, vf, { timeout: 15000 }).catch(() => {});
+    const vc = await page.evaluate(() => window.werkstatt3.Z.v.name);
+    pruef(/Cent/.test(vc), 'Fein ziehen → ' + vc);
+    await page.locator('#bFein').tap();
+    await page.waitForTimeout(300);
     o = await page.evaluate((i) => window.werkstatt3.ort(i), idx);
     const v3 = await page.evaluate(() => document.querySelectorAll('.lage').length);
     await page.touchscreen.tap(o.x, o.y); await page.waitForTimeout(120); await page.touchscreen.tap(o.x, o.y);
     await page.waitForTimeout(1500);
     const vd = await page.evaluate(() => window.werkstatt3.Z.v.name);
     console.log('  nach Doppeltipp:', vd, '/ Lagen', await page.evaluate(() => document.querySelectorAll('.lage').length), 'vorher', v3);
-    pruef(true, 'Doppeltipp ohne Fehler');
+    pruef(/auf Stufe/.test(vd), 'Doppeltipp → Note auf Stufe');
+    const cent = await page.evaluate((i) => window.werkstatt3.Z.v.noten[i].cent, idx);
+    pruef(Math.abs(cent) <= 5, 'nach Doppeltipp Abweichung ' + cent + ' Cent');
     // ▶ / ■
     await page.locator('#bSpiel').tap(); await page.waitForTimeout(400);
     pruef(await page.getAttribute('#bSpiel', 'aria-label') === 'Anhalten', '▶ spielt');

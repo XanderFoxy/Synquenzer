@@ -2,8 +2,11 @@
 // Silben- und Worterkennung einer Gesangsaufnahme. Alles lokal im Browser: die Aufnahme verlässt nie das Gerät.
 // Läuft im Hauptfaden und im Worker (kein window/document auf oberster Ebene).
 //
-// export function silben(x, sr, opt)  → [{t0, t1, kern, staerke, db, hz}]
-// export async function woerter(x, sr, opt) → [{t0, t1, text, silben:[…], zeile, quelle, p}]
+// export function silben(x, sr, opt)        → [{t0, t1, kern, staerke, db, hz, tal}]   (Sekunden, absolut)
+// export async function woerter(x, sr, opt) → [{t0, t1, text, silben:[…], zeile, quelle, p}] (+ .quelle, .hinweis am Array)
+// export function silbenTeilen(wort, deutsch) → ["Wel", "come"]
+// export async function modellStatus()       → {moeglich, da, wie, mb, gesamtMb, cache, modell}
+// export function modellBeenden() / export async function modellEntfernen()
 // (Beschreibung der Optionen: siehe SILBEN.md)
 
 // ---------------------------------------------------------------- Grundbausteine
@@ -239,17 +242,17 @@ export function silben(x, sr, opt = {}) {
   const empf = klemm(opt.empfindlich != null ? +opt.empfindlich : 0.5, 0, 1);
   const schwelle = 3.5 - 3 * empf;
   const kand = [];
-  const r30 = ms(0.03), r300 = ms(0.3), r200 = ms(0.2);
-  for (let m = r300; m < n - r300; m++) {
+  const r30 = ms(0.03), r300 = ms(0.3), r200 = ms(0.2), lo = j => Math.max(0, j), hi = j => Math.min(n - 1, j);
+  for (let m = 1; m < n - 1; m++) {
     if (!ist[m]) continue;
-    let emin = Infinity; for (let j = m - r30; j <= m + ms(0.01); j++) if (Ev[j] < emin) emin = Ev[j];
-    let rmax = -Infinity; for (let j = m; j < m + r200; j++) if (Ev[j] > rmax) rmax = Ev[j];
-    let lmax = -Infinity; for (let j = m - r300; j <= m; j++) if (Ev[j] > lmax) lmax = Ev[j];
+    let emin = Infinity; for (let j = lo(m - r30); j <= hi(m + ms(0.01)); j++) if (Ev[j] < emin) emin = Ev[j];
+    let rmax = -Infinity; for (let j = m; j <= hi(m + r200 - 1); j++) if (Ev[j] > rmax) rmax = Ev[j];
+    let lmax = -Infinity; for (let j = lo(m - r300); j <= m; j++) if (Ev[j] > lmax) lmax = Ev[j];
     const lvl = rmax - ref; if (lvl < -35) continue;
     const dR = rmax - emin, dL = lmax - emin;
-    let omax = 0; for (let j = m - ms(0.04); j <= m + ms(0.06); j++) if (od[j] > omax) omax = od[j];
-    let hmin = Infinity; for (let j = m - r30; j <= m + r30; j++) if (Hs[j] < hmin) hmin = Hs[j];
-    let hb = 0, nb = 0; for (let j = m - ms(0.12); j < m - ms(0.02); j++) { hb += H[j]; nb++; }
+    let omax = 0; for (let j = lo(m - ms(0.04)); j <= hi(m + ms(0.06)); j++) if (od[j] > omax) omax = od[j];
+    let hmin = Infinity; for (let j = lo(m - r30); j <= hi(m + r30); j++) if (Hs[j] < hmin) hmin = Hs[j];
+    let hb = 0, nb = 0; for (let j = lo(m - ms(0.12)); j < m - ms(0.02); j++) { hb += H[j]; nb++; }
     hb /= Math.max(1, nb);
     const wert = 0.9 * Math.log(omax / odMed + 0.2) + 0.25 * Math.min(dR, 30) / 3 + 0.12 * Math.min(dL, 30) / 3 +
       0.5 * Math.max(lvl, -35) / 6 + 1.5 * (hb - hmin);
@@ -351,7 +354,7 @@ function ausrichtenDP(T, D, freiRand) {
   const passt = (k, j) => {
     let c = -1; // Treffer werden belohnt
     const t = T[k], p = pause[j];
-    if (t.erw != null) c += Math.min(10, Math.abs(D[j].t0 - t.erw) / 0.25);
+    if (t.erw != null) c += Math.min(10, Math.abs(D[j].t0 - t.erw) / (t.tol || 0.25));
     if (t.zs === true) c += p >= 1 ? -0.3 : p >= 0.3 ? -0.1 : 0.2;   // Zeilenanfang nach Pause
     else if (t.zs === false && p >= 1) c += 1.5;                     // lange Pause mitten in der Zeile: unwahrscheinlich
     return c;
@@ -387,7 +390,7 @@ function zusammenbauen(quellWoerter, D, opt) {
     const a = fin(w.start) ? w.start : fin(w.t0) ? w.t0 : null, e = fin(w.end) ? w.end : fin(w.t1) ? w.t1 : a != null ? a + 0.3 * teile.length : null;
     teile.forEach((tx, q) => {
       const erw = vor && fin(+vor[q].t) ? +vor[q].t : a != null ? a + (Math.max(e, a + 0.05) - a) * q / teile.length : null;
-      T.push({ wi, text: tx, zs: q === 0 ? zs : (zs == null ? null : false), erw });
+      T.push({ wi, text: tx, zs: q === 0 ? zs : (zs == null ? null : false), erw, tol: opt.tol });
     });
   });
   const paar = ausrichtenDP(T, D, !!opt.freiRand);
@@ -412,6 +415,7 @@ function zusammenbauen(quellWoerter, D, opt) {
   const out = [];
   for (const [wi, sl] of proWort) {
     if (!sl.length) continue;
+    if (opt.quelle === 'modell' && sl.every(q => q.geschaetzt)) continue; // erkanntes Wort ohne eigene Silbe: eher erfunden
     const w = quellWoerter[wi];
     out.push({ t0: sl[0].t0, t1: sl[sl.length - 1].t1, text: w.text, silben: sl, zeile: w.zeile != null ? w.zeile : null, quelle: opt.quelle, p: w.p != null ? w.p : null });
   }
@@ -421,7 +425,7 @@ function zusammenbauen(quellWoerter, D, opt) {
   for (const d of lose) {
     let vor = null; for (const w of out) if (w.t0 <= d.t0 && (!vor || w.t0 > vor.t0)) vor = w;
     const nachW = out.find(w => w.t0 > d.t0);
-    if (vor && d.t0 - vor.t1 < 0.15 && d.t0 <= (nachW ? nachW.t0 : Infinity) && d.t0 > vor.t0) {
+    if (vor && vor.text != null && d.t0 - vor.t1 < 0.15 && d.t0 <= (nachW ? nachW.t0 : Infinity) && d.t0 > vor.t0) {
       vor.silben.push(silbe(d, '–')); vor.silben.sort((a, b) => a.t0 - b.t0); vor.t1 = Math.max(vor.t1, d.t1);
     } else out.push({ t0: d.t0, t1: d.t1, text: null, silben: [silbe(d, null)], zeile: null, quelle: 'silben', p: null });
   }
@@ -786,8 +790,14 @@ export async function woerter(x, sr, opt = {}) {
       jeFenster[k] = (r && r.words) || [];
     }
     const qw = zurueckLegen(jeFenster, S, D);
+    // Wort-Zeitstempel solcher Modelle kommen beim Gesang meist zu spät (Wortanfang ≈ Ende des Vorgängers):
+    // Verzug gegen die Silbenanfänge schätzen und abziehen
+    const vz = [];
+    for (const w of qw) { let best = null; for (const d of D) if (d.t0 <= w.start + 0.1 && d.t0 >= w.start - 0.8 && (!best || d.t0 > best.t0)) best = d; if (best) vz.push(w.start - best.t0); }
+    const verzug = klemm(median(vz) || 0, 0, 0.6);
+    for (const w of qw) { w.start -= verzug; w.end -= verzug; }
     melde(opt, 1, qw.length + ' Wörter erkannt');
-    const out = zusammenbauen(qw, D, { deutsch: lang === 'de', quelle: 'modell', freiRand: false });
+    const out = zusammenbauen(qw, D, { deutsch: lang === 'de', quelle: 'modell', freiRand: false, tol: 0.35 });
     return fertig(out, 'modell', 'Wörter vom lokalen Sprachmodell (' + MODELL.NAME + ', ' + (lang === 'de' ? 'deutsch' : 'englisch') + '), auf die erkannten Silben gelegt. Gesungener Text wird nicht immer richtig erkannt.');
   }
   return fertig(kandidaten(D), 'silben', 'Wörter ohne Text: nur aus Silben gebündelt (gebunden gesungen = ein Wort, Pause = neue Zeile). Für echten Text: opt.text oder opt.modell.');
