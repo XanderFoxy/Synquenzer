@@ -1,19 +1,19 @@
 {
- "stand": "2026-11-23T20:40:13.596Z",
+ "stand": "2026-11-24T01:03:14.390Z",
  "quellen": {
   "ticketmaster": {
    "ok": true,
    "treffer": 0,
    "fehler": [],
    "uebersprungen": "kein TM_KEY gesetzt",
-   "ms": 1
+   "ms": 0
   },
   "eventim": {
    "ok": true,
    "treffer": 14,
    "fehler": [],
    "uebersprungen": null,
-   "ms": 12169
+   "ms": 12250
   },
   "seiten": {
    "ok": false,
@@ -22,37 +22,32 @@
     "Gothic meets Klassik: fetch failed"
    ],
    "uebersprungen": null,
-   "ms": 10254,
+   "ms": 10423,
    "geprueft": 3,
    "gesamt": 4
   },
   "musicbrainz": {
    "ok": false,
-   "treffer": 4,
+   "treffer": 8,
    "fehler": [
-    "The Human League: HTTP 503 musicbrainz.org",
-    "New Order: HTTP 503 musicbrainz.org",
-    "Roxette: HTTP 503 musicbrainz.org"
+    "The Frozen Autumn: HTTP 503 musicbrainz.org"
    ],
    "uebersprungen": null,
-   "ms": 104209
+   "ms": 49046
   },
   "mbevents": {
-   "ok": false,
+   "ok": true,
    "treffer": 0,
-   "fehler": [
-    "New Order: HTTP 503 musicbrainz.org",
-    "Plastic Autumn: HTTP 503 musicbrainz.org"
-   ],
+   "fehler": [],
    "uebersprungen": null,
-   "ms": 70859
+   "ms": 60810
   },
   "deezer": {
    "ok": true,
-   "treffer": 8,
+   "treffer": 3,
    "fehler": [],
    "uebersprungen": null,
-   "ms": 2558
+   "ms": 2494
   }
  },
  "pushes": 0,
