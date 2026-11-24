@@ -58,8 +58,7 @@ def doppel_anker(H):
         hid = 'H-' + k[2:]; h = Hd[hid]; z = ZKD[k]
         # A: direkt an der Haupt ausgerichtet (beide trocken)
         gg_ok = e.get('gg_haupt_corr', -1) >= 0.80
-        srcA = h['src_peak'] + e['gg_haupt_off'] - (A2[hid]['q_spitze'] - h['src_peak']) * 0  # gg bezieht sich auf die Haupt-Quellspitze
-        # (gg wurde um die gemessene Haupt-Quellspitze ausgerichtet; bei Hand-Korrektur gleiche Silbe -> Versatz bleibt)
+        srcA = h['src_peak'] + e['gg_haupt_off']      # doppel_t(t+gg) ~ v7(t): Doppel-Ereignis zur Haupt-Spitze
         shiftA = (h['tgt_peak'] + 0.010) - srcA
         # B: Doppel-Rohaufnahme -> doppel_t, Ziel der Zielkarte
         b_ok = e['corr'] >= 0.80
