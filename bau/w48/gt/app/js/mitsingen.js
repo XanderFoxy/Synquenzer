@@ -239,7 +239,7 @@ export async function zeige(el, lied, { stimme } = {}) {
   async function spiele() {   // nur aus dem Tipp heraus (iOS)
     if (!bufInst) return;
     await sichereCtx();
-    spielt = true; starteQuellen(pos);
+    spielt = true; starteQuellen(pos); if (/Bereit/.test(status.textContent)) meld('');
     playKnopf.replaceChildren(ic('pause')); playKnopf.setAttribute('aria-label', 'Pause');
   }
   function pause() {
@@ -281,7 +281,7 @@ export async function zeige(el, lied, { stimme } = {}) {
   }
 
   // ---- Zeichnen (rAF) ----
-  const PX = 120;
+  const PX = 90;   // px je Sekunde
   let W = 0, H = 0, dpr = 1;
   function groesse() {
     const r = buehne.getBoundingClientRect(); dpr = Math.min(2, window.devicePixelRatio || 1);
