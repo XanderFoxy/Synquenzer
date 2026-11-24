@@ -179,12 +179,12 @@ h2.abschnitt { font-size: 13px; text-transform: uppercase; letter-spacing: .08em
 .bereich .pille span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bereich .pille small { color: var(--leise); font-weight: 500; }
 .pille .x { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--flaeche2); flex: none; }
-.schleife-k { grid-area: schleife; }
+.schleife-k { grid-area: schleife; justify-self: end; width: 52px; justify-content: center; padding: 0; }
 .tempo { grid-area: tempo; display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 13px; font-weight: 700; color: var(--leise); }
 .tempo input { flex: 1; min-width: 60px; height: 44px; accent-color: var(--akzent); }
 .tempo output { min-width: 40px; text-align: right; color: var(--text); }
 .hand { grid-area: hand; display: inline-flex; background: var(--flaeche2); border-radius: 22px; padding: 3px; }
-.hand button { min-height: 38px; min-width: 44px; padding: 0 9px; border: 0; border-radius: 19px; background: none; font-size: 13px; font-weight: 700; color: var(--leise); transition: background-color .15s ease, color .15s ease; }
+.hand button { min-height: 38px; min-width: 44px; padding: 0 8px; border: 0; border-radius: 19px; background: none; font-size: 13px; font-weight: 700; color: var(--leise); transition: background-color .15s ease, color .15s ease; }
 .hand button[aria-pressed="true"] { background: var(--flaeche); color: var(--text); box-shadow: var(--schatten); }
 
 .tastenflaeche {

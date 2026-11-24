@@ -322,7 +322,8 @@ async function seiteStueck(id) {
       erkl = `<b>${esc(notenName(getippt.schreibweise || getippt.midi))}</b> = ${esc(ROLLEN_NAME[r])}${r === 'fremd' ? '' : ' von ' + esc(s.name)} · steht im ${sys === 'bass' ? 'Bassschlüssel' : 'Violinschlüssel'} ${esc(ortImSystem(getippt.schreibweise, sys))}. ` + erkl;
     }
     karte.className = 'akkordkarte' + (ruhig() ? '' : ' neu');
-    karte.innerHTML = `<div class="gross">${esc(s.art === 'einzelton' ? s.grundton : s.kurz)}<small>${esc(s.name)}</small></div>
+    const kurzBass = s.art === 'einzelton' ? s.grundton : s.kurz + (s.umkehrung > 0 || s.bassFremd ? '/' + s.bass : '');
+    karte.innerHTML = `<div class="gross">${esc(kurzBass)}<small>${esc(s.name)}</small></div>
       <div><span class="umk">${esc(s.umkehrungText)}${s.art !== 'einzelton' ? ' · ' + (s.lage === 'weit' ? 'weite Lage' : 'enge Lage') : ''}</span><div class="toene">${toene.map((n) => tonChip(n, s.rollen.get(n.id), getippt && getippt.midi === n.midi)).join('')}</div></div>
       <button class="rund hoer" type="button" aria-label="Akkord anhören">${ICON.ohr}</button>
       <p class="erkl">${erkl}</p>`;
