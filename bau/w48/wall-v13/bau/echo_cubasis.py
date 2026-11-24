@@ -34,9 +34,20 @@ ROH = {
 NOTEN = {0: 1.0, 1: 0.5, 2: 0.25, 3: 0.125}   # Index -> Anteil einer ganzen Note (Index 2 = 1/4 audio-gemessen 0,5000 s)
 
 
-def mischung(m, gesetz='sinus'):
-    """(trocken, nass) für einen Mix-Rohwert m.  'sinus' = cos/sin(m·π/2) (audio-gemessen am besten passend),
-    'doppelt' = min(1,2(1−m)) / min(1,2m) (passt zur PDF-Angabe −15/−18 dB), 'wurzel' = √(1−m)/√m (RoomWorks, PDF BELEGT)."""
+K_GEMESSEN = 1.75   # nass/trocken ≈ 1,75·m für kleine m (audio-gemessen an original/Gesang-Platzhalter-3 und Doppel-Platzhalter-4)
+
+
+def mischung(m, gesetz='gemessen'):
+    """(trocken, nass) für einen Mix-Rohwert m der Delays/des Chorus.
+    'gemessen' (Standard): nass/trocken = 1,75·m (Mitte der Messungen; 1. Echo Delay −16,0 dB, Stereo Delay −18,8 dB),
+    'sinus'   = cos/sin(m·π/2)  (Autokorrelation ohne Chorus-Dekorrelation; −16,9 / −19,8 dB),
+    'doppelt' = min(1,2(1−m)) / min(1,2m) (PDF-Angabe −15 / −18 dB),
+    'wurzel'  = √(1−m)/√m (RoomWorks, PDF BELEGT)."""
+    if m >= 0.999:
+        return 0.0, 1.0
+    if gesetz == 'gemessen':
+        d = np.cos(m * np.pi / 2)
+        return d, min(1.0, K_GEMESSEN * m * d)
     if gesetz == 'sinus':
         return np.cos(m * np.pi / 2), np.sin(m * np.pi / 2)
     if gesetz == 'doppelt':
@@ -52,7 +63,7 @@ def raum_zeit(n):            # RoomWorks SE: Hallzeit = 0,1·200^n s (PDF BELEGT
     return 0.1 * 200.0 ** n
 
 
-def parameter(spur='haupt', bpm=120.0, gesetz='sinus'):
+def parameter(spur='haupt', bpm=120.0, gesetz='gemessen'):
     """Alle Größen der Kette als Zahlen (Sekunden, lineare Faktoren)."""
     viertel = 60.0 / bpm
     spur = {'gegen': 'chor', 'gegengesang': 'chor', 'ki': 'chor', 'lead': 'haupt'}.get(spur, spur)
@@ -165,7 +176,7 @@ def chorus_st(x_st, sr, C):
 
 
 # ---------------------------------------------------------------- die Kette
-def kette(x, sr=48000, spur='haupt', bpm=120.0, gesetz='sinus', mit_send=True, mit_chorus=True, P=None):
+def kette(x, sr=48000, spur='haupt', bpm=120.0, gesetz='gemessen', mit_send=True, mit_chorus=True, P=None):
     x = np.asarray(x, dtype=np.float64)
     if x.ndim == 2:
         x = x.mean(1)
@@ -211,7 +222,7 @@ def kette(x, sr=48000, spur='haupt', bpm=120.0, gesetz='sinus', mit_send=True, m
     return c_tr, c_ec, c_ha
 
 
-def impulsantwort(spur='haupt', sr=48000, dauer=4.0, bpm=120.0, gesetz='sinus', mit_chorus=True):
+def impulsantwort(spur='haupt', sr=48000, dauer=4.0, bpm=120.0, gesetz='gemessen', mit_chorus=True):
     x = np.zeros(int(sr * dauer)); x[int(0.01 * sr)] = 1.0
     return kette(x, sr, spur, bpm, gesetz, mit_chorus=mit_chorus)
 
