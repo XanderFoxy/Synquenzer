@@ -3,7 +3,7 @@
 // eigenen Übungen ('training/uebung/<id>'). musterAusDaten() liest nur, was du selbst eingetragen hast: welche Übungen du gemacht
 // hast und wie sie sich für dich angefühlt haben – in Worten, ohne Zahl, ohne richtig oder falsch.
 import { GRUPPEN, GRUPPE, UEBUNGEN, UEBUNG } from './uebungen.js';
-import { gefuehlEintrag, gemachteIds, gruppeVon } from './plan.js';
+import { juengstesGefuehl, gemachteIds, gruppeVon } from './plan.js';
 
 const INHALT = {
   fokus: {
@@ -222,8 +222,8 @@ export function musterAusDaten({ tage = {}, schwerpunkt = null } = {}) {
   const je = {};
   for (const id of gemachteIds(tage)) {
     const g = gruppeVon(id); if (!g || !GRUPPE[g]) continue;
-    const e = gefuehlEintrag(tage, id), x = je[g] || (je[g] = { gut: [], mittel: [], nicht: [], offen: [] });
-    const n = nameVon(id); const f = e ? e.gut : null;
+    const x = je[g] || (je[g] = { gut: [], mittel: [], nicht: [], offen: [] });
+    const n = nameVon(id), f = juengstesGefuehl(tage, id);
     (f === 2 ? x.gut : f === 1 ? x.mittel : f === 0 ? x.nicht : x.offen).push(n);
   }
   const r = [];

@@ -236,19 +236,23 @@ export function stuecke(satz, woerterListe) {
   if (pos < satz.length) aus.push({ t: satz.slice(pos), an: false });
   return aus;
 }
-// Wörter, die in den Texten wiederkehren (ohne Allerweltswörter und ohne die kleinen Wörter der Wortgruppen).
-// Mindestens 2-mal, mindestens 4 Buchstaben. Angezeigt wird die häufigste Schreibweise (Hauptwörter groß).
+// Wörter, die in den Texten wiederkehren – meist Themen (Hauptwörter). Ohne Allerweltswörter und ohne die Wörter der
+// grammatischen Gruppen (ich, nicht, immer, war, werde, machen, weil …); Freunde/Familie und Gefühlswörter dürfen bleiben.
+// Mindestens 2-mal, mindestens 4 Buchstaben; Einzahl/Mehrzahl grob zusammengefasst. Gezeigt wird die häufigste Schreibweise –
+// groß nur, wenn das Wort auch mitten im Satz groß steht (sonst ist es nur der Satzanfang).
 const STOP = menge(STOPP);
-const KLEIN = ['ich', 'wir', 'du', 'man', 'verneinung', 'absolut', 'abgestuft'];
+const OHNE = GRUPPEN_IDS.filter((g) => !['menschen', 'freude', 'belastung'].includes(g));
+const stamm = (w) => (w.length > 5 ? w.replace(/(en|e|n|s)$/, '') : w);
 export function wiederkehrend(texte, reihenfolge, n = 8) {
   const z = new Map();
-  for (const id of reihenfolge) for (const s of saetze((texte || {})[id] || '')) for (const x of woerter(s)) {
-    if (x.zahl || x.w.length < 4 || STOP.has(x.w) || HILF.has(x.w) || KLEIN.some((g) => passt(g, x.w))) continue;
-    const e = z.get(x.w) || { n: 0, formen: new Map() }; e.n++; e.formen.set(x.o, (e.formen.get(x.o) || 0) + 1); z.set(x.w, e);
-  }
+  for (const id of reihenfolge) for (const s of saetze((texte || {})[id] || '')) woerter(s).forEach((x, i) => {
+    if (x.zahl || x.w.length < 4 || STOP.has(x.w) || HILF.has(x.w) || OHNE.some((g) => passt(g, x.w))) return;
+    const k = stamm(x.w), e = z.get(k) || { n: 0, formen: new Map(), gross: false };
+    e.n++; e.formen.set(x.w, (e.formen.get(x.w) || 0) + 1); if (i > 0 && /^[A-ZÄÖÜ]/.test(x.o)) e.gross = true; z.set(k, e);
+  });
   return [...z.entries()].filter(([, e]) => e.n >= 2)
     .sort((a, b) => b[1].n - a[1].n || b[0].length - a[0].length || a[0].localeCompare(b[0], 'de')).slice(0, n)
-    .map(([w, e]) => { const f = [...e.formen.entries()].sort((a, b) => b[1] - a[1])[0][0]; return /^[A-ZÄÖÜ]/.test(f) ? f : w; });
+    .map(([, e]) => { const f = [...e.formen.entries()].sort((a, b) => b[1] - a[1])[0][0]; return e.gross ? f.charAt(0).toUpperCase() + f.slice(1) : f; });
 }
 
 // Kleiner Fingerabdruck der Texte (merkt, ob sich seit dem letzten Ergebnis etwas geändert hat)

@@ -17,8 +17,8 @@ export const QUELLEN = {
   },
   soto2019: {
     text: "Soto, C. J. (2019). How replicable are links between personality traits and consequential life outcomes? The Life Outcomes of Personality Replication Project. Psychological Science, 30, 711–727.",
-    notiz: "87 % von 78 Zusammenhängen zwischen Big Five und Lebensbereichen ließen sich bestätigen, im Mittel mit 77 % der ursprünglichen Stärke.",
-    erklaerung: "Soto hat 78 bekannte Befunde darüber, wie die fünf großen Grundzüge mit Lebensbereichen zusammenhängen (etwa Beziehungen, Arbeit, Gesundheit), mit großen neuen Stichproben noch einmal geprüft – und vorher festgelegt, wie ausgewertet wird. 87 % der Zusammenhänge zeigten sich wieder in derselben Richtung, im Mittel mit etwa drei Vierteln der ursprünglichen Stärke. Die Verbindungen sind also echt, aber meist kleiner als zuerst berichtet. Sie beschreiben Gruppen von Menschen und sind keine Vorhersage für einen einzelnen Menschen."
+    notiz: "Von 78 Zusammenhängen zwischen Big Five und Lebensbereichen ließen sich fast neun von zehn bestätigen, im Mittel mit gut drei Vierteln der ursprünglichen Stärke.",
+    erklaerung: "Soto hat 78 bekannte Befunde darüber, wie die fünf großen Grundzüge mit Lebensbereichen zusammenhängen (etwa Beziehungen, Arbeit, Gesundheit), mit großen neuen Stichproben noch einmal geprüft – und vorher festgelegt, wie ausgewertet wird. Fast neun von zehn Zusammenhängen zeigten sich wieder in derselben Richtung, im Mittel mit etwa drei Vierteln der ursprünglichen Stärke. Die Verbindungen sind also echt, aber meist kleiner als zuerst berichtet. Sie beschreiben Gruppen von Menschen und sind keine Vorhersage für einen einzelnen Menschen."
   },
   roberts2017: {
     text: "Roberts, B. W., Luo, J., Briley, D. A., Chow, P. I., Su, R., & Hill, P. L. (2017). A systematic review of personality trait change through intervention. Psychological Bulletin, 143(2), 117–141.",

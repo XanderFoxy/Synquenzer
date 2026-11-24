@@ -158,18 +158,22 @@ export function zuletzt(tage, datum, n = 4, tageZurueck = 60) {
 export function tagWort(s, heute) { const a = abstand(s, heute); return a === 0 ? 'heute' : a === 1 ? 'gestern' : datumLang(s); }
 
 // ---------- Gefühl je Übung („Wie war das für dich?“) ----------
-// Die Antwort je Übung ist der jüngste Eintrag mit Gefühl – oder, wenn es keinen gibt, der jüngste Eintrag überhaupt.
-// Rückgabe { datum, i, gut } oder null. Genau diesen Eintrag ändert antwortSetzen; das Muster liest dasselbe.
-export function gefuehlEintrag(tage, id) {
-  let jung = null;
+const istGefuehl = (g) => g === 0 || g === 1 || g === 2;
+// Die Antwort je Übung ist ihr jüngster Eintrag: { datum, i, gut (oder null) } oder null. Genau diesen ändert antwortSetzen.
+export function juengsterEintrag(tage, id) {
   for (const s of Object.keys(tage || {}).sort().reverse()) {
     const l = eintraege(tage, s);
-    for (let i = l.length - 1; i >= 0; i--) if (l[i] && l[i].id === id) {
-      const g = l[i].gut; if (g === 0 || g === 1 || g === 2) return { datum: s, i, gut: g };
-      if (!jung) jung = { datum: s, i, gut: null };
-    }
+    for (let i = l.length - 1; i >= 0; i--) if (l[i] && l[i].id === id) return { datum: s, i, gut: istGefuehl(l[i].gut) ? l[i].gut : null };
   }
-  return jung;
+  return null;
+}
+// Fürs Muster: das jüngste Gefühl, das du zu dieser Übung angegeben hast (oder null).
+export function juengstesGefuehl(tage, id) {
+  for (const s of Object.keys(tage || {}).sort().reverse()) {
+    const l = eintraege(tage, s);
+    for (let i = l.length - 1; i >= 0; i--) if (l[i] && l[i].id === id && istGefuehl(l[i].gut)) return l[i].gut;
+  }
+  return null;
 }
 export function gemachteIds(tage) { const r = new Set(); for (const l of Object.values(tage || {})) for (const e of Array.isArray(l) ? l : []) if (e && e.id) r.add(e.id); return [...r]; }
 export function gruppeVon(id) { return UEBUNG[id] ? UEBUNG[id].gruppe : String(id).startsWith('hf-') ? 'wachsen' : null; }

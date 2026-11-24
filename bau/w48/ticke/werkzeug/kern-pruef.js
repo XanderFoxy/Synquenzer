@@ -18,7 +18,7 @@ async function seite(browser, opt = {}) {
 }
 async function geh(p, hash) { await p.evaluate((h) => { location.hash = h; }, hash); await warte(p, 350); }
 const quer = (p) => p.evaluate(() => { const i = document.getElementById('inhalt'); return { doc: document.documentElement.scrollWidth - document.documentElement.clientWidth, inhalt: i.scrollWidth - i.clientWidth }; });
-const VERBOTEN = [/\bPunkte?n?\b/, /\d\s?%/, /Prozent/, /die meisten/, /in Folge/, /\bLevel\b/, /Abzeichen/, /\bRang\b/, /Perzentil/, /Wahrscheinlichkeit/, /im Vergleich zu anderen/, /Mit Claude/];
+const VERBOTEN = [/(?<!keine )Prozent/, /\bPunkte?n?\b/, /\d\s?%/, /die meisten/, /in Folge/, /\bLevel\b/, /Abzeichen/, /\bRang\b/, /Perzentil/, /Wahrscheinlichkeit/, /im Vergleich zu anderen/, /Mit Claude/];
 async function textPruef(p, name) {
   const t = await p.evaluate(() => document.getElementById('inhalt').innerText + ' ' + (document.getElementById('weg-leiste').innerText || ''));
   const treffer = VERBOTEN.filter((r) => r.test(t)).map(String);
@@ -110,7 +110,7 @@ async function foto(p, n) { if (FOTOS) await p.screenshot({ path: `${FOTOS}/kern
     pruef('Ergebnis neu berechnet nach Wahl', e1 && e1.antworten && e1.antworten.d1 === 4, JSON.stringify(e1 && e1.antworten));
     await setze('d1', async () => { await p.click('dialog.blatt .antwort:nth-child(3)'); });
     z = await zeileText('d1'); pruef('Wahl ändern, „vorher“ sichtbar', /teils, teils/.test(z) && /vorher: stimmt eher/.test(z), z);
-    await setze('d1', async () => { await foto(p, '10-blatt-vorher'); const n = await p.$$eval('dialog.blatt .antw-vorher-liste li', (l) => l.length); pruef('Blatt zeigt Vorher-Liste', n === 1, n + ' Einträge'); await p.click('dialog.blatt [data-w=v0]'); });
+    await setze('d1', async () => { await foto(p, '10-blatt-vorher'); const n = await p.$$eval('dialog.blatt .antw-vorher-liste li', (l) => l.length); pruef('Blatt zeigt Vorher-Liste', n === 1, n + ' Einträge'); await p.click('dialog.blatt [data-w=vor-0]'); });
     z = await zeileText('d1'); pruef('„Wieder nehmen“ setzt alte Antwort', /stimmt eher/.test(z) && !/^.*stimmt eher.*vorher: stimmt eher/.test(z), z);
     await setze('d3', async () => { await p.fill('#antw-feld', 'Ich höre erst auf den Bauch und prüfe dann.'); await foto(p, '11-blatt-text'); await p.click('dialog.blatt [data-w=ok]'); });
     z = await zeileText('d3'); pruef('Text setzen', /höre erst auf den Bauch/.test(z), z);

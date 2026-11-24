@@ -117,14 +117,14 @@ export function zeige(ctx, el) {
     let feld = null;
     const eingabe = !kannSetzen ? `<p>Diese Antwort änderst du direkt im Fragebogen.</p>`
       : art === 'wahl' ? `<div class="antworten" role="group" aria-label="Antwort wählen">${opts.map((x, i) => { const an = !o && String(x.wert) === String(a.wert);
-          return `<button type="button" class="antwort" aria-pressed="${an}" data-w="o${i}"><span class="kreis" aria-hidden="true"></span><span>${esc(x.text)}</span>${an ? '<span class="sr"> (jetzige Antwort)</span>' : ''}</button>`; }).join('')}</div>`
+          return `<button type="button" class="antwort" aria-pressed="${an}" data-w="opt-${i}"><span class="kreis" aria-hidden="true"></span><span>${esc(x.text)}</span>${an ? '<span class="sr"> (jetzige Antwort)</span>' : ''}</button>`; }).join('')}</div>`
       : art === 'text' ? `<label class="sr" for="antw-feld">Deine Antwort</label><textarea id="antw-feld" class="feld" rows="6">${esc(o ? '' : a.wert)}</textarea>`
       : `<label class="sr" for="antw-feld">Deine Antwort</label><input id="antw-feld" class="feld frage-feld" type="${art === 'zeit' ? 'time' : 'text'}"${art === 'zahl' ? ' inputmode="decimal"' : ''} value="${esc(o ? '' : a.wert)}">`;
     const html = `${a.gruppe ? `<p class="leise klein antw-blatt-gruppe">${esc(s.info.name)} › ${esc(a.gruppe)}</p>` : ''}<p class="antw-blatt-frage">${esc(a.frage)}</p>
       ${o ? '<p class="leise klein">Noch offen.</p>' : art === 'wahl' || !kannSetzen ? '' : `<p class="leise klein">Jetzt: ${esc(a.anzeige || String(a.wert))}</p>`}
       ${eingabe}
       <div class="reihe"><button type="button" class="knopf zweit" data-w="">${kannSetzen ? 'Abbrechen' : 'Schließen'}</button>${kannSetzen && art !== 'wahl' ? '<button type="button" class="knopf haupt" data-w="ok">Speichern</button>' : ''}</div>
-      ${vorher.length && kannSetzen ? `<h3 class="klein antw-vorher-t">Vorher</h3><ul class="antw-vorher-liste">${vorher.map((v, i) => `<li><span>${esc(v.anzeige || '–')}${v.zeit ? `<small class="leise"> · ${esc(datum(v.zeit))}</small>` : ''}</span><button type="button" class="knopf zweit klein" data-w="v${i}" aria-label="${esc('Wieder nehmen: ' + (v.anzeige || ''))}">Wieder nehmen</button></li>`).join('')}</ul>` : ''}
+      ${vorher.length && kannSetzen ? `<h3 class="klein antw-vorher-t">Vorher</h3><ul class="antw-vorher-liste">${vorher.map((v, i) => `<li><span>${esc(v.anzeige || '–')}${v.zeit ? `<small class="leise"> · ${esc(datum(v.zeit))}</small>` : ''}</span><button type="button" class="knopf zweit klein" data-w="vor-${i}" aria-label="${esc('Wieder nehmen: ' + (v.anzeige || ''))}">Wieder nehmen</button></li>`).join('')}</ul>` : ''}
       <p class="antw-blatt-links">${!o && kannSetzen ? '<button type="button" class="link" data-w="loeschen">Antwort löschen</button>' : ''}${a.route ? `<a class="link" href="#${esc(a.route)}" data-w="hin">Im Fragebogen ansehen</a>` : ''}</p>`;
     const w = await blatt(html, {
       titel: o ? 'Antwort geben' : 'Antwort ändern',
@@ -136,9 +136,10 @@ export function zeige(ctx, el) {
     if (w == null || tot) return;
     if (w === 'hin') { kern.geh(a.route); return; }
     let neu;
+    const nr = (pre) => (w.startsWith(pre) ? Number(w.slice(pre.length)) : -1);
     if (w === 'loeschen') neu = null;
-    else if (w[0] === 'o') neu = opts[Number(w.slice(1))].wert;
-    else if (w[0] === 'v') neu = vorher[Number(w.slice(1))].wert;
+    else if (opts && opts[nr('opt-')]) neu = opts[nr('opt-')].wert;
+    else if (vorher[nr('vor-')]) neu = vorher[nr('vor-')].wert;
     else if (w === 'ok') {
       const roh = feld ? feld.value : '';
       if (!String(roh).trim()) { meldung(o ? 'Nichts eingegeben.' : 'Leer gelassen – nichts geändert. Zum Löschen: „Antwort löschen“.', 4000); return; }

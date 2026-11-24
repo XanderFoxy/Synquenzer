@@ -35,7 +35,7 @@ export const RICHTUNGEN = [
   { id: 'satzlaenge', art: 'wert', grenzen: [8, 11, 16, 21] },
   { id: 'absolut', art: 'waage', a: ['absolut'], b: ['abgestuft'], min: 5 },
   { id: 'begruenden', art: 'dichte', gruppen: ['begruenden'], grenzen: [0.8, 1.6, 3.5, 5] },
-  { id: 'vielfalt', art: 'wert', grenzen: [0.62, 0.68, 0.79, 0.84] }
+  { id: 'vielfalt', art: 'wert', grenzen: [0.66, 0.72, 0.84, 0.88] }
 ];
 const summe = (an, gr) => gr.reduce((s, g) => s + an.merkmale[g].anzahl, 0);
 const belegeVon = (an, gr, n = 4) => gr.flatMap((g) => an.merkmale[g].belege).sort((x, y) => y[1] - x[1]).slice(0, n);
@@ -113,7 +113,7 @@ export function stilNotizen(an) {
   aus.push(z.fragen >= 2 ? 'In deinen Texten stehen Fragen – auch Fragen an dich selbst.' : z.fragen === 1 ? 'In deinen Texten steht eine Frage.' : 'Deine Texte stellen keine Fragen – sie erzählen und sagen.');
   if (z.ausrufe) aus.push(z.ausrufe >= 2 ? 'Ausrufezeichen geben deinen Texten an einigen Stellen Nachdruck.' : 'An einer Stelle gibt ein Ausrufezeichen Nachdruck.');
   if (an.merkmale.man.anzahl >= 3) aus.push('Du schreibst öfter „man“, wo auch „ich“ stehen könnte.');
-  if (an.verneint.anzahl) aus.push(`Gefühlswörter nach „nicht“ oder „kein“ zählen nicht mit – bei dir zum Beispiel ${belegListe(an.verneint.belege, 2)}.`);
+  if (an.verneint.anzahl) aus.push(`Gefühlswörter mit „nicht“ oder „kein“ davor zählen nicht mit – in deinen Texten betrifft das ${belegListe(an.verneint.belege, 3)}.`);
   return aus;
 }
 

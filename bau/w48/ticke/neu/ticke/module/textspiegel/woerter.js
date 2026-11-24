@@ -113,7 +113,8 @@ export const STOPP = `aber alle allem allen aller alles als also am an andere an
   fand gefunden kommt komme kam kommen sehe sieht sah sehen lässt lasse dinge ding sache sachen halt total ganz genau gerade gern gerne
   okay klar natürlich eigentlich vielleicht irgendwie ziemlich wirklich besonders bisschen dafür denke denkt glaube weiß einen eins zwei
   drei mehr meisten oft eher fast kaum bald heute morgen gestern dort hier dabei danach davor deshalb deswegen darum trotzdem obwohl
-  sowie sowohl weder noch beide beiden beim seid sei wäre wären hätte hätten habt hab tun tut tue getan gemacht mag möchte darf kann`;
+  sowie sowohl weder noch beide beiden beim seid sei wäre wären hätte hätten habt hab tun tut tue getan gemacht mag möchte darf kann
+  wenig lange lang später danach dabei paar viel vielleicht dass einem einfach weiß`;
 
 // Zahl der Einträge (für die Methoden-Anzeige)
 export const ANZAHL = Object.values(GRUPPEN).reduce((s, g) => s + g.liste.split(/\s+/).filter(Boolean).length, 0);

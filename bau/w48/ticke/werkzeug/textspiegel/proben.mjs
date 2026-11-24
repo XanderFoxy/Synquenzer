@@ -11,3 +11,9 @@ export const P2 = { // knapp, sachlich, nach vorn
   bremse: 'Wenig Zeit. Schule dauert lange. Dann bleibt kaum Zeit. Ich mache trotzdem weiter. Ich plane die Woche neu. Ich schaffe das.',
   freund: 'Er ist zuverlässig. Er hilft beim Umzug. Er repariert alles. Er redet wenig. Er kommt pünktlich. Er macht, was er sagt.'
 };
+export const P3 = { // lange Sätze, erklärend, wiederholend
+  tag: 'Ich glaube, dass ich an dem Tag ganz ich war, weil ich den ganzen Tag Zeit hatte und weil ich merke, dass ich nur dann wirklich ich bin, wenn ich Zeit habe und niemand etwas von mir will, und deshalb denke ich, dass Zeit für mich das Wichtigste ist, weil ich mit Zeit verstehe, was ich will und was ich nicht will.',
+  antrieb: 'Mich treibt an, dass ich verstehen will, warum Dinge so sind, wie sie sind, denn wenn ich verstehe, warum etwas so ist, dann weiß ich, was ich machen kann, und deshalb lese ich viel und denke viel nach, weil ich glaube, dass man nur etwas ändern kann, wenn man es verstanden hat und weiß, warum es so ist.',
+  bremse: 'Mich bremst, dass ich oft zu viel nachdenke, weil ich immer verstehen will, warum etwas so ist, und dann denke ich und denke ich, und deshalb fange ich manchmal nicht an, weil ich noch nicht verstanden habe, warum ich es machen soll, und das ist eigentlich schade, denn ich weiß, dass ich es könnte.',
+  freund: 'Mein Freund würde sagen, dass ich viel nachdenke und viel erkläre, weil ich immer wissen will, warum etwas so ist, und dass ich manchmal zu viel erkläre, weil ich glaube, dass man alles verstehen kann, wenn man nur lange genug nachdenkt, und dass er das mag, weil er dann auch viel versteht.'
+};

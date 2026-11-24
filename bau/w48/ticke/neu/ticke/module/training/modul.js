@@ -244,7 +244,7 @@ function uebung(ctx, id) {
   const mmss = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
   // Atem-Takt: ein Kreis wächst beim Einatmen und wird beim Ausatmen kleiner – läuft nur mit dem Timer
   const atemWort = () => (T.fertig ? 'Fertig' : T.laeuft ? (T.phase === 'aus' ? 'Ausatmen' : 'Einatmen') : T.rest < T.gesamt ? 'Pause' : 'Bereit');
-  const atemHtml = () => (w.atem ? `<div class="tr-atem${T.laeuft ? ' ' + (T.phase || 'ein') : ''}" data-atem style="--ein:${Number(w.atem.ein) || 4}s;--aus:${Number(w.atem.aus) || 6}s" aria-hidden="true">
+  const atemHtml = () => (w.atem ? `<div class="tr-atem${T.laeuft && T.phase ? ' ' + T.phase : ''}" data-atem style="--ein:${Number(w.atem.ein) || 4}s;--aus:${Number(w.atem.aus) || 6}s" aria-hidden="true">
       <span class="tr-atem-kreis"></span><span class="tr-atem-wort" data-atem-wort>${atemWort()}</span></div>
       <p class="klein leise">Etwa ${Number(w.atem.ein) || 4} Sekunden ein, ${Number(w.atem.aus) || 6} Sekunden aus. Der Kreis zeigt den Takt – folg ihm locker.</p>` : '');
   const timerHtml = () => `<div class="karte weich tr-timer">${atemHtml()}<p class="tr-uhr" aria-hidden="true" data-uhr>${mmss(T.rest)}</p>${ui.fortschritt(1 - T.rest / T.gesamt, 'Verstrichene Zeit')}
@@ -278,6 +278,7 @@ function uebung(ctx, id) {
     const ph = vorbei % (ein + aus) < ein ? 'ein' : 'aus';
     if (ph === T.phase) return; T.phase = ph;
     const a = el.querySelector('[data-atem]'); if (!a) return;
+    void a.offsetWidth;   // Stil erst berechnen, damit der erste Atemzug sichtbar wächst (neu gemaltes Element)
     a.classList.toggle('ein', ph === 'ein'); a.classList.toggle('aus', ph === 'aus');
     const wt = a.querySelector('[data-atem-wort]'); if (wt) wt.textContent = atemWort();
   };
@@ -511,7 +512,7 @@ function erinnerung(ctx) {
 }
 
 // ================= Schnittstelle: Antworten, Muster, Äste =================
-// Antwort-IDs: 'schwerpunkt' · 'zeit' · 'gefuehl.<übung oder herausforderung>' (Gefühl beim jüngsten Eintrag mit Gefühl)
+// Antwort-IDs: 'schwerpunkt' · 'zeit' · 'gefuehl.<übung oder herausforderung>' (Gefühl beim jüngsten Eintrag dieser Übung)
 // · 'plan.<plan-id>.<feld>' · 'notiz.<JJJJ-Www>' (Wochen-Notiz). Frühere Werte: Modul-Daten 'vorher' (höchstens 5 je Antwort).
 const PLAN_FELDER = { woop: UEBUNG['z-woop'].werkzeug.felder, wenndann: UEBUNG['z-wenndann'].werkzeug.felder, gewohnheit: UEBUNG['g-anker'].werkzeug.felder };
 const wahlText = (liste, w) => { const x = liste.find(([v]) => String(v) === String(w)); return x ? x[1] : ''; };
@@ -533,7 +534,7 @@ function liste(sp) {
     optionen: ZEITEN.map(([wert, text]) => ({ wert, text })), route: 'training' }));
   // Gefühl je Übung – jüngste zuerst
   const H = P.herausforderungen(P.profilAus({ wachstum: sp.ergebnis ? sp.ergebnis('passt.wachstum') : null }).wachstum);
-  const ids = P.gemachteIds(d.tage).map((id) => ({ id, e: P.gefuehlEintrag(d.tage, id) })).filter((x) => x.e).sort((a, b) => (a.e.datum < b.e.datum ? 1 : a.e.datum > b.e.datum ? -1 : 0));
+  const ids = P.gemachteIds(d.tage).map((id) => ({ id, e: P.juengsterEintrag(d.tage, id) })).filter((x) => x.e).sort((a, b) => (a.e.datum < b.e.datum ? 1 : a.e.datum > b.e.datum ? -1 : 0));
   for (const { id, e } of ids) {
     const hf = String(id).startsWith('hf-'), h = hf ? H.find((x) => x.id === id) : null;
     if (!UEBUNG[id] && !hf) continue;
@@ -569,7 +570,7 @@ function setze(sp, id, wert) {
     if (wert !== null && ![0, 2, 5, 10].includes(Number(wert))) return false;
     neu = wert === null ? null : Number(wert); sp.schreib(M, 'zeit', neu === null ? undefined : neu);
   } else if (id.startsWith('gefuehl.')) {
-    const uid = id.slice(8), e = P.gefuehlEintrag(d.tage, uid);
+    const uid = id.slice(8), e = P.juengsterEintrag(d.tage, uid);
     if (!e || (wert !== null && ![0, 1, 2].includes(Number(wert)))) return false;
     neu = wert === null ? null : Number(wert);
     const l = [...(d.tage[e.datum] || [])]; l[e.i] = { ...l[e.i], gut: neu };
