@@ -3,7 +3,8 @@
 // belegt nur mit Quelle. Keine Diagnosen, keine Heilversprechen, keine Lernstile. Texte: Du-Form, kurz, ohne Fachwörter.
 // Felder: id, gruppe, titel, dauer (Minuten), kurz, schritte[], warum {text, stufe, quellen}, gut? {text, stufe, quellen}
 //   werkzeug?: { timer: Minuten, felder: [{k, label, platz?, lang?}], vorlage?: 'Text mit {k}', plan?: 'woop'|'wenndann'|'gewohnheit',
-//                link?: {href, text, hinweis?}, pflicht?: [k] (für Pläne) }
+//                link?: {href ('#…' – nur Wege innerhalb dieser App), text, hinweis?}, pflicht?: [k] (für Pläne),
+//                atem?: {ein, aus} (Sekunden – Atem-Takt, läuft mit dem Timer, ganz in der App) }
 
 export const GRUPPEN = [
   { id: 'fokus', titel: 'Fokus & Energie bündeln', kurz: 'Eine Sache zur Zeit, echte Pausen, Ablenkung vorher planen.',
@@ -134,7 +135,7 @@ export const UEBUNGEN = [
     gut: { text: '„Nie zweimal hintereinander“ ist eine Faustregel, keine geprüfte Grenze.', stufe: 'idee', quellen: [] } },
   { id: 'g-abhaken', gruppe: 'gewohnheiten', titel: 'Sichtbar abhaken', dauer: 1,
     kurz: 'Ein Haken pro Tag – hier bei deinen Plänen.',
-    schritte: ['Wähl eine Gewohnheit aus deinen Plänen oder leg eine neue an.', 'Hak sie jeden Tag ab, an dem du sie gemacht hast.', 'Schau am Ende der Woche im Rückblick, wie oft es geklappt hat.'],
+    schritte: ['Wähl eine Gewohnheit aus deinen Plänen oder leg eine neue an.', 'Hak sie jeden Tag ab, an dem du sie gemacht hast.', 'Schau am Ende der Woche im Rückblick, wie es dir damit ging.'],
     warum: { text: 'Fortschritt aufzuschreiben hilft im Mittel beim Erreichen von Zielen. Hier auf Gewohnheiten übertragen.', stufe: 'abgeleitet', quellen: ['harkin2016'] },
     werkzeug: { link: { href: '#training/plaene', text: 'Zu deinen Plänen' } } },
 
@@ -240,10 +241,12 @@ export const UEBUNGEN = [
     warum: { text: 'Die Weltgesundheitsorganisation rät, langes Sitzen zu unterbrechen. Dass genau zwei Minuten reichen, ist nicht eigens geprüft.', stufe: 'abgeleitet', quellen: ['bull2020'] },
     werkzeug: { timer: 2 } },
   { id: 'h-atem', gruppe: 'gesundheit', titel: 'Langsam atmen', dauer: 5,
-    kurz: 'Fünf Minuten ruhig atmen – ausführlich in der Atem-App.',
-    schritte: ['Setz dich bequem hin.', 'Atme durch die Nase etwa vier Sekunden ein und etwa sechs Sekunden aus.', 'Fünf Minuten lang. Wird dir schwindlig: normal weiteratmen.'],
+    kurz: 'Fünf Minuten ruhig atmen – die App zeigt dir den Takt.',
+    schritte: ['Setz dich bequem hin, die Füße auf dem Boden, die Schultern locker.', 'Starte den Timer. Der Kreis wird beim Einatmen größer und beim Ausatmen kleiner – atme einfach mit.',
+      'Atme durch die Nase etwa vier Sekunden ein und etwa sechs Sekunden aus. Das längere Ausatmen ist der Kern der Übung.',
+      'Fünf Minuten lang. Wandern die Gedanken, kehr ohne Ärger zum Atem zurück. Wird dir schwindlig: normal weiteratmen.'],
     warum: { text: 'Atemübungen senkten in zwölf Studien das Stress-Gefühl im Mittel etwas. Die Studien hatten Schwächen.', stufe: 'belegt', quellen: ['fincham2023'] },
-    werkzeug: { timer: 5, link: { href: '../atem/', text: 'Atem-App öffnen', hinweis: 'Öffnet die Atem-App auf derselben Seite.' } } },
+    werkzeug: { timer: 5, atem: { ein: 4, aus: 6 } } },
   { id: 'h-gruen', gruppe: 'gesundheit', titel: 'Kurz ins Grüne', dauer: 10,
     kurz: 'Zehn Minuten in einen Park, unter Bäume oder ans Wasser.',
     schritte: ['Geh an einen Ort mit Bäumen, Wiese oder Wasser.', 'Zehn Minuten nur schauen, hören, gehen – ohne Handy.', 'Achte danach: Fühlt sich dein Kopf anders an?'],
@@ -335,7 +338,8 @@ export const RICHTUNG_UEBUNGEN = {
   neugieriger: ['l-warum', 'h-gehen', 'w-staerke']
 };
 
-// Profil → Übungen (aus M1 bigfive). seite: -1 = eher/deutlich niedriger, 1 = eher/deutlich höher. Nur außerhalb des Mittelfelds.
+// Profil → Übungen (aus M1 bigfive). seite: -1 / 1 = die eine oder die andere Richtung des Bereichs (gleichwertig, siehe POL_WORT).
+// Nur, wenn das Profil deutlich in eine Richtung zeigt; „beides gehört zu dir“ ergibt keinen Grund.
 export const PROFIL_REGELN = [
   { bereich: 'gewissenhaftigkeit', seite: -1, uebungen: ['f-ein-ding', 'f-wichtigstes', 'g-anker', 'g-mini', 'z-wenndann', 'z-schritt', 'g-umgebung'],
     grund: 'Dann helfen eher kurze, feste Einheiten und Wenn-dann-Pläne als große Vorsätze.', stufe: 'abgeleitet', quellen: ['steel2007', 'gollwitzer2006'] },
@@ -357,6 +361,14 @@ export const PROFIL_REGELN = [
     grund: 'Wer viel Rücksicht nimmt, sagt oft zu selten Nein. Eine freundliche Grenze schützt deine Kraft.', stufe: 'idee', quellen: [] }
 ];
 export const BEREICH_NAME = { offenheit: 'Offenheit', gewissenhaftigkeit: 'Gewissenhaftigkeit', extraversion: 'Extraversion (Geselligkeit)', vertraeglichkeit: 'Verträglichkeit', stabilitaet: 'Emotionale Stabilität' };
+// Die zwei gleichwertigen Pole je Bereich, in Worten (Schlüssel = seite). Ohne Vergleich mit anderen, ohne Zahl.
+export const POL_WORT = {
+  offenheit: { '-1': 'Bewährtes und Vertrautes', 1: 'Neues und Ungewohntes' },
+  gewissenhaftigkeit: { '-1': 'spontan und beweglich', 1: 'geplant und beständig' },
+  extraversion: { '-1': 'ruhig und nach innen gewandt', 1: 'gesellig und nach außen gewandt' },
+  vertraeglichkeit: { '-1': 'direkt und eigenständig', 1: 'rücksichtsvoll und auf Harmonie bedacht' },
+  stabilitaet: { '-1': 'feinfühlig, Gefühle kommen stark an', 1: 'gelassen, Gefühle kommen ruhiger an' }
+};
 
 // Kurz-Namen der Bereiche für die Auswahl „Worauf willst du achten?“
 export const SCHWERPUNKTE = [['gemischt', 'Gemischt'], ['fokus', 'Fokus'], ['ziele', 'Ziele'], ['gewohnheiten', 'Gewohnheiten'], ['lernen', 'Lernen'],

@@ -1,5 +1,7 @@
 // M2 interessen – Auswertung (reine Rechnung, ohne DOM und ohne kern.js → in Node testbar).
-// Ergebnis-Formate: ARCH.md §3.3 (interessen.riasec, interessen.rhythmus, interessen.ehrlichkeit).
+// Ergebnis-Formate: ARCH.md §3.3 (interessen.riasec, interessen.rhythmus, interessen.ehrlichkeit) – unverändert, weil andere Module
+// (passt, training, textspiegel) die Felder lesen. Die Zahlen darin sind NUR intern (Rechenweg für Richtung und Reihenfolge):
+// angezeigt wird nie eine Zahl, kein Balken und kein Platz – nur Richtungen in Worten (Abschnitt „Richtungen“ unten).
 import { RIASEC, REIHE, WORT_INTERESSE, EHRLICHKEIT, FACETTEN, WORT_EHRLICH, TYP_GRENZEN, TYP_WORT, SELBST } from './daten.js';
 
 const r2 = (x) => Math.round(x * 100) / 100;
@@ -146,6 +148,33 @@ export function ueberlappt(a1, b1, a2, b2) {
   for (const [x1, y1] of teile(a1, b1)) for (const [x2, y2] of teile(a2, b2)) if (Math.min(y1, y2) - Math.max(x1, x2) > 0.25) return true;
   return false;
 }
+
+// ---------- Richtungen in Worten (für Anzeige und Muster) ----------
+// deutlich: 'klar' | 'leicht' | 'beides' – aus der Stufe −2…2 (Mittel der eigenen Antworten, kein Vergleich mit anderen).
+export function deutlichAus(stufe) { const a = Math.abs(Number(stufe) || 0); return a >= 2 ? 'klar' : a >= 1 ? 'leicht' : 'beides'; }
+const stufeVon = (b) => (b && typeof b.stufe === 'number' ? b.stufe : b && typeof b.wert === 'number' ? stufePomp(b.wert) : 0);
+// Ehrlichkeit (gesamt oder ein Teil): pol 'fair' | 'strategisch' | null (beides)
+export function ehrlichRichtung(b) { const s = stufeVon(b); return { pol: s > 0 ? 'fair' : s < 0 ? 'strategisch' : null, deutlich: deutlichAus(s), wort: WORT_EHRLICH[String(s)] }; }
+// Interessen-Bereich: wie sehr er dich anzieht – in Worten
+export function interesseRichtung(b) { const s = stufeVon(b); return { stufe: s, deutlich: deutlichAus(s), wort: WORT_INTERESSE[String(s)] }; }
+// Tagesrhythmus: pol 'frueh' | 'spaet' | null (dazwischen)
+export function rhythmusRichtung(typ) {
+  const pol = typ === 'frueh' || typ === 'eher-frueh' ? 'frueh' : typ === 'spaet' || typ === 'eher-spaet' ? 'spaet' : null;
+  return { pol, deutlich: typ === 'frueh' || typ === 'spaet' ? 'klar' : pol ? 'leicht' : 'beides', wort: TYP_WORT[typ] || '' };
+}
+// Zwei Achsen hinter dem Sechseck (Prediger 1982): Dinge ↔ Menschen, Daten ↔ Ideen. Gewichte aus der Lage im Sechseck
+// (R Dinge, S Menschen, I Dinge+Ideen, A Ideen+Menschen, E Menschen+Daten, C Daten+Dinge). Ausgabe nur Pol + Deutlichkeit.
+// Grenzen (eigene Festlegung, grob): Unterschied unter 10 → beides, unter 25 → leicht, sonst klar.
+export function riasecAchsen(typen) {
+  const w = (t) => (typen && typen[t] && typeof typen[t].wert === 'number' ? typen[t].wert : null);
+  if (REIHE.some((t) => w(t) === null)) return null;
+  const achse = (d, plus, minus) => { const a = Math.abs(d); return { pol: a < 10 ? null : d > 0 ? plus : minus, deutlich: a < 10 ? 'beides' : a < 25 ? 'leicht' : 'klar' }; };
+  const menschen = (2 * w('S') + w('A') + w('E')) / 4, dinge = (2 * w('R') + w('I') + w('C')) / 4;
+  const ideen = (w('I') + w('A')) / 2, daten = (w('E') + w('C')) / 2;
+  return { dingeMenschen: achse(menschen - dinge, 'menschen', 'dinge'), datenIdeen: achse(ideen - daten, 'ideen', 'daten') };
+}
+// Reihenfolge der sechs Bereiche (was dich am meisten anzieht zuerst) – ohne Platz-Zahlen in der Anzeige.
+export function riasecReihenfolge(e) { return [...REIHE].sort((a, b) => (e.typen[b].wert - e.typen[a].wert) || REIHE.indexOf(a) - REIHE.indexOf(b)); }
 
 // ---------- Anzeige-Hilfen ----------
 export function uhrText(h) { if (h == null) return '–'; let m = Math.round(uhr24(h) * 12) * 5; m %= 1440; return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`; }
