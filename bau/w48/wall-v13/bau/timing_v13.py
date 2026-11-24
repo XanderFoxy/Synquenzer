@@ -45,6 +45,7 @@ B = sprech_bloecke(H7, O)
 for b in B:     # „siehst du mich nicht“: v12 beginnt erst mit dem s bei 219,8 (gehaltener Ton davor gehört zum entfernten Rest)
     if b['id'] == 'sprech-126': b['src_a'] = 219.79 + b['off']; b['tgt_a'] = 219.79
 LOG['ziel_ausnahmen'] = {k: v for k, v in H_ZIEL.items()}
+del O
 LOG['sprechbloecke'] = [(b['id'], round(b['src_a'], 3), round(b['src_b'], 3), round(b['off'] * 1000, 1), b['corr']) for b in B]
 
 # ===================== 3. Reinigung (Quellzeit v7) =====================
@@ -60,6 +61,7 @@ OYE_REST = [(217.88, 219.79)]       # Rest von „open your eyes“ + gehaltener
 g_p = RG.pausen_gain(x, mkH, H, B, E, zb, ev['atmer'], LOG, stumm_extra=OYE_REST)
 g_s, silben_g = RG.silben_pegel(x, H, E, LOG)
 x = x * g_p * g_s
+del g_p, g_s
 LOG['silben_gain_db'] = {k: round(v, 2) for k, v in silben_g.items()}
 
 # ===================== 4. Warp Haupt =====================
@@ -69,7 +71,7 @@ lead = rendern(x, PH.stuecke, N)
 lead, LOG['lead_spitzen'] = RG.spitzen_weich(lead)
 schreibe(ST13 + 'lead.wav', lead)
 kmH = zeitkarte(PH.stuecke)
-np.save(TC + 'karte_H.npy', kmH)
+np.save(TC + 'karte_H.npy', kmH); np.save(TC + 'stuecke_H.npy', np.array(PH.stuecke, dtype=np.int64))
 
 # ===================== 5. Doppel =====================
 C = doppel_messung(H, H7, DT)
@@ -80,7 +82,7 @@ dop = rendern(DT, PD.stuecke, N)
 dop, LOG['doppel_spitzen'] = RG.spitzen_weich(dop)
 schreibe(ST13 + 'doppel.wav', dop)
 kmD = zeitkarte(PD.stuecke)
-np.save(TC + 'karte_D.npy', kmD)
+np.save(TC + 'karte_D.npy', kmD); np.save(TC + 'stuecke_D.npy', np.array(PD.stuecke, dtype=np.int64))
 
 # ===================== 6. Plan-Daten für Mess-Skript und Mix =====================
 def seg_info(P):

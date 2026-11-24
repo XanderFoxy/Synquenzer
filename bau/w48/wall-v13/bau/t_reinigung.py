@@ -20,9 +20,9 @@ def rampe(n_ges, bereiche, ramp_s=0.010):
         a = max(0, int(a)); b = min(n_ges, int(b))
         if b <= a: continue
         m[a:b] = 1
-    if r > 1:
-        k = np.hanning(2 * r + 1); k /= k.sum()
-        m = np.convolve(m, k, 'same')
+    if r > 1:      # zweimal gleitender Mittelwert = dreieckige (weiche) Rampe, O(N)
+        from scipy.ndimage import uniform_filter1d
+        m = uniform_filter1d(uniform_filter1d(m, r), r)
     return np.clip(m, 0, 1)
 
 
@@ -73,9 +73,9 @@ def zischlaute(x, ereignisse, zb, log):
     h = hp(x, 5000.0, 2); y = x.copy()
     for a, b, d in ereignisse:
         a7, b7 = zb.roh_zu_v7(a) - 0.005, zb.roh_zu_v7(b) + 0.005
-        m = rampe(len(x), [(a7 * SR, b7 * SR)], 0.005)
         i0, i1 = int((a7 - 0.02) * SR), int((b7 + 0.02) * SR)
-        y[i0:i1] = y[i0:i1] - (1 - 10 ** (-d / 20)) * h[i0:i1] * m[i0:i1]
+        m = rampe(i1 - i0, [((a7 - 0.02) * 0 + 0.02 * SR, (b7 - a7 + 0.02) * SR)], 0.005)
+        y[i0:i1] = y[i0:i1] - (1 - 10 ** (-d / 20)) * h[i0:i1] * m
     log['zischlaute'] = len(ereignisse)
     return y
 
@@ -159,9 +159,9 @@ def silben_pegel(x, anker, E, log, grenze=6.0):
         s0 = int((a['src_kons'] - 0.010) * SR)
         s1 = int((A[i + 1]['src_kons'] - 0.010) * SR) if i + 1 < len(A) else n
         kurve[max(0, s0):s1] = g[i]
-    # vor der ersten Silbe: 0
-    r = int(0.015 * SR); k = np.hanning(2 * r + 1); k /= k.sum()
-    kurve = np.convolve(kurve, k, 'same')
+    # vor der ersten Silbe: 0; Übergänge weich (zweimal gleitender Mittelwert, 15 ms)
+    from scipy.ndimage import uniform_filter1d
+    r = int(0.015 * SR); kurve = uniform_filter1d(uniform_filter1d(kurve, r), r)
     lv_neu = lv7 + np.array(g)
     log['silben_pegel'] = dict(median_abzug_db=round(med, 2), g_min=round(min(g), 2), g_max=round(max(g), 2),
                                g_abs_median=round(float(np.median(np.abs(g))), 2),
