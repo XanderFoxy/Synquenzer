@@ -294,9 +294,10 @@ function stoppeKlang() {
   ctxA = null;
 }
 let micAn = false;
-async function starteMikro(onTon) {
+async function starteMikro(onTon, onFehler) {
   if (!istFn(M.ton.mikrofon)) throw new Error('Die Tonhöhen-Erkennung ist noch nicht geladen.');
-  const r = await M.ton.mikrofon({ onTon });
+  // kein await davor: iOS erlaubt AudioContext + Mikrofon nur direkt im Tipp
+  const r = await M.ton.mikrofon({ onTon, onFehler: onFehler || ((e) => meldung(String(e && e.message || e), 4500)) });
   micAn = true;
   const stop = istFn(r) ? r : (r && (r.stop || r.stopp)) || (() => {});
   return () => { micAn = false; try { stop(); } catch (e) { /* egal */ } };
@@ -372,6 +373,7 @@ async function zeige() {
     else if (seite === 'lied' && a && b === 'zeile' && c) inhalt = await seiteZeile(a, c, d === 'bau');
     else if (seite === 'lied' && a && b === 'weg') inhalt = await seiteWeg(a);
     else if (seite === 'lied' && a) inhalt = await seiteLied(a);
+    else if (seite === 'mitsingen') inhalt = await seiteMitsingen(a || speicher.hole('letztesLied', 'the-wall'));
     else if (seite === 'warmup') inhalt = await seiteWarmup(a || speicher.hole('letztesLied', 'the-wall'));
     else if (seite === 'stimme') inhalt = seiteStimme();
     else if (seite === 'neu') inhalt = seiteNeu();
@@ -455,7 +457,8 @@ async function seiteLied(id) {
   const kopf = h('section', { class: 'held' },
     h('h1', null, lied.titel || 'Ohne Titel'),
     h('p', null, [lied.kuenstler, lied.bpm ? `${lied.bpm} BPM` : null, lied.tonart].filter(Boolean).join(' · ')),
-    h('div', { class: 'knopf-reihe', style: { marginTop: '16px' } },
+    h('a', { class: 'knopf weiss breit', href: `#mitsingen/${enc(id)}`, style: { marginTop: '16px', minHeight: '56px' } }, ic('play'), 'Mitsingen mit Instrumental'),
+    h('div', { class: 'knopf-reihe', style: { marginTop: '10px' } },
       h('a', { class: 'knopf weiss', href: `#warmup/${enc(id)}` }, ic('warm'), 'Warm-up für dieses Lied'),
       naechster ? h('a', { class: 'knopf weiss', href: `#lied/${enc(id)}/teil/${enc(naechster.id)}` }, ic('pfad'), 'Lernweg') : null));
 
@@ -1042,24 +1045,46 @@ async function seiteWarmup(id) {
   h('p', { class: 'leise klein', style: { textAlign: 'center' } }, 'Bei Schmerz, Kratzen oder Heiserkeit: aufhören und Pause machen.')];
 }
 
+// ================================================================ #mitsingen/<id>
+async function seiteMitsingen(id) {
+  const lied = await holeLied(id);
+  if (!lied) return nichtGefunden();
+  setzeKopf(`Mitsingen · ${lied.titel || 'Lied'}`, `#lied/${enc(id)}`); setzeNav('start');
+  const box = h('div', { class: 'mitsingen' });
+  let mod = null;
+  try { mod = await import('./mitsingen.js'); } catch (e) { mod = null; }
+  if (mod && istFn(mod.zeige)) {
+    try {
+      const r = await mod.zeige(box, liedFuer(lied), { stimme: stimme(), trans: transVon(id), meldung });
+      if (istFn(r)) aufraeumen.push(r); else if (r && istFn(r.stopp || r.stop)) aufraeumen.push(() => (r.stopp || r.stop)());
+      return box;
+    } catch (e) { console.warn(e); }
+  }
+  return [h('section', { class: 'held' }, h('h1', null, 'Mitsingen'), h('p', null, `Mit Instrumental zu „${lied.titel || 'deinem Lied'}“ singen.`)),
+    h('div', { class: 'karte leer' }, h('p', null, 'Das Mitsingen mit Instrumental wird gerade gebaut und kommt mit der nächsten Fassung.'),
+      h('p', { class: 'leise klein', style: { marginTop: '8px' } }, 'Bis dahin: Zeilen einzeln mit Vokalstimme oder Klavier üben.'),
+      h('a', { class: 'knopf haupt', href: `#lied/${enc(id)}`, style: { marginTop: '14px' } }, ic('pfad'), 'Zum Lernweg'))];
+}
+
 // ================================================================ #stimme
 function seiteStimme() {
   setzeKopf('Meine Stimmlage'); setzeNav('stimme');
   const box = h('div');
   const SCHRITTE = [
-    { titel: 'Tiefster bequemer Ton', text: 'Sing auf „a“ oder „u“ langsam von der Mitte nach unten – nur so tief, wie es ohne Knarren geht. Halte den tiefsten bequemen Ton kurz.', sek: 8 },
-    { titel: 'Höchster bequemer Ton', text: 'Jetzt langsam nach oben gleiten – so hoch, wie es ohne Druck geht. Den höchsten bequemen Ton kurz halten.', sek: 8 },
-    { titel: 'Eine Zeile', text: 'Sing eine Zeile aus einem Lied, ganz normal in deiner Lage.', sek: 10 },
+    { titel: 'Tiefster bequemer Ton', text: 'Sing auf „a“ oder „u“ langsam von der Mitte nach unten – nur so tief, wie es ohne Knarren geht. Den tiefsten bequemen Ton 2–3 Sekunden halten.', sek: 8 },
+    { titel: 'Höchster bequemer Ton', text: 'Jetzt langsam nach oben gleiten – so hoch, wie es ohne Druck geht. Den höchsten bequemen Ton 2–3 Sekunden halten.', sek: 8 },
+    { titel: 'Sirene', text: 'Auf „u“ oder „ng“ einmal von ganz unten nach ganz oben und zurück gleiten – wie eine Sirene, leicht und leise.', sek: 10 },
   ];
   let stufe = 0, stopFn = null, timer = 0;
   let spur = [];
-  aufraeumen.push(() => { clearInterval(timer); if (stopFn) stopFn(); stopFn = null; });
+  const stoppeAlles = () => { clearInterval(timer); if (stopFn) stopFn(); stopFn = null; };
+  aufraeumen.push(stoppeAlles);
 
   function ergebnis(st) {
     const baender = [{ ...BAND_GANZ, lo: st.tief, hi: st.hoch, name: `Bequem ${nName(st.tief)}–${nName(st.hoch)}` }];
     if (st.kern && isFinite(st.kern[0])) baender.push({ ...BAND_KERN, lo: st.kern[0], hi: st.kern[1], name: `Kern ${nName(st.kern[0])}–${nName(st.kern[1])}` });
     return h('section', { class: 'karte' },
-      h('p', { class: 'leise klein' }, st.quelle === 'profil' ? 'Aus deinem Stimmprofil' : 'Schätzung aus deiner Aufnahme'),
+      h('p', { class: 'leise klein' }, st.quelle === 'profil' ? 'Aus deinem Stimmprofil' : st.quelle === 'hand' ? 'Von Hand gewählt' : 'Schätzung aus deiner Aufnahme'),
       h('h3', { style: { fontSize: '24px', margin: '2px 0 8px' } }, st.typ ? `Eher ${st.typ}` : 'Deine Lage'),
       isFinite(st.tief) ? klaviatur(baender.filter((b) => isFinite(b.lo) && isFinite(b.hi)), st.uebergaenge || []) : null,
       legende(baender.filter((b) => isFinite(b.lo)), st.uebergaenge || []),
@@ -1067,29 +1092,43 @@ function seiteStimme() {
       h('p', { class: 'leise klein', style: { marginTop: '8px' } }, 'Eine Schätzung, kein Urteil – die Lage ändert sich mit Übung, Tagesform und Aufwärmen.'));
   }
   function zeigeUebersicht() {
+    stoppeAlles();
     const st = stimme();
     box.replaceChildren(
-      h('section', { class: 'held' }, h('h1', null, 'Meine Stimmlage'), h('p', null, 'Sing kurz ins Mikrofon oder lade eine Gesangsaufnahme. Alles bleibt auf diesem Gerät.')),
+      h('section', { class: 'held' }, h('h1', null, 'Meine Stimmlage'), h('p', null, 'Sing kurz ins Mikrofon, lade eine Gesangsaufnahme oder wähle deine Töne von Hand. Alles bleibt auf diesem Gerät.')),
       st && (isFinite(st.tief) || st.kern) ? ergebnis(st) : h('div', { class: 'karte leer' }, h('p', null, 'Noch keine Stimmlage gespeichert.')),
-      h('button', { class: 'knopf haupt breit', onclick: geführt }, ic('stimme'), st ? 'Neu ermitteln (singen)' : 'Jetzt singen – 3 kurze Schritte'),
+      h('button', { class: 'knopf haupt breit', onclick: gefuehrt }, ic('stimme'), st ? 'Neu ermitteln (singen)' : 'Jetzt singen – 3 kurze Schritte'),
+      h('button', { class: 'knopf breit', style: { marginTop: '10px' }, onclick: vonHand }, ic('klavier'), 'Ton von Hand wählen (Klaviatur)'),
       h('label', { class: 'datei-feld' }, ic('datei'), h('span', null, h('b', null, 'Gesangsdatei laden'), h('br'), h('span', { class: 'leise klein' }, 'WAV, MP3, M4A – am besten nur Gesang')),
         h('input', { type: 'file', accept: 'audio/*,.wav,.mp3,.m4a,.aif,.aiff,.flac', onchange: (e) => e.target.files[0] && ausDatei(e.target.files[0]) })),
       st ? h('button', { class: 'knopf klein', onclick: () => { speicher.loescheStimme(); meldung('Stimmlage gelöscht'); zeigeUebersicht(); } }, ic('loeschen'), 'Gespeicherte Stimmlage löschen') : null);
   }
+  const typVon = (lo, hi) => { const m = (lo + hi) / 2; return m < 51 ? 'Bass' : m < 55.5 ? 'Bariton' : m < 60 ? 'Tenor' : m < 64 ? 'Alt' : m < 68 ? 'Mezzosopran' : 'Sopran'; };
+  // Ersatz, falls stimmlage() aus den Live-Meldungen nichts Sicheres findet: Quantile der klar erkannten Töne
+  function ausMeldungen(sp) {
+    const ms = sp.filter((e) => e.hz > 0 && e.sicher >= 0.5).map((e) => 69 + 12 * Math.log2(e.hz / 440)).sort((a, b) => a - b);
+    if (ms.length < 15) return null;
+    const q = (p) => Math.round(ms[Math.min(ms.length - 1, Math.floor(p * (ms.length - 1)))]);
+    const tief = q(0.04), hoch = q(0.96), kern = [q(0.2), q(0.8)], typ = typVon(kern[0], kern[1]);
+    return { tief, hoch, kern, typ: `${typ} (Schätzung)`, sicherheit: 0.3,
+      text: `Schätzung aus ${Math.round(ms.length / 30)} s klar erkannten Tönen: sicher ${nName(tief)}–${nName(hoch)}, am wohlsten ${nName(kern[0])}–${nName(kern[1])}. Das passt am ehesten zu ${typ}.` };
+  }
   function auswerten(sp) {
     let st = istFn(M.ton.stimmlage) ? versuch(() => M.ton.stimmlage(sp), null) : null;
+    if (!st || !isFinite(st.tief)) st = ausMeldungen(sp) || st;
     fertig(st);
   }
-  function fertig(st) {
+  function fertig(st, quelle = 'aufnahme') {
     if (!st || !isFinite(st.tief)) {
       box.replaceChildren(h('div', { class: 'karte leer' }, h('p', null, (st && st.text) || 'Es wurden zu wenige klare Töne erkannt. Bitte noch einmal – etwas lauter, näher am Mikrofon, Töne kurz halten.')),
-        h('button', { class: 'knopf haupt breit', onclick: geführt }, 'Noch einmal'), h('button', { class: 'knopf breit', onclick: zeigeUebersicht }, 'Zurück'));
+        h('button', { class: 'knopf haupt breit', onclick: gefuehrt }, 'Noch einmal singen'), h('button', { class: 'knopf breit', style: { marginTop: '10px' }, onclick: vonHand }, ic('klavier'), 'Ton von Hand wählen'),
+        h('button', { class: 'knopf breit', style: { marginTop: '10px' }, onclick: zeigeUebersicht }, 'Zurück'));
       return;
     }
     const alt = stimme();
-    const neu = { tief: st.tief, hoch: st.hoch, kern: st.kern, typ: st.typ, sicherheit: st.sicherheit, text: st.text, uebergaenge: (alt && alt.uebergaenge) || [], quelle: 'aufnahme', datum: Date.now() };
+    const neu = { tief: st.tief, hoch: st.hoch, kern: st.kern, typ: st.typ, sicherheit: st.sicherheit, text: st.text, uebergaenge: st.uebergaenge || (alt && alt.uebergaenge) || [], quelle, datum: Date.now() };
     speicher.speichereStimme(neu);
-    meldung('Deine Stimmlage ist gespeichert');
+    meldung('Deine Stimmlage ist gespeichert – Übungen und Eignung nutzen sie jetzt');
     zeigeUebersicht();
   }
   async function ausDatei(datei) {
@@ -1100,37 +1139,81 @@ function seiteStimme() {
       fertig(r && r.stimme ? r.stimme : r);
     } catch (e) { meldung('Datei ließ sich nicht lesen: ' + (e && e.message || e), 5000); zeigeUebersicht(); }
   }
-  function geführt() { stufe = 0; spur = []; zeigeStufe(); }
+  function gefuehrt() { stoppeAlles(); stufe = 0; spur = []; zeigeStufe(); }
   function zeigeStufe() {
     const s = SCHRITTE[stufe];
     const blase = h('div', { class: 'ton-blase' }, '–');
+    const pegelBalken = h('i'); const pegel = h('div', { class: 'zeit-balken', 'aria-hidden': 'true' }, pegelBalken);
+    const bisher = h('p', { class: 'leise klein', style: { marginTop: '8px' } }, '');
     const ring = h('div', { class: 'mic-ring' }, h('span', { class: 'welle' }), h('span', { class: 'welle' }), h('button', { class: 'rund-knopf', 'aria-label': 'Aufnahme starten', onclick: () => los() }, ic('stimme')));
     const info = h('p', { class: 'leise' }, 'Tippe auf das Mikrofon, wenn du bereit bist.');
     const leiste = h('div', { class: 'stufen-leiste' }, SCHRITTE.map((x, k) => h('div', { class: k === stufe ? 'an' : k < stufe ? 'fertig' : '' }, h('b', null, k < stufe ? '✓' : String(k + 1)), x.titel)));
     box.replaceChildren(h('section', { class: 'karte' }, leiste),
-      h('section', { class: 'karte mic-buehne' }, h('h3', { style: { fontSize: '22px' } }, s.titel), h('p', null, s.text), ring, blase, info),
-      h('div', { class: 'knopf-reihe' }, h('button', { class: 'knopf', onclick: () => { clearInterval(timer); if (stopFn) stopFn(); stopFn = null; weiter(); } }, stufe < SCHRITTE.length - 1 ? 'Schritt überspringen' : 'Auswerten'),
-        h('button', { class: 'knopf', onclick: () => { clearInterval(timer); if (stopFn) stopFn(); stopFn = null; zeigeUebersicht(); } }, 'Abbrechen')));
+      h('section', { class: 'karte mic-buehne' }, h('h3', { style: { fontSize: '22px' } }, s.titel), h('p', null, s.text), ring, blase, pegel, bisher, info),
+      h('div', { class: 'knopf-reihe' }, h('button', { class: 'knopf', onclick: () => { stoppeAlles(); weiter(); } }, stufe < SCHRITTE.length - 1 ? 'Schritt überspringen' : 'Auswerten'),
+        h('button', { class: 'knopf', onclick: zeigeUebersicht }, 'Abbrechen')));
+    const klar = () => spur.filter((e) => e.hz > 0).map((e) => 69 + 12 * Math.log2(e.hz / 440));
     async function los() {
       if (stopFn) return;
+      info.textContent = 'Mikrofon wird gestartet …';
       try {
         stopFn = await starteMikro((e) => {
-          if (e) spur.push({ hz: e.hz > 0 ? e.hz : 0, sicher: typeof e.sicher === 'number' ? e.sicher : e.hz > 0 ? 1 : 0, pegel: isFinite(e.pegel) ? e.pegel : -100 });
+          if (!e) return;
+          spur.push({ hz: e.hz > 0 ? e.hz : 0, sicher: typeof e.sicher === 'number' ? e.sicher : e.hz > 0 ? 1 : 0, pegel: isFinite(e.pegel) ? e.pegel : -100 });
           const m = tonAusEreignis(e);
           blase.textContent = m == null ? '…' : nName(m);
-        });
-      } catch (err) { meldung(String(err && err.message || err), 5000); return; }
+          blase.classList.toggle('an', m != null);
+          pegelBalken.style.transform = `scaleX(${Math.max(0, Math.min(1, ((isFinite(e.pegel) ? e.pegel : -100) + 70) / 60))})`;
+          if (m != null && spur.length % 6 === 0) { const k = klar(); if (k.length > 5) bisher.textContent = `Erkannt bisher: ${nName(Math.min(...k))} bis ${nName(Math.max(...k))}`; }
+        }, (err) => { info.textContent = String(err && err.message || err); });
+      } catch (err) { info.textContent = String(err && err.message || err); meldung(String(err && err.message || err), 6000); return; }
       ring.classList.add('aktiv');
       let r = s.sek; info.textContent = `Noch ${r} s …`;
       timer = setInterval(() => {
         r--; info.textContent = r > 0 ? `Noch ${r} s …` : 'Danke!';
-        if (r <= 0) { clearInterval(timer); if (stopFn) stopFn(); stopFn = null; ring.classList.remove('aktiv'); setTimeout(weiter, 500); }
+        if (r <= 0) { stoppeAlles(); ring.classList.remove('aktiv'); setTimeout(weiter, 500); }
       }, 1000);
     }
   }
   function weiter() {
     if (stufe < SCHRITTE.length - 1) { stufe++; zeigeStufe(); return; }
     auswerten(spur);
+  }
+  // Ausweg ohne Mikrofon: tiefsten und höchsten bequemen Ton auf der Klaviatur antippen
+  function vonHand() {
+    stoppeAlles();
+    const alt = stimme();
+    const wahl = { tief: alt && isFinite(alt.tief) ? alt.tief : null, hoch: alt && isFinite(alt.hoch) ? alt.hoch : null };
+    let ziel = 'tief';
+    const anzeige = h('p', { class: 'hand-anzeige' });
+    const tasten = h('div', { class: 'hand-tasten' });
+    const zielSeg = h('div', { class: 'segment', role: 'group' });
+    const speichern = h('button', { class: 'knopf haupt breit', style: { marginTop: '12px' }, onclick: () => {
+      const lo = Math.min(wahl.tief, wahl.hoch), hi = Math.max(wahl.tief, wahl.hoch);
+      const kern = hi - lo >= 8 ? [lo + 2, hi - 2] : [lo, hi], typ = typVon(kern[0], kern[1]);
+      fertig({ tief: lo, hoch: hi, kern, typ: `${typ} (Schätzung)`, sicherheit: 0.2, text: `Von Hand gewählt: bequem ${nName(lo)}–${nName(hi)}, Kernbereich angenommen ${nName(kern[0])}–${nName(kern[1])}. Das passt am ehesten zu ${typ} – eine grobe Schätzung; mit dem Mikrofon wird sie genauer.` }, 'hand');
+    } }, ic('haken'), 'Diese Lage speichern');
+    const male = () => {
+      anzeige.textContent = `Tiefster: ${wahl.tief != null ? nName(wahl.tief) : '–'}   ·   Höchster: ${wahl.hoch != null ? nName(wahl.hoch) : '–'}`;
+      tasten.querySelectorAll('button').forEach((b) => { const m = Number(b.dataset.m); b.classList.toggle('an', m === wahl.tief || m === wahl.hoch); b.classList.toggle('drin', wahl.tief != null && wahl.hoch != null && m > Math.min(wahl.tief, wahl.hoch) && m < Math.max(wahl.tief, wahl.hoch)); });
+      zielSeg.querySelectorAll('button').forEach((b) => { const an = b.dataset.z === ziel; b.classList.toggle('an', an); b.setAttribute('aria-pressed', String(an)); });
+      speichern.disabled = !(wahl.tief != null && wahl.hoch != null && wahl.tief !== wahl.hoch);
+    };
+    for (const [z, t] of [['tief', 'Tiefsten wählen'], ['hoch', 'Höchsten wählen']]) zielSeg.append(h('button', { 'data-z': z, onclick: () => { ziel = z; male(); } }, t));
+    for (let m = 38; m <= 76; m++) {
+      const schwarz = [1, 3, 6, 8, 10].includes(m % 12);
+      tasten.append(h('button', { class: `hand-taste ${schwarz ? 'schwarz' : ''}`, 'data-m': String(m), 'aria-label': nName(m), onclick: () => {
+        stoppeKlang(); spieleFolge([{ t: 0, dauer: 0.9, midi: m, vokal: 'a' }], { art: 'klavier' });
+        wahl[ziel] = m; if (ziel === 'tief') ziel = 'hoch'; male();
+      } }, nName(m)));
+    }
+    box.replaceChildren(
+      h('section', { class: 'held' }, h('h1', null, 'Ton von Hand wählen'), h('p', null, 'Tippe eine Taste: sie klingt. Sing sie nach – geht sie bequem? Dann ist sie dein tiefster bzw. höchster Ton.')),
+      h('section', { class: 'karte' }, zielSeg, anzeige, tasten, speichern),
+      h('button', { class: 'knopf breit', onclick: zeigeUebersicht }, ic('zurueck'), 'Zurück'));
+    male();
+    const start = tasten.querySelector(`[data-m="${wahl.tief != null ? wahl.tief : 45}"]`);
+    if (start) setTimeout(() => { try { tasten.scrollLeft = start.offsetLeft - 20; } catch (e) { /* egal */ } }, 50);
   }
   zeigeUebersicht();
   return box;
