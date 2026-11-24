@@ -1,19 +1,20 @@
-// Wie ich ticke – Seiten des Kerns: Start („Dein Weg“), Einstieg, Start-Fragebogen (#los), Fragen-Übersicht, Einstellungen (Daten,
-// Quellen, Hinweise), Muster (nur ?test=1).
+// Wie ich ticke – Seiten des Kerns: Start („Dein Weg“), Einstieg, Start-Fragebogen (#los), Fragen-Übersicht, Deine Antworten
+// (#antworten, lädt antworten.js erst beim Öffnen), Einstellungen (Daten, Woher das Wissen kommt, Hinweise), Bausteine (nur ?test=1).
 // Bekommt den Kern über ctx.kern (kein Import von kern.js → kein Kreis).
-import { esc, sym, marke, aussage, band, fortschritt, hilfeKarte, fuss, blatt, bestaetige, meldung, datei, dateiWaehlen, datum, fragebogen, SKALA5, merkHinweis as merkBaustein } from './ui.js';
+import { esc, sym, marke, aussage, band, richtung, fortschritt, hilfeKarte, fuss, blatt, bestaetige, meldung, datei, dateiWaehlen, datum, fragebogen, SKALA5, merkHinweis as merkBaustein } from './ui.js';
 
 export function zeige(ctx) {
   const [top, unter] = ctx.pfad;
   if (top === 'einstieg') return einstieg(ctx);
   if (top === 'los') return los(ctx);
   if (top === 'fragen') return fragen(ctx);
+  if (top === 'antworten') return antworten(ctx);
   if (top === 'einstellungen') {
     if (unter === 'quellen') return quellenSeite(ctx);
     if (unter === 'hinweise') return hinweise(ctx);
     return einstellungen(ctx);
   }
-  if (top === 'muster' && ctx.kern.TEST) return muster(ctx);
+  if (top === 'bausteine' && ctx.kern.TEST) return bausteine(ctx);
   return start(ctx);
 }
 
@@ -23,17 +24,24 @@ const merkHinweis = (k, text) => merkBaustein(k.speicher.einwilligung(), text);
 
 // ---------- Start ----------
 const KANN = [
-  'Deine Persönlichkeit als Bereich zeigen – nicht als Schublade.',
+  'Dein Muster erkennen: wie du denkst, entscheidest und was dir wichtig ist – als Richtungen in Worten, nicht als Schublade.',
+  'Dich in Verästelungen weiterlernen lassen: Jeder Ast erklärt, wie er im Alltag aussieht, was er stark macht und wo er reiben kann – alles hier in der App.',
   'Interessen, Tagesrhythmus und Ehrlichkeit einordnen.',
-  'Zeigen, was zu dir passt: Stärken immer mit ihren Kosten, Arbeitsweise, Tätigkeiten, Umgang mit dir und anderen.',
-  'Kurze tägliche Übungen für Fokus, Ziele, Lernen und Gesundheit.',
-  'Deinen Schreibstil spiegeln – lokal, ohne Netz.'
+  'Zeigen, was zu dir passt: Stärken immer mit ihrer Kehrseite, Arbeitsweise, Tätigkeiten, Umgang mit dir und anderen.',
+  'Kurze Übungen für Fokus, Ziele, Lernen und Gesundheit.',
+  'Deinen Schreibstil spiegeln – lokal, ohne Netz.',
+  'Jede Antwort jederzeit ansehen und ändern – dein Muster rechnet sofort neu.'
 ];
 const KANN_NICHT = [
+  'Keine Bewertung: kein Richtig oder Falsch, kein Besser oder Schlechter, kein Vergleich mit anderen.',
   'Keine Diagnose: Sie erkennt keine Krankheiten und tut auch nicht so.',
   'Keine Typ-Schublade (kein „INFP“), keine Lernstile, kein Horoskop.',
-  'Keine Garantie: Sie gibt begründete Hinweise – du prüfst, was stimmt.'
+  'Keine Garantie: Sie gibt begründete Hinweise – du prüfst, was zu dir passt.'
 ];
+// Die zwei großen Karten oben auf der Startseite
+const startKarten = () => `<ul class="kacheln start-karten">
+    <li><a class="kachel gross-kachel muster-kachel" href="#muster">${sym('muster')}<b>Dein Muster</b><span>So bist du zusammengesetzt – mit Verästelungen zum Weiterlernen</span></a></li>
+    <li><a class="kachel gross-kachel" href="#antworten">${sym('stift')}<b>Antworten ändern</b><span>Alles ansehen und jederzeit korrigieren</span></a></li></ul>`;
 function start({ el, kern }) {
   const e = kern.einst(), erg = kern.speicher.ergebnisse(), F = alleFragen(kern);
   const begonnen = e.einstieg || Object.keys(erg).length > 0;
@@ -42,10 +50,11 @@ function start({ el, kern }) {
   const marken = `<p>Jeder Hinweis trägt eine Marke: ${marke('belegt')} ${marke('abgeleitet')} ${marke('idee')} – tippe darauf, dann siehst du, woher er kommt.</p>`;
   if (!begonnen) {
     el.innerHTML = `<h2 class="gross">Wie ich ticke</h2>
-      <p class="lead">Versteh dich selbst besser – mit anerkannten Fragebögen und ehrlich in den Grenzen.</p>
+      <p class="lead">Erkenne dein Muster – wie du denkst, handelst und was dir wichtig ist. Ohne richtig oder falsch.</p>
+      ${startKarten()}
       <a class="knopf haupt gross voll" href="#einstieg">Für mich starten</a>
-      <p class="leise klein mitte">Etwa 15 Minuten für alles, gern in Etappen. Deine Antworten bleiben auf diesem Gerät.</p>
-      <a class="kachel spiel-kachel" href="#spiel">${sym('spiel')}<b>Oder erst spielen: Entweder – oder</b><span>Schnelle Wahlen, Kopfnüsse, Punkte – etwa 4 Minuten</span></a>
+      <p class="leise klein mitte">Etwa 15 Minuten für alles, gern in Etappen. Deine Antworten bleiben auf diesem Gerät und lassen sich jederzeit ändern.</p>
+      <a class="kachel spiel-kachel" href="#spiel">${sym('spiel')}<b>Oder erst: Entweder – oder</b><span>Immer zwei Aussagen, eine schnelle Wahl – etwa 4 Minuten</span></a>
       <div class="karte">${kannHtml}</div>
       <div class="karte weich">${marken}</div>
       <p class="leise klein mitte">Live mit Gästen: kommt später.</p>${fuss()}`;
@@ -53,12 +62,13 @@ function start({ el, kern }) {
   }
   const W = kern.weg.status();
   el.innerHTML = `<h2 class="gross">Wie ich ticke</h2>
+    ${startKarten()}
     ${wegKarte(kern, W)}
     ${merkHinweis(kern)}
     ${heuteKarte(kern)}
     <ul class="kacheln">
-      <li class="breit"><a class="kachel spiel-kachel" href="#spiel">${sym('spiel')}<b>Entweder – oder</b><span>Das Spiel: schnelle Wahlen, Kopfnüsse, Profil mit Wahrscheinlichkeiten</span></a></li>
-      <li><a class="kachel" href="#profil">${sym('profil')}<b>Profil</b><span>Deine Bereiche auf einen Blick</span></a></li>
+      <li class="breit"><a class="kachel spiel-kachel" href="#spiel">${sym('spiel')}<b>Entweder – oder</b><span>Immer zwei Aussagen, eine schnelle Wahl – dein Muster in Worten</span></a></li>
+      <li><a class="kachel" href="#profil">${sym('profil')}<b>Profil</b><span>Deine Richtungen in Worten</span></a></li>
       <li><a class="kachel" href="#passt">${sym('passt')}<b>Was passt zu mir</b><span>Stärken, Arbeitsweise, Wachstum</span></a></li>
       <li><a class="kachel" href="#training">${sym('training')}<b>Training</b><span>Kleine Übungen für heute</span></a></li>
       <li><a class="kachel" href="#text">${sym('text')}<b>Text-Spiegel</b><span>Was dein Text verrät – und was nicht</span></a></li>
@@ -79,7 +89,7 @@ function wegInfo(id, W, kern) {
   const s = W.s[id], st = W.st, vt = W.vt;
   if (id === 'start') return s === 'fertig' ? 'alle vier Teile beantwortet' : st.begonnen ? `${st.erledigt} von ${st.teile.length} Teilen · noch etwa ${st.rest} Min.` : `vier kurze Teile · etwa ${st.minuten} Min.`;
   if (id === 'vertiefung') {
-    if (s === 'nicht-noetig') return 'gerade nicht nötig – kein Bereich fällt auf';
+    if (s === 'nicht-noetig') return 'gerade nicht nötig – die Kurzform reicht';
     if (s === 'aus') return 'ausgelassen – jederzeit möglich';
     if (s === 'fertig') return 'erledigt';
     if (vt.liste.length && W.s.start === 'fertig') return 'lohnt sich bei: ' + vt.offen.map((b) => kern.weg.BEREICH_NAME[b] || b).join(', ');
@@ -101,27 +111,21 @@ function wegKarte(kern, W) {
   }).join('');
   const knopf = naechste
     ? `<a class="knopf haupt voll" href="#${esc(naechste.route)}">Weiter: ${esc(naechste.knopf)}</a>`
-    : `<p class="weg-geschafft">${sym('haken')} <b>Geschafft – du hast den ganzen Weg einmal durchlaufen.</b> Ab jetzt: jeden Tag ein kleiner Schritt im Training. Wiederhole die Fragebögen in ein paar Monaten, dann siehst du, was sich bewegt.</p>
-       <a class="knopf haupt voll" href="#training">${sym('training')} Training für heute</a>`;
+    : `<p class="weg-geschafft">${sym('haken')} <b>Du bist den Weg einmal ganz gegangen.</b> Ab hier springst du frei: durch dein Muster und seine Verästelungen, zu kleinen Übungen im Training – und deine Antworten kannst du jederzeit ändern, wenn du dich anders siehst.</p>
+       <a class="knopf haupt voll" href="#muster">${sym('muster')} Dein Muster</a>
+       <a class="knopf zweit voll" href="#training">${sym('training')} Training für heute</a>`;
   const liste = `<ol class="stand weg-liste" tabindex="-1">${zeilen}</ol>`;
   return `<section class="karte weg" aria-labelledby="weg-t"><h3 id="weg-t">Dein Weg</h3>
     ${fortschritt(W.erledigt / W.gesamt, 'Schritte erledigt')}<p class="leise klein">${W.erledigt} von ${W.gesamt} Schritten erledigt</p>
     ${naechste ? liste + knopf : knopf + `<details class="weg-alle"><summary>Die ${W.gesamt} Schritte ansehen</summary>${liste}</details>`}</section>`;
 }
-// Richtung aus „Was passt zu mir“ und Training-Serie (ohne Modul-Code: nur Speicher lesen)
+// Richtung aus „Was passt zu mir“ und Training heute (ohne Modul-Code: nur Speicher lesen). Bewusst KEINE Serie/kein Zählen von Tagen.
 const tagText = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-function serie(tage) {
-  const aktiv = (s) => Array.isArray(tage[s]) && tage[s].length > 0;
-  const d = new Date(); d.setHours(12, 0, 0, 0);
-  const heute = aktiv(tagText(d)); if (!heute) d.setDate(d.getDate() - 1);
-  let n = 0; while (aktiv(tagText(d)) && n < 3660) { n++; d.setDate(d.getDate() - 1); }
-  return { n, heute };
-}
 function heuteKarte(kern) {
   const w = kern.speicher.ergebnis('passt.wachstum'), tage = kern.speicher.lies('training', 'tage', {}) || {};
-  const se = serie(tage), zeilen = [];
+  const zeilen = [], heute = tage[tagText(new Date())], schonMal = Object.values(tage).some((t) => Array.isArray(t) && t.length);
   if (w && w.schema === 1 && w.titel) zeilen.push(`<li><a class="zeile" href="#training/wachsen"><span><b>Deine Richtung: ${esc(w.titel)}</b><small>Kleine Herausforderungen im Training</small></span><span class="rechts">${sym('weiter')}</span></a></li>`);
-  if (se.n > 0) zeilen.push(`<li><a class="zeile" href="#training"><span><b>Training: ${se.n} ${se.n === 1 ? 'Tag' : 'Tage'} in Folge</b><small>${se.heute ? 'Heute schon geschafft' : 'Heute noch offen'}</small></span><span class="rechts">${sym('weiter')}</span></a></li>`);
+  if (schonMal) zeilen.push(`<li><a class="zeile" href="#training"><span><b>Training</b><small>${Array.isArray(heute) && heute.length ? 'Heute schon etwas gemacht' : 'Ein kleiner Vorschlag für heute'}</small></span><span class="rechts">${sym('weiter')}</span></a></li>`);
   return zeilen.length ? `<ul class="zeilen">${zeilen.join('')}</ul>` : '';
 }
 // Alle Fragebögen einzeln (mit „genauer“ bzw. Hinweis auf die Antwort-Qualität)
@@ -140,8 +144,8 @@ function los({ el, kern }) {
     const zeile = (t, i) => `<li><a class="zeile" href="#${esc(t.fertig ? t.route : t.bogen)}" data-los-teil><span><b>${i + 1}. ${esc(t.titel)}</b><small>${
       t.fertig ? 'fertig' + (t.vertieft ? ' · genauer' : '') : t.ausgelassen ? 'ausgelassen' : t.n ? `${t.n} von ${t.anzahl}` : `${t.anzahl > 1 ? t.anzahl + ' kurze Sätze' : 'ein paar Angaben'}`}</small></span><span class="rechts">${t.fertig ? sym('haken') : esc(t.dauer || '')}${sym('weiter')}</span></a></li>`;
     if (st.fertig) {
-      el.innerHTML = `<h2>Start-Fragebogen geschafft</h2>
-        <p class="lead">Danke fürs Mitmachen! Als Nächstes siehst du deine Profil-Karte – mit Bereichen statt Punkten und ehrlichen Grenzen.</p>
+      el.innerHTML = `<h2>Start-Fragebogen beantwortet</h2>
+        <p class="lead">Danke fürs Mitmachen! Als Nächstes siehst du deine Profil-Karte – Richtungen in Worten, ohne richtig oder falsch. Jede Antwort kannst du später noch ändern.</p>
         ${fortschritt(1, 'Start-Fragebogen')}
         <a class="knopf haupt gross voll" href="#profil">${sym('profil')} Weiter: Deine Profil-Karte</a>
         <ol class="zeilen los-teile" aria-label="Die vier Teile">${T.map(zeile).join('')}</ol>
@@ -149,7 +153,7 @@ function los({ el, kern }) {
       return;
     }
     el.innerHTML = `<h2>Start-Fragebogen</h2>
-      <p class="lead">${st.begonnen ? `${st.erledigt} von ${T.length} Teilen geschafft – noch etwa ${Math.max(1, st.rest)} ${st.rest === 1 ? 'Minute' : 'Minuten'}.` : `Vier kurze Teile, etwa ${st.minuten} Minuten. Danach siehst du deine Profil-Karte.`}</p>
+      <p class="lead">${st.begonnen ? `${st.erledigt} von ${T.length} Teilen beantwortet – noch etwa ${Math.max(1, st.rest)} ${st.rest === 1 ? 'Minute' : 'Minuten'}.` : `Vier kurze Teile, etwa ${st.minuten} Minuten. Danach siehst du deine Profil-Karte.`}</p>
       ${fortschritt(st.anteil, 'Start-Fragebogen')}
       ${u16 ? '<p class="hinweis">Persönlichkeit ist in deinem Alter noch stark in Bewegung. Nimm alle Ergebnisse als Momentaufnahme.</p>' : ''}
       <button type="button" class="knopf haupt gross voll" data-los="weiter">${st.begonnen ? 'Weiter' : 'Los geht’s'}: ${esc(n.titel)}</button>
@@ -183,7 +187,7 @@ function einstieg({ el, kern }) {
       <div class="chips" role="radiogroup" aria-labelledby="alter-t">${ALTER.map(([w, t]) => `<button type="button" class="chip" role="radio" aria-checked="${alter === w}" data-alter="${w}">${esc(t)}</button>`).join('')}</div>
       ${alter === 'u16' ? '<p class="hinweis">Persönlichkeit ist in deinem Alter noch stark in Bewegung. Nimm alle Ergebnisse als Momentaufnahme.</p>' : ''}
       <h3>So geht es weiter</h3>
-      <p>Zuerst ein Start-Fragebogen mit vier kurzen Teilen (etwa 7 Minuten), dann deine Profil-Karte. Genauer wird es nur, wo es sich lohnt. Danach: was zu dir passt und kleine Übungen für jeden Tag.</p>
+      <p>Zuerst ein Start-Fragebogen mit vier kurzen Teilen (etwa 7 Minuten), dann deine Profil-Karte. Genauer wird es nur, wo es sich lohnt. Danach: dein Muster mit seinen Verästelungen, was zu dir passt und kleine Übungen. Jede Antwort kannst du später ansehen und ändern.</p>
       <h3>Sollen deine Antworten gemerkt werden?</h3>
       <p>Nur auf diesem Gerät, nichts geht ins Netz. Löschen geht jederzeit mit einem Knopf.</p>
       <div class="stapel"><button type="button" class="knopf haupt gross" data-los="ja">${sym('schloss')} Ja, auf diesem Gerät merken</button>
@@ -212,8 +216,9 @@ function fragen({ el, kern }) {
     <ol class="zeilen">${F.map((f) => { const r = erg[f.ergebnis];
       return `<li><a class="zeile" href="#${esc(f.route)}"><span><b>${esc(f.titel)}</b><small>${esc(f.kurz || '')}</small></span><span class="rechts">${r ? sym('haken') + ' ' + esc(datum(r.zeit)) : esc(f.dauer || '')}${sym('weiter')}</span></a></li>`; }).join('')}</ol>
     <p class="leise klein">Die Reihenfolge ist fest, damit spätere Wiederholungen vergleichbar bleiben. Pausen sind jederzeit möglich.</p>
-    <a class="karte akzent" href="#spiel">${sym('spiel')}<span><b>Entweder – oder</b><br><span class="klein leise">Das Spiel: immer zwei Aussagen, eine Wahl – mit Kopfnüssen, etwa 4 Minuten</span></span><span class="rechts">${sym('weiter')}</span></a>
+    <a class="karte akzent" href="#spiel">${sym('spiel')}<span><b>Entweder – oder</b><br><span class="klein leise">Immer zwei Aussagen, eine schnelle Wahl – etwa 4 Minuten</span></span><span class="rechts">${sym('weiter')}</span></a>
     ${merkHinweis(kern)}
+    <a class="knopf zweit voll" href="#antworten">${sym('stift')} Antworten ansehen und ändern</a>
     <a class="knopf zweit voll" href="#profil">Zum Profil</a>${fuss()}`;
 }
 
@@ -239,7 +244,8 @@ function einstellungen({ el, kern }) {
         <div class="chips" role="radiogroup" aria-labelledby="schrift-t">${SCHRIFT.map(([w, t]) => `<button type="button" class="chip" role="radio" aria-checked="${Number(e.schrift) === w}" data-schrift="${w}">${t}</button>`).join('')}</div>
         <p class="leise klein">Hell oder dunkel folgt deinem Gerät.</p></div>
       <h3>Mehr</h3>
-      <ul class="zeilen"><li><a class="zeile" href="#einstellungen/quellen"><span><b>Quellen</b><small>Woher jede Aussage kommt</small></span><span class="rechts">${sym('weiter')}</span></a></li>
+      <ul class="zeilen"><li><a class="zeile" href="#antworten"><span><b>Deine Antworten</b><small>Alles ansehen und ändern</small></span><span class="rechts">${sym('weiter')}</span></a></li>
+        <li><a class="zeile" href="#einstellungen/quellen"><span><b>Woher das Wissen kommt</b><small>Alle Quellen, hier in der App erklärt</small></span><span class="rechts">${sym('weiter')}</span></a></li>
         <li><a class="zeile" href="#einstellungen/hinweise"><span><b>Hinweise und Grenzen</b><small>Keine Diagnose, Datenschutz, Hilfe</small></span><span class="rechts">${sym('weiter')}</span></a></li></ul>
       <p class="leise klein">Fassung ${esc(kern.VERSION)} · <span id="offline">Offline: wird geprüft …</span></p>${fuss()}`;
     const o = await kern.offlineBereit(); const os = el.querySelector('#offline'); if (os) os.textContent = o ? 'Offline bereit' : 'Offline noch nicht bereit';
@@ -277,20 +283,22 @@ function einstellungen({ el, kern }) {
   return () => { el.removeEventListener('click', klick); el.removeEventListener('change', wechsel); };
 }
 
-// ---------- Quellen ----------
+// ---------- Woher das Wissen kommt (Quellen als reiner Text mit Erklärung, ohne Links) ----------
 function quellenSeite({ el, kern, titel }) {
-  titel('Quellen');
-  el.innerHTML = '<h2>Quellen</h2><p class="leise">Lädt …</p>';
+  const T = 'Woher das Wissen kommt';
+  titel(T);
+  el.innerHTML = `<h2>${T}</h2><p class="leise">Lädt …</p>`;
   kern.quellen().then((Q) => {
     if (!el.isConnected || kern.route().pfad[1] !== 'quellen') return;
     const gruppe = (titel, q) => { const e = Object.entries(q || {}); if (!e.length) return '';
-      return `<h3>${esc(titel)}</h3><ul class="quellen">${e.map(([id, v]) => `<li id="q-${esc(id)}">${esc(v.text)}${v.notiz ? `<br><span class="leise">${esc(v.notiz)}</span>` : ''}${v.url ? `<br><a href="${esc(v.url)}" target="_blank" rel="noopener noreferrer">Quelle öffnen</a> <span class="leise klein">(fremde Seite)</span>` : ''}</li>`).join('')}</ul>`; };
-    el.innerHTML = `<h2>Quellen</h2>
+      return `<h3>${esc(titel)}</h3><ul class="quellen">${e.map(([id, v]) => { const erkl = v.erklaerung || v.notiz;
+        return `<li id="q-${esc(id)}"><span class="quelle-text">${esc(v.text)}</span>${erkl ? `<span class="quelle-erkl">${esc(erkl)}</span>` : ''}</li>`; }).join('')}</ul>`; };
+    el.innerHTML = `<h2>${T}</h2>
+      <p>Hier steht, worauf sich die App stützt – jede Quelle mit ein paar Sätzen, was darin steht und was es für dich bedeutet. Du musst nirgendwo anders nachlesen: Die App öffnet keine fremden Seiten und sendet nichts.</p>
       <div class="karte">${['belegt', 'abgeleitet', 'idee'].map((s) => `<p>${marke(s)} <b>${esc(Q.STUFEN[s].kurz)}.</b> ${esc(Q.STUFEN[s].text)}</p>`).join('')}</div>
       ${gruppe('Grundlagen', Q.nachModul.kern)}
-      ${kern.module.map((m) => gruppe(m.name, Q.nachModul[m.id])).join('')}
-      <p class="leise klein">Links führen zu fremden Seiten (meist doi.org). Die App selbst sendet nichts.</p>${fuss()}`;
-  }).catch(() => { el.innerHTML = '<h2>Quellen</h2><p>Die Quellen konnten nicht geladen werden.</p>'; });
+      ${kern.module.map((m) => gruppe(m.name, Q.nachModul[m.id])).join('')}${fuss()}`;
+  }).catch(() => { el.innerHTML = `<h2>${T}</h2><p>Die Quellen konnten nicht geladen werden.</p>`; });
 }
 
 // ---------- Hinweise und Grenzen ----------
@@ -304,15 +312,16 @@ function hinweise({ el, titel }) {
       ${aussage({ text: 'Direkt aus der Forschung.', stufe: 'belegt' })}
       ${aussage({ text: 'Aus der Forschung übertragen, so aber nicht eigens geprüft.', stufe: 'abgeleitet' })}
       ${aussage({ text: 'Zum Ausprobieren, nicht geprüft.', stufe: 'idee' })}</div>
-    <div class="karte"><h3>Bereiche statt Punkte</h3>
-      <p>Jede Messung hat einen Messfehler – auch ein guter Fragebogen. Darum zeigt die App einen Bereich: Dort liegt dein Wert sehr wahrscheinlich. Ein breiter Bereich heißt: Hier ist die Messung unsicherer.</p>
-      ${band({ name: 'Beispiel', unten: 52, oben: 66, wort: 'eher höher als die meisten', links: 'niedriger', rechts: 'höher' })}
-      <p class="leise klein">Die Fragen sind eigene deutsche Übersetzungen frei nutzbarer Fragebögen (IPIP und O*NET Interest Profiler). Deutsche Vergleichswerte fehlen noch, darum gilt jeder Vergleich als vorläufig.</p></div>
+    <div class="karte"><h3>Richtungen statt Messwerte</h3>
+      <p>Wie du denkst und handelst, ist deine Richtung – kein Ergebnis, das gut oder schlecht wäre. Darum beschreibt die App jede Seite von dir mit zwei gleichwertigen Polen, die beide ihre Stärken haben. Es gibt keine Prozente, keine Noten und keinen Vergleich mit anderen; Abstufungen stehen nur in Worten: „klar in Richtung …“, „leicht in Richtung …“ oder „beides gehört zu dir“.</p>
+      ${richtung({ titel: 'Beispiel: Offenheit', pole: ['Neugier auf Neues', 'Halt im Bewährten'], deutlich: 'leicht', zu: 0, text: 'Leicht in Richtung Neugier auf Neues – das Bewährte gehört trotzdem auch zu dir.' })}
+      <p>Jede Antwort kannst du jederzeit ansehen und ändern (<a href="#antworten">Deine Antworten</a>). Dein Muster rechnet dann sofort neu.</p>
+      <p class="leise klein">Die Fragen sind eigene deutsche Fassungen frei nutzbarer Fragebögen (IPIP und O*NET Interest Profiler) und selbst formulierte Aussagen.</p></div>
     <div class="karte"><h3>Deine Daten</h3><ul>
       <li>Alles wird auf deinem Gerät berechnet. Es gibt keine Anmeldung, keine Werbung und keine Analyse-Werkzeuge.</li>
       <li>Gespeichert wird nur, wenn du „Auf diesem Gerät merken“ wählst – und nur in diesem Browser.</li>
       <li>Sichern als Datei und „Alles löschen“ findest du in den Einstellungen.</li>
-      <li>„Mit Claude tiefer lesen“ erzeugt nur einen Text zum Kopieren. Ob und wohin du ihn einfügst, entscheidest du selbst.</li>
+      <li>Alle Antworten und Erklärungen stehen in der App selbst. Sie öffnet keine fremden Seiten und schickt nichts weg – nur die Hilfe-Nummern unten rufen auf Wunsch direkt an.</li>
       <li>iPhone: Leg die App auf den Home-Bildschirm (Teilen → „Zum Home-Bildschirm“). Sonst kann Safari gespeicherte Daten nach einigen Tagen ohne Besuch löschen.</li></ul></div>
     <div class="karte"><h3>Was bewusst fehlt</h3><ul>
       <li>Typen wie bei MBTI („16 Typen“): Sie sind wenig stabil – bei einer Wiederholung bekommt ein großer Teil einen anderen Typ. ${marke('belegt', ['pittenger2005'])}</li>
@@ -322,16 +331,32 @@ function hinweise({ el, titel }) {
     ${hilfeKarte()}${fuss()}`;
 }
 
-// ---------- Muster (nur mit ?test=1): alle Bausteine auf einer Seite ----------
-function muster({ el, kern }) {
-  el.innerHTML = `<h2>Muster</h2><p class="leise">Nur zum Testen (?test=1). Bausteine aus ui.js.</p>
+// ---------- Deine Antworten (#antworten, #antworten/<modulid>): antworten.js wird erst hier geladen ----------
+function antworten(ctx) {
+  const { el } = ctx; let aus = null, tot = false;
+  el.innerHTML = `<h2>Deine Antworten</h2><div id="antw" class="antw"><p class="leise lade">Lädt …</p></div>${fuss()}`;
+  import('./antworten.js').then((m) => {
+    if (tot || !ctx.aktuell()) return;
+    const platz = el.querySelector('#antw'); if (platz) aus = m.zeige(ctx, platz);
+  }).catch((e) => {
+    console.error(e); if (tot) return;
+    const platz = el.querySelector('#antw'); if (platz) platz.innerHTML = '<p>Diese Seite konnte gerade nicht geladen werden. Bist du offline und öffnest sie zum ersten Mal?</p>';
+  });
+  return () => { tot = true; if (typeof aus === 'function') aus(); };
+}
+
+// ---------- Bausteine (nur mit ?test=1): alle Bausteine auf einer Seite ----------
+function bausteine({ el, kern }) {
+  el.innerHTML = `<h2>Bausteine</h2><p class="leise">Nur zum Testen (?test=1). Bausteine aus ui.js.</p>
     <h3>Marken</h3><p>${marke('belegt', ['dunlosky2013'])} ${marke('abgeleitet', ['soto2019'])} ${marke('idee')}</p>
     ${aussage({ text: 'Sich selbst abfragen hilft beim Lernen mehr als Wiederlesen.', stufe: 'belegt', quellen: ['dunlosky2013'] })}
     ${aussage({ text: 'Du arbeitest gern konzentriert allein.', stufe: 'abgeleitet', quellen: ['soto2019'], kosten: 'Lange Gruppen-Runden kosten dich mehr Kraft.' })}
-    <h3>Bänder</h3>
-    ${band({ name: 'Offenheit', unten: 54, oben: 68, wort: 'eher höher als die meisten', links: 'bewährt', rechts: 'neugierig' })}
-    ${band({ name: 'Extraversion', unten: 28, oben: 40, wort: 'deutlich niedriger als die meisten', links: 'ruhiger', rechts: 'geselliger' })}
-    ${band({ name: 'Kurzform (grob)', unten: 40, oben: 64, wort: 'im Mittelfeld', links: 'niedriger', rechts: 'höher', grob: true })}
+    <h3>Richtungen</h3>
+    ${richtung({ titel: 'Offenheit', pole: ['Neugier auf Neues', 'Halt im Bewährten'], deutlich: 'klar', zu: 0, text: 'Klar in Richtung Neugier auf Neues.' })}
+    ${richtung({ titel: 'Geselligkeit', pole: [{ name: 'Kraft aus der Ruhe', text: 'Tiefe Gespräche, eigene Gedanken, Zeit für dich.' }, { name: 'Kraft aus Begegnung', text: 'Menschen, Austausch, Schwung von außen.' }], deutlich: 'leicht', zu: 1, text: 'Leicht in Richtung Kraft aus Begegnung.', erklaeren: true })}
+    ${richtung({ titel: 'Entscheiden', pole: ['aus dem Bauch', 'mit dem Kopf'], deutlich: 'beides', text: 'Beides gehört zu dir: aus dem Bauch und mit dem Kopf.' })}
+    <h3>Band (alt)</h3>
+    ${band({ name: 'Kurzform (grob)', unten: 40, oben: 64, wort: 'beides gehört zu dir', links: 'ruhiger', rechts: 'geselliger', grob: true })}
     <h3>Fortschritt</h3>${fortschritt(0.4)}
     <h3>Karten</h3><div class="karte gruen"><b>Deine Stärken</b><p>grün</p></div><div class="karte gelb"><b>Hier lohnt ein genauerer Blick</b><p>gelb</p></div>
     ${hilfeKarte()}

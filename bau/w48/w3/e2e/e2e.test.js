@@ -64,7 +64,7 @@ const warteNeu = (page, n, ms = 20000) => page.waitForFunction((n) => document.q
     await page.waitForTimeout(500);
     const lagen = await page.$$eval('.lage', (els) => els.map((e) => { const r = e.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, vorne: e.classList.contains('vorne'), t: e.querySelector('.fahne').textContent }; }));
     console.log('  Lagen:', lagen.map((l) => `${l.t} @${Math.round(l.x)},${Math.round(l.y)}`).join(' | '));
-    pruef(lagen.length === 4, '4 Versionen (Original, Gereinigt, Getimed, Auto) – ' + lagen.length);
+    pruef(lagen.length === 3 && lagen.some((l) => /Original/.test(l.t)) && lagen.some((l) => /Gereinigt/.test(l.t)), '3 Versionen (Original, Gereinigt, Auto-Durchlauf) – ' + lagen.length);
     const nach = lagen.slice().sort((a, b) => a.y - b.y);
     pruef(nach.every((l, i) => i === 0 || l.y - nach[i - 1].y >= 40), 'Staffelung senkrecht (nichts auf 0)');
     pruef(nach.every((l, i) => i === 0 || l.x > nach[i - 1].x), 'Staffelung schräg nach rechts');
@@ -153,20 +153,21 @@ const warteNeu = (page, n, ms = 20000) => page.waitForFunction((n) => document.q
     const cent = await page.evaluate((i) => window.werkstatt3.Z.v.noten[i].cent, idx);
     pruef(/auf Stufe/.test(vd) && Math.abs(cent) <= 5, 'Doppeltipp → „' + vd + '“, Abweichung ' + cent + ' Cent');
     // ältere Version vorne weiterbearbeiten (Basis = Getimed)
-    const g = page.locator('.lage', { hasText: 'Getimed' });
+    const g = page.locator('.lage', { hasText: 'Gereinigt' });
     await g.scrollIntoViewIfNeeded();
     const gb = await g.locator('.fahne').boundingBox();
     await page.touchscreen.tap(gb.x + gb.width / 2, gb.y + gb.height / 2); await page.waitForTimeout(400);
-    const gid = await page.evaluate(() => window.werkstatt3.Z.v.name === 'Getimed' && window.werkstatt3.Z.v.id);
-    pruef(!!gid, 'Getimed vorne');
+    const gid = await page.evaluate(() => window.werkstatt3.Z.v.name === 'Gereinigt' && window.werkstatt3.Z.v.id);
+    pruef(!!gid, 'Gereinigt vorne');
     await page.locator('#werk').scrollIntoViewIfNeeded();
     o = await page.evaluate((i) => window.werkstatt3.ort(i), idx);
     n0 = await lagenZahl(page);
     await page.mouse.move(o.x, o.y); await page.mouse.down(); await page.mouse.move(o.x, o.y + pph * 0.5, { steps: 4 }); await page.mouse.move(o.x, o.y + pph * 1.1, { steps: 4 }); await page.mouse.up();
     await warteNeu(page, n0).catch(() => {});
     const vb = await page.evaluate(() => ({ name: window.werkstatt3.Z.v.name, basis: window.werkstatt3.Z.v.basis }));
-    pruef(/−1 Halbton/.test(vb.name) && vb.basis === gid, 'ältere Version weiterbearbeitet → „' + vb.name + '“ (Basis Getimed)');
+    pruef(/−1 Halbton/.test(vb.name) && vb.basis === gid, 'ältere Version weiterbearbeitet → „' + vb.name + '“ (Basis Gereinigt)');
     // Zwiebel-Foto
+    await page.waitForTimeout(500);
     const zl = await page.$$eval('.lage', (els) => els.map((e) => { const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), e.querySelector('.fahne').textContent]; }).sort((a, b) => a[1] - b[1]));
     console.log('  Zwiebel:', zl.map((l) => l[2] + '@' + l[0] + ',' + l[1]).join(' | '));
     pruef(zl.every((l, i) => i === 0 || (l[1] - zl[i - 1][1] >= 40 && l[0] > zl[i - 1][0])), 'Zwiebel mit ' + zl.length + ' Lagen schräg gestaffelt');

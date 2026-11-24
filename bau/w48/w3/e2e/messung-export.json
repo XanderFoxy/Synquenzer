@@ -1,0 +1,158 @@
+[
+ {
+  "datei": "Refrain1.wav",
+  "sr": 48000,
+  "bits": 24,
+  "laenge": 1584000,
+  "sek": 33,
+  "spitzen": {
+   "n": 73,
+   "median": 34.4,
+   "p90": 54.9,
+   "starkN": 65,
+   "starkMedian": 38,
+   "starkP90": 54.9
+  },
+  "ton": {
+   "noten": 79,
+   "median": 17.2,
+   "p90": 44.5,
+   "stabilN": 71,
+   "stabilMedian": 16.1,
+   "stabilP90": 44.4,
+   "langN": 56,
+   "langMedian": 14.9,
+   "langP90": 44.8
+  },
+  "boden": {
+   "p5": -60.8,
+   "p10": -51.1,
+   "p95": -17.4,
+   "spitze": -1
+  },
+  "erkannt": {
+   "klicks": 5,
+   "brummHz": 50,
+   "brummUeberBoden": 15.2,
+   "rauschBoden": -64,
+   "schmatzer": 0
+  }
+ },
+ {
+  "datei": "export-hoch-gereinigt.wav",
+  "sr": 48000,
+  "bits": 24,
+  "laenge": 1584000,
+  "sek": 33,
+  "spitzen": {
+   "n": 82,
+   "median": 38,
+   "p90": 55.3,
+   "starkN": 76,
+   "starkMedian": 38.5,
+   "starkP90": 55.3
+  },
+  "ton": {
+   "noten": 85,
+   "median": 17.2,
+   "p90": 45.8,
+   "stabilN": 77,
+   "stabilMedian": 15.5,
+   "stabilP90": 45.3,
+   "langN": 58,
+   "langMedian": 12.3,
+   "langP90": 45.3
+  },
+  "boden": {
+   "p5": -67.8,
+   "p10": -48,
+   "p95": -19,
+   "spitze": -4.5
+  },
+  "erkannt": {
+   "klicks": 0,
+   "brummHz": 0,
+   "brummUeberBoden": null,
+   "rauschBoden": -72.1,
+   "schmatzer": 0
+  }
+ },
+ {
+  "datei": "export-hoch-getimed.wav",
+  "sr": 48000,
+  "bits": 24,
+  "laenge": 1584000,
+  "sek": 33,
+  "spitzen": {
+   "n": 84,
+   "median": 1,
+   "p90": 18.1,
+   "starkN": 76,
+   "starkMedian": 1,
+   "starkP90": 13
+  },
+  "ton": {
+   "noten": 90,
+   "median": 18.1,
+   "p90": 43.5,
+   "stabilN": 77,
+   "stabilMedian": 17.6,
+   "stabilP90": 43.7,
+   "langN": 67,
+   "langMedian": 17.6,
+   "langP90": 42
+  },
+  "boden": {
+   "p5": -66.9,
+   "p10": -47.5,
+   "p95": -19.2,
+   "spitze": -4.5
+  },
+  "erkannt": {
+   "klicks": 2,
+   "brummHz": 0,
+   "brummUeberBoden": null,
+   "rauschBoden": -72,
+   "schmatzer": 0
+  }
+ },
+ {
+  "datei": "export-hoch-fertig.wav",
+  "sr": 48000,
+  "bits": 24,
+  "laenge": 1584000,
+  "sek": 33,
+  "spitzen": {
+   "n": 85,
+   "median": 0,
+   "p90": 6.7,
+   "starkN": 79,
+   "starkMedian": 0,
+   "starkP90": 2.3
+  },
+  "ton": {
+   "noten": 86,
+   "median": 7.5,
+   "p90": 29.1,
+   "stabilN": 70,
+   "stabilMedian": 5.9,
+   "stabilP90": 18.6,
+   "langN": 62,
+   "langMedian": 5.3,
+   "langP90": 17.2
+  },
+  "boden": {
+   "p5": -66.9,
+   "p10": -47.6,
+   "p95": -19.3,
+   "spitze": -4.5
+  },
+  "erkannt": {
+   "klicks": 0,
+   "brummHz": 0,
+   "brummUeberBoden": null,
+   "rauschBoden": -72,
+   "schmatzer": 0
+  }
+ }
+]

@@ -433,10 +433,14 @@ function infoNote() {
 function infoZug() {
   const z = Z.zug, n = noten()[z.i];
   if (z.dt) infoText.innerHTML = `<b>Timing ${minus(Math.round(z.dt * 1000))} ms</b> → Takt ${position((n.peak ?? n.t0) + z.dt)}<br><small>Spitze auf den Strich, Vorlauf bleibt links</small>`;
-  else { const m = n.midi + (n.cent || 0) / 100 + z.dm; infoText.innerHTML = `<b>Tonhöhe ${tonText(z.dm)}</b> → ${notenName(m)}${Math.abs(Math.round((m - Math.round(m)) * 100)) >= 1 ? ' ' + minus(Math.round((m - Math.round(m)) * 100)) + ' ct' : ''}`; }
+  else { const m = n.midi + (n.cent || 0) / 100 + z.dm; infoText.innerHTML = `<b>Tonhöhe ${tonText(z.dm, n.midi + (n.cent || 0) / 100)}</b> → ${notenName(m)}${Math.abs(Math.round((m - Math.round(m)) * 100)) >= 1 ? ' ' + minus(Math.round((m - Math.round(m)) * 100)) + ' ct' : ''}`; }
 }
 function infoAuswahl() { if (Z.auswahl) infoText.innerHTML = `<b>Auswahl</b> ${fmtZeit(Z.auswahl.a)} – ${fmtZeit(Z.auswahl.b)}<br><small>Schleife einschalten zum Wiederholen</small>`; }
-function tonText(dm) {
+function tonText(dm, cur) {
+  if (cur != null) {
+    const zz = cur + dm, zr = Math.round(zz);
+    if (Math.abs(zz - zr) < 0.005) { const hs = zr - Math.round(cur); return hs ? minus(hs) + (Math.abs(hs) === 1 ? ' Halbton' : ' Halbtöne') : 'auf ' + notenName(zr); }
+  }
   const h = Math.round(dm);
   if (Math.abs(dm - h) < 0.005 && h) return minus(h) + (Math.abs(h) === 1 ? ' Halbton' : ' Halbtöne');
   return minus(Math.round(dm * 100)) + ' Cent';
@@ -510,7 +514,7 @@ async function tonZug(i, dm, name) {
     }
     const NN = noten().slice(); NN[i] = nn;
     Z.wahl = i;
-    versionNeu(name || `Note ${i + 1} ${tonText(dm)}`, { x: neuX, noten: NN, stufe: 'bearbeitet' });
+    versionNeu(name || `Note ${i + 1} ${tonText(dm, n.midi + (n.cent || 0) / 100)}`, { x: neuX, noten: NN, stufe: 'bearbeitet' });
     vorhoeren(nn);
   } catch (e) { meldung('Tonhöhe ging nicht: ' + e.message); neu(); }
   beschaeftigt(false);
@@ -569,7 +573,7 @@ function zwiebel(liste) {
   $('bAktuell').disabled = !liste.length || !!liste[0].vorne;
   $('zwiebelZahl').textContent = n ? `· ${n}` : '';
   $('bExportRein').disabled = !liste.some((v) => v.stufe === 'gereinigt');
-  $('bExportTim').disabled = !liste.some((v) => v.stufe === 'getimed');
+  $('bExportTim').disabled = !getimedQuelle(liste);
 }
 function miniWelle(c, v, bw) {
   const d = Math.min(2, window.devicePixelRatio || 1);
@@ -749,7 +753,7 @@ document.addEventListener('keydown', (e) => {
 
 // ---------------------------------------------------------------- Automatisch fertig machen
 
-const SCHR = { reinigen: ['sbReinigen', 'spReinigen'], timing: ['sbTiming', 'spTiming'], tonhoehe: ['sbTon', 'spTon'] };
+const SCHR = { reinigen: ['sbReinigen', 'spReinigen'], tonhoehe: ['sbTon', 'spTon'], timing: ['sbTiming', 'spTiming'] };
 function standSetzen(schritt, p, fertig) {
   const s = SCHR[schritt]; if (!s) return;
   const b = $(s[0]); b.firstElementChild.style.transform = `scaleX(${klemm(p / 100, 0, 1)})`; b.classList.toggle('fertig', !!fertig);
@@ -760,13 +764,6 @@ function autoOpt() {
   return { reinigen: Object.assign({}, E.rein), raster: { bpm: E.bpm, offset: E.versatz, teilung: E.teilung, staerke: E.timing / 100 },
     timing: E.timing > 0 && E.teilung !== 'frei', ziel: zielOpt(), tonhoehe: E.ton > 0 };
 }
-function zurueckAbb(anker, t) {
-  if (!anker || anker.length < 2) return t;
-  if (t <= anker[0].dst) return anker[0].src + (t - anker[0].dst);
-  const L = anker[anker.length - 1]; if (t >= L.dst) return L.src + (t - L.dst);
-  let i = 1; while (anker[i].dst < t) i++;
-  const a = anker[i - 1], b = anker[i]; return a.src + (t - a.dst) / (b.dst - a.dst) * (b.src - a.src);
-}
 $('bAuto').addEventListener('click', async () => {
   const v = Z.v; if (!v || Z.beschaeftigt) return;
   const x0 = await aktuellX(); if (!x0) return;
@@ -774,7 +771,7 @@ $('bAuto').addEventListener('click', async () => {
   beschaeftigt(true, 'Automatisch …');
   $('stand').hidden = false; $('bericht').hidden = true; $('bericht').classList.remove('fehler');
   for (const k in SCHR) standSetzen(k, 0);
-  const reihe = ['reinigen', 'timing', 'tonhoehe'];
+  const reihe = ['reinigen', 'tonhoehe', 'timing'];
   const x = x0.slice(), sr = v.sr, basis = v.id;
   try {
     const r = await rufen({ typ: 'auto', x, sr, opt: autoOpt() }, [x.buffer], (schritt, p) => {
@@ -783,13 +780,9 @@ $('bAuto').addEventListener('click', async () => {
     });
     for (const k of reihe) standSetzen(k, 100, true);
     const b = r.bericht || {}, N = r.noten || [];
-    // Zwischenstufen mit eigenen Noten (vor der Korrektur), damit jede Schicht etwas zeigt
-    const roh = N.map((n) => { const d = (n.vorher ?? n.midi + n.cent / 100) - (n.midi + n.cent / 100), mi = Math.round(n.vorher ?? n.midi); return Object.assign({}, n, { midi: mi, cent: Math.round(((n.vorher ?? n.midi) - mi) * 100), kurve: (n.kurve || []).map((k) => (k > 0 ? k + d : k)) }); });
-    const zur = (n) => Object.assign({}, n, { t0: zurueckAbb(r.anker, n.t0), t1: zurueckAbb(r.anker, n.t1), peak: n.peak == null ? null : zurueckAbb(r.anker, n.peak), onset: n.onset == null ? null : zurueckAbb(r.anker, n.onset) });
     const gem = { sr, datei: Z.name };
-    verlauf.neu('Gereinigt', Object.assign({}, gem, { x: r.gereinigt, stufe: 'gereinigt', bericht: b.reinigen || null, noten: r.anker ? roh.map(zur) : roh, basis }));
-    if (r.anker) verlauf.neu('Getimed', Object.assign({}, gem, { x: r.getimed, stufe: 'getimed', anker: r.anker, noten: roh }));
-    verlauf.neu('Auto-Durchlauf', Object.assign({}, gem, { x: r.y, stufe: 'fertig', noten: N, anker: r.anker, bericht: b, einst: JSON.parse(JSON.stringify(E)) }));
+    const vg = verlauf.neu('Gereinigt', Object.assign({}, gem, { x: r.gereinigt, stufe: 'gereinigt', bericht: b.reinigen || null, noten: r.roh || null, basis }));
+    verlauf.neu('Auto-Durchlauf', Object.assign({}, gem, { x: r.y, stufe: 'fertig', noten: N, anker: r.anker, bericht: b, basis: vg.id, einst: JSON.parse(JSON.stringify(E)) }));
     $('bericht').textContent = berichtText(b, N);
     $('bericht').hidden = false;
     tonhoeheMitte(); neu();
@@ -849,9 +842,33 @@ async function exportVon(v, zusatz) {
   meldung(name + ' geladen (' + v.name + ')');
 }
 const neuesteStufe = (st) => verlauf.liste().find((v) => v.stufe === st);
+// „nur getimed“ = neueste gereinigte Fassung + Timing (ohne Tonhöhenkorrektur), wird erst beim Tippen gerechnet –
+// mit den Takt-Einstellungen des zugehörigen Auto-Durchlaufs
+function getimedQuelle(liste) {
+  liste = liste || verlauf.liste();
+  const g = liste.find((v) => v.stufe === 'gereinigt'); if (!g) return null;
+  const f = liste.find((v) => v.stufe === 'fertig' && v.basis === g.id);
+  return { f, g };
+}
+async function exportGetimed() {
+  const q = getimedQuelle(); if (!q || Z.beschaeftigt) return;
+  let x = q.g.x; if (!x) { const h = await verlauf.holen(q.g.id); x = h && h.x; }
+  if (!x) { meldung('„Gereinigt“ ist nicht mehr im Speicher'); return; }
+  beschaeftigt(true, 'Timing …');
+  try {
+    const seg = x.slice();
+    const e = (q.f && q.f.einst) || E;
+    const raster = { bpm: e.bpm, offset: e.versatz, teilung: e.teilung === 'frei' ? '1/16' : e.teilung, staerke: Math.max(0.01, (e.timing ?? 100) / 100) };
+    const r = await rufen({ typ: 'timing', x: seg, sr: q.g.sr, raster, klicks: (e.rein || {}).klicks !== false }, [seg.buffer]);
+    const name = basisName() + '_getimed.wav';
+    await io.exportieren(io.wav(r.y, q.g.sr, 24), name);
+    meldung(name + ' geladen (gereinigt + Timing, ohne Tonhöhe)');
+  } catch (e) { meldung('Das ging nicht: ' + e.message); }
+  beschaeftigt(false);
+}
 $('bExport').addEventListener('click', () => exportVon(Z.v, 'fertig'));
 $('bExportRein').addEventListener('click', () => exportVon(neuesteStufe('gereinigt'), 'gereinigt'));
-$('bExportTim').addEventListener('click', () => exportVon(neuesteStufe('getimed'), 'getimed'));
+$('bExportTim').addEventListener('click', exportGetimed);
 
 let meldT = 0;
 function meldung(t) { const m = $('meldung'); m.textContent = t; m.hidden = false; clearTimeout(meldT); meldT = setTimeout(() => { m.hidden = true; }, 2600); }

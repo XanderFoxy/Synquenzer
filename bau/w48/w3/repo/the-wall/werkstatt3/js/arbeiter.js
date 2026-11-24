@@ -3,10 +3,13 @@
 // Lässt sich auch im Hauptfaden importieren (Ersatz, wenn kein Module-Worker geht): export bearbeiten(msg, melde).
 //
 // Aufträge (postMessage):
-//   {typ:'auto', id, x, sr, opt}   → {typ:'stand', id, schritt:'reinigen'|'timing'|'tonhoehe', prozent}
-//                                  → {typ:'fertig', id, y, gereinigt, getimed, noten, anker, bericht, tr}
+//   {typ:'auto', id, x, sr, opt}   → {typ:'stand', id, schritt:'reinigen'|'tonhoehe'|'timing', prozent}
+//                                  → {typ:'fertig', id, y, gereinigt, noten, roh, anker, bericht, tr}
+//        Reihenfolge: reinigen → tonhöhe (verfolgen/noten/korrigieren) → timing (transienten/zeitkarte/warp) → Klick-Nachlauf.
+//        noten = so, wie sie im fertigen y klingen (Zeit nach dem Warp); roh = vor der Korrektur (Zeit wie gereinigt).
 //        opt = {reinigen:{klicks:true,…}|false, raster:{bpm, offset, teilung, staerke}, timing:true,
 //               ziel:{skala, grundton, staerke, uebergang_ms, vibratoErhalten}, tonhoehe:true}
+//   {typ:'timing', id, x, sr, raster, klicks} → {typ:'fertig', id, y, anker}  (nur Timing, z. B. Export „nur getimed“)
 //   {typ:'warp', id, x, sr, anker} → {typ:'fertig', id, y}          (Ausschnitt; Anker relativ zum Ausschnitt)
 //   {typ:'ton', id, x, sr, note, cent} → {typ:'fertig', id, y, note} (Ausschnitt; Note relativ zum Ausschnitt)
 //   {typ:'analyse', id, x, sr}     → {typ:'fertig', id, noten}     (Tonhöhe/Noten ohne Änderung, z. B. fürs Original)
@@ -115,6 +118,45 @@ function abb(anker, t) {
   const a = anker[lo], b = anker[hi]; return a.dst + (t - a.src) / (b.src - a.src) * (b.dst - a.dst);
 }
 
+// Zeit Quelle → Ziel und zurück (lineare Abschnitte zwischen den Ankern)
+function zur(anker, t) {
+  if (!anker || anker.length < 2) return t;
+  let lo = 0, hi = anker.length - 1;
+  if (t <= anker[0].dst) return anker[0].src + (t - anker[0].dst);
+  if (t >= anker[hi].dst) return anker[hi].src + (t - anker[hi].dst);
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (anker[m].dst <= t) lo = m; else hi = m; }
+  const a = anker[lo], b = anker[hi]; return a.src + (t - a.dst) / (b.dst - a.dst) * (b.src - a.src);
+}
+
+// Noten in die gewarpte Zeit bringen: t0/t1 abbilden, Tonhöhenkurve neu abtasten (kurve[j] gilt bei t0 + j·hop)
+function notenAbbilden(nn, anker) {
+  if (!anker || anker.length < 2) return nn;
+  return nn.map((n) => {
+    const hop = n.hop || 0.005, k = kurveMidi(n), K = k.length;
+    const t0 = abb(anker, n.t0), t1 = Math.max(t0 + hop, abb(anker, n.t1));
+    const L = Math.max(1, Math.round((t1 - t0) / hop)), kurve = new Array(L);
+    for (let j = 0; j < L; j++) {
+      const f = (zur(anker, t0 + j * hop) - n.t0) / hop, i = Math.max(0, Math.min(K - 1, Math.floor(f))), fr = Math.max(0, Math.min(1, f - i));
+      const a = k[i], b = k[Math.min(K - 1, i + 1)];
+      kurve[j] = !(a === a) ? b : !(b === b) ? a : a + (b - a) * fr;
+    }
+    const o = Object.assign({}, n, { t0, t1, kurve, hop });
+    delete o.i0; delete o.i1;
+    return o;
+  });
+}
+
+// Spitze/Vorlauf je Note (aus den Transienten derselben Zeitachse)
+function mitSpitzen(nn, tr) {
+  return nn.map((n) => {
+    const sp = tr.find((t) => t.peak >= n.t0 - 0.06 && t.peak <= Math.min(n.t1, n.t0 + 0.25));
+    return Object.assign({}, n, { peak: sp ? sp.peak : null, onset: sp ? Math.min(sp.onset, sp.peak) : null });
+  });
+}
+
+// Reihenfolge: Reinigen → Tonhöhe → Timing. Das Timing kommt zuletzt, damit die Spitzen des FERTIGEN Klangs
+// genau auf dem Raster liegen (die Tonhöhenkorrektur verschiebt Anschläge sonst um einige Millisekunden).
+// Die Zeitdehnung (WSOLA) ändert die Tonhöhe nicht.
 async function auto(x, sr, opt = {}, melde = () => {}) {
   const m = await module();
   const bericht = { fehlt: m.fehlt };
@@ -125,43 +167,49 @@ async function auto(x, sr, opt = {}, melde = () => {}) {
     gereinigt = r.y; bericht.reinigen = r.bericht;
   }
   melde('reinigen', 100);
-  // 2) Timing: Spitzen auf die Rasterlinien, Vorlauf bleibt links davor
-  let getimed = gereinigt, anker = null, tr = [];
+  // 2) Tonhöhe: verfolgen → Noten → je Note zur Stufe
+  let noten = [], gestimmt = gereinigt;
+  const ziel = Object.assign({ skala: 'chromatisch', staerke: 1, uebergang_ms: 40, vibratoErhalten: true }, opt.ziel || {});
+  if (m.ton) {
+    const spur = m.ton.verfolgen(gereinigt, sr, 0.005, { fortschritt: (p) => melde('tonhoehe', 0.5 * p) });
+    noten = m.ton.noten(spur, opt.notenOpt || {}) || [];
+    melde('tonhoehe', 50);
+    if (opt.tonhoehe !== false && ziel.staerke > 0 && noten.length) {
+      gestimmt = m.ton.korrigieren(gereinigt, sr, noten, Object.assign({}, ziel, { fortschritt: (p) => melde('tonhoehe', 50 + 0.5 * p) })) || gereinigt;
+      bericht.ton = { noten: noten.length, gestimmt: true };
+    } else bericht.ton = { noten: noten.length, gestimmt: false };
+  } else {
+    noten = ersatzNoten(ersatzSpur(gereinigt, sr));
+    bericht.ton = { noten: noten.length, gestimmt: false, ersatz: true };
+  }
+  melde('tonhoehe', 100);
+  // 3) Timing: Spitzen des gestimmten Klangs auf die Rasterlinien, Vorlauf bleibt links davor
+  let y = gestimmt, anker = null, tr = [];
   const raster = opt.raster || {};
   if (m.tim) {
-    tr = m.tim.transienten(gereinigt, sr);
+    tr = m.tim.transienten(gestimmt, sr);
     melde('timing', 10);
     if (opt.timing !== false && raster.teilung !== 'frei' && (raster.staerke ?? 1) > 0 && tr.length) {
       anker = m.tim.zeitkarte(tr, raster);
       melde('timing', 20);
-      getimed = m.tim.warp(gereinigt, sr, anker, { stand: (p) => melde('timing', 20 + 0.8 * p) });
+      y = m.tim.warp(gestimmt, sr, anker, { stand: (p) => melde('timing', 20 + 0.7 * p) });
       bericht.timing = { pins: anker.pins ? anker.pins.length : 0, frei: anker.frei || 0, transienten: tr.length };
-      tr = tr.map((t) => ({ peak: abb(anker, t.peak), onset: abb(anker, t.onset), staerke: t.staerke }));
-      try { bericht.timing.abweichung = m.tim.rasterAbweichung(tr, raster); delete bericht.timing.abweichung.werte; } catch (e) { /* egal */ }
+      // 4) Nachreinigen: Knackser, die beim Dehnen an Konsonanten entstehen können (nur der Klick-Schritt)
+      const kl = opt.reinigen === false ? false : (opt.reinigen || {}).klicks;
+      if (m.rein && kl !== false) {
+        try {
+          const r = m.rein.reinigen(y, sr, { klicks: kl === undefined ? true : kl, brumm: false, rauschen: false, schmatzer: false, atmer: false, ausgleich: false });
+          y = r.y; bericht.timing.nachKlicks = (r.bericht.klicks && r.bericht.klicks.anzahl) || 0;
+        } catch (e) { /* ohne Nachreinigung */ }
+      }
+      melde('timing', 95);
     } else bericht.timing = { pins: 0, transienten: tr.length, aus: true };
   }
   melde('timing', 100);
-  // 3) Tonhöhe: verfolgen → Noten → je Note zur Stufe
-  let noten = [], y = getimed;
-  const ziel = Object.assign({ skala: 'chromatisch', staerke: 1, uebergang_ms: 40, vibratoErhalten: true }, opt.ziel || {});
-  if (m.ton) {
-    const spur = m.ton.verfolgen(getimed, sr, 0.005);
-    melde('tonhoehe', 35);
-    noten = m.ton.noten(spur, opt.notenOpt || {}) || [];
-    melde('tonhoehe', 50);
-    if (opt.tonhoehe !== false && ziel.staerke > 0 && noten.length) {
-      y = m.ton.korrigieren(getimed, sr, noten, ziel) || getimed;
-      bericht.ton = { noten: noten.length, gestimmt: true };
-    } else bericht.ton = { noten: noten.length, gestimmt: false };
-  } else {
-    noten = ersatzNoten(ersatzSpur(getimed, sr));
-    bericht.ton = { noten: noten.length, gestimmt: false, ersatz: true };
-  }
-  melde('tonhoehe', 90);
-  // Noten für die Anzeige: so, wie sie nach der Korrektur klingen (Kurve als MIDI je hop), Spitze/Vorlauf dazu
-  const gestimmt = bericht.ton.gestimmt;
+  // Noten: roh = vor der Korrektur (Zeit wie „Gereinigt“), Anzeige = wie sie nach Korrektur + Timing klingen
+  const gestimmtJa = bericht.ton.gestimmt;
   let anzeige = noten;
-  if (gestimmt) {
+  if (gestimmtJa) {
     if (m.ton && m.ton.korrigierteNoten) { try { anzeige = m.ton.korrigierteNoten(noten, ziel); } catch (e) { anzeige = null; } }
     if (!anzeige || anzeige.length !== noten.length) anzeige = noten.map((n) => {
       const ist = n.midi + (n.cent || 0) / 100, z = stufe(ist, ziel), d = (z - ist) * Math.min(1, Math.max(0, ziel.staerke));
@@ -169,15 +217,16 @@ async function auto(x, sr, opt = {}, melde = () => {}) {
       return Object.assign({}, n, { kurve, midi: mi, cent: Math.round((neu - mi) * 100) });
     });
   }
-  noten = anzeige.map((n, i) => {
+  const norm = (n, i) => Object.assign({}, n, { id: n.id ?? i + 1, kurve: Array.from(kurveMidi(n)), hop: n.hop ?? 0.005 });
+  const roh = mitSpitzen(noten.map(norm), tr);
+  const trZiel = anker ? tr.map((t) => ({ peak: abb(anker, t.peak), onset: abb(anker, t.onset), staerke: t.staerke })) : tr;
+  if (anker) { try { bericht.timing.abweichung = m.tim.rasterAbweichung(trZiel, raster); delete bericht.timing.abweichung.werte; } catch (e) { /* egal */ } }
+  const fertig = mitSpitzen(notenAbbilden(anzeige.map(norm), anker), trZiel).map((n, i) => {
     const alt = noten[i] || n;
-    const sp = tr.find((t) => t.peak >= n.t0 - 0.06 && t.peak <= Math.min(n.t1, n.t0 + 0.25));
-    return Object.assign({}, n, { id: n.id ?? i + 1, kurve: Array.from(kurveMidi(n)), hop: n.hop ?? alt.hop ?? null,
-      peak: sp ? sp.peak : null, onset: sp ? Math.min(sp.onset, sp.peak) : null, vorher: alt.midi + (alt.cent || 0) / 100 });
+    return Object.assign(n, { vorher: alt.midi + (alt.cent || 0) / 100 });
   });
-  if (gestimmt) bericht.ton.gestimmtAnzahl = noten.filter((n) => Math.abs(n.midi + n.cent / 100 - n.vorher) > 0.05).length;
-  melde('tonhoehe', 100);
-  return { y, gereinigt, getimed, noten, anker, bericht, tr };
+  if (gestimmtJa) bericht.ton.gestimmtAnzahl = fertig.filter((n) => Math.abs(n.midi + n.cent / 100 - n.vorher) > 0.05).length;
+  return { y, gereinigt, noten: fertig, roh, anker, bericht, tr: trZiel };
 }
 
 async function tonSchieben(x, sr, note, cent) {
@@ -195,6 +244,15 @@ async function tonSchieben(x, sr, note, cent) {
 export async function bearbeiten(msg, melde = () => {}) {
   const m = await module();
   if (msg.typ === 'auto') return auto(msg.x, msg.sr, msg.opt, melde);
+  if (msg.typ === 'timing') { // nur Timing (z. B. Export „nur getimed“): eigene Spitzen → Raster → Warp → Klick-Nachlauf
+    if (!m.tim) throw new Error('timing.js fehlt');
+    const tr = m.tim.transienten(msg.x, msg.sr);
+    if (!tr.length) return { y: msg.x, anker: null };
+    const anker = m.tim.zeitkarte(tr, msg.raster || {});
+    let y = m.tim.warp(msg.x, msg.sr, anker, { stand: (p) => melde('timing', p) });
+    if (m.rein && msg.klicks !== false) { try { y = m.rein.reinigen(y, msg.sr, { klicks: msg.klicks ?? true, brumm: false, rauschen: false, schmatzer: false, atmer: false, ausgleich: false }).y; } catch (e) { /* ohne */ } }
+    return { y, anker: Array.from(anker, (a) => ({ src: a.src, dst: a.dst })) };
+  }
   if (msg.typ === 'warp') {
     if (!m.tim) throw new Error('timing.js fehlt');
     return { y: m.tim.warp(msg.x, msg.sr, msg.anker) };
@@ -228,8 +286,8 @@ if (imWorker) {
     try {
       const r = await bearbeiten(msg, melde);
       const tr = [];
-      for (const k of ['y', 'gereinigt', 'getimed']) if (r[k] && r[k].buffer && !tr.includes(r[k].buffer)) tr.push(r[k].buffer);
-      // gleiche Puffer nicht doppelt übertragen (z. B. Timing aus → getimed === gereinigt)
+      for (const k of ['y', 'gereinigt']) if (r[k] && r[k].buffer && !tr.includes(r[k].buffer)) tr.push(r[k].buffer);
+      // gleiche Puffer nicht doppelt übertragen (z. B. Tonhöhe und Timing aus → y === gereinigt)
       self.postMessage(Object.assign({ typ: 'fertig', id }, r), tr);
     } catch (err) {
       self.postMessage({ typ: 'fehler', id, text: String((err && err.message) || err) });
