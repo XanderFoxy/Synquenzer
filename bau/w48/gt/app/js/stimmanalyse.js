@@ -148,7 +148,7 @@ export const SAUBER_STUFEN = ['klar', 'meist klar', 'wackelig', 'unsauber'];
 export const SAUBER_WORT = { klar: 'klar und ruhig', 'meist klar': 'meist klar', wackelig: 'etwas wackelig', unsauber: 'noch unsauber' };
 export const REGISTER = ['Brust', 'Misch', 'Kopf'];
 function sauberIndex(s) {
-  const qC = Number.isFinite(s.cpp) ? clamp((s.cpp - 4) / 10) : 0.5;
+  const qC = Number.isFinite(s.cpp) ? clamp((s.cpp - 0.3) / 1.4) : 0.5; // eigener Maßstab (Cepstrum des dB-Spektrums, 1/N)
   const qH = Number.isFinite(s.hnr) ? clamp((s.hnr - 5) / 15) : 0.5;
   const qJ = Number.isFinite(s.jitter) ? clamp(1 - (s.jitter - 0.4) / 1.4) : 0.6;
   const qS = Number.isFinite(s.shimmer) ? clamp(1 - (s.shimmer - 2.5) / 8) : 0.6;
@@ -310,7 +310,7 @@ export function stimmlageAusLiedern(analysen, opt = {}) {
     const viel = t.dauer >= 0.04 * gesamt || t.dauer >= 3;
     if (t.midi >= kern[0] && t.midi <= kern[1] && t.q >= 0.5 && t.angestrengt < 0.35 && viel) t.zone = 'bequem';
     else if (t.midi >= tief && t.midi <= hoch && t.q >= 0.38 && t.angestrengt < 0.5) t.zone = 'sicher';
-    else t.zone = 'rand';
+    else { t.zone = 'rand'; t.randGrund = t.angestrengt >= 0.5 ? 'angestrengt' : t.q < 0.42 ? 'unsauber' : 'selten'; }
     t.tendenz = t.cent > 15 ? 'eher zu hoch' : t.cent < -15 ? 'eher zu tief' : 'mittig';
   }
   // Registerwechsel: wo der Brust-Anteil (geglättet über Nachbartöne) unter die Hälfte fällt
@@ -320,7 +320,16 @@ export function stimmlageAusLiedern(analysen, opt = {}) {
   for (const m of ms) { const b = brust(m); if (b == null) continue; if (wAnf == null && b < 0.62 && m > ms[0] + 2) wAnf = m; if (wAnf != null && wEnde == null && b < 0.4) wEnde = m; }
   if (wAnf != null && wEnde == null) wEnde = Math.max(wAnf, ms[ms.length - 1]);
   const kopfTon = ms.find((m) => toene[m].reg[2] >= 0.45 && toene[m].dauer >= 0.3) ?? null;
-  const uebergaenge = wAnf != null ? [...new Set([wAnf, wEnde])].sort((a, b) => a - b) : [];
+  let uebergaenge = wAnf != null ? [...new Set([wAnf, wEnde])].sort((a, b) => a - b) : [];
+  // kein klarer Wechsel: Ton im oberen Bereich mit dem höchsten Misch-/Kopf-Anteil als angedeuteter Übergang
+  let angedeutet = null;
+  if (wAnf == null) {
+    const mitteK = (kern[0] + kern[1]) / 2;
+    const c = ms.filter((m) => m > mitteK && toene[m].dauer >= 0.3).sort((a, b) => toene[a].reg[0] - toene[b].reg[0])[0];
+    if (c != null && 1 - toene[c].reg[0] >= 0.3) { angedeutet = c; uebergaenge = [c]; }
+  }
+  // höchster sauber gehaltener Brustton (spricht gegen Fächer, deren Wechsel darunter liegt)
+  const brustOben = ms.filter((m) => toene[m].register === 'Brust' && toene[m].q >= 0.5 && toene[m].dauer >= 0.25).pop();
   // Stimmfach
   let kand = FAECHER;
   if (opt.geschlecht === 'm' || opt.geschlecht === 'w') kand = FAECHER.filter((f) => f.g === opt.geschlecht);
@@ -330,6 +339,7 @@ export function stimmlageAusLiedern(analysen, opt = {}) {
     if (tief < f.umfang[0]) d += 0.5 * (f.umfang[0] - tief);
     if (hoch > f.umfang[1]) d += 0.5 * (hoch - f.umfang[1]);
     if (wAnf != null) d += 0.35 * Math.abs(wAnf - f.wechsel);
+    if (brustOben != null && brustOben > f.wechsel) d += 0.6 * (brustOben - f.wechsel);
     return { typ: f.typ, d };
   });
   const gsum = bew.reduce((s, b) => s + Math.exp(-(b.d ** 2) / (2 * 2.6 ** 2)), 0) || 1;
@@ -354,11 +364,14 @@ export function stimmlageAusLiedern(analysen, opt = {}) {
   const sek = liste.reduce((s, a) => s + (a.sekunden || 0), 0);
   // Text in Worten
   const randOben = ms.filter((m) => m > kern[1] && toene[m].zone === 'rand');
+  const randHart = randOben.filter((m) => toene[m].randGrund !== 'selten');
   const s = [];
   s.push(`Schätzung aus ${liste.length === 1 ? 'einer Aufnahme' : `${liste.length} Aufnahmen`} (${Math.round(sek)} s klar gehaltene Töne): Am meisten, längsten und saubersten singst du zwischen ${N(kern[0])} und ${N(kern[1])} – das ist deine bequeme Lage.`);
-  s.push(`Sicher klingt es von ${N(tief)} bis ${N(hoch)}${randOben.length ? `; ab ${N(randOben[0])} wird es unsauberer oder angestrengter – das ist dein Rand im Moment` : ''}.`);
+  s.push(`Sicher klingt es von ${N(tief)} bis ${N(hoch)}${randHart.length ? `; ab ${N(randHart[0])} wird es unsauberer oder angestrengter – das ist dein Rand im Moment` : randOben.length ? `; ${N(randOben[0])}${randOben.length > 1 ? ` bis ${N(randOben[randOben.length - 1])}` : ''} singst du nur kurz – dafür reichen die Aufnahmen noch nicht` : ''}.`);
   if (wAnf != null) s.push(wEnde > wAnf ? `Zwischen ${N(wAnf)} und ${N(wEnde)} wechselt dein Klang vermutlich von der Brust- in die Misch-/Kopfstimme.` : `Um ${N(wAnf)} wechselt dein Klang vermutlich von der Brust- in die Misch-/Kopfstimme.`);
+  else if (angedeutet != null) s.push(`Einen klaren Registerwechsel gibt es in diesen Aufnahmen nicht – du bleibst fast überall in der Bruststimme; um ${N(angedeutet)} wird der Klang am ehesten leichter (erster Schritt Richtung Mischstimme).`);
   else s.push('Einen klaren Registerwechsel gibt es in diesen Aufnahmen nicht – du bleibst fast überall in der Bruststimme.');
+  if (brustOben != null && brustOben >= 60) s.push(`${N(brustOben)} hältst du noch sauber in der Bruststimme.`);
   if (lauter) s.push('Nach oben wirst du deutlich lauter – oft ein Zeichen, dass die Höhe gedrückt wird. Oben lieber etwas leiser und leichter.');
   else if (sauberFaellt) s.push('Nach oben wird der Klang etwas weniger sauber – dort hilft Vokal-Ausgleich und Registerübung.');
   s.push(`Das spricht ${fachText}. Männer- und Frauenstimmen überschneiden sich – die Tonhöhe allein ist kein sicheres Urteil.`);
@@ -370,7 +383,7 @@ export function stimmlageAusLiedern(analysen, opt = {}) {
   return {
     tief, hoch, kern, typ: `${b1.typ} (Schätzung)`, uebergaenge, text: s.join(' '), sicherheit, quelle: 'lieder', datum: Date.now(),
     typen: bew.slice(0, 3).map((b) => ({ typ: b.typ, wort: b.p >= 0.5 ? 'am ehesten' : b.p >= 0.2 ? 'möglich' : 'unwahrscheinlich' })),
-    fachText, register: { wechsel: wAnf != null ? [wAnf, wEnde] : null, kopfAb: kopfTon, je: registerJe },
+    fachText, register: { wechsel: wAnf != null ? [wAnf, wEnde] : null, angedeutet, kopfAb: kopfTon, brustBis: brustOben ?? null, je: registerJe },
     sauberkeit, toene, schwankung, anstrengung: { lauterNachOben: lauter > 0, sauberFaellt: sauberFaellt > 0 },
     aufnahmen: liste.map((a) => ({ name: a.name || '', datum: a.datum || null, sekunden: a.sekunden || 0 })), sekunden: rund(sek, 1),
   };

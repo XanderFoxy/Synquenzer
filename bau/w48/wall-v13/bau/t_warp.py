@@ -53,8 +53,11 @@ class Planer:
     def __init__(self, x, mk, still_db=-62.0, stimm_r=0.75, stimm_db=-48.0):
         self.x = x; self.mk = mk
         lvl, r = mk['lvl'], mk['r']; hf = mk.get('hf', lvl - 20)
+        from scipy.ndimage import median_filter
+        r = median_filter(r, 7)          # Periodizität geglättet (Vibrato/Rauhigkeit unterbricht sonst die Läufe)
         self.still = lvl < still_db
         self.stimm = (r >= stimm_r) & (lvl >= stimm_db)
+        self.stimm2 = (r >= 0.60) & (lvl >= stimm_db + 3)          # Ausweich-Maske (rauer/behauchter Vokal)
         # Atem: leises, stimmloses, nicht zischendes Geräusch
         self.atem = (lvl >= still_db) & (lvl < -42.0) & (r < 0.5) & (hf - lvl < -4.0)
         self.stuecke = []        # (a, b, blende) in Quell-Samples
@@ -138,7 +141,11 @@ class Planer:
             cap = (b - a) - int(0.040 * SR) if rest < 0 else 10 ** 9
             d = int(np.sign(rest) * min(abs(rest), cap))
             if d: plan.append(['pause', (a, b), d]); rest -= d
-        # 2) Vokal-Läufe, gemeinsamer Faktor
+        # 2) Vokal-Läufe, gemeinsamer Faktor (reicht die Kapazität nicht: Ausweich-Maske, Spleiß-Korrelation sichert die Qualität)
+        if rest != 0:
+            cap1 = sum(b - a for a, b in vo); vo2 = runs(self.stimm2 | self.stimm, 0.050, RAND); cap2 = sum(b - a for a, b in vo2)
+            grenze = (MAX_DEHN - 1) if rest > 0 else (1 - MIN_DEHN)
+            if cap1 * grenze < abs(rest) and cap2 > cap1: vo = vo2; info['maske'] = 'ausweich'
         if rest != 0 and vo:
             tot = sum(b - a for a, b in vo)
             cap = int((MAX_DEHN - 1) * tot) if rest > 0 else int((1 - MIN_DEHN) * tot)

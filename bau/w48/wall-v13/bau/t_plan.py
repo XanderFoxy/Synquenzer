@@ -17,7 +17,10 @@ H_HAND = {'H-066': dict(q_spitze=115.975, q_kons=115.948), 'H-069': dict(off=-0.
 #   ti: Zielkarte 26 (115,250). 26 verlangt no->ti 0,71x und ti->sed 1,39x (außerhalb 0,8–1,25). Xanders Ausnahme-Regel
 #       („wenn mehr Silben da sind … im Ursprung lassen … nichts künstlich stretchen“): ti bleibt an seinem Ursprung
 #       (Original 115,352 = 16tel 26,8) und kommt aufs nächste 16tel 27 = 115,375.
-H_ZIEL = {'H-065b': 115.375}
+#   world (S1) und so (S2): Zielkarte 16. world braucht dafür world->of 1,41x, so braucht is->so 0,65x (das lange s am Ende von
+#       „is“ ist Konsonant und darf nicht gestaucht werden). Beide sind im Original spät (world 17,5, so 16,9). Nächster erreichbarer
+#       Rasterplatz ist 17 – für beide gleich, damit Xanders Paar „SO auf WORLD“ stimmt.
+H_ZIEL = {'H-065b': 115.375, 'H-014': 50.125, 'H-057': 106.125}
 
 
 def haupt_anker():
