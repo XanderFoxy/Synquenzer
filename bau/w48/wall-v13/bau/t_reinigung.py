@@ -96,9 +96,12 @@ def singen_maske(x, mk, anker, bloecke):
             else: leise = 0
             if leise >= 12: k -= 12; break
             k += 1
-        ber.append((a['src_kons'] * SR - 0.020 * SR, k * HOP + 0.040 * SR))
+        ber.append((min(a['src_kons'], a.get('src_kons_zk', a['src_kons'])) * SR - 0.020 * SR, k * HOP + 0.040 * SR))
     for b in bloecke:
         ber.append((b['src_a'] * SR, b['src_b'] * SR))
+    # deutlich hörbares Material (> -40 dBFS) gehört immer dazu (Konsonanten-Reste, Ausklang)
+    for a_, b_ in _laeufe(lvl > -40.0):
+        ber.append((a_ * HOP - 0.020 * SR, b_ * HOP + 0.020 * SR))
     return ber
 
 

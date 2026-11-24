@@ -1,163 +1,185 @@
-# The Wall v13 – Haupt- und Doppelstimme neu getimt (Bau-Skript).
-# Quellen: Haupt = projekt7/Haupt-3-trocken-v7.wav (24 bit, trocken, v6-gestimmt), Doppel = wall-v12/bau/stimmen/doppel_t.wav
-#          (v7-Doppel 24 bit, in v12 auf die Haupt gestimmt). Keine 128-kbit-MP3.
-# Anker: t2_anker.py (Hüllkurven-Ausrichtung E5-trocken -> v7), Ziele: analyse/zielkarte.json (+ Änderungen in t_plan.py H_ZIEL).
-# Warp: t_warp.py (nur Original-Abtastwerte; Dehnen/Stauchen nur durch Perioden-Wiederholung/-Auslassung in Vokalen, in Pausen und
-#       Atem; Anlaut + 25 ms Anschlag starr/bitgleich verschoben; Blenden 5–16 ms an steigenden Nulldurchgängen).
-import sys, os, json, subprocess
+# The Wall v13 – Haupt- und Doppelstimme neu timen (Agent „timing“, 24.11.2026). Nur lokal, nichts ins Netz.
+#
+# Quellen (Begründung in analyse/timing_mess.md):
+#   Haupt  = repo/the-wall/projekt7/Haupt-3-trocken-v7.wav  (24 bit, trocken, mit der v6-Tonhöhenkorrektur = Tonhöhe von v12)
+#            + v10-07 („Who“ R2 schneller auf dem Ton) aus v12 nachgebaut. NICHT ende.npy (v12-Lead, 128-kbit-MP3).
+#   Doppel = wall-v12/bau/stimmen/doppel_t.wav  (v7-Doppel 24 bit, in v12 auf die Haupt gestimmt, rubberband R3, 32 bit float)
+#   Zeitbezug: E5 trocken (wall/roh/original.npy, gleiche Lage wie die Rohaufnahme) nur zum Messen der Quell-Anker.
+#
+# Ablauf: Anker messen (t2_anker.py -> tcache/anker2.json) -> Ziele (Zielkarte + begründete Ausnahmen, t_plan.py)
+#   -> Reinigung in Quellzeit (t_reinigung.py) -> Warp (t_warp.py: Perioden-Spleiße nur im Vokal, Pausen, Konsonanten bitgleich)
+#   -> weiche Spitzenbegrenzung -> Terzen (Ober/Unter) neu aus der neuen Haupt -> Zeitkarten + Plan für den Mix.
+import json, os, subprocess, sys, time
+import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from tgemein import *
-from t_plan import *
+from t_plan import haupt_anker, anlaut, sprech_bloecke, starr_liste, doppel_anker_abstimmung, H_ZIEL
 from t_lauf import plane
-from t_warp import rendern, zeitkarte, quelle_zu_ziel
-from zk_kern import nah, staerkster
+from t_warp import rendern, zeitkarte, quelle_zu_ziel, merkmale
+import t_reinigung as RG
+from t_doppel import doppel_messung
 
-LOG = {}
-H7 = lade_wav(QUELLE['H_v7']); DT = lade_wav(QUELLE['D_t']); O = lade_npy('original')
-mkH = dict(np.load(TC + 'mk_H_v7.npz')); mkD = dict(np.load(TC + 'mk_D_t.npz'))
+LOG = dict(erstellt=time.strftime('%Y-%m-%d %H:%M'), agent='timing')
+t_start = time.time()
 
-# ---------------- Haupt ----------------
+
+def mk_laden(name, x):
+    p = TC + 'mk_%s.npz' % name
+    if os.path.exists(p): return dict(np.load(p))
+    m = merkmale(x); m.pop('hop', None)
+    from scipy.signal import butter, sosfiltfilt
+    h = sosfiltfilt(butter(4, [3000, 9000], 'bandpass', fs=SR, output='sos'), x)
+    m['hf'] = rms_frames(h, 120, 480)[:len(m['lvl'])]
+    np.savez(p, **m); return m
+
+
+# ===================== 1. Quellen =====================
+H7 = lade_wav(QUELLE['H_v7']); DT = lade_wav(QUELLE['D_t'])
+O = lade_npy('original'); E = lade_npy('ende')
+mkH = mk_laden('H_v7', H7); mkD = mk_laden('D_t', DT)
+
+# ===================== 2. Anker und Ziele (Haupt) =====================
 H = haupt_anker()
 for a in H: anlaut(mkH, a)
 B = sprech_bloecke(H7, O)
-PH, posH = plane(H7, mkH, starr_liste(H, B))
-lead = rendern(H7, PH.stuecke, N)
+for b in B:     # „siehst du mich nicht“: v12 beginnt erst mit dem s bei 219,8 (gehaltener Ton davor gehört zum entfernten Rest)
+    if b['id'] == 'sprech-126': b['src_a'] = 219.79 + b['off']; b['tgt_a'] = 219.79
+LOG['ziel_ausnahmen'] = {k: v for k, v in H_ZIEL.items()}
+LOG['sprechbloecke'] = [(b['id'], round(b['src_a'], 3), round(b['src_b'], 3), round(b['off'] * 1000, 1), b['corr']) for b in B]
 
-# ---------------- Doppel ----------------
-C = json.load(open(TC + 'doppel_C.json'))
-D, tabD = doppel_anker_abstimmung(H, C, mkD)
-PD, posD = plane(DT, mkD, starr_liste(D, []))
-doppel = rendern(DT, PD.stuecke, N)
+# ===================== 3. Reinigung (Quellzeit v7) =====================
+zb = RG.Zeitbezug(H)
+ev = LIED['ereignisse']
+x = H7.copy()
+who = next(a for a in H if a['id'] == 'H-082')
+x = RG.who_r2_tonhoehe(x, who, E, LOG, TC)
+x = RG.entklicken(x, ev['klicks'], zb, LOG)
+x = RG.plopps(x, ev['plopps'], zb, LOG)
+x = RG.zischlaute(x, ev['deesser'], zb, LOG)
+OYE_REST = [(217.88, 219.79)]       # Rest von „open your eyes“ + gehaltener Ton vor „siehst“ (in v12 entfernt)
+g_p = RG.pausen_gain(x, mkH, H, B, E, zb, ev['atmer'], LOG, stumm_extra=OYE_REST)
+g_s, silben_g = RG.silben_pegel(x, H, E, LOG)
+x = x * g_p * g_s
+LOG['silben_gain_db'] = {k: round(v, 2) for k, v in silben_g.items()}
 
-
-# ---------------- Nachbearbeitung Haupt (wie v10/v11) ----------------
-def glatt_db(g_db, ms):
-    k = max(1, int(ms * SR / 1000)); w = np.ones(k) / k
-    return np.convolve(g_db, w, 'same')
-
-
-def kurve(punkte, n):
-    """stückweise konstante dB-Kurve aus [(t0, t1, db)]."""
-    g = np.zeros(n)
-    for t0, t1, d in punkte: g[int(t0 * SR):int(t1 * SR)] = d
-    return g
-
-
-# 1) „Open your eyes“-Rest im Zwischenteil stumm (wie v11/ende: 217,90–219,78 still)
-m = np.ones(N); a, b = int(217.90 * SR), int(219.78 * SR); f = int(0.012 * SR)
-m[a:b] = 0; m[a - f:a] = np.linspace(1, 0, f); m[b:b + f] = np.linspace(0, 1, f)
-lead *= m
-
-# 2) Silben-Pegel angleichen (±6 dB, halbe Abweichung zum Median des Teils), Silbe = Anlaut bis nächster Anlaut
-from zk_gemein import bp
-band = bp(lead, 120, 4000)
-seg = []
-Hs = sorted(H, key=lambda a: a['tgt_peak'])
-for i, a in enumerate(Hs):
-    t0 = a['tgt_peak'] - (a['src_peak'] - a['src_kons'])
-    t1 = min(a['tgt_peak'] + 0.6, (Hs[i + 1]['tgt_peak'] - (Hs[i + 1]['src_peak'] - Hs[i + 1]['src_kons'])) if i + 1 < len(Hs) else a['tgt_peak'] + 0.6)
-    s = band[int(a['tgt_peak'] * SR):int(min(t1, a['tgt_peak'] + 0.25) * SR)]
-    seg.append([t0, t1, 10 * np.log10(np.mean(s * s) + 1e-14), a['teil']])
-med = {}
-for t in set(s[3] for s in seg): med[t] = np.median([s[2] for s in seg if s[3] == t])
-pk = [(s[0], s[1], float(np.clip(-0.5 * (s[2] - med[s[3]]), -6, 6))) for s in seg]
-g_sil = glatt_db(kurve(pk, N), 30)
-lead *= undb(g_sil)
-LOG['silben_pegel'] = dict(korrektur_db_p5_p95=[round(float(np.percentile([p[2] for p in pk], q)), 2) for q in (5, 95)],
-                           max_abs=round(float(max(abs(p[2]) for p in pk)), 2))
-
-# 3) Rauschen in Pausen leiser (Expander: unter −55 dBFS bis −10 dB)
-lv = rms_frames(lead, 480, 480)
-gexp = -np.clip(-55.0 - lv, 0, 10)
-g_e = glatt_db(np.repeat(gexp, 480)[:N] if len(gexp) * 480 >= N else np.concatenate([np.repeat(gexp, 480), np.zeros(N - len(gexp) * 480)]), 20)
-lead *= undb(g_e)
-
-# 4) Spitzen weich begrenzen vor dem Kompressor (Spitze > aktiver Pegel + 14 dB), Attack 1 ms, Release 60 ms
-akt = rms_frames(lead, 480, 480) > -40
-akt_rms = 10 * np.log10(np.mean(np.repeat(rms_frames(lead, 480, 480)[akt], 1) * 0 + 1e-30) + 1e-30)
-rms_akt = 10 * np.log10(np.mean([10 ** (v / 10) for v in rms_frames(lead, 480, 480)[akt]]))
-thr = rms_akt + 14.0
-pk1 = np.abs(lead[:len(lead) // 48 * 48]).reshape(-1, 48).max(1)
-over = np.maximum(0, 20 * np.log10(pk1 + 1e-12) - thr)
-from scipy.ndimage import maximum_filter1d
-over = maximum_filter1d(over, 3)
-from scipy.signal import lfilter
-rel = np.exp(-1 / 60.0)
-gr = over.copy()
-for i in range(1, len(gr)): gr[i] = max(over[i], gr[i - 1] * rel)
-grs = np.repeat(gr, 48); grs = np.concatenate([grs, np.zeros(N - len(grs))])
-lead *= undb(-grs)
-LOG['spitzen'] = dict(schwelle_dbfs=round(float(thr), 1), anteil_gr_ueber_1db=round(float(np.mean(gr[akt.repeat(10)[:len(gr)]] > 1) * 100), 2) if True else None,
-                      max_gr_db=round(float(gr.max()), 1))
-
+# ===================== 4. Warp Haupt =====================
+stH = starr_liste(H, B)
+PH, posH = plane(x, mkH, stH)
+lead = rendern(x, PH.stuecke, N)
+lead, LOG['lead_spitzen'] = RG.spitzen_weich(lead)
 schreibe(ST13 + 'lead.wav', lead)
-schreibe(ST13 + 'doppel.wav', doppel)
+kmH = zeitkarte(PH.stuecke)
+np.save(TC + 'karte_H.npy', kmH)
 
-# ---------------- Messung ----------------
-kmH = zeitkarte(PH.stuecke); kmD = zeitkarte(PD.stuecke)
-ZKH = {s['id']: s for s in ZK['silben'] if s['stimme'] == 'haupt'}
-rows = []
-for a in H:
-    z = ZKH[a['id']]
-    t_karte = quelle_zu_ziel(kmH, [int(round(a['src_peak'] * SR))])[0] / SR
-    if a['akzent']:
-        r = staerkster(lead, a['tgt_peak'] - 0.06, a['tgt_peak'] + 0.06) or nah(lead, a['tgt_peak'], half=0.06)
-    else:
-        r = nah(lead, a['tgt_peak'], half=0.06)
-    rows.append(dict(id=a['id'], text=a['text'], teil=a['teil'], ziel_zk=z['ziel_t'], ziel=a['tgt_peak'], v12=z['t_v12'], orig=z['t_orig'],
-                     v13_karte=round(float(t_karte), 4), v13_mess=r['spitze_t'],
-                     abw_v12_ms=round((z['t_v12'] - z['ziel_t']) * 1000) if z['t_v12'] is not None else None,
-                     abw_v13_karte_ms=round((t_karte - z['ziel_t']) * 1000, 1), abw_v13_mess_ms=round((r['spitze_t'] - z['ziel_t']) * 1000, 1),
-                     anlaut=a['anlaut_art']))
+# ===================== 5. Doppel =====================
+C = doppel_messung(H, H7, DT)
+D, tabD = doppel_anker_abstimmung(H, C, mkD)
+stD = starr_liste(D, [])
+PD, posD = plane(DT, mkD, stD)
+dop = rendern(DT, PD.stuecke, N)
+dop, LOG['doppel_spitzen'] = RG.spitzen_weich(dop)
+schreibe(ST13 + 'doppel.wav', dop)
+kmD = zeitkarte(PD.stuecke)
+np.save(TC + 'karte_D.npy', kmD)
 
-
-def stat(v):
-    v = np.abs(np.array([x for x in v if x is not None], float))
-    return dict(n=len(v), median=round(float(np.median(v)), 1), p95=round(float(np.percentile(v, 95)), 1), max=round(float(v.max()), 1))
+# ===================== 6. Plan-Daten für Mess-Skript und Mix =====================
+def seg_info(P):
+    seg = [l for l in P.log if 'name' in l]
+    f = [x_ for l in seg for x_ in l.get('faktoren', [])]
+    return seg, f
 
 
-LOG['haupt_abw_zielkarte'] = dict(v12=stat([r['abw_v12_ms'] for r in rows]), v13_karte=stat([r['abw_v13_karte_ms'] for r in rows]),
-                                  v13_mess=stat([r['abw_v13_mess_ms'] for r in rows]))
-fakH = [f for l in PH.log if 'name' in l for f in l.get('faktoren', [])]
-fakD = [f for l in PD.log if 'name' in l for f in l.get('faktoren', [])]
-LOG['dehnfaktoren'] = {nm: dict(n=len(f), min=round(min(f), 3), max=round(max(f), 3), p5=round(float(np.percentile(f, 5)), 3), median=round(float(np.median(f)), 3),
-                               p95=round(float(np.percentile(f, 95)), 3), hist=np.histogram(f, bins=[0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.05, 1.1, 1.15, 1.2, 1.25, 1.3])[0].tolist())
-                       for nm, f in (('haupt', fakH), ('doppel', fakD))}
-LOG['spleisse'] = {nm: dict(n=len(P.spleisse), korr_median=round(float(np.median([s['korr'] for s in P.spleisse])), 3),
-                            korr_min=round(float(min(s['korr'] for s in P.spleisse)), 3)) for nm, P in (('haupt', PH), ('doppel', PD))}
-LOG['ungedeckt'] = {nm: [dict(name=l['name'], soll_ms=round(l['delta_ms'], 1), rest_ms=round(l['rest_ms'], 1)) for l in P.log if 'name' in l and abs(l['rest_ms']) > 5]
-                    for nm, P in (('haupt', PH), ('doppel', PD))}
-# Doppel gegen Haupt (nur angekerte Silben): Ziel = Haupt-Ziel + 10 ms
-dd = []
-for a in D:
-    t = quelle_zu_ziel(kmD, [int(round(a['src_peak'] * SR))])[0] / SR
-    dd.append(dict(id=a['id'], text=a['text'], teil=a['teil'], doppel_minus_haupt_ms=round((t - a['haupt_ziel']) * 1000, 1), stimmen=a['stimmen']))
-LOG['doppel'] = dict(angekert=len(D), gesamt=len(tabD), d_minus_h=dict(min=min(x['doppel_minus_haupt_ms'] for x in dd), max=max(x['doppel_minus_haupt_ms'] for x in dd),
-                     median=float(np.median([x['doppel_minus_haupt_ms'] for x in dd]))), silben=dd, nicht_angekert=[t['id'] + ' ' + t['text'] for t in tabD if not t['gewaehlt']])
-# „see“: Länge des s
-h61 = next(a for a in H if a['id'] == 'H-061'); z61 = ZKH['H-061']
-s_len_v13 = (z61['erster_einsatz_t'] - z61['konsonant_s'])     # Vorlauf starr -> gleiche Länge wie Quelle
-LOG['see_s'] = dict(original_s=round(z61['erster_einsatz_t'] - z61['konsonant_s'], 3), v12_s=round(z61['v12_erster_einsatz_t'] - z61['v12_konsonant_s'], 3),
-                    v13_s_aus_quelle=round(h61['src_peak'] - h61['src_kons'] - (z61['t_orig'] - z61['erster_einsatz_t']), 3),
-                    v13_s_beginn=round(h61['tgt_peak'] - (h61['src_peak'] - h61['src_kons']), 3), v13_akzent_ziel=h61['tgt_peak'])
-LOG['zeilen'] = {nm: [r for r in rows if r['id'] in ids] for nm, ids in (('there is so much more to see', ['H-0%d' % i for i in range(55, 62)]),
-                                                                         ('are we hypnotized', ['H-062', 'H-063', 'H-064', 'H-065', 'H-065b', 'H-066']))}
-LOG['silben'] = rows
-json.dump(LOG, open(A13 + 'timing_mess.json', 'w'), indent=1, ensure_ascii=False, default=float)
+segH, fH = seg_info(PH); segD, fD = seg_info(PD)
+json.dump(dict(H=H, B=B, D=D, tabD=tabD, posH=posH, posD=posD, segH=segH, segD=segD, splH=PH.spleisse, splD=PD.spleisse,
+               fH=fH, fD=fD, log=LOG), open(TC + 'bau_plan.json', 'w'), indent=0, default=float, ensure_ascii=False)
+print('Haupt: Abschnitte %d, Spleiße %d, Faktoren %.3f…%.3f' % (len(segH), len(PH.spleisse), min(fH), max(fH)), flush=True)
+print('Doppel: Anker %d/%d, Spleiße %d, Faktoren %.3f…%.3f' % (len(D), len(tabD), len(PD.spleisse), min(fD), max(fD)), flush=True)
 
-# ---------------- Hörproben (lokal) ----------------
-E = lade_npy('ende')
-def musik(t0, d=6.0):
-    b_ = subprocess.run(['ffmpeg', '-v', 'error', '-ss', str(t0), '-t', str(d), '-i', R + 'spuren/The-Wall_v5_Instrumental-Master.mp3', '-f', 'f32le', '-ac', '2', '-ar', str(SR), '-'], capture_output=True).stdout
-    x = np.frombuffer(b_, np.float32).reshape(-1, 2).astype(np.float64); y = np.zeros((int(d * SR), 2)); y[:len(x)] = x[:len(y)]; return y
-for nm, t0 in (('see', 105.0), ('hypnotized', 111.0)):
-    mu = musik(t0)
-    for ver, v in (('v12', E), ('v13', lead)):
-        s = v[int(t0 * SR):int((t0 + 6) * SR)]
-        s = s / (np.sqrt(np.mean(s ** 2)) + 1e-9) * 0.08
-        mix = mu * 0.5 + s[:, None]
-        mix /= max(1.0, np.abs(mix).max() / 0.95)
-        sf.write(OUT13 + 'probe_%s_%s.wav' % (nm, ver), mix.astype(np.float32), SR, subtype='PCM_24')
-print(json.dumps({k: LOG[k] for k in ('haupt_abw_zielkarte', 'dehnfaktoren', 'spleisse', 'see_s', 'silben_pegel', 'spitzen')}, indent=1, default=float))
-print('ungedeckt', LOG['ungedeckt'])
-print('doppel', {k: v for k, v in LOG['doppel'].items() if k != 'silben'})
+# ===================== 7. Terzen (Ober/Unter) neu aus der neuen Haupt =====================
+# Ober-/Unterstimme hängen von der Haupt ab (stimmen_v12.py: Versionen der Haupt um +3/+4/+5 bzw. -3/-4 Halbtöne,
+# rubberband R2 + Formant, je Lead-Ton per Pitchmap gewählt). Gegengesang (Xanders eigene Spur) und Doppel-Stimmung hängen
+# nicht von der Haupt-Zeit ab -> unverändert (wall-v12/bau/stimmen/gegen_t.wav, gegen_adtL/R.wav).
+P12 = W12 + 'bau/plan/'
+plan12 = json.load(open(P12 + 'plan.json'))
+s7e = np.array(sorted([(a['src_peak'], a['t_v12']) for a in H if a['t_v12'] is not None]))
+# v12-Lead-Zeit -> v7-Zeit (Umkehrung über die Anker; ZT-Sprechstellen haben gleiche Lage) -> v13-Zeit (Zeitkarte)
+def v12_zu_v13(t):
+    t = np.atleast_1d(np.asarray(t, float))
+    t7 = t - np.interp(t, s7e[:, 1], s7e[:, 1] - s7e[:, 0])
+    return quelle_zu_ziel(kmH, np.round(t7 * SR).astype(np.int64)) / SR
+def d12_zu_d13(t):   # Doppel v12 = doppel_t-Zeit
+    t = np.atleast_1d(np.asarray(t, float))
+    return quelle_zu_ziel(kmD, np.round(t * SR).astype(np.int64)) / SR
+
+os.makedirs(B13 + 'plan_v13', exist_ok=True)
+for nm in ('ober', 'unter'):
+    zeilen = [tuple(map(float, l.split())) for l in open(P12 + nm + '.txt')]
+    fr = np.array([z[0] for z in zeilen]); val = [z[1] for z in zeilen]
+    neu = np.round(v12_zu_v13(fr / SR) * SR).astype(np.int64)
+    neu = np.maximum.accumulate(neu)
+    with open(B13 + 'plan_v13/%s.txt' % nm, 'w') as f:
+        for q, v in zip(neu, val): f.write('%d %.4f\n' % (q, v))
+plan13 = dict(plan12)
+for key in ('ober_gate', 'unter_gate'):
+    plan13[key] = [[float(v12_zu_v13(a)[0]), float(v12_zu_v13(b)[0])] for a, b in plan12[key]]
+plan13['doppel_gate'] = [[float(d12_zu_d13(a)[0]), float(d12_zu_d13(b)[0])] for a, b in plan12['doppel_gate']]
+plan13['hinweis_v13'] = ('ober/unter_gate und ober/unter.txt: v12-Lead-Zeit über die Silben-Anker auf v13-Lead-Zeit abgebildet; '
+                         'doppel_gate: doppel_t-Zeit über die Doppel-Zeitkarte auf v13-Doppel-Zeit. chor/gegen_fenster, oye unverändert.')
+json.dump(plan13, open(B13 + 'plan_v13/plan.json', 'w'), indent=1, ensure_ascii=False)
+
+def rb(x_, out_name, args):
+    fi = TC + 'rb_in.wav'; fo = TC + 'rb_out.wav'
+    sf.write(fi, x_.astype(np.float32), SR, subtype='FLOAT')
+    subprocess.run(['nice', 'rubberband'] + args + [fi, fo], check=True, capture_output=True)
+    y, _ = sf.read(fo, dtype='float64')
+    # Latenz ausgleichen (Hüllkurven-Korrelation wie stimmen_v12.ausrichten)
+    from scipy.signal import correlate, butter as bu, sosfiltfilt as sff
+    def env(v):
+        sos = bu(2, [300, 3000], 'bandpass', fs=SR, output='sos'); w_ = sff(sos, v)
+        e_ = np.sqrt(np.convolve(w_ ** 2, np.ones(96) / 96, 'same')); return e_ - e_.mean()
+    m = min(len(x_), len(y)); a_ = env(x_[:m])[::4]; b_ = env(y[:m])[::4]
+    c = correlate(b_, a_, mode='full', method='fft'); mid = len(a_) - 1; w = 2000
+    lag = (np.argmax(c[mid - w:mid + w + 1]) - w) * 4
+    z = np.zeros(N)
+    if lag >= 0: seg = y[lag:lag + N]; z[:len(seg)] = seg
+    else: seg = y[:N + lag]; z[-lag:-lag + len(seg)] = seg
+    schreibe(ST13 + out_name + '.wav', z)
+    os.remove(fi); os.remove(fo)
+    return z, lag
+
+if not os.environ.get('OHNE_TERZEN'):
+    vers = {}
+    for iv in (3, 4, 5):
+        vers['p%d' % iv], l1 = rb(lead, 'lead_p%d' % iv, ['-2', '-F', '-p', str(iv)])
+        vers['p%d_adt' % iv], l2 = rb(lead, 'lead_p%d_adt' % iv, ['-2', '-F', '-p', '%.2f' % (iv + 0.08)])
+        print('Terz-Version +%d fertig (Latenz %d/%d)' % (iv, l1, l2), flush=True)
+    for iv in (3, 4):
+        vers['m%d' % iv], l1 = rb(lead, 'lead_m%d' % iv, ['-2', '-F', '-p', str(-iv)])
+        print('Terz-Version -%d fertig (Latenz %d)' % (iv, l1), flush=True)
+    # zusammengesetzt wie mix_v12.zusammensetzen (Gate: ober/unter_gate * chor_fenster * (1 - OYE))
+    sys.path.insert(0, W12 + 'bau')
+    from dsp import maske
+    def zusammensetzen(pm_file, versionen, gate, fade_ms=12.0):
+        pts = [tuple(map(float, l.split())) for l in open(pm_file)]
+        K = 1000; n1 = int(266 * K) + 2; sel = np.zeros(n1)
+        for k, (fr_, v) in enumerate(pts):
+            a = int(fr_ / SR * K); b_ = int(pts[k + 1][0] / SR * K) if k + 1 < len(pts) else n1
+            sel[a:b_] = v
+        out = np.zeros(N)
+        w = max(int(fade_ms), 1); win = np.hanning(w + 2)[1:-1]; win /= win.sum()
+        for v, x_ in versionen.items():
+            m = np.convolve((sel == v).astype(float), win, 'same')
+            out += x_ * np.interp(np.arange(N) / SR, np.arange(n1) / K, m)
+        return out * gate
+    fen_c = plan13['chor_fenster']; OYE = tuple(plan13['oye'])
+    g_ober = maske(plan13['ober_gate'], N, 0.025) * maske(fen_c, N, 0.1) * (1 - maske([OYE], N, 0.03))
+    g_unter = maske(plan13['unter_gate'], N, 0.03) * maske(fen_c, N, 0.1) * (1 - maske([OYE], N, 0.03))
+    pmo = B13 + 'plan_v13/ober.txt'; pmu = B13 + 'plan_v13/unter.txt'
+    schreibe(ST13 + 'ober.wav', zusammensetzen(pmo, {3.0: vers['p3'], 4.0: vers['p4'], 5.0: vers['p5']}, g_ober))
+    schreibe(ST13 + 'ober_adt.wav', zusammensetzen(pmo, {3.0: vers['p3_adt'], 4.0: vers['p4_adt'], 5.0: vers['p5_adt']}, g_ober))
+    schreibe(ST13 + 'unter.wav', zusammensetzen(pmu, {-3.0: vers['m3'], -4.0: vers['m4']}, g_unter))
+    LOG['terzen'] = 'neu aus v13-Lead: lead_p3/p4/p5(+_adt), lead_m3/m4; ober.wav, ober_adt.wav, unter.wav (Gate wie mix_v12, ohne Verzögerung/Pegel)'
+
+LOG['laufzeit_s'] = round(time.time() - t_start, 1)
+json.dump(LOG, open(TC + 'bau_log.json', 'w'), indent=1, ensure_ascii=False, default=float)
+print(json.dumps(LOG, indent=1, ensure_ascii=False, default=float)[:3000])
