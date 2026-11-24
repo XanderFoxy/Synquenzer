@@ -1,0 +1,37 @@
+// Rauchtest Stimmanalyse: #stimme → „Aus meinen Liedern ermitteln“ mit Test-WAV → Stimmkarte; Lied-Seite → „Deine Höhe in diesem Lied“
+import { createRequire } from 'module';
+import { testWav } from './testwav.mjs';
+const require = createRequire(import.meta.url);
+const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+const G = '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/gt/';
+const U = 'http://127.0.0.1:8961/app/';
+const b = await chromium.launch();
+const ctx = await b.newContext({ viewport: { width: 428, height: 926 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2, colorScheme: 'dark' });
+const p = await ctx.newPage();
+const fehler = [];
+p.on('pageerror', (e) => fehler.push('pageerror: ' + e.message));
+p.on('console', (m) => { if (m.type() === 'error') fehler.push('error: ' + m.text()); });
+p.on('requestfailed', (r) => fehler.push('requestfailed: ' + r.url()));
+await p.goto(U + '#stimme'); await p.waitForTimeout(700);
+const t0 = Date.now();
+await p.setInputFiles('input[data-aus-liedern]', { name: 'test-tonleiter.wav', mimeType: 'audio/wav', buffer: testWav() });
+await p.waitForSelector('.stimmkarte-karte svg.stimmkarte', { timeout: 20000 }); await p.waitForTimeout(900);
+console.log('Stimmkarte nach', Date.now() - t0, 'ms');
+console.log('KARTE:', (await p.locator('.stimmkarte-karte').innerText()).replace(/\n+/g, ' / ').slice(0, 600));
+const st = await p.evaluate(() => JSON.parse(localStorage.getItem('gt.stimme')));
+console.log('Profil:', st.typ, st.tief, st.hoch, st.kern, st.uebergaenge, Object.keys(st.toene || {}).length, 'Töne', st.quelle);
+const klein = await p.evaluate(() => [...document.querySelectorAll('button, a.knopf, label.datei-feld, .chip')].filter((e) => e.offsetParent && e.getBoundingClientRect().height < 44).map((e) => e.textContent.trim().slice(0, 30)));
+console.log('unter 44 px:', klein.length ? klein : 'keine');
+const qs = await p.evaluate(() => document.documentElement.scrollWidth > innerWidth);
+console.log('Querscroll:', qs);
+await p.screenshot({ path: G + 'fotos/s-stimme.png', fullPage: false });
+await p.locator('.stimmkarte-karte').screenshot({ path: G + 'fotos/s-stimme-karte.png' });
+// Lied-Seite The Wall: Karte vorhanden, Eignung nutzt neues Profil
+await p.goto(U + '#lied/the-wall'); await p.waitForSelector('.hoehe-karte', { timeout: 10000 }); await p.waitForTimeout(500);
+console.log('HÖHE-KARTE:', (await p.locator('.hoehe-karte').innerText()).replace(/\n+/g, ' / ').slice(0, 200));
+console.log('EIGNUNG:', (await p.locator('.karte.eignung').innerText()).replace(/\n+/g, ' / ').slice(0, 160));
+await p.setInputFiles('input[data-lied-aufnahme]', { name: 'test-tonleiter.wav', mimeType: 'audio/wav', buffer: testWav() });
+await p.waitForFunction(() => { const k = document.querySelector('.hoehe-karte'); return k && !k.querySelector('.laden-kugeln') && /Schätzung aus deiner Aufnahme|Keine klaren|keine Silbenzeiten|zu wenige/i.test(k.innerText); }, null, { timeout: 20000 });
+console.log('HÖHE nach Laden:', (await p.locator('.hoehe-karte').innerText()).replace(/\n+/g, ' / ').slice(0, 300));
+console.log('FEHLER:', fehler.length, fehler.slice(0, 5));
+await b.close();

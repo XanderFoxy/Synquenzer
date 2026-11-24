@@ -54,7 +54,7 @@ Schätzung aus 5 Aufnahmen (502 s klar gehaltene Töne): Am meisten, längsten u
 
 ## Deine Höhe in The Wall (Hauptstimme, Versatz 0 s)
 
-Bis Des4 klingt deine Stimme in diesem Lied klar in der Bruststimme. Unsauberer oder angestrengter wird es auf „claim … we“ (B3) und „we“ (B3). Ab etwa As3 gehst du vermutlich in die Misch- oder Kopfstimme – zuerst auf „open“. Eine Schätzung aus deiner Aufnahme – Tagesform und Mikrofon spielen mit.
+Meist bleibst du in der Bruststimme (klar bis Des4). Unsauberer oder angestrengter wird es auf „claim … we“ (B3) und „we“ (B3). Stellenweise ab As3 wechselst du vermutlich in die Misch- oder Kopfstimme – zuerst auf „open“. Eine Schätzung aus deiner Aufnahme – Tagesform und Mikrofon spielen mit.
 
 - „We claim we know It all“ – claim, we (B3): angestrengt/lauter
 - „We claim we know It all“ – we (B3): angestrengt/lauter
@@ -67,7 +67,7 @@ Bis Des4 klingt deine Stimme in diesem Lied klar in der Bruststimme. Unsauberer 
 
 - **Lautstärke zurücknehmen** (Übung messa-di-voce): Auf „claim … we“ (B3) wirst du lauter und der Klang drückt. Sing die Zeile „We claim we know It all“ zuerst nur halb so laut – die Höhe kommt leichter, wenn du nicht schiebst. Dann Schritt für Schritt wieder lauter, solange es leicht bleibt.
 - **Vokal-Ausgleich in der Höhe** (Übung register-ausgleich): Auf „this“ (B3) wird der Ton unruhiger. Mach dort den Vokal „o“ etwas offener, Kiefer locker – der Kiefer öffnet nach unten, nicht in die Breite.
-- **Misch-Stimme mit „ng“** (Übung ng-sirene): In „open your eyes“ kippst du auf „open“ vermutlich in die Kopfstimme. Sing die Melodie der Zeile erst auf „ng“, dann auf „nga“, dann mit Text – so bleibt die Verbindung ohne Bruch.
+- **Misch-Stimme mit „ng“** (Übung ng-sirene): In „open your eyes“ kippst du auf „open“ vermutlich in die Misch-/Kopfstimme. Sing die Melodie der Zeile erst auf „ng“, dann auf „nga“, dann mit Text – so bleibt die Verbindung ohne Bruch.
 - **Sirene bis B3** (Übung oktav-glissando): Gleite auf „u“ oder „ng“ von Es3 bis B3 (dem höchsten Ton auf „claim … we“) und zurück – leise, ohne anzuhalten. Danach die Zeile mit Text.
 - **Registerausgleich** (Übung register-ausgleich): Dein Wechsel liegt in diesem Lied um As3. Tonleiter auf „a“ durch As3 hindurch, oben nicht lauter werden – dann dieselbe Stelle mit den Wörtern „open“.
 

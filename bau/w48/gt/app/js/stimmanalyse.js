@@ -460,7 +460,7 @@ export function liedHoehe(lied, analyse, opt = {}) {
   if (mitUnsauber) tipps.push({ titel: 'Vokal-Ausgleich in der Höhe', uebung: 'register-ausgleich', zid: mitUnsauber.zid, ziel: mitUnsauber.midi,
     text: `Auf ${zitat(mitUnsauber)} (${mitUnsauber.name}) wird der Ton unruhiger. Mach dort den Vokal ${VOKAL_HOEHE[mitUnsauber.vokal] || 'etwas runder und höher im Kopf'} – der Kiefer öffnet nach unten, nicht in die Breite.` });
   if (mitKipp) tipps.push({ titel: 'Misch-Stimme mit „ng“', uebung: 'ng-sirene', zid: mitKipp.zid, ziel: mitKipp.midi,
-    text: `In „${mitKipp.text}“ kippst du auf ${zitat(mitKipp)} vermutlich in die ${mitKipp.midi >= (kipp ?? 0) + 2 ? 'Kopfstimme' : 'Misch-/Kopfstimme'}. Sing die Melodie der Zeile erst auf „ng“, dann auf „nga“, dann mit Text – so bleibt die Verbindung ohne Bruch.` });
+    text: `In „${mitKipp.text}“ kippst du auf ${zitat(mitKipp)} vermutlich in die Misch-/Kopfstimme. Sing die Melodie der Zeile erst auf „ng“, dann auf „nga“, dann mit Text – so bleibt die Verbindung ohne Bruch.` });
   if (b0) tipps.push({ titel: `Sirene bis ${b0.name}`, uebung: 'oktav-glissando', zid: b0.zid, ziel: b0.midi, sirene: true,
     text: `Gleite auf „u“ oder „ng“ von ${N(b0.midi - 7)} bis ${b0.name} (dem höchsten Ton auf ${zitat(b0)}) und zurück – leise, ohne anzuhalten. Danach die Zeile mit Text.` });
   if (befunde.length && kipp != null) tipps.push({ titel: 'Registerausgleich', uebung: 'register-ausgleich', zid: (mitKipp || b0).zid, ziel: kipp,
@@ -468,11 +468,11 @@ export function liedHoehe(lied, analyse, opt = {}) {
   // Zusammenfassung in Worten
   const klarBis = (() => { const kl = zOut.flatMap((z) => z.silben.filter((s) => s.q != null && s.q >= 0.5 && s.register === 'Brust')).map((s) => s.midi); return kl.length ? Math.max(...kl) : null; })();
   const t = [];
-  if (klarBis != null) t.push(`Bis ${N(klarBis)} klingt deine Stimme in diesem Lied klar in der Bruststimme.`);
+  if (klarBis != null) t.push(kipp != null && klarBis > kipp ? `Meist bleibst du in der Bruststimme (klar bis ${N(klarBis)}).` : `Bis ${N(klarBis)} klingt deine Stimme in diesem Lied klar in der Bruststimme.`);
   if (befunde.length) {
     const u = befunde.filter((b) => b.unsauber || b.angestrengt).slice(0, 2);
     if (u.length) t.push(`Unsauberer oder angestrengter wird es auf ${u.map((b) => `${zitat(b)} (${b.name})`).join(' und ')}.`);
-    if (kipp != null) t.push(`Ab etwa ${N(kipp)} gehst du vermutlich in die Misch- oder Kopfstimme${mitKipp ? ` – zuerst auf ${zitat(mitKipp)}` : ''}.`);
+    if (kipp != null) t.push(`${klarBis != null && klarBis > kipp ? 'Stellenweise' : 'Ab etwa'} ${klarBis != null && klarBis > kipp ? `ab ${N(kipp)}` : ''} wechselst du vermutlich in die Misch- oder Kopfstimme${mitKipp ? ` – zuerst auf ${zitat(mitKipp)}` : ''}.`.replace('Ab etwa  wechselst', `Ab etwa ${N(kipp)} wechselst`));
   } else t.push('In der Höhe dieses Lieds bleibt dein Klang ruhig – keine auffälligen Stellen.');
   t.push('Eine Schätzung aus deiner Aufnahme – Tagesform und Mikrofon spielen mit.');
   return { zeilen: zOut, befunde: befunde.slice(0, 6), tipps, kipp, klarBis, versatz, text: t.join(' ') };

@@ -1,0 +1,20 @@
+// Zusatz: echte Hauptstimme in „Deine Höhe in diesem Lied“ (The Wall) laden → Foto s-hoehe.png
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+const G = '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/gt/';
+const b = await chromium.launch();
+const ctx = await b.newContext({ viewport: { width: 428, height: 926 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2, colorScheme: 'dark' });
+const p = await ctx.newPage(); const fehler = [];
+p.on('pageerror', (e) => fehler.push(e.message)); p.on('console', (m) => { if (m.type() === 'error') fehler.push(m.text()); });
+await p.goto('http://127.0.0.1:8961/app/#lied/the-wall'); await p.waitForSelector('.hoehe-karte'); await p.waitForTimeout(400);
+const t0 = Date.now();
+await p.setInputFiles('input[data-lied-aufnahme]', G + '../wall-v12/repo/the-wall/projekt7/Haupt-3-trocken-v7.wav');
+await p.waitForFunction(() => { const k = document.querySelector('.hoehe-karte'); return k && !k.querySelector('.laden-kugeln') && /Schätzung aus deiner Aufnahme/.test(k.innerText); }, null, { timeout: 60000 });
+console.log('fertig nach', Date.now() - t0, 'ms');
+await p.locator('.hoehe-karte').scrollIntoViewIfNeeded(); await p.waitForTimeout(800);
+console.log((await p.locator('.hoehe-karte').innerText()).replace(/\n+/g, ' / ').slice(0, 900));
+await p.locator('.hoehe-karte').screenshot({ path: G + 'fotos/s-hoehe.png' });
+await p.goto('http://127.0.0.1:8961/app/#stimme'); await p.waitForTimeout(1200);
+await p.screenshot({ path: G + 'fotos/s-stimme-xander.png' });
+console.log('FEHLER:', fehler.length, fehler.slice(0, 4)); await b.close();

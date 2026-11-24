@@ -29,6 +29,7 @@ function h(tag, attr, ...kinder) {
   }
   return el;
 }
+const fuelle = (el, ...k) => el.replaceChildren(...k.flat(Infinity).filter((x) => x != null && x !== false));
 const ic = (name, cls = 'ic') => h('span', { html: `<svg class="${cls}" aria-hidden="true"><use href="#i-${name}"/></svg>`, style: { display: 'contents' } });
 function versuch(f, ersatz) { try { const r = f(); return r === undefined ? ersatz : r; } catch (e) { console.warn(e); return ersatz; } }
 const istFn = (f) => typeof f === 'function';
@@ -599,7 +600,7 @@ function hoeheKarte(lied) {
     h('input', { type: 'file', 'data-lied-aufnahme': '1', accept: 'audio/*,.wav,.mp3,.m4a,.aif,.aiff,.flac', onchange: (e) => e.target.files[0] && auswerten(e.target.files[0], e.target.files[0].name) }));
   async function auswerten(datei, name) {
     const balkenI = h('i');
-    box.replaceChildren(h('h3', null, 'Deine Höhe in diesem Lied'), h('div', { class: 'laden-kugeln', style: { justifyContent: 'center', marginTop: '10px' } }, h('span'), h('span'), h('span')),
+    fuelle(box, h('h3', null, 'Deine Höhe in diesem Lied'), h('div', { class: 'laden-kugeln', style: { justifyContent: 'center', marginTop: '10px' } }, h('span'), h('span'), h('span')),
       h('p', { class: 'leise', style: { marginTop: '10px' } }, 'Deine Aufnahme wird ausgewertet …'), h('div', { class: 'zeit-balken', 'aria-hidden': 'true' }, balkenI));
     try {
       const sa = await ladeSA();
@@ -616,7 +617,7 @@ function hoeheKarte(lied) {
   }
   function zeigeErgebnis(r, neu) {
     if (!r || !r.zeilen || !r.zeilen.length && !(r.befunde || []).length) {
-      box.replaceChildren(h('h3', null, 'Deine Höhe in diesem Lied'), h('p', { class: 'leise' }, (r && r.text) || 'Keine klaren Töne gefunden.'), laden('Andere Aufnahme laden'));
+      fuelle(box, h('h3', null, 'Deine Höhe in diesem Lied'), h('p', { class: 'leise' }, (r && r.text) || 'Keine klaren Töne gefunden.'), laden('Andere Aufnahme laden'));
       return;
     }
     const zeilen = new Map(r.zeilen.map((z) => [z.zid, z]));
@@ -632,7 +633,7 @@ function hoeheKarte(lied) {
         u ? uebungsDetails(u, folge ? { folge, gleiten } : null) : null,
         t.zid ? h('a', { class: 'knopf klein', href: `#lied/${enc(id)}/zeile/${enc(t.zid)}`, style: { marginTop: '8px' } }, ic('play'), 'Diese Zeile üben') : null);
     });
-    box.replaceChildren(
+    fuelle(box, 
       h('span', { class: 'band' }),
       h('p', { class: 'leise klein' }, 'Schätzung aus deiner Aufnahme'),
       h('h3', null, 'Deine Höhe in diesem Lied'),
@@ -651,7 +652,7 @@ function hoeheKarte(lied) {
     if (neu) box.classList.add('frisch');
   }
   function start() {
-    box.replaceChildren(h('h3', null, 'Deine Höhe in diesem Lied'),
+    fuelle(box, h('h3', null, 'Deine Höhe in diesem Lied'),
       h('p', { class: 'leise', style: { marginTop: '4px' } }, hatSilben ? 'Lade deine eigene Aufnahme dieses Lieds: Ich zeige dir je Zeile, wo es in der Höhe unsauber oder angestrengt wird, wo du in die Kopfstimme kippst – und wie du genau das übst.' : 'Zu diesem Lied gibt es noch keine Silbenzeiten – die Auswertung je Zeile braucht ein Lied mit Melodie.'),
       hatSilben ? laden('Meine Aufnahme dieses Lieds laden') : null);
   }
@@ -1250,7 +1251,7 @@ function seiteStimme() {
   function zeigeUebersicht() {
     stoppeAlles();
     const st = stimme();
-    box.replaceChildren(
+    fuelle(box, 
       h('section', { class: 'held' }, h('h1', null, 'Meine Stimmlage'), h('p', null, 'Sing kurz ins Mikrofon, lade eine Gesangsaufnahme oder wähle deine Töne von Hand. Alles bleibt auf diesem Gerät.')),
       st && (isFinite(st.tief) || st.kern) ? ergebnis(st) : h('div', { class: 'karte leer' }, h('p', null, 'Noch keine Stimmlage gespeichert.')),
       h('button', { class: 'knopf haupt breit', onclick: gefuehrt }, ic('stimme'), st ? 'Neu ermitteln (singen)' : 'Jetzt singen – 3 kurze Schritte'),
@@ -1300,7 +1301,7 @@ function seiteStimme() {
     stoppeAlles();
     const stand = h('p', { style: { marginTop: '14px' } }, 'Aufnahme wird ausgewertet …');
     const balkenI = h('i'), balken = h('div', { class: 'zeit-balken', 'aria-hidden': 'true' }, balkenI);
-    box.replaceChildren(h('div', { class: 'karte leer' }, h('div', { class: 'laden-kugeln', style: { justifyContent: 'center' } }, h('span'), h('span'), h('span')), stand, balken,
+    fuelle(box, h('div', { class: 'karte leer' }, h('div', { class: 'laden-kugeln', style: { justifyContent: 'center' } }, h('span'), h('span'), h('span')), stand, balken,
       h('p', { class: 'leise klein' }, 'Tonhöhe, Sauberkeit und Register je Ton – alles auf diesem Gerät.')));
     try {
       const sa = await ladeSA();
@@ -1331,7 +1332,7 @@ function seiteStimme() {
   }
   function fertig(st, quelle = 'aufnahme') {
     if (!st || !isFinite(st.tief)) {
-      box.replaceChildren(h('div', { class: 'karte leer' }, h('p', null, (st && st.text) || 'Es wurden zu wenige klare Töne erkannt. Bitte noch einmal – etwas lauter, näher am Mikrofon, Töne kurz halten.')),
+      fuelle(box, h('div', { class: 'karte leer' }, h('p', null, (st && st.text) || 'Es wurden zu wenige klare Töne erkannt. Bitte noch einmal – etwas lauter, näher am Mikrofon, Töne kurz halten.')),
         h('button', { class: 'knopf haupt breit', onclick: gefuehrt }, 'Noch einmal singen'), h('button', { class: 'knopf breit', style: { marginTop: '10px' }, onclick: vonHand }, ic('klavier'), 'Ton von Hand wählen'),
         h('button', { class: 'knopf breit', style: { marginTop: '10px' }, onclick: zeigeUebersicht }, 'Zurück'));
       return;
@@ -1343,7 +1344,7 @@ function seiteStimme() {
     zeigeUebersicht();
   }
   async function ausDatei(datei) {
-    box.replaceChildren(h('div', { class: 'karte leer' }, h('div', { class: 'laden-kugeln', style: { justifyContent: 'center' } }, h('span'), h('span'), h('span')), h('p', { style: { marginTop: '14px' } }, 'Aufnahme wird ausgewertet …')));
+    fuelle(box, h('div', { class: 'karte leer' }, h('div', { class: 'laden-kugeln', style: { justifyContent: 'center' } }, h('span'), h('span'), h('span')), h('p', { style: { marginTop: '14px' } }, 'Aufnahme wird ausgewertet …')));
     try {
       const { x, sr } = await ladeDatei(datei);
       const r = await imHintergrund('stimmlage', x, sr, {});
@@ -1359,7 +1360,7 @@ function seiteStimme() {
     const ring = h('div', { class: 'mic-ring' }, h('span', { class: 'welle' }), h('span', { class: 'welle' }), h('button', { class: 'rund-knopf', 'aria-label': 'Aufnahme starten', onclick: () => los() }, ic('stimme')));
     const info = h('p', { class: 'leise' }, 'Tippe auf das Mikrofon, wenn du bereit bist.');
     const leiste = h('div', { class: 'stufen-leiste' }, SCHRITTE.map((x, k) => h('div', { class: k === stufe ? 'an' : k < stufe ? 'fertig' : '' }, h('b', null, k < stufe ? '✓' : String(k + 1)), x.titel)));
-    box.replaceChildren(h('section', { class: 'karte' }, leiste),
+    fuelle(box, h('section', { class: 'karte' }, leiste),
       h('section', { class: 'karte mic-buehne' }, h('h3', { style: { fontSize: '22px' } }, s.titel), h('p', null, s.text), ring, blase, pegel, bisher, info),
       h('div', { class: 'knopf-reihe' }, h('button', { class: 'knopf', onclick: () => { stoppeAlles(); weiter(); } }, stufe < SCHRITTE.length - 1 ? 'Schritt überspringen' : 'Auswerten'),
         h('button', { class: 'knopf', onclick: zeigeUebersicht }, 'Abbrechen')));
@@ -1418,7 +1419,7 @@ function seiteStimme() {
         wahl[ziel] = m; if (ziel === 'tief') ziel = 'hoch'; male();
       } }, nName(m)));
     }
-    box.replaceChildren(
+    fuelle(box, 
       h('section', { class: 'held' }, h('h1', null, 'Ton von Hand wählen'), h('p', null, 'Tippe eine Taste: sie klingt. Sing sie nach – geht sie bequem? Dann ist sie dein tiefster bzw. höchster Ton.')),
       h('section', { class: 'karte' }, zielSeg, anzeige, tasten, speichern),
       h('button', { class: 'knopf breit', onclick: zeigeUebersicht }, ic('zurueck'), 'Zurück'));

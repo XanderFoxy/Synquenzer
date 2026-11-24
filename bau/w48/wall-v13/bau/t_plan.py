@@ -118,3 +118,44 @@ def starr_liste(anker, bloecke=()):
         if st[i]['s1'] > st[i + 1]['s0']:
             st[i]['s1'] = st[i + 1]['s0']
     return [r for r in st if r['s1'] > r['s0']]
+
+
+def doppel_anker_abstimmung(H, C, mkD):
+    """Doppel-Anker per Abstimmung von vier Messungen (alle in doppel_t-Zeit, bezogen auf das Haupt-Ereignis):
+       A Hüllkurve Doppel<->Haupt (r>=0,75), B Doppel-Rohaufnahme->doppel_t (r>=0,75), C Einsatz-Detektor der Zielkarte
+       auf doppel_t (Anstieg >= 6 dB), E Onset-Stärke-Korrelation (r>=0,65, eindeutig).
+       Anker nur, wenn mindestens 3 Messungen innerhalb ±20 ms übereinstimmen oder A und B beide r>=0,9 und übereinstimmen.
+       Sonst kein Anker: die Silbe bleibt relativ zu ihren Nachbarn wie gesungen."""
+    Hd = {h['id']: h for h in H}
+    out = []; tab = []
+    for k, o in C.items():
+        h = Hd['H-' + k[2:]]
+        ev = o['h_ev']
+        kand = {}
+        if o['A'] is not None and (o['A_c'] or 0) >= 0.75: kand['A'] = o['A'] - ev
+        if o['B_c'] >= 0.75: kand['B'] = o['B'] - ev
+        if o['C_s'] >= 0.8 and o['C_rise'] >= 6: kand['C'] = o['C'] - ev
+        if o['E_c'] >= 0.65 and (np.isnan(o['E_c2']) or o['E_c'] - o['E_c2'] >= 0.05): kand['E'] = o['E'] - ev
+        best = []
+        for nm, v in kand.items():
+            grp = [n2 for n2, v2 in kand.items() if abs(v2 - v) <= 0.020]
+            if len(grp) > len(best): best = grp
+        wahl = None
+        if len(best) >= 3: wahl = best
+        elif set(best) == {'A', 'B'} and o['A_c'] >= 0.9 and o['B_c'] >= 0.9: wahl = best
+        rec = dict(id=k, text=o['text'], teil=o['teil'], kand={n: round(v * 1000) for n, v in kand.items()}, gruppe=best, gewaehlt=bool(wahl))
+        tab.append(rec)
+        if not wahl: continue
+        off = float(np.median([kand[n] for n in wahl]))
+        sp = ev + off
+        shift_h = h['tgt_peak'] - h['src_peak']
+        tgt = ev + shift_h + 0.010
+        # Vokal-Einsatz und Anlaut der Doppel-Silbe: wie in der Haupt relativ zum Ereignis, dann eigene Anlaut-Regel
+        h_ev_vok = h['src_vokal'] if not h['akzent'] else ev - 0.02
+        a = dict(id=k, text=o['text'], teil=o['teil'], src_peak=sp, src_vokal=min(sp - 0.002, sp - (ev - h_ev_vok)),
+                 src_kons_zk=min(sp - 0.004, o['C_kons'] if abs(o['C'] - sp) < 0.02 else sp - (ev - h['src_kons'])),
+                 akzent=False, tgt_peak=tgt, art='silbe', off_ms=round(off * 1000), stimmen=wahl, haupt_ziel=ev + shift_h)
+        anlaut(mkD, a)
+        out.append(a)
+    out.sort(key=lambda a: a['src_peak'])
+    return out, tab
