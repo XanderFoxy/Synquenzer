@@ -31,9 +31,11 @@ function h(tag, attr, ...kinder) {
 const ic = (name, cls = 'ic') => h('span', { html: `<svg class="${cls}" aria-hidden="true"><use href="#i-${name}"/></svg>`, style: { display: 'contents' } });
 function versuch(f, ersatz) { try { const r = f(); return r === undefined ? ersatz : r; } catch (e) { console.warn(e); return ersatz; } }
 const istFn = (f) => typeof f === 'function';
+const zeilenZahl = (n) => (n === 1 ? '1 Zeile' : `${n} Zeilen`);
 const ht = (n) => (n === 1 ? '1 Halbton' : `${n} Halbtöne`);
 const mmss = (s) => { s = Math.max(0, Math.round(s)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 const enc = encodeURIComponent;
+const minText = (m) => String(Math.round((Number(m) || 1) * 10) / 10).replace('.', ',');
 
 let meldTimer = 0;
 function meldung(text, ms = 2600) {
@@ -464,7 +466,7 @@ async function seiteLied(id) {
       h('span', { class: 'punkt' }, fertig ? ic('haken') : String(i + 1)),
       h('div', { class: 'inhalt' }, h('a', { class: 'karte', href: `#lied/${enc(id)}/teil/${enc(t.id)}` },
         h('div', { class: 'station-kopf' }, h('div', null, h('h3', null, t.name || t.id),
-          h('p', { class: 'leise klein' }, [isFinite(t.start) ? mmss(t.start) : null, ut ? `${nName(ut.tief, ton)}–${nName(ut.hoch, ton)}` : null, `${zeilenVon(lied, t.id).length} Zeilen`].filter(Boolean).join(' · '))), haken),
+          h('p', { class: 'leise klein' }, [isFinite(t.start) ? mmss(t.start) : null, ut ? `${nName(ut.tief, ton)}–${nName(ut.hoch, ton)}` : null, zeilenZahl(zeilenVon(lied, t.id).length)].filter(Boolean).join(' · '))), haken),
         (t.merkmale && t.merkmale.length) || schwer ? h('div', { class: 'chips', style: { marginTop: '10px' } },
           schwer ? h('span', { class: 'chip warm' }, `${schwer} schwierige ${schwer === 1 ? 'Stelle' : 'Stellen'}`) : null,
           (t.merkmale || []).slice(0, 3).map((m) => h('span', { class: 'chip' }, kurzMerkmal(m)))) : null)));
@@ -510,7 +512,7 @@ async function seiteTeil(id, tid) {
 
   const kopf = h('section', { class: 'held' },
     h('h1', null, t.name || tid),
-    h('p', null, [lied.titel, ut ? `${nName(ut.tief, ton)}–${nName(ut.hoch, ton)}` : null, `${zeilen.length} Zeilen`].filter(Boolean).join(' · ')),
+    h('p', null, [lied.titel, ut ? `${nName(ut.tief, ton)}–${nName(ut.hoch, ton)}` : null, zeilenZahl(zeilen.length)].filter(Boolean).join(' · ')),
     zeilen[0] ? h('a', { class: 'knopf weiss breit', href: `#lied/${enc(id)}/zeile/${enc(zeilen[0].id)}`, style: { marginTop: '16px', minHeight: '56px' } }, ic('play'), 'Erste Zeile üben') : null);
 
   const schwierig = (p.schwierig || []).map((s) => {
@@ -868,7 +870,7 @@ async function seiteWarmup(id) {
     box.replaceChildren(
       h('section', { class: 'karte' },
         h('div', { class: 'ueb-kopf' }, uebSymbol(u, true), h('div', null,
-          h('p', { class: 'leise klein' }, `Schritt ${i + 1} von ${schritte.length} · ${Number(s.minuten) || 1} Min.`),
+          h('p', { class: 'leise klein' }, `Schritt ${i + 1} von ${schritte.length} · ${minText(s.minuten)} Min.`),
           h('h3', { style: { fontSize: '21px' } }, s.titel || (u && u.titel) || 'Übung'))),
         vokalReihe,
         s.text ? h('p', { style: { marginTop: '12px' } }, s.text) : null, zeileLink,
@@ -1086,7 +1088,7 @@ function seiteUebungen() {
   function male() {
     chips.replaceChildren(...[''].concat(alleSw).map((sw) => h('button', { class: `chip ${filter === sw ? 'an' : ''}`, style: { flex: 'none' }, onclick: () => { filter = sw; speicher.merke('uebFilter', sw); male(); } }, sw ? (NAMEN[sw] || sw) : 'Alle')));
     karten.replaceChildren(...liste.filter((u) => !filter || (u.stichworte || []).includes(filter)).map((u) => h('details', { class: 'karte ueb' },
-      h('summary', null, uebSymbol(u), h('div', { style: { flex: '1', minWidth: '0' } }, h('h3', null, u.titel), h('p', { class: 'leise klein' }, [u.dauerMin ? `${u.dauerMin} Min.` : null, u.ziel].filter(Boolean).join(' · '))), h('span', { class: 'pfeil' }, ic('weiter'))),
+      h('summary', null, uebSymbol(u), h('div', { style: { flex: '1', minWidth: '0' } }, h('h3', null, u.titel), h('p', { class: 'leise klein' }, [u.dauerMin ? `${minText(u.dauerMin)} Min.` : null, u.ziel].filter(Boolean).join(' · '))), h('span', { class: 'pfeil' }, ic('weiter'))),
       h('div', { class: 'ueb-inhalt' }, u.anleitung && u.anleitung.length ? h('ol', { class: 'anleitung' }, u.anleitung.map((a) => h('li', null, a))) : null,
         (u.stichworte || []).length ? h('div', { class: 'chips', style: { marginTop: '10px' } }, u.stichworte.map((s) => h('span', { class: 'chip' }, NAMEN[s] || s))) : null))));
   }

@@ -1,0 +1,148 @@
+{
+ "A_ausschnitte": {
+  "bau": {
+   "name": "The-Wall-v13-test",
+   "basis": "v8",
+   "modus": "ausschnitte",
+   "bits": 24,
+   "zip": "/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/wall-v13/out/test/The-Wall-v13-test.zip",
+   "cbp_bytes": 519615,
+   "wav_dateien": 149,
+   "cbp_sha1": "9c3c67cce345c4ade6162e3da4c33c304a0f763e"
+  },
+  "clips": {
+   "VOX Haupt": 20,
+   "VOX Doppel": 19,
+   "VOX Chor 1": 23,
+   "VOX Chor 2": 22,
+   "VOX Chor 3": 17,
+   "VOX KI Oberterz": 27,
+   "VOX KI Unterterz": 21
+  },
+  "pruef": {
+   "rundweg_bitgleich": true,
+   "clips": 149,
+   "max_laengen_abweichung_samples": 0,
+   "dateien": 151,
+   "fehler": [],
+   "ok": true
+  },
+  "sek": 7.5,
+  "haupt_ausserhalb_clips_max_dbfs": -54.7,
+  "haupt_clips_beispiel": [
+   {
+    "clip": "Haupt S1-1",
+    "datei": "v13_Haupt_S1-1.wav",
+    "von_s": 31.4797,
+    "bis_s": 37.3,
+    "pos_ticks": 60441,
+    "laenge_ticks": 11175
+   },
+   {
+    "clip": "Haupt S1-2",
+    "datei": "v13_Haupt_S1-2.wav",
+    "von_s": 39.2797,
+    "bis_s": 47.2802,
+    "pos_ticks": 75417,
+    "laenge_ticks": 15361
+   },
+   {
+    "clip": "Haupt S1-3",
+    "datei": "v13_Haupt_S1-3.wav",
+    "von_s": 47.6,
+    "bis_s": 53.0,
+    "pos_ticks": 91392,
+    "laenge_ticks": 10368
+   }
+  ]
+ },
+ "B_ganz": {
+  "clips": {
+   "VOX Haupt": 1,
+   "VOX Doppel": 22,
+   "VOX Chor 1": 15,
+   "VOX Chor 2": 15,
+   "VOX Chor 3": 16,
+   "VOX KI Oberterz": 27,
+   "VOX KI Unterterz": 21
+  },
+  "pruef": {
+   "rundweg_bitgleich": true,
+   "clips": 117,
+   "max_laengen_abweichung_samples": 0,
+   "dateien": 119,
+   "fehler": [],
+   "ok": true
+  },
+  "sek": 4.1
+ },
+ "C_struktur": {
+  "alle_effekte_fader_pan_sends_gleich": true,
+  "spuren": [
+   {
+    "spur": "VOX Haupt",
+    "effekte_gleich": true,
+    "fader_gleich": true,
+    "pan_gleich": true,
+    "sends_gleich": true,
+    "clips_alt": 32,
+    "clips_neu": 20
+   },
+   {
+    "spur": "VOX Doppel",
+    "effekte_gleich": true,
+    "fader_gleich": true,
+    "pan_gleich": true,
+    "sends_gleich": true,
+    "clips_alt": 22,
+    "clips_neu": 19
+   },
+   {
+    "spur": "VOX Chor 1",
+    "effekte_gleich": true,
+    "fader_gleich": true,
+    "pan_gleich": true,
+    "sends_gleich": true,
+    "clips_alt": 15,
+    "clips_neu": 23
+   },
+   {
+    "spur": "VOX Chor 2",
+    "effekte_gleich": true,
+    "fader_gleich": true,
+    "pan_gleich": true,
+    "sends_gleich": true,
+    "clips_alt": 15,
+    "clips_neu": 22
+   },
+   {
+    "spur": "VOX Chor 3",
+    "effekte_gleich": true,
+    "fader_gleich": true,
+    "pan_gleich": true,
+    "sends_gleich": true,
+    "clips_alt": 16,
+    "clips_neu": 17
+   },
+   {
+    "spur": "VOX KI Oberterz",
+    "effekte_gleich": true,
+    "fader_gleich": true,
+    "pan_gleich": true,
+    "sends_gleich": true,
+    "clips_alt": 27,
+    "clips_neu": 27
+   },
+   {
+    "spur": "VOX KI Unterterz",
+    "effekte_gleich": true,
+    "fader_gleich": true,
+    "pan_gleich": true,
+    "sends_gleich": true,
+    "clips_alt": 21,
+    "clips_neu": 21
+   }
+  ]
+ },
+ "ok": true
+}

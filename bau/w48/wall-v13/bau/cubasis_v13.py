@@ -58,7 +58,7 @@ def lade_mono(q):
     return x
 
 
-def finde_ausschnitte(x, schwelle_db=-50.0, luecke_s=1.0, vor_s=0.20, nach_s=0.60, min_s=0.30):
+def finde_ausschnitte(x, schwelle_db=-55.0, luecke_s=1.0, vor_s=0.40, nach_s=0.60, min_s=0.30):
     """Aktive Stellen (RMS 20 ms über schwelle_db dBFS) → Liste (start_sample, ende_sample) auf Tick-Raster."""
     fr = int(0.02 * SR); nf = len(x) // fr
     e = 10 * np.log10(np.mean(x[:nf * fr].reshape(nf, fr) ** 2, 1) + 1e-14)
@@ -142,7 +142,7 @@ def baue_projekt(spuren, ziel_zip, name='The-Wall-v13', basis='v8', modus='aussc
             stuecke = finde_ausschnitte(x, **(ausschnitt_param or {}))
         neu = []; zaehler = {}; liste = []
         for s, t in stuecke:
-            teil = teil_von(s / SR)
+            teil = teil_von((s + t) / 2 / SR) if modus != 'ganz' else teil_von(0)   # Teil nach der Clip-Mitte (Auftakt zählt zum Teil danach)
             zaehler[teil] = zaehler.get(teil, 0) + 1
             clipname = '%s %s-%d' % (kurz, teil, zaehler[teil])
             datei = 'v13_%s_%s-%d.wav' % (kurz, teil, zaehler[teil])
