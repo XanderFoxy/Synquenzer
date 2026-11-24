@@ -1,12 +1,13 @@
-// M4 passt – Regelwerk: Ergebnisse (bigfive, interessen.*) → Aussagen mit Stufe, Quelle, Begründung („Weil …“).
-// Reine Rechnung ohne DOM und ohne kern.js → in Node testbar (test/passt/regeln-test.mjs).
-// Grundsätze: nur die Seite zeigen, auf der jemand liegt; im Mittelfeld nichts Bestimmtes behaupten; „klar“ nur, wenn das GANZE
-// Band außerhalb 45–55 liegt (KONZEPT §2.3); bei „eher“ steht „noch unsicher“ dabei. Profil-Name nur, wenn eindeutig.
-import { BEREICHE, BEREICH, FACETTE_NAME, RIASEC, STAERKEN, ARBEIT, LERNEN, GEEIGNET, SELBST, ANDERE, NICHT, WACHSTUM, VORHERSAGEN } from './texte.js';
+// M4 passt – Regelwerk: Ergebnisse (bigfive, interessen.*) → Aussagen mit Stufe, Quelle, Begründung in Worten („passt zu deiner Richtung …“).
+// Reine Rechnung ohne DOM und ohne kern.js → in Node testbar.
+// Grundsätze: nur die Seite zeigen, zu der jemand neigt; im Mittelfeld „beides gehört zu dir“; „klar“ nur, wenn das GANZE
+// Band außerhalb 45–55 liegt (KONZEPT §2.3), sonst „leicht“. Profil-Wort-Bild nur, wenn eindeutig.
+// KEINE Bewertung nach außen: Zahlen (T-Werte, Bänder, Ränge) werden nur intern gerechnet, nie angezeigt. Texte nur in Worten.
+import { BEREICHE, BEREICH, FACETTE_NAME, RIASEC, STAERKEN, ARBEIT, LERNEN, GEEIGNET, SELBST, ANDERE, NICHT, WACHSTUM, VORHERSAGEN, ALLTAG_REIHE } from './texte.js';
 
 export const ABSCHNITTE = [
-  { id: 'staerken', titel: 'Stärken und ihr Preis', kurz: 'Was du gut kannst – und was es kostet' },
-  { id: 'arbeit', titel: 'Arbeitsweise', kurz: 'Struktur, Team, Druck, Lernen, beste Zeit' },
+  { id: 'staerken', titel: 'Stärken und wo sie reiben', kurz: 'Was dir liegt – und die andere Seite davon' },
+  { id: 'arbeit', titel: 'Arbeitsweise', kurz: 'Struktur, Team, Druck, Lernen, gute Zeiten' },
   { id: 'geeignet', titel: 'Wofür du geeignet bist', kurz: 'Tätigkeiten, Rollen, Projekte' },
   { id: 'selbst', titel: 'Umgang mit dir selbst', kurz: 'Erholung, innerer Kritiker, Gewohnheiten' },
   { id: 'andere', titel: 'Umgang mit anderen', kurz: 'Reden, Streit, Nähe und Abstand' },
@@ -19,12 +20,33 @@ export const FRAGEBOEGEN = {
   'interessen.ehrlichkeit': { route: 'fragen/interessen/ehrlichkeit', titel: 'Ehrlichkeit und Bescheidenheit' }
 };
 
-const WORTE = { '-2': 'deutlich niedriger als die meisten', '-1': 'eher niedriger als die meisten', '0': 'im Mittelfeld', '1': 'eher höher als die meisten', '2': 'deutlich höher als die meisten' };
 export const stufeT = (t) => (t < 35 ? -2 : t < 45 ? -1 : t <= 55 ? 0 : t <= 65 ? 1 : 2);
-export const wortT = (s) => WORTE[String(s)] || WORTE['0'];
 const zahl = (x) => typeof x === 'number' && isFinite(x);
-const rund = (x) => Math.round(x);
 export function uhrText(h) { if (!zahl(h)) return '–'; let m = Math.round((((h % 24) + 24) % 24) * 12) * 5; m %= 1440; return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`; }
+
+// ---------- Richtung in Worten ----------
+// deutlich: 'klar' (ganzes Band auf einer Seite) | 'leicht' (Richtung zeigt sich, Band reicht in die Mitte) | 'beides'
+export const deutlichAus = (l) => (!l || !l.pol ? 'beides' : l.sicher === 'klar' ? 'klar' : 'leicht');
+export const DEUTLICH_WORT = { klar: 'klar', leicht: 'leicht', beides: 'beides' };
+export function poleVon(id) {
+  if (BEREICH[id]) return [BEREICH[id].links, BEREICH[id].rechts];
+  if (id === 'ehrlichkeit') return ['Eigener Vorteil im Blick', 'Fair und bescheiden'];
+  if (id === 'rhythmus') return ['Abends wach', 'Morgens wach'];
+  return ['', ''];
+}
+// „klar in Richtung „Neugier auf Neues““ | „leicht in Richtung …“ | „beides gehört zu dir“
+export function richtungWort(id, l) {
+  const d = deutlichAus(l); if (d === 'beides') return 'beides gehört zu dir';
+  const [a, b] = poleVon(id); return `${d} in Richtung „${l.pol > 0 ? b : a}“`;
+}
+export const wortT = (s) => (s > 0 ? 'Richtung rechter Pol' : s < 0 ? 'Richtung linker Pol' : 'beides');   // alt, nur noch für Prüfungen
+const INTERESSE_WORT = { 2: 'zieht dich klar an', 1: 'zieht dich an', 0: 'teils, teils', '-1': 'zieht dich weniger an', '-2': 'zieht dich kaum an' };
+export const interesseWort = (x) => INTERESSE_WORT[String(Math.max(-2, Math.min(2, Math.round(zahl(x && x.stufe) ? x.stufe : 0))))];
+export const RHYTHMUS_WORT = { frueh: 'klar in Richtung „Morgens wach“', 'eher-frueh': 'leicht in Richtung „Morgens wach“', mittel: 'beides gehört zu dir – weder ausgeprägt früh noch spät',
+  'eher-spaet': 'leicht in Richtung „Abends wach“', spaet: 'klar in Richtung „Abends wach“' };
+export const RHYTHMUS_SATZ = { frueh: 'Morgens bist du klar wacher als abends.', 'eher-frueh': 'Morgens bist du eher wacher als abends.', mittel: 'Morgens und abends – beides geht bei dir.',
+  'eher-spaet': 'Abends bist du eher wacher als morgens.', spaet: 'Abends bist du klar wacher als morgens.' };
+export const rhythmusDeutlich = (typ) => (/^(frueh|spaet)$/.test(typ) ? 'klar' : /^eher-/.test(typ) ? 'leicht' : 'beides');
 
 // ---------- Lage eines Bandes ----------
 // T-Skala: pol −1/0/1, sicher 'klar' (ganzes Band außerhalb 45–55) | 'eher' (Wert außerhalb, Band reicht hinein) | 'mitte'.

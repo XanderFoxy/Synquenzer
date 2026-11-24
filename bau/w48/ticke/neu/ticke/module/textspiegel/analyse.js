@@ -1,7 +1,8 @@
 // M3 textspiegel – lokale Analyse. Rein (ohne DOM), läuft im Browser und in Node (Tests). Nichts wird gesendet.
-// Zählt Wörter aus dem eigenen Wörterbuch (woerter.js), Satzlänge, Wortvielfalt (MATTR), Krisen-Wörter; maskiert Namen;
-// prüft Zitate. Grenzen nach KONZEPT §2.5: unter 50 Wörtern nichts, bis 300 nur Stil, ab 300 schwache Hinweise.
-import { GRUPPEN, VERNEINER, VERB_NACH, MEINEN_VERB_NACH, HILFSVERBEN, PARTIZIP_OHNE_GE, GE_AUSNAHMEN, ABKUERZUNGEN } from './woerter.js';
+// Zählt Wörter aus dem eigenen Wörterbuch (woerter.js), Satzlänge, Wortvielfalt (MATTR), Krisen-Wörter; findet die Stellen zu
+// einem Merkmal und wiederkehrende Wörter (für „Tiefer lesen“). Grenzen nach KONZEPT §2.5: unter 50 Wörtern nichts, bis 300 nur
+// Texte beschreiben, ab 300 vorsichtige Richtungen. Die Zahlen hier bleiben intern – die Anzeige spricht nur in Worten.
+import { GRUPPEN, VERNEINER, VERB_NACH, MEINEN_VERB_NACH, HILFSVERBEN, PARTIZIP_OHNE_GE, GE_AUSNAHMEN, ABKUERZUNGEN, STOPP } from './woerter.js';
 
 export const GRENZEN = { min: 50, stil: 300, ziel: [80, 150], fenster: 50, paar: 6 };
 
@@ -157,9 +158,6 @@ export function schwerpunkt(analyse, gruppe) {
   let best = null; for (const [id, a] of Object.entries(analyse.aufgaben)) if (!best || a.merkmale[gruppe] > best[1]) best = [id, a.merkmale[gruppe]];
   return best && best[1] / ges >= 0.6 ? { id: best[0], anzahl: best[1], von: ges } : null;
 }
-// Treffer bei „über oder unter dem Durchschnitt“ aus einer Korrelation r (zweidimensional normalverteilt): 50 + 100·asin(r)/π
-export const treffer = (r) => 50 + (100 * Math.asin(r)) / Math.PI;
-
 // ---------- Krisen-Regel (KONZEPT §2.5): bei Wörtern zu Suizid, Selbstverletzung oder akuter Gewalt → keine Analyse, Hilfe ----------
 // Jede Wortliste bleibt unvollständig (Umgangssprache, Tippfehler, Andeutungen). Darum steht der Hilfe-Fuß ohnehin auf jeder Seite;
 // lieber einmal zu oft Hilfe zeigen als einmal zu wenig (ein Fehlalarm lässt sich mit „Text ändern“ beheben). Test: test/textspiegel/analyse.test.mjs.
@@ -199,36 +197,58 @@ export function krise(texte) {
   return { an: aufgaben.length > 0, aufgaben };
 }
 
-// ---------- Für „Mit Claude tiefer lesen“: Namen und Kontaktdaten ersetzen ----------
-const RE_ESC = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-export function maskiere(text, namen = []) {
-  let t = String(text || '');
-  t = t.replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, '[E-Mail]');
-  t = t.replace(/\b(https?:\/\/|www\.)\S+/gi, '[Link]');
-  t = t.replace(/(^|[^\w@])@[\w.]{2,}/g, '$1[Konto]');
-  t = t.replace(/(\+\d{1,3}[\s/-]?|\b0)[\d\s/()-]{5,}\d/g, (m) => (m.replace(/\D/g, '').length >= 7 ? '[Telefon]' : m));
-  const liste = [...new Set(namen.map((n) => String(n).trim()).filter((n) => n.length >= 2))];   // Nummer = Reihenfolge der Eingabe
-  liste.map((n, i) => [n, i + 1]).sort((a, b) => b[0].length - a[0].length).forEach(([n, nr]) => {      // längere Namen zuerst ersetzen
-    const re = new RegExp('(^|[^\\p{L}])(' + RE_ESC(n) + ")(s|'s|')?(?=[^\\p{L}]|$)", 'giu');
-    t = t.replace(re, `$1[Person ${nr}]`);
-  });
-  return t;
+// ---------- Für „Tiefer lesen“: die Stellen in den eigenen Texten ----------
+// Sätze, in denen Wörter der Gruppen stehen (verneinte Gefühlswörter zählen nicht). Je Satz die gefundenen Originalwörter.
+// Sortiert: mehr Treffer zuerst, bei Gleichstand der kürzere Satz. Lange Sätze werden um den ersten Treffer gekürzt.
+export function fundstellen(texte, reihenfolge, gruppen, n = 2) {
+  const aus = [];
+  for (const id of reihenfolge) {
+    for (const s of saetze((texte || {})[id] || '')) {
+      const ws = woerter(s), treffer = new Set();
+      ws.forEach((x, i) => {
+        if (x.zahl) return;
+        for (const g of gruppen) {
+          if (!passt(g, x.w)) continue;
+          if (g === 'ich' && (x.w === 'meine' || x.w === 'meinen') && i > 0 && MEINEN.has(ws[i - 1].w)) continue;
+          if (GEFUEHL.includes(g) && verneint(ws, i)) continue;
+          treffer.add(x.o); break;
+        }
+      });
+      if (treffer.size) aus.push({ aufgabe: id, satz: kuerze(s, treffer), woerter: [...treffer] });
+    }
+  }
+  return aus.sort((a, b) => b.woerter.length - a.woerter.length || a.satz.length - b.satz.length).slice(0, n);
 }
-
-// ---------- Zitate aus Claudes Antwort prüfen: steht jedes »Zitat« wörtlich in den eigenen Texten? ----------
-const norm = (s) => String(s || '').toLowerCase().replace(/[’‘`´]/g, "'").replace(/[„“”«»"]/g, '').replace(/[–—]/g, '-').replace(/\s+/g, ' ').trim();
-export function zitate(antwort) {
-  const aus = [], re = /»([^«»]{3,400})«|„([^“”„]{3,400})[“”]|"([^"\n]{3,400})"|«([^«»]{3,400})»/g;
-  for (const m of String(antwort || '').matchAll(re)) aus.push((m[1] || m[2] || m[3] || m[4]).trim());
+function kuerze(s, treffer, max = 220) {
+  if (s.length <= max) return s;
+  let i = s.length; for (const w of treffer) { const j = s.indexOf(w); if (j >= 0 && j < i) i = j; }
+  const von = Math.max(0, Math.min(i - 60, s.length - max)), bis = Math.min(s.length, von + max);
+  return (von > 0 ? '… ' : '') + s.slice(von, bis).trim() + (bis < s.length ? ' …' : '');
+}
+// Zerlegt einen Satz in Stücke [{t, an}] – an = eines der gefundenen Wörter (zum Hervorheben in der Anzeige).
+export function stuecke(satz, woerterListe) {
+  const ziel = new Set(woerterListe), aus = []; let pos = 0;
+  for (const m of String(satz).matchAll(/[\p{L}\p{M}]+(?:['-][\p{L}\p{M}]+)*/gu)) {
+    if (!ziel.has(m[0])) continue;
+    if (m.index > pos) aus.push({ t: satz.slice(pos, m.index), an: false });
+    aus.push({ t: m[0], an: true }); pos = m.index + m[0].length;
+  }
+  if (pos < satz.length) aus.push({ t: satz.slice(pos), an: false });
   return aus;
 }
-export function pruefeZitate(antwort, texte) {
-  const quelle = norm(Object.values(texte || {}).join(' \n '));
-  return zitate(antwort).map((z) => {
-    const teile = z.split(/\s*(?:\[…\]|\(…\)|\[\.\.\.\]|\.\.\.|…)\s*/).map((x) => norm(x).replace(/^[\s.,;:!?-]+|[\s.,;:!?-]+$/g, '')).filter((x) => x.length >= 2);
-    const gefunden = teile.length > 0 && teile.every((x) => quelle.includes(x));
-    return { zitat: z, gefunden };
-  });
+// Wörter, die in den Texten wiederkehren (ohne Allerweltswörter und ohne die kleinen Wörter der Wortgruppen).
+// Mindestens 2-mal, mindestens 4 Buchstaben. Angezeigt wird die häufigste Schreibweise (Hauptwörter groß).
+const STOP = menge(STOPP);
+const KLEIN = ['ich', 'wir', 'du', 'man', 'verneinung', 'absolut', 'abgestuft'];
+export function wiederkehrend(texte, reihenfolge, n = 8) {
+  const z = new Map();
+  for (const id of reihenfolge) for (const s of saetze((texte || {})[id] || '')) for (const x of woerter(s)) {
+    if (x.zahl || x.w.length < 4 || STOP.has(x.w) || HILF.has(x.w) || KLEIN.some((g) => passt(g, x.w))) continue;
+    const e = z.get(x.w) || { n: 0, formen: new Map() }; e.n++; e.formen.set(x.o, (e.formen.get(x.o) || 0) + 1); z.set(x.w, e);
+  }
+  return [...z.entries()].filter(([, e]) => e.n >= 2)
+    .sort((a, b) => b[1].n - a[1].n || b[0].length - a[0].length || a[0].localeCompare(b[0], 'de')).slice(0, n)
+    .map(([w, e]) => { const f = [...e.formen.entries()].sort((a, b) => b[1] - a[1])[0][0]; return /^[A-ZÄÖÜ]/.test(f) ? f : w; });
 }
 
 // Kleiner Fingerabdruck der Texte (merkt, ob sich seit dem letzten Ergebnis etwas geändert hat)

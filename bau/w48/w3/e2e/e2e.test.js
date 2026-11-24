@@ -73,15 +73,6 @@ const warteNeu = (page, n, ms = 20000) => page.waitForFunction((n) => document.q
     pruef(info.n > 30, 'Noten-Blobs: ' + info.n + ' (mit Spitze ' + info.peaks + ')');
     const vielfalt = await page.evaluate(() => { const c = document.getElementById('rolle'), g = c.getContext('2d'), d = g.getImageData(0, 0, c.width, c.height).data, s = new Set(); for (let i = 0; i < d.length; i += 4 * 97) s.add(d[i] + ',' + d[i + 1] + ',' + d[i + 2]); return s.size; });
     pruef(vielfalt > 12, 'Pianorolle zeichnet (Farben ' + vielfalt + ')');
-    // Export der Auto-Fassung + Zwischenstufen
-    for (const [knopf, zusatz] of [['#bExport', 'fertig'], ['#bExportRein', 'gereinigt'], ['#bExportTim', 'getimed']]) {
-      await page.locator(knopf).scrollIntoViewIfNeeded();
-      const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 20000 }), page.locator(knopf).tap()]);
-      const ziel = `${E2E}/export-${name}-${zusatz}.wav`;
-      await dl.saveAs(ziel);
-      const gr = fs.statSync(ziel).size, kopf = fs.readFileSync(ziel).subarray(0, 44);
-      pruef(dl.suggestedFilename() === 'Refrain1_' + zusatz + '.wav' && Math.abs(gr - (44 + 1584000 * 3)) < 64 && kopf.readUInt16LE(34) === 24 && kopf.readUInt32LE(24) === 48000, `Export ${dl.suggestedFilename()} 24 bit 48 kHz ${gr} B`);
-    }
     // Fotos (hochkant): oben, Rolle
     if (name === 'hoch') {
       await page.evaluate(() => window.scrollTo(0, 0)); await page.waitForTimeout(200);
@@ -91,6 +82,15 @@ const warteNeu = (page, n, ms = 20000) => page.waitForFunction((n) => document.q
       await page.locator('#werk').screenshot({ path: S + '/final-rolle.png' });
     } else {
       await page.screenshot({ path: E2E + '/quer-rolle.png' });
+    }
+    // Export der Auto-Fassung + Zwischenstufen
+    for (const [knopf, zusatz] of [['#bExport', 'fertig'], ['#bExportRein', 'gereinigt'], ['#bExportTim', 'getimed']]) {
+      await page.locator(knopf).scrollIntoViewIfNeeded();
+      const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 20000 }), page.locator(knopf).tap()]);
+      const ziel = `${E2E}/export-${name}-${zusatz}.wav`;
+      await dl.saveAs(ziel);
+      const gr = fs.statSync(ziel).size, kopf = fs.readFileSync(ziel).subarray(0, 44);
+      pruef(dl.suggestedFilename() === 'Refrain1_' + zusatz + '.wav' && Math.abs(gr - (44 + 1584000 * 3)) < 64 && kopf.readUInt16LE(34) === 24 && kopf.readUInt32LE(24) === 48000, `Export ${dl.suggestedFilename()} 24 bit 48 kHz ${gr} B`);
     }
     // ältere Version nach vorne (Fähnchen antippen), Hören spielt sie
     const alt = page.locator('.lage', { hasText: 'Gereinigt' });

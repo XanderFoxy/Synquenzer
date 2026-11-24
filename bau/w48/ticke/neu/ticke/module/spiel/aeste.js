@@ -197,7 +197,7 @@ export const AESTE = [
       { name: 'feinfühlig, wachsam', text: 'Du spürst Stimmungen, Spannungen und Gefahren früh und deutlich. Das macht dich aufmerksam, vorsichtig und oft sehr einfühlsam.' },
       { name: 'gelassen, ruhig', text: 'Vieles bringt dich nicht so schnell aus der Ruhe. Du bleibst auch unter Druck eher bei dir und kannst anderen in schwierigen Lagen Halt geben.' }
     ],
-    wasEsIst: 'In der Persönlichkeitsforschung heißt diese Richtung „emotionale Stabilität“, ihr Gegenpol „Neurotizismus“ – ein altes Fachwort, das nichts mit Krankheit zu tun hat. Gemeint ist, wie stark Gefühle wie Sorge, Ärger oder Anspannung bei dir anschlagen. '
+    wasEsIst: 'In der Persönlichkeitsforschung heißt diese Richtung „emotionale Stabilität“, ihr Gegenpol „Neurotizismus“ – ein Fachwort für eine Neigung der Persönlichkeit, keine Krankheit. Gemeint ist, wie stark Gefühle wie Sorge, Ärger oder Anspannung bei dir anschlagen. '
       + 'Feinfühlige Menschen haben eine empfindliche innere Antenne: Sie merken früh, wenn etwas nicht stimmt, und erleben Gefühle intensiver. Gelassene Menschen haben eine ruhigere Antenne und lassen mehr an sich abperlen. '
       + 'Beides hat seinen Sinn: Wachsamkeit schützt und macht vorsichtig, Gelassenheit hilft, in schwierigen Lagen ruhig zu handeln. '
       + 'Die Richtung kann sich mit der Lebenslage verschieben – in anstrengenden Zeiten spüren fast alle Menschen mehr.',

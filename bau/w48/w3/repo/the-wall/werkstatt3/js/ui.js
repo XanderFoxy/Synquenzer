@@ -255,13 +255,13 @@ function blob(n, i, dt, dm, d, mx, art) {
   if (art === 'geist') { g.setLineDash([3, 3]); g.strokeStyle = F.mut; g.lineWidth = 1; g.stroke(); g.setLineDash([]); return; }
   g.fillStyle = art === 'wahl' || art === 'zug' ? F.wahl : F.note;
   g.globalAlpha = art === 'zug' ? 0.9 : 0.82; g.fill(); g.globalAlpha = 1;
-  // Vorlauf (onset → Spitze) als Klammer darunter, Spitze als Strich
+  // Vorlauf (onset → Spitze) als Keil, der zur Spitze hin anwächst; Spitze als Strich (grün = auf dem Raster)
   if (n.peak != null) {
     const xp = xOf(n.peak + dt), xo = xOf((n.onset ?? n.peak) + dt);
     const auf = rasterG() > 0 && Math.abs(n.peak + dt - naechsteLinie(n.peak + dt)) < 0.003;
     g.fillStyle = auf ? F.ok : F.warn;
-    g.fillRect(Math.round(xp) - 1, yc - hMax / 2 - 3, 2, hMax + 6);
-    if (xp - xo > 1.5) g.fillRect(xo, yc + hMax / 2 + 2, xp - xo, 2);
+    if (xp - xo > 1.5) { g.globalAlpha = 0.32; g.beginPath(); g.moveTo(xo, yc); g.lineTo(xp, yc - hMax / 2); g.lineTo(xp, yc + hMax / 2); g.closePath(); g.fill(); g.globalAlpha = 1; }
+    g.fillRect(Math.round(xp) - 1, yc - hMax / 2 - 2, 2, hMax + 4);
   }
   // Tonhöhenkurve
   const k = n.kurve;
@@ -928,7 +928,7 @@ verlauf.wiederherstellen().then((l) => {
 }).catch(() => { /* nur im Speicher */ });
 
 // für Tests und Fehlersuche
-window.werkstatt3 = { Z, E, verlauf, rufen, zeichnen: neu,
+window.werkstatt3 = { Z, E, verlauf, rufen, zeichnen: neu, zeichnenSofort() { zeichnen(); },
   ort(i) { const n = noten()[i], r = buehne.getBoundingClientRect(); if (!n) return null; const t = Math.min(n.t1 - 0.01, (n.peak ?? n.t0) + 0.03); return { x: r.left + xOf(t), y: r.top + yOf(n.midi + (n.cent || 0) / 100), sichtbar: xOf(t) > K && xOf(t) < W }; },
   zeige(t) { Z.sicht.t0 = t; begrenzen(); neu(); },
   hoertGerade() { if (!spiel || !puf.id) return null; const v = verlauf.liste().find((w) => w.id === puf.id); return v ? v.name : null; } };
