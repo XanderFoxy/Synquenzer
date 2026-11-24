@@ -4,11 +4,11 @@ Code: app/js/stimmanalyse.js (analysiere → stimmlageAusLiedern, liedHoehe), Sk
 
 ## Ergebnis in Worten
 
-Schätzung aus 5 Aufnahmen (502 s klar gehaltene Töne): Am meisten, längsten und saubersten singst du zwischen Des3 und A3 – das ist deine bequeme Lage. Sicher klingt es von A2 bis Des4; F4 singst du nur kurz – dafür reichen die Aufnahmen noch nicht. Zwischen A2 und F4 wechselt dein Klang vermutlich von der Brust- in die Misch-/Kopfstimme. Des4 hältst du noch sauber in der Bruststimme. Nach oben wirst du deutlich lauter – oft ein Zeichen, dass die Höhe gedrückt wird. Oben lieber etwas leiser und leichter. Das spricht am ehesten Bass. Männer- und Frauenstimmen überschneiden sich – die Tonhöhe allein ist kein sicheres Urteil. Zwischen deinen Aufnahmen verschiebt sich die obere Grenze um etwa 6 Halbtöne – das ist die Tagesform. Je mehr Aufnahmen, desto ruhiger wird die Schätzung.
+Schätzung aus 5 Aufnahmen (502 s klar gehaltene Töne): Am meisten, längsten und saubersten singst du zwischen Des3 und A3 – das ist deine bequeme Lage. Sicher klingt es von A2 bis Des4; F4 singst du nur kurz – dafür reichen die Aufnahmen noch nicht. Einen klaren Registerwechsel gibt es in diesen Aufnahmen nicht – du bleibst fast überall in der Bruststimme; um H3 wird der Klang am ehesten leichter (erster Schritt Richtung Mischstimme). Des4 hältst du noch sauber in der Bruststimme. Nach oben wirst du deutlich lauter – oft ein Zeichen, dass die Höhe gedrückt wird. Oben lieber etwas leiser und leichter. Das spricht zwischen Bass und Bariton. Männer- und Frauenstimmen überschneiden sich – die Tonhöhe allein ist kein sicheres Urteil. Zwischen deinen Aufnahmen verschiebt sich die obere Grenze um etwa ±2 Halbtöne – das ist Tagesform, aber auch das Lied selbst: ein tiefes Lied zeigt deine Höhe nicht. Je mehr Aufnahmen, desto ruhiger wird die Schätzung.
 
 - Bequeme Lage (Kern): Des3–A3; sicher: A2–Des4
-- Stimmfach: am ehesten Bass (Bass: am ehesten, Bariton: unwahrscheinlich, Tenor: unwahrscheinlich)
-- Übergang(e): A2, F4; Registerwechsel-Zone: A2–F4; sauber in Brust bis Des4
+- Stimmfach: zwischen Bass und Bariton (Bass: am ehesten, Bariton: möglich, Tenor: unwahrscheinlich)
+- Übergang(e): H3; Registerwechsel-Zone: keine klare, angedeutet um H3; sauber in Brust bis Des4
 - Schwankung zwischen den Spuren: obere Grenze Spanne 6 HT, untere 10 HT (SD hoch 2.1, Kern oben 2.8) – Achtung: alle Spuren sind dasselbe Lied an ähnlichen Tagen, also eher Spur- als Tagesschwankung.
 - Anstrengung: wird nach oben deutlich lauter; Sauberkeit fällt nach oben nicht deutlich
 
@@ -54,7 +54,7 @@ Schätzung aus 5 Aufnahmen (502 s klar gehaltene Töne): Am meisten, längsten u
 
 ## Deine Höhe in The Wall (Hauptstimme, Versatz 0 s)
 
-Bis Des4 klingt deine Stimme in diesem Lied klar in der Bruststimme. Unsauberer oder angestrengter wird es auf „claim … we“ (B3) und „we“ (B3). Ab etwa C3 gehst du vermutlich in die Misch- oder Kopfstimme – zuerst auf „open“. Eine Schätzung aus deiner Aufnahme – Tagesform und Mikrofon spielen mit.
+Bis Des4 klingt deine Stimme in diesem Lied klar in der Bruststimme. Unsauberer oder angestrengter wird es auf „claim … we“ (B3) und „we“ (B3). Ab etwa As3 gehst du vermutlich in die Misch- oder Kopfstimme – zuerst auf „open“. Eine Schätzung aus deiner Aufnahme – Tagesform und Mikrofon spielen mit.
 
 - „We claim we know It all“ – claim, we (B3): angestrengt/lauter
 - „We claim we know It all“ – we (B3): angestrengt/lauter
@@ -69,7 +69,7 @@ Bis Des4 klingt deine Stimme in diesem Lied klar in der Bruststimme. Unsauberer 
 - **Vokal-Ausgleich in der Höhe** (Übung register-ausgleich): Auf „this“ (B3) wird der Ton unruhiger. Mach dort den Vokal „o“ etwas offener, Kiefer locker – der Kiefer öffnet nach unten, nicht in die Breite.
 - **Misch-Stimme mit „ng“** (Übung ng-sirene): In „open your eyes“ kippst du auf „open“ vermutlich in die Kopfstimme. Sing die Melodie der Zeile erst auf „ng“, dann auf „nga“, dann mit Text – so bleibt die Verbindung ohne Bruch.
 - **Sirene bis B3** (Übung oktav-glissando): Gleite auf „u“ oder „ng“ von Es3 bis B3 (dem höchsten Ton auf „claim … we“) und zurück – leise, ohne anzuhalten. Danach die Zeile mit Text.
-- **Registerausgleich** (Übung register-ausgleich): Dein Wechsel liegt in diesem Lied um C3. Tonleiter auf „a“ durch C3 hindurch, oben nicht lauter werden – dann dieselbe Stelle mit den Wörtern „open“.
+- **Registerausgleich** (Übung register-ausgleich): Dein Wechsel liegt in diesem Lied um As3. Tonleiter auf „a“ durch As3 hindurch, oben nicht lauter werden – dann dieselbe Stelle mit den Wörtern „open“.
 
 ## Methode und Grenzen
 

@@ -207,33 +207,37 @@ class Planer:
         return got
 
     def _vokal(self, a, b, d, exakt=False):
-        """Perioden wiederholen (d>0) / auslassen (d<0) im Lauf [a,b). Gibt erreichte Längenänderung zurück."""
+        """Perioden wiederholen (d>0) / auslassen (d<0) im Lauf [a,b). Kandidaten-Stellen alle ~40 ms; schlägt ein Sprung fehl
+        (Korrelation < 0,6), übernimmt die nächste Stelle. Gibt erreichte Längenänderung zurück."""
         L = b - a
         J = int(0.020 * SR)
         n = max(1, int(np.ceil(abs(d) / J)))
-        n = min(n, max(1, int(L / (0.040 * SR))))      # Abstand der Sprünge >= 40 ms
+        M = max(n, int(L / (0.040 * SR)))
         got = 0
-        for i in range(n):
-            rest_i = d - got
-            if rest_i == 0: break
-            wunsch = abs(rest_i) / (n - i)
-            p0 = a + int((i + 0.5) * L / n)
+        for k in range(M):
+            rest_k = d - got
+            if rest_k * d <= 0: break                     # Ziel erreicht oder knapp überschritten: nicht zurückspringen
+            p0 = a + int((k + 0.5) * L / M)
             p0 = max(p0, self.cur + int(0.004 * SR))
             if p0 >= b - int(0.004 * SR): break
             p0 = self.nulldurchgang(p0)
             if p0 < self.cur: continue
             P = self.periode(p0)
+            noch = max(1, int(np.ceil(n * (M - k) / M)))
+            wunsch = abs(rest_k) / noch
+            letzte = (k == M - 1)
+            if abs(rest_k) < 0.45 * P or (wunsch < 0.45 * P and not letzte): continue
             X = int(np.clip(2 * P, 0.008 * SR, 0.016 * SR))
             richt = -1 if d > 0 else +1
             hi_lim = min(int(0.045 * SR), (p0 - a) - X // 2) if d > 0 else min(int(0.045 * SR), (b - p0) - X - 8)
-            lo = int(max(0.5 * P, wunsch - 0.7 * P)); hi = int(min(wunsch + 0.7 * P, hi_lim))
+            lo = int(max(0.5 * P, wunsch - 0.7 * P)); hi = int(min(wunsch + 0.7 * P, hi_lim, abs(rest_k) + 0.5 * P))
             if hi < lo: continue
             lags, nk = self.sprung_korr(p0, richt, lo, hi, X)
-            if lags is None: continue
+            if lags is None or len(lags) == 0: continue
             score = nk - 0.15 * np.abs(lags - wunsch) / max(P, 1)
             j = int(np.argmax(score)); lag = int(lags[j]); korr = float(nk[j])
-            if exakt and i == n - 1:
-                w = int(round(wunsch))
+            if exakt and noch == 1:
+                w = int(round(abs(rest_k)))
                 if lo <= w <= hi:
                     kw = float(nk[np.where(lags == w)[0][0]])
                     if kw >= korr - 0.03 and kw >= 0.8: lag, korr = w, kw

@@ -317,8 +317,15 @@ export function stimmlageAusLiedern(analysen, opt = {}) {
   const ms = Object.keys(toene).map(Number).sort((a, b) => a - b);
   const brust = (m) => { let s = 0, c = 0; for (const k of [m - 1, m, m + 1]) if (toene[k]) { const w = k === m ? 2 : 1; s += toene[k].reg[0] * w * Math.sqrt(toene[k].dauer); c += w * Math.sqrt(toene[k].dauer); } return c ? s / c : null; };
   let wAnf = null, wEnde = null;
-  for (const m of ms) { const b = brust(m); if (b == null) continue; if (wAnf == null && b < 0.62 && m > ms[0] + 2) wAnf = m; if (wAnf != null && wEnde == null && b < 0.4) wEnde = m; }
-  if (wAnf != null && wEnde == null) wEnde = Math.max(wAnf, ms[ms.length - 1]);
+  // nur oberhalb der unteren Kerngrenze suchen; der Abfall muss auf dem nächsten gesungenen Ton anhalten
+  const oberT = ms.filter((m) => m >= kern[0] && toene[m].dauer >= 0.25);
+  for (let i = 0; i < oberT.length; i++) {
+    const m = oberT[i], b = brust(m), bn = i + 1 < oberT.length ? brust(oberT[i + 1]) : b;
+    if (b == null) continue;
+    if (wAnf == null && b < 0.62 && bn < 0.62) wAnf = m;
+    if (wAnf != null && wEnde == null && b < 0.4) wEnde = m;
+  }
+  if (wAnf != null && wEnde == null) wEnde = wAnf;
   const kopfTon = ms.find((m) => toene[m].reg[2] >= 0.45 && toene[m].dauer >= 0.3) ?? null;
   let uebergaenge = wAnf != null ? [...new Set([wAnf, wEnde])].sort((a, b) => a - b) : [];
   // kein klarer Wechsel: Ton im oberen Bereich mit dem höchsten Misch-/Kopf-Anteil als angedeuteter Übergang
@@ -375,7 +382,7 @@ export function stimmlageAusLiedern(analysen, opt = {}) {
   if (lauter) s.push('Nach oben wirst du deutlich lauter – oft ein Zeichen, dass die Höhe gedrückt wird. Oben lieber etwas leiser und leichter.');
   else if (sauberFaellt) s.push('Nach oben wird der Klang etwas weniger sauber – dort hilft Vokal-Ausgleich und Registerübung.');
   s.push(`Das spricht ${fachText}. Männer- und Frauenstimmen überschneiden sich – die Tonhöhe allein ist kein sicheres Urteil.`);
-  if (schwankung) s.push(`Zwischen deinen Aufnahmen verschiebt sich die obere Grenze um etwa ${schwankung.spanneHoch <= 1 ? 'einen Halbton' : `${schwankung.spanneHoch} Halbtöne`} – das ist die Tagesform. Je mehr Aufnahmen, desto ruhiger wird die Schätzung.`);
+  if (schwankung) { const sdH = Math.max(1, Math.round(schwankung.hoch)); s.push(`Zwischen deinen Aufnahmen verschiebt sich die obere Grenze um etwa ±${sdH === 1 ? 'einen Halbton' : `${sdH} Halbtöne`} – das ist Tagesform, aber auch das Lied selbst: ein tiefes Lied zeigt deine Höhe nicht. Je mehr Aufnahmen, desto ruhiger wird die Schätzung.`); }
   else s.push('Die Tagesform schwankt – mit mehreren Aufnahmen von verschiedenen Tagen wird die Schätzung genauer.');
   const sicherheit = rund(Math.min(1, sek / 60) * Math.min(1, (hoch - tief + 1) / 10) * (b1.p >= 0.6 ? 1 : 0.75) * Math.min(1, 0.6 + 0.2 * liste.length), 2);
   const sauberkeit = {}, registerJe = {};
@@ -442,7 +449,7 @@ export function liedHoehe(lied, analyse, opt = {}) {
   }
   befunde.sort((a, b) => b.gewicht - a.gewicht);
   // Kipp-Punkt im Lied: tiefster Ton, auf dem Misch/Kopf überwiegt
-  const misch = zOut.flatMap((z) => z.silben.filter((s) => s.q != null && s.register !== 'Brust')).map((s) => s.midi);
+  const misch = zOut.flatMap((z) => z.silben.filter((s) => s.q != null && s.midi >= oben && s.register !== 'Brust')).map((s) => s.midi);
   const kipp = misch.length ? Math.min(...misch) : null;
   // Tipps (konkret mit den Wörtern der schwierigsten Zeilen)
   const tipps = [];
