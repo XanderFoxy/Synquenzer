@@ -1,0 +1,17 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rauchtest Tastatur</title><style>body{margin:0;background:#f6f7fb;font-family:system-ui}@media (prefers-color-scheme:dark){body{background:#0f1218}}#t{margin:8px 16px}</style></head>
+<body><div id="t"></div><div id="u"></div>
+<script type="module">
+import { tastatur } from '../app/js/tastatur.js';
+import { uebungen } from '../app/js/uebungen.js';
+import { spieler } from '../app/js/wiedergabe.js';
+import { akkordAusMidis } from '../app/js/akkorde.js';
+const tipps = [];
+const t = tastatur(document.getElementById('t'), { von: 21, bis: 108, beiTipp: (m) => tipps.push(m) });
+const a = akkordAusMidis([48, 52, 57]);
+const f = new Map(); for (const n of a.noten) f.set(n.midi, a.rollen.get(n.id));
+t.zeige(new Set(f.keys()), f); t.scrolleZu(52, false);
+const u = uebungen(document.getElementById('u'), { start: 'akkord' });
+window.__test = { tipps, t, u, a, spieler };
+window.__bereit = true;
+</script></body></html>
