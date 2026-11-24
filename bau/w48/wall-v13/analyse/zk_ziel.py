@@ -99,22 +99,22 @@ for z, R in REF.items():
         vals = {r: rel(t_h(R['reihen'][r][1][k]), R['reihen'][r][0]) for r in ('R1', 'R2', 'R3')}
         rund = {r: int(round(v)) for r, v in vals.items()}
         werte, anz = np.unique(list(rund.values()), return_counts=True)
-        if anz.max() >= 2: platz = int(werte[np.argmax(anz)]); grund = 'Mehrheit'
-        else: platz = rund['R3']; grund = 'kein Gleichstand möglich -> R3'
+        mehrheit = int(werte[np.argmax(anz)]) if anz.max() >= 2 else None
+        mittel = float(np.mean(list(vals.values())))
+        if abs(mittel - (np.floor(mittel) + 0.5)) < 0.1:
+            platz = rund['R3']; grund = 'Mittel %.2f liegt genau zwischen zwei 16teln -> R3 (sauberster)' % mittel
+        else:
+            platz = int(round(mittel)); grund = 'Durchschnitt %.2f' % mittel + (' = Mehrheit' if mehrheit == platz else ' (Mehrheit wäre %s)' % mehrheit)
         # Doppel als Zusatz-Info
         dv = {r: (rel(t_d(R['reihen'][r][1][k]), R['reihen'][r][0]) if t_d(R['reihen'][r][1][k]) else None) for r in ('R1', 'R2', 'R3')}
         REF_MUSTER[(z, k)] = dict(platz=platz, grund=grund, haupt={r: round(v, 2) for r, v in vals.items()},
                                   doppel={r: (round(v, 2) if v is not None else None) for r, v in dv.items()}, gerundet=rund)
 # Zweiter Taktschlag (know/is/low) liegt in allen drei Refrains zwischen Schlag 2 (4) und 2e (5): R3 (saubersten) -> 4.
-for key in (('Z1', 3), ('Z2', 3), ('Z3', 3)):
-    m = REF_MUSTER[key]
-    if m['platz'] == 21 and m['gerundet']['R3'] == 20:
-        m['platz'] = 20; m['unsicher'] = True
-        m['grund'] = 'Mehrheit R1/R2 wäre 21 (2e), Mittel %.2f; R3 (sauberster) und „know“ in Zeile 1 liegen auf Schlag 2 -> 20 (glaubhafter Taktstrich)' % np.mean(list(m['haupt'].values()))
-    elif m['platz'] == 20: m['grund'] += ' (Schlag 2)'
+for key in (('Z2', 3), ('Z3', 3)):
+    REF_MUSTER[key]['unsicher'] = True   # zweiter Schlag liegt in R1–R3 zwischen 2 und 2e
 # „eyes“ (Z4 Silbe 6): Mittel genau zwischen 31 und 32; Outro und Tag singen „eyes“ auf dem Taktstrich -> 32
 m = REF_MUSTER[('Z4', 5)]
-if m['platz'] == 31:
+if m['platz'] in (31, 32):
     m['platz'] = 32; m['unsicher'] = True
     m['grund'] = 'gerundet 31/32/31, Mittel %.2f (genau zwischen 31 und 32); Outro/Tag „eyes“ auf dem Taktstrich -> 32 (Taktstrich)' % np.mean(list(m['haupt'].values()))
 
