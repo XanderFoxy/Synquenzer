@@ -14,6 +14,7 @@ const path = require('path');
   p.on('console', m => { if (m.type() === 'error') fehler.push(m.text()); });
   await p.addInitScript(t => { try { localStorage.setItem('w3-thema', t) } catch (e) {} }, thema);
   await p.goto('file://' + path.join(__dirname, 'repo/the-wall/werkstatt3/css/muster-konsole.html'));
+  if (ganz) await p.addStyleTag({ content: '.dock{position:static!important;margin:12px -12px 0}' });
   await p.waitForTimeout(500);
   const info = await p.evaluate(() => {
     const H = document.documentElement, s = getComputedStyle(H);

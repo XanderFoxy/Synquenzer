@@ -11,7 +11,7 @@
 // export async function anClaude({blob, name, notiz, stellen, onFortschritt, original, originalName, code, signal, zusatz, nochmal})
 //        → {ok:true, id, dateien:[{nr, name, rolle, bytes}], doppelt?}   id = Satz-ID (UUID) im Speicher
 //        doppelt = genau dieser Inhalt (Datei + Notiz + Stellen) ging in dieser Sitzung schon an; nochmal:true sendet trotzdem
-//        → {ok:false, art, text}   art: 'code' | 'netz' | 'platz' | 'drossel' | 'abgebrochen' | 'eingabe' | 'server'
+//        → {ok:false, art, text}   art: 'code' | 'netz' | 'platz' | 'drossel' | 'abgebrochen' | 'eingabe' | 'herkunft' | 'server'
 //        Wirft nie. Gleiche Datei nochmal (nach Netzabbruch) → geht dort weiter, wo es aufgehört hat.
 //        onFortschritt({schritt, anteil, gesendet, gesamt, text}) – anteil 0…1 über alles; schritt:
 //        'vorbereiten' | 'anmelden' | 'senden' | 'warten' | 'pruefen' | 'fertig'
@@ -20,6 +20,7 @@
 // export function zeitText(sekunden) → "1:23,4"
 
 const API = 'https://dbdnsryoivvezspgydpx.supabase.co/functions/v1/';
+const HERKUNFT = 'https://xanderfoxy.github.io';  // ton-ticket/ton-fertig lassen nur diese Seite zu (CORS)
 const TEIL = 16 * 1024 * 1024;          // wie Ton-Post (Server-Grenze je Teil: 45 MiB)
 const GUELTIG = 110 * 60 * 1000;        // Upload-Adressen gelten 2 h – mit Puffer
 const GLEICHZEITIG = 2;                 // Teile parallel unterwegs
@@ -43,6 +44,7 @@ export const codeVergessen = () => ls.del(LS_CODE);
 export async function codePruefen(code) {
   const c = String(code || '').trim() || ls.get(LS_CODE);
   if (!c) return fehler('code', TEXT.codeFehlt);
+  if (fremd()) return fehler('herkunft', TEXT.herkunft);
   try {
     const r = await rufe('ton-ticket', { code: c, nurPlatz: true }, {});
     codeMerken(c);
@@ -58,12 +60,15 @@ const TEXT = {
   netz: 'Keine Verbindung zum Speicher. Bitte Netz prüfen und nochmal auf „An Claude schicken“ tippen – schon Gesendetes wird übersprungen.',
   abgebrochen: 'Senden abgebrochen. Nochmal tippen setzt fort.',
   server: 'Der Speicher antwortet gerade nicht richtig. Bitte gleich nochmal senden.',
+  herkunft: 'An Claude schicken geht nur auf der echten Seite (xanderfoxy.github.io) – von hier aus lässt der Speicher keine Verbindung zu.',
   weg: 'Diese Sendung ist im Speicher nicht mehr da. Bitte nochmal senden – sie geht dann ganz neu los.',
   unvollstaendig: 'Nicht alle Teile sind angekommen. Bitte nochmal senden – Angekommenes wird übersprungen.',
   leer: 'Keine Gesangsdatei zum Senden da (die Datei ist leer).',
 };
 class Fehler extends Error { constructor(art, text, mehr) { super(text); this.art = art; Object.assign(this, mehr || {}); } }
 const fehler = (art, text) => ({ ok: false, art, text });
+// Andere Herkunft (z. B. lokaler Test-Server): der Browser würde jede Antwort blocken – sofort ehrlich sagen statt minutenlang zu warten.
+const fremd = () => !!(G.document && G.location?.origin && G.location.origin !== HERKUNFT);
 function fehlerAus(e, codeBenutzt) {
   if (e instanceof Fehler) {
     if (e.art === 'code' && codeBenutzt && codeBenutzt === ls.get(LS_CODE)) codeVergessen(); // falscher gemerkter Code: neu fragen
@@ -402,6 +407,7 @@ async function senden(opt, neuVersuch = false) {
     if (original != null && (!istBlob(original) || !original.size)) return fehler('eingabe', 'Das Original ist leer – bitte ohne Original senden.');
     code = String(codeArg || '').trim() || ls.get(LS_CODE);
     if (!code) return fehler('code', TEXT.codeFehlt);
+    if (fremd()) return fehler('herkunft', TEXT.herkunft);
     abbruch(signal);
     wach(true); wachGesetzt = true;
 

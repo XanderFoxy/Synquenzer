@@ -22,7 +22,7 @@ body{font:16px/1.35 -apple-system,system-ui,"Segoe UI",sans-serif;padding:10px m
 button,.pille{font:500 15px -apple-system,system-ui,sans-serif;color:var(--text);background:var(--flaeche);border:1px solid var(--linie2);border-radius:10px;min-height:44px;min-width:44px;padding:0 12px;display:inline-flex;align-items:center;justify-content:center;gap:6px}
 .pille svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.pille svg.voll{fill:currentColor;stroke:none}
 [aria-pressed=true],.aktiv,.gewaehlt,[aria-selected=true]{background:var(--text);color:var(--grund)}
-.haupt,.laeuft{background:var(--akzent);color:var(--text-auf-farbe);border-color:var(--akzent)}.fehler{color:var(--z-fehler);border-color:var(--z-fehler)}
+.haupt,.pille.laeuft{background:var(--akzent);color:var(--text-auf-farbe);border-color:var(--akzent)}.fehler{color:var(--z-fehler);border-color:var(--z-fehler)}
 .seg{display:inline-flex;border:1px solid var(--linie2);border-radius:10px;overflow:hidden}.seg>button{border:0;border-radius:0}
 .leiste{display:flex;flex-wrap:wrap;align-items:center;gap:6px}.leiste+.leiste{margin-top:8px}
 .fahne{display:inline-flex;align-items:center;height:24px;padding:0 8px;border-radius:6px;font:700 12px -apple-system,system-ui,sans-serif;background:var(--flaeche2);border:1px solid var(--linie2)}
@@ -37,16 +37,17 @@ button,.pille{font:500 15px -apple-system,system-ui,sans-serif;color:var(--text)
 .fahnen .fahne{position:absolute;top:0}
 .buehne{position:relative;overflow:hidden;touch-action:none}
 .buehne canvas{display:block;width:100%}
-#rolle{height:236px}#welle{height:58px;border-top:1px solid var(--linie)}
+#rolle{height:220px}#welle{height:58px;border-top:1px solid var(--linie)}
 .raster3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .raster3 .pille{width:100%;padding:0 8px}
 #staffel{flex:1 1 140px;min-width:120px}
 /* Gestaffelte Versions-Layer: jede Fassung eine Lasche, ältere liegen dahinter, versetzt */
-.stapel{position:relative;height:calc(46px + 5 * 18px);margin-top:12px}
-.lage{position:absolute;left:calc((5 - var(--i)) * 14px);right:calc(var(--i) * 6px);bottom:calc(var(--i) * 18px);height:46px;z-index:calc(10 - var(--i));
-  display:flex;align-items:center;gap:10px;padding:0 16px;border-radius:999px 14px 14px 999px;background:var(--flaeche2);
-  box-shadow:inset 6px 0 0 var(--farbe),0 -3px 0 var(--grund);opacity:var(--a,1);font-size:14px}
-.lage b{font-size:16px;color:var(--farbe)}.lage span{color:var(--text-leise)}.lage .fahne{margin-left:auto}
+.versionen{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.versionen .pille{width:100%}
+.stapel{display:flex;flex-direction:column;gap:4px;margin-top:12px}
+.lage{display:flex;align-items:center;gap:10px;height:28px;margin-left:calc(var(--i) * 16px);padding:0 12px 0 30px;border-radius:999px 8px 8px 999px;
+  background:linear-gradient(90deg,var(--farbe) 0 20px,var(--grund) 20px 24px,var(--flaeche2) 24px);font-size:13.5px;line-height:1}
+.lage.vorn{height:40px;padding-left:34px;background:linear-gradient(90deg,var(--farbe) 0 24px,var(--grund) 24px 28px,var(--flaeche2) 28px)}
+.lage b{font-size:15px;color:var(--farbe);letter-spacing:.04em;min-width:30px}.lage span{color:var(--text-leise)}.lage .fahne{margin-left:auto}
 .dock{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;align-items:center;gap:10px;background:var(--flaeche);border-top:1px solid var(--linie);
   padding:10px max(12px,env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
 .dock .meldung{flex:1;min-width:0}
@@ -98,7 +99,7 @@ button,.pille{font:500 15px -apple-system,system-ui,sans-serif;color:var(--text)
 
 <section class="rahmen unten f-flieder">
   <h2 class="rahmen-titel">Versionen</h2><span class="rahmen-info">6 Lagen</span>
-  <div class="leiste">
+  <div class="versionen">
     <button class="pille klein layer-1" type="button" aria-pressed="true">v12</button>
     <button class="pille klein layer-2" type="button" aria-pressed="true">v11</button>
     <button class="pille klein layer-3" type="button" aria-pressed="true">v10</button>
@@ -111,12 +112,12 @@ button,.pille{font:500 15px -apple-system,system-ui,sans-serif;color:var(--text)
     <input id="staffel" type="range" min="0" max="100" value="40" aria-label="Staffel-Abstand" style="--wert:40%">
   </div>
   <div class="stapel" aria-label="Gestaffelte Fassungen">
-    <div class="lage layer-6" style="--i:5;--a:.55"><b>v7</b><span>12.11.</span></div>
-    <div class="lage layer-5" style="--i:4;--a:.65"><b>v8</b><span>14.11.</span></div>
-    <div class="lage layer-4" style="--i:3;--a:.75"><b>v9</b><span>17.11.</span></div>
-    <div class="lage layer-3" style="--i:2;--a:.85"><b>v10</b><span>19.11.</span></div>
-    <div class="lage layer-2" style="--i:1;--a:.93"><b>v11</b><span>21.11.</span></div>
-    <div class="lage layer-1" style="--i:0"><b>v12</b><span>23.11.</span><span class="fahne neu">Neu</span></div>
+    <div class="lage vorn layer-1" style="--i:0"><b>v12</b><span>23.11.</span><span class="fahne neu">Neu</span></div>
+    <div class="lage layer-2" style="--i:1"><b>v11</b><span>21.11.</span></div>
+    <div class="lage layer-3" style="--i:2"><b>v10</b><span>19.11.</span></div>
+    <div class="lage layer-4" style="--i:3"><b>v9</b><span>17.11.</span></div>
+    <div class="lage layer-5" style="--i:4"><b>v8</b><span>14.11.</span></div>
+    <div class="lage layer-6" style="--i:5"><b>v7</b><span>12.11.</span></div>
   </div>
 </section>
 
@@ -204,8 +205,8 @@ function zeichne(){
   for(let t=0;t<4;t++){c.fillText(String(9+t),X(t*4)+5,(LINEAL-3)/2+1);for(let b=1;b<4;b++)c.fillRect(Math.round(X(t*4+b)),LINEAL-9,1,6)}
   // ältere Versions-Layer (gestaffelt, dahinter)
   for(let L=6;L>=2;L--){c.globalAlpha=+F['layer-alpha-'+L]||.4;c.fillStyle=F['layer-'+L];
-    NOTEN.forEach((nn,i)=>{const dm=((i*7+L*3)%5===0)?(L%2?1:-1):0,ds=((i+L)%3-1)*.12*(L-1)/2;
-      rr(c,X(nn[0]+ds)+1,Y(nn[2]+dm)+2+(L-1)*1.5,nn[1]*bw-2,zh-4,4);c.fill()})}
+    NOTEN.forEach((nn,i)=>{const dm=((i+L)%5===0)?(L%2?1:-1):0,ds=(L-1)*.07;
+      rr(c,X(nn[0]+ds)+1,Y(nn[2]+dm)+1+(L-1)*1.6,nn[1]*bw-2,zh-2,5);c.fill()})}
   c.globalAlpha=1;
   // Layer 1 (aktuelle Fassung) mit Silben
   NOTEN.forEach((nn,i)=>{const x=X(nn[0])+1,y=Y(nn[2])+1,w=nn[1]*bw-2,h=zh-2;
@@ -213,17 +214,20 @@ function zeichne(){
     c.fillStyle=F.note;rr(c,x,y,w,h,5);c.fill();c.globalAlpha=1;
     c.strokeStyle=F['note-rand'];c.lineWidth=1;c.stroke();
     if(i===GEWAEHLT){c.save();c.shadowColor=F['note-gewaehlt'];c.shadowBlur=10;c.strokeStyle=F['note-gewaehlt'];c.lineWidth=2;rr(c,x-2,y-2,w+4,h+4,7);c.stroke();c.restore()}
-    c.font='700 11px '+schrift;const tw=c.measureText(nn[3]).width;
-    if(tw+8<w&&i!==GEZOGEN){c.fillStyle=F['note-text'];c.fillText(nn[3],x+5,y+h/2+.5)}});
+  });
   // gezogene Note (Geist am Ziel)
   {const nn=NOTEN[GEZOGEN],x=X(nn[0])+1,y=Y(ZIEL)+1,w=nn[1]*bw-2,h=zh-2;
     c.fillStyle=F['note-ziehen'];rr(c,x,y,w,h,5);c.fill();c.save();c.setLineDash([4,3]);c.strokeStyle=F['note-ziehen-rand'];c.lineWidth=2;c.stroke();c.restore();
     c.fillStyle=F['note-ziehen-rand'];c.font='700 11px '+schrift;c.fillText('↑ G4',x+w+5,y+h/2+.5)}
   // gesungene Tonhöhe (Linie)
   c.save();c.strokeStyle=F.tonlinie;c.lineWidth=1.6;c.lineJoin='round';c.beginPath();
-  for(let s=0;s<=SPIEL;s+=.05){let m=62;for(const nn of NOTEN)if(s>=nn[0]&&s<nn[0]+nn[1]){m=nn[2];break}
-    const y=Y(m)+zh/2-(Math.sin(s*9)*.35+Math.sin(s*2.3)*.25)*zh*.6;s===0?c.moveTo(X(s),y):c.lineTo(X(s),y)}
+  let yv=null;for(let s=0;s<=SPIEL;s+=.04){let m=null;for(const nn of NOTEN)if(s>=nn[0]&&s<nn[0]+nn[1]){m=nn[2];break}
+    if(m==null&&yv==null)continue;const ziel=m==null?yv:Y(m)+zh/2+Math.sin(s*14)*zh*.12;yv=yv==null?ziel:yv+(ziel-yv)*.3;
+    c.lineTo(X(s),yv)}
   c.stroke();c.restore();
+  // Silben auf den Noten (nach der Linie, damit lesbar)
+  c.font='700 11px '+schrift;NOTEN.forEach((nn,i)=>{const w=nn[1]*bw-2;if(i!==GEZOGEN&&c.measureText(nn[3]).width+8<w){c.fillStyle=F.note;
+    const y=Y(nn[2])+1;rr(c,X(nn[0])+3,y+2,c.measureText(nn[3]).width+5,zh-6,3);c.fill();c.fillStyle=F['note-text'];c.fillText(nn[3],X(nn[0])+5,y+(zh-2)/2+.5)}});
   // Spielkopf (läuft)
   const xs=Math.round(X(SPIEL));c.save();c.shadowColor=F.spielkopf;c.shadowBlur=12;c.fillStyle=F.spielkopf;c.fillRect(xs-1,LINEAL-2,2,H-LINEAL+2);
   c.beginPath();c.moveTo(xs-7,0);c.lineTo(xs+7,0);c.lineTo(xs,10);c.closePath();c.fill();c.restore();

@@ -68,33 +68,37 @@ export function reinigen(x, sr, opt = {}) {
 
 const plaene = new Map();
 function fftPlan(n) {
-  let p = plaene.get(n);
-  if (p) return p;
+  let p = plaene.get(n); if (p) return p;
   const lv = Math.round(Math.log2(n));
-  const rev = new Uint32Array(n);
-  for (let i = 0; i < n; i++) { let r = 0, v = i; for (let j = 0; j < lv; j++) { r = (r << 1) | (v & 1); v >>= 1; } rev[i] = r; }
-  const c = new Float64Array(n >> 1), s = new Float64Array(n >> 1);
-  for (let i = 0; i < n >> 1; i++) { c[i] = Math.cos(2 * Math.PI * i / n); s[i] = Math.sin(2 * Math.PI * i / n); }
-  p = { n, rev, c, s };
-  plaene.set(n, p);
-  return p;
+  const sw = [];
+  for (let i = 0; i < n; i++) { let r = 0, v = i; for (let j = 0; j < lv; j++) { r = (r << 1) | (v & 1); v >>= 1; } if (r > i) sw.push(i, r); }
+  // Twiddles je Stufe hintereinander (ab size=8)
+  const tw = new Float64Array(2 * n); let o = 0; const off = [];
+  for (let size = 8; size <= n; size <<= 1) { off.push(o); const h = size >> 1; for (let j = 0; j < h; j++) { tw[o++] = Math.cos(2 * Math.PI * j / size); tw[o++] = Math.sin(2 * Math.PI * j / size); } }
+  p = { n, sw: Uint32Array.from(sw), tw, off }; plaene.set(n, p); return p;
 }
-
-// In-place komplexe FFT (ohne 1/N). inverse=true → e^{+i…}
+// In-place komplexe FFT (ohne 1/N), Radix-2 mit kombinierter Radix-4-Anfangsstufe. inverse=true → e^{+i…}
 function fft(re, im, p, inverse) {
-  const { n, rev, c, s } = p;
-  for (let i = 0; i < n; i++) {
-    const j = rev[i];
-    if (j > i) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; }
-  }
+  const { n, sw, tw, off } = p;
+  for (let q = 0; q < sw.length; q += 2) { const i = sw[q], j = sw[q + 1]; let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; }
+  // size 2 + 4 kombiniert (Radix-4 ohne Twiddles)
   const sg = inverse ? 1 : -1;
-  for (let size = 2; size <= n; size <<= 1) {
-    const half = size >> 1, step = n / size;
-    for (let j = 0, k = 0; j < half; j++, k += step) {
-      const wr = c[k], wi = sg * s[k];
-      for (let a = j; a < n; a += size) {
-        const b = a + half;
-        const tr = re[b] * wr - im[b] * wi, ti = re[b] * wi + im[b] * wr;
+  for (let a = 0; a < n; a += 4) {
+    const r0 = re[a] + re[a + 1], i0 = im[a] + im[a + 1], r1 = re[a] - re[a + 1], i1 = im[a] - im[a + 1];
+    const r2 = re[a + 2] + re[a + 3], i2 = im[a + 2] + im[a + 3], r3 = re[a + 2] - re[a + 3], i3 = im[a + 2] - im[a + 3];
+    re[a] = r0 + r2; im[a] = i0 + i2; re[a + 2] = r0 - r2; im[a + 2] = i0 - i2;
+    // w = e^{sg·iπ/2} = sg·i → (r3 + i i3)·(sg i) = -sg i3 + i sg r3
+    const tr = -sg * i3, ti = sg * r3;
+    re[a + 1] = r1 + tr; im[a + 1] = i1 + ti; re[a + 3] = r1 - tr; im[a + 3] = i1 - ti;
+  }
+  let st = 0;
+  for (let size = 8; size <= n; size <<= 1, st++) {
+    const h = size >> 1, o = off[st];
+    for (let i = 0; i < n; i += size) {
+      for (let j = 0, t = o; j < h; j++, t += 2) {
+        const wr = tw[t], wi = sg * tw[t + 1], a = i + j, b = a + h;
+        const xr = re[b], xi = im[b];
+        const tr = xr * wr - xi * wi, ti = xr * wi + xi * wr;
         re[b] = re[a] - tr; im[b] = im[a] - ti; re[a] += tr; im[a] += ti;
       }
     }
@@ -169,14 +173,14 @@ function blockEnergie(x, bs) {
 }
 
 // ───────────────────────── 1. Klicks ─────────────────────────
-// AR-Vorhersagefehler (Ordnung 20, Blöcke ~43 ms). Ein Klick = kurzer Ausreißer im Fehler,
+// AR-Vorhersagefehler (Ordnung 16, Blöcke ~43 ms). Ein Klick = kurzer Ausreißer im Fehler,
 // deutlich über der Umgebung (RMS UND Maximum, 3–12 ms links/rechts) → Glottis-Pulse und
 // Konsonanten (wiederkehrend bzw. länger) bleiben unberührt. Reparatur: AR-Extrapolation
 // vorwärts + rückwärts, mit sin²-Überblendung.
 
 function klicks(y, sr, st, sub) {
-  const len = y.length, p = 20, s = st.staerke;
-  const B = Math.max(512, Math.round(sr * 0.0427)), W = 2 * B, win = hann(W);
+  const len = y.length, p = 16, s = st.staerke;
+  const B = Math.max(512, Math.round(sr * 0.0427)), W = B + (B >> 1), win = hann(W);
   const e = new Float32Array(len), seg = new Float64Array(W);
   const a = new Float64Array(p + 1), r = new Float64Array(p + 1), tmp = new Float64Array(p + 1);
   for (let b0 = 0; b0 < len; b0 += B) {
@@ -202,7 +206,7 @@ function klicks(y, sr, st, sub) {
     for (let i = a0; i < a1; i++) { const v = e[i], av = v < 0 ? -v : v; sm += v * v; if (av > mx) mx = av; }
     be[j] = sm; bm[j] = mx;
   }
-  const K = 14 - 6 * s, K2 = 3.4 - 1.4 * s;            // Std: K≈10.4, K2≈2.6
+  const K = 15 - 6 * s, K2 = 3.8 - 1.6 * s;            // Std: K≈11.4, K2≈2.8
   const maxLen = Math.round(sr * 0.001 * (1 + 1.5 * s));  // Std: ~1.9 ms
   const nah = 3, weit = 12;
   let anzahl = 0, summeLen = 0;
@@ -230,6 +234,12 @@ function klicks(y, sr, st, sub) {
     const g0 = Math.max(p + 2, f - 2), g1 = Math.min(len - p - 3, l + 2);
     const m = g1 - g0 + 1;
     if (m < 1 || m > maxLen + p) continue;
+    // Unter lautem Gesang nur ganz kurze (digitale) Klicks – längere Ereignisse sind meist Konsonanten
+    if (m > Math.round(sr * 0.0004) + (p >> 1)) {
+      let lr = 0; const c0 = Math.max(0, g0 - bs * 10), c1 = Math.min(len, g1 + bs * 10);
+      for (let i = c0; i < c1; i++) lr += y[i] * y[i];
+      if (lr / Math.max(1, c1 - c0) > 1e-3) continue;   // > −30 dBFS
+    }
     if (!reparieren(y, g0, g1, sr)) continue;
     anzahl++; summeLen += m;
     j = Math.ceil((g1 + 1) / bs) + 1;
@@ -296,13 +306,33 @@ function brumm(y, sr, st, sub) {
   const f0 = sw > 0 ? sf / sw : [50, 60][best];
   const thr = 9 - 3 * st.staerke;
   const ziele = hs.filter((o) => o.prom >= thr).sort((a, b) => b.prom - a.prom).slice(0, 24);
-  const orig = st.staerke < 1 ? y.slice() : null;
+  const z = y.slice();
   for (const o of ziele) {
     const f = o.prom >= 12 ? o.f : o.k * f0;
     const bw = 1.6 + 0.05 * o.k;
-    filtereInPlace(y, koeff('notch', f, f / bw, sr));
+    filtereInPlace(z, koeff('notch', f, f / bw, sr));
   }
-  if (orig) { const s = st.staerke; for (let i = 0; i < len; i++) y[i] = orig[i] + s * (y[i] - orig[i]); }
+  // Maskierung: unter lautem Gesang (≥ 30 dB über dem Brummen) ist Brummen unhörbar → dort
+  // nur teilweise kerben (min. 25 %), damit tiefe Gesangsanteile/Plosive nicht „mitklingen“.
+  const bs = Math.max(16, Math.round(sr / 100)), nb = Math.ceil(len / bs);
+  const ey = new Float64Array(nb), eb = new Float64Array(nb);
+  for (let j = 0; j < nb; j++) {
+    const a = j * bs, b = Math.min(len, a + bs); let sy = 0, sb = 0;
+    for (let i = a; i < b; i++) { const v = y[i], d = v - z[i]; sy += v * v; sb += d * d; }
+    ey[j] = sy / Math.max(1, b - a); eb[j] = sb / Math.max(1, b - a);
+  }
+  const humDb = dbP(median(eb));
+  const w = new Float64Array(nb);
+  for (let j = 0; j < nb; j++) {
+    let m = 0, c = 0; for (let q = Math.max(0, j - 5); q <= Math.min(nb - 1, j + 5); q++) { m += ey[q]; c++; }
+    w[j] = clamp(1 - (dbP(m / c) - humDb - 30) / 20, 0.25, 1);
+  }
+  const ws = new Float64Array(nb);
+  for (let j = 0; j < nb; j++) { let m = 0, c = 0; for (let q = Math.max(0, j - 5); q <= Math.min(nb - 1, j + 5); q++) { m += w[q]; c++; } ws[j] = st.staerke * m / c; }
+  for (let j = 0; j < nb; j++) {
+    const a = j * bs, b = Math.min(len, a + bs), w0 = ws[j], w1 = j + 1 < nb ? ws[j + 1] : w0;
+    for (let i = a; i < b; i++) { const ww = w0 + (w1 - w0) * (i - a) / bs; y[i] -= ww * (y[i] - z[i]); }
+  }
   sub(0.8);
   const P2 = spektrum(y, N, starts, true);
   let red = 0;
