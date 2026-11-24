@@ -195,7 +195,7 @@ def doppel_gegen_haupt(LH, LD, ereignisse):
 
 
 refr = [r for r in rows if r['teil'] in ('R1', 'R2', 'R3', 'Tag', 'Out')]
-dd13 = doppel_gegen_haupt(L13, D13, [('D-' + r['id'][2:], r['v13_det']) for r in refr])
+dd13 = doppel_gegen_haupt(L13, D13, [('D-' + r['id'][2:], r['v13_plan']) for r in refr])
 dd12 = doppel_gegen_haupt(E, D12, [('D-' + r['id'][2:], r['v12_det']) for r in refr if r['v12_det'] is not None])
 
 

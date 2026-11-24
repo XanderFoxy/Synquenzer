@@ -17,7 +17,8 @@ from t_plan import haupt_anker, anlaut, sprech_bloecke, starr_liste, doppel_anke
 from t_lauf import plane
 from t_warp import rendern, zeitkarte, quelle_zu_ziel, merkmale
 import t_reinigung as RG
-from t_doppel import doppel_messung
+from t_doppel import doppel_messung, nachmessen
+from t_warp import ziel_zu_quelle
 
 LOG = dict(erstellt=time.strftime('%Y-%m-%d %H:%M'), agent='timing')
 t_start = time.time()
@@ -79,6 +80,35 @@ D, tabD = doppel_anker_abstimmung(H, C, mkD)
 stD = starr_liste(D, [])
 PD, posD = plane(DT, mkD, stD)
 dop = rendern(DT, PD.stuecke, N)
+# 2. Durchgang: freie (nicht verankerte) Doppel-Silben im Ergebnis gegen die neue Haupt nachmessen. Stimmen alle drei Messungen
+# (±20 ms) überein – oder zwei, davon die Hüllkurve mit r >= 0,85, bei mindestens 25 ms Abweichung –, wird die Silbe zusätzlich
+# verankert (Ziel = Haupt + 10 ms) und das Doppel neu gerechnet. Akzent-Silben (see, sake, your, the) nur bei 3 von 3.
+kmD1 = zeitkarte(PD.stuecke)
+Hd = {h['id']: h for h in H}
+frei = [k for k in C if k not in {a['id'] for a in D}]
+ev13 = [(k, float(quelle_zu_ziel(kmH, [int(round(Hd['H-' + k[2:]]['src_peak'] * SR))])[0]) / SR) for k in frei]
+nm2 = nachmessen(lead, dop, ev13)
+zus = []
+for r in nm2:
+    if r['versatz'] is None: continue
+    akz = Hd['H-' + r['id'][2:]]['akzent']
+    stark = len(r['gruppe']) >= 3 or (not akz and len(r['gruppe']) == 2 and 'A' in r['gruppe'] and r['A_r'] >= 0.85 and abs(r['versatz']) >= 0.025)
+    if not stark: continue
+    t_d13 = r['ev'] + r['versatz']
+    src = float(ziel_zu_quelle(kmD1, [int(round(t_d13 * SR))])[0]) / SR
+    h = Hd['H-' + r['id'][2:]]
+    a = dict(id=r['id'], text=h['text'], teil=h['teil'], src_peak=src, src_vokal=src - (h['src_peak'] - h['src_vokal']),
+             src_kons_zk=src - (h['src_peak'] - h['src_kons_zk']), akzent=False, tgt_peak=r['ev'] + 0.010, art='silbe',
+             off_ms=round(r['versatz'] * 1000), stimmen=['2. Durchgang'] + r['gruppe'], haupt_ziel=r['ev'])
+    anlaut(mkD, a)
+    zus.append(a)
+LOG['doppel_2_durchgang'] = dict(gemessen=len(nm2), zusaetzlich_verankert=len(zus),
+                                 silben=[(a['id'], a['text'], a['teil'], a['off_ms']) for a in zus])
+if zus:
+    D = sorted(D + zus, key=lambda a: a['src_peak'])
+    stD = starr_liste(D, [])
+    PD, posD = plane(DT, mkD, stD)
+    dop = rendern(DT, PD.stuecke, N)
 dop, LOG['doppel_spitzen'] = RG.spitzen_weich(dop)
 schreibe(ST13 + 'doppel.wav', dop)
 kmD = zeitkarte(PD.stuecke)

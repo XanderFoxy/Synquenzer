@@ -213,6 +213,7 @@ class Planer:
         J = int(0.020 * SR)
         n = max(1, int(np.ceil(abs(d) / J)))
         M = max(n, int(L / (0.040 * SR)))
+        max_abs = int((MAX_DEHN - 1) * L) if d > 0 else int((1 - MIN_DEHN) * L)     # harte Faktor-Grenze je Lauf
         got = 0
         for k in range(M):
             rest_k = d - got
@@ -230,7 +231,7 @@ class Planer:
             X = int(np.clip(2 * P, 0.008 * SR, 0.016 * SR))
             richt = -1 if d > 0 else +1
             hi_lim = min(int(0.045 * SR), (p0 - a) - X // 2) if d > 0 else min(int(0.045 * SR), (b - p0) - X - 8)
-            lo = int(max(0.5 * P, wunsch - 0.7 * P)); hi = int(min(wunsch + 0.7 * P, hi_lim, abs(rest_k) + 0.5 * P))
+            lo = int(max(0.5 * P, wunsch - 0.7 * P)); hi = int(min(wunsch + 0.7 * P, hi_lim, abs(rest_k) + 0.5 * P, max_abs - abs(got)))
             if hi < lo: continue
             lags, nk = self.sprung_korr(p0, richt, lo, hi, X)
             if lags is None or len(lags) == 0: continue

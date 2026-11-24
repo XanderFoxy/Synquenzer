@@ -1,5 +1,5 @@
 {
- "erstellt": "2026-11-24 02:05",
+ "erstellt": "2026-11-24 02:09",
  "agent": "timing",
  "ziel_ausnahmen": {
   "H-065b": 115.375,
@@ -212,12 +212,77 @@
   "anteil_ueber_1db": 0.01746,
   "max_db": 7.38
  },
+ "doppel_2_durchgang": {
+  "gemessen": 64,
+  "zusaetzlich_verankert": 10,
+  "silben": [
+   [
+    "D-036",
+    "this",
+    "R1",
+    7
+   ],
+   [
+    "D-037",
+    "wall",
+    "R1",
+    5
+   ],
+   [
+    "D-049",
+    "eyes",
+    "R1",
+    8
+   ],
+   [
+    "D-051",
+    "can’t",
+    "S2",
+    -64
+   ],
+   [
+    "D-052",
+    "we",
+    "S2",
+    -33
+   ],
+   [
+    "D-066",
+    "tised",
+    "S2",
+    34
+   ],
+   [
+    "D-069",
+    "it",
+    "S2",
+    -18
+   ],
+   [
+    "D-110",
+    "Can’t",
+    "ZT",
+    -88
+   ],
+   [
+    "D-147",
+    "low",
+    "R3",
+    55
+   ],
+   [
+    "D-152",
+    "o",
+    "R3",
+    -33
+   ]
+  ]
+ },
  "doppel_spitzen": {
   "schwelle_db": -14.66,
   "aktiv_db": -26.66,
-  "anteil_ueber_1db": 0.02718,
-  "max_db": 10.21
+  "anteil_ueber_1db": 0.02712,
+  "max_db": 10.2
  },
- "terzen": "neu aus v13-Lead: lead_p3/p4/p5(+_adt), lead_m3/m4; ober.wav, ober_adt.wav, unter.wav (Gate wie mix_v12, ohne Verzögerung/Pegel)",
- "laufzeit_s": 120.9
+ "laufzeit_s": 23.8
 }
