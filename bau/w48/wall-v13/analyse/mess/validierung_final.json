@@ -1,0 +1,158 @@
+{
+ "haupt": {
+  "acf_original": [
+   0.2448,
+   0.1587,
+   0.0424,
+   0.0092
+  ],
+  "gesetze": {
+   "gemessen": {
+    "acf_nachbau": [
+     0.2505,
+     0.1648,
+     0.0475,
+     0.0174
+    ],
+    "zone1_orig_minus_nachbau_db": -0.02,
+    "zone1_iqr": [
+     -0.7,
+     0.56
+    ],
+    "zone2_orig_minus_nachbau_db": 0.76,
+    "zone2_iqr": [
+     0.66,
+     1.18
+    ],
+    "zonen": [
+     27,
+     15
+    ],
+    "stereo_korrelation": 0.839,
+    "seite_zu_mitte_db": -10.6
+   },
+   "sinus": {
+    "acf_nachbau": [
+     0.2389,
+     0.1561,
+     0.0445,
+     0.0165
+    ],
+    "zone1_orig_minus_nachbau_db": 0.33,
+    "zone1_iqr": [
+     -0.4,
+     0.95
+    ],
+    "zone2_orig_minus_nachbau_db": 1.21,
+    "zone2_iqr": [
+     1.09,
+     1.62
+    ],
+    "zonen": [
+     27,
+     15
+    ]
+   },
+   "doppelt": {
+    "acf_nachbau": [
+     0.2775,
+     0.1838,
+     0.0548,
+     0.0196
+    ],
+    "zone1_orig_minus_nachbau_db": -0.61,
+    "zone1_iqr": [
+     -1.45,
+     -0.27
+    ],
+    "zone2_orig_minus_nachbau_db": -0.12,
+    "zone2_iqr": [
+     -0.32,
+     0.07
+    ],
+    "zonen": [
+     27,
+     15
+    ]
+   }
+  }
+ },
+ "doppel": {
+  "acf_original": [
+   0.2454,
+   0.1653,
+   0.0433,
+   0.0149
+  ],
+  "gesetze": {
+   "gemessen": {
+    "acf_nachbau": [
+     0.2533,
+     0.168,
+     0.0434,
+     0.0185
+    ],
+    "zone1_orig_minus_nachbau_db": 1.0,
+    "zone1_iqr": [
+     0.12,
+     1.39
+    ],
+    "zone2_orig_minus_nachbau_db": 1.03,
+    "zone2_iqr": [
+     0.37,
+     1.57
+    ],
+    "zonen": [
+     29,
+     20
+    ],
+    "stereo_korrelation": 0.848,
+    "seite_zu_mitte_db": -10.8
+   },
+   "sinus": {
+    "acf_nachbau": [
+     0.2416,
+     0.1592,
+     0.0403,
+     0.0178
+    ],
+    "zone1_orig_minus_nachbau_db": 1.44,
+    "zone1_iqr": [
+     0.5,
+     1.77
+    ],
+    "zone2_orig_minus_nachbau_db": 1.53,
+    "zone2_iqr": [
+     0.85,
+     2.06
+    ],
+    "zonen": [
+     29,
+     20
+    ]
+   },
+   "doppelt": {
+    "acf_nachbau": [
+     0.2805,
+     0.1874,
+     0.0508,
+     0.0203
+    ],
+    "zone1_orig_minus_nachbau_db": 0.14,
+    "zone1_iqr": [
+     -0.69,
+     0.5
+    ],
+    "zone2_orig_minus_nachbau_db": 0.04,
+    "zone2_iqr": [
+     -0.64,
+     0.51
+    ],
+    "zonen": [
+     29,
+     20
+    ]
+   }
+  }
+ }
+}

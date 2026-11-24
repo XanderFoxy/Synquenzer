@@ -1,0 +1,20 @@
+{
+ "cubasis_kette_auf_v12_lead": {
+  "refrains": {
+   "echo_zu_trocken_db": -10.9,
+   "hall_zu_trocken_db": -11.8,
+   "nass_gesamt_zu_trocken_db": -8.2
+  },
+  "strophen": {
+   "echo_zu_trocken_db": -10.9,
+   "hall_zu_trocken_db": -12.0,
+   "nass_gesamt_zu_trocken_db": -8.3
+  }
+ },
+ "v12_mix": {
+  "hall_direkt_refrain_db": -11.0,
+  "delay_direkt_refrain_db": -24.0,
+  "hall": "plate_ir 1,7 s, Vorverz. 62,5 ms",
+  "delay": "0,5 s, fb 0,18, 6 Taps, 300–5000 Hz, geduckt bis −10 dB"
+ }
+}
