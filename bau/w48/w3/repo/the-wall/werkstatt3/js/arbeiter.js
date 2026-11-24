@@ -8,7 +8,8 @@
 //        opt = {reinigen:{klicks:true,…}|false, raster:{bpm, offset, teilung, staerke}, timing:true,
 //               ziel:{skala, grundton, staerke, uebergang_ms, vibratoErhalten}, tonhoehe:true}
 //   {typ:'warp', id, x, sr, anker} → {typ:'fertig', id, y}          (Ausschnitt; Anker relativ zum Ausschnitt)
-//   {typ:'ton', id, x, sr, note, cent} → {typ:'fertig', id, y}      (Ausschnitt; Note relativ zum Ausschnitt)
+//   {typ:'ton', id, x, sr, note, cent} → {typ:'fertig', id, y, note} (Ausschnitt; Note relativ zum Ausschnitt)
+//   {typ:'analyse', id, x, sr}     → {typ:'fertig', id, noten}     (Tonhöhe/Noten ohne Änderung, z. B. fürs Original)
 //   Fehler → {typ:'fehler', id, text}
 // Fehlt ein Modul (z. B. tonhoehe.js), springt ein einfacher Ersatz ein, damit die Seite trotzdem arbeitet.
 
@@ -78,12 +79,12 @@ function ersatzSpur(x, sr, hop = 0.01) {
 
 function ersatzNoten(spur) {
   const { t, f0 } = spur, out = []; let cur = null;
-  const fertig = () => { if (cur && cur.k.length >= 6) { const s = cur.k.slice().sort((a, b) => a - b), med = s[s.length >> 1]; out.push({ id: out.length + 1, t0: cur.t0, t1: cur.t1, midi: Math.round(med), cent: Math.round((med - Math.round(med)) * 100), f0Mittel: 440 * 2 ** ((med - 69) / 12), kurve: cur.k }); } cur = null; };
+  const fertig = () => { if (cur && cur.k.length >= 6) { const s = cur.k.slice().sort((a, b) => a - b), med = s[s.length >> 1]; out.push({ id: out.length + 1, t0: cur.t0, t1: cur.t1, midi: Math.round(med), cent: Math.round((med - Math.round(med)) * 100), f0Mittel: 440 * 2 ** ((med - 69) / 12), kurve: cur.k, hop: 0.01 }); } cur = null; };
   for (let i = 0; i < t.length; i++) {
     const m = midiVonHz(f0[i]);
     if (!(m === m)) { if (cur && t[i] - cur.t1 > 0.03) fertig(); continue; }
     if (cur && Math.abs(m - cur.ref) > 0.8) fertig();
-    if (!cur) cur = { t0: t[i] - 0.005, t1: t[i], k: [], ref: m };
+    if (!cur) cur = { t0: t[i], t1: t[i], k: [], ref: m };
     cur.k.push(m); cur.t1 = t[i] + 0.005; cur.ref = cur.ref * 0.8 + m * 0.2;
   }
   fertig();
@@ -157,19 +158,24 @@ async function auto(x, sr, opt = {}, melde = () => {}) {
     bericht.ton = { noten: noten.length, gestimmt: false, ersatz: true };
   }
   melde('tonhoehe', 90);
-  // Noten für die Anzeige: Kurve als MIDI, nach der Korrektur auf ihrer neuen Höhe, Spitze/Vorlauf dazu
+  // Noten für die Anzeige: so, wie sie nach der Korrektur klingen (Kurve als MIDI je hop), Spitze/Vorlauf dazu
   const gestimmt = bericht.ton.gestimmt;
-  noten = noten.map((n, i) => {
-    const k = kurveMidi(n), ist = n.midi + (n.cent || 0) / 100;
-    let neu = ist;
-    if (gestimmt) { const z = stufe(ist, ziel); neu = ist + (z - ist) * Math.min(1, Math.max(0, ziel.staerke)); }
-    const d = neu - ist; if (d) for (let j = 0; j < k.length; j++) k[j] += d;
+  let anzeige = noten;
+  if (gestimmt) {
+    if (m.ton && m.ton.korrigierteNoten) { try { anzeige = m.ton.korrigierteNoten(noten, ziel); } catch (e) { anzeige = null; } }
+    if (!anzeige || anzeige.length !== noten.length) anzeige = noten.map((n) => {
+      const ist = n.midi + (n.cent || 0) / 100, z = stufe(ist, ziel), d = (z - ist) * Math.min(1, Math.max(0, ziel.staerke));
+      const kurve = Array.from(kurveMidi(n), (v) => v + d), neu = ist + d, mi = Math.round(neu);
+      return Object.assign({}, n, { kurve, midi: mi, cent: Math.round((neu - mi) * 100) });
+    });
+  }
+  noten = anzeige.map((n, i) => {
+    const alt = noten[i] || n;
     const sp = tr.find((t) => t.peak >= n.t0 - 0.06 && t.peak <= Math.min(n.t1, n.t0 + 0.25));
-    const midi = Math.round(neu);
-    return { id: n.id ?? i + 1, t0: n.t0, t1: n.t1, midi, cent: Math.round((neu - midi) * 100), f0Mittel: n.f0Mittel, _k: k,
-      peak: sp ? sp.peak : null, onset: sp ? Math.min(sp.onset, sp.peak) : null, vorher: ist };
+    return Object.assign({}, n, { id: n.id ?? i + 1, kurve: Array.from(kurveMidi(n)), hop: n.hop ?? alt.hop ?? null,
+      peak: sp ? sp.peak : null, onset: sp ? Math.min(sp.onset, sp.peak) : null, vorher: alt.midi + (alt.cent || 0) / 100 });
   });
-  if (gestimmt) bericht.ton.gestimmtAnzahl = noten.filter((n) => Math.abs(n.midi + n.cent / 100 - n.vorher) > 0.005).length;
+  if (gestimmt) bericht.ton.gestimmtAnzahl = noten.filter((n) => Math.abs(n.midi + n.cent / 100 - n.vorher) > 0.05).length;
   melde('tonhoehe', 100);
   return { y, gereinigt, getimed, noten, anker, bericht, tr };
 }
@@ -193,7 +199,16 @@ export async function bearbeiten(msg, melde = () => {}) {
     if (!m.tim) throw new Error('timing.js fehlt');
     return { y: m.tim.warp(msg.x, msg.sr, msg.anker) };
   }
-  if (msg.typ === 'ton') return { y: await tonSchieben(msg.x, msg.sr, msg.note, msg.cent) };
+  if (msg.typ === 'ton') {
+    const y = await tonSchieben(msg.x, msg.sr, msg.note, msg.cent);
+    let note = null;
+    if (m.ton && m.ton.noteVerschoben && msg.note.kurve && msg.note.kurve.length) { try { note = m.ton.noteVerschoben(msg.note, msg.cent); } catch (e) { note = null; } }
+    return { y, note };
+  }
+  if (msg.typ === 'analyse') {
+    if (m.ton) { const sp = m.ton.verfolgen(msg.x, msg.sr, 0.005); return { noten: (m.ton.noten(sp) || []).map((n) => Object.assign({}, n, { kurve: Array.from(kurveMidi(n)) })) }; }
+    return { noten: ersatzNoten(ersatzSpur(msg.x, msg.sr)) };
+  }
   if (msg.typ === 'module') return { fehlt: m.fehlt };
   throw new Error('unbekannter Auftrag ' + msg.typ);
 }

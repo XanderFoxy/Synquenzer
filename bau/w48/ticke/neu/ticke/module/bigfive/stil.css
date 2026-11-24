@@ -1,0 +1,25 @@
+/* M1 bigfive – nur Klassen mit Präfix bf-, nur Tokens aus stil.css (ARCH.md §5). */
+.bf-liste{padding-left:1.2rem}
+.bf-liste li{margin:.4rem 0}
+.bf-bereich{scroll-margin-top:.75rem}
+.bf-bereich>h3{margin-bottom:.15rem}
+.bf-bereich .band{margin:.6rem 0 .4rem}
+.bf-pr{margin:.2rem 0 .6rem}
+.bf-angebot{margin:.8rem 0 .2rem}
+.bf-angebot p{margin:.1rem 0 .5rem}
+.bf-facetten{margin:.8rem 0 .2rem;border-top:1px solid var(--rand);padding-top:.3rem}
+.bf-facetten summary{min-height:2.75rem;display:flex;align-items:center;cursor:pointer;font-weight:650;color:var(--akzent)}
+.bf-facette .band{margin:.55rem 0 .1rem}
+.bf-facette .band-name{font-weight:600;font-size:.95rem}
+.bf-facette p{margin:0 0 .4rem}
+.bf-aktionen{margin:1.2rem 0}
+.bf-aktionen .link{align-self:center}
+.bf-qualitaet h3{margin-top:0}
+.bf-tabelle{display:grid;gap:0;margin:.6rem 0;border:1px solid var(--rand);border-radius:var(--rund-k);overflow:hidden;font-size:.9rem}
+.bf-zeile{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:.4rem;padding:.45rem .7rem;border-top:1px solid var(--rand);background:var(--fl)}
+.bf-zeile:first-child{border-top:0}
+.bf-zeile.kopf{background:var(--fl2);font-weight:650}
+.bf-saetze{padding-left:1.4rem}
+.bf-saetze li{margin:.25rem 0}
+.bf-lesehilfe{margin:.8rem 0 .2rem}.bf-lesehilfe .link{min-height:2.75rem;min-width:2.75rem;padding:0 .35rem;margin-left:.1rem;vertical-align:middle}
+.bf-bereich>.band .band-name{display:none}
