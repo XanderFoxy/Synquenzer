@@ -841,12 +841,20 @@ document.addEventListener('dragover', (e) => e.preventDefault());
 document.addEventListener('drop', (e) => { e.preventDefault(); const f = e.dataTransfer && e.dataTransfer.files[0]; if (f) dateiLaden(f); });
 
 const basisName = () => String(Z.name || 'Gesang').replace(/\.[a-z0-9]{2,5}$/i, '').replace(/[\\/:*?"<>|]+/g, '-').trim() || 'Gesang';
+// Kein hartes Clipping im Export: übersteuert eine Fassung (> −0,1 dBFS), werden nur die Proben über −0,9 dBFS weich begrenzt
+function spitzenSchutz(x) {
+  let m = 0; for (let i = 0; i < x.length; i++) { const a = Math.abs(x[i]); if (a > m) m = a; }
+  if (!(m > 0.989)) return x;
+  const t = 0.9, r = 0.999 - t, y = new Float32Array(x.length);
+  for (let i = 0; i < x.length; i++) { const v = x[i], a = Math.abs(v); y[i] = a <= t ? v : Math.sign(v) * (t + r * Math.tanh((a - t) / r)); }
+  return y;
+}
 async function exportVon(v, zusatz) {
   if (!v) return;
   let x = v.x; if (!x) { const h = await verlauf.holen(v.id); x = h && h.x; }
   if (!x) { meldung('Diese Version ist nicht mehr im Speicher'); return; }
   const name = basisName() + '_' + zusatz + '.wav';
-  await io.exportieren(io.wav(x, v.sr, 24), name);
+  await io.exportieren(io.wav(spitzenSchutz(x), v.sr, 24), name);
   meldung(name + ' geladen (' + v.name + ')');
 }
 const neuesteStufe = (st) => verlauf.liste().find((v) => v.stufe === st);
@@ -869,7 +877,7 @@ async function exportGetimed() {
     const raster = { bpm: e.bpm, offset: e.versatz, teilung: e.teilung === 'frei' ? '1/16' : e.teilung, staerke: Math.max(0.01, (e.timing ?? 100) / 100) };
     const r = await rufen({ typ: 'timing', x: seg, sr: q.g.sr, raster, klicks: (e.rein || {}).klicks !== false }, [seg.buffer]);
     const name = basisName() + '_getimed.wav';
-    await io.exportieren(io.wav(r.y, q.g.sr, 24), name);
+    await io.exportieren(io.wav(spitzenSchutz(r.y), q.g.sr, 24), name);
     meldung(name + ' geladen (gereinigt + Timing, ohne Tonhöhe)');
   } catch (e) { meldung('Das ging nicht: ' + e.message); }
   beschaeftigt(false);

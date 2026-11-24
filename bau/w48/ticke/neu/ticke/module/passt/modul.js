@@ -145,7 +145,7 @@ function profil(ctx) {
     const verlauf = kern.speicher.verlauf('bigfive').filter((x) => x && x.schema === 1 && x.skala === 'T');
     const ent = verlauf.length >= 2 ? entwicklung(verlauf[verlauf.length - 2], verlauf[verlauf.length - 1]) : [];
     el.innerHTML = `<h2>Dein Profil</h2>${u16Html(R)}
-      <p class="lead">So, wie du dich beschrieben hast – in Worten, ohne Punkte und ohne richtig oder falsch.</p>
+      <p class="lead">So, wie du dich beschrieben hast – in Worten, ohne Wertung und ohne richtig oder falsch.</p>
       <section class="karte pa-karte" aria-label="Profil-Karte">
         <p class="pa-kopf"><span>Wie ich ticke · Profil-Karte</span><span>${esc(ui.datum(new Date().toISOString()))}</span></p>
         ${name ? `<p class="pa-name">${esc(name)}</p><p class="klein leise">${esc(profilNameText(R.name))}</p>` : ''}

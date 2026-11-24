@@ -1,9 +1,8 @@
 /* M3 textspiegel – nur Klassen mit Präfix ts-, nur Tokens aus stil.css des Kerns, Maße in rem.
-   textarea.… statt .… : sonst gewinnt textarea.feld (min-height 9rem) aus dem Kern. */
+   textarea.… statt .… : sonst gewinnt textarea.feld (min-height 9rem) aus dem Kern.
+   0.3: keine Messbalken mehr (Waage, Skala, Tabelle entfallen) – Richtungen nur als zwei gleichwertige Pole in Worten. */
 .ts-schritt{margin:0 0 .1rem}
 textarea.ts-feld{min-height:13rem;font-size:1.06rem;line-height:1.55}
-textarea.ts-claude{min-height:16rem;font:1rem/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-textarea#ts-antwort{min-height:8rem}
 .ts-zaehler{display:flex;align-items:center;gap:.75rem;margin:.35rem 0 .1rem}
 .ts-zaehler>#ts-balken{flex:1}
 .ts-zaehler>#ts-zahl{font-size:.88rem;color:var(--leise);white-space:nowrap;font-variant-numeric:tabular-nums}
@@ -12,26 +11,31 @@ textarea#ts-antwort{min-height:8rem}
 .ts-details>summary::-webkit-details-marker{display:none}
 .ts-details>summary::before{content:"+";display:inline-block;width:1.2rem;font-size:1.15rem}
 .ts-details[open]>summary::before{content:"–"}
-.ts-skala{list-style:none;padding:0;margin:.6rem 0}
-.ts-skala li{display:grid;grid-template-columns:1fr auto;align-items:end;gap:.2rem .75rem;margin:.7rem 0}
-.ts-skala li>b{font-variant-numeric:tabular-nums;white-space:nowrap}
-.ts-skala .ts-bar{grid-column:1/-1;display:block;height:.6rem;border-radius:.3rem;background:var(--fl2);border:1px solid var(--rand);overflow:hidden}
-.ts-skala .ts-bar>span{display:block;height:100%;background:var(--band-rand)}
-.ts-waage{display:flex;height:1.4rem;border-radius:.7rem;overflow:hidden;border:1px solid var(--rand);background:var(--fl2);margin:.5rem 0 .25rem}
-.ts-waage>span{display:block;height:100%}
-.ts-waage-a{background:var(--abgeleitet)}
-.ts-waage-b{background:var(--akzent)}
-.ts-pole{display:flex;justify-content:space-between;gap:.75rem;font-size:.86rem;color:var(--leise);margin-bottom:.5rem}
-.ts-pole b{color:var(--text);font-variant-numeric:tabular-nums}
-.ts-punkt{display:inline-block;width:.7rem;height:.7rem;border-radius:50%;margin:0 .3rem;vertical-align:baseline}
-.ts-punkt-a{background:var(--abgeleitet)}
-.ts-punkt-b{background:var(--akzent)}
+/* Richtung: zwei Pole, dazwischen eine ruhige Linie – keine Zahl, keine Position */
+.ts-richtung{display:flex;align-items:center;gap:.5rem;margin:.55rem 0 .2rem}
+.ts-pol{flex:0 1 auto;max-width:44%;padding:.3rem .65rem;border-radius:1.2rem;border:1px solid var(--rand);color:var(--leise);font-size:.9rem;line-height:1.3;text-align:center;overflow-wrap:anywhere}
+.ts-pol.an{color:var(--text);font-weight:650;border-color:var(--akzent)}
+.ts-richtung[data-deutlich=klar] .ts-pol.an{background:var(--akzent-weich)}
+.ts-linie{flex:1 1 1.5rem;min-width:1rem;height:2px;border-radius:1px;background:var(--rand)}
+.ts-wort{margin:.1rem 0 .4rem;color:var(--leise)}
 .ts-beleg{margin:.35rem 0}
-.ts-tabelle{width:100%;border-collapse:collapse;font-size:.86rem;font-variant-numeric:tabular-nums}
-.ts-tabelle th,.ts-tabelle td{padding:.4rem .25rem;border-top:1px solid var(--rand);text-align:right;font-weight:400}
-.ts-tabelle thead th{font-weight:650;border-top:0;color:var(--leise)}
-.ts-tabelle th:first-child{text-align:left}
-.ts-tabelle abbr{text-decoration:none}
+.ts-astlink{display:inline-flex;align-items:center;min-height:2.75rem}
+/* Tiefer lesen */
+.ts-tief>summary{gap:.5rem}
+.ts-tief h4{margin:1rem 0 .3rem}
+.ts-stelle{margin:.4rem 0 .6rem;padding:.55rem .8rem;border-left:3px solid var(--rand);border-radius:0 var(--rund-k) var(--rund-k) 0;background:var(--fl2)}
+.ts-stelle p{margin:0;overflow-wrap:anywhere}
+.ts-stelle footer{margin-top:.25rem}
+.ts-stelle mark{background:var(--akzent-weich);color:var(--text);border-radius:.25rem;padding:0 .15em;font-weight:600}
+.ts-woerter{display:flex;flex-wrap:wrap;gap:.4rem;margin:.4rem 0}
+.ts-woerter>span{padding:.25rem .7rem;border-radius:1.1rem;border:1px solid var(--rand);background:var(--fl);font-size:.92rem}
+.ts-jetext{padding-left:1.1rem}
+.ts-jetext li{margin:.5rem 0}
+/* Frühere Fassungen */
+.ts-fassungen ul{list-style:none;padding:0;margin:.4rem 0}
+.ts-fassungen li{display:flex;gap:.75rem;align-items:center;justify-content:space-between;padding:.5rem 0;border-top:1px solid var(--rand)}
+.ts-fassungen li>span{flex:1;min-width:0;overflow-wrap:anywhere}
+.ts-fassungen .knopf{flex:none;min-height:2.75rem}
 .ts-vgl{border-top:1px solid var(--rand);padding-top:.6rem;margin-top:.8rem}
 .ts-vgl:first-of-type{border-top:0;margin-top:.2rem}
 .ts-vgl h4{margin-top:.2rem}
@@ -39,9 +43,4 @@ textarea#ts-antwort{min-height:8rem}
 .ts-blind-karte{display:block;width:100%;text-align:left;min-height:3rem;padding:.85rem 1rem;border-radius:var(--rund);border:1px solid var(--rand);background:var(--fl);color:var(--text);cursor:pointer;box-shadow:var(--schatten);font:inherit}
 .ts-blind-karte ul{margin:.35rem 0 0}
 .ts-blind-karte li{margin:.15rem 0}
-.ts-zitate{list-style:none;padding:0}
-.ts-zitate li{display:flex;gap:.5rem;align-items:flex-start;margin:.6rem 0}
-.ts-zitate .sym{width:1.25rem;height:1.25rem;margin-top:.15rem}
-.ts-ok .sym{color:var(--gruen)}
-.ts-fehlt .sym{color:var(--gelb)}
 .ts-antwort:empty{display:none}

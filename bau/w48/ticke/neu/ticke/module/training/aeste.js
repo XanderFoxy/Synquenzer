@@ -26,7 +26,7 @@ const INHALT = {
       { id: 'offene-schleifen', titel: 'Offene Schleifen', text: 'Unerledigtes meldet sich immer wieder im Kopf. Es hilft schon, es aufzuschreiben und festzulegen, wann du dich darum kümmerst – dann darf der Kopf loslassen.' },
       { id: 'pausen', titel: 'Pausen und Zeitfenster', text: 'Aufmerksamkeit schwankt über den Tag und ermüdet bei langer Anstrengung. Kurze, echte Pausen machen frischer; Schweres gelingt meist besser in der eigenen wachen Zeit.' }
     ],
-    verwandt: ['bigfive.gewissenhaftigkeit', 'interessen.rhythmus', 'muster.kontrolle', 'muster.neugier_denken', 'training.gewohnheiten', 'training.gesundheit'],
+    verwandt: ['bigfive.gewissenhaftigkeit', 'interessen.rhythmus', 'muster.kontrolle', 'muster.stress', 'passt.arbeit_struktur', 'training.gewohnheiten', 'training.gesundheit'],
     wissen: 'Rubinstein, Meyer und Evans (2001) zu den Kosten von Aufgabenwechseln; Stothart, Mitchum und Yehnert (2015) zur Ablenkung durch Handy-Mitteilungen; Masicampo und Baumeister (2011) zu offenen Aufgaben und Plänen; Albulescu und Kollegen (2022) zu kurzen Pausen; Schmidt und Kollegen (2007) zu Tageszeit und Denken.'
   },
   ziele: {
@@ -49,7 +49,7 @@ const INHALT = {
       { id: 'genau', titel: 'Genaue Ziele', text: 'Edwin Locke und Gary Latham zeigten über Jahrzehnte: Genaue, fordernde Ziele führen im Mittel weiter als ungenaue. Wichtig ist, dass das Ziel reizt und machbar bleibt.' },
       { id: 'bestes-selbst', titel: 'Das beste mögliche Selbst', text: 'Über ein gelungenes Leben in ein paar Jahren zu schreiben, hebt im Mittel etwas die Zuversicht. Danach lohnt der Blick auf das Hindernis, damit aus dem Bild ein Weg wird.' }
     ],
-    verwandt: ['bigfive.gewissenhaftigkeit', 'passt.wachstum', 'muster.kontrolle', 'muster.sinn', 'training.gewohnheiten', 'training.wachsen'],
+    verwandt: ['bigfive.gewissenhaftigkeit', 'passt.wachstum', 'muster.kontrolle', 'muster.sinn', 'muster.entscheiden', 'training.gewohnheiten', 'training.wachsen'],
     wissen: 'Oettingen (2012) zum mentalen Kontrastieren; Wang, Wang und Gai (2021), eine Zusammenfassung von 21 Studien zu WOOP; Gollwitzer und Sheeran (2006) zu Wenn-dann-Plänen; Locke und Latham (2002) zur Zielsetzung; Harkin und Kollegen (2016) zum Beobachten des eigenen Fortschritts; Carrillo und Kollegen (2019) zum besten möglichen Selbst.'
   },
   gewohnheiten: {
@@ -96,7 +96,7 @@ const INHALT = {
       { id: 'schlaf', titel: 'Schlaf', text: 'Im Schlaf wird Gelerntes gefestigt. Darum lohnt eine kurze Wiederholung am Abend und ein Abfragen am Morgen.' },
       { id: 'lernstile', titel: 'Mythos Lernstile', text: 'Die Idee, jeder lerne am besten über einen bestimmten Sinn, ist weit verbreitet, aber nicht belegt. Wichtiger ist die Art des Übens.' }
     ],
-    verwandt: ['bigfive.offenheit', 'muster.lernen', 'muster.neugier_denken', 'interessen.riasec', 'training.fokus', 'training.gesundheit'],
+    verwandt: ['bigfive.offenheit', 'muster.lernen', 'muster.neugier_denken', 'muster.denkfallen', 'passt.lernen', 'interessen.riasec', 'training.fokus'],
     wissen: 'Dunlosky und Kollegen (2013), eine große Übersicht über Lerntechniken; Roediger und Karpicke (2006) zum Lernen durch Abfragen; Cepeda und Kollegen (2006) zum verteilten Üben; Bisra und Kollegen (2018) zum Selbst-Erklären; Brunmair und Richter (2019) zum gemischten Üben; Rasch und Born (2013) zu Schlaf und Gedächtnis; Pashler und Kollegen (2008) zu Lernstilen.'
   },
   gefuehle: {
@@ -120,7 +120,7 @@ const INHALT = {
       { id: 'selbstmitgefuehl', titel: 'Selbstmitgefühl', text: 'So freundlich mit sich zu sprechen wie mit einem guten Freund, senkt im Mittel Stress und Grübeln. Das heißt nicht, alles gutzuheißen, sondern sich nicht zusätzlich selbst zu treten.' },
       { id: 'gruebeln', titel: 'Dem Grübeln einen Platz geben', text: 'Eine feste, kurze Sorgen-Zeit am Tag kann das Grübeln zu anderen Zeiten leiser machen. Das ist ein erster, kleiner Befund.' }
     ],
-    verwandt: ['bigfive.stabilitaet', 'muster.selbstmitgefuehl', 'muster.emotionen', 'muster.stress', 'muster.ungewissheit', 'training.gesundheit'],
+    verwandt: ['bigfive.stabilitaet', 'muster.gefuehle', 'muster.selbstmitgefuehl', 'muster.stress', 'muster.denkfallen', 'textspiegel.gefuehl', 'training.gesundheit'],
     wissen: 'Webb, Miles und Sheeran (2012) zu Wegen, Gefühle zu lenken; Torre und Lieberman (2018) zum Benennen von Gefühlen; Kross und Kollegen (2014) zum Selbstgespräch in der Du-Form; Ferrari und Kollegen (2019) zu Selbstmitgefühl; McGowan und Behar (2013) zur festen Sorgen-Zeit; Cregg und Cheavens (2021) zu Dankbarkeits-Übungen.'
   },
   gesundheit: {
@@ -168,7 +168,7 @@ const INHALT = {
       { id: 'kleine-gesten', titel: 'Kleine Gesten', text: 'Sich ohne Anlass melden, Danke sagen, ein ehrliches Kompliment machen: Menschen unterschätzen regelmäßig, wie sehr das freut, und überschätzen, wie unangenehm es ist.' },
       { id: 'grenzen', titel: 'Grenzen', text: 'Ein kurzes, freundliches Nein schützt Zeit und Kraft. Eine Begründung ist erlaubt, aber keine Pflicht.' }
     ],
-    verwandt: ['bigfive.extraversion', 'bigfive.vertraeglichkeit', 'muster.werte_ich_wir', 'muster.kommunikation', 'muster.grenzen', 'interessen.ehrlichkeit'],
+    verwandt: ['bigfive.extraversion', 'bigfive.vertraeglichkeit', 'muster.kommunikation', 'muster.grenzen', 'muster.naehe', 'muster.konflikt', 'passt.andere_naehe'],
     wissen: 'Weger und Kollegen (2014) zum aktiven Zuhören; Huang und Kollegen (2017) zu Fragen in Gesprächen; Rogers, Howieson und Neame (2018) zu Ich-Sätzen im Streit; Boothby und Bohns (2021) zu Komplimenten; Liu und Kollegen (2023) zum Melden ohne Anlass; Kumar und Epley (2018) zu Danke-Briefen; Gable und Kollegen (2004) zum Mitfreuen; Curry und Kollegen (2018) zu Freundlichkeiten.'
   },
   wachsen: {

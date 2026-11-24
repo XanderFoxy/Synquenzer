@@ -237,6 +237,24 @@ async function waehleBis(page, n, seite = (i) => (i % 3 ? '.sp-links' : '.sp-rec
     ok(page.fehler.length === 0, 'keine Seitenfehler (ohne Merken) ' + page.fehler.slice(0, 3).join(' / '));
     await ctx.close();
   }
+  console.log('7) Von vorn wählen: alte Wahlen bleiben als „vorher“');
+  {
+    const { ctx, page } = await neu(b);
+    await ctx.addInitScript((d) => { if (!sessionStorage.getItem('x')) { sessionStorage.setItem('x', '1'); localStorage.clear(); for (const [k, v] of Object.entries(d)) localStorage.setItem(k, v); } }, ALT.fertig);
+    await page.goto(U('spiel')); await page.waitForSelector('[data-sp=neu]');
+    await page.click('[data-sp=neu]'); await page.waitForSelector('dialog[open] [data-w=ja]'); await page.click('dialog[open] [data-w=ja]');
+    await page.waitForSelector('.sp-paar[data-bereit="1"]');
+    ok(/Wahl 1 von 40/.test(await text(page)), 'von vorn: Wahl 1 von 40');
+    const l = await page.evaluate(() => window.__spiel.lauf());
+    ok(Object.keys(l.antworten).length === 0 && Object.keys(l.vorher).length === 55, 'von vorn: Wahlen leer, 55 × „vorher“');
+    await page.click('a[href="#spiel"]'); await page.waitForSelector('.sp-held');
+    const tu = await text(page);
+    ok(/Dein Muster ansehen/.test(tu) && /Neu wählen/.test(tu), 'Pause nach „von vorn“: altes Muster + „Neu wählen“');
+    const li = await page.evaluate(async () => (await import('./module/spiel/modul.js')).antwortListe(window.__ticke).find((x) => x.id === 'p05'));
+    ok(li.wert === null && li.vorher.length === 1, 'antwortListe nach „von vorn“: offen, mit „vorher“');
+    ok(page.fehler.length === 0, 'keine Seitenfehler (von vorn) ' + page.fehler.slice(0, 3).join(' / '));
+    await ctx.close();
+  }
   console.log('Zeiten (ms):', JSON.stringify(zeiten));
   console.log(`\n${pruef - fehlerZahl} von ${pruef} Prüfungen ok${fehlerZahl ? ` – ${fehlerZahl} FEHLER` : ''}`);
   await b.close();

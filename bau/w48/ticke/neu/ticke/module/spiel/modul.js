@@ -288,7 +288,7 @@ function uebersicht(ctx) {
     let knoepfe;
     if (imHaupt) knoepfe = `<a class="knopf haupt gross voll" href="#spiel/runde">Weiter wählen <span class="klein">· Wahl ${nHaupt + 1} von ${HAUPT_ANZAHL}</span></a>`;
     else if (imDuell) knoepfe = `<a class="knopf haupt gross voll" href="#spiel/runde">Weiter mit den Tätigkeiten</a>`;
-    else if (q.e) knoepfe = `<a class="knopf haupt gross voll" href="#spiel/ergebnis">Dein Muster ansehen</a>`;
+    else if (q.e) knoepfe = `<a class="knopf haupt gross voll" href="#spiel/ergebnis">Dein Muster ansehen</a>${hauptFertig(l) ? '' : '<a class="knopf zweit voll" href="#spiel/runde">Neu wählen</a>'}`;
     else knoepfe = `<a class="knopf haupt gross voll" href="#spiel/runde">Anfangen</a>`;
     if (irgendwas(l)) knoepfe += `<a class="knopf zweit voll" href="#spiel/wahlen">Deine Wahlen ansehen und ändern</a>`;
     const kurz = q.e ? kurzMuster(q.e) : '';
@@ -323,7 +323,7 @@ function uebersicht(ctx) {
 // ---------- Muster ----------
 function ergebnis(ctx) {
   const { el } = ctx, S = kern.speicher;
-  ctx.titel('Dein Muster'); ctx.zurueckZu('spiel');
+  ctx.titel('Entweder – oder'); ctx.zurueckZu('spiel');
   const male = () => {
     const q = quelle(S), e = q.e, l = q.l;
     if (!e || (!Object.keys(e.bereiche || {}).length && !e.interessen)) {
@@ -421,7 +421,11 @@ function wahlen(ctx) {
   };
   male();
   const ziel = ctx.param && ctx.param.id && SCHRITT[ctx.param.id] ? el.querySelector('#sp-w-' + ctx.param.id) : null;
-  if (ziel) { ziel.classList.add('sp-w-ziel'); requestAnimationFrame(() => { try { ziel.scrollIntoView({ block: 'center' }); } catch {} ziel.querySelector('.sp-w-knopf')?.focus({ preventScroll: true }); }); }
+  // Sprung zu einer Wahl (?id=…): nur der Inhalt scrollt (scrollIntoView könnte auf dem iPhone die ganze Seite verschieben)
+  if (ziel) {
+    ziel.classList.add('sp-w-ziel');
+    requestAnimationFrame(() => { const r = ziel.getBoundingClientRect(), rb = el.getBoundingClientRect(); el.scrollTop += r.top - rb.top - Math.max(0, (rb.height - r.height) / 2); ziel.querySelector('.sp-w-knopf')?.focus({ preventScroll: true }); });
+  }
   const klick = (ev) => {
     const b = ev.target.closest('.sp-w-knopf'); if (!b || !el.contains(b)) return;
     const s = SCHRITT[b.dataset.id], w = b.dataset.wert; if (!s || (w !== 'a' && w !== 'b')) return;

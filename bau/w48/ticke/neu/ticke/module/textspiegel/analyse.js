@@ -221,9 +221,19 @@ export function fundstellen(texte, reihenfolge, gruppen, n = 2) {
 }
 function kuerze(s, treffer, max = 220) {
   if (s.length <= max) return s;
-  let i = s.length; for (const w of treffer) { const j = s.indexOf(w); if (j >= 0 && j < i) i = j; }
+  let i = treffer.size ? s.length : 0; for (const w of treffer) { const j = s.indexOf(w); if (j >= 0 && j < i) i = j; }
   const von = Math.max(0, Math.min(i - 60, s.length - max)), bis = Math.min(s.length, von + max);
   return (von > 0 ? '… ' : '') + s.slice(von, bis).trim() + (bis < s.length ? ' …' : '');
+}
+// Kürzester (ab 2 Wörtern) und längster Satz aller Texte – für „Knapp oder ausführlich“ in „Tiefer lesen“. null ohne zwei Sätze.
+export function extremSaetze(texte, reihenfolge) {
+  let kurz = null, lang = null, n = 0;
+  for (const id of reihenfolge) for (const s of saetze((texte || {})[id] || '')) {
+    const w = woerter(s).length; if (w < 2) continue; n++;
+    if (!kurz || w < kurz.w) kurz = { aufgabe: id, satz: s, w };
+    if (!lang || w > lang.w) lang = { aufgabe: id, satz: kuerze(s, new Set()), w };
+  }
+  return n >= 2 ? { kurz, lang } : null;
 }
 // Zerlegt einen Satz in Stücke [{t, an}] – an = eines der gefundenen Wörter (zum Hervorheben in der Anzeige).
 export function stuecke(satz, woerterListe) {

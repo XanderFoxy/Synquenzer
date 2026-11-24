@@ -1,0 +1,24 @@
+const { chromium } = require('playwright'); const fs = require('fs');
+const W = '/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/ticke-w';
+const ALT = JSON.parse(fs.readFileSync(W + '/werkzeug/spiel/alt-daten.json', 'utf8'));
+(async () => {
+  const b = await chromium.launch();
+  const ctx = await b.newContext({ viewport: { width: 428, height: 926 }, hasTouch: true, isMobile: true, serviceWorkers: 'block', reducedMotion: 'reduce', deviceScaleFactor: 2 });
+  await ctx.addInitScript((d) => { if (!sessionStorage.getItem('x')) { sessionStorage.setItem('x', '1'); localStorage.clear(); for (const [k, v] of Object.entries(d)) localStorage.setItem(k, v); } }, ALT.fertig);
+  const page = await ctx.newPage(); const f = []; page.on('pageerror', (e) => f.push(String(e))); page.on('console', (m) => { if (m.type() === 'error') f.push(m.text()); });
+  await page.goto('http://127.0.0.1:8956/ticke/?test=1#spiel/ergebnis'); await page.waitForSelector('.sp-ri');
+  await page.click('.sp-ri:nth-of-type(2) .sp-beide summary').catch(() => {});
+  await page.evaluate(() => document.querySelectorAll('.sp-ri')[1].scrollIntoView());
+  await page.screenshot({ path: W + '/fotos/spiel-9-muster-beide-seiten.png' });
+  await page.evaluate(() => document.querySelectorAll('.sp-ri')[5].scrollIntoView());
+  await page.screenshot({ path: W + '/fotos/spiel-10-muster-taetigkeiten.png' });
+  await page.goto('http://127.0.0.1:8956/ticke/?test=1#muster/ast/spiel.stabilitaet'); await page.waitForTimeout(1200);
+  const t = await page.evaluate(() => document.getElementById('inhalt').innerText.slice(0, 600));
+  await page.screenshot({ path: W + '/fotos/spiel-11-ast-im-muster.png' });
+  console.log('Ast-Seite (Modul muster):', t.replace(/\n+/g, ' | ').slice(0, 500));
+  await page.goto('http://127.0.0.1:8956/ticke/?test=1#antworten/spiel'); await page.waitForTimeout(1500);
+  console.log('Antworten-Seite (Kern):', (await page.evaluate(() => document.getElementById('inhalt').innerText.slice(0, 400))).replace(/\n+/g, ' | '));
+  await page.screenshot({ path: W + '/fotos/spiel-12-antworten-kern.png' });
+  console.log('Fehler:', f.length, f.slice(0, 5));
+  await b.close();
+})();

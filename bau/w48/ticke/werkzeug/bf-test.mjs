@@ -16,7 +16,7 @@ async function kontext({ daten = null, quer = false, dunkel = false } = {}) {
   return { c, p };
 }
 const geh = async (p, h) => { await p.evaluate((x) => { location.hash = x; }, h); await p.waitForTimeout(250); };
-const inhaltText = (p) => p.evaluate(() => document.getElementById('inhalt').innerText);
+const inhaltText = (p) => p.evaluate(() => document.getElementById('inhalt').innerText.replace(/keine Punkte|keine Prozente/g, ''));
 async function pruefeErgebnis(p, name) {
   await p.waitForSelector('.bf-bereich', { timeout: 10000 });
   ok(await p.locator('.bf-bereich').count() === 5, name + ': 5 Bereiche');
@@ -101,6 +101,17 @@ console.log('1. Alte Daten (Vorlage 0.2.1) laden');
   await c.close();
 }
 
+// ---- 2b. Eilig ausgefüllte Vorlage-Daten ----
+console.log('2b. Eilige Antworten (Vorlage-Daten)');
+{
+  const { c, p } = await kontext({ daten: JSON.parse(fs.readFileSync(altDatei.replace('.json', '-eilig.json'), 'utf8')) });
+  await p.goto(basis + '?test=1#fragen/bigfive'); await pruefeErgebnis(p, 'eilig');
+  ok(await p.locator('.bf-qualitaet').count() === 1, 'eilig: freundlicher Hinweis sichtbar');
+  ok(!(await p.locator('.bf-richtung').allInnerTexts()).some((t) => t.startsWith('Klar')), 'eilig: Richtungen vorsichtig (kein „klar“)');
+  const q = await p.locator('.bf-qualitaet').innerText(); ok(!/\d/.test(q), 'eilig: Hinweis ohne Zahlen über ihn');
+  await c.close();
+}
+
 // ---- 3. Neu ausfüllen (erfundene Antworten) über den Fragebogen ----
 console.log('3. Fragebogen neu ausfüllen');
 {
@@ -115,14 +126,15 @@ console.log('3. Fragebogen neu ausfüllen');
     const info = await p.evaluate(() => { const t = document.querySelector('#fb-text').textContent; const q = window.__bigfive.FRAGEN.find((x) => x.t === t); return { b: q.b, k: q.k }; });
     let w = ziel[info.b]; if (info.k < 0) w = 6 - w;
     if (i === 4) { await p.click('[data-fb=skip]'); await p.waitForTimeout(300); continue; }
-    await p.click(`.antwort[data-wert="${w}"]`); await p.waitForTimeout(400);
+    await p.click(`.antwort[data-wert="${w}"]`); await p.waitForTimeout(1750);
   }
   await p.waitForSelector('.bf-bereich', { timeout: 10000 }).catch(() => {});
   if (!(await p.locator('.bf-bereich').count())) { await geh(p, 'fragen/bigfive'); }
   await pruefeErgebnis(p, 'neu');
   const r = await p.evaluate(() => Object.fromEntries(Object.entries(window.__ticke.speicher.ergebnis('bigfive').bereiche).map(([k, v]) => [k, v.wort])));
   console.log('  neu:', JSON.stringify(r));
-  ok(r.gewissenhaftigkeit.includes('Plan und Struktur') && r.offenheit.includes('Halt im Bewährten') && r.stabilitaet.includes('Gelassene Ruhe'), 'neu: Richtungen passen zu den erfundenen Antworten');
+  ok(!(await p.locator('.bf-qualitaet').count()), 'neu: in Ruhe ausgefüllt → kein Eilig-Hinweis');
+  ok(r.gewissenhaftigkeit.startsWith('klar') && r.gewissenhaftigkeit.includes('Plan und Struktur') && r.offenheit.includes('Halt im Bewährten') && r.stabilitaet.includes('Gelassene Ruhe'), 'neu: Richtungen passen zu den erfundenen Antworten');
   const L = await p.evaluate(() => window.__bigfive.antwortListe(window.__ticke));
   ok(L.length === 30 && L.filter((x) => x.wert == null).length === 1 && L.some((x) => x.uebersprungen), 'neu: übersprungener Satz als offen gelistet');
   // Vertrag: antwortSetzen ändert das Muster, „vorher“ höchstens 5

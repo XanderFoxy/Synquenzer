@@ -80,7 +80,8 @@ function gefuehlHtml(e) {
   const gut = e ? e.gut : null;
   return `<p class="tr-frage" id="tr-gut-t">Wie war das für dich?</p>
     <div class="chips" role="radiogroup" aria-labelledby="tr-gut-t">${GUT.map(([w, t], i) => `<button type="button" class="chip" role="radio" aria-checked="${gut === w}" tabindex="${(gut == null ? i === 0 : gut === w) ? 0 : -1}" data-gut="${w}" data-fokus="gut-${w}">${esc(t)}</button>`).join('')}</div>
-    <p class="klein leise">Es gibt hier kein Richtig oder Falsch. Dein Gefühl hilft der App, dir öfter vorzuschlagen, was zu dir passt. Ändern kannst du es jederzeit – auch später unter <a class="link" href="#antworten/training">Antworten ändern</a>.</p>`;
+    <p class="klein leise">Es gibt hier kein Richtig oder Falsch. Dein Gefühl hilft der App, dir öfter vorzuschlagen, was zu dir passt. Ändern kannst du es jederzeit – hier oder später unter „Antworten ändern“.</p>
+    <p class="klein"><a class="link" href="#antworten/training">Alle deine Antworten im Training ansehen und ändern</a></p>`;
 }
 // Abschnitt „Gemacht?“ (für Übungen und Herausforderungen gleich)
 function fertigHtml(id, tage) {
@@ -452,7 +453,8 @@ function woche(ctx) {
       <textarea id="tr-rb" class="feld" rows="4" aria-labelledby="tr-rb-t" placeholder="z. B. Morgens raus tut mir gut. Nächste Woche: einmal Danke schreiben.">${esc(rb ? rb.text : '')}</textarea>
       <button type="button" class="knopf haupt voll" data-tr="rb" data-fokus="rb">Notiz speichern</button>
       ${rb ? `<p class="klein leise">Gespeichert am ${esc(ui.datum(rb.zeit))}.</p>` : ''}
-      <p class="klein leise">Das ist dein eigenes Gefühl, kein Messwert. Muster zeigen sich oft erst nach ein paar Wochen – in <a class="link" href="#muster">Dein Muster</a> siehst du, wie sie sich mit deinen anderen Ästen verbinden. ${marke('idee')}</p>
+      <p class="klein leise">Das ist dein eigenes Gefühl, kein Messwert. Muster zeigen sich oft erst nach ein paar Wochen. ${marke('idee')}</p>
+      <p><a class="link" href="#muster">Dein Muster: wie sich das mit deinen anderen Ästen verbindet</a></p>
       ${merkHtml()}${fussHtml()}`;
     fokusNach(el, fokus); fokus = null;
   };
