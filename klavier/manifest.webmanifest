@@ -1,0 +1,13 @@
+{
+  "name": "Klavier-Lernhilfe",
+  "short_name": "Klavier",
+  "description": "Noten sehen, Akkorde verstehen, Tasten finden.",
+  "lang": "de",
+  "start_url": "./#start",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f5f6fb",
+  "theme_color": "#5b5bd6",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
