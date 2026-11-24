@@ -1,6 +1,6 @@
 # oberflaeche – Stand 24.11.2026
 Dateien: app/index.html, app/stil.css, app/js/app.js, app/js/speicher.js, app/manifest.webmanifest, app/icon.svg.
-Routen: #start, #lied/<id>, #lied/<id>/teil/<teil>, #lied/<id>/zeile/<zid>, #warmup/<id> (ohne id: zuletzt geöffnetes Lied), #stimme, #neu, #uebungen, #profil=<base64url-JSON>.
+Routen: #start, #lied/<id>, #lied/<id>/weg, #lied/<id>/teil/<teil>, #lied/<id>/zeile/<zid>[/bau], #mitsingen/<id>, #warmup/<id> (ohne id: zuletzt geöffnetes Lied), #stimme, #neu, #uebungen, #profil=<base64url-JSON>.
 Profil-Link: JSON {name, stimme:{tief,hoch,kern:[lo,hi],typ,uebergaenge:[midi],text}} → localStorage gt.profil / gt.stimme, Hash wird entfernt, Meldung „Dein Stimmprofil ist gespeichert“. Erzeugen: btoa-url von JSON (Node: Buffer.from(JSON.stringify(x)).toString('base64url')).
 Speicher: IndexedDB „gesangstrainer“ (lieder, audio), localStorage gt.* (stimme, profil, fortschritt, einst, warmEin, letztesLied, uebFilter); alles mit try/catch und Ersatz im Arbeitsspeicher.
 Module werden dynamisch geladen (Ersatz-Phonetik/-Plan/-Warm-up/-Klang, falls eines fehlt).

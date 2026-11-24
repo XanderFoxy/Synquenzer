@@ -514,6 +514,7 @@ async function seiteLied(id) {
 // ================================================================ Eignung (Ampel-Karte) und „Weg zu diesem Lied“
 const AMPEL = { passt: ['#6fe3a8', '#1fb5c9'], 'mit Übung': ['#ffd36e', '#ff9a3d'], 'noch weit': ['#ff8a9a', '#d9367a'] };
 const STUFE_TITEL = { passt: 'Passt zu deiner Stimme', 'mit Übung': 'Mit Übung erreichbar', 'noch weit': 'Noch ein weiter Weg' };
+const ohneStufe = (t) => String(t || '').replace(/^[^.]*\(Schätzung\)\.\s*/, '');
 const vz = (t) => (t > 0 ? '+' : t < 0 ? '−' : '±') + Math.abs(t);
 function eignungsKarte(lied, e) {
   const id = lied.id, ton = lied.tonart, tAkt = transVon(id);
@@ -538,7 +539,7 @@ function eignungsKarte(lied, e) {
     h('div', { class: 'eg-kopf' }, ampel, h('div', null,
       h('p', { class: 'leise klein' }, e.ohneStimme ? 'Eignung · Schätzung mit Annahme' : 'Eignung für deine Stimme · Schätzung'),
       h('h3', null, e.ohneMelodie ? 'Tonlage noch offen' : STUFE_TITEL[e.stufe] || e.stufe))),
-    h('p', { class: 'eg-satz' }, e.text),
+    h('p', { class: 'eg-satz' }, ohneStufe(e.text)),
     h('ul', { class: 'eg-gruende' }, gr.slice(0, 4).map((g) => h('li', null, g))),
     gr.length > 4 ? h('details', null, h('summary', { class: 'klein' }, `${gr.length - 4} weitere Gründe`), h('ul', { class: 'eg-gruende' }, gr.slice(4).map((g) => h('li', null, g)))) : null,
     ...transReihe,
@@ -595,7 +596,7 @@ async function seiteWeg(id) {
     h('span', { class: 'pfeil', style: { color: 'var(--sanft)' } }, ic('hinweis')),
     h('div', null, h('p', null, h('b', null, `„${x.silbe}“ · ${nName(x.midi, ton)}`), ' – ', x.warum), h('p', { class: 'leise klein' }, x.zeilenText || ''))));
   const egF = AMPEL[e.stufe] || AMPEL['mit Übung'];
-  return [h('section', { class: 'held' }, h('h1', null, `Weg zu „${lied.titel || 'diesem Lied'}“`), h('p', null, e.text),
+  return [h('section', { class: 'held' }, h('h1', null, `Weg zu „${lied.titel || 'diesem Lied'}“`), h('p', null, ohneStufe(e.text)),
       h('div', { class: 'chips', style: { marginTop: '12px' } }, h('span', { class: 'chip', style: { background: `linear-gradient(90deg, ${egF[0]}, ${egF[1]})`, color: '#2b1d24' } }, STUFE_TITEL[e.stufe] || e.stufe),
         h('span', { class: 'chip', style: { background: 'rgba(255,255,255,.22)', color: '#fff' } }, `${e.weg.length} Wochen · Schätzung`))),
     e.ohneStimme ? h('a', { class: 'karte hinweis-karte', href: '#stimme' }, h('span', { class: 'pfeil' }, ic('hinweis')), h('p', { class: 'klein' }, 'Stimmlage ermitteln – bis dahin gilt der Weg für einen typischen Bariton (Annahme).')) : null,
@@ -742,7 +743,10 @@ async function seiteZeile(id, zid, bauZiel = false) {
     return box;
   };
   const stufenSeg = seg([['vokale', 'Vokale'], ['da', 'Silben „da“'], ['text', 'Text']], 'stufe', () => { baueKette(); if (spielt) neuStart(); });
-  const artSeg = seg([['stimme', 'Vokalstimme', 'welle'], ['klavier', 'Klavier', 'klavier']], 'art', () => { if (spielt) neuStart(); });
+  const artSeg = seg([['stimme', 'Vokalstimme', 'welle'], ['klavier', 'Klavier', 'klavier']], 'art', () => {
+    if (spielt) { neuStart(); return; }
+    stoppeKlang(); spieleFolge([{ t: 0, dauer: 0.6, midi: (noten[0] ? noten[0].midi : grundton()) + ein.trans, vokal: (noten[0] && noten[0].vokal) || 'a' }], { art: ein.art }); // Klangprobe
+  });
 
   const tempoOut = h('output', null, `${Math.round(ein.tempo * 100)} %`);
   const tempoIn = h('input', { type: 'range', min: '50', max: '100', step: '5', value: String(Math.round(ein.tempo * 100)), 'aria-label': 'Tempo',
@@ -1004,7 +1008,7 @@ async function seiteWarmup(id) {
     const versatz = () => (starts ? starts[durchgang] - (s.ton.start ?? starts[0]) : 0);
     const nn0 = notenAus(s.ton, s);
     const artSeg = h('div', { class: 'segment' }, [['klavier', 'Klavier', 'klavier'], ['stimme', 'Vokalstimme', 'welle']].map(([w, txt, icn]) => {
-      const b = h('button', { class: ein.art === w ? 'an' : '', onclick: () => { ein.art = w; speicher.merke('warmEin', ein); artSeg.querySelectorAll('button').forEach((x) => x.classList.toggle('an', x === b)); } }, ic(icn), txt);
+      const b = h('button', { class: ein.art === w ? 'an' : '', onclick: () => { ein.art = w; speicher.merke('warmEin', ein); artSeg.querySelectorAll('button').forEach((x) => x.classList.toggle('an', x === b)); if (nn0.length) { stoppeKlang(); spieleFolge([{ ...nn0[0], t: 0, dauer: 0.6 }], { art: w }); } } }, ic(icn), txt);
       return b;
     }));
     const bereichText = () => { const nn = notenAus(s.ton, s, versatz()); const ms = nn.map((n) => n.midi); return nName(Math.min(...ms), ton) + (Math.max(...ms) > Math.min(...ms) ? '–' + nName(Math.max(...ms), ton) : ''); };
