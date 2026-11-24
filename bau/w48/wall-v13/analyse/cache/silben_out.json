@@ -867,35 +867,29 @@
 "abw_v12_ziel_ms": -13,
 "verschiebung_ms": 5,
 "quelle_regel": "eigen",
-"konsonant_s": 45.959,
-"vokal_t": 45.959,
-"vorlauf_ms": 36,
-"ziel_konsonant_s": 45.964,
-"ziel_vokal_t": 45.964,
-"v12_konsonant_s": 45.933,
-"v12_vorlauf_ms": 54,
+"konsonant_s": 45.624,
+"vokal_t": 45.782,
+"vorlauf_ms": 371,
+"ziel_konsonant_s": 45.629,
+"ziel_vokal_t": 45.787,
+"v12_konsonant_s": 45.614,
+"v12_vorlauf_ms": 373,
 "messung": "automatisch + Akzent",
 "sicher": 0.8,
 "notiz": "Strophe 1 = Vorbild | Transienten-Spitze = Akzent (zweiter, stärkerer Einsatz); erster Vokal-Einsatz 45.821 (T23+14.57) gehört zum Vorlauf und bleibt in Originallänge davor",
 "herkunft": {
 "kette_ms": {
-"v6": -3,
-"v7": -175,
-"v10": -181,
+"v6": -8,
+"v7": -8,
+"v10": -8,
 "v12": -8
 },
-"sprung": [
-[
-"v7",
--172
-],
-[
-"v12",
-173
-]
-]
+"sprung": []
 },
-"erster_einsatz_t": 45.821
+"erster_einsatz_t": 45.822,
+"ziel_erster_einsatz_t": 45.827,
+"v12_erster_einsatz_t": 45.814,
+"herkunft_bezug": "erster Vokal-Einsatz"
 },
 {
 "id": "D-011",
@@ -3708,26 +3702,29 @@
 "abw_v12_ziel_ms": 11,
 "verschiebung_ms": -15,
 "quelle_regel": "refrain-mehrheit",
-"konsonant_s": 91.471,
-"vokal_t": 91.479,
-"vorlauf_ms": 44,
-"ziel_konsonant_s": 91.456,
-"ziel_vokal_t": 91.464,
-"v12_konsonant_s": 91.473,
-"v12_vorlauf_ms": 38,
+"konsonant_s": 91.241,
+"vokal_t": 91.241,
+"vorlauf_ms": 274,
+"ziel_konsonant_s": 91.226,
+"ziel_vokal_t": 91.226,
+"v12_konsonant_s": 91.236,
+"v12_vorlauf_ms": 275,
 "messung": "automatisch + Akzent",
 "sicher": 0.8,
 "notiz": "Z4 Silbe 5: Durchschnitt 28.21 = Mehrheit; Haupt R1/R2/R3 = {'R1': 28.12, 'R2': 28.17, 'R3': 28.33} | Transienten-Spitze = Akzent (zweiter, stärkerer Einsatz); erster Vokal-Einsatz 91.270 (T46+10.16) gehört zum Vorlauf und bleibt in Originallänge davor",
 "herkunft": {
 "kette_ms": {
 "v6": -6,
-"v7": -4,
-"v10": -4,
-"v12": -4
+"v7": -6,
+"v10": -6,
+"v12": -13
 },
 "sprung": []
 },
-"erster_einsatz_t": 91.27
+"erster_einsatz_t": 91.271,
+"ziel_erster_einsatz_t": 91.256,
+"v12_erster_einsatz_t": 91.258,
+"herkunft_bezug": "erster Vokal-Einsatz"
 },
 {
 "id": "D-048",
@@ -4728,39 +4725,34 @@
 "abw_v12_ziel_ms": 167,
 "verschiebung_ms": -1,
 "quelle_regel": "strophe1",
-"konsonant_s": 109.965,
-"vokal_t": 109.965,
-"vorlauf_ms": 36,
-"ziel_konsonant_s": 109.964,
-"ziel_vokal_t": 109.964,
-"v12_konsonant_s": 110.099,
-"v12_vorlauf_ms": 68,
+"konsonant_s": 109.633,
+"vokal_t": 109.819,
+"vorlauf_ms": 368,
+"ziel_konsonant_s": 109.632,
+"ziel_vokal_t": 109.818,
+"v12_konsonant_s": 109.584,
+"v12_vorlauf_ms": 583,
 "messung": "automatisch + Akzent",
 "sicher": 0.8,
 "notiz": "folgt Strophe 1 (S1P2) | Transienten-Spitze = Akzent (zweiter, stärkerer Einsatz); erster Vokal-Einsatz 109.834 (T55+14.67) gehört zum Vorlauf und bleibt in Originallänge davor",
 "herkunft": {
 "kette_ms": {
-"v6": -9,
-"v7": -171,
-"v10": -1,
-"v12": 166
+"v6": -2,
+"v7": -2,
+"v10": 176,
+"v12": 169
 },
 "sprung": [
 [
-"v7",
--162
-],
-[
 "v10",
-170
-],
-[
-"v12",
-167
+178
 ]
 ]
 },
-"erster_einsatz_t": 109.834
+"erster_einsatz_t": 109.833,
+"ziel_erster_einsatz_t": 109.832,
+"v12_erster_einsatz_t": 110.002,
+"herkunft_bezug": "erster Vokal-Einsatz"
 },
 {
 "id": "D-061",
@@ -7593,26 +7585,29 @@
 "abw_v12_ziel_ms": -2,
 "verschiebung_ms": -21,
 "quelle_regel": "refrain-mehrheit",
-"konsonant_s": 155.455,
+"konsonant_s": 155.471,
 "vokal_t": 155.481,
-"vorlauf_ms": 66,
-"ziel_konsonant_s": 155.434,
+"vorlauf_ms": 50,
+"ziel_konsonant_s": 155.45,
 "ziel_vokal_t": 155.46,
-"v12_konsonant_s": 155.44,
-"v12_vorlauf_ms": 58,
+"v12_konsonant_s": 155.441,
+"v12_vorlauf_ms": 57,
 "messung": "automatisch + Akzent",
 "sicher": 0.8,
 "notiz": "Z4 Silbe 5: Durchschnitt 28.21 = Mehrheit; Haupt R1/R2/R3 = {'R1': 28.12, 'R2': 28.17, 'R3': 28.33} | Transienten-Spitze = Akzent (zweiter, stärkerer Einsatz); erster Vokal-Einsatz 155.522 (T78+12.18) gehört zum Vorlauf und bleibt in Originallänge davor",
 "herkunft": {
 "kette_ms": {
-"v6": -21,
-"v7": -23,
-"v10": -23,
-"v12": -23
+"v6": -22,
+"v7": -18,
+"v10": -18,
+"v12": -18
 },
 "sprung": []
 },
-"erster_einsatz_t": 155.522
+"erster_einsatz_t": 155.521,
+"ziel_erster_einsatz_t": 155.5,
+"v12_erster_einsatz_t": 155.503,
+"herkunft_bezug": "erster Vokal-Einsatz"
 },
 {
 "id": "D-098",
@@ -9977,31 +9972,34 @@
 "abw_v12_ziel_ms": -3,
 "verschiebung_ms": 35,
 "quelle_regel": "refrain-mehrheit",
-"konsonant_s": 243.425,
-"vokal_t": 243.425,
-"vorlauf_ms": 40,
-"ziel_konsonant_s": 243.46,
-"ziel_vokal_t": 243.46,
-"v12_konsonant_s": 243.481,
-"v12_vorlauf_ms": 16,
+"konsonant_s": 243.105,
+"vokal_t": 243.105,
+"vorlauf_ms": 360,
+"ziel_konsonant_s": 243.14,
+"ziel_vokal_t": 243.14,
+"v12_konsonant_s": 243.134,
+"v12_vorlauf_ms": 363,
 "messung": "automatisch + Akzent",
 "sicher": 0.8,
 "notiz": "Z3 Silbe 5: Durchschnitt 28.05 = Mehrheit; Haupt R1/R2/R3 = {'R1': 28.18, 'R2': 28.26, 'R3': 27.72} | Transienten-Spitze = Akzent (zweiter, stärkerer Einsatz); erster Vokal-Einsatz 243.132 (T122+9.06) gehört zum Vorlauf und bleibt in Originallänge davor",
 "herkunft": {
 "kette_ms": {
-"v6": 36,
-"v7": 35,
-"v10": 35,
-"v12": 32
+"v6": 44,
+"v7": 28,
+"v10": 28,
+"v12": 33
 },
 "sprung": [
 [
 "v6",
-36
+44
 ]
 ]
 },
-"erster_einsatz_t": 243.132
+"erster_einsatz_t": 243.131,
+"ziel_erster_einsatz_t": 243.166,
+"v12_erster_einsatz_t": 243.164,
+"herkunft_bezug": "erster Vokal-Einsatz"
 },
 {
 "id": "D-148",
@@ -10436,26 +10434,34 @@
 "abw_v12_ziel_ms": 39,
 "verschiebung_ms": -41,
 "quelle_regel": "refrain-mehrheit",
-"konsonant_s": 251.485,
-"vokal_t": 251.501,
-"vorlauf_ms": 56,
-"ziel_konsonant_s": 251.444,
-"ziel_vokal_t": 251.46,
-"v12_konsonant_s": 251.499,
-"v12_vorlauf_ms": 40,
+"konsonant_s": 251.256,
+"vokal_t": 251.256,
+"vorlauf_ms": 285,
+"ziel_konsonant_s": 251.215,
+"ziel_vokal_t": 251.215,
+"v12_konsonant_s": 251.262,
+"v12_vorlauf_ms": 277,
 "messung": "automatisch + Akzent",
 "sicher": 0.8,
 "notiz": "Z4 Silbe 5: Durchschnitt 28.21 = Mehrheit; Haupt R1/R2/R3 = {'R1': 28.12, 'R2': 28.17, 'R3': 28.33} | Transienten-Spitze = Akzent (zweiter, stärkerer Einsatz); erster Vokal-Einsatz 251.263 (T126+10.10) gehört zum Vorlauf und bleibt in Originallänge davor",
 "herkunft": {
 "kette_ms": {
-"v6": -7,
-"v7": -3,
-"v10": -3,
-"v12": -2
+"v6": 4,
+"v7": 48,
+"v10": 22,
+"v12": 8
 },
-"sprung": []
+"sprung": [
+[
+"v7",
+44
+]
+]
 },
-"erster_einsatz_t": 251.263
+"erster_einsatz_t": 251.262,
+"ziel_erster_einsatz_t": 251.221,
+"v12_erster_einsatz_t": 251.27,
+"herkunft_bezug": "erster Vokal-Einsatz"
 },
 {
 "id": "D-154",

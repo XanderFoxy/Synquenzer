@@ -2,6 +2,16 @@
 import json, numpy as np
 from zk_gemein import *
 from zk_kern import nah
+AKZ = ('011', '061', '048', '098', '154', '148')
+
+
+def ende_von_roh(r):
+    best = None
+    for a0, a1, r0, r1 in LIED['karte']:
+        if r1 > r0 and r0 <= r < r1:
+            a = a0 + (r - r0) * (a1 - a0) / (r1 - r0)
+            if best is None or abs(a - r) < abs(best - r): best = a
+    return best if best is not None else r
 
 F = json.load(open(CACHE + 'final_mess.json'))
 Z = json.load(open(CACHE + 'ziele.json'))
@@ -32,6 +42,12 @@ for L in F['silben']:
 # Direkte Nachmessung in v6/v7/v10 (Haupt) für die Herkunft der v12-Fehler
 for L in F['silben']:
     h = L['H_roh']; L['stufen'] = {}
+    if L['id'] in AKZ:   # Akzent-Silben: Herkunft am ersten Vokal-Einsatz messen (der wurde verschoben/ersetzt)
+        L['erst_roh'] = nah(lade('H_roh'), h['erst_t'], half=0.02)
+        L['erst_v12'] = nah(lade('H_v12'), ende_von_roh(h['erst_t']), half=0.05)
+        for nm, key in (('H_v6', 'v6'), ('H_v7', 'v7'), ('H_v10', 'v10')):
+            L['stufen'][key] = nah(lade(nm), h['erst_t'], half=0.2, strafe=1.0)['spitze_t']
+        continue
     for nm, key in (('H_v6', 'v6'), ('H_v7', 'v7'), ('H_v10', 'v10')):
         r = nah(lade(nm), h['spitze_t'] + L['hist'][key] / 1000.0, half=0.05)
         L['stufen'][key] = r['spitze_t']
@@ -39,6 +55,7 @@ for L in F['silben']:
 
 def herkunft(L):
     h = L['H_roh']['spitze_t']; st = L['stufen']; v12 = L['H_v12']['spitze_t']
+    if L['id'] in AKZ: h = L['erst_roh']['spitze_t']; v12 = L['erst_v12']['spitze_t']
     kette = [('Original', h), ('v6', st['v6']), ('v7', st['v7']), ('v10', st['v10']), ('v12', v12)]
     schritte = [(kette[k + 1][0], (kette[k + 1][1] - kette[k][1]) * 1000) for k in range(4)]
     gross = [(n, round(d)) for n, d in schritte if abs(d) >= 35]
@@ -65,7 +82,13 @@ for L in F['silben']:
                    v12_konsonant_s=r3(h12['konsonant_s']), v12_vorlauf_ms=round((h12['spitze_t'] - h12['konsonant_s']) * 1000),
                    messung=h['quelle'], sicher=h.get('sicher'), notiz=zl['notiz'], herkunft=herkunft(L))
     if akz:
-        eintrag['erster_einsatz_t'] = r3(h['erst_t'])
+        er, e12 = L['erst_roh'], L['erst_v12']
+        eintrag.update(erster_einsatz_t=r3(er['spitze_t']), konsonant_s=r3(er['konsonant_s']), vokal_t=r3(er['vokal_t']),
+                       vorlauf_ms=round((h['spitze_t'] - er['konsonant_s']) * 1000), ziel_konsonant_s=r3(er['konsonant_s'] + versch),
+                       ziel_vokal_t=r3(er['vokal_t'] + versch), ziel_erster_einsatz_t=r3(er['spitze_t'] + versch),
+                       v12_erster_einsatz_t=r3(e12['spitze_t']), v12_konsonant_s=r3(e12['konsonant_s']),
+                       v12_vorlauf_ms=round((h12['spitze_t'] - e12['konsonant_s']) * 1000),
+                       herkunft_bezug='erster Vokal-Einsatz')
         eintrag['notiz'] += ' | Transienten-Spitze = Akzent (zweiter, stärkerer Einsatz); erster Vokal-Einsatz %.3f (%s) gehört zum Vorlauf und bleibt in Originallänge davor' % (h['erst_t'], rstr(h['erst_t']))
     silben.append(eintrag)
     # Doppel: gleiches Ereignis wie die Haupt-Messung (bei Akzent-Silben: erster Vokal-Einsatz) -> Ziel = Haupt-Ziel dieses Ereignisses
