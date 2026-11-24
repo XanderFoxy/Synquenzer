@@ -521,7 +521,7 @@ function tonalitaet(P, df) {
 
 // ───────────────────────── 4. Schmatzer ─────────────────────────
 // Mundgeräusche: kurze (≤ 5 ms) breitbandige Spitzen im Band 2–8 kHz, deutlich über der
-// Umgebung (4–25 ms links UND rechts) und nicht unter einem lauten Vokal (HF ≥ LF − 6 dB).
+// Umgebung (4–25 ms links UND rechts) und nicht unter einem lauten Vokal (HF ≥ LF − 3 dB).
 // Nur der Anteil > 2 kHz wird im Ereignis abgesenkt (nullphasig, weiche Flanken) – nicht gelöscht.
 
 function schmatzer(y, sr, st, sub) {
@@ -546,7 +546,7 @@ function schmatzer(y, sr, st, sub) {
     }
   }
   sub(0.5);
-  const T = Math.pow(10, (18 - 10 * s) / 10);  // Std: 12 dB über Umgebung
+  const T = Math.pow(10, (20 - 10 * s) / 10);  // Std: 14 dB über Umgebung
   const maxBl = Math.round(3 + 4 * s);          // Std: ≤ ~5 ms
   const gmin = Math.pow(10, -(8 + 16 * s) / 20);
   const hpRep = koeff('hp', 2000, 0.707, sr);
@@ -565,7 +565,7 @@ function schmatzer(y, sr, st, sub) {
     if (b - a + 1 > maxBl) continue;
     let hf = 0, lf = 0;
     for (let q = a - 1; q <= b + 1; q++) { hf += eh[q]; lf += Math.max(0, ea[q] - eh[q]); }
-    if (hf < lf * 0.25) continue;   // unter lautem Vokal: nicht anfassen
+    if (hf < lf * 0.5) continue;    // unter lautem Vokal: nicht anfassen
     let evt = 0; for (let q = a; q <= b; q++) evt += eh[q]; evt /= (b - a + 1);
     const g = clamp(Math.sqrt(2 * ref / evt), gmin, 1);
     if (g > 0.9) continue;
