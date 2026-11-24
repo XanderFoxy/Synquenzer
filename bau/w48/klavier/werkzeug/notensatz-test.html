@@ -1,0 +1,27 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Notensatz-Test</title>
+<style>:root{color-scheme:light dark}body{margin:0;padding:12px 16px;font:15px system-ui;background:#fbfaf7;color:#1d2330}
+@media (prefers-color-scheme:dark){body{background:#14161c;color:#e8e9ee}}
+h2{font-size:15px;margin:14px 0 4px}.blatt{background:transparent}</style></head><body>
+<div id="aus"></div>
+<script type="module">
+import { einlesen } from '../app/js/einlesen.js';
+import { zeichne, noteBox, markiere, positionBei } from '../app/js/notensatz.js';
+import { ROLLEN_FARBE } from '../app/js/modell.js';
+const aus = document.getElementById('aus');
+const fehler = [];
+window.onerror = (m) => fehler.push(String(m));
+for (const f of ['beethoven-fuer-elise.musicxml', 'uebung-umkehrungen-bass.musicxml', 'bach-praeludium-c-dur.musicxml']) {
+  const st = await einlesen(await (await fetch('../app/beispiele/' + f)).text(), f);
+  const h = document.createElement('h2'); h.textContent = st.titel; aus.append(h);
+  const d = document.createElement('div'); d.className = 'blatt'; aus.append(d);
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); d.append(svg);
+  // Demo-Farben: nur zum Sehen (die echte Zuordnung macht akkorde.js)
+  const rolle = { 9: 'grundton', 0: 'terz', 4: 'quinte', 8: 'terz', 11: 'quinte', 2: 'septime', 3: 'fremd', 5: 'option', 7: 'septime' };
+  const farben = new Map(st.noten.filter(n => n.system === 'unten').map(n => [n.id, ROLLEN_FARBE[rolle[n.midi % 12] || 'fremd']]));
+  const markiert = new Set(st.noten.filter(n => n.takt === 2).slice(0, 2).map(n => n.id));
+  zeichne(svg, st, { farben, markiert, schleife: { von: 2, bis: 3 }, bis: f.startsWith('bach') ? 4 : undefined, beiTipp: (id) => console.log('tipp', id) });
+  window.box = noteBox(st.noten[0].id, svg); window.pos = positionBei(1, svg);
+}
+window.fertig = { fehler };
+</script></body></html>
