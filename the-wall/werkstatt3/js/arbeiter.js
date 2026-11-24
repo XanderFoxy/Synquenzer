@@ -13,6 +13,8 @@
 //   {typ:'warp', id, x, sr, anker} → {typ:'fertig', id, y}          (Ausschnitt; Anker relativ zum Ausschnitt)
 //   {typ:'ton', id, x, sr, note, cent} → {typ:'fertig', id, y, note} (Ausschnitt; Note relativ zum Ausschnitt)
 //   {typ:'analyse', id, x, sr}     → {typ:'fertig', id, noten}     (Tonhöhe/Noten ohne Änderung, z. B. fürs Original)
+//   {typ:'tempo', id, x, sr}       → {typ:'fertig', id, tempo:{bpm, offset, guete}}   (timing.js bpmSchaetzen(transienten))
+//   {typ:'silben', id, x, sr}      → {typ:'fertig', id, silben, woerter, hinweis, quelle}   (silben.js, ohne Sprachmodell)
 //   Fehler → {typ:'fehler', id, text}
 // Fehlt ein Modul (z. B. tonhoehe.js), springt ein einfacher Ersatz ein, damit die Seite trotzdem arbeitet.
 
@@ -266,6 +268,19 @@ export async function bearbeiten(msg, melde = () => {}) {
   if (msg.typ === 'analyse') {
     if (m.ton) { const sp = m.ton.verfolgen(msg.x, msg.sr, 0.005); return { noten: (m.ton.noten(sp) || []).map((n) => Object.assign({}, n, { kurve: Array.from(kurveMidi(n)) })) }; }
     return { noten: ersatzNoten(ersatzSpur(msg.x, msg.sr)) };
+  }
+  if (msg.typ === 'tempo') { // Tempo erkennen: Spitzen → bpmSchaetzen
+    if (!m.tim) throw new Error('timing.js fehlt');
+    return { tempo: m.tim.bpmSchaetzen(m.tim.transienten(msg.x, msg.sr)) };
+  }
+  if (msg.typ === 'silben') { // Silben + Wort-Kandidaten (ohne Sprachmodell, nichts geht nach draußen)
+    const s = await import('./silben.js');
+    melde('silben', 10);
+    const S = s.silben(msg.x, msg.sr);
+    melde('silben', 80);
+    const W = await s.woerter(msg.x, msg.sr, { silben: S });
+    melde('silben', 100);
+    return { silben: S, woerter: Array.from(W), hinweis: W.hinweis || '', quelle: W.quelle || 'silben' };
   }
   if (msg.typ === 'module') return { fehlt: m.fehlt };
   throw new Error('unbekannter Auftrag ' + msg.typ);

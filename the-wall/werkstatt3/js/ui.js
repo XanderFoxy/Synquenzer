@@ -15,7 +15,7 @@ const minus = (v) => (v < 0 ? '−' : '+') + Math.abs(v);
 
 // ---------------------------------------------------------------- Einstellungen
 
-const STD = { bpm: 120, taktart: '4/4', versatz: 0, teilung: '1/16', skala: 'chromatisch', grundton: 0, timing: 100, ton: 100,
+const STD = { bpm: 120, taktart: '4/4', versatz: 0, teilung: '1/16', skala: 'chromatisch', grundton: 0, timing: 100, ton: 100, instLaut: 70,
   rein: { klicks: true, brumm: true, rauschen: true, schmatzer: true, atmer: true, ausgleich: true } };
 let E = JSON.parse(JSON.stringify(STD));
 try { const s = JSON.parse(localStorage.getItem('w3-einst') || 'null'); if (s) E = Object.assign(E, s, { rein: Object.assign({}, STD.rein, s.rein) }); } catch (e) { /* ohne Speicher */ }
@@ -33,7 +33,7 @@ const naechsteLinie = (t) => { const g = rasterG(); return g > 0 ? E.versatz + M
 // ---------------------------------------------------------------- Zustand
 
 const Z = { name: '', v: null, sicht: { t0: 0, pps: 60, m0: 76, pph: 16 }, wahl: -1, auswahl: null, kopf: 0,
-  fein: false, schleife: false, metro: false, beschaeftigt: false, zug: null, fehlt: [] };
+  fein: false, schleife: false, metro: false, beschaeftigt: false, zug: null, fehlt: [], inst: null, mix: false, stellen: [] };
 const noten = () => (Z.v && Z.v.noten) || [];
 
 // ---------------------------------------------------------------- Rechen-Arbeiter (Module-Worker, sonst Hauptfaden)
@@ -205,6 +205,7 @@ function zeichnen() {
     if (zug.dt) { const x = xOf((n.peak ?? n.t0) + zug.dt); g.fillStyle = F.gold; g.fillRect(Math.round(x) - 1, R, 2, yBot - R); }
     blob(n, zug.i, zug.dt, zug.dm, d, mx, 'zug');
   }
+  if (v.silben && v.silben.liste.length) silbenZeichnen(v.silben.liste, N, tA, tB);
   g.restore();
   // Lineal
   g.fillStyle = F.lineal; g.fillRect(K, 0, W - K, R);
@@ -225,6 +226,12 @@ function zeichnen() {
     g.beginPath(); g.moveTo(x - 4, R - 8); g.lineTo(x + 4, R - 8); g.lineTo(x, R - 1); g.closePath(); g.fill();
   }
   if (Z.auswahl) { g.fillStyle = F.gold; const a = xOf(Z.auswahl.a), b = xOf(Z.auswahl.b); g.fillRect(Math.max(K, a), 0, Math.max(0, Math.min(W, b) - Math.max(K, a)), 3); }
+  // markierte Stellen (für „An Claude schicken“): rote Fähnchen im Lineal
+  for (const st of Z.stellen) {
+    if (st.s < tA || st.s > tB) continue;
+    const x = Math.round(xOf(st.s));
+    g.fillStyle = F.ton; g.fillRect(x - 1, 0, 2, R); g.fillRect(x, 1, 8, 7);
+  }
   // Tasten
   g.fillStyle = F.tasten; g.fillRect(0, 0, K, H);
   g.save(); g.beginPath(); g.rect(0, R, K, yBot - R); g.clip();
@@ -240,6 +247,28 @@ function zeichnen() {
   g.fillStyle = F.raster; g.fillRect(K - 1, 0, 1, H);
   g.fillStyle = F.linealText; g.font = '600 10px -apple-system,system-ui,sans-serif'; g.fillText('Takt', 6, R / 2);
   g.fillStyle = F.tasten; g.fillRect(0, yBot, K, B); g.fillStyle = F.tastenText; g.fillText('Welle', 5, yBot + B / 2);
+}
+
+// Silben: kleine Beschriftung über den Noten (Nummer; Silben eines Wort-Kandidaten mit Strich verbunden)
+function silbenZeichnen(L, N, tA, tB) {
+  const s = Z.sicht, hMax = Math.max(8, s.pph * 1.7);
+  let j = 0, letztX = -1e9;
+  g.font = '600 10px -apple-system,system-ui,sans-serif'; g.textBaseline = 'middle';
+  for (const sb of L) {
+    if (sb.t1 < tA || sb.t0 > tB) continue;
+    while (j < N.length && N[j].t1 < sb.kern) j++;
+    let m = null;
+    for (let k = Math.max(0, j - 1); k < Math.min(N.length, j + 2); k++) { const n = N[k]; if (n.t0 <= sb.kern && n.t1 >= sb.kern) { m = n.midi + (n.cent || 0) / 100; break; } }
+    if (m == null && sb.hz > 0) m = 69 + 12 * Math.log2(sb.hz / 440);
+    const y = m == null ? R + 14 : yOf(m) - hMax / 2 - 26, x0 = xOf(sb.t0), x1 = xOf(sb.t1); // über dem Notennamen
+    g.fillStyle = F.gold; g.globalAlpha = 0.35 + 0.65 * Math.min(1, sb.staerke ?? 1);
+    g.fillRect(Math.round(x0), y + 6, 1.5, 6);
+    const xe = sb.weiter != null ? xOf(sb.weiter) : x1; // gleiches Wort: Strich bis zur nächsten Silbe
+    if (xe - x0 > 4) g.fillRect(x0, y + 11, xe - x0, 1);
+    g.globalAlpha = 1;
+    const txt = sb.text || String(sb.nr);
+    if (x0 - letztX > g.measureText(txt).width + 6) { g.fillStyle = F.fg; g.fillText(txt, x0 + 2, y); letztX = x0; }
+  }
 }
 
 function blob(n, i, dt, dm, d, mx, art) {
@@ -496,8 +525,9 @@ async function zeitZug(i, dt) {
     const karte = anker.map((a) => ({ src: a.src + r0, dst: a.dst + r0 }));
     const NN = N.map((n) => Object.assign({}, n, { t0: abb(karte, n.t0), t1: abb(karte, n.t1), peak: n.peak == null ? null : abb(karte, n.peak), onset: n.onset == null ? null : abb(karte, n.onset) }));
     const auf = rasterG() > 0 && Math.abs(P.pk + dt - naechsteLinie(P.pk + dt)) < 0.003;
+    const sil = v.silben ? Object.assign({}, v.silben, { liste: v.silben.liste.map((sb) => Object.assign({}, sb, { t0: abb(karte, sb.t0), t1: abb(karte, sb.t1), kern: abb(karte, sb.kern), weiter: sb.weiter == null ? null : abb(karte, sb.weiter) })) }) : null;
     Z.wahl = i;
-    versionNeu(`Note ${i + 1} ${minus(Math.round(dt * 1000))} ms${auf ? ' → ' + position(P.pk + dt) : ''}`, { x: neuX, noten: NN, stufe: 'bearbeitet' });
+    versionNeu(`Note ${i + 1} ${minus(Math.round(dt * 1000))} ms${auf ? ' → ' + position(P.pk + dt) : ''}`, { x: neuX, noten: NN, stufe: 'bearbeitet', silben: sil });
     vorhoeren(NN[i]);
   } catch (e) { meldung('Timing ging nicht: ' + e.message); neu(); }
   beschaeftigt(false);
@@ -540,7 +570,7 @@ async function aufStufe(i) {
 
 function versionNeu(name, daten) {
   const v = Z.v;
-  verlauf.neu(name, Object.assign({ sr: v.sr, datei: Z.name, basis: v.id }, daten));
+  verlauf.neu(name, Object.assign({ sr: v.sr, datei: Z.name, basis: v.id, silben: v.silben || null }, daten));
 }
 
 // ---------------------------------------------------------------- Versions-Zwiebel
@@ -645,13 +675,13 @@ function tonhoeheMitte() {
 
 function sichtbar(an) {
   $('leer').hidden = an;
-  for (const id of ['werk', 'transport', 'zwiebel', 'export']) $(id).hidden = !an;
+  for (const id of ['werk', 'transport', 'werkzeuge', 'zwiebel', 'export']) $(id).hidden = !an;
   $('bAuto').disabled = !an || Z.beschaeftigt;
 }
 
 // ---------------------------------------------------------------- Abspielen, Schleife, Metronom
 
-let ac = null, quelle = null, spiel = null, puf = { id: null, b: null }, rafK = 0;
+let ac = null, quelle = null, spiel = null, puf = { id: null, b: null }, rafK = 0, instQ = null, instG = null;
 function acHolen() {
   if (!ac) { const C = window.AudioContext || window.webkitAudioContext; if (!C) return null; ac = new C(); }
   if (ac.state === 'suspended') ac.resume();
@@ -676,8 +706,18 @@ function abspielen(von, bis = null, schleife = false, a = null, vorhoer = false)
   q.buffer = b; q.connect(c.destination);
   von = klemm(von, 0, Math.max(0, v.dauer - 0.01));
   const t = c.currentTime + 0.03;
-  if (schleife && bis) { a = a ?? von; q.loop = true; q.loopStart = a; q.loopEnd = bis; q.start(t, klemm(von, a, bis - 0.01)); }
-  else if (bis) q.start(t, von, Math.max(0.02, bis - von)); else q.start(t, von);
+  // Instrumental: eigene Spur über eigenen Regler, startet auf denselben Takt der Audio-Uhr (nicht beim Vorhören)
+  const qs = [q];
+  if (Z.inst && !vorhoer) {
+    if (!Z.inst.b) { const ib = c.createBuffer(1, Z.inst.x.length, Z.inst.sr); if (ib.copyToChannel) ib.copyToChannel(Z.inst.x, 0); else ib.getChannelData(0).set(Z.inst.x); Z.inst.b = ib; }
+    if (!instG) { instG = c.createGain(); instG.connect(c.destination); }
+    instG.gain.value = E.instLaut / 100;
+    const qi = c.createBufferSource(); qi.buffer = Z.inst.b; qi.connect(instG); qs.push(qi); instQ = qi;
+  }
+  for (const qq of qs) {
+    if (schleife && bis) { a = a ?? von; qq.loop = true; qq.loopStart = a; qq.loopEnd = bis; qq.start(t, klemm(von, a, bis - 0.01)); }
+    else if (bis) qq.start(t, von, Math.max(0.02, bis - von)); else qq.start(t, von);
+  }
   q.onended = () => { if (quelle === q) stopp(!vorhoer); };
   quelle = q;
   spiel = { ctxT: t, off: schleife ? klemm(von, a, bis) : von, a: a ?? von, b: bis, loop: !!(schleife && bis), ende: bis ?? v.dauer, vorhoer };
@@ -685,6 +725,7 @@ function abspielen(von, bis = null, schleife = false, a = null, vorhoer = false)
 }
 function stopp(merken = true) {
   if (quelle) { const p = pos(); try { quelle.onended = null; quelle.stop(); } catch (e) { /* schon aus */ } quelle = null; if (merken && spiel && !spiel.vorhoer) Z.kopf = p; }
+  if (instQ) { try { instQ.stop(); } catch (e) { /* schon aus */ } instQ = null; }
   spiel = null; metroStopp(); spielKnopf(); kopfZeichnen(); zeitAnzeige(Z.kopf);
 }
 function vorhoeren(n) { if (n) abspielen(Math.max(0, n.t0 - 0.2), Math.min(Z.v.dauer, n.t1 + 0.25), false, null, true); }
@@ -830,6 +871,7 @@ async function dateiLaden(f) {
     const r = await io.laden(f);
     await verlauf.leeren();
     Z.name = r.name || f.name || 'Aufnahme'; Z.v = null; Z.wahl = -1; Z.auswahl = null; Z.kopf = 0;
+    Z.stellen = []; stellenZeigen();
     $('bericht').hidden = true; $('stand').hidden = true;
     verlauf.neu('Original', { x: r.x, sr: r.sr, stufe: 'original', datei: Z.name, basis: null });
     dateiZeile(Z.v);
@@ -853,9 +895,9 @@ async function exportVon(v, zusatz) {
   if (!v) return;
   let x = v.x; if (!x) { const h = await verlauf.holen(v.id); x = h && h.x; }
   if (!x) { meldung('Diese Version ist nicht mehr im Speicher'); return; }
-  const name = basisName() + '_' + zusatz + '.wav';
-  await io.exportieren(io.wav(spitzenSchutz(x), v.sr, 24), name);
-  meldung(name + ' geladen (' + v.name + ')');
+  const mix = !!(Z.mix && Z.inst), name = basisName() + '_' + zusatz + (mix ? '_mit-instrumental' : '') + '.wav';
+  await io.exportieren(io.wav(spitzenSchutz(mix ? await mitInst(x, v.sr) : x), v.sr, 24), name);
+  meldung(name + ' geladen (' + v.name + (mix ? ' + Instrumental' : '') + ')');
 }
 const neuesteStufe = (st) => verlauf.liste().find((v) => v.stufe === st);
 // „nur getimed“ = neueste gereinigte Fassung + Timing (ohne Tonhöhenkorrektur), wird erst beim Tippen gerechnet –
@@ -876,9 +918,9 @@ async function exportGetimed() {
     const e = (q.f && q.f.einst) || E;
     const raster = { bpm: e.bpm, offset: e.versatz, teilung: e.teilung === 'frei' ? '1/16' : e.teilung, staerke: Math.max(0.01, (e.timing ?? 100) / 100) };
     const r = await rufen({ typ: 'timing', x: seg, sr: q.g.sr, raster, klicks: (e.rein || {}).klicks !== false }, [seg.buffer]);
-    const name = basisName() + '_getimed.wav';
-    await io.exportieren(io.wav(spitzenSchutz(r.y), q.g.sr, 24), name);
-    meldung(name + ' geladen (gereinigt + Timing, ohne Tonhöhe)');
+    const mix = !!(Z.mix && Z.inst), name = basisName() + '_getimed' + (mix ? '_mit-instrumental' : '') + '.wav';
+    await io.exportieren(io.wav(spitzenSchutz(mix ? await mitInst(r.y, q.g.sr) : r.y), q.g.sr, 24), name);
+    meldung(name + ' geladen (gereinigt + Timing, ohne Tonhöhe' + (mix ? ', mit Instrumental' : '') + ')');
   } catch (e) { meldung('Das ging nicht: ' + e.message); }
   beschaeftigt(false);
 }
@@ -919,6 +961,154 @@ $('chipsRein').querySelectorAll('button').forEach((b) => {
 });
 einstKurz();
 
+// ---------------------------------------------------------------- Tempo erkennen (timing.js: bpmSchaetzen(transienten(…)))
+
+$('bTempo').addEventListener('click', async () => {
+  if (!Z.v || Z.beschaeftigt) return;
+  const ausInst = !!Z.inst, x = ausInst ? Z.inst.x : await aktuellX(); if (!x) return;
+  beschaeftigt(true, 'Tempo …');
+  try {
+    const seg = x.slice();
+    const t = (await rufen({ typ: 'tempo', x: seg, sr: ausInst ? Z.inst.sr : Z.v.sr }, [seg.buffer])).tempo || {};
+    if (!(t.guete > 0) || !(t.bpm >= 40)) meldung('Kein sicheres Tempo gefunden – BPM bleibt ' + String(E.bpm).replace('.', ','));
+    else {
+      E.bpm = Math.round(t.bpm * 100) / 100; E.versatz = Math.round((t.offset || 0) * 1000) / 1000;
+      $('fBpm').value = E.bpm; $('fVersatz').value = E.versatz; geaendert();
+      meldung(`Tempo ${String(E.bpm).replace('.', ',')} BPM, erster Schlag bei ${String(E.versatz).replace('.', ',')} s (aus ${ausInst ? 'Instrumental' : 'Gesang'})`);
+    }
+  } catch (e) { meldung('Tempo ging nicht: ' + e.message); }
+  beschaeftigt(false);
+});
+
+// ---------------------------------------------------------------- Silben erkennen (silben.js im Rechen-Arbeiter, ohne Sprachmodell)
+
+function silbenAufbereiten(r) {
+  const liste = [];
+  const dazu = (sb, weiter) => liste.push({ t0: sb.t0, t1: sb.t1, kern: sb.kern ?? sb.t0, hz: sb.hz, staerke: sb.staerke,
+    text: sb.text && sb.text !== '–' ? sb.text : null, weiter });
+  for (const w of r.woerter || []) { const ws = w.silben || []; ws.forEach((sb, k) => dazu(sb, k < ws.length - 1 ? ws[k + 1].t0 : null)); }
+  if (!liste.length) for (const sb of r.silben || []) dazu(sb, null);
+  liste.sort((a, b) => a.t0 - b.t0).forEach((sb, i) => { sb.nr = i + 1; });
+  const zeilen = new Set((r.woerter || []).map((w) => w.zeile).filter((z) => z != null)).size;
+  return { liste, woerter: (r.woerter || []).length, zeilen, hinweis: r.hinweis || '' };
+}
+$('bSilben').addEventListener('click', async () => {
+  const v = Z.v; if (!v || Z.beschaeftigt) return;
+  const x = await aktuellX(); if (!x) return;
+  beschaeftigt(true, 'Silben …');
+  try {
+    const seg = x.slice();
+    const r = await rufen({ typ: 'silben', x: seg, sr: v.sr }, [seg.buffer], (sch, p) => { $('warte').textContent = 'Silben … ' + p + ' %'; });
+    v.silben = silbenAufbereiten(r);
+    const S = v.silben;
+    infoText.innerHTML = `<b>${S.liste.length} Silben</b> · ${S.woerter} Wort-Kandidaten${S.zeilen ? ' · ' + S.zeilen + ' Zeilen' : ''}<br><small>Nummern über den Noten, Strich = gleiches Wort (ohne Text geraten)</small>`;
+    neu();
+  } catch (e) { meldung('Silben gingen nicht: ' + e.message); }
+  beschaeftigt(false);
+});
+
+// ---------------------------------------------------------------- Instrumental: eigene Spur, eigener Regler, spielt synchron mit
+
+function neuStarten() {
+  if (!spiel || spiel.vorhoer) return;
+  const p = pos(), schl = spiel.loop ? { a: spiel.a, b: spiel.b } : null;
+  abspielen(p, schl ? schl.b : null, !!schl, schl ? schl.a : null);
+}
+function instAnzeigen() {
+  const I = Z.inst, info = $('instInfo');
+  $('instZeile').hidden = !I && !info.dataset.fehler;
+  const mixB = $('segMix').querySelector('[data-v=mix]'); mixB.disabled = !I;
+  if (!I) Z.mix = false;
+  $('segMix').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.v === 'mix') === Z.mix)));
+  $('exportInfo').textContent = '24 bit, gleiche Abtastrate, Version vorne' + (Z.mix ? ' + Instrumental' : '');
+  if (!I) return;
+  info.innerHTML = ''; const b = document.createElement('b'); b.textContent = I.name;
+  const ab = Z.v ? Math.abs(I.dauer - Z.v.dauer) : 0;
+  info.append(b, ` · ${fmtZeit(I.dauer).replace(/\.\d+$/, '')}${ab > 1 ? ' · ' + Math.round(ab) + ' s ' + (I.dauer > Z.v.dauer ? 'länger' : 'kürzer') + ' als der Gesang' : ''}`);
+}
+async function instLaden(f) {
+  if (!f) return;
+  const info = $('instInfo'); info.dataset.fehler = ''; $('instZeile').hidden = false; info.textContent = 'Lädt ' + (f.name || '') + ' …';
+  try {
+    const r = await io.laden(f);
+    Z.inst = { x: r.x, sr: r.sr, name: r.name || f.name || 'Instrumental', dauer: r.dauer, b: null, rs: null };
+    instAnzeigen(); neuStarten();
+  } catch (e) { info.dataset.fehler = '1'; info.textContent = 'Instrumental ließ sich nicht lesen: ' + e.message; }
+}
+$('instEingabe').addEventListener('change', (e) => { const f = e.target.files && e.target.files[0]; instLaden(f).then(() => { e.target.value = ''; }); });
+$('fInst').value = E.instLaut; $('wInst').textContent = E.instLaut + ' %';
+$('fInst').addEventListener('input', (e) => { E.instLaut = +e.target.value; $('wInst').textContent = E.instLaut + ' %'; if (instG) instG.gain.value = E.instLaut / 100; einstSichern(); });
+$('bInstWeg').addEventListener('click', () => { Z.inst = null; $('instInfo').dataset.fehler = ''; instAnzeigen(); neuStarten(); });
+$('segMix').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b || b.disabled) return; Z.mix = b.dataset.v === 'mix' && !!Z.inst; instAnzeigen(); });
+// Instrumental auf die Abtastrate des Gesangs bringen (OfflineAudioContext, sonst linear) und dazumischen
+async function instBei(sr) {
+  const I = Z.inst; if (I.sr === sr) return I.x;
+  if (I.rs && I.rs.sr === sr) return I.rs.x;
+  let y = null;
+  try {
+    const n = Math.ceil(I.x.length * sr / I.sr), oc = new OfflineAudioContext(1, n, sr), b = oc.createBuffer(1, I.x.length, I.sr);
+    b.getChannelData(0).set(I.x); const q = oc.createBufferSource(); q.buffer = b; q.connect(oc.destination); q.start();
+    y = (await oc.startRendering()).getChannelData(0);
+  } catch (e) {
+    const n = Math.floor(I.x.length * sr / I.sr), f = I.sr / sr; y = new Float32Array(n);
+    for (let i = 0; i < n; i++) { const p = i * f, k = Math.floor(p), a = p - k; y[i] = I.x[k] * (1 - a) + (I.x[k + 1] || 0) * a; }
+  }
+  I.rs = { sr, x: y }; return y;
+}
+async function mitInst(x, sr) {
+  const ix = await instBei(sr), gn = E.instLaut / 100, y = new Float32Array(Math.max(x.length, ix.length));
+  y.set(x); for (let i = 0; i < ix.length; i++) y[i] += gn * ix[i];
+  return y;
+}
+instAnzeigen();
+
+// ---------------------------------------------------------------- An Claude schicken (senden.js, nur auf Knopfdruck)
+
+const lsCode = () => { try { return !!localStorage.getItem('ton-post-code'); } catch (e) { return false; } };
+const zeitKurz = (s) => { const z = Math.max(0, Math.round((+s || 0) * 10)), m = Math.floor(z / 600), r = z % 600; return m + ':' + String(Math.floor(r / 10)).padStart(2, '0') + ',' + (r % 10); };
+$('codeTeil').hidden = lsCode();
+function stellenZeigen() {
+  const box = $('stellen'); box.innerHTML = '';
+  Z.stellen.forEach((st, i) => {
+    const b = document.createElement('button'); b.type = 'button';
+    b.innerHTML = '<svg class="ic" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+    b.append(zeitKurz(st.s)); b.setAttribute('aria-label', 'Stelle ' + zeitKurz(st.s) + ' entfernen');
+    b.addEventListener('click', () => { Z.stellen.splice(i, 1); stellenZeigen(); });
+    box.append(b);
+  });
+  box.hidden = !Z.stellen.length; neu();
+}
+$('bStelle').addEventListener('click', () => {
+  if (!Z.v) return;
+  const t = Math.round((spiel ? pos() : Z.kopf) * 1000) / 1000;
+  if (!Z.stellen.some((st) => Math.abs(st.s - t) < 0.05)) { Z.stellen.push({ s: t }); Z.stellen.sort((a, b) => a.s - b.s); }
+  stellenZeigen(); meldung('Stelle ' + zeitKurz(t) + ' markiert');
+});
+let claudeAb = null, claudeWav = { id: null, blob: null };
+$('bClaude').addEventListener('click', async () => {
+  const v = Z.v; if (!v || claudeAb) return;
+  const x = await aktuellX(); if (!x) { meldung('Diese Version ist nicht mehr im Speicher'); return; }
+  const text = $('claudeText'), balken = $('claudeBalken'), code = $('fCode').value.trim();
+  const zeig = (a) => { balken.firstElementChild.style.transform = `scaleX(${klemm(a, 0, 1)})`; };
+  $('claudeStand').hidden = false; text.className = ''; text.textContent = 'Vorbereiten …'; balken.classList.remove('fertig'); zeig(0);
+  $('bClaude').disabled = true; $('bClaudeAb').hidden = false;
+  claudeAb = new AbortController();
+  let r;
+  try {
+    const S = await import('./senden.js');
+    if (claudeWav.id !== v.id) claudeWav = { id: v.id, blob: io.wav(spitzenSchutz(x), v.sr, 24) }; // gleicher Blob → nochmal tippen setzt fort
+    r = await S.anClaude({ blob: claudeWav.blob, name: basisName() + ' – ' + v.name, notiz: $('fNotiz').value, stellen: Z.stellen.map((st) => ({ s: st.s })),
+      code: code || undefined, signal: claudeAb.signal, zusatz: { version: v.nr, fassung: v.name, datei: Z.name, bpm: E.bpm, taktart: E.taktart },
+      onFortschritt: (f) => { zeig(f.anteil || 0); if (f.text) text.textContent = f.text; } });
+  } catch (e) { r = { ok: false, art: 'server', text: 'Senden ging nicht: ' + e.message }; }
+  claudeAb = null; $('bClaude').disabled = false; $('bClaudeAb').hidden = true;
+  if (r.ok) { zeig(1); balken.classList.add('fertig'); text.className = 'gut'; text.textContent = r.doppelt ? 'Schon angekommen – genau das liegt schon bei Claude.' : 'Angekommen – Claude kann es jetzt abholen (nur Gesang, ' + v.name + ').'; }
+  else { text.className = r.art === 'abgebrochen' ? '' : 'fehler'; text.textContent = r.text || 'Senden ging nicht.'; }
+  $('codeTeil').hidden = lsCode() && r.art !== 'code';
+  if (r.art === 'code') $('fCode').focus();
+});
+$('bClaudeAb').addEventListener('click', () => { if (claudeAb) claudeAb.abort(); });
+
 // ---------------------------------------------------------------- Farbschema
 
 function themaSetzen(t, merken) {
@@ -926,9 +1116,13 @@ function themaSetzen(t, merken) {
   if (t === 'konsole') H0.dataset.thema = 'konsole'; else delete H0.dataset.thema;
   if (merken) { try { localStorage.setItem('w3-thema', t); } catch (e) { /* egal */ } }
   document.querySelectorAll('[data-thema-wahl]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.themaWahl === (t === 'konsole' ? 'konsole' : 'klassisch'))));
-  farben(); neu(); for (const el of lagen.values()) el._b = -1; zwiebel();
+  const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = getComputedStyle(H0).getPropertyValue('--grund').trim() || getComputedStyle(H0).getPropertyValue('--bg').trim() || m.content;
+  document.dispatchEvent(new CustomEvent('thema', { detail: t === 'konsole' ? 'konsole' : 'klassisch' }));
 }
+// Canvas: Farben nur beim Umschalten neu lesen, dann neu zeichnen (Pianorolle und Versions-Wellen)
+document.addEventListener('thema', () => { farben(); neu(); for (const el of lagen.values()) el._b = -1; zwiebel(); });
 document.addEventListener('click', (e) => { const b = e.target.closest('[data-thema-wahl]'); if (b) themaSetzen(b.dataset.themaWahl, true); });
+document.addEventListener('touchstart', () => {}, { passive: true }); // ohne das zeigt iOS kein :active-Leuchten
 try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { farben(); neu(); }); } catch (e) { /* alt */ }
 
 // ---------------------------------------------------------------- Start
