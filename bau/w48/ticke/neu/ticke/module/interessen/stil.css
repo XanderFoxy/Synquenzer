@@ -1,7 +1,16 @@
 /* M2 interessen – Modul-Stil (Präfix ia-). Farben nur über Tokens aus stil.css, Maße in rem. */
-.ia-code{font-size:2.1rem;font-weight:750;letter-spacing:.08em;margin:.1rem 0 .4rem;line-height:1.15}
 .ia-gross{font-size:1.2rem;font-weight:650;margin:.1rem 0 .5rem}
-.ia-typ-kurz{margin:-.75rem 0 .95rem;color:var(--leise);font-size:.86rem;line-height:1.35}
+/* Richtung in Worten: zwei gleichwertige Pole nebeneinander (kein Balken, keine Skala) */
+.ia-pole{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.5rem;margin:.6rem 0 .7rem}
+.ia-pol{min-width:0;display:flex;flex-direction:column;gap:.25rem;padding:.6rem .7rem;border:1px solid var(--rand);border-radius:.8rem;background:var(--fl);font-size:.88rem;line-height:1.35;overflow-wrap:break-word;hyphens:auto}
+.ia-pol b{font-size:.96rem;line-height:1.25}
+.ia-pol span{color:var(--leise)}
+.ia-pol.an{border:2px solid var(--akzent);background:var(--akzent-weich)}
+.ia-pol.an span{color:var(--text)}
+.ia-pol small{margin-top:auto;font-weight:650;font-size:.8rem;color:var(--text)}
+.ia-achse-t{margin:.7rem 0 .1rem}
+.ia-wort{display:block;font-weight:650;font-size:.92rem;margin:.1rem 0 .05rem}
+.ia-bereiche .zeile>span:first-child{min-width:0}
 .ia-ideen{margin:.3rem 0 .2rem}.ia-ideen li{margin:.4rem 0}
 .ia-tipps{list-style:none;padding:0}.ia-tipps li{margin:.65rem 0}
 

@@ -82,7 +82,7 @@ function quelle(S) {
 }
 const VORN = { klar: 'Klar', leicht: 'Leicht' };
 function richtungSatz(B, b) {
-  if (!b.richtung || b.deutlich === 'beides') return `Beides gehört zu dir – ${klein(B.satz[2])}`;
+  if (!b.richtung || b.deutlich === 'beides') return `Beides gehört zu dir – ${B.satz[2]}`;   // satz[2] beginnt mit einem Hauptwort
   const pol = b.richtung > 0 ? B.rechts : B.links;
   return `${VORN[b.deutlich] || 'Leicht'} in Richtung „${pol}“ – ${klein(B.satz[b.richtung > 0 ? 0 : 1])}`;
 }
@@ -284,7 +284,7 @@ function uebersicht(ctx) {
       <section class="sp-held" aria-labelledby="sp-h"><h2 id="sp-h">Entweder – oder</h2>
         <p><b>Schnelle Wahl zwischen zwei Möglichkeiten:</b> ${HAUPT_ANZAHL}-mal zwei Aussagen – du nimmst, was eher zu dir passt. Etwa 3 Minuten.</p>
         <div class="sp-vs" aria-hidden="true"><span>Ich liebe große Feiern.</span><span>Ich träume gern vor mich hin.</span></div>
-        <p class="klein">Kein richtig oder falsch, keine Punkte, keine Eile. Am Ende steht dein Muster in Worten – und jede Wahl kannst du jederzeit ändern.</p></section>
+        <p class="klein">Es gibt kein richtig oder falsch und keine Eile. Am Ende steht dein Muster in Worten – und jede Wahl kannst du jederzeit ändern.</p></section>
       ${kurz ? `<div class="karte"><b>Dein Muster bisher</b>${q.gespeichert && q.zeit ? ` <span class="leise klein">vom ${esc(ui.datum(q.zeit))}</span>` : ''}<ul class="sp-kurz">${kurz}</ul></div>` : ''}
       ${knoepfe}
       <ul class="zeilen">
@@ -440,7 +440,7 @@ function so(ctx) {
     <section class="karte"><h3>2. Wie aus Wahlen eine Richtung wird</h3>
       <p>Jede Wahl ist ein Vergleich: Welche der beiden Aussagen spricht dich mehr an? (Thurstone, 1927) ${marke('belegt', ['thurstone1927'])}</p>
       <p>Jede Wahl schiebt eine Richtung ein kleines Stück. Zeigen viele Wahlen in dieselbe Richtung, heißt es <b>„klar in Richtung …“</b>, zeigen einige dorthin, <b>„leicht in Richtung …“</b>. Halten sie sich die Waage, heißt es <b>„beides gehört zu dir“</b>.</p>
-      <p>Damit nicht einfach eine Rangfolge herauskommt, steht in vielen Paaren eine Aussage <i>für</i> einen Bereich gegen eine Aussage, die <i>für die andere Seite</i> eines Bereichs spricht. ${marke('belegt', ['brown2011', 'brown2013', 'buerkner2019'])}</p>
+      <p>Damit nicht einfach nur eine Reihenfolge herauskommt, steht in vielen Paaren eine Aussage <i>für</i> einen Bereich gegen eine Aussage, die <i>für die andere Seite</i> eines Bereichs spricht. ${marke('belegt', ['brown2011', 'brown2013', 'buerkner2019'])}</p>
       <p class="klein leise">Für Fachleute: Thurstone-Modell für Paare (Thurstonian IRT) mit angenommenen, nicht geschätzten Aussagen-Werten; Schätzung auf dem Gerät. Die Rechnung bleibt innen – nach außen gehen nur Worte.</p></section>
 
     <section class="karte"><h3>3. Zwei Seiten, beide gleich viel wert</h3>

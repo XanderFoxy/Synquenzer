@@ -1,0 +1,64 @@
+/* M5 training – Modul-Stil (Präfix tr-). Farben nur über Tokens aus stil.css, Maße in rem (ARCH.md §5). */
+.tr-motto{font-size:1.2rem;font-weight:700;color:var(--akzent);margin:-.2rem 0 .2rem}
+.tr-kopf{display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap;margin:0 0 .2rem;font-size:.76rem;letter-spacing:.06em;text-transform:uppercase;color:var(--leise)}
+.tr-gross{font-size:1.3rem;line-height:1.25;margin:.35rem 0 .2rem!important}
+.tr-meta{color:var(--leise);font-size:.92rem;margin:.1rem 0 .4rem}
+.tr-heute .knopf.voll{margin-top:.55rem}
+.tr-warum-dir{border-top:1px dashed var(--rand);margin-top:.6rem;padding-top:.4rem}
+.tr-warum-dir>p{margin:.1rem 0}
+.tr-gruende{padding-left:1.1rem;margin:.2rem 0;font-size:.92rem}
+.tr-gruende li{margin:.3rem 0}
+.tr-geschafft p{margin:0}
+.tr-geschafft .sym,.tr-ok .sym,.tr-fertig h3 .sym{color:var(--gruen);vertical-align:-.3rem}
+.tr-ok{color:var(--gruen);font-weight:650;margin:.5rem 0}
+.tr-hf{border-left:4px solid var(--akzent)}
+.tr-frage{font-weight:650;margin:.9rem 0 .1rem}
+.tr-stufe{display:inline-block;font-size:.72rem;font-weight:650;line-height:1.2;padding:.12rem .45rem;border-radius:.8rem;border:1px solid currentColor;margin-right:.35rem;white-space:nowrap}
+.tr-stufe-belegt{color:var(--belegt);background:var(--belegt-hg)}
+.tr-stufe-abgeleitet{color:var(--abgeleitet);background:var(--abgeleitet-hg)}
+.tr-stufe-idee{color:var(--idee);background:var(--idee-hg)}
+.tr-zeilen .rechts .sym{width:1.25rem;height:1.25rem}
+.tr-zeilen .rechts .sym:not(:last-child){color:var(--gruen)}
+/* Serie + 7 Punkte */
+.tr-serie{display:flex;align-items:baseline;gap:.5rem;margin:.1rem 0 .4rem}
+.tr-zahl{font-size:2.2rem;line-height:1;color:var(--akzent);font-variant-numeric:tabular-nums}
+.tr-punkte{display:flex;justify-content:space-between;gap:.25rem;margin:.5rem 0}
+.tr-punkt{display:flex;flex-direction:column;align-items:center;gap:.2rem;font-size:.76rem;color:var(--leise);flex:1}
+.tr-punkt i{display:block;width:1.6rem;height:1.6rem;border-radius:50%;border:2px solid var(--rand);background:var(--fl)}
+.tr-punkt.an i{background:var(--akzent);border-color:var(--akzent)}
+.tr-punkt.heute{color:var(--text);font-weight:650}
+.tr-punkt.heute i{box-shadow:0 0 0 2px var(--hg),0 0 0 4px var(--akzent)}
+.tr-punkt.spaeter i{border-style:dashed;opacity:.6}
+/* Übung */
+.tr-schritte{padding-left:1.4rem}
+.tr-schritte li{margin:.45rem 0}
+.tr-fuerdich p{margin:.2rem 0}
+.tr-timer{text-align:center}
+.tr-timer .reihe{justify-content:center}
+.tr-uhr{font-size:2.6rem;font-weight:700;font-variant-numeric:tabular-nums;margin:.2rem 0;letter-spacing:.02em}
+.tr-felder textarea.feld{min-height:5.5rem}
+.tr-satz{background:var(--fl2);border-radius:var(--rund-k);padding:.7rem .9rem;margin:.3rem 0 .4rem;font-weight:600}
+.tr-fertig{margin-top:1.4rem}
+.tr-fertig h3{margin-top:0}
+.tr-link-karte{display:flex;align-items:center;gap:.75rem}
+.tr-link-karte .sym{color:var(--akzent)}
+.tr-link-karte .rechts{margin-left:auto;color:var(--leise)}
+/* Pläne */
+.tr-planzeile{display:flex;align-items:center;gap:.6rem;padding:.55rem 1rem;flex-wrap:wrap}
+.tr-plantext{flex:1 1 12rem;min-width:0}
+.tr-plantext small{display:block;color:var(--leise);font-size:.8rem}
+.tr-planliste{list-style:none;padding:0;margin:.4rem 0}
+.tr-plan>p{margin:.2rem 0}
+.tr-plan .reihe{margin-bottom:0}
+/* Rückblick */
+.tr-liste{padding-left:1.2rem}
+.tr-liste li{margin:.35rem 0}
+.tr-wnav{justify-content:space-between}
+.tr-wnav .knopf{flex:0 1 auto}
+.tr-uhrfeld{max-width:12rem}
+.tr-merk{margin-top:1rem}
+.tr-grenze{margin-top:1.6rem}
+@media (orientation:landscape) and (max-height:540px){
+  .tr-uhr{font-size:2rem}
+  .tr-punkt i{width:1.3rem;height:1.3rem}
+}

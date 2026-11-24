@@ -151,6 +151,7 @@ a.karte .rechts{margin-left:auto;color:var(--leise)}
 .chip[aria-pressed=true],.chip[aria-checked=true]{border-color:var(--akzent);background:var(--akzent-weich);color:var(--text);font-weight:650}
 .stand{list-style:none;padding:0;margin:.5rem 0}
 .stand li{display:flex;align-items:center;gap:.6rem;min-height:2.6rem;margin:0}
+.stand li>a{min-height:2.75rem;display:inline-flex;align-items:center}
 .stand .punkt{width:1.15rem;height:1.15rem;border-radius:50%;border:2px solid var(--rand);flex:none}
 .stand .fertig .punkt{background:var(--akzent);border-color:var(--akzent)}
 

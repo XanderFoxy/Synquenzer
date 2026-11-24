@@ -118,7 +118,8 @@ function rhythmusNeu(Sp) {
   const e = { ...LEER, ...(Sp.lies('interessen', 'rhythmus', {}) || {}) };
   if (istLeer(e)) { if (Sp.ergebnis(K.Y)) Sp.loescheErgebnis(K.Y); return { ok: true, ergebnis: 'geloescht' }; }
   const r = R.rhythmusAuswerten(e);
-  if (r.fehler) return { ok: false, fehler: r.fehler + ' Bis dahin bleibt die bisherige Richtung stehen.' };
+  // Antwort ist gemerkt, aber noch unvollständig: das bisherige Ergebnis bleibt stehen, bis die fehlende Angabe da ist.
+  if (r.fehler) return { ok: true, ergebnis: 'gemerkt', hinweis: r.fehler + (gueltig(Sp.ergebnis(K.Y)) ? ' Bis dahin bleibt die bisherige Richtung stehen.' : '') };
   Sp.setzeErgebnis(K.Y, { ...r, eingabe: eingabeVon(e) }, { ersetzen: gueltig(Sp.ergebnis(K.Y)) });
   return { ok: true, ergebnis: 'neu' };
 }
@@ -150,7 +151,8 @@ export function antwortListe(k = kern) {
   return out;
 }
 
-// Rückgabe: { ok: true, ergebnis?: 'neu'|'gemerkt'|'geloescht', unveraendert? } oder { ok: false, fehler }.
+// Rückgabe: { ok: true, ergebnis?: 'neu'|'gemerkt'|'geloescht', unveraendert?, hinweis? } oder { ok: false, fehler } (dann nichts gespeichert).
+// 'gemerkt' = Antwort gespeichert, Ergebnis kommt erst, wenn der Teil vollständig ist (oder ein Durchgang läuft gerade).
 export async function antwortSetzen(k = kern, id, wert) {
   const Sp = sp(k), s = String(id || ''), p = s.indexOf('.'), teil = s.slice(0, p), f = s.slice(p + 1);
   const falsch = { ok: false, fehler: 'Diese Antwort passt nicht zur Frage.' };
@@ -208,14 +210,14 @@ export function muster(k = kern) {
     const teile = Object.keys(D.FACETTEN).filter((x) => fac[x]);
     const klarste = teile.filter((x) => R.ehrlichRichtung(fac[x]).deutlich === 'klar').map((x) => `${D.FACETTEN[x].name} (${facetteWort(x, fac[x])})`);
     out.push({ ast: K.E, titel: 'Ehrlichkeit und Bescheidenheit', richtung: ehrlichSatz(g), deutlich: g.deutlich,
-      woher: `Aus deinen Antworten zu zwölf Aussagen über Aufrichtigkeit, Fairness, Genügsamkeit und Bescheidenheit.${klarste.length ? ' Am deutlichsten: ' + liste3(klarste) + '.' : ''}` });
+      woher: `Aus deinen Antworten zu den Aussagen über Aufrichtigkeit, Fairness, Genügsamkeit und Bescheidenheit.${klarste.length ? ' Am deutlichsten: ' + liste3(klarste) + '.' : ''}` });
   }
   const r = Sp.ergebnis(K.R);
   if (gueltig(r) && r.typen && Array.isArray(r.top) && r.top.length >= 3 && D.REIHE.every((t) => r.typen[t] && num(r.typen[t].wert))) {
     const T = D.TYPEN, a = R.riasecAchsen(r.typen), kurz = r.form !== 'voll';
-    const achse = (x, key) => { const P = D.ACHSEN[key].pole, pol = P.find((q) => q.id === x.pol); return pol ? `${x.deutlich} in Richtung ${pol.name}` : 'beides'; };
+    const achse = (x, key) => { const P = D.ACHSEN[key].pole, pol = P.find((q) => q.id === x.pol); return pol ? `${x.deutlich} in Richtung ${pol.name}` : 'beides gehört zu dir'; };
     out.push({ ast: K.R, titel: 'Was dich anzieht', deutlich: r.spreizung < 15 ? 'beides' : r.spreizung < 30 ? 'leicht' : 'klar',
-      richtung: `Am meisten ziehen dich ${liste3(r.top.map((t) => T[t].name))} an${a ? ` – bei Dinge oder Menschen ${achse(a.dingeMenschen, 'dingeMenschen')}, bei Daten oder Ideen ${achse(a.datenIdeen, 'datenIdeen')}` : ''}.`,
+      richtung: `Am meisten ziehen dich ${liste3(r.top.map((t) => T[t].name))} an.${a ? ` Zwischen Dingen und Menschen: ${achse(a.dingeMenschen, 'dingeMenschen')}; zwischen Daten und Ideen: ${achse(a.datenIdeen, 'datenIdeen')}.` : ''}`,
       woher: `Aus deinen Antworten, wie gern du ${kurz ? '24' : '48'} verschiedene Tätigkeiten tun würdest${kurz ? ' (Kurzform, noch vorläufig)' : ''}.` });
     for (const t of R.riasecReihenfolge(r)) {
       const g = R.interesseRichtung(r.typen[t]), bsp = D.RIASEC.filter((f) => f.typ === t && f.k).slice(0, 2).map((f) => `„${f.text}“`);
@@ -270,7 +272,7 @@ function riasecSeite(ctx) {
     <p class="leise klein">Fragen: aus dem O*NET Interest Profiler (US-Arbeitsministerium), Auswahl nach Armstrong u. a. (2008), gekürzt und selbst übersetzt – vorläufig. Das US-Arbeitsministerium hat diese Fassung nicht geprüft oder empfohlen. ${marke('abgeleitet', ['armstrong2008', 'onet'])}</p>
     ${ui.fuss()}`;
   return binde(el, {
-    start: () => { schreib('riasec', { antworten: {}, laeuft: true, genauer: false }); kern.geh(B + '/riasec/bogen'); },
+    start: () => { merkeAlle(S, 'riasec', st.antworten); schreib('riasec', { antworten: {}, laeuft: true, genauer: false }); kern.geh(B + '/riasec/bogen'); },
     weiter: () => kern.geh(B + '/riasec/bogen' + (st.genauer ? '?genauer=1' : '')),
     neu: async () => { if (await ui.bestaetige({ titel: 'Von vorn anfangen?', text: 'Deine bisherigen Antworten in diesem Teil werden zurückgesetzt. Die alten bleiben bei „vorher“ sichtbar.', ja: 'Von vorn' })) {
       merkeAlle(S, 'riasec', st.antworten); schreib('riasec', { antworten: {}, laeuft: true, genauer: false }); kern.geh(B + '/riasec/bogen'); } }
@@ -583,7 +585,7 @@ function angaben(r) {
   const U = R.uhrText, e = r.eingabe || null, teile = [];
   const paar = (ein, auf) => `einschlafen ${esc(ein)} Uhr, aufwachen ${esc(auf)} Uhr`;
   const t = num(r.tageMitTermin) ? r.tageMitTermin : e && num(e.tage) ? e.tage : null;
-  if (r.einschlafenArbeit != null) teile.push(`Tage mit Termin (${tageText(t ?? 0).replace(/^an /, '')} pro Woche): ${e && e.arbeitEin ? paar(e.arbeitEin, e.arbeitAuf) : paar(U(r.einschlafenArbeit), U(r.einschlafenArbeit + r.schlafdauerArbeit))}`);
+  if (r.einschlafenArbeit != null) teile.push(`Tage mit Termin (${t ?? '?'} ${t === 1 ? 'Tag' : 'Tage'} pro Woche): ${e && e.arbeitEin ? paar(e.arbeitEin, e.arbeitAuf) : paar(U(r.einschlafenArbeit), U(r.einschlafenArbeit + r.schlafdauerArbeit))}`);
   else if (t === 0) teile.push('keine Tage mit fester Aufstehzeit');
   if (r.einschlafenFrei != null) teile.push(`freie Tage: ${e && e.freiEin ? paar(e.freiEin, e.freiAuf) : paar(U(r.einschlafenFrei), U(r.einschlafenFrei + r.schlafdauerFrei))}${r.weckerFrei ? ', mit Wecker' : ''}`);
   return teile.join(' · ');

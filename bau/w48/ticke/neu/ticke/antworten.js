@@ -5,7 +5,7 @@
 // Wird von seiten.js erst beim Öffnen geladen; bekommt den Kern über ctx.kern (kein Import von kern.js → kein Kreis).
 import { esc, sym, blatt, meldung, datum } from './ui.js';
 
-const norm = (t) => String(t ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ß/g, 'ss');
+const norm = (t) => String(t ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ß/g, 'ss');
 const offen = (a) => a.wert == null || a.wert === '';
 const zielRoute = (m) => (m.fragen && m.fragen[0] && m.fragen[0].route) || (m.routen && m.routen[0]) || 'start';
 const gueltig = (a) => a && a.id != null && typeof a.frage === 'string';
@@ -38,7 +38,7 @@ export function zeige(ctx, el) {
     await kern.modul(m.id); return import(new URL(m.datei, import.meta.url).href);   // Rückfall für ältere Kerne
   }
   async function liste(s) {
-    s.liste = null; s.fehler = null;
+    s.liste = null;                            // s.fehler bleibt: Ladefehler des Moduls soll sichtbar bleiben
     if (!s.ns || typeof s.ns.antwortListe !== 'function') return;
     try { const l = await s.ns.antwortListe(kern); s.liste = Array.isArray(l) ? l.filter(gueltig) : []; }
     catch (e) { console.warn('antwortListe', s.info.id, e); s.fehler = e; }

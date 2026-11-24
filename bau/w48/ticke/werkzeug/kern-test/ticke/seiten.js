@@ -128,11 +128,11 @@ function heuteKarte(kern) {
   if (schonMal) zeilen.push(`<li><a class="zeile" href="#training"><span><b>Training</b><small>${Array.isArray(heute) && heute.length ? 'Heute schon etwas gemacht' : 'Ein kleiner Vorschlag für heute'}</small></span><span class="rechts">${sym('weiter')}</span></a></li>`);
   return zeilen.length ? `<ul class="zeilen">${zeilen.join('')}</ul>` : '';
 }
-// Alle Fragebögen einzeln (mit „genauer“ bzw. Hinweis auf die Antwort-Qualität)
+// Alle Fragebögen einzeln (mit „genauer“, wenn vertieft)
 function fragenStand(kern, erg, F) {
   const zeile = (ok, titel, href, rechts, extra = '') => `<li class="${ok ? 'fertig' : ''}"><span class="punkt" aria-hidden="true"></span><a href="${href}">${esc(titel)}</a><span class="leise klein">${ok ? '– ' + esc(rechts) : ''}${extra}</span><span class="sr">${ok ? 'erledigt' : 'offen'}</span></li>`;
   const bf = erg.bigfive;
-  const bfExtra = bf ? `${bf.form === 'vertieft' ? ' · genauer' : ''}${bf.qualitaet && bf.qualitaet.fraglich ? ' <span class="gelb-punkt" title="noch einmal in Ruhe?"></span><span class="sr"> – vielleicht noch einmal in Ruhe ausfüllen</span>' : ''}` : '';
+  const bfExtra = bf && bf.form === 'vertieft' ? ' · genauer' : '';   // bewusst kein Urteil über die Antworten (kein „fraglich“-Punkt)
   return `<ul class="stand">${F.map((f) => zeile(!!erg[f.ergebnis], f.titel, '#' + f.route, 'am ' + datum(erg[f.ergebnis] && erg[f.ergebnis].zeit), f.ergebnis === 'bigfive' ? bfExtra : '')).join('')}</ul>
     <p class="mitte"><a class="link" href="#fragen">Zur Übersicht „Fragen“</a></p>`;
 }

@@ -11,7 +11,7 @@ const KERN = JSON.stringify({ format: 1, einwilligung: { an: true, zeit: '2026-1
 let fehlerZahl = 0, pruef = 0;
 const ok = (b, t) => { pruef++; if (!b) { fehlerZahl++; console.log('  FEHLER:', t); } else console.log('  ok:', t); };
 // Wörter/Zeichen, die eine Bewertung wären (auf den sichtbaren Seiten des Moduls)
-const VERBOTEN = /(\d+\s?%|Prozent|Punkte|Sterne|Abzeichen|Level|Bonus|richtig!|falsch|Erwischt|Hoppla|Adlerauge|Aussagekraft|fraglich|überdurchschnittlich|unterdurchschnittlich|Rang|Wahrscheinlichkeit)/i;
+const VERBOTEN = /(\d+\s?%|Prozent|Punkte|Sterne|Abzeichen|Level|Bonus|richtig!|falsch|Erwischt|Hoppla|Adlerauge|Aussagekraft|fraglich|überdurchschnittlich|unterdurchschnittlich|\bRang\b|Rangfolge|Wahrscheinlichkeit)/i;
 async function neu(b, opt = {}) {
   const ctx = await b.newContext({ viewport: { width: 428, height: 926 }, hasTouch: true, isMobile: true, serviceWorkers: 'block', reducedMotion: 'reduce', deviceScaleFactor: 2, ...opt });
   const page = await ctx.newPage();
@@ -20,7 +20,7 @@ async function neu(b, opt = {}) {
   page.on('console', (m) => { if (m.type() === 'error') page.fehler.push('console: ' + m.text()); });
   return { ctx, page };
 }
-const text = (page) => page.evaluate(() => document.getElementById('inhalt').innerText);
+const text = (page) => page.evaluate(() => document.getElementById('inhalt').innerText.replace(/(kein|ohne) richtig oder falsch/gi, ''));
 const quer = (page) => page.evaluate(() => { const d = document.documentElement; const zuBreit = [...document.querySelectorAll('#inhalt *')].filter((x) => { const r = x.getBoundingClientRect(); return r.right > innerWidth + 1 && r.width > 0; }).map((x) => x.className || x.tagName).slice(0, 5); return { sw: d.scrollWidth, iw: innerWidth, inhaltSW: document.getElementById('inhalt').scrollWidth, inhaltCW: document.getElementById('inhalt').clientWidth, zuBreit }; });
 const kleineTippflaechen = (page, sel) => page.evaluate((s) => [...document.querySelectorAll(s)].filter((x) => { const r = x.getBoundingClientRect(); return r.width > 0 && (r.height < 43.5 || r.width < 43.5); }).map((x) => x.textContent.trim().slice(0, 30) + ' ' + Math.round(x.getBoundingClientRect().height)), sel);
 async function waehleBis(page, n, seite = (i) => (i % 3 ? '.sp-links' : '.sp-rechts')) {
@@ -70,8 +70,8 @@ async function waehleBis(page, n, seite = (i) => (i % 3 ? '.sp-links' : '.sp-rec
     const l3 = await page.evaluate(() => { const l = window.__spiel.lauf(), id = window.__spiel.ABLAUF[2].id; return { w: l.antworten[id].w, vorher: l.vorher[id] }; });
     ok(l3.w !== vorher3 && l3.vorher && l3.vorher.length === 1 && l3.vorher[0].w === vorher3, 'Zurück und umwählen: neue Wahl gespeichert, alte als „vorher“');
     t0 = Date.now();
-    await waehleBis(page, 36);
-    zeiten.waehlenJe = Math.round((Date.now() - t0) / 36);
+    await waehleBis(page, 37);
+    zeiten.waehlenJe = Math.round((Date.now() - t0) / 37);
     await page.waitForSelector('.sp-ende');
     const te = await text(page);
     ok(/Alle 40 Wahlen sind da/.test(te) && /Tätigkeiten wählen/.test(te), 'Fertig-Seite mit freiwilligen Tätigkeiten');
@@ -88,8 +88,8 @@ async function waehleBis(page, n, seite = (i) => (i % 3 ? '.sp-links' : '.sp-rec
     ok(!VERBOTEN.test(tm), 'Muster-Seite ohne Bewertungs-Wörter' + (VERBOTEN.test(tm) ? ' → ' + tm.match(VERBOTEN)[0] : ''));
     ok((await page.$$('.sp-ri')).length === 6, 'Muster: 5 Richtungen + Tätigkeiten');
     ok(/(Klar|Leicht) in Richtung|Beides gehört zu dir/.test(tm), 'Richtungen in Worten');
-    const zahlen = (tm.match(/\d+/g) || []);
-    ok(zahlen.length <= 6, 'Muster-Seite fast ohne Ziffern (nur Hilfe-Nummern): ' + zahlen.join(','));
+    const zahlen = ((await page.evaluate(() => { const c = document.getElementById('inhalt').cloneNode(true); c.querySelectorAll('.fuss').forEach((x) => x.remove()); return c.innerText; })).match(/\d+/g) || []);
+    ok(zahlen.length === 0, 'Muster-Seite ohne Ziffern (außer Hilfe-Nummern im Fuß): ' + zahlen.join(','));
     ok((await page.$$('a[href^="#muster/ast/spiel."]')).length === 6, 'Links zu den Ästen (#muster/ast/spiel.…)');
     await page.screenshot({ path: FOTO + 'spiel-5-muster.png', fullPage: true });
     const q = await quer(page); ok(q.inhaltSW <= q.inhaltCW + 1 && q.zuBreit.length === 0, 'Muster: nichts läuft quer über ' + JSON.stringify(q));
@@ -106,17 +106,6 @@ async function waehleBis(page, n, seite = (i) => (i % 3 ? '.sp-links' : '.sp-rec
     const q2 = await quer(page); ok(q2.inhaltSW <= q2.inhaltCW + 1 && q2.zuBreit.length === 0, 'Wahlen: nichts läuft quer ' + JSON.stringify(q2));
     await page.screenshot({ path: FOTO + 'spiel-6-wahlen.png' });
     // Alle Offenheit-Paare in Richtung „Neues“, dann alle in Richtung „Vertrautes“ – Muster muss sich drehen
-    const setzeOffen = async (richtung) => {
-      const ziele = await page.evaluate((r) => { const S = window.__spiel; const out = [];
-        for (const s of S.ABLAUF) { if (s.art !== 'paar') continue; const A = window.__spielAussage || null; }
-        return out; }, richtung);
-      return ziele;
-    };
-    await setzeOffen(1);
-    const plan = await page.evaluate(() => {
-      // aus daten.js: welche Seite eines Paars zeigt Richtung „Neues“ (Offenheit k=+1) bzw. „Vertrautes“?
-      return null;
-    });
     const musterVor = await page.evaluate(() => window.__spiel.muster().find((m) => m.ast === 'spiel.offenheit'));
     // per Klick umwählen: in jedem Paar mit Offenheit-Aussage die Seite, die zur Gegenrichtung passt
     const ziel = musterVor.deutlich !== 'beides' && /Richtung „Neues“/.test(musterVor.richtung) ? -1 : 1;
@@ -132,10 +121,10 @@ async function waehleBis(page, n, seite = (i) => (i % 3 ? '.sp-links' : '.sp-rec
       }
       return res;
     }, ziel);
-    let geklickt = 0;
+    let geklickt = 0, ersterId = null;
     for (const [id, w] of klicks) {
       const knopf = await page.$(`#sp-w-${id} [data-wert="${w}"][aria-pressed="false"]`);
-      if (knopf) { await knopf.click(); geklickt++; await page.waitForTimeout(20); }
+      if (knopf) { await knopf.click(); geklickt++; ersterId = ersterId || id; await page.waitForTimeout(20); }
     }
     const musterNach = await page.evaluate(() => window.__spiel.muster().find((m) => m.ast === 'spiel.offenheit'));
     console.log('     vorher:', musterVor.richtung.slice(0, 60), '| nachher:', musterNach.richtung.slice(0, 60), '| Klicks', geklickt);
@@ -143,7 +132,7 @@ async function waehleBis(page, n, seite = (i) => (i % 3 ? '.sp-links' : '.sp-rec
     const erg2 = await page.evaluate(() => window.__ticke.speicher.ergebnis('spiel'));
     ok(erg2.bereiche.offenheit.richtung === ziel, 'Gespeichertes Ergebnis sofort neu gerechnet');
     ok(await page.evaluate(() => window.__ticke.speicher.verlauf('spiel').length) === 1, 'Derselbe Lauf ersetzt sein Ergebnis (kein neuer Verlaufseintrag)');
-    const info = await page.evaluate((id) => document.querySelector('#sp-w-' + id + ' .sp-w-info')?.textContent || '', klicks[0][0]);
+    const info = await page.evaluate((id) => document.querySelector('#sp-w-' + id + ' .sp-w-info')?.textContent || '', ersterId);
     ok(/vorher/.test(info), '„vorher“ sichtbar nach Umwählen: ' + info);
     await page.goto(U('spiel/ergebnis')); await page.waitForSelector('.sp-ri');
     const tm2 = await text(page);

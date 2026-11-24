@@ -1,4 +1,4 @@
-/* M4 passt – Modul-Stil (Präfix pa-). Farben nur über Tokens aus stil.css, Maße in rem (ARCH.md §5). */
+/* M4 passt – Modul-Stil (Präfix pa-). Farben nur über Tokens aus stil.css, Maße in rem (ARCH.md §5). Keine Skalen, keine Messbalken. */
 .pa-liste{list-style:none;padding:0;margin:.6rem 0}
 .pa-liste>.pa-aussage{background:var(--fl);border:1px solid var(--rand);border-radius:var(--rund);padding:.75rem 1rem;margin:.65rem 0}
 .pa-aussage>p{margin:.2rem 0}
@@ -8,27 +8,32 @@
 .pa-weil{color:var(--leise);font-size:.84rem;line-height:1.35}
 .pa-kurz{padding-left:1.1rem}.pa-kurz li{margin:.55rem 0}
 .pa-preis-kurz{font-size:.9rem;color:var(--leise)}
-.pa-karte .pa-kopf{display:flex;justify-content:space-between;gap:.5rem;margin:0;font-size:.76rem;letter-spacing:.06em;text-transform:uppercase;color:var(--leise)}
+.pa-karte .pa-kopf{display:flex;flex-wrap:wrap;justify-content:space-between;gap:.25rem .5rem;margin:0;font-size:.76rem;letter-spacing:.06em;text-transform:uppercase;color:var(--leise)}
 .pa-karte>h3{margin-top:1.1rem}
 .pa-name{font-size:1.4rem;font-weight:750;color:var(--akzent);margin:.5rem 0 .1rem!important;line-height:1.2}
-.pa-name.pa-ohne{color:var(--text);font-size:1.1rem}
-.pa-top{padding-left:1.4rem;margin:.3rem 0}.pa-top li{margin:.25rem 0}
+.pa-saetze{padding-left:1.1rem;margin:.3rem 0}.pa-saetze li{margin:.4rem 0;line-height:1.45}
+/* Richtung: zwei gleichwertige Pole als Worte, dazwischen eine ruhige Linie (keine Position, keine Zahl) */
+.pa-ris{display:flex;flex-direction:column;gap:.5rem;margin:.4rem 0}
+.pa-ri{display:block;min-height:2.75rem;padding:.6rem .75rem;border:1px solid var(--rand);border-radius:var(--rund-k);background:var(--fl);color:var(--text);text-decoration:none}
+a.pa-ri:active{background:var(--fl2)}
+.pa-ri-kopf{display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+.pa-ri-kopf .sym{width:1.1rem;height:1.1rem;color:var(--leise)}
+.pa-ri-pole{display:grid;grid-template-columns:minmax(0,1fr) 1.25rem minmax(0,1fr);align-items:center;gap:.35rem;margin:.4rem 0 .3rem}
+.pa-pol{display:block;padding:.3rem .55rem;border-radius:.9rem;border:1px solid var(--rand);background:var(--fl2);color:var(--leise);font-size:.84rem;line-height:1.25;overflow-wrap:anywhere}
+.pa-pol:last-child{text-align:right}
+.pa-pol.an{border-color:var(--akzent);background:var(--akzent-weich);color:var(--text);font-weight:600}
+.pa-pol.an.klar{border-width:2px}
+.pa-ri-linie{height:2px;background:var(--rand);border-radius:1px}
+.pa-ri-text{display:block;font-size:.88rem;color:var(--leise)}
 .pa-ent{padding-left:1.2rem}.pa-ent li{margin:.25rem 0}
-.pa-deutlich{color:var(--gruen);font-weight:650}
 .pa-aktionen{margin:1rem 0}
 .pa-nicht p{margin:.25rem 0}
 .pa-merk{margin-top:1rem}
-.pa-probe .pa-frage{border-top:1px solid var(--rand);padding-top:.5rem;margin-top:.6rem}
-.pa-probe .pa-frage>p{margin:.2rem 0}
-.pa-urteil{font-size:.92rem;border-radius:.6rem;padding:.45rem .7rem;display:flex;flex-wrap:wrap;gap:.2rem .4rem;align-items:center}
-.pa-urteil .sym{width:1.1rem;height:1.1rem}
-.pa-urteil.pa-ja{background:var(--gruen-hg);color:var(--gruen)}
-.pa-urteil.pa-nein{background:var(--gelb-hg);color:var(--gelb)}
-.pa-urteil .leise{color:var(--leise);flex-basis:100%}
-.pa-summe{margin:.8rem 0 .3rem}
-.pa-abschnitte .rechts{font-variant-numeric:tabular-nums}
+.pa-alltag .pa-frage{border-top:1px solid var(--rand);padding-top:.5rem;margin-top:.6rem}
+.pa-alltag .pa-frage>p{margin:.2rem 0}
+.pa-bezug{font-size:.9rem;color:var(--leise);line-height:1.4}
 .pa-bei{color:var(--leise)}
 .pa-wahl h4{margin-top:.8rem}
-.pa-aufgaben{padding-left:1.4rem}.pa-aufgaben li{margin:.5rem 0}
+.pa-aufgaben{padding-left:1.2rem}.pa-aufgaben li{margin:.5rem 0}
 .pa-bild img{display:block;width:100%;height:auto;max-height:60dvh;object-fit:contain;border-radius:var(--rund-k);border:1px solid var(--rand);background:var(--fl2)}
 @media (orientation:landscape) and (max-height:540px){.pa-bild img{max-height:55dvh}}
