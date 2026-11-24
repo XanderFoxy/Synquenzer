@@ -1,12 +1,13 @@
-// M1 bigfive – Auswertung (ohne DOM, ohne Kern; in Node testbar: test/bigfive/rechnen-test.mjs).
-// Weg: Antworten 1–5 → umpolen → Rohwert (Mittel × Fragenzahl, fehlende Antworten anteilig) → T-Wert mit Vergleichswerten
-// (Johnson, IPIP-NEO-120) → 95-%-Band aus der Zuverlässigkeit, verbreitert bei widersprüchlichen Antworten → Wort, Stufe.
-import { FRAGEN, BEREICHE, FACETTEN, NORMEN, FASSUNG, START_REIHE } from './daten.js';
+// M1 bigfive – Auswertung (ohne DOM, ohne Kern; in Node testbar).
+// Angezeigt wird NUR die Richtung in Worten (eigenesMuster): Antworten 1–5 → umpolen → Mittel der eigenen Antworten je Bereich/Facette
+// → „klar“ / „leicht“ in Richtung eines der zwei gleichwertigen Pole oder „beides“. Kein Vergleich mit anderen Menschen.
+// Intern bleibt die frühere Rechnung (T-Wert mit Johnsons Vergleichswerten → Band, stufe, klar) im Ergebnis stehen, weil ältere Leser
+// (passt, training, textspiegel, weg) diese Felder erwarten und „Genauer hinschauen“ damit vorgeschlagen wird. Sie wird nicht gezeigt.
+import { FRAGEN, BEREICHE, BEREICH, FACETTEN, FACETTEN_POLE, NORMEN, FASSUNG, START_REIHE } from './daten.js';
 
 export const GRUPPEN = {
   alle: 'alle Altersgruppen', u21: 'unter 21 Jahren', '21-40': '21 bis 40 Jahre', '41-60': '41 bis 60 Jahre', '60plus': 'über 60 Jahre'
 };
-const WORTE = { '-2': 'deutlich niedriger als die meisten', '-1': 'eher niedriger als die meisten', '0': 'im Mittelfeld', '1': 'eher höher als die meisten', '2': 'deutlich höher als die meisten' };
 export const GRENZEN = {
   schnellMs: 1500,        // Median-Zeit je Frage darunter → „sehr schnell“ (Huang u. a. 2012: < 2 s je Frage ist verdächtig)
   gleichLauf: 10,         // so viele gleiche Antworten hintereinander → „alles gleich“ (Johnson 2005: Longstring)
@@ -17,24 +18,61 @@ export const GRENZEN = {
   deutlich: 15,           // |T − 50| ab hier → „deutlich“
   naeherung: 3,           // zusätzliche Unsicherheit (T) der Startform-Vergleichswerte (Näherung)
   qualitaet: 4,           // zusätzliche Unsicherheit (T), wenn die Antwort-Qualität fraglich ist
-  minStart: 4             // so viele der 6 Startfragen müssen beantwortet sein
+  minStart: 4,            // so viele der 6 Startfragen müssen beantwortet sein
+  leicht: 0.35,           // eigene Richtung: |Mittel − 3| ab hier „leicht“ (3 = „teils, teils“)
+  klar: 0.85,             // … ab hier „klar“
+  gemischtSd: 1.3         // Antworten eines Bereichs so weit gestreut und nicht klar → „beides gehört zu dir“
 };
 
 const rund = (x, n = 1) => Math.round(x * 10 ** n) / 10 ** n;
 export const stufeT = (t) => (t < 35 ? -2 : t < 45 ? -1 : t <= 55 ? 0 : t <= 65 ? 1 : 2);
-export const wort = (s) => WORTE[String(s)] || WORTE['0'];
 export const klar = (b) => (b.oben < 45 ? -1 : b.unten > 55 ? 1 : 0);
-// Prozentrang aus T (Normalverteilung): Anteil der Vergleichsgruppe mit niedrigerem Wert, in Prozent.
-export function prozentrang(t) {
-  const z = (t - 50) / 10, a = Math.abs(z) / Math.SQRT2, u = 1 / (1 + 0.3275911 * a);
-  const erf = 1 - (((((1.061405429 * u - 1.453152027) * u) + 1.421413741) * u - 0.284496736) * u + 0.254829592) * u * Math.exp(-a * a);
-  return Math.max(0, Math.min(100, 50 * (1 + Math.sign(z) * erf)));
-}
 const sb = (rho, n) => (n * rho) / (1 + (n - 1) * rho);                         // Spearman-Brown
 const mittel = (xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
 const sd = (xs) => { if (xs.length < 2) return 0; const m = mittel(xs); return Math.sqrt(xs.reduce((a, x) => a + (x - m) ** 2, 0) / (xs.length - 1)); };
 const gueltig = (a) => typeof a === 'number' && a >= 1 && a <= 5;
 const umpolen = (q, a) => (q.k > 0 ? a : 6 - a);
+
+// ---------- Eigene Richtung (nur aus den eigenen Antworten) ----------
+// werte: umgepolte Antworten (IPIP-Richtung); umgepolt: App-Bereich zeigt in die Gegenrichtung (stabilitaet).
+// pol: 1 = erster Pol (rechts, Zustimmung in App-Richtung), -1 = Gegenpol (links), 0 = beides. deutlich: 'klar' | 'leicht' | 'beides'.
+export function richtungAus(werte, umgepolt = false, fraglich = false) {
+  if (!werte.length) return null;
+  const m = umgepolt ? 6 - mittel(werte) : mittel(werte), d = m - 3, s = sd(werte), n = werte.length;
+  let pol = d >= GRENZEN.leicht ? 1 : d <= -GRENZEN.leicht ? -1 : 0;
+  let deutlich = pol === 0 ? 'beides' : Math.abs(d) >= GRENZEN.klar ? 'klar' : 'leicht';
+  if (n >= 3 && s >= GRENZEN.gemischtSd && Math.abs(d) < GRENZEN.klar) { pol = 0; deutlich = 'beides'; }   // zeigt in verschiedene Richtungen
+  if (fraglich && deutlich === 'klar') deutlich = 'leicht';                                                  // eilige Antworten: vorsichtiger sagen
+  return { pol, deutlich, n };
+}
+// Pol-Namen eines Bereichs bzw. einer Facette: [erster Pol, Gegenpol].
+export function poleVon(schluessel) {
+  const [b, f] = String(schluessel).split('.'), B = BEREICH[b]; if (!B) return null;
+  if (!f) return [B.rechts, B.links];
+  const P = FACETTEN_POLE[b] && FACETTEN_POLE[b][f]; return P ? [P[1], P[2]] : null;
+}
+// Kurzes Wort zur Richtung, z. B. „klar in Richtung „Neugier auf Neues““ oder „beides gehört zu dir“ (auch für ältere Leser im Feld wort).
+export function wortAus(schluessel, r) {
+  const P = poleVon(schluessel); if (!r || !P) return '';
+  if (r.deutlich === 'beides' || !r.pol) return 'beides gehört zu dir';
+  return `${r.deutlich === 'klar' ? 'klar' : 'leicht'} in Richtung „${r.pol > 0 ? P[0] : P[1]}“`;
+}
+// Muster aus den Antworten: { bereiche: {id: {pol, deutlich, n}}, facetten: {'bereich.facette': {pol, deutlich, n}}, fraglich }.
+// Bereiche erst ab GRENZEN.minStart Antworten der Kurzform (bzw. sobald vertieft), Facetten ab einer Antwort.
+export function eigenesMuster(antworten, fraglich = false) {
+  const bereiche = {}, facetten = {};
+  for (const B of BEREICHE) {
+    const qs = FRAGEN.filter((q) => q.b === B.ipip && gueltig(antworten[q.id]));
+    const start = qs.filter((q) => q.start).length;
+    if (start >= GRENZEN.minStart || istVertieft(B.ipip, antworten)) bereiche[B.id] = richtungAus(qs.map((q) => umpolen(q, antworten[q.id])), !!B.umgepolt, fraglich);
+    FACETTEN[B.id].forEach(([fid], i) => {
+      const fq = qs.filter((q) => q.f === i + 1);
+      const r = richtungAus(fq.map((q) => umpolen(q, antworten[q.id])), !!B.umgepolt, fraglich);
+      if (r) facetten[B.id + '.' + fid] = r;
+    });
+  }
+  return { bereiche, facetten, fraglich: !!fraglich };
+}
 
 // Ein Band auf der T-Skala. werte: umgepolte Antworten, k: Fragen im vollen Satz, norm: [mittel, sd] der Summe, r: Zuverlässigkeit.
 function bandAus(werte, k, norm, r, extra = 0) {
@@ -50,10 +88,7 @@ function fertig(b, umgepolt) {
   let { wert, unten, oben } = b;
   if (umgepolt) [wert, unten, oben] = [100 - wert, 100 - oben, 100 - unten];
   const band = { wert: rund(wert), unten: rund(unten), oben: rund(oben), n: b.n, r: rund(b.r, 2) };
-  band.stufe = stufeT(band.wert); band.wort = wort(band.stufe); band.klar = klar(band);
-  // Anzeige auf 1–99 begrenzt: Prozentrang setzt eine Normalverteilung voraus und ist an den Rändern ungenau (Prüfung 17.11. F13)
-  const pr1 = (t) => Math.max(1, Math.min(99, Math.round(prozentrang(t))));
-  band.pr = [pr1(band.unten), pr1(band.oben)];
+  band.stufe = stufeT(band.wert); band.klar = klar(band);   // intern (ältere Leser); band.wort setzt wertung() aus der eigenen Richtung
   return band;
 }
 
@@ -97,6 +132,7 @@ export function wertung(antworten, { gruppe = 'alle', zeiten = {}, lauf = null, 
   const qual = qualitaet(antworten, zeiten, reihe);
   const extraQ = qual.fraglich ? GRENZEN.qualitaet : 0;
   const bereiche = {}, facetten = {}, angeboten = [], erledigt = [], gruende = {}, fehlt = [];
+  const eigen = eigenesMuster(antworten, qual.fraglich);
   for (const B of BEREICHE) {
     const ip = B.ipip, nrm = N[ip], rel = NORMEN.r[ip];
     const vertieft = istVertieft(ip, antworten);
@@ -114,7 +150,8 @@ export function wertung(antworten, { gruppe = 'alle', zeiten = {}, lauf = null, 
         if (fq.length < 2) return;
         const rf = Math.min(0.7, sb(NORMEN.rhoW, fq.length) - 0.05);
         const fb = fertig(bandAus(fq.map((q) => umpolen(q, antworten[q.id])), 4, nrm.f[i], rf, extraQ), B.umgepolt);
-        fb.grob = true; facetten[B.id + '.' + fid] = fb;
+        fb.grob = true; fb.eigen = eigen.facetten[B.id + '.' + fid] || null; fb.wort = wortAus(B.id + '.' + fid, fb.eigen);
+        facetten[B.id + '.' + fid] = fb;
       });
     } else {
       const qs = FRAGEN.filter((q) => q.b === ip && q.start && gueltig(antworten[q.id]));
@@ -126,6 +163,8 @@ export function wertung(antworten, { gruppe = 'alle', zeiten = {}, lauf = null, 
     band.form = vertieft ? 'vertieft' : 'start';
     band.grob = !vertieft;
     band.streuung = rund(roh.sd, 2);
+    band.eigen = eigen.bereiche[B.id] || richtungAus(FRAGEN.filter((q) => q.b === ip && gueltig(antworten[q.id])).map((q) => umpolen(q, antworten[q.id])), !!B.umgepolt, qual.fraglich);
+    band.wort = wortAus(B.id, band.eigen);
     bereiche[B.id] = band;
     if (!vertieft) {
       const abst = Math.abs(band.wert - 50);
@@ -138,8 +177,9 @@ export function wertung(antworten, { gruppe = 'alle', zeiten = {}, lauf = null, 
   const form = erledigt.length ? 'vertieft' : 'start';
   return {
     schema: 1, form, skala: 'T', fassung: FASSUNG, gruppe: G, lauf,
-    vergleich: `vorläufig – englischsprachige Online-Stichprobe (Johnson, IPIP-NEO-120), ${GRUPPEN[G]}, Frauen und Männer gemischt; eigene deutsche Übersetzung, noch ohne deutsche Vergleichswerte`,
+    vergleich: 'nicht angezeigt – die Richtung in Worten kommt nur aus den eigenen Antworten (intern: Johnson, IPIP-NEO-120, für ältere Leser)',
     bereiche, facetten,
+    facettenEigen: eigen.facetten,   // Richtung je Facette in Worten (ab einer Antwort), nur aus den eigenen Antworten
     vertiefung: { angeboten, erledigt, gruende, empfohlen: angeboten.slice(0, 2) },
     fehlt, qualitaet: qual,
     beantwortet: FRAGEN.filter((q) => gueltig(antworten[q.id])).length,

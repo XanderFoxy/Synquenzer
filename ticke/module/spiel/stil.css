@@ -1,30 +1,30 @@
 /* Entweder – oder (Modul spiel). Alle Klassen mit Präfix sp-. Farben als Tokens; weiße Schrift auf allen Verläufen ≥ 4,5:1.
    0.2.1: Der Glanz liegt nur im oberen Innenrand (nie unter der Schrift), Knöpfe wachsen mit dem Text statt ihn abzuschneiden,
-   der Hinweis unten rutscht bei wenig Breite in eine eigene Zeile. */
-.sp{--sp-l1:#c2410c;--sp-l2:#e11d48;--sp-r1:#0f766e;--sp-r2:#2563eb;--sp-auf:#ffffff;--sp-gold:#b45309;--sp-gold-hg:#fdf0d5;
-  --sp-ok:#15803d;--sp-ok-hg:#dcfce7;--sp-hopp:#b45309;--sp-hopp-hg:#ffedd5;--sp-stern-aus:#d6d2c8;--sp-schatten:0 6px 18px rgba(20,30,40,.18)}
+   der Hinweis unten rutscht bei wenig Breite in eine eigene Zeile.
+   0.3: kein Spiel mehr – Punkte, Sterne, Abzeichen, Konfetti, „+10“, Blitz-Meldungen und Kopfnuss-Auflösung sind entfernt.
+   Neu: ruhige Pole in Worten (sp-pole), „bisher“-Markierung beim Zurückgehen, Liste „Deine Wahlen“ (sp-w…). */
+.sp{--sp-l1:#c2410c;--sp-l2:#e11d48;--sp-r1:#0f766e;--sp-r2:#2563eb;--sp-auf:#ffffff;
+  --sp-schatten:0 6px 18px rgba(20,30,40,.18)}
 .sp.sp-f2{--sp-l1:#7c3aed;--sp-l2:#db2777;--sp-r1:#15803d;--sp-r2:#0e7490}
 .sp.sp-f3{--sp-l1:#b45309;--sp-l2:#be123c;--sp-r1:#4338ca;--sp-r2:#0369a1}
 .sp.sp-f4{--sp-l1:#a21caf;--sp-l2:#6d28d9;--sp-r1:#047857;--sp-r2:#b45309}
 .sp.sp-f5{--sp-l1:#0e7490;--sp-l2:#4f46e5;--sp-r1:#c2410c;--sp-r2:#be185d}
-@media (prefers-color-scheme:dark){.sp{--sp-gold:#f5c26b;--sp-gold-hg:#3a2d17;--sp-ok:#86efac;--sp-ok-hg:#14301f;--sp-hopp:#fdba74;--sp-hopp-hg:#3b2414;--sp-stern-aus:#3a4652;--sp-schatten:0 6px 18px rgba(0,0,0,.5)}}
+@media (prefers-color-scheme:dark){.sp{--sp-schatten:0 6px 18px rgba(0,0,0,.5)}}
 
-/* ---------- Spielfläche ---------- */
+/* ---------- Wählen ---------- */
 #inhalt>.sp-spiel{min-height:max(22rem,100%);display:flex;flex-direction:column;gap:.5rem}
 .sp-kopf{display:flex;align-items:center;gap:.5rem;container-type:inline-size}
 .sp-kopf h2{flex:1 1 auto;min-width:0}
 .sp-kopf h2>span:last-child{min-width:0;-webkit-hyphens:auto;hyphens:auto;overflow-wrap:break-word}
 .sp-merk{flex:none;display:inline-flex;align-items:center;gap:.3rem;min-height:2.75rem;min-width:2.75rem;padding:0 .75rem;border-radius:1.4rem;border:1px solid var(--rand);background:var(--fl);color:var(--text);font-size:.8rem;font-weight:650;cursor:pointer;white-space:nowrap}
 .sp-merk .sym{width:1.05rem;height:1.05rem}
-/* Wenig Platz: nur das Schloss (Name bleibt per aria-label), damit der Level-Name nicht unter den Knopf rutscht */
+/* Wenig Platz: nur das Schloss (Name bleibt per aria-label), damit die Überschrift nicht unter den Knopf rutscht */
 @container (max-width:19.5em){.sp-merk{padding:0;justify-content:center}.sp-merk span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}}
-.sp-spiel h2{font-size:1.05rem;margin:0;display:flex;align-items:center;gap:.5rem;min-height:1.6rem}
-.sp-spiel h2 .sp-lv{display:inline-flex;align-items:center;justify-content:center;min-width:1.7rem;height:1.7rem;border-radius:.85rem;padding:0 .45rem;color:var(--sp-auf);font-size:.85rem;
-  background:linear-gradient(135deg,var(--sp-l1),var(--sp-r2))}
+.sp-spiel h2{font-size:1rem;font-weight:650;margin:0;display:flex;align-items:center;gap:.5rem;min-height:1.6rem;color:var(--leise);-webkit-hyphens:auto;hyphens:auto;overflow-wrap:break-word}
 .sp-stand{display:flex;align-items:center;gap:.6rem}
 .sp-balken{flex:1;height:.6rem;border-radius:.3rem;background:var(--fl2);overflow:hidden}
 .sp-balken>span{display:block;height:100%;border-radius:.3rem;background:linear-gradient(90deg,var(--sp-l1),var(--sp-l2),var(--sp-r2));transition:width .3s}
-.sp-punkte{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--sp-gold)}
+.sp-nr{font-size:.85rem;color:var(--leise);font-variant-numeric:tabular-nums;white-space:nowrap}
 .sp-frage{font-size:1.15rem;font-weight:650;line-height:1.3;margin:.35rem 0 .1rem;text-align:center;min-height:1.5rem}
 .sp-paar{flex:1 0 auto;min-height:11rem;container-type:inline-size;display:grid;grid-template-columns:1fr 1fr;gap:.7rem;position:relative}
 .sp-wahl{--sp-rand-o:1rem;position:relative;display:flex;align-items:center;justify-content:center;min-height:9rem;padding:var(--sp-rand-o) .8rem;border:0;border-radius:1.4rem;cursor:pointer;
@@ -40,12 +40,15 @@
 .sp-wahl::after{content:"";position:absolute;left:0;right:0;top:0;height:var(--sp-rand-o);background:radial-gradient(ellipse 70% 100% at 32% 0,rgba(255,255,255,.34),rgba(255,255,255,0));pointer-events:none}
 .sp-wahl:active{transform:scale(.97)}
 .sp-wahl:focus-visible{outline:4px solid var(--text);outline-offset:3px}
-.sp-wahl.sp-ja{transform:scale(1.04);box-shadow:0 0 0 4px var(--hg),0 0 0 7px var(--sp-gold),var(--sp-schatten)}
+.sp-wahl.sp-ja{transform:scale(1.04);box-shadow:0 0 0 4px var(--hg),0 0 0 7px var(--text),var(--sp-schatten)}
 .sp-wahl.sp-nein{opacity:.32;transform:scale(.95)}
+/* Zurückgehen: die bisherige Wahl ist mit Ring und dem Wort „bisher“ markiert (keine Farbe allein) */
+.sp-wahl.sp-bisher{box-shadow:0 0 0 4px var(--hg),0 0 0 7px var(--text),var(--sp-schatten)}
+.sp-wahl{flex-direction:column;gap:.35rem}
+.sp-bisher-wort{font-size:.78rem;font-weight:700;letter-spacing:.02em;padding:.05rem .55rem;border-radius:.7rem;background:rgba(0,0,0,.22)}
 .sp-oder{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;width:3.1rem;height:3.1rem;border-radius:50%;display:flex;align-items:center;justify-content:center;
   background:var(--hg);color:var(--text);font-weight:800;font-size:.9rem;box-shadow:0 0 0 3px var(--fl2);pointer-events:none}
-.sp-plus{position:absolute;left:50%;top:18%;transform:translateX(-50%);font-weight:800;font-size:1.3rem;color:var(--sp-auf);text-shadow:0 1px 4px rgba(0,0,0,.35);animation:sp-hoch .7s ease-out forwards;pointer-events:none}
-@keyframes sp-hoch{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-2.2rem)}}
+
 .sp-rein .sp-wahl,.sp-rein .sp-frage{animation:sp-rein .28s ease-out both}
 .sp-rein .sp-rechts{animation-delay:.04s}
 @keyframes sp-rein{from{opacity:0;transform:translateY(.6rem) scale(.98)}to{opacity:1;transform:none}}
@@ -53,32 +56,11 @@
 .sp-unten .leise{flex:1;text-align:center;font-size:.82rem}
 /* Wenig Platz (kleines iPhone, große Schrift): Hinweis als eigene Zeile über den Knöpfen statt schmaler Spalte */
 @container (max-width:19.5em){.sp-unten .leise{order:-1;flex-basis:100%}}
-.sp-blitz{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;padding:.6rem 1rem;border-radius:1rem;font-weight:800;background:var(--sp-gold-hg);color:var(--sp-gold);box-shadow:var(--sp-schatten);pointer-events:none;animation:sp-blitz .9s ease-out forwards;white-space:nowrap}
-@keyframes sp-blitz{0%{opacity:0;transform:translate(-50%,-50%) scale(.7)}20%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-60%) scale(1)}}
 
-/* Auflösung einer Kopfnuss */
-.sp-aufl{flex:1;display:flex;flex-direction:column;justify-content:center;gap:.6rem;border-radius:1.4rem;padding:1.2rem;background:var(--sp-ok-hg);color:var(--text);animation:sp-rein .25s ease-out both}
-.sp-aufl.sp-erwischt{background:var(--sp-hopp-hg)}
-.sp-aufl .sp-gross{font-size:1.6rem;font-weight:800;margin:0;color:var(--sp-ok)}
-.sp-aufl.sp-erwischt .sp-gross{color:var(--sp-hopp)}
-.sp-aufl p{margin:0}
-
-/* ---------- Level geschafft ---------- */
-.sp-ende{text-align:center}
-.sp-ende h2{font-size:1.6rem;margin-top:.4rem}
-.sp-sterne{display:flex;justify-content:center;gap:.4rem;margin:.6rem 0}
-.sp-sterne svg{width:3.2rem;height:3.2rem}
-.sp-stern-an{fill:var(--sp-gold);stroke:var(--sp-gold)}
-.sp-stern-aus{fill:none;stroke:var(--sp-stern-aus)}
-.sp-ende .sp-stern-an{animation:sp-stern .5s cubic-bezier(.3,1.6,.5,1) both}
-.sp-ende .sp-sterne svg:nth-child(2) .sp-stern-an{animation-delay:.15s}.sp-ende .sp-sterne svg:nth-child(3) .sp-stern-an{animation-delay:.3s}
-@keyframes sp-stern{from{transform:scale(0);transform-origin:center}to{transform:scale(1);transform-origin:center}}
-.sp-sterne svg path{transform-box:fill-box;transform-origin:center}
-.sp-gross-zahl{font-size:2.1rem;font-weight:800;color:var(--sp-gold);margin:.2rem 0;font-variant-numeric:tabular-nums}
-.sp-ende .karte{text-align:left}
-.sp-konfetti{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden}
-.sp-konfetti i{position:absolute;top:-1rem;width:.6rem;height:1rem;border-radius:.15rem;animation:sp-fall 1.6s ease-in forwards}
-@keyframes sp-fall{to{transform:translate(var(--dx),110vh) rotate(var(--rot));opacity:.9}}
+/* ---------- Alle Wahlen da ---------- */
+.sp-ende h2{font-size:1.45rem;margin-top:.4rem}
+.sp-ende>.knopf,.sp-ende>.karte{margin-top:.7rem}
+.sp-kurz{margin:.4rem 0 0;padding-left:1.1rem}.sp-kurz li{margin:.25rem 0}
 
 /* ---------- Übersicht ---------- */
 .sp-held{border-radius:1.4rem;padding:1.2rem 1.1rem;color:var(--sp-auf);background:linear-gradient(135deg,var(--sp-l1),var(--sp-l2) 45%,var(--sp-r2));box-shadow:var(--sp-schatten);margin:.4rem 0 .9rem}
@@ -86,39 +68,37 @@
 .sp-held p{margin:.2rem 0}
 .sp-held .sp-vs{display:flex;gap:.5rem;margin:.7rem 0 .2rem}
 .sp-held .sp-vs span{flex:1;border-radius:.9rem;padding:.55rem .6rem;background:rgba(0,0,0,.14);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.5);font-weight:650;font-size:.92rem;text-align:center}
-.sp-levels{list-style:none;padding:0;margin:.5rem 0}
-.sp-levels li{display:flex;align-items:center;gap:.7rem;min-height:2.9rem;border-top:1px solid var(--rand)}.sp-levels li:first-child{border-top:0}
-.sp-punkt{width:1.9rem;height:1.9rem;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;color:var(--sp-auf);font-weight:800;font-size:.85rem}
-.sp-levels small{display:block;color:var(--leise);font-size:.84rem}
-.sp-levels .rechts{margin-left:auto;color:var(--sp-gold);white-space:nowrap}
 
-/* ---------- Ergebnis ---------- */
-.sp-urteil{display:flex;gap:.7rem;align-items:flex-start}
-.sp-urteil .sp-ampel{width:1.1rem;height:1.1rem;border-radius:50%;flex:none;margin-top:.25rem;background:var(--gruen)}
-.sp-urteil.mittel .sp-ampel,.sp-urteil.fraglich .sp-ampel{background:var(--gelb)}
-.sp-bereich{margin:.9rem 0 1.1rem}
-.sp-bereich h3{margin:0 0 .15rem;font-size:1.05rem}
-.sp-bereich .band{margin:.2rem 0}
-.sp-satz{margin:.2rem 0}
-.sp-chance{display:flex;align-items:center;gap:.6rem;margin:.35rem 0}
-.sp-chance .sp-leiste{flex:1;height:.55rem;border-radius:.3rem;background:var(--fl2);overflow:hidden}
-.sp-chance .sp-leiste>span{display:block;height:100%;background:var(--akzent);border-radius:.3rem}
-.sp-chance b{font-variant-numeric:tabular-nums;min-width:3.2rem;text-align:right}
-.sp-abz{display:flex;flex-wrap:wrap;gap:.5rem;list-style:none;padding:0;margin:.5rem 0}
-.sp-abz li{display:flex;align-items:center;gap:.45rem;border-radius:1.2rem;padding:.4rem .8rem .4rem .45rem;background:var(--sp-gold-hg);color:var(--text);font-size:.9rem}
-.sp-abz li .sp-medaille{width:1.7rem;height:1.7rem;border-radius:50%;background:var(--sp-gold);color:var(--hg);display:flex;align-items:center;justify-content:center;flex:none}
-.sp-abz li .sp-medaille svg{width:1.1rem;height:1.1rem}
-.sp-tab{width:100%;border-collapse:collapse;font-size:.92rem}
-.sp-tab td{padding:.4rem .2rem;border-top:1px solid var(--rand);vertical-align:top}
-.sp-tab td:last-child{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
-.sp-zoeg{margin:.4rem 0;padding:.5rem .7rem;border-radius:.8rem;background:var(--fl2)}
-.sp-glocke{width:100%;height:auto;max-height:11rem;display:block;margin:.4rem 0}
-.sp-glocke .sp-g-flaeche{fill:var(--band)}
-.sp-glocke .sp-g-linie{fill:none;stroke:var(--band-rand);stroke-width:2}
-.sp-glocke .sp-g-achse{stroke:var(--rand-bed);stroke-width:1}
-.sp-glocke .sp-g-mitte{stroke:var(--text);stroke-width:1.5;stroke-dasharray:4 3}
-.sp-glocke text{fill:var(--leise);font-size:11px}
-.sp-formel{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.88rem;background:var(--fl2);border-radius:.6rem;padding:.55rem .7rem;overflow-x:auto;white-space:nowrap}
+/* ---------- Muster ---------- */
+.sp-ri h3{margin:0 0 .5rem;font-size:1.08rem}
+/* Zwei Pole als Worte, dazwischen eine ruhige Linie – ohne Zahl, ohne Punkt auf einer Skala */
+.sp-pole{display:flex;align-items:center;gap:.6rem;margin:.2rem 0 .55rem}
+.sp-pol{flex:0 1 auto;max-width:42%;padding:.3rem .7rem;border-radius:1rem;border:1px solid var(--rand);color:var(--leise);font-size:.9rem;line-height:1.25;text-align:center;-webkit-hyphens:auto;hyphens:auto;overflow-wrap:break-word}
+.sp-pol.sp-pol-an{border-color:var(--akzent);background:var(--akzent-weich);color:var(--text);font-weight:650}
+.sp-pol-linie{flex:1 1 1rem;min-width:1rem;height:2px;border-radius:1px;background:var(--rand)}
+.sp-satz{margin:.2rem 0 .35rem}
+.sp-ri .richtung{margin:.2rem 0 .5rem}
+.sp-beide{margin:.3rem 0 0}
+.sp-beide summary{min-height:2.75rem;display:flex;align-items:center;cursor:pointer;color:var(--akzent);font-weight:600}
+.sp-beide p{margin:.2rem 0 .5rem}
+.sp-liste{margin:.3rem 0;padding-left:1.1rem}.sp-liste li{margin:.3rem 0}
+.sp-ast{display:inline-flex;align-items:center;gap:.2rem;min-height:2.75rem;font-weight:600}
+.sp-ast .sym{width:1.1rem;height:1.1rem}
+
+/* ---------- Deine Wahlen ---------- */
+.sp-wg h3{margin:1.3rem 0 .2rem}
+.sp-wl{list-style:none;padding:0;margin:.4rem 0}
+.sp-w{padding:.55rem 0;border-top:1px solid var(--rand);scroll-margin-top:1rem}
+.sp-w:first-child{border-top:0}
+.sp-w-paar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:stretch;gap:.4rem}
+.sp-w-knopf{display:flex;align-items:center;justify-content:center;gap:.35rem;min-height:2.75rem;padding:.5rem .6rem;border-radius:.9rem;border:1.5px solid var(--rand);background:var(--fl);color:var(--text);
+  font-size:.92rem;line-height:1.3;text-align:center;cursor:pointer;touch-action:manipulation;-webkit-hyphens:auto;hyphens:auto;overflow-wrap:break-word;min-width:0}
+.sp-w-knopf>span{min-width:0}
+.sp-w-knopf .sym{width:1.05rem;height:1.05rem;flex:none}
+.sp-w-knopf[aria-pressed="true"]{border-color:var(--akzent);background:var(--akzent-weich);font-weight:650}
+.sp-w-oder{align-self:center;font-size:.78rem;color:var(--leise)}
+.sp-w-info{margin:.3rem 0 0}
+.sp-w-ziel{background:var(--akzent-weich);border-radius:.9rem;padding-left:.4rem;padding-right:.4rem}
 
 /* ---------- Quer (iPhone quer: wenig Höhe) ---------- */
 @media (orientation:landscape) and (max-height:540px){
@@ -127,11 +107,10 @@
   .sp-paar{min-height:8rem;gap:1rem}
   .sp-wahl{--sp-rand-o:.6rem;min-height:7rem;font-size:1.02rem;padding:var(--sp-rand-o) 1rem}
   .sp-unten .leise{display:none}
-  .sp-merk{margin:-.65rem 0 -.3rem}   /* Tippfläche bleibt 44 px, die Zeile wird aber nicht höher als der Level-Name */
+  .sp-merk{margin:-.65rem 0 -.3rem}   /* Tippfläche bleibt 44 px, die Zeile wird aber nicht höher als die Überschrift */
 }
 @media (prefers-reduced-motion:reduce){
   .sp-wahl,.sp-balken>span{transition:none}
-  .sp-rein .sp-wahl,.sp-rein .sp-frage,.sp-aufl,.sp-ende .sp-stern-an,.sp-plus,.sp-blitz{animation:none}
-  .sp-plus,.sp-blitz{display:none}
+  .sp-rein .sp-wahl,.sp-rein .sp-frage{animation:none}
   .sp-wahl.sp-ja{transform:none}.sp-wahl.sp-nein{transform:none}
 }

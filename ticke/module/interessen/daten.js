@@ -119,17 +119,27 @@ export const PAARE = {
   SC: 'Für andere organisieren: Abläufe planen, Termine abstimmen, Anleitungen schreiben.',
   EC: 'Projekte führen: Zahlen, Planung und Verkauf zusammenbringen.'
 };
-// Wörter je Stufe (−2…2) – ohne Vergleich mit anderen (Skala „pomp“: es gibt noch keine deutschen Vergleichswerte).
-export const WORT_INTERESSE = { '-2': 'zieht dich kaum an', '-1': 'zieht dich eher wenig an', '0': 'teils, teils', '1': 'zieht dich eher an', '2': 'zieht dich stark an' };
+// Wörter je Stufe (−2…2) – Richtung in Worten, ohne Zahl und ohne Vergleich mit anderen (intern: Mittel seiner eigenen Antworten).
+// Werden auch von anderen Modulen gezeigt (passt: „Interesse Forschend: …“) – darum kurze Satzteile.
+export const WORT_INTERESSE = { '-2': 'ruft dich im Moment kaum', '-1': 'ruft dich im Moment eher wenig', '0': 'mal ja, mal nein', '1': 'zieht dich eher an', '2': 'zieht dich klar an' };
+// Zwei Achsen hinter dem Sechseck (Prediger 1982) – je zwei gleichwertige Pole.
+export const ACHSEN = {
+  dingeMenschen: { name: 'Dinge oder Menschen', pole: [
+    { id: 'dinge', name: 'Dinge', text: 'mit Material, Werkzeug, Technik, Natur – am Ende sieht man, was entstanden ist' },
+    { id: 'menschen', name: 'Menschen', text: 'helfen, erklären, überzeugen, gemeinsam etwas bewegen' }] },
+  datenIdeen: { name: 'Daten oder Ideen', pole: [
+    { id: 'daten', name: 'Daten', text: 'Ordnung, Zahlen, Abläufe, klare Fakten und Pläne' },
+    { id: 'ideen', name: 'Ideen', text: 'Einfälle, Theorien, Bilder, Klänge, Neues ausdenken' }] }
+};
 
 // ---------- Ehrlichkeit-Bescheidenheit ----------
 // IPIP-Fragen zu den vier Teilen nach HEXACO (angelehnt an die IPIP-HEXACO-Skalen, Ashton, Lee & Goldberg 2007; gemeinfrei).
 // u: true = umgepolt (Zustimmung heißt weniger Ehrlichkeit-Bescheidenheit). Wortlaut-Zuordnung vor Veröffentlichung prüfen (QUELLEN.md).
 export const FACETTEN = {
-  aufrichtigkeit: { name: 'Aufrichtigkeit', kurz: 'nicht schmeicheln, nicht tricksen' },
-  fairness: { name: 'Fairness', kurz: 'nicht schummeln, nichts nehmen, was dir nicht zusteht' },
-  genuegsamkeit: { name: 'Genügsamkeit', kurz: 'Geld, Luxus und Status sind dir weniger wichtig' },
-  bescheidenheit: { name: 'Bescheidenheit', kurz: 'dich nicht über andere stellen' }
+  aufrichtigkeit: { name: 'Aufrichtigkeit', kurz: 'ob du geradeheraus bist oder auch mal schmeichelst und taktierst' },
+  fairness: { name: 'Fairness', kurz: 'wie streng du es mit Regeln nimmst, wenn es um deinen Vorteil geht' },
+  genuegsamkeit: { name: 'Genügsamkeit', kurz: 'wie wichtig dir Geld, Luxus und Status sind' },
+  bescheidenheit: { name: 'Bescheidenheit', kurz: 'ob du dich mit anderen auf eine Stufe stellst oder gern zeigst, was du kannst' }
 };
 export const EHRLICHKEIT = [
   { id: 'h1', f: 'aufrichtigkeit', text: 'Ich mache mich nicht größer, als ich bin.', en: "Don't pretend to be more than I am." },
@@ -145,13 +155,30 @@ export const EHRLICHKEIT = [
   { id: 'h9', f: 'genuegsamkeit', u: true, text: 'Ich würde gern in einem sehr teuren Auto gesehen werden.', en: 'Would like to be seen driving around in a very expensive car.' },
   { id: 'h12', f: 'bescheidenheit', u: true, text: 'Ich prahle mit meinen guten Seiten.', en: 'Boast about my virtues.' }
 ];
+// Zwei gleichwertige Pole (beide mit Stärken). Wörter je Stufe (−2…2): Richtung in Worten.
+export const POLE_EHRLICH = [
+  { id: 'strategisch', name: 'Strategisch und statusbewusst', text: 'setzt sich für den eigenen Vorteil ein, verhandelt gut, zeigt das eigene Können und mag schöne Dinge' },
+  { id: 'fair', name: 'Fair und bescheiden', text: 'spielt mit offenen Karten, nimmt sich nicht mehr als zusteht und stellt sich nicht über andere' }
+];
 export const WORT_EHRLICH = {
-  '-2': 'deutlich auf der Seite „eigener Vorteil“', '-1': 'eher auf der Seite „eigener Vorteil“', '0': 'in der Mitte',
-  '1': 'eher auf der Seite „fair und bescheiden“', '2': 'deutlich auf der Seite „fair und bescheiden“'
+  '-2': 'klar in Richtung strategisch und statusbewusst', '-1': 'leicht in Richtung strategisch und statusbewusst', '0': 'beides gehört zu dir',
+  '1': 'leicht in Richtung fair und bescheiden', '2': 'klar in Richtung fair und bescheiden'
+};
+// Pole je Teil (links = Seite „eigener Vorteil“, rechts = Seite „fair und bescheiden“), beide ohne Wertung.
+export const POLE_FACETTE = {
+  aufrichtigkeit: ['taktisch und diplomatisch', 'geradeheraus'],
+  fairness: ['beweglich mit Regeln', 'regeltreu'],
+  genuegsamkeit: ['genießt Luxus und Status', 'genügsam'],
+  bescheidenheit: ['zeigt gern das eigene Können', 'zurückhaltend mit Eigenlob']
 };
 
 // ---------- Tagesrhythmus (eigene Fragen, Rechnung angelehnt an Roenneberg u. a. 2003) ----------
-export const TYP_WORT = { frueh: 'Morgentyp', 'eher-frueh': 'eher Morgentyp', mittel: 'weder früh noch spät', 'eher-spaet': 'eher Abendtyp', spaet: 'Abendtyp' };
+// Richtung in Worten (auch von anderen Modulen gezeigt: „Tagesrhythmus: …“). Kein Typ-Etikett, kein Messwert.
+export const TYP_WORT = { frueh: 'klar in Richtung früh', 'eher-frueh': 'leicht in Richtung früh', mittel: 'dazwischen', 'eher-spaet': 'leicht in Richtung spät', spaet: 'klar in Richtung spät' };
+export const POLE_RHYTHMUS = [
+  { id: 'frueh', name: 'Früh', text: 'morgens schnell wach und klar, früh am Tag schon viel geschafft' },
+  { id: 'spaet', name: 'Spät', text: 'abends wach und kreativ, wenn es ruhig wird, kommt der Schwung' }
+];
 // Grenzen der korrigierten Schlafmitte an freien Tagen (Stunden nach Mitternacht) – eigene Einteilung, grob ±1 Streuung um das Mittel.
 export const TYP_GRENZEN = [['frueh', 2.5], ['eher-frueh', 3.5], ['mittel', 5], ['eher-spaet', 6], ['spaet', Infinity]];
 // Selbstauskunft „Wann kannst du dich am besten konzentrieren?“ (eigene Frage) → Uhrzeit-Bereich.

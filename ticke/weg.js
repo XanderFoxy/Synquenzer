@@ -1,20 +1,21 @@
 // Wie ich ticke – „Dein Weg“: der durchgehende Ablauf für „Für mich“ (KONZEPT §2). Ohne DOM, in Node testbar.
 // Einstieg → Start-Fragebogen → Profil-Karte → Genauer hinschauen (nur wo nötig) → Text-Spiegel (freiwillig) → Was passt zu mir → Training.
+// Der Weg ist reine Orientierung (was offen ist, was erledigt ist, was als Nächstes kommt) – keine Stufen zum Aufsteigen, keine Belohnung.
 // Liest nur über ein kern-ähnliches Objekt k: k.einst(), k.speicher.{ergebnis, lies}, k.module (liste.js). Schreibt nur in m.weg.
 // m.weg = { start: 'laeuft' | undefined,            Start-Fragebogen läuft (Module springen nach einem Teil zurück zu #los)
 //           gesehen: { profil, passt, training },     ISO-Zeit, wann die Seite nach dem Start-Fragebogen offen war
 //           aus: { '<stufe>' | '<ergebnis>': ISO },   bewusst ausgelassen (Stufen vertiefung/text, Teile außer Big Five)
 //           vertiefung: ['bereich', …],               beim Ende des Start-Fragebogens empfohlene Bereiche (fest, damit der Weg endet)
-//           fertig: ISO }                             wann der ganze Weg zum ersten Mal geschafft war
+//           fertig: ISO }                             wann der ganze Weg zum ersten Mal gegangen war
 export const W = 'weg';
 export const STUFEN = [
   { id: 'einstieg', titel: 'Einstieg', kurz: 'Alter und Merken – etwa 30 Sekunden', route: 'einstieg' },
   { id: 'start', titel: 'Start-Fragebogen', kurz: 'Vier kurze Teile, etwa 7 Minuten', route: 'los' },
-  { id: 'profil', titel: 'Profil-Karte', kurz: 'Deine Bereiche auf einen Blick', route: 'profil' },
+  { id: 'profil', titel: 'Profil-Karte', kurz: 'Deine Richtungen in Worten', route: 'profil' },
   { id: 'vertiefung', titel: 'Genauer hinschauen', kurz: 'Nur wo es sich lohnt', frei: true },
   { id: 'text', titel: 'Text-Spiegel', kurz: 'Freiwillig: vier kurze Texte', route: 'text', frei: true },
-  { id: 'passt', titel: 'Was passt zu mir', kurz: 'Stärken mit Preis, Arbeitsweise, Wachsen', route: 'passt' },
-  { id: 'training', titel: 'Training', kurz: 'Dein Vorschlag für heute', route: 'training' }
+  { id: 'passt', titel: 'Was passt zu mir', kurz: 'Stärken mit ihrer Kehrseite, Arbeitsweise, Wachsen', route: 'passt' },
+  { id: 'training', titel: 'Training', kurz: 'Ein kleiner Vorschlag für heute', route: 'training' }
 ];
 export const STUFE = Object.fromEntries(STUFEN.map((s, i) => [s.id, { ...s, nr: i + 1 }]));
 export const BEREICH_NAME = { offenheit: 'Offenheit', gewissenhaftigkeit: 'Gewissenhaftigkeit', extraversion: 'Extraversion', vertraeglichkeit: 'Verträglichkeit', stabilitaet: 'Emotionale Stabilität' };
@@ -139,7 +140,7 @@ export function leiste(k, { pfad, param = {}, hash = pfad.join('/') }) {
 
 // ---------- Schreiben (nur über k.speicher.schreib) ----------
 // Nach jeder Ansicht und jedem Ergebnis: Start-Status aufräumen, empfohlene Vertiefung festhalten, Seiten als gesehen merken.
-// Gibt 'geschafft' zurück, wenn der Weg gerade zum ersten Mal komplett ist.
+// Gibt 'geschafft' zurück (interner Wert), wenn der Weg gerade zum ersten Mal ganz gegangen ist.
 export function nachfuehren(k, pfad = null) {
   const sp = k.speicher, jetzt = new Date().toISOString();
   const st = startStand(k);

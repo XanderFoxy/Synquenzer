@@ -27,7 +27,9 @@ const PFADE = {
   schliessen: '<path d="M6 6l12 12M18 6L6 18"/>',
   schloss: '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>',
   herz: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
-  spiel: '<rect x="2.5" y="5" width="8" height="14" rx="2.2"/><rect x="13.5" y="5" width="8" height="14" rx="2.2"/><path d="M6.5 10.5v3M17.5 10.5v3"/>'
+  spiel: '<rect x="2.5" y="5" width="8" height="14" rx="2.2"/><rect x="13.5" y="5" width="8" height="14" rx="2.2"/><path d="M6.5 10.5v3M17.5 10.5v3"/>',
+  muster: '<path d="M12 21v-9M12 15l-5.2-4.6M12 12.5l5.4-5"/><circle cx="12" cy="5.2" r="2"/><circle cx="5.6" cy="9.3" r="2"/><circle cx="18.6" cy="6.3" r="2"/><path d="M12 12V7.2"/>',
+  stift: '<path d="M4.5 19.5l1-4.2L15.8 5a2 2 0 0 1 2.8 0l.4.4a2 2 0 0 1 0 2.8L8.7 18.5z"/><path d="M13.8 7l3.2 3.2M4.5 19.5h15"/>'
 };
 export function sym(name, klasse = '') {
   return `<svg class="sym ${klasse}" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${PFADE[name] || PFADE.info}</svg>`;
@@ -48,14 +50,30 @@ export function aussage({ text, stufe = 'idee', quellen = [], kosten = '', tag =
   return `<${tag} class="aussage">${t} ${marke(stufe, quellen)}${kosten ? `<span class="kosten">Kosten: ${html ? kosten : esc(kosten)}</span>` : ''}</${tag}>`;
 }
 
-// ---------- Band: Bereich statt Punkt ----------
+// ---------- Richtung: zwei gleichwertige Pole in Worten (ohne Zahl, ohne Messwert-Balken) ----------
+// pole: [a, b] – je ein Text oder {name, text}. zu: 0 | 1 – zu welchem Pol es geht (weglassen: keiner hervorgehoben).
+// deutlich: 'klar' | 'leicht' | 'beides'. text: der Satz in Worten (trägt die Bedeutung). titel: optional.
+// erklaeren: true zeigt darunter die Texte beider Pole gleich groß nebeneinander. tag: umgebendes Element (div/li).
+// Zwischen den Polen liegt nur eine ruhige Linie – keine Markierung, kein Anteil, keine Skala.
+const DEUTLICH = ['klar', 'leicht', 'beides'];
+export function richtung({ titel = '', pole = ['', ''], deutlich = 'beides', text = '', zu = null, erklaeren = false, tag = 'div' } = {}) {
+  const d = DEUTLICH.includes(deutlich) ? deutlich : 'beides';
+  const P = [0, 1].map((i) => { const p = (pole || [])[i]; return p && typeof p === 'object' ? { name: p.name || '', text: p.text || '' } : { name: String(p ?? ''), text: '' }; });
+  const seite = d !== 'beides' && (zu === 0 || zu === 1) ? zu : null;
+  const pol = (i) => `<span class="richtung-pol${d === 'beides' ? ' beide' : seite === i ? ' an' : ''}">${esc(P[i].name)}${seite === i ? '<span class="sr"> (deine Richtung)</span>' : ''}</span>`;
+  return `<${tag} class="richtung richtung-${d}${seite != null ? ' zu-' + seite : ''}">${titel ? `<p class="richtung-titel">${esc(titel)}</p>` : ''}
+    <p class="richtung-achse">${pol(0)}<span class="richtung-linie" aria-hidden="true"></span><span class="sr"> oder </span>${pol(1)}</p>
+    ${text ? `<p class="richtung-satz">${esc(text)}</p>` : ''}${erklaeren && (P[0].text || P[1].text) ? `<div class="richtung-erkl">${P.map((p) => `<p><b>${esc(p.name)}</b><br>${esc(p.text)}</p>`).join('')}</div>` : ''}</${tag}>`;
+}
+
+// ---------- Band: Bereich statt Punkt (alt; neue Ansichten nehmen richtung()) ----------
 // unten/oben auf der Skala min..max (Standard T-Werte 20–80); mitte = Mittelfeld, das blass hinterlegt wird.
 // ohneName: Kopfzeile ohne Namen (wenn die Karte darüber schon so heißt); das aria-label bleibt vollständig.
 export function band({ name, unten, oben, min = 20, max = 80, mitte = [45, 55], wort = '', links = '', rechts = '', grob = false, beschreibung = '', ohneName = false }) {
   const pos = (v) => Math.max(0, Math.min(100, ((v - min) / (max - min)) * 100));
   const a = pos(Math.min(unten, oben)), b = pos(Math.max(unten, oben));
   const m0 = pos(mitte[0]), m1 = pos(mitte[1]);
-  const label = beschreibung || `${name}: Bereich von ${Math.round(Math.min(unten, oben))} bis ${Math.round(Math.max(unten, oben))} auf einer Skala von ${min} bis ${max}${wort ? ', ' + wort : ''}.`;
+  const label = beschreibung || `${name}${wort ? ': ' + wort : ''}.`;   // ohne Zahlen (keine Bewertung, Regel „Richtungen statt Messwerte“)
   return `<div class="band${grob ? ' grob' : ''}" role="img" aria-label="${esc(label)}">
     <div class="band-kopf" aria-hidden="true">${ohneName ? '<span></span>' : `<span class="band-name">${esc(name)}</span>`}<span class="band-wort">${esc(wort)}</span></div>
     <div class="band-spur" aria-hidden="true"><span class="band-mitte" style="left:${m0}%;width:${m1 - m0}%"></span><span class="band-bereich" style="left:${a}%;width:${Math.max(0, b - a)}%"></span></div>

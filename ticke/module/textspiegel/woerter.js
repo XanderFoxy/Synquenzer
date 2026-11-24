@@ -62,7 +62,11 @@ export const GRUPPEN = {
       merke merkst merkt merken gemerkt erkenne erkennst erkennt erkennen erkannt denke denkst denkt denken gedacht glaube glaubst
       glaubt glauben geglaubt weiß weißt wissen gewusst sinn bedeutet bedeutung nachdenken nachgedacht` },
   verneinung: { name: 'Verneinungen', kurz: 'nicht, kein, nie …',
-    liste: 'nicht kein keine keinen keinem keiner keines nie niemals nichts niemand niemanden niemandem nein weder' }
+    liste: 'nicht kein keine keinen keinem keiner keines nie niemals nichts niemand niemanden niemandem nein weder' },
+  // 0.3: Gegenpol zu „absolut“ – Wörter, die eine Aussage abstufen („Hedges“, Lakoff 1973). Überschneidung mit „vorsicht“ ist gewollt.
+  abgestuft: { name: 'Abgestufte Wörter', kurz: 'meistens, oft, eher …',
+    liste: `meistens meist oft öfter öfters manchmal gelegentlich selten teilweise teils größtenteils überwiegend ziemlich fast kaum
+      halbwegs einigermaßen ungefähr etwa eher vielleicht eventuell möglicherweise vermutlich wahrscheinlich irgendwie gewissermaßen relativ` }
 };
 
 // Reihenfolge und Gruppen der Anzeige
@@ -95,6 +99,22 @@ export const GE_AUSNAHMEN = `gestern gegen genau gerne gern gesund gemeinsam gel
 // Abkürzungen, deren Punkt KEIN Satzende ist (als reguläre Ausdrücke, ohne Groß/klein)
 export const ABKUERZUNGEN = ['z\\.\\s?b\\.', 'd\\.\\s?h\\.', 'u\\.\\s?a\\.', 'u\\.\\s?u\\.', 'z\\.\\s?t\\.', 'o\\.\\s?ä\\.', 'usw\\.', 'bzw\\.', 'ca\\.',
   'etc\\.', 'evtl\\.', 'ggf\\.', 'vgl\\.', 'nr\\.', 'bspw\\.', 'inkl\\.', 'sog\\.', 'dr\\.', 'mio\\.', 'mrd\\.', 'std\\.', 'min\\.', 'max\\.', 'str\\.', 'st\\.', 'jh\\.', 'abs\\.', 'gr\\.'];
+
+// Wörter, die für „Wörter, die wiederkehren“ (Tiefer lesen) nicht zählen: Artikel, Fürwörter, Bindewörter, Hilfs- und Allerweltsverben.
+export const STOPP = `aber alle allem allen aller alles als also am an andere anderen anderer anderes auch auf aus bei beim bin bis bist bloß da dabei dadurch
+  dafür dagegen daher damit dann daran darauf darin darüber das dass davon dazu dem den denen denn der deren des dessen dich die dies diese
+  diesem diesen dieser dieses dir doch dort du durch eben echt ein eine einem einen einer eines einfach einige einmal er es etwas euch euer
+  für gab gar geben gegen geht gehen ging gibt habe haben hast hat hatte hatten her hier hin hinter ich ihm ihn ihnen ihr ihre ihrem ihren
+  ihrer im immer in ins ist ja jede jedem jeden jeder jedes jetzt kann kannst kein keine keinem keinen keiner können könnte machen macht
+  mache machte mal man manche manchmal mehr mein meine meinem meinen meiner mich mir mit muss musste müssen nach nicht nichts noch nun nur
+  ob oder ohne schon sehr sein seine seinem seinen seiner seit selbst sich sie sind so soll sollte sondern sonst über um und uns unser
+  unsere unter viel viele vielen vom von vor war waren warst was weil weiter welche welchem welchen welcher wenn wer werde werden wie wieder
+  will wir wird wirklich wo wollen wollte würde würden wurde wurden zu zum zur zwar zwischen sagen sagt sage sagte gesagt finde findet
+  fand gefunden kommt komme kam kommen sehe sieht sah sehen lässt lasse dinge ding sache sachen halt total ganz genau gerade gern gerne
+  okay klar natürlich eigentlich vielleicht irgendwie ziemlich wirklich besonders bisschen dafür denke denkt glaube weiß einen eins zwei
+  drei mehr meisten oft eher fast kaum bald heute morgen gestern dort hier dabei danach davor deshalb deswegen darum trotzdem obwohl
+  sowie sowohl weder noch beide beiden beim seid sei wäre wären hätte hätten habt hab tun tut tue getan gemacht mag möchte darf kann
+  wenig lange lang später danach dabei paar viel vielleicht dass einem einfach weiß`;
 
 // Zahl der Einträge (für die Methoden-Anzeige)
 export const ANZAHL = Object.values(GRUPPEN).reduce((s, g) => s + g.liste.split(/\s+/).filter(Boolean).length, 0);

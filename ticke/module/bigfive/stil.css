@@ -1,25 +1,47 @@
-/* M1 bigfive – nur Klassen mit Präfix bf-, nur Tokens aus stil.css (ARCH.md §5). */
+/* M1 bigfive – nur Klassen mit Präfix bf-, nur Tokens aus stil.css (ARCH.md §5). Fassung 24.11.2026: keine Balken/Skalen, zwei gleichwertige Pole. */
 .bf-liste{padding-left:1.2rem}
 .bf-liste li{margin:.4rem 0}
 .bf-bereich{scroll-margin-top:.75rem}
 .bf-bereich>h3{margin-bottom:.15rem}
-.bf-bereich .band{margin:.6rem 0 .4rem}
-.bf-pr{margin:.2rem 0 .6rem}
+/* Zwei Pole: untereinander (hochkant), nebeneinander bei genug Breite. Der Pol, zu dem die Antworten zeigen, ist nur hervorgehoben. */
+.bf-pole{display:grid;grid-template-columns:minmax(0,1fr);gap:.35rem;margin:.75rem 0 .55rem}
+@media (min-width:40rem){.bf-pole{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:stretch}}
+.bf-pol{position:relative;min-width:0;border:1px solid var(--rand);border-radius:var(--rund-k);padding:.6rem .75rem;background:var(--fl);overflow-wrap:anywhere}
+.bf-pol b{display:block;font-size:1rem;line-height:1.3}
+.bf-poltext{display:block;font-size:.9rem;color:var(--leise);margin-top:.2rem;line-height:1.4}
+.bf-pol.an{border:2px solid var(--akzent);background:var(--akzent-weich)}
+.bf-pol.halb{border:2px dashed var(--akzent)}
+.bf-pol.beide{border:2px solid var(--rand-bed)}
+.bf-hier{display:inline-block;font-size:.78rem;font-weight:650;color:var(--akzent);margin-bottom:.15rem}
+.bf-pol.beide .bf-hier{color:var(--text)}
+.bf-zw{align-self:center;justify-self:center;font-size:.85rem;color:var(--leise);padding:0 .2rem}
+.bf-richtung{font-weight:650;margin:.5rem 0 .2rem}
+.bf-woher{margin:.1rem 0 .5rem}
 .bf-angebot{margin:.8rem 0 .2rem}
 .bf-angebot p{margin:.1rem 0 .5rem}
-.bf-facetten{margin:.8rem 0 .2rem;border-top:1px solid var(--rand);padding-top:.3rem}
+.bf-facetten{margin:.6rem 0 .2rem;border-top:1px solid var(--rand);padding-top:.3rem}
 .bf-facetten summary{min-height:2.75rem;display:flex;align-items:center;cursor:pointer;font-weight:650;color:var(--akzent)}
-.bf-facette .band{margin:.55rem 0 .1rem}
-.bf-facette .band-name{font-weight:600;font-size:.95rem}
-.bf-facette p{margin:0 0 .4rem}
+.bf-fac{list-style:none;padding:0;margin:.3rem 0 .5rem}
+.bf-fac li{display:flex;flex-wrap:wrap;column-gap:.5rem;row-gap:.05rem;padding:.45rem 0;border-top:1px solid var(--rand)}
+.bf-fac li:first-child{border-top:0}
+.bf-fac li>b{font-weight:650}
+.bf-fac li>small{flex-basis:100%;font-size:.82rem}
+.bf-wege{display:flex;flex-wrap:wrap;gap:.5rem;margin:.7rem 0 .1rem}
+.bf-wege .knopf{flex:1 1 auto}
 .bf-aktionen{margin:1.2rem 0}
 .bf-aktionen .link{align-self:center}
 .bf-qualitaet h3{margin-top:0}
-.bf-tabelle{display:grid;gap:0;margin:.6rem 0;border:1px solid var(--rand);border-radius:var(--rund-k);overflow:hidden;font-size:.9rem}
-.bf-zeile{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:.4rem;padding:.45rem .7rem;border-top:1px solid var(--rand);background:var(--fl)}
-.bf-zeile:first-child{border-top:0}
-.bf-zeile.kopf{background:var(--fl2);font-weight:650}
 .bf-saetze{padding-left:1.4rem}
 .bf-saetze li{margin:.25rem 0}
-.bf-lesehilfe{margin:.8rem 0 .2rem}.bf-lesehilfe .link{min-height:2.75rem;min-width:2.75rem;padding:0 .35rem;margin-left:.1rem;vertical-align:middle}
-.bf-bereich>.band .band-name{display:none}
+/* Deine Antworten */
+.bf-jetzt-liste{list-style:none;padding:0;margin:.3rem 0 .2rem}
+.bf-jetzt-liste li{margin:.25rem 0}
+.bf-sprung{margin:.8rem 0 .4rem}
+.bf-sprung .chip{display:inline-flex;align-items:center;text-decoration:none}
+.bf-antw-gruppe{scroll-margin-top:.75rem}
+.bf-antw-gruppe>h3{margin:1.1rem 0 .3rem}
+.bf-antw>span:first-child{flex:1;min-width:0}
+.bf-antw b{font-weight:600}
+.bf-satz{font-size:1.05rem;margin:.2rem 0 .6rem}
+.bf-vorher{margin:.6rem 0 0}
+.bf-bereich .aussage{font-size:.92rem}

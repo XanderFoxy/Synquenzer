@@ -1,6 +1,7 @@
-// M5 training – Rechnen ohne DOM (in Node testbar): Datum, Tagesvorschlag aus Profil, Serie, Wochenrückblick, Pläne, Kalender-Datei.
+// M5 training – Rechnen ohne DOM (in Node testbar): Datum, Tagesvorschlag aus Profil, Tagebuch (zuletzt, Woche), Gefühl je Übung,
+// „vorher“-Liste für geänderte Antworten, Pläne, Kalender-Datei. Keine Serien, keine Zähler als Leistung.
 // Eingaben kommen immer als Daten herein (kein Zugriff auf kern oder localStorage). Datum immer als lokales 'JJJJ-MM-TT'.
-import { UEBUNGEN, UEBUNG, GRUPPE, RICHTUNG_UEBUNGEN, PROFIL_REGELN, BEREICH_NAME } from './uebungen.js';
+import { UEBUNGEN, UEBUNG, GRUPPE, RICHTUNG_UEBUNGEN, PROFIL_REGELN, BEREICH_NAME, POL_WORT } from './uebungen.js';
 
 // ---------- Datum (lokal, nicht UTC) ----------
 const zwei = (n) => String(n).padStart(2, '0');
@@ -54,7 +55,8 @@ export function profilAus({ bigfive = null, rhythmus = null, wachstum = null, al
 const uhrText = (h) => { if (h == null || isNaN(h)) return '–'; let m = Math.round((((h % 24) + 24) % 24) * 12) * 5; m %= 1440; return `${Math.floor(m / 60)}:${zwei(m % 60)}`; };
 export { uhrText };
 
-// Gründe aus dem Profil: { uebungId: [{ text, stufe, quellen, gewicht, art }] }. Mittelfeld → kein Grund (gegen Barnum-Sätze).
+// Gründe aus dem Profil: { uebungId: [{ text, stufe, quellen, gewicht, art }] }. Zeigt das Profil in keine Richtung („beides
+// gehört zu dir“) → kein Grund (gegen Barnum-Sätze). Texte nur in Worten: Richtung mit zwei gleichwertigen Polen, keine Zahl, kein Vergleich.
 export function profilGruende(profil) {
   const G = {}; const add = (id, g) => { if (!UEBUNG[id]) return; (G[id] || (G[id] = [])).push(g); };
   const bf = profil && profil.bigfive;
@@ -62,8 +64,8 @@ export function profilGruende(profil) {
     const b = bf.bereiche[r.bereich]; if (!b || typeof b.stufe !== 'number' || !b.stufe) continue;
     if (Math.sign(b.stufe) !== r.seite) continue;
     const unsicher = !(b.klar === r.seite);
-    const lage = `${BEREICH_NAME[r.bereich]}: ${b.wort || (r.seite < 0 ? 'eher niedriger als die meisten' : 'eher höher als die meisten')}` +
-      (isFinite(b.unten) && isFinite(b.oben) ? ` (Bereich ${Math.round(b.unten)}–${Math.round(b.oben)}${unsicher ? ', noch unsicher' : ''})` : '') + '.';
+    const pol = (POL_WORT[r.bereich] || {})[r.seite] || BEREICH_NAME[r.bereich];
+    const lage = `Dein Profil zeigt ${Math.abs(b.stufe) >= 2 && !unsicher ? 'klar' : 'leicht'} in Richtung „${pol}“ (${BEREICH_NAME[r.bereich]}).`;
     const gewicht = (Math.abs(b.stufe) >= 2 ? 2 : 1.5) * (unsicher ? 0.8 : 1);
     for (const id of r.uebungen) add(id, { text: `${lage} ${r.grund}`, stufe: r.stufe, quellen: r.quellen, gewicht, art: 'profil' });
   }
@@ -71,12 +73,12 @@ export function profilGruende(profil) {
   if (rh) {
     const jl = Number(rh.sozialerJetlag);
     if (jl >= 2) for (const id of ['h-aufstehen', 'h-morgenlicht', 'h-abendlicht'])
-      add(id, { text: `Zwischen deinen Schlafzeiten an freien Tagen und an Tagen mit fester Zeit liegen etwa ${String(Math.round(jl * 10) / 10).replace('.', ',')} Stunden („sozialer Jetlag“). Das hängt mit schlechterem Schlaf und Befinden zusammen; regelmäßigere Zeiten und Morgenlicht setzen genau dort an.`, stufe: 'abgeleitet', quellen: ['wittmann2006', 'blume2019'], gewicht: 1.6, art: 'rhythmus' });
+      add(id, { text: 'An freien Tagen schläfst du deutlich später als an Tagen mit fester Zeit („sozialer Jetlag“). Das hängt in Studien mit schlechterem Schlaf und Befinden zusammen; regelmäßigere Zeiten und Morgenlicht setzen genau dort an.', stufe: 'abgeleitet', quellen: ['wittmann2006', 'blume2019'], gewicht: 1.6, art: 'rhythmus' });
     if (rh.typ === 'spaet' || rh.typ === 'eher-spaet') for (const id of ['h-morgenlicht', 'h-abendlicht'])
       add(id, { text: 'Du bist eher ein Abendtyp. Licht am Morgen und weniger helles Licht am Abend stellen die innere Uhr etwas früher.', stufe: 'abgeleitet', quellen: ['blume2019', 'wright2013'], gewicht: 1.4, art: 'rhythmus' });
     if (rh.typ === 'frueh' || rh.typ === 'eher-frueh') add('f-wichtigstes', { text: 'Du bist eher ein Morgentyp: Leg das Wichtigste in den Vormittag.', stufe: 'abgeleitet', quellen: ['schmidt2007'], gewicht: 1.2, art: 'rhythmus' });
     if (Array.isArray(rh.hinweise) && rh.hinweise.includes('kurz-geschlafen')) for (const id of ['h-koffein', 'h-abendlicht'])
-      add(id, { text: 'Laut deinen Angaben schläfst du an Tagen mit fester Zeit unter sechs Stunden. Weniger spätes Koffein und gedämpftes Abendlicht können beim Einschlafen helfen.', stufe: 'abgeleitet', quellen: ['gardiner2023', 'chang2015'], gewicht: 1.4, art: 'rhythmus' });
+      add(id, { text: 'Laut deinen Angaben ist dein Schlaf an Tagen mit fester Zeit eher kurz. Weniger spätes Koffein und gedämpftes Abendlicht können beim Einschlafen helfen.', stufe: 'abgeleitet', quellen: ['gardiner2023', 'chang2015'], gewicht: 1.4, art: 'rhythmus' });
     if (rh.fokus && rh.fokus.von != null) add('f-fenster', { text: `Dein Fokus-Fenster liegt etwa bei ${uhrText(rh.fokus.von)} bis ${uhrText(rh.fokus.bis)} Uhr (aus deinem Tagesrhythmus).`, stufe: 'abgeleitet', quellen: ['schmidt2007'], gewicht: 1.3, art: 'rhythmus' });
   }
   const w = profil && profil.wachstum;
@@ -87,13 +89,13 @@ export function profilGruende(profil) {
 
 // ---------- Tagesvorschlag ----------
 // o: { tage, datum, schwerpunkt ('gemischt' | Gruppen-ID), zeit (0 = egal, sonst Höchstdauer), wechsel (Zahl), weg (heute übersprungene IDs), profil }
-// Rückgabe: { haupt, weitere: [2], gruende: [{text, stufe, quellen}], punkte: {id: Zahl} }
+// Rückgabe: { haupt, weitere: [2], gruende: [{text, stufe, quellen}], gewicht: {id: Zahl} } – gewicht ist nur die interne Reihenfolge.
 export function vorschlag({ tage = {}, datum, schwerpunkt = 'gemischt', zeit = 0, wechsel = 0, weg = [], profil = null, uebungen = UEBUNGEN } = {}) {
   const G = profilGruende(profil), B = bewertungen(tage);
   const sp = GRUPPE[schwerpunkt] ? schwerpunkt : 'gemischt';
   const kandidaten = uebungen.filter((u) => !zeit || u.dauer <= zeit);
   const pool = kandidaten.length ? kandidaten : uebungen;
-  const punkte = {};
+  const punkte = {};   // interne Reihenfolge der Vorschläge, wird nie angezeigt
   for (const u of pool) {
     let p = 1;
     if (sp !== 'gemischt' && u.gruppe === sp) p += 4;
@@ -120,10 +122,10 @@ export function vorschlag({ tage = {}, datum, schwerpunkt = 'gemischt', zeit = 0
     if (sp !== 'gemischt' && haupt.gruppe === sp) gruende.push({ text: `Du hast „${GRUPPE[sp].titel}“ als Schwerpunkt gewählt.`, stufe: null, quellen: [] });
     const eigene = [...(G[haupt.id] || [])].sort((a, b) => b.gewicht - a.gewicht).slice(0, 2);
     for (const g of eigene) gruende.push({ text: g.text, stufe: g.stufe, quellen: g.quellen });
-    const b = B[haupt.id]; if (b && b.gut[2]) gruende.push({ text: `Hat dir schon ${b.gut[2] === 1 ? 'einmal' : b.gut[2] + '-mal'} gutgetan.`, stufe: null, quellen: [] });
+    const b = B[haupt.id]; if (b && b.gut[2]) gruende.push({ text: 'Hat dir schon gutgetan.', stufe: null, quellen: [] });
     if (!gruende.length) gruende.push({ text: 'Jeden Tag kommt ein anderer Vorschlag aus allen Bereichen.', stufe: null, quellen: [] });
   }
-  return { haupt, weitere, gruende, punkte };
+  return { haupt, weitere, gruende, gewicht: punkte };
 }
 
 // ---------- Herausforderungen zur Wachstums-Richtung (M4 passt.wachstum.aufgaben) ----------
@@ -143,20 +145,51 @@ export function herausforderungHeute(wachstum, tage, datum, wechsel = 0) {
   return H[start];
 }
 
-// ---------- Serie und letzte Tage ----------
-// Serie = Tage in Folge mit mindestens einer Übung. Ist heute noch nichts gemacht, zählt die Serie bis gestern („heute noch offen“).
-export function serie(tage, datum) {
-  const aktiv = (s) => eintraege(tage, s).length > 0;
-  const heute = aktiv(datum); let n = 0, s = heute ? datum : plusTage(datum, -1);
-  while (aktiv(s) && n < 3660) { n++; s = plusTage(s, -1); }
-  return { tage: n, heute, offen: !heute && n > 0 };
+// ---------- Tagebuch: zuletzt gemacht ----------
+// Die zuletzt gemachten Übungen (jede nur einmal), neueste zuerst: [{ id, datum, text }]. Ein Verlauf für dich, kein Zähler.
+export function zuletzt(tage, datum, n = 4, tageZurueck = 60) {
+  const r = [], gesehen = new Set();
+  for (let k = 0; k <= tageZurueck && r.length < n; k++) {
+    const s = plusTage(datum, -k), l = eintraege(tage, s);
+    for (let i = l.length - 1; i >= 0 && r.length < n; i--) { const e = l[i]; if (!e || gesehen.has(e.id)) continue; gesehen.add(e.id); r.push({ id: e.id, datum: s, text: e.text || null }); }
+  }
+  return r;
 }
-export function letzteTage(tage, datum, n = 7) {
-  const r = []; for (let k = n - 1; k >= 0; k--) { const s = plusTage(datum, -k); r.push({ datum: s, wt: WT_KURZ[wochentag(s)], anzahl: eintraege(tage, s).length }); } return r;
+export function tagWort(s, heute) { const a = abstand(s, heute); return a === 0 ? 'heute' : a === 1 ? 'gestern' : datumLang(s); }
+
+// ---------- Gefühl je Übung („Wie war das für dich?“) ----------
+const istGefuehl = (g) => g === 0 || g === 1 || g === 2;
+// Die Antwort je Übung ist ihr jüngster Eintrag: { datum, i, gut (oder null) } oder null. Genau diesen ändert antwortSetzen.
+export function juengsterEintrag(tage, id) {
+  for (const s of Object.keys(tage || {}).sort().reverse()) {
+    const l = eintraege(tage, s);
+    for (let i = l.length - 1; i >= 0; i--) if (l[i] && l[i].id === id) return { datum: s, i, gut: istGefuehl(l[i].gut) ? l[i].gut : null };
+  }
+  return null;
+}
+// Fürs Muster: das jüngste Gefühl, das du zu dieser Übung angegeben hast (oder null).
+export function juengstesGefuehl(tage, id) {
+  for (const s of Object.keys(tage || {}).sort().reverse()) {
+    const l = eintraege(tage, s);
+    for (let i = l.length - 1; i >= 0; i--) if (l[i] && l[i].id === id && istGefuehl(l[i].gut)) return l[i].gut;
+  }
+  return null;
+}
+export function gemachteIds(tage) { const r = new Set(); for (const l of Object.values(tage || {})) for (const e of Array.isArray(l) ? l : []) if (e && e.id) r.add(e.id); return [...r]; }
+export function gruppeVon(id) { return UEBUNG[id] ? UEBUNG[id].gruppe : String(id).startsWith('hf-') ? 'wachsen' : null; }
+
+// ---------- „vorher“: frühere Antworten (höchstens 5 je Frage, neueste zuerst) ----------
+export function mitVorher(vorher, id, alt, neuWert, zeit = new Date().toISOString(), max = 5) {
+  const v = vorher && typeof vorher === 'object' ? { ...vorher } : {};
+  if (!alt || alt.wert == null || alt.wert === neuWert) return v;
+  v[id] = [{ wert: alt.wert, anzeige: String(alt.anzeige || ''), zeit }, ...(Array.isArray(v[id]) ? v[id] : [])].slice(0, max);
+  const ids = Object.keys(v); if (ids.length > 300) for (const k of ids.slice(0, ids.length - 300)) delete v[k];   // Speicher klein halten
+  return v;
 }
 
 // ---------- Wochenrückblick (Montag bis Sonntag) ----------
-// versatz 0 = diese Woche, -1 = letzte Woche … Rückgabe ohne DOM, Texte erst in modul.js.
+// versatz 0 = diese Woche, -1 = letzte Woche … Rückgabe ohne DOM, Texte erst in modul.js. Ein Tagebuch: was wann gemacht wurde
+// und wie es sich angefühlt hat – keine Tages-Zählung, kein Vergleich mit der Vorwoche.
 export function woche(tage, datum, versatz = 0, plaene = []) {
   const mo = plusTage(montag(datum), 7 * versatz), so = plusTage(mo, 6);
   const tageListe = []; let anzahl = 0;
@@ -174,16 +207,14 @@ export function woche(tage, datum, versatz = 0, plaene = []) {
   }
   const liste = Object.values(je);
   const sort = (a, b) => b.n - a.n || (a.id < b.id ? -1 : 1);
-  const plaeneWoche = (plaene || []).filter((p) => !p.aus).map((p) => ({ id: p.id, art: p.art, text: planText(p), haken: (p.haken || []).filter((h) => h >= mo && h <= so).length }));
-  const vorher = plusTage(mo, -7); let vorherAktiv = 0; for (let k = 0; k < 7; k++) if (eintraege(tage, plusTage(vorher, k)).length) vorherAktiv++;
+  const plaeneWoche = (plaene || []).filter((p) => !p.aus).map((p) => ({ id: p.id, art: p.art, text: planText(p), tage: (p.haken || []).filter((h) => h >= mo && h <= so).sort().map((h) => WT_KURZ[wochentag(h)]) }));
   return {
     von: mo, bis: so, schluessel: isoWoche(mo), tage: tageListe, anzahl,
-    aktiveTage: tageListe.filter((t) => t.eintraege.length).length,
     gutgetan: liste.filter((x) => x.gut[2] > 0).sort((a, b) => b.gut[2] - a.gut[2] || sort(a, b)),
     gehtSo: liste.filter((x) => x.gut[1] > 0 && !x.gut[2]).sort(sort),
     eherNicht: liste.filter((x) => x.gut[0] > 0).sort((a, b) => b.gut[0] - a.gut[0] || sort(a, b)),
     unbewertet: liste.filter((x) => x.gut[0] + x.gut[1] + x.gut[2] < x.n).length,
-    gruppen, plaene: plaeneWoche, vorherAktiv, aktuell: versatz === 0
+    gruppen, plaene: plaeneWoche, aktuell: versatz === 0
   };
 }
 
@@ -204,7 +235,6 @@ export function hakenUmschalten(p, datum) {
   const h = new Set(p.haken || []); if (h.has(datum)) h.delete(datum); else h.add(datum);
   return { ...p, haken: [...h].sort().slice(-400) };
 }
-export function hakenWoche(p, datum) { const mo = montag(datum), so = plusTage(mo, 6); return (p.haken || []).filter((h) => h >= mo && h <= so).length; }
 
 // ---------- Kalender-Datei (.ics, RFC 5545) zum Selbst-Importieren ----------
 // ereignisse: [{ titel, text, zeit 'HH:MM', tage ['MO', …], dauer (Min.) }]. Zeiten „schwebend“ (ohne Zeitzone) = Ortszeit des Geräts.

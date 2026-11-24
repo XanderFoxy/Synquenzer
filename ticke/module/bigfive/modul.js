@@ -1,37 +1,144 @@
-// M1 bigfive – Big Five aus dem IPIP-NEO-120 (gemeinfrei): Startform 30 Fragen (eine je Facette, ca. 3 Min.), adaptive Vertiefung
-// je Bereich (die übrigen 18 Fragen → 6 Facetten), Ergebnis als Band mit vorläufigen Vergleichswerten, Antwort-Qualität.
-// Vertrag: ARCH.md §2–§4. Routen: fragen/bigfive (Übersicht/Ergebnis), …/start, …/vertiefung?bereich=, …/ergebnis, …/methode.
+// M1 bigfive – Big Five aus dem IPIP-NEO-120 (gemeinfrei): Kurzform 30 Sätze (einer je Facette, ca. 3 Min.), „Genauer hinschauen“
+// je Bereich (die übrigen 18 Sätze). Fassung 24.11.2026 (Xanders Wunsch): KEINE Bewertung – je Bereich zwei gleichwertige Pole in Worten,
+// Richtung nur aus den eigenen Antworten („klar“, „leicht“, „beides gehört zu dir“), kein Vergleich, keine Prozente/Balken.
+// Alle Antworten jederzeit ansehen und ändern (#fragen/bigfive/antworten), das Muster rechnet sofort neu; frühere Antworten als „vorher“.
+// Routen: fragen/bigfive (Übersicht/Ergebnis), …/start, …/vertiefung?bereich=, …/ergebnis, …/antworten?bereich=, …/methode.
+// Vertrag (Muster-Baum, #antworten): export antwortListe(k), antwortSetzen(k, id, wert), muster(k), aeste().
 import { kern } from '../../kern.js';
-import { FRAGEN, NACH_ID, BEREICHE, BEREICH, FACETTEN, NORMEN, startFragen, vertiefungsFragen } from './daten.js';
-import { wertung, startFertig, startBeantwortet, GRUPPEN, GRENZEN } from './rechnen.js';
-import { TEXTE, MITTE, UNKLAR, FRAGLICH, GRUENDE, QUALITAET } from './texte.js';
+import { FRAGEN, NACH_ID, BEREICHE, BEREICH, VON_IPIP, FACETTEN, FACETTEN_POLE, START_REIHE, startFragen, vertiefungsFragen } from './daten.js';
+import { wertung, startFertig, startBeantwortet, eigenesMuster, wortAus } from './rechnen.js';
+import { TEXTE, satz, grundText, FRAGLICH, QUALITAET } from './texte.js';
+import { aeste, AST_TITEL } from './aeste.js';
+
+export { aeste };
 
 const M = 'bigfive';
 const sp = kern.speicher;
 const ui = kern.ui;
 const { esc } = ui;
 const BASIS = 'fragen/bigfive';
-const zahl = (x, n = 0) => Number(x).toLocaleString('de-DE', { maximumFractionDigits: n });
+const VORHER_MAX = 5;
+const SKALA = ui.SKALA5 || [
+  { wert: 1, text: 'stimmt gar nicht' }, { wert: 2, text: 'stimmt eher nicht' }, { wert: 3, text: 'teils, teils' }, { wert: 4, text: 'stimmt eher' }, { wert: 5, text: 'stimmt genau' }
+];
+const anzeigeVon = (w) => (SKALA.find((x) => x.wert === w) || {}).text || '';
+const gueltig = (a) => typeof a === 'number' && a >= 1 && a <= 5;
+const S_ = (k) => (k && k.speicher) || sp;
+const titelVon = (id) => AST_TITEL[id] || (BEREICH[id] && BEREICH[id].name) || id;
+const liste = (xs) => (xs.length < 2 ? xs.join('') : xs.slice(0, -1).join(', ') + ' und ' + xs[xs.length - 1]);
+const zitat = (t) => `„${t}“`;
 
-// ---------- Modul-Daten ----------
-function daten() {
-  return { antworten: sp.lies(M, 'antworten', {}), zeiten: sp.lies(M, 'zeiten', {}), lauf: sp.lies(M, 'lauf', null), gruppe: sp.lies(M, 'gruppe', null) };
+// ---------- Modul-Daten (Format der Vorlage; neu nur das Feld „vorher“) ----------
+function daten(S = sp) {
+  return { antworten: S.lies(M, 'antworten', {}) || {}, zeiten: S.lies(M, 'zeiten', {}) || {}, lauf: S.lies(M, 'lauf', null), gruppe: S.lies(M, 'gruppe', null) };
 }
 function gruppe() {
-  const g = sp.lies(M, 'gruppe', null); if (g && GRUPPEN[g]) return g;
+  const g = sp.lies(M, 'gruppe', null); if (g) return g;   // nur intern (Vergleichswerte für ältere Leser), wird nicht mehr gezeigt
   const a = kern.einst().alter; return a === 'u16' || a === '16-17' ? 'u21' : 'alle';
 }
 function reihe() { return [...startFragen(), ...vertiefungsFragen('alle')].map((q) => q.id); }
 function rechne(d = daten()) { return wertung(d.antworten, { gruppe: gruppe(), zeiten: d.zeiten, lauf: d.lauf, reihe: reihe() }); }
-function speichereErgebnis() {
-  const d = daten(); if (!startFertig(d.antworten)) return null;
-  const res = rechne(d), alt = sp.ergebnis(M);
-  return sp.setzeErgebnis(M, res, { ersetzen: !!(alt && d.lauf && alt.lauf === d.lauf) });
+// nachAenderung: auch speichern, wenn nach einer Korrektur die Kurzform nicht mehr vollständig ist (dasselbe Ergebnis wird ersetzt).
+function speichereErgebnis({ nachAenderung = false } = {}) {
+  const d = daten(), alt = sp.ergebnis(M);
+  const gleicherLauf = !!(alt && d.lauf && alt.lauf === d.lauf);
+  if (!startFertig(d.antworten) && !(nachAenderung && gleicherLauf)) return null;
+  return sp.setzeErgebnis(M, rechne(d), { ersetzen: gleicherLauf });
 }
-function neuerLauf() { sp.schreib(M, 'antworten', {}); sp.schreib(M, 'zeiten', {}); sp.schreib(M, 'lauf', new Date().toISOString()); }
+// Frühere Antwort merken (neueste zuerst, höchstens VORHER_MAX je Satz).
+function merkeVorher(S, id, alt) {
+  if (!gueltig(alt)) return;
+  const v = S.lies(M, 'vorher', {}) || {};
+  v[id] = [{ wert: alt, anzeige: anzeigeVon(alt), zeit: new Date().toISOString() }, ...(v[id] || [])].slice(0, VORHER_MAX);
+  S.schreib(M, 'vorher', v);
+}
+function neuerLauf() {
+  const a = sp.lies(M, 'antworten', {}) || {};
+  const v = sp.lies(M, 'vorher', {}) || {}, jetzt = new Date().toISOString();
+  for (const [id, w] of Object.entries(a)) if (gueltig(w)) v[id] = [{ wert: w, anzeige: anzeigeVon(w), zeit: jetzt }, ...(v[id] || [])].slice(0, VORHER_MAX);
+  sp.schreib(M, 'vorher', v);
+  sp.schreib(M, 'antworten', {}); sp.schreib(M, 'zeiten', {}); sp.schreib(M, 'lauf', new Date().toISOString());
+}
 const gehoertZu = (e, d) => !!(e && d.lauf && e.lauf === d.lauf && startFertig(d.antworten));
 
-// ---------- Fragebogen (Start oder Vertiefung) ----------
+// ---------- Das Muster in Worten: { bereiche: {id: {pol, deutlich, n}}, facetten: {'b.f': {…}}, fraglich, form: {id: 'start'|'vertieft'} } ----------
+// Neue Ergebnisse tragen die Richtung selbst (eigen, facettenEigen). Ältere Ergebnisse der Vorlage: aus den Antworten nachrechnen,
+// falls sie dazugehören; sonst vorsichtig aus den alten Feldern ableiten (klar/stufe).
+function aus(b) { return b ? { pol: b.klar || Math.sign(b.stufe || 0), deutlich: b.klar ? 'klar' : b.stufe ? 'leicht' : 'beides', n: b.n || 0 } : null; }
+function lagen(e, d) {
+  const fertig = (L) => (Object.keys(L.bereiche).length ? L : null);
+  if (!e || e.schema !== 1 || !e.bereiche) return d && Object.keys(d.antworten).length ? fertig({ ...eigenesMuster(d.antworten), form: {} }) : null;
+  const fraglich = !!(e.qualitaet && e.qualitaet.fraglich);
+  const form = Object.fromEntries(Object.entries(e.bereiche).map(([id, b]) => [id, b && b.form]));
+  const neu = e.facettenEigen && Object.values(e.bereiche).every((b) => b && b.eigen);
+  if (neu) return fertig({ bereiche: Object.fromEntries(Object.entries(e.bereiche).map(([id, b]) => [id, b.eigen])), facetten: e.facettenEigen, fraglich, form });
+  if (d && gehoertZu(e, d)) return fertig({ ...eigenesMuster(d.antworten, fraglich), form });
+  const bereiche = {}, facetten = {};
+  for (const [id, b] of Object.entries(e.bereiche)) { const r = aus(b); if (r) bereiche[id] = fraglich && r.deutlich === 'klar' ? { ...r, deutlich: 'leicht' } : r; }
+  for (const [id, b] of Object.entries(e.facetten || {})) { const r = aus(b); if (r) facetten[id] = r; }
+  return fertig({ bereiche, facetten, fraglich, form });
+}
+function facettenVon(B, L) { return Object.entries(FACETTEN_POLE[B.id]).map(([f, P]) => ({ f, titel: P[0], pole: [P[1], P[2]], r: L.facetten[B.id + '.' + f] || null })); }
+function woherText(B, r, L) {
+  const quelle = L.form && L.form[B.id] === 'vertieft' ? 'Aus deinen Antworten zu allen Sätzen dieses Bereichs' : 'Aus deinen Antworten in der Kurzform (ein Satz je Facette)';
+  const fac = facettenVon(B, L).filter((x) => x.r);
+  if (r.pol) {
+    const mit = fac.filter((x) => x.r.pol === r.pol && x.r.deutlich === 'klar').map((x) => zitat(x.titel));
+    const mit2 = mit.length ? mit : fac.filter((x) => x.r.pol === r.pol).map((x) => zitat(x.titel));
+    return `${quelle}${mit2.length ? ` – am deutlichsten bei ${liste(mit2.slice(0, 3))}` : ''}.`;
+  }
+  const P = TEXTE[B.id].pole, hin = fac.filter((x) => x.r.pol > 0).map((x) => zitat(x.titel)), her = fac.filter((x) => x.r.pol < 0).map((x) => zitat(x.titel));
+  if (hin.length && her.length) return `${quelle}: ${liste(hin.slice(0, 3))} ${hin.length > 1 ? 'zeigen' : 'zeigt'} eher zu ${zitat(P[0].name)}, ${liste(her.slice(0, 3))} eher zu ${zitat(P[1].name)}.`;
+  return `${quelle}.`;
+}
+
+// ---------- Vertrag: Antworten ansehen und ändern ----------
+function reihenfolge(a, vorher) {
+  const ids = [];
+  for (const B of BEREICHE) {
+    START_REIHE.map((n) => NACH_ID['bf' + n]).filter((q) => q.b === B.ipip).forEach((q) => ids.push(q.id));
+    vertiefungsFragen(B.id).filter((q) => q.id in a || (vorher[q.id] && vorher[q.id].length)).forEach((q) => ids.push(q.id));
+  }
+  return ids;
+}
+function eintrag(id, a, vorher) {
+  const q = NACH_ID[id], B = BEREICH[VON_IPIP[q.b]], w = gueltig(a[id]) ? a[id] : null;
+  return {
+    id, gruppe: titelVon(B.id), frage: q.t, art: 'wahl', wert: w, anzeige: w == null ? '' : anzeigeVon(w),
+    optionen: SKALA.map((x) => ({ wert: x.wert, text: x.text })), route: `${BASIS}/antworten?bereich=${B.id}`,
+    vorher: (vorher[id] || []).slice(0, VORHER_MAX).map((v) => ({ wert: v.wert, anzeige: v.anzeige || anzeigeVon(v.wert), zeit: v.zeit })),
+    ...(q.h ? { hilfe: q.h } : {}), uebersprungen: a[id] === null, kurzform: !!q.start, bereich: B.id
+  };
+}
+export function antwortListe(k = kern) {
+  const S = S_(k), a = S.lies(M, 'antworten', {}) || {}, vorher = S.lies(M, 'vorher', {}) || {};
+  return reihenfolge(a, vorher).map((id) => eintrag(id, a, vorher));
+}
+export async function antwortSetzen(k = kern, id, wert) {
+  const S = S_(k), q = NACH_ID[id];
+  if (!q) throw new Error('Unbekannte Frage: ' + id);
+  const w = wert === null || wert === undefined || wert === '' ? null : Number(wert);
+  if (w !== null && !(Number.isInteger(w) && w >= 1 && w <= 5)) throw new Error('Ungültige Antwort: ' + wert);
+  const a = S.lies(M, 'antworten', {}) || {}, alt = a[id];
+  if (w === null ? !(id in a) : alt === w) return eintrag(id, a, S.lies(M, 'vorher', {}) || {});   // nichts geändert
+  merkeVorher(S, id, alt);
+  if (w === null) delete a[id]; else a[id] = w;
+  if (!S.lies(M, 'lauf', null)) S.schreib(M, 'lauf', new Date().toISOString());
+  S.schreib(M, 'antworten', a);
+  speichereErgebnis({ nachAenderung: true });
+  kern.emit('bigfive:geaendert', { id, wert: w });
+  return eintrag(id, a, S.lies(M, 'vorher', {}) || {});
+}
+export function muster(k = kern) {
+  const S = S_(k), L = lagen(S.ergebnis(M), daten(S));
+  if (!L) return [];
+  return BEREICHE.filter((B) => L.bereiche[B.id]).map((B) => {
+    const r = L.bereiche[B.id];
+    return { ast: 'bigfive.' + B.id, titel: titelVon(B.id), richtung: satz(B.id, r), deutlich: r.deutlich, woher: woherText(B, r, L) + (L.fraglich ? ' Die Antworten wirkten eilig – darum vorsichtig gesagt.' : '') };
+  });
+}
+
+// ---------- Fragebogen (Kurzform oder Vertiefung) ----------
 function bogen(ctx, teil) {
   const { el } = ctx;
   const d = daten();
@@ -40,13 +147,13 @@ function bogen(ctx, teil) {
   if (bereich && !(bereich === 'alle' || BEREICH[bereich])) { kern.geh(BASIS, { ersetzen: true }); return; }
   if (bereich && !startFertig(d.antworten)) {
     ctx.titel('Genauer hinschauen');
-    el.innerHTML = `<h2>Erst die Kurzform</h2><p>Für die Vertiefung brauche ich deine Antworten aus der Kurzform. Sie sind auf diesem Gerät nicht mehr da – zum Beispiel, weil sie nicht gemerkt wurden.</p>
+    el.innerHTML = `<h2>Erst die Kurzform</h2><p>Für „Genauer hinschauen“ brauche ich deine Antworten aus der Kurzform. Sie sind auf diesem Gerät nicht mehr da – zum Beispiel, weil sie nicht gemerkt wurden.</p>
       <a class="knopf haupt voll" href="#${BASIS}/start">Kurzform ausfüllen (ca. 3 Min.)</a>${ui.fuss()}`;
     return;
   }
   if (!d.lauf) sp.schreib(M, 'lauf', new Date().toISOString());
   const qs = bereich ? vertiefungsFragen(bereich) : startFragen();
-  const name = bereich ? (bereich === 'alle' ? 'Alle Bereiche genauer' : BEREICH[bereich].name + ' genauer') : 'Persönlichkeit';
+  const name = bereich ? (bereich === 'alle' ? 'Alle Bereiche genauer' : titelVon(bereich) + ' genauer') : 'Persönlichkeit';
   ctx.titel(bereich ? 'Genauer hinschauen' : 'Persönlichkeit');
   const fragen = qs.map((q, i) => ({ id: q.id, text: q.t, hilfe: q.h || (i === 0 ? 'Beschreib dich so, wie du jetzt meistens bist – nicht so, wie du gern wärst.' : '') }));
   const antworten = { ...d.antworten }, zeiten = { ...d.zeiten };
@@ -58,6 +165,7 @@ function bogen(ctx, teil) {
     titel: name, fragen, antworten: meine, ueberspringen: true, weiterText: 'Weiter',
     beiAntwort(id, wert) {
       const jetzt = performance.now(), dt = Math.round(jetzt - letzte); letzte = jetzt;
+      if (gueltig(antworten[id]) && antworten[id] !== wert) merkeVorher(sp, id, antworten[id]);   // umentschieden → „vorher“
       antworten[id] = wert; zeiten[id] = dt;
       sp.schreib(M, 'antworten', antworten); sp.schreib(M, 'zeiten', zeiten);
       schnellFolge = dt < 900 ? schnellFolge + 1 : 0;
@@ -68,9 +176,9 @@ function bogen(ctx, teil) {
     fertig() {
       const e = speichereErgebnis();
       const weg = !bereich && kern.weg ? kern.weg.nachBogen() : null;   // Start-Fragebogen läuft → zurück zu #los (Integration)
-      if (weg) { kern.geh(weg, { ersetzen: true }); if (e) ui.meldung('Teil 1 geschafft – weiter geht’s.'); return; }
+      if (weg) { kern.geh(weg, { ersetzen: true }); if (e) ui.meldung('Teil 1 fertig – weiter geht’s.'); return; }
       kern.geh(BASIS + (bereich && bereich !== 'alle' ? '?zu=' + bereich : ''), { ersetzen: true });
-      if (e) ui.meldung(bereich ? 'Fertig – dein Ergebnis ist jetzt genauer.' : 'Fertig – hier ist dein Ergebnis.');
+      if (e) ui.meldung(bereich ? 'Fertig – dein Muster ist jetzt genauer.' : 'Fertig – hier ist dein Muster.');
     },
     pause() { kern.geh((!bereich && kern.weg && kern.weg.nachBogen()) || BASIS); }
   });
@@ -83,75 +191,86 @@ function einstieg(ctx, e) {
   const d = daten(), n = startBeantwortet(d.antworten), laeuft = n > 0 && !startFertig(d.antworten);
   const u16 = kern.einst().alter === 'u16';
   el.innerHTML = `<h2>Persönlichkeit (Big Five)</h2>
-    <p class="lead">Fünf große Grundzüge, die in der Forschung am besten belegt sind: Offenheit, Gewissenhaftigkeit, Extraversion, Verträglichkeit und emotionale Stabilität. ${ui.marke('belegt', ['goldberg2006', 'soto2019'])}</p>
+    <p class="lead">Fünf große Grundzüge, die in der Forschung am besten untersucht sind: Offenheit, Gewissenhaftigkeit, Extraversion, Verträglichkeit und der Umgang mit Stress. ${ui.marke('belegt', ['goldberg2006', 'soto2019'])}</p>
     <ul class="bf-liste">
       <li><b>30 kurze Sätze</b>, etwa 3 Minuten. Du sagst jeweils, wie sehr er auf dich zutrifft.</li>
-      <li>Danach kannst du einzelne Bereiche <b>genauer anschauen</b> – die App schlägt vor, wo es sich lohnt.</li>
-      <li>Ergebnis als <b>Bereich</b>, nicht als genaue Zahl – jede Messung hat einen Messfehler.</li>
+      <li>Danach siehst du dein <b>Muster in Worten</b>: je Bereich zwei Seiten, beide mit Stärken – keine Punkte, kein Vergleich mit anderen.</li>
+      <li>Jede Antwort kannst du später <b>ansehen und ändern</b>. Wo du magst, schaust du einzelne Bereiche genauer an.</li>
     </ul>
-    <p class="hinweis klein">Beschreib dich so, wie du <b>jetzt meistens</b> bist – nicht so, wie du gern wärst. Es gibt kein Richtig oder Falsch. Du kannst Fragen überspringen.</p>
-    ${u16 ? '<p class="hinweis gelb klein">Mit unter 16 ist Persönlichkeit noch stark in Bewegung. Nimm das Ergebnis als Momentaufnahme.</p>' : ''}
-    ${laeuft ? `${ui.fortschritt(n / 30, 'Kurzform beantwortet')}<p class="leise klein">${n} von 30 beantwortet.</p>
+    <p class="hinweis klein">Beschreib dich so, wie du <b>jetzt meistens</b> bist – nicht so, wie du gern wärst. Es gibt kein Richtig oder Falsch. Du kannst Sätze überspringen.</p>
+    ${u16 ? '<p class="hinweis gelb klein">Mit unter 16 ist Persönlichkeit noch stark in Bewegung. Nimm dein Muster als Momentaufnahme.</p>' : ''}
+    ${laeuft ? `${ui.fortschritt(n / 30, 'Kurzform beantwortet')}<p class="leise klein">Frage ${n} von 30 beantwortet.</p>
       <a class="knopf haupt gross voll" href="#${BASIS}/start">Weitermachen</a>
+      <a class="knopf zweit voll" href="#${BASIS}/antworten">Bisherige Antworten ansehen</a>
       <button type="button" class="knopf zweit voll" data-bf="neu">Von vorn beginnen</button>`
     : `<a class="knopf haupt gross voll" href="#${BASIS}/start">Los geht’s</a>`}
-    ${e ? `<p class="mitte"><a class="link" href="#${BASIS}/ergebnis">Letztes Ergebnis ansehen (${esc(ui.datum(e.zeit))})</a></p>` : ''}
+    ${e ? `<p class="mitte"><a class="link" href="#${BASIS}/ergebnis">Dein letztes Muster ansehen (${esc(ui.datum(e.zeit))})</a></p>` : ''}
     <p class="leise klein">${ui.sym('schloss')} ${sp.einwilligung() ? 'Deine Antworten bleiben auf diesem Gerät.' : 'Deine Antworten bleiben nur bis zum Schließen in diesem Fenster. Nichts wird gesendet.'}</p>
-    <p class="mitte"><a class="link" href="#${BASIS}/methode">Woher die Fragen kommen und wie gerechnet wird</a></p>
+    <p class="mitte"><a class="link" href="#${BASIS}/methode">Woher die Sätze kommen und wie das Muster entsteht</a></p>
     ${ui.fuss()}`;
   const klick = async (ev) => {
     const b = ev.target.closest('[data-bf=neu]'); if (!b) return;
-    if (await ui.bestaetige({ titel: 'Von vorn beginnen?', text: 'Deine bisherigen Antworten in diesem Durchgang werden gelöscht.', ja: 'Von vorn' })) { neuerLauf(); kern.geh(BASIS + '/start'); }
+    if (await ui.bestaetige({ titel: 'Von vorn beginnen?', text: 'Deine Antworten in diesem Durchgang werden zurückgesetzt. Was du geantwortet hattest, bleibt als „vorher“ sichtbar.', ja: 'Von vorn' })) { neuerLauf(); kern.geh(BASIS + '/start'); }
   };
   el.addEventListener('click', klick);
   return () => el.removeEventListener('click', klick);
 }
 
-// ---------- Ergebnis ----------
-const lage = (b) => (b.klar > 0 || b.stufe >= 1 ? 'hoch' : b.klar < 0 || b.stufe <= -1 ? 'niedrig' : 'mitte');
-function bandHtml(name, b, B, klein = false) {
-  const pr = `Von 100 Menschen der Vergleichsgruppe liegen etwa ${b.pr[0]} bis ${b.pr[1]} darunter.`;
-  return ui.band({ name, unten: b.unten, oben: b.oben, wort: b.wort, links: klein ? '' : B.links, rechts: klein ? '' : B.rechts, grob: !!b.grob,
-    beschreibung: `${name}: ${b.wort}. Bereich ${zahl(b.unten)} bis ${zahl(b.oben)} auf einer Skala von 20 bis 80, Mitte 50. ${pr}` });
-}
+// ---------- Ergebnis: dein Muster in Worten ----------
 function brauchtHilfe(e, a) {
   const s = e.bereiche.stabilitaet;
   return (s && s.oben < 45) || [11, 41, 71, 86].some((n) => a['bf' + n] >= 4) || a.bf101 === 1;
 }
-function bereichHtml(B, e, mitAktion) {
-  const b = e.bereiche[B.id], T = TEXTE[B.id];
-  if (!b) return `<section class="karte bf-bereich" id="bf-${B.id}"><h3>${esc(B.name)}</h3><p class="leise">Zu wenige Antworten für diesen Bereich.</p></section>`;
-  const fraglich = !!(e.qualitaet && e.qualitaet.fraglich);   // Prüfung 17.11. (F6): bei fraglicher Qualität keine Stärken/Kosten zu einem Pol
-  const l = fraglich ? 'mitte' : lage(b), t = T[l];
-  const grund = e.vertiefung && e.vertiefung.gruende && e.vertiefung.gruende[B.id];
-  const fac = FACETTEN[B.id].map(([fid, fname, fkurz]) => [fid, fname, fkurz, e.facetten && e.facetten[B.id + '.' + fid]]).filter((x) => x[3]);
-  let facHtml = '';
-  if (fac.length) {
-    const sort = [...fac].sort((x, y) => y[3].wert - x[3].wert), hoch = sort[0], tief = sort[sort.length - 1];
-    facHtml = `<details class="bf-facetten" ${location.hash.includes('zu=' + B.id) ? 'open' : ''}><summary>Die 6 Facetten</summary>
-      <p class="klein leise">Je Facette 4 Fragen – deshalb grob (gestrichelt). Am höchsten: <b>${esc(hoch[1])}</b>, am niedrigsten: <b>${esc(tief[1])}</b>. ${ui.marke('abgeleitet', ['johnson2014'])}</p>
-      ${fac.map(([fid, fname, fkurz, fb]) => `<div class="bf-facette">${bandHtml(fname, fb, B, true)}<p class="klein leise">${esc(fkurz)}${fid === 'liberalitaet' ? ' · nur 2 Fragen, sehr grob' : ''}</p></div>`).join('')}
-    </details>`;
-  }
-  const vertieft = b.form === 'vertieft';
+// Zwei gleichwertige Pole; der Pol, zu dem die Antworten zeigen, ist nur hervorgehoben (kein Punkt auf einer Skala).
+function poleHtml(B, r) {
+  const P = TEXTE[B.id].pole;
+  const marke = (i) => {
+    const zu = r.pol === (i === 0 ? 1 : -1);
+    if (r.deutlich === 'beides' || !r.pol) return ['beide', 'gehört zu dir'];
+    return zu ? [r.deutlich === 'klar' ? 'an' : 'halb', r.deutlich === 'klar' ? 'hierhin zeigen deine Antworten' : 'leicht hierhin'] : ['', ''];
+  };
+  return `<div class="bf-pole">${P.map((p, i) => { const [k, t] = marke(i); return `${i ? '<span class="bf-zw" aria-hidden="true">oder</span>' : ''}<div class="bf-pol ${k}">${t ? `<span class="bf-hier">${esc(t)}</span>` : ''}<b>${esc(p.name)}</b><span class="bf-poltext">${esc(p.text)}</span></div>`; }).join('')}</div>`;
+}
+function facettenHtml(B, L, offen) {
+  const fac = facettenVon(B, L);
+  if (!fac.some((x) => x.r)) return '';
+  const vertieft = L.form && L.form[B.id] === 'vertieft';
+  return `<details class="bf-facetten"${offen ? ' open' : ''}><summary>Die sechs Facetten</summary>
+    <p class="klein leise">${vertieft ? 'Je Facette stehen jetzt mehrere Sätze dahinter.' : 'In der Kurzform steht hinter jeder Facette ein Satz – nimm sie als ersten Hinweis. Mit „Genauer hinschauen“ kommen je Facette weitere Sätze dazu.'}</p>
+    <ul class="bf-fac">${fac.map((x) => `<li><b>${esc(x.titel)}</b><span>${x.r ? esc(wortAus(B.id + '.' + x.f, x.r)) : '<span class="leise">noch offen</span>'}</span><small class="leise">Die zwei Seiten: ${esc(zitat(x.pole[0]))} und ${esc(zitat(x.pole[1]))}${x.f === 'liberalitaet' ? ' · nur zwei Sätze, sehr grob' : ''}</small></li>`).join('')}</ul>
+  </details>`;
+}
+function bereichHtml(B, e, L, aktiv) {
+  const T = TEXTE[B.id], r = L.bereiche[B.id];
+  if (!r) return `<section class="karte bf-bereich" id="bf-${B.id}"><h3>${esc(titelVon(B.id))}</h3><p class="leise">Für diesen Bereich fehlen noch Antworten.</p>
+    <p><a class="knopf zweit klein" href="#${BASIS}/antworten?bereich=${B.id}">Antworten dazu</a></p></section>`;
+  const b = e.bereiche[B.id] || {}, vertieft = b.form === 'vertieft';
+  const grund = aktiv && !vertieft && e.vertiefung && e.vertiefung.gruende && e.vertiefung.gruende[B.id];
+  const auf = (location.hash || '').includes('zu=' + B.id);
   return `<section class="karte bf-bereich" id="bf-${B.id}" aria-labelledby="bf-h-${B.id}">
-    <h3 id="bf-h-${B.id}">${esc(B.name)}</h3>
+    <h3 id="bf-h-${B.id}">${esc(titelVon(B.id))}</h3>
     <p class="klein leise">${esc(T.was)}</p>
-    ${bandHtml(B.name, b, B)}
-    <p class="klein bf-pr">Von 100 Menschen der Vergleichsgruppe liegen etwa <b>${b.pr[0]} bis ${b.pr[1]}</b> darunter. ${ui.marke('abgeleitet', ['johnson2014', 'johnsonnormen'])}</p>
-    ${fraglich
-      ? `<p class="aussage">${esc(FRAGLICH)} ${ui.marke('abgeleitet', ['johnson2005'])}</p>`
-      : l === 'mitte'
-      ? `<p class="aussage">${esc(MITTE + (b.oben - b.unten > 24 ? ' ' + UNKLAR : ''))} ${ui.marke('abgeleitet', ['johnson2014'])}</p>`
-      : ui.aussage({ html: true, text: (b.klar ? '' : '<span class="leise">Eher so – der Bereich ist noch breit:</span> ') + esc(t.staerke), stufe: l === 'niedrig' ? 'idee' : 'abgeleitet', quellen: l === 'niedrig' ? [] : ['johnson2014'],
-          kosten: esc(t.kosten) + ' ' + ui.marke(t.kostenStufe || 'idee', t.kostenStufe ? ['johnson2014'] : []) })}
-    ${ui.aussage({ text: T.belegt.text, stufe: 'belegt', quellen: T.belegt.quellen })}
-    <p class="klein leise"><b>Was das nicht heißt:</b> ${esc(fraglich ? 'Ein Ergebnis aus fraglichen Antworten ist kein Urteil über dich.' : l === 'mitte' ? 'Mitte heißt nicht „langweilig“ oder „nichts Besonderes“.' : T.nicht[l])}</p>
-    ${facHtml}
-    ${mitAktion && !vertieft ? (grund
-      ? `<div class="hinweis bf-angebot"><p class="klein">${esc(GRUENDE[grund])}</p><a class="knopf haupt klein" href="#${BASIS}/vertiefung?bereich=${B.id}">Genauer hinschauen · 18 Fragen</a></div>`
-      : `<p><a class="knopf zweit klein" href="#${BASIS}/vertiefung?bereich=${B.id}">Genauer hinschauen · 18 Fragen</a></p>`) : ''}
+    ${poleHtml(B, r)}
+    <p class="bf-richtung">${esc(satz(B.id, r))}</p>
+    <p class="klein leise bf-woher">${esc(woherText(B, r, L))}</p>
+    ${facettenHtml(B, L, auf)}
+    ${ui.aussage({ text: T.forschung.text, stufe: 'belegt', quellen: T.forschung.quellen })}
+    <p class="klein leise"><b>Was das nicht heißt:</b> ${esc(T.nicht)}</p>
+    ${grund ? `<div class="hinweis bf-angebot"><p class="klein">${esc(grundText(r))}</p><a class="knopf haupt klein" href="#${BASIS}/vertiefung?bereich=${B.id}">Genauer hinschauen · 18 Sätze</a></div>` : ''}
+    <div class="bf-wege">
+      <a class="knopf zweit klein" href="#muster/ast/bigfive.${B.id}">Mehr über diesen Ast</a>
+      <a class="knopf zweit klein" href="#${BASIS}/antworten?bereich=${B.id}">Antworten dazu</a>
+      ${aktiv && !vertieft && !grund ? `<a class="knopf zweit klein" href="#${BASIS}/vertiefung?bereich=${B.id}">Genauer hinschauen</a>` : ''}
+    </div>
   </section>`;
+}
+function kurzHtml(L) {
+  const name = (B) => zitat(TEXTE[B.id].pole[L.bereiche[B.id].pol > 0 ? 0 : 1].name);
+  const da = BEREICHE.filter((B) => L.bereiche[B.id]);
+  const klar = da.filter((B) => L.bereiche[B.id].deutlich === 'klar').map(name);
+  const leicht = da.filter((B) => L.bereiche[B.id].deutlich === 'leicht').map(name);
+  const beides = da.filter((B) => L.bereiche[B.id].deutlich === 'beides').map((B) => titelVon(B.id));
+  return `${klar.length ? `<p>Klar zeigen deine Antworten in Richtung ${esc(liste(klar))}.</p>` : ''}${leicht.length ? `<p>Leicht in Richtung ${esc(liste(leicht))}.</p>` : ''}${beides.length ? `<p>Beide Seiten gehören zu dir bei: ${esc(liste(beides))}.</p>` : ''}`;
 }
 function ergebnis(ctx, e) {
   const { el } = ctx; ctx.zurueckZu('fragen'); ctx.titel('Persönlichkeit');
@@ -159,95 +278,121 @@ function ergebnis(ctx, e) {
     el.innerHTML = `<h2>Bitte noch einmal ausfüllen</h2><p>Dieses Ergebnis stammt aus einer anderen Fassung der App.</p><a class="knopf haupt voll" href="#${BASIS}/start">Kurzform ausfüllen</a>${ui.fuss()}`;
     return;
   }
-  const d = daten(), aktiv = gehoertZu(e, d);
-  const klarHoch = BEREICHE.filter((B) => e.bereiche[B.id] && e.bereiche[B.id].klar > 0).map((B) => B.name);
-  const klarTief = BEREICHE.filter((B) => e.bereiche[B.id] && e.bereiche[B.id].klar < 0).map((B) => B.name);
+  const d = daten(), aktiv = gehoertZu(e, d) || !!(e.lauf && d.lauf === e.lauf), L = lagen(e, d);
+  if (!L) { el.innerHTML = `<h2>Noch kein Muster</h2><p>Für ein Muster fehlen noch Antworten.</p><a class="knopf haupt voll" href="#${BASIS}/antworten">Deine Antworten</a>${ui.fuss()}`; return; }
   const q = e.qualitaet || {};
-  const qText = [q.schnell && QUALITAET.schnell(q.medianMs), q.gleich && QUALITAET.gleich(q.laengsterLauf), q.jaSager && QUALITAET.jaSager(), q.neinSager && QUALITAET.neinSager()].filter(Boolean);
+  const qText = [q.schnell && QUALITAET.schnell(), q.gleich && QUALITAET.gleich(), q.jaSager && QUALITAET.jaSager(), q.neinSager && QUALITAET.neinSager()].filter(Boolean);
   const offen = BEREICHE.filter((B) => e.bereiche[B.id] && e.bereiche[B.id].form !== 'vertieft').length;
-  el.innerHTML = `<h2>Deine Persönlichkeit</h2>
-    <p class="leise klein">Big Five · ${esc(ui.datum(e.zeit))} · ${e.form === 'vertieft' ? 'teilweise vertieft' : 'Kurzform'} · ${e.beantwortet || ''} Antworten</p>
-    ${qText.length ? `<div class="karte gelb bf-qualitaet" role="note"><h3>Hier lohnt ein genauerer Blick</h3>${qText.map((t) => `<p>${esc(t)}</p>`).join('')}
-      <p>Die Bereiche sind deshalb breiter. Das ist okay – nur ist das Ergebnis dann unsicherer. ${ui.marke('belegt', ['johnson2005', 'huang2012'])}</p>
-      <p>Darum zeigt die App diesmal keine Stärken und Kosten zu einzelnen Bereichen, nur die Balken. ${ui.marke('abgeleitet', ['johnson2005'])}</p>
-      ${aktiv ? '<button type="button" class="knopf zweit voll" data-bf="neu">Noch einmal in Ruhe ausfüllen</button>' : ''}</div>` : ''}
-    ${kern.einst().alter === 'u16' ? '<p class="hinweis gelb klein">Mit unter 16 ist Persönlichkeit noch stark in Bewegung, und die Vergleichswerte passen nur grob. Nimm das als Momentaufnahme.</p>' : ''}
-    <section class="karte weich bf-kurz" aria-labelledby="bf-kurz-h"><h3 id="bf-kurz-h">Kurz gesagt</h3>
-      ${klarHoch.length || klarTief.length
-        ? `${klarHoch.length ? `<p>Klar <b>höher</b> als die meisten: ${esc(klarHoch.join(', '))}.</p>` : ''}${klarTief.length ? `<p>Klar <b>niedriger</b> als die meisten: ${esc(klarTief.join(', '))}.</p>` : ''}<p class="klein leise">„Klar“ heißt: der ganze Bereich liegt außerhalb des Mittelfelds. Alles andere ist Mittelfeld oder noch unsicher. ${ui.marke('abgeleitet', ['johnson2014', 'johnsonnormen'])}</p>`
-        : `<p>Bei keinem der fünf Bereiche liegt der ganze Bereich klar außerhalb der Mitte. Das ist häufig – besonders bei der Kurzform. ${ui.marke('abgeleitet', ['johnson2014', 'johnsonnormen'])}</p>`}
-    </section>
-    <p class="klein leise bf-lesehilfe">Verglichen mit: <b>${esc(GRUPPEN[e.gruppe] || GRUPPEN.alle)}</b> – vorläufig ${aktiv ? '<button type="button" class="link" data-bf="zum-vergleich">ändern</button>' : ''}<br>Der farbige Bereich zeigt, wo dein Wert mit großer Wahrscheinlichkeit (95 %) liegt. Grau in der Mitte: das Mittelfeld. Gestrichelt: noch grob.</p>
-    ${BEREICHE.map((B) => bereichHtml(B, e, aktiv)).join('')}
-    <section class="karte weich bf-vergleich" id="bf-vergleich" aria-labelledby="bf-v-h"><h3 id="bf-v-h">Womit verglichen wird</h3>
-      <p class="klein">Vergleichsgruppe: <b>${esc(GRUPPEN[e.gruppe] || GRUPPEN.alle)}</b>, Frauen und Männer gemischt, aus einer großen englischsprachigen Online-Stichprobe. <b>Vorläufig:</b> eigene deutsche Übersetzung, deutsche Vergleichswerte gibt es noch nicht. ${ui.marke('abgeleitet', ['johnsonnormen', 'johnson2014'])}</p>
-      ${aktiv ? `<p class="klein leise" id="bf-g-t">Vergleichsgruppe wählen (nach Alter):</p><div class="chips" role="radiogroup" aria-labelledby="bf-g-t">${Object.entries(GRUPPEN).map(([g, t]) => `<button type="button" class="chip" role="radio" aria-checked="${e.gruppe === g}" data-gruppe="${g}">${esc(t)}</button>`).join('')}</div>` : ''}
-    </section>
+  const rest = vertiefungsFragen('alle').filter((x) => !(x.id in d.antworten)).length;
+  el.innerHTML = `<h2>Dein Muster: Persönlichkeit</h2>
+    <p class="leise klein">Big Five · Stand ${esc(ui.datum(e.zeit))} · ${e.form === 'vertieft' ? 'teilweise genauer angeschaut' : 'Kurzform'}</p>
+    <p>Jeder Bereich hat zwei Seiten. Keine ist besser – jede hat ihre Stärken und ihre Reibungen. ${ui.marke('belegt', ['nettle2006'])} Hier siehst du, wohin deine Antworten zeigen.</p>
+    ${qText.length ? `<div class="karte gelb bf-qualitaet" role="note"><h3>Hier lohnt ein zweiter Blick</h3>${qText.map((t) => `<p>${esc(t)}</p>`).join('')}
+      <p>${esc(FRAGLICH)} ${ui.marke('belegt', ['johnson2005', 'huang2012'])}</p>
+      ${aktiv ? `<a class="knopf zweit voll" href="#${BASIS}/antworten">Antworten in Ruhe ansehen</a>` : ''}</div>` : ''}
+    ${kern.einst().alter === 'u16' ? '<p class="hinweis gelb klein">Mit unter 16 ist Persönlichkeit noch stark in Bewegung. Nimm dein Muster als Momentaufnahme.</p>' : ''}
+    <section class="karte weich bf-kurz" aria-labelledby="bf-kurz-h"><h3 id="bf-kurz-h">Kurz gesagt</h3>${kurzHtml(L)}
+      <p class="klein leise">Das kommt nur aus deinen eigenen Antworten – ohne Vergleich mit anderen Menschen.</p></section>
+    ${BEREICHE.map((B) => bereichHtml(B, e, L, aktiv)).join('')}
     ${brauchtHilfe(e, aktiv ? d.antworten : {}) ? ui.hilfeKarte({ titel: 'Falls es dir gerade schwer geht', text: 'Einige Antworten klingen nach viel Belastung. Das ist keine Diagnose. Wenn du magst, sprich mit jemandem. Die TelefonSeelsorge ist kostenlos, anonym und rund um die Uhr da.' }) : ''}
     <div class="stapel bf-aktionen">
-      ${aktiv && offen ? `<a class="knopf zweit voll" href="#${BASIS}/vertiefung?bereich=alle">Alle Bereiche genauer · ${vertiefungsFragen('alle').filter((x) => !(x.id in d.antworten)).length} Fragen, ca. ${Math.max(1, Math.round(vertiefungsFragen('alle').filter((x) => !(x.id in d.antworten)).length * 6 / 60))} Min.</a>` : ''}
-      ${sp.einwilligung() ? '' : '<button type="button" class="knopf haupt voll" data-aktion="merken">Auf diesem Gerät merken</button>'}
-      <a class="knopf zweit voll" href="#passt">Weiter: Was passt zu mir</a>
-      <button type="button" class="knopf zweit voll" data-bf="neu">Noch einmal ausfüllen</button>
-      <a class="link" href="#${BASIS}/methode">So wird gerechnet</a>
+      <a class="knopf haupt voll" href="#${BASIS}/antworten">Deine Antworten ansehen und ändern</a>
+      <a class="knopf zweit voll" href="#muster">Dein ganzes Muster mit allen Ästen</a>
+      ${aktiv && offen && rest ? `<a class="knopf zweit voll" href="#${BASIS}/vertiefung?bereich=alle">Alle Bereiche genauer · ${rest} Sätze, ca. ${Math.max(1, Math.round(rest * 6 / 60))} Min.</a>` : ''}
+      ${sp.einwilligung() ? '' : '<button type="button" class="knopf zweit voll" data-aktion="merken">Auf diesem Gerät merken</button>'}
+      <a class="knopf zweit voll" href="#passt">Was passt zu mir</a>
+      <button type="button" class="knopf zweit voll" data-bf="neu">Noch einmal ganz neu ausfüllen</button>
+      <a class="link" href="#${BASIS}/methode">Woher die Sätze kommen und wie das Muster entsteht</a>
     </div>
-    <p class="klein leise">Was das alles nicht heißt: kein Typ, keine Diagnose, keine Garantie. Persönlichkeit verändert sich über die Jahre und durch Begleitung, etwa Therapie oder Training. ${ui.marke('belegt', ['roberts2017'])}</p>
+    <p class="klein leise">Kein Typ, keine Diagnose, keine Festlegung. Persönlichkeit verändert sich über die Jahre und durch Begleitung, etwa Therapie oder Training. ${ui.marke('belegt', ['roberts2017'])}</p>
     ${ui.fuss()}`;
   const zu = ctx.param.zu; if (zu) { const z = el.querySelector('#bf-' + CSS.escape(zu)); if (z) requestAnimationFrame(() => { try { z.scrollIntoView({ block: 'start' }); } catch {} }); }
   const klick = async (ev) => {
-    const g = ev.target.closest('[data-gruppe]');
-    if (g && aktiv) {
-      sp.schreib(M, 'gruppe', g.dataset.gruppe);
-      const neu = speichereErgebnis(); ergebnis(ctx, neu || e);
-      const f = el.querySelector(`[data-gruppe="${g.dataset.gruppe}"]`); if (f) f.focus();
-      ui.meldung('Vergleichsgruppe: ' + GRUPPEN[g.dataset.gruppe]);
-      return;
-    }
-    if (ev.target.closest('[data-bf=zum-vergleich]')) { const v = el.querySelector('#bf-vergleich'); if (v) { v.scrollIntoView({ block: 'start' }); const c = v.querySelector('[aria-checked=true]'); if (c) c.focus({ preventScroll: true }); } return; }
     const n = ev.target.closest('[data-bf=neu]');
-    if (n && await ui.bestaetige({ titel: 'Noch einmal ausfüllen?', text: 'Dein jetziges Ergebnis bleibt im Verlauf. Du beantwortest die 30 Sätze neu.', ja: 'Neu beginnen' })) { neuerLauf(); kern.geh(BASIS + '/start'); }
+    if (n && await ui.bestaetige({ titel: 'Noch einmal ganz neu ausfüllen?', text: 'Dein jetziges Muster bleibt im Verlauf. Du beantwortest die 30 Sätze neu; deine bisherigen Antworten bleiben als „vorher“ sichtbar.', ja: 'Neu beginnen' })) { neuerLauf(); kern.geh(BASIS + '/start'); }
   };
-  if (el._bfKlick) el.removeEventListener('click', el._bfKlick);
-  el._bfKlick = klick; el.addEventListener('click', klick);
-  return () => { if (el._bfKlick) el.removeEventListener('click', el._bfKlick); el._bfKlick = null; };
+  el.addEventListener('click', klick);
+  return () => el.removeEventListener('click', klick);
 }
 
-// ---------- Methode ----------
+// ---------- Deine Antworten: ansehen und ändern ----------
+function antwortenSeite(ctx) {
+  const { el } = ctx; ctx.zurueckZu(BASIS); ctx.titel('Deine Antworten');
+  const zeileHtml = (x) => {
+    const stand = x.wert != null ? 'Deine Antwort: ' + x.anzeige : x.uebersprungen ? 'übersprungen' : 'noch offen';
+    const vor = x.vorher.length ? ` · vorher: ${x.vorher[0].anzeige}` : '';
+    return `<li><button type="button" class="zeile bf-antw" data-bf-frage="${esc(x.id)}" aria-haspopup="dialog"><span><b>${esc(x.frage)}</b><small>${esc(stand + vor)}</small></span><span class="rechts">ändern${ui.sym('weiter')}</span></button></li>`;
+  };
+  const male = () => {
+    const alle = antwortListe(kern), L = lagen(sp.ergebnis(M), daten());
+    const jetzt = L ? `<section class="karte weich bf-jetzt" aria-labelledby="bf-jetzt-h"><h3 id="bf-jetzt-h">Dein Muster jetzt</h3>
+        <ul class="bf-jetzt-liste" id="bf-jetzt-liste">${BEREICHE.map((B) => `<li><b>${esc(titelVon(B.id))}:</b> ${L.bereiche[B.id] ? esc(wortAus(B.id, L.bereiche[B.id])) : '<span class="leise">noch offen</span>'}</li>`).join('')}</ul>
+        <a class="link" href="#${BASIS}">Ganzes Muster ansehen</a></section>` : '';
+    el.innerHTML = `<h2>Deine Antworten</h2>
+      <p class="lead">Tippe einen Satz an, um deine Antwort zu ändern. Dein Muster rechnet sofort neu.</p>
+      ${jetzt}
+      <nav class="chips bf-sprung" aria-label="Zu einem Bereich springen">${BEREICHE.map((B) => `<a class="chip" href="#${BASIS}/antworten?bereich=${B.id}" data-bf-sprung="${B.id}">${esc(titelVon(B.id))}</a>`).join('')}</nav>
+      ${BEREICHE.map((B) => { const xs = alle.filter((x) => x.bereich === B.id); return `<section class="bf-antw-gruppe" id="bf-a-${B.id}" aria-labelledby="bf-ah-${B.id}"><h3 id="bf-ah-${B.id}">${esc(titelVon(B.id))}</h3><ul class="zeilen">${xs.map(zeileHtml).join('')}</ul></section>`; }).join('')}
+      <p class="klein leise">Was du vorher geantwortet hast, merkt sich die App – höchstens fünf frühere Antworten je Satz, nur auf diesem Gerät.</p>
+      <p class="mitte"><a class="link" href="#antworten">Alle Antworten der App an einem Ort</a></p>
+      ${ui.fuss()}`;
+  };
+  male();
+  const springe = (b) => { const z = el.querySelector('#bf-a-' + CSS.escape(b)); if (z) requestAnimationFrame(() => { try { z.scrollIntoView({ block: 'start' }); } catch {} }); };
+  if (ctx.param.bereich) springe(ctx.param.bereich);
+  let offenBlatt = false;
+  const klick = async (ev) => {
+    const s = ev.target.closest('[data-bf-sprung]');
+    if (s) { ev.preventDefault(); springe(s.dataset.bfSprung); return; }
+    const z = ev.target.closest('[data-bf-frage]'); if (!z || offenBlatt) return;
+    const id = z.dataset.bfFrage, x = antwortListe(kern).find((y) => y.id === id); if (!x) return;
+    offenBlatt = true;
+    let w;
+    try {
+      w = await ui.blatt(`<p class="bf-satz"><b>${esc(zitat(x.frage))}</b></p>${x.hilfe ? `<p class="klein leise">${esc(x.hilfe)}</p>` : ''}
+        <div class="antworten" role="radiogroup" aria-label="Deine Antwort">${x.optionen.map((o) => `<button type="button" class="antwort" role="radio" aria-checked="${x.wert === o.wert}" data-w="${o.wert}"${x.wert === o.wert ? ' autofocus' : ''}><span class="kreis" aria-hidden="true"></span><span>${esc(o.text)}</span></button>`).join('')}</div>
+        ${x.wert != null ? '<button type="button" class="knopf zweit voll" data-w="weg">Antwort entfernen</button>' : ''}
+        ${x.vorher.length ? `<p class="klein leise bf-vorher">Vorher: ${x.vorher.map((v) => `${esc(v.anzeige)} (${esc(ui.datum(v.zeit))})`).join(' · ')}</p>` : ''}`, { titel: 'Antwort ändern' });
+    } finally { offenBlatt = false; }
+    if (w == null) return;
+    const neu = w === 'weg' ? null : Number(w);
+    if (neu === x.wert) return;
+    await antwortSetzen(kern, id, neu);
+    male();
+    const f = el.querySelector(`[data-bf-frage="${CSS.escape(id)}"]`); if (f) { try { f.focus({ preventScroll: false }); } catch {} }
+    ui.meldung(neu == null ? 'Antwort entfernt – dein Muster ist neu berechnet.' : 'Geändert – dein Muster ist neu berechnet.');
+  };
+  el.addEventListener('click', klick);
+  return () => el.removeEventListener('click', klick);
+}
+
+// ---------- Woher die Sätze kommen und wie das Muster entsteht ----------
 function methode(ctx) {
-  const { el } = ctx; ctx.zurueckZu(BASIS); ctx.titel('So wird gerechnet');
-  const R = NORMEN.r, name = { N: 'Emotionale Stabilität', E: 'Extraversion', O: 'Offenheit', A: 'Verträglichkeit', C: 'Gewissenhaftigkeit' };
-  const halb = (r, extra = 0) => zahl(1.96 * Math.sqrt(100 * (1 - r) + extra * extra), 0);
-  el.innerHTML = `<h2>So wird gerechnet</h2>
-    <h3>Die Fragen</h3>
+  const { el } = ctx; ctx.zurueckZu(BASIS); ctx.titel('So entsteht dein Muster');
+  el.innerHTML = `<h2>So entsteht dein Muster</h2>
+    <h3>Die Sätze</h3>
     <p>Alle Sätze stammen aus dem <b>IPIP-NEO-120</b>, einem frei nutzbaren (gemeinfreien) Fragebogen zu den Big Five und ihren 30 Facetten. ${ui.marke('belegt', ['johnson2014', 'goldberg2006'])}</p>
     <p>Die deutschen Sätze sind eine <b>eigene, vorläufige Übersetzung</b>. Sie ist noch nicht mit Rück-Übersetzung und Testgruppe geprüft. ${ui.marke('abgeleitet', ['itc2018'])}</p>
-    <p><b>Kurzform:</b> 30 Sätze, je Facette einer. <b>Genauer hinschauen:</b> die übrigen 3 Sätze je Facette, also 18 je Bereich. Zwei Sätze über die Wahl von US-Parteien sind weggelassen – deshalb hat die Facette „Werte hinterfragen“ nur 2 Sätze.</p>
-    <p>Etwa die Hälfte der Sätze ist „umgedreht“ gestellt (z. B. „Ich bin lieber allein“ bei Extraversion). Deren Antworten werden umgerechnet (5 → 1, 4 → 2 …). So fällt auf, wenn jemand einfach allem zustimmt.</p>
-    <h3>Der Vergleich</h3>
-    <p>Dein Mittelwert wird mit Vergleichswerten aus einer großen englischsprachigen Online-Stichprobe verglichen (Auswertungsprogramm zum IPIP-NEO-120, getrennt nach Alter und Geschlecht). Die App fragt nicht nach dem Geschlecht und mischt deshalb Frauen und Männer zu gleichen Teilen. ${ui.marke('abgeleitet', ['johnsonnormen'])}</p>
-    <p>Das Ergebnis ist ein <b>T-Wert</b>: 50 ist der Durchschnitt der Vergleichsgruppe, etwa zwei Drittel liegen zwischen 40 und 60. Daraus folgt der <b>Prozentrang</b>: wie viele von 100 Menschen darunter liegen. Er nimmt eine Normalverteilung an und ist an den Rändern ungenau; darum zeigt die App höchstens „1 bis 99“.</p>
-    <p>Für die Kurzform sind die Vergleichswerte nur angenähert (aus den Facetten-Werten berechnet). Dafür wird der Bereich etwas breiter: Eine Näherungs-Unsicherheit von etwa ${zahl(GRENZEN.naeherung, 0)} T-Punkten ist eingerechnet. Diese ${zahl(GRENZEN.naeherung, 0)} Punkte sind eine eigene Schätzung, nicht gemessen. Die Gruppe „alle Altersgruppen“ mischt die Altersgruppen zu gleichen Teilen. ${ui.marke('abgeleitet', ['johnsonnormen'])}</p>
-    <h3>Warum ein Bereich statt einer Zahl</h3>
-    <p>Jede Messung hat einen Messfehler. Wie groß, hängt von der <b>Zuverlässigkeit</b> ab (0 bis 1). Der Balken zeigt den Bereich, in dem dein Wert mit 95 % Wahrscheinlichkeit liegt. ${ui.marke('belegt', ['johnson2014'])} Gehen deine Antworten in einem Bereich weit auseinander, macht die App den Balken zusätzlich breiter – das ist eine eigene Regel. ${ui.marke('abgeleitet', ['johnson2014'])}</p>
-    <div class="bf-tabelle" role="table" aria-label="Zuverlässigkeit je Bereich">
-      <div role="row" class="bf-zeile kopf"><span role="columnheader">Bereich</span><span role="columnheader">Kurzform</span><span role="columnheader">genauer</span></div>
-      ${['O', 'C', 'E', 'A', 'N'].map((b) => `<div role="row" class="bf-zeile"><span role="cell">${name[b]}</span><span role="cell">r ≈ ${zahl(R[b].rStart, 2)} · ±${halb(R[b].rStart, GRENZEN.naeherung)}</span><span role="cell">r ≈ ${zahl(R[b].r24, 2)} · ±${halb(R[b].r24)}</span></div>`).join('')}
-    </div>
-    <p class="klein leise">Die Zuverlässigkeit ist aus den Vergleichstabellen geschätzt (Annahme: Sätze derselben Facette hängen etwa so zusammen wie in Facetten mit α = .75). Facetten mit 4 Sätzen: r ≈ .70, also grob.</p>
-    <h3>Antwort-Qualität</h3>
-    <p>Die App schaut freundlich nach drei Dingen: sehr schnelle Antworten (im Mittel unter ${zahl(GRENZEN.schnellMs / 1000, 1)} Sekunden), sehr oft dieselbe Antwort (${GRENZEN.gleichLauf}-mal hintereinander oder ${zahl(GRENZEN.gleichAnteil * 100)} % gleich) und Zustimmung zu fast allem. Dann wird der Bereich breiter, und du bekommst einen Hinweis. Dass solche Antworten ein Ergebnis ungenauer machen, ist gut untersucht. ${ui.marke('belegt', ['johnson2005', 'huang2012'])} Die genauen Grenzen hat die App selbst gewählt. ${ui.marke('abgeleitet', ['johnson2005', 'huang2012'])}</p>
+    <p><b>Kurzform:</b> 30 Sätze, je Facette einer. <b>Genauer hinschauen:</b> die übrigen drei Sätze je Facette. Zwei Sätze über die Wahl von US-Parteien sind weggelassen – deshalb hat die Facette „Werte hinterfragen“ nur zwei Sätze.</p>
+    <p>Etwa die Hälfte der Sätze zeigt zur jeweils anderen Seite (zum Beispiel „Ich bin lieber allein“ zu „Ruhe und Tiefe“). So zählt jede Zustimmung für die Seite, zu der der Satz gehört.</p>
+    <h3>Wie die Richtung entsteht</h3>
+    <p>Die App schaut nur auf <b>deine eigenen Antworten</b>: Hast du in einem Bereich vor allem den Sätzen der einen Seite zugestimmt, zeigt dein Muster <b>klar</b> dorthin. Neigst du nur etwas dorthin, heißt es <b>leicht</b>. Hast du oft „teils, teils“ gewählt oder zeigen deine Antworten in verschiedene Richtungen, heißt es: <b>beides gehört zu dir</b>.</p>
+    <p>Es gibt keine Punkte, keine Prozente und keinen Vergleich mit anderen Menschen. Keine Seite ist besser – jede hat Stärken und Reibungen. ${ui.marke('belegt', ['nettle2006'])} Die Grenzen zwischen „klar“, „leicht“ und „beides“ hat die App selbst gewählt. ${ui.marke('idee')}</p>
+    <p>Jeder Mensch zeigt im Alltag beide Seiten – mal mehr die eine, mal mehr die andere. Dein Muster beschreibt, was bei dir häufiger vorkommt, nicht, was du immer tust.</p>
+    <h3>Antworten ändern</h3>
+    <p>Unter „Deine Antworten“ kannst du jede Antwort jederzeit ändern oder entfernen. Das Muster rechnet sofort neu. Was du vorher geantwortet hattest, bleibt als „vorher“ sichtbar (höchstens fünf je Satz) – nur auf diesem Gerät.</p>
+    <p><a class="knopf zweit voll" href="#${BASIS}/antworten">Deine Antworten ansehen</a></p>
+    <h3>Wenn die Antworten eilig wirken</h3>
+    <p>Die App schaut freundlich nach drei Dingen: sehr schnelle Antworten, sehr oft dieselbe Antwort hintereinander und Zustimmung zu fast allem. Dann bekommst du einen Hinweis, und die App sagt die Richtungen vorsichtiger. Dass solche Antworten ein Muster unsicherer machen, ist gut untersucht. ${ui.marke('belegt', ['johnson2005', 'huang2012'])}</p>
     <h3>Wann „Genauer hinschauen“ vorgeschlagen wird</h3>
-    <ul><li>wenn deine Antworten in einem Bereich weit auseinandergehen,</li><li>wenn du nahe der Mitte liegst (dann gleichen sich oft hohe und niedrige Facetten aus),</li><li>wenn du deutlich außerhalb der Mitte liegst (dann zeigen die Facetten, woher das kommt).</li></ul>
-    <p class="klein leise">Das ist eine einfache Regel, kein „echter“ adaptiver Test. Dafür bräuchte es Daten von mehreren hundert Menschen auf Deutsch. ${ui.marke('abgeleitet', ['johnson2014'])}</p>
+    <p>Wenn deine Antworten in einem Bereich in verschiedene Richtungen zeigen oder wenn eine Richtung besonders deutlich ist – dann zeigen die Facetten, woher das kommt. Für diesen Vorschlag nutzt die App intern noch Vergleichstabellen zum Fragebogen; angezeigt wird kein Vergleich. ${ui.marke('abgeleitet', ['johnsonnormen'])}</p>
     <h3>Fachwörter</h3>
-    <p class="klein"><b>Neurotizismus</b> heißt in der Forschung die Gegenseite der emotionalen Stabilität. <b>Facette</b>: ein Teilbereich, z. B. „Geselligkeit“ bei Extraversion. <b>Gemeinfrei</b>: darf von allen frei genutzt werden.</p>
+    <p class="klein"><b>Big Five:</b> die fünf großen Grundzüge der Persönlichkeit. <b>Facette:</b> ein Teilbereich, zum Beispiel „Geselligkeit“ bei Extraversion. <b>Neurotizismus:</b> so heißt in der Forschung die Seite „Feines Gespür“ beim Umgang mit Stress. <b>Gemeinfrei:</b> darf von allen frei genutzt werden.</p>
     <details class="karte weich"><summary>Alle ${FRAGEN.length} Sätze ansehen</summary>
-      ${BEREICHE.map((B) => `<h4>${esc(B.name)}</h4><ol class="klein bf-saetze">${FRAGEN.filter((q) => q.b === B.ipip).map((q) => `<li>${esc(q.t)} <span class="leise">(${esc(FACETTEN[B.id][q.f - 1][1])}${q.k < 0 ? ', umgedreht' : ''}${q.start ? ', Kurzform' : ''})</span></li>`).join('')}</ol>`).join('')}
-      ${B_HINWEIS}
+      ${BEREICHE.map((B) => `<h4>${esc(titelVon(B.id))}</h4><ol class="klein bf-saetze">${FRAGEN.filter((q) => q.b === B.ipip).map((q) => { const P = FACETTEN_POLE[B.id][FACETTEN[B.id][q.f - 1][0]], zuErst = (q.k > 0) !== !!B.umgepolt; return `<li>${esc(q.t)} <span class="leise">(${esc(P[0])} – zählt für ${esc(zitat(zuErst ? P[1] : P[2]))}${q.start ? ', Kurzform' : ''})</span></li>`; }).join('')}</ol>`).join('')}
     </details>
     ${ui.fuss()}`;
 }
-const B_HINWEIS = '<p class="klein leise">Bei emotionaler Stabilität sind die Sätze in Richtung Neurotizismus gestellt; „umgedreht“ heißt dort: Zustimmung spricht für mehr Stabilität.</p>';
 
 // ---------- Registrierung ----------
 export default {
@@ -259,15 +404,16 @@ export default {
     if (teil === 'start') return bogen(ctx, 'start');
     if (teil === 'vertiefung') return bogen(ctx, ctx.param.bereich || 'alle');
     if (teil === 'methode') return methode(ctx);
+    if (teil === 'antworten') return antwortenSeite(ctx);
     const e = sp.ergebnis(M), d = daten();
     if (teil === 'ergebnis') return e ? ergebnis(ctx, e) : einstieg(ctx, null);
     // Übersicht: läuft ein neuer Durchgang, der noch nicht fertig ist → Einstieg; sonst das neueste Ergebnis.
-    const laeuft = startBeantwortet(d.antworten) > 0 && !startFertig(d.antworten);
+    const laeuft = startBeantwortet(d.antworten) > 0 && !startFertig(d.antworten) && !(e && e.lauf && e.lauf === d.lauf);
     if (e && !laeuft) return ergebnis(ctx, e);
     if (!e && startFertig(d.antworten)) { const neu = speichereErgebnis(); if (neu) return ergebnis(ctx, neu); }
     return einstieg(ctx, e);
   }
 };
 
-// Für Tests (nur ?test=1): Fragen + Rechnung erreichbar, ohne Code anderer Module zu brauchen.
-if (kern.TEST) window.__bigfive = { FRAGEN, NACH_ID, wertung, rechne };
+// Für Tests (nur ?test=1): Fragen + Rechnung + Vertrag erreichbar, ohne Code anderer Module zu brauchen.
+if (kern.TEST) window.__bigfive = { FRAGEN, NACH_ID, wertung, rechne, antwortListe, antwortSetzen, muster, aeste };

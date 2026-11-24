@@ -1,21 +1,40 @@
-// Entweder – oder (Modul „spiel“) – Daten: Aussagen, Paare, Prüf-Fragen, Level. Kein DOM, kein Import → auch in Node testbar.
-// Aussagen: IPIP-NEO-120 (Johnson 2014, gemeinfrei, ipip.ori.org), dieselbe eigene deutsche Übersetzung wie im Modul bigfive
-// (vorläufig). nr = Platz im IPIP-NEO-120. b = Bereich der App, k = +1: die Aussage spricht für „mehr“ vom Bereich, −1: dagegen.
-// Bei „stabilitaet“ sprechen IPIP-Neurotizismus-Aussagen GEGEN den Bereich (k = −1).
+// Entweder – oder (Modul „spiel“) – Daten: Richtungen, Aussagen, Paare, Teile. Kein DOM, kein Import → auch in Node testbar.
+// Aussagen: IPIP-NEO-120 (Johnson 2014, gemeinfrei), dieselbe eigene deutsche Übersetzung wie im Modul bigfive
+// (vorläufig). nr = Platz im IPIP-NEO-120. b = Bereich der App, k = +1: die Aussage spricht für den Pol „rechts“, −1: für „links“.
+// Bei „stabilitaet“ sprechen die IPIP-Neurotizismus-Aussagen für den Pol „feinfühlig, wachsam“ (k = −1).
 // Zwangswahl-Paare (forced choice, Blockgröße 2) nach dem Thurstone-Modell (Brown & Maydeu-Olivares 2011): 30 Paare, jedes
 // Bereichs-Paar 3-mal, 12 Aussagen je Bereich, 11 Paare gleich gepolt (+/+), 4 Paare gleich gepolt (−/−), 15 Paare gemischt
-// (+/−) – die gemischten machen die Lage auf der Skala schätzbar, nicht nur die Rangfolge.
-// Interessen-Duell: Tätigkeiten aus den IIP RIASEC Markers (Armstrong, Allison & Rounds 2008, aus dem O*NET Interest Profiler;
+// (+/−) – die gemischten zeigen die Richtung, nicht nur eine Reihenfolge.
+// Tätigkeiten: aus den IIP RIASEC Markers (Armstrong, Allison & Rounds 2008, aus dem O*NET Interest Profiler;
 // Hinweis zur O*NET-Lizenz in module/interessen/quellen.js „onet“), dieselbe Übersetzung wie im Modul interessen.
+// 0.3: kein Spiel mehr – keine Punkte, keine Fang- oder Kontrollfragen, kein richtig/falsch. Ergebnis nur in Worten.
 
-export const FASSUNG = 'eo-1';
+export const FASSUNG = 'eo-2';
 
+// Fünf Richtungen mit zwei gleichwertigen Polen. links = Pol „weniger“ (Aussagen mit k = −1), rechts = Pol „mehr“ (k = +1).
+// id = Bereichs-ID der Vorlage (bleibt so, alte Daten laden weiter). forschung = Name des Bereichs in der Big-Five-Forschung.
+// thema: worum es geht (für „woher“). satz: [rechts, links, beides] – je ein Satz in Worten, beide Pole mit ihren Stärken.
 export const BEREICHE = [
-  { id: 'offenheit', name: 'Offenheit', links: 'mag Vertrautes', rechts: 'sucht Neues', mehr: 'offen für Neues', weniger: 'lieber beim Vertrauten' },
-  { id: 'gewissenhaftigkeit', name: 'Gewissenhaftigkeit', links: 'spontan, locker', rechts: 'geplant, gründlich', mehr: 'geplant und gründlich', weniger: 'spontan und locker' },
-  { id: 'extraversion', name: 'Extraversion', links: 'eher ruhig, für sich', rechts: 'gesellig, aktiv', mehr: 'gesellig und aktiv', weniger: 'eher ruhig und für dich' },
-  { id: 'vertraeglichkeit', name: 'Verträglichkeit', links: 'direkt, kritisch', rechts: 'rücksichtsvoll, mitfühlend', mehr: 'rücksichtsvoll und mitfühlend', weniger: 'direkt und kritisch' },
-  { id: 'stabilitaet', name: 'Emotionale Stabilität', links: 'spürt Stress stärker', rechts: 'gelassen', mehr: 'gelassen', weniger: 'spürst Stress eher stärker' }
+  { id: 'offenheit', titel: 'Neues oder Vertrautes', thema: 'Neues und Vertrautes', forschung: 'Offenheit für Erfahrungen', links: 'Vertrautes', rechts: 'Neues',
+    satz: ['Du gehst gern auf Neues zu: Ideen, Fantasie und Abwechslung ziehen dich an.',
+      'Du hältst dich gern an Vertrautes: Bewährtes gibt dir Boden, und du gehst Dingen lieber in die Tiefe als in die Breite.',
+      'Neues und Vertrautes ziehen dich ähnlich an – je nach Lage nimmst du das eine oder das andere.'] },
+  { id: 'gewissenhaftigkeit', titel: 'Spontan oder geplant', thema: 'Spontaneität und Planung', forschung: 'Gewissenhaftigkeit', links: 'spontan, beweglich', rechts: 'geplant, gründlich',
+    satz: ['Du gehst eher geplant und gründlich vor: Ordnung und ein klarer Weg geben dir Ruhe.',
+      'Du gehst eher spontan und beweglich vor: Du lässt dich vom Moment leiten und kannst gut umplanen.',
+      'Planen und Losgehen liegen bei dir nah beieinander – du nimmst, was die Lage braucht.'] },
+  { id: 'extraversion', titel: 'Ruhe oder Trubel', thema: 'Ruhe und Geselligkeit', forschung: 'Extraversion', links: 'ruhig, für dich', rechts: 'gesellig, aktiv',
+    satz: ['Du bist eher gesellig und aktiv: Menschen und Bewegung geben dir Schwung.',
+      'Du bist eher ruhig und gern für dich: Stille und wenige, nahe Menschen geben dir Kraft.',
+      'Trubel und Ruhe tun dir beide gut – du wechselst je nach Tag zwischen beidem.'] },
+  { id: 'vertraeglichkeit', titel: 'Direkt oder rücksichtsvoll', thema: 'Klartext und Rücksicht', forschung: 'Verträglichkeit', links: 'direkt, kritisch', rechts: 'rücksichtsvoll, mitfühlend',
+    satz: ['Du bist eher rücksichtsvoll und mitfühlend: Du achtest darauf, wie es anderen geht.',
+      'Du bist eher direkt und kritisch: Du sagst, was du denkst, und prüfst, bevor du vertraust.',
+      'Rücksicht und Klartext gehören bei dir beide dazu – je nachdem, mit wem du es zu tun hast.'] },
+  { id: 'stabilitaet', titel: 'Feinfühlig oder gelassen', thema: 'Feingefühl und Gelassenheit', forschung: 'Emotionale Stabilität (umgekehrt: Neurotizismus)', links: 'feinfühlig, wachsam', rechts: 'gelassen, ruhig',
+    satz: ['Du bleibst eher gelassen: Vieles lässt du an dir abperlen und behältst die Ruhe.',
+      'Du bist eher feinfühlig und wachsam: Du spürst Stimmungen und Anspannung früh und deutlich.',
+      'Gelassenheit und Feingefühl wechseln sich bei dir ab – je nach Lage spürst du mehr oder bleibst ruhig.'] }
 ];
 export const BEREICH = Object.fromEntries(BEREICHE.map((b, i) => [b.id, { ...b, i }]));
 
@@ -88,7 +107,7 @@ export const AUSSAGEN = {
   s12: A(31, 'stabilitaet', -1, 'Ich rechne mit dem Schlimmsten.')
 };
 
-// 30 Haupt-Paare (werden gewertet). Reihenfolge = Reihenfolge im Spiel (Bereiche wechseln sich ab).
+// 30 Haupt-Paare (aus ihnen kommt die Richtung). Bereiche wechseln sich ab.
 const P = (id, a, b) => ({ id, a, b });
 export const PAARE = [
   P('p01', 'e5', 'c7'), P('p02', 'o9', 'e7'), P('p03', 'a10', 's3'), P('p04', 'c10', 'o1'), P('p05', 'e1', 'a1'),
@@ -100,52 +119,19 @@ export const PAARE = [
 ];
 export const PAAR = Object.fromEntries(PAARE.map((p) => [p.id, p]));
 
-// Wiederholungen: dasselbe Paar später noch einmal, Seiten getauscht (nicht gewertet, nur für die Beständigkeit).
+// Wiederholungen: dasselbe Paar später noch einmal, Seiten getauscht. Fließt nicht in die Richtung ein; wählst du einmal so, einmal so,
+// zeigt das Muster: beides gehört zu dir.
 export const WIEDER = [{ id: 'w1', von: 'p03' }, { id: 'w2', von: 'p07' }, { id: 'w3', von: 'p12' }, { id: 'w4', von: 'p20' }];
 
-// Ketten: drei Aussagen, jede gegen jede (A–B, B–C, C–A), über das Spiel verteilt. Wer A vor B und B vor C nimmt, „sollte“ auch
-// A vor C nehmen (Transitivität). Ein Kreis (A>B, B>C, C>A) heißt: hier war es knapp oder egal (Kendall & Babington Smith 1940).
-// Nicht gewertet, aber: Das Profil aus den 30 Haupt-Paaren sagt diese Wahlen vorher (Vorhersage-Treffer).
+// Dreier-Vergleiche (Ketten): drei Aussagen, jede gegen jede (A–B, B–C, C–A), über alle Wahlen verteilt. Ein Kreis (A vor B, B vor C,
+// C vor A) heißt nur: Diese drei sprechen dich ähnlich an (Kendall & Babington Smith 1940). Fließt nicht in die Richtung ein.
 export const KETTEN = [
   { id: 'k1', aus: ['o4', 'c1', 'e3'] },
   { id: 'k2', aus: ['a3', 's2', 'o1'] }
 ];
 export const KETTEN_PAARE = KETTEN.flatMap((k) => [[0, 1], [1, 2], [2, 0]].map(([x, y], j) => ({ id: `${k.id}${'abc'[j]}`, kette: k.id, a: k.aus[x], b: k.aus[y] })));
 
-// Kontrollfragen (Meade & Craig 2012): eine Anweisung und zwei „unmögliche“ Aussagen. Aufmerksame wählen fast immer gleich.
-export const KONTROLLE = [
-  { id: 'x1', art: 'anweisung', frage: 'Kontrolle: Tippe auf „Banane“.', a: 'Apfel', b: 'Banane', richtig: 'b' },
-  { id: 'x2', art: 'unsinn', frage: 'Was passt eher zu dir?', a: 'Ich war schon einmal auf dem Mond.', b: 'Ich habe schon einmal Wasser getrunken.', richtig: 'b' },
-  { id: 'x3', art: 'unsinn', frage: 'Was passt eher zu dir?', a: 'Ich habe schon einmal ein Fenster geöffnet.', b: 'Ich kann mit Fischen telefonieren.', richtig: 'a' }
-];
-
-// Leichte Fragen vor einer Falle (bauen Schwung auf). seite: feste Seite von Antwort a (sonst zufällig) – so steht die richtige
-// Antwort der leichten Fragen immer links, die schnelle Antwort der Falle auch.
-// Kopfnüsse: richtig ist die bedachte Antwort, intuitiv die schnelle, falsche. Danach kommt sofort die Auflösung.
-// beleg: Marke der Auflösung (Standard 'belegt'). n4 ist ein bekanntes Rätsel (Bahnung/Priming), keine eigene Studie → 'abgeleitet'.
-// n5 („Moses-Täuschung“): Der zweite Knopf verrät den Fehler nicht, er sagt nur „Da stimmt was nicht“ – wie die Antwort
-// „kann man nicht beantworten“ bei Speckmann & Unkelbach (2021), wo die Täuschung trotzdem auftrat.
-export const LEICHT = [
-  { id: 'm1', frage: 'Was ist weiß?', a: 'Milch', b: 'Kohle', richtig: 'a', seite: 'l', vor: 'n4' },
-  { id: 'm2', frage: 'Was kommt in den Milchkaffee?', a: 'Milch', b: 'Senf', richtig: 'a', seite: 'l', vor: 'n4' },
-  { id: 'm3', frage: 'Was gibt die Kuh?', a: 'Milch', b: 'Saft', richtig: 'a', seite: 'l', vor: 'n4' },
-  { id: 'm4', frage: 'Welche Farbe hat das Fell von Eisbären?', a: 'Weiß', b: 'Grün', richtig: 'a', seite: 'l', vor: 'n5' },
-  { id: 'm5', frage: 'Wo ist es kälter?', a: 'Am Nordpol', b: 'Auf Mallorca', richtig: 'a', seite: 'l', vor: 'n5' }
-];
-export const KOPF = [
-  { id: 'n1', art: 'reflexion', frage: 'Du läufst ein Rennen und überholst die Person auf Platz 2. Auf welchem Platz bist du jetzt?', a: 'Platz 1', b: 'Platz 2', richtig: 'b',
-    aufloesung: 'Platz 2: Du hast den Platz der Person übernommen, die du überholt hast. Platz 1 ist noch vor dir.', quellen: ['thomson2016'] },
-  { id: 'n2', art: 'reflexion', frage: 'Ein Bauer hat 15 Schafe. Alle bis auf 8 laufen weg. Wie viele bleiben ihm?', a: '7', b: '8', richtig: 'b',
-    aufloesung: '8: „Alle bis auf 8“ heißt, 8 bleiben. Die 7 entsteht, wenn man schnell 15 − 8 rechnet.', quellen: ['thomson2016'] },
-  { id: 'n3', art: 'reflexion', frage: 'Seerosen auf einem Teich verdoppeln jeden Tag ihre Fläche. Nach 40 Tagen ist der Teich ganz bedeckt. Nach wie vielen Tagen war er halb bedeckt?', a: 'Nach 20 Tagen', b: 'Nach 39 Tagen', richtig: 'b',
-    aufloesung: 'Nach 39 Tagen: Am letzten Tag verdoppelt sich die Fläche noch einmal – von halb auf ganz.', quellen: ['frederick2005'] },
-  { id: 'n4', art: 'schwung', frage: 'Was trinkt die Kuh?', a: 'Milch', b: 'Wasser', richtig: 'b', seite: 'l',
-    aufloesung: 'Wasser! Milch gibt die Kuh – trinken tut sie Wasser (nur Kälber trinken Milch). Nach drei Mal „Milch“ liegt das Wort schon bereit und rutscht leicht heraus.', quellen: ['meyer1971'], beleg: 'abgeleitet' },
-  { id: 'n5', art: 'taeuschung', frage: 'Wie heißt der Kontinent am Südpol, auf dem die Eisbären leben?', a: 'Antarktis', b: 'Da stimmt was nicht', richtig: 'b', seite: 'l',
-    aufloesung: 'Da stimmt was nicht: Eisbären leben nur im hohen Norden, rund um den Nordpol – am Südpol gibt es keine. Die Frage klingt so vertraut, dass der Fehler leicht durchrutscht, wie bei der berühmten „Moses-Täuschung“.', quellen: ['erickson1981', 'speckmann2021'] }
-];
-
-// Interessen-Duell (Bonus): 15 Paare, jede Kombination der sechs Bereiche genau einmal, jeder Bereich 5-mal.
+// Tätigkeiten (freiwillig): 15 Paare, jede Kombination der sechs Bereiche genau einmal, jeder Bereich 5-mal.
 export const TYPEN = {
   R: { name: 'Praktisch-technisch', kurz: 'mit Händen, Werkzeug und Technik' },
   I: { name: 'Forschend', kurz: 'verstehen und untersuchen' },
@@ -181,35 +167,33 @@ export const DUELLE = [
   ['e3', 'a2'], ['a5', 'c1'], ['s6', 'e7'], ['c8', 's8'], ['e4', 'c6']
 ].map(([a, b], i) => ({ id: 'd' + String(i + 1).padStart(2, '0'), a, b }));
 
-// ---------- Level: Reihenfolge der Schritte ----------
-// Arten: paar (gewertet), wieder, kette, kontrolle, leicht, kopf, duell. Farben: Paare von Verläufen je Level (stil.css).
-export const LEVEL = [
-  { nr: 1, name: 'Aufwärmen', farbe: 'f1', wissen: 'Zwei Aussagen, eine Wahl: So eine „Zwangswahl“ macht Schönfärben schwerer, weil beide Seiten gut klingen können.',
-    folge: ['p01', 'p02', 'p03', 'p04', 'p05', 'x1', 'p06', 'p07', 'k1a', 'p08'] },
-  { nr: 2, name: 'Kopfnüsse', farbe: 'f2', wissen: 'Forschende bauen kleine Fallen ein, um zu sehen, ob man noch genau liest. Gute Nachricht: Wer reinfällt, ist nicht dumm – das Gehirn spart nur Arbeit.',
-    folge: ['p09', 'p10', 'p11', 'm1', 'm2', 'm3', 'n4', 'p12', 'k2a', 'p13', 'n1', 'p14'] },
-  { nr: 3, name: 'Dranbleiben', farbe: 'f3', wissen: 'Manche Paare kommen zweimal. Wer sich treu bleibt, macht das Ergebnis sicherer. Ein Wechsel ist erlaubt – er zeigt nur, wo es knapp war.',
-    folge: ['p15', 'p16', 'k1b', 'p17', 'x2', 'p18', 'w1', 'p19', 'n2', 'p20', 'k2b', 'p21', 'w2', 'p22'] },
-  { nr: 4, name: 'Endspurt', farbe: 'f4', wissen: 'Am Ende rechnet die App: Jede Wahl schiebt deine Schätzung ein Stück – und je mehr Wahlen in dieselbe Richtung zeigen, desto schmaler wird der Bereich.',
-    folge: ['p23', 'p24', 'm4', 'm5', 'n5', 'p25', 'k1c', 'p26', 'w3', 'x3', 'p27', 'k2c', 'p28', 'n3', 'p29', 'w4', 'p30'] },
-  { nr: 5, name: 'Bonus: Interessen-Duell', farbe: 'f5', bonus: true, wissen: 'Interessen sind ziemlich beständig. Hier zählt nur, was du lieber tun würdest – egal, ob du es kannst.',
-    folge: DUELLE.map((d) => d.id) }
+// ---------- Teile: Reihenfolge der Wahlen ----------
+// Arten: paar (30 Haupt-Paare), wieder (dasselbe Paar später noch einmal, Seiten getauscht), kette (Dreier-Vergleich), duell (Tätigkeiten).
+// Vier ruhige Teile à 10 Wahlen (nur für die Orientierung und die Farbe), dazu freiwillig die Tätigkeiten.
+// Die Vorlage 0.2.1 hatte zusätzlich Kontroll-, leichte und Kopfnuss-Fragen (x1–x3, m1–m5, n1–n5); deren alte Antworten werden still übergangen.
+export const TEILE = [
+  { nr: 1, farbe: 'f1', folge: ['p01', 'p02', 'p03', 'p04', 'p05', 'p06', 'p07', 'k1a', 'p08', 'p09'] },
+  { nr: 2, farbe: 'f2', folge: ['p10', 'p11', 'p12', 'k2a', 'p13', 'p14', 'p15', 'p16', 'k1b', 'p17'] },
+  { nr: 3, farbe: 'f3', folge: ['p18', 'w1', 'p19', 'p20', 'k2b', 'p21', 'w2', 'p22', 'p23', 'p24'] },
+  { nr: 4, farbe: 'f4', folge: ['p25', 'k1c', 'p26', 'w3', 'p27', 'k2c', 'p28', 'p29', 'w4', 'p30'] },
+  { nr: 5, farbe: 'f5', frei: true, name: 'Tätigkeiten', folge: DUELLE.map((d) => d.id) }
 ];
+export const TEILE_HAUPT = TEILE.filter((T) => !T.frei).length;
 
 // Schritt-Objekt zu einer id (Texte aufgelöst). Rückgabe: { id, art, frage, a: {id?, t}, b: {id?, t}, … }
 const ALLE = {};
 for (const p of PAARE) ALLE[p.id] = { id: p.id, art: 'paar', frage: 'Was passt eher zu dir?', a: { id: p.a, t: AUSSAGEN[p.a].t }, b: { id: p.b, t: AUSSAGEN[p.b].t } };
 for (const w of WIEDER) { const p = PAAR[w.von]; ALLE[w.id] = { id: w.id, art: 'wieder', von: w.von, frage: 'Was passt eher zu dir?', a: { id: p.a, t: AUSSAGEN[p.a].t }, b: { id: p.b, t: AUSSAGEN[p.b].t } }; }
 for (const k of KETTEN_PAARE) ALLE[k.id] = { id: k.id, art: 'kette', kette: k.kette, frage: 'Was passt eher zu dir?', a: { id: k.a, t: AUSSAGEN[k.a].t }, b: { id: k.b, t: AUSSAGEN[k.b].t } };
-for (const x of KONTROLLE) ALLE[x.id] = { id: x.id, art: 'kontrolle', sorte: x.art, frage: x.frage, a: { t: x.a }, b: { t: x.b }, richtig: x.richtig };
-for (const m of LEICHT) ALLE[m.id] = { id: m.id, art: 'leicht', frage: m.frage, a: { t: m.a }, b: { t: m.b }, richtig: m.richtig, seite: m.seite, vor: m.vor };
-for (const n of KOPF) ALLE[n.id] = { id: n.id, art: 'kopf', sorte: n.art, frage: n.frage, a: { t: n.a }, b: { t: n.b }, richtig: n.richtig, seite: n.seite || null, aufloesung: n.aufloesung, quellen: n.quellen, beleg: n.beleg || 'belegt' };
 for (const d of DUELLE) ALLE[d.id] = { id: d.id, art: 'duell', frage: 'Was würdest du lieber tun?', a: { id: d.a, t: TAETIGKEITEN[d.a].t, typ: TAETIGKEITEN[d.a].typ }, b: { id: d.b, t: TAETIGKEITEN[d.b].t, typ: TAETIGKEITEN[d.b].typ } };
 export const SCHRITT = ALLE;
 
-// Alle Schritte in Spiel-Reihenfolge, mit Level-Nummer
-export const ABLAUF = LEVEL.flatMap((L) => L.folge.map((id) => ({ ...ALLE[id], level: L.nr })));
-export const PFLICHT_ANZAHL = ABLAUF.filter((s) => s.level < 5).length;   // Level 1–4
+// Alle Wahlen in Reihenfolge, mit Teil-Nummer (teil; level = dasselbe, für alte Hilfsmittel)
+export const ABLAUF = TEILE.flatMap((T) => T.folge.map((id) => ({ ...ALLE[id], teil: T.nr, level: T.nr })));
+export const HAUPT = ABLAUF.filter((s) => s.art !== 'duell');
+export const HAUPT_ANZAHL = HAUPT.length;                    // 40
+export const PFLICHT_ANZAHL = HAUPT_ANZAHL;                  // alter Name
+export const DUELL_ANZAHL = ABLAUF.length - HAUPT_ANZAHL;    // 15
 
 // Wörter einer Wahl (für die Lese-Zeit)
 export const woerter = (s) => `${s.frage} ${s.a.t} ${s.b.t}`.split(/\s+/).filter(Boolean).length;

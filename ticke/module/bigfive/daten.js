@@ -170,13 +170,14 @@ FRAGEN.forEach((q) => { q.start = START.has(q.nr); });
 export const NACH_NR = Object.fromEntries(FRAGEN.map((q) => [q.nr, q]));
 export const NACH_ID = Object.fromEntries(FRAGEN.map((q) => [q.id, q]));
 
-// App-Bereiche (Anzeige-Reihenfolge OCEAN, „stabilitaet“ = umgepolter Neurotizismus, hoch = stabil). ARCH.md §3.3.
+// App-Bereiche (Anzeige-Reihenfolge OCEAN, „stabilitaet“ = umgepolter Neurotizismus). ARCH.md §3.3. IDs bleiben (Ergebnis-Schlüssel).
+// links/rechts = die zwei gleichwertigen Pole in Worten (links: wenig vom IPIP-Merkmal, rechts: viel). titel = Anzeige-Name im Modul.
 export const BEREICHE = [
-  { id: 'offenheit', ipip: 'O', name: 'Offenheit', links: 'mag Vertrautes', rechts: 'sucht Neues' },
-  { id: 'gewissenhaftigkeit', ipip: 'C', name: 'Gewissenhaftigkeit', links: 'spontan, locker', rechts: 'geplant, gründlich' },
-  { id: 'extraversion', ipip: 'E', name: 'Extraversion', links: 'eher ruhig, für sich', rechts: 'gesellig, aktiv' },
-  { id: 'vertraeglichkeit', ipip: 'A', name: 'Verträglichkeit', links: 'direkt, kritisch', rechts: 'rücksichtsvoll, mitfühlend' },
-  { id: 'stabilitaet', ipip: 'N', name: 'Emotionale Stabilität', links: 'spürt Stress stärker', rechts: 'gelassen, schwer zu erschüttern', umgepolt: true }
+  { id: 'offenheit', ipip: 'O', name: 'Offenheit', titel: 'Offenheit', links: 'Halt im Bewährten', rechts: 'Neugier auf Neues' },
+  { id: 'gewissenhaftigkeit', ipip: 'C', name: 'Gewissenhaftigkeit', titel: 'Gewissenhaftigkeit', links: 'Spontan und beweglich', rechts: 'Plan und Struktur' },
+  { id: 'extraversion', ipip: 'E', name: 'Extraversion', titel: 'Extraversion', links: 'Ruhe und Tiefe', rechts: 'Kontakt und Schwung' },
+  { id: 'vertraeglichkeit', ipip: 'A', name: 'Verträglichkeit', titel: 'Verträglichkeit', links: 'Klarheit und eigener Kopf', rechts: 'Rücksicht und Miteinander' },
+  { id: 'stabilitaet', ipip: 'N', name: 'Emotionale Stabilität', titel: 'Gelassenheit und Gespür', links: 'Feines Gespür', rechts: 'Gelassene Ruhe', umgepolt: true }
 ];
 export const BEREICH = Object.fromEntries(BEREICHE.map((b) => [b.id, b]));
 export const VON_IPIP = Object.fromEntries(BEREICHE.map((b) => [b.ipip, b.id]));
@@ -200,6 +201,26 @@ export const FACETTEN = {
     ['masshalten', 'Maß halten', 'kannst Versuchungen gut widerstehen'], ['belastbarkeit', 'Belastbarkeit', 'bleibst unter Druck handlungsfähig']]
 };
 
+// Zwei gleichwertige Pole je Facette (Anzeige ohne Zahl): [Pol bei Zustimmung in App-Richtung, Gegenpol]. titel = neutraler Name.
+// Reihenfolge wie FACETTEN (IPIP-Facette 1–6). Bei „stabilitaet“ ist der erste Pol die ruhigere Seite.
+export const FACETTEN_POLE = {
+  offenheit: { fantasie: ['Fantasie', 'Träumen und Ausmalen', 'Nah am Wirklichen'], kunst: ['Sinn für Schönes', 'Berührt von Schönem', 'Nüchterner Blick'],
+    gefuehle: ['Gefühle wahrnehmen', 'Gefühle stark erleben', 'Sachlich bei Gefühlen'], abenteuer: ['Lust auf Neues', 'Abwechslung', 'Vertraute Abläufe'],
+    intellekt: ['Denklust', 'Lust an Ideen', 'Praktisch und konkret'], liberalitaet: ['Werte hinterfragen', 'Regeln hinterfragen', 'Klare Maßstäbe'] },
+  gewissenhaftigkeit: { selbstwirksamkeit: ['Zutrauen in dein Können', 'Zutrauen', 'Selbstkritischer Blick'], ordnung: ['Ordnung', 'Ordnung um dich', 'Kreatives Durcheinander'],
+    pflichtgefuehl: ['Zusagen und Regeln', 'Zusagen genau halten', 'Regeln locker sehen'], leistungsstreben: ['Ehrgeiz', 'Hohe Ziele', 'Kraft gezielt einsetzen'],
+    selbstdisziplin: ['Anfangen und Dranbleiben', 'Durchziehen', 'Der Energie folgen'], besonnenheit: ['Denken oder gleich handeln', 'Erst abwägen', 'Schnell entschlossen'] },
+  extraversion: { freundlichkeit: ['Herzlichkeit', 'Schnell warm mit anderen', 'Nähe wächst langsam'], geselligkeit: ['Geselligkeit', 'Gern unter vielen', 'Kleiner Kreis'],
+    durchsetzung: ['Vorangehen', 'Die Führung nehmen', 'Anderen den Vortritt lassen'], aktivitaet: ['Tempo', 'Viel Tempo', 'Ruhiges Tempo'],
+    erlebnishunger: ['Lust auf Aufregung', 'Nervenkitzel', 'Ruhig und sicher'], frohsinn: ['Freude zeigen', 'Freude nach außen', 'Stille Freude'] },
+  vertraeglichkeit: { vertrauen: ['Vertrauen', 'Vertrauen vorschießen', 'Erst prüfen'], aufrichtigkeit: ['Geradlinigkeit', 'Offene Karten', 'Taktisch vorgehen'],
+    hilfsbereitschaft: ['Hilfsbereitschaft', 'Für andere da sein', 'Bei den eigenen Aufgaben'], kooperation: ['Mit Streit umgehen', 'Streit vermeiden', 'Streit austragen'],
+    bescheidenheit: ['Bescheidenheit', 'Sich zurücknehmen', 'Zu den eigenen Stärken stehen'], mitgefuehl: ['Mitgefühl', 'Stark mitfühlen', 'Abstand zu fremdem Leid'] },
+  stabilitaet: { gelassenheit: ['Sorgen', 'Sorgen loslassen', 'Sorgen früh bemerken'], ausgeglichenheit: ['Ärger', 'Ruhig bei Ärger', 'Ärger deutlich spüren'],
+    grundstimmung: ['Stimmung', 'Helle Grundstimmung', 'Schwere Gefühle kennen'], selbstsicherheit: ['Unter Menschen', 'Unbefangen', 'Aufmerksam, wie du wirkst'],
+    masshalten: ['Lust und Maß', 'Maß halten', 'Genuss im Moment'], belastbarkeit: ['Unter Druck', 'Ruhig unter Druck', 'Druck früh spüren'] }
+};
+
 // Fragen der Vertiefung eines Bereichs (alles außer der Startform), Facetten wechseln sich ab (Reihenfolge nach nr).
 export function vertiefungsFragen(bereichId) {
   const ipip = bereichId === 'alle' ? null : BEREICH[bereichId] && BEREICH[bereichId].ipip;
@@ -207,7 +228,9 @@ export function vertiefungsFragen(bereichId) {
 }
 export function startFragen() { return START_REIHE.map((n) => NACH_NR[n]); }
 
-// Vergleichswerte (T-Skala, Rohwert = Summe): aus Johnsons IPIP-NEO-120-Normtabellen (englischsprachige Online-Stichprobe,
+// Vergleichswerte (T-Skala, Rohwert = Summe) – werden NICHT angezeigt. Nur noch intern: Felder wert/stufe/klar für ältere Leser
+// (passt, training, textspiegel) und die Vorschläge „Genauer hinschauen“. Die Richtung in Worten kommt allein aus den eigenen Antworten.
+//: aus Johnsons IPIP-NEO-120-Normtabellen (englischsprachige Online-Stichprobe,
 // 8 Gruppen nach Geschlecht × Alter). Gruppen hier ohne Geschlecht: gleich gewichtete Mischung aus Männern und Frauen
 // (Mittel = Mittel der Mittel; Varianz = mittlere Varianz + Streuung der Mittel). Erzeugt mit test/bigfive/normen-bauen.mjs.
 // d: Bereich (24 Fragen, 24–120) · f: Facetten 1–6 (4 Fragen, 4–20) · s: Startform (6 Fragen, eine je Facette, 6–30; abgeleitet).

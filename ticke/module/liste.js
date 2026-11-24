@@ -31,6 +31,15 @@ export const MODULE = [
     ]
   },
   {
+    id: 'muster', name: 'Muster und Verästelungen',
+    datei: './module/muster/modul.js', quellen: './module/muster/quellen.js',
+    routen: ['muster'],               // muster (Baum) · muster/ast/<ast-id> · muster/fragen (Denkweise)
+    fragen: [                         // ohne start/bogen: nicht Teil des Start-Fragebogens (dessen Reihenfolge bleibt fest)
+      { route: 'muster/fragen', titel: 'Denkweise', dauer: 'ca. 4 Min.', ergebnis: 'muster',
+        kurz: 'Wie du denkst, entscheidest und was dir wichtig ist – ohne richtig oder falsch.' }
+    ]
+  },
+  {
     id: 'textspiegel', name: 'Text-Spiegel',
     datei: './module/textspiegel/modul.js', quellen: './module/textspiegel/quellen.js',
     routen: ['text'],                 // text · text/schreiben/<aufgabe> · text/spiegel · text/claude · text/blindtest

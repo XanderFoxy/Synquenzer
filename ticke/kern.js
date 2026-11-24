@@ -6,7 +6,7 @@ import * as seiten from './seiten.js';
 import { mass } from './mass.js';
 import * as WEG from './weg.js';
 
-export const VERSION = '0.2.1';
+export const VERSION = '0.3.0';
 export const FORMAT = 1;                      // Format der gespeicherten Daten (ARCH.md §3); höher → MIGRATIONEN
 const P = 'ticke.v1.';                        // einziger Präfix in localStorage (Ursprung teilen sich alle Synquenzer-Apps!)
 const TEST = /[?&]test=1/.test(location.search);
@@ -129,9 +129,12 @@ function wendeEinstAn() { const e = einst(), s = Number(e.schrift) || 1; documen
 // ---------- Rechen-Hilfen für Bänder: mass.js (ohne DOM, auch in Node testbar) ----------
 
 // ---------- Navigation ----------
-export const NAV = [['start', 'Start'], ['fragen', 'Fragen'], ['profil', 'Profil'], ['passt', 'Was passt'], ['training', 'Training'], ['text', 'Text']];
-const TITEL = { start: 'Wie ich ticke', einstieg: 'Für mich', los: 'Start-Fragebogen', fragen: 'Fragen', profil: 'Profil', passt: 'Was passt zu mir', training: 'Training', text: 'Text-Spiegel', einstellungen: 'Einstellungen', muster: 'Muster', spiel: 'Entweder – oder' };
-const KERN_ROUTEN = ['start', 'einstieg', 'los', 'fragen', 'einstellungen', 'muster'];
+// Sechs Reiter (bei 428 px lesbar, je ≥ 44 px): „Profil“ und „Was passt zu mir“ teilen sich einen Reiter mit Unterreitern (UNTER).
+export const NAV = [['start', 'Start'], ['muster', 'Muster'], ['fragen', 'Fragen'], ['profil', 'Profil'], ['training', 'Training'], ['text', 'Text']];
+const NAV_ZU = { los: 'fragen', spiel: 'fragen', passt: 'profil' };          // Seiten, die zu einem anderen Reiter gehören
+const UNTER = { profil: [['profil', 'Profil'], ['passt', 'Was passt zu mir']] }; // Reiter → Unterreiter (oben unter dem Kopf)
+const TITEL = { start: 'Wie ich ticke', einstieg: 'Für mich', los: 'Start-Fragebogen', fragen: 'Fragen', profil: 'Profil', passt: 'Was passt zu mir', training: 'Training', text: 'Text-Spiegel', einstellungen: 'Einstellungen', muster: 'Dein Muster', antworten: 'Deine Antworten', spiel: 'Entweder – oder', bausteine: 'Bausteine' };
+const KERN_ROUTEN = ['start', 'einstieg', 'los', 'fragen', 'einstellungen', 'antworten', 'bausteine'];
 function leseRoute(hash = location.hash) {
   let h = hash.replace(/^#/, ''); try { h = decodeURIComponent(h); } catch {}
   const [p, q = ''] = h.split('?');
@@ -161,10 +164,11 @@ async function zeige() {
   aufraeumen = null; zurueckZiel = null;
   const top = r.pfad[0], wer = besitzer(r.pfad);
   wegLeiste(r);
-  const navTop = top === 'los' || top === 'spiel' ? 'fragen' : top;   // Start-Fragebogen und Spiel gehören zu „Fragen“
+  const navTop = NAV_ZU[top] || top;   // Start-Fragebogen und Entweder – oder gehören zu „Fragen“, „Was passt“ zu „Profil“
   document.querySelectorAll('#leiste a').forEach((a) => { if (a.dataset.r === navTop) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
   const zg = document.getElementById('zu-einst'); if (zg) { if (top === 'einstellungen') zg.setAttribute('aria-current', 'page'); else zg.removeAttribute('aria-current'); }
-  const ist = NAV.some(([id]) => id === top) && r.pfad.length === 1;
+  unterreiter(navTop, top);
+  const ist = (NAV.some(([id]) => id === top) || (UNTER[navTop] || []).some(([id]) => id === top)) && r.pfad.length === 1;
   document.getElementById('zurueck').hidden = ist;
   setzeTitel(TITEL[top] || 'Wie ich ticke');
   const ctx = {
@@ -190,6 +194,15 @@ async function zeige() {
   wegNach(r);
   const h = el.querySelector('h2'); if (h && !el.contains(document.activeElement)) { if (!h.hasAttribute('tabindex')) h.tabIndex = -1; try { h.focus({ preventScroll: true }); } catch {} }
   emit('ansicht', { route: r.hash, pfad: r.pfad, param: r.param, besitzer: wer });
+}
+// Unterreiter (z. B. Profil | Was passt zu mir): eigene Zeile unter dem Kopf, damit Modul-Ansichten sie nicht überschreiben.
+function unterreiter(navTop, top) {
+  const u = document.getElementById('unterreiter'); if (!u) return;
+  const L = UNTER[navTop];
+  if (!L) { if (!u.hidden) { u.hidden = true; u.innerHTML = ''; u.dataset.fuer = ''; } return; }
+  if (u.dataset.fuer !== navTop) { u.innerHTML = `<div class="unter-innen">${L.map(([id, n]) => `<a href="#${id}" data-r="${id}">${ui.esc(n)}</a>`).join('')}</div>`; u.dataset.fuer = navTop; }
+  u.querySelectorAll('a').forEach((a) => { if (a.dataset.r === top) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+  u.hidden = false;
 }
 function setzeTitel(t) { document.getElementById('titel').textContent = t; document.title = t === 'Wie ich ticke' ? t : t + ' – Wie ich ticke'; }
 
@@ -220,11 +233,12 @@ function wegLeiste(r = leseRoute()) {
 function wegNach(r = leseRoute()) {
   let neu = null; try { neu = WEG.nachfuehren(kern, r.pfad); } catch (e) { console.error(e); }
   wegLeiste(r);
-  if (neu === 'geschafft') ui.meldung('Dein Weg ist geschafft. Ab jetzt: jeden Tag ein kleiner Schritt.', 4500);
+  if (neu === 'geschafft') ui.meldung('Du bist den Weg einmal ganz gegangen. Ab hier springst du frei durch dein Muster.', 4500);
 }
 
 // ---------- Module ----------
 const GELADEN = new Map();
+const EXPORTE = new Map();                    // id → alle Exporte der Modul-Datei (antwortListe, antwortSetzen, muster, aeste …)
 function modul(id) {
   if (!GELADEN.has(id)) {
     const info = MODULE.find((m) => m.id === id);
@@ -232,6 +246,7 @@ function modul(id) {
     const p = import(new URL(info.datei, import.meta.url).href).then((mod) => {
       const m = mod.default;
       if (!m || m.id !== id || typeof m.ansicht !== 'function') throw new Error('Modul ' + id + ' hält den Vertrag nicht ein (default {id, ansicht}).');
+      EXPORTE.set(id, mod);
       if (m.schema) {
         SCHEMA[id] = m.schema;
         const d = MEM.get('m.' + id);
@@ -247,6 +262,8 @@ function modul(id) {
   }
   return GELADEN.get(id);
 }
+// Lädt ein Modul wie modul(id) (Schema-Umzug und start() inklusive) und gibt alle benannten Exporte der Datei zurück.
+function exporte(id) { return modul(id).then(() => EXPORTE.get(id)); }
 
 // ---------- Quellen + Evidenz-Blatt ----------
 let QP = null;
@@ -264,14 +281,15 @@ function quellen() {
 }
 function quelleHtml(id, q) {
   if (!q) return `<li>Quelle „${ui.esc(id)}“ fehlt noch.</li>`;
-  return `<li>${ui.esc(q.text)}${q.notiz ? `<br><span class="leise">${ui.esc(q.notiz)}</span>` : ''}${q.url ? `<br><a href="${ui.esc(q.url)}" target="_blank" rel="noopener noreferrer">Quelle öffnen</a> <span class="leise klein">(fremde Seite)</span>` : ''}</li>`;
+  const erkl = q.erklaerung || q.notiz;       // keine Links: Was in der Quelle steht, erklärt die App selbst
+  return `<li><span class="quelle-text">${ui.esc(q.text)}</span>${erkl ? `<span class="quelle-erkl">${ui.esc(erkl)}</span>` : ''}</li>`;
 }
 async function zeigeBeleg(stufe, ids = []) {
   let Q; try { Q = await quellen(); } catch { Q = { alle: {}, STUFEN: {} }; }
   const s = (Q.STUFEN || {})[stufe] || { name: stufe, text: '' };
   await ui.blatt(`<p><span class="marke marke-${ui.esc(stufe)}" aria-hidden="true">${ui.esc(s.name)}</span> ${ui.esc(s.kurz || '')}</p><p>${ui.esc(s.text)}</p>
-    ${ids.length ? `<h3>${ids.length > 1 ? 'Quellen' : 'Quelle'}</h3><ul class="quellen">${ids.map((id) => quelleHtml(id, Q.alle[id])).join('')}</ul>` : '<p class="leise">Für diesen Punkt ist keine eigene Quelle hinterlegt.</p>'}
-    <p class="klein"><a class="link" href="#einstellungen/quellen" data-w="quellen">Alle Quellen</a></p>`, { titel: 'Woher kommt das?' }).then((w) => { if (w === 'quellen') geh('einstellungen/quellen'); });
+    ${ids.length ? `<h3>${ids.length > 1 ? 'Quellen' : 'Quelle'}</h3><ul class="quellen">${ids.map((id) => quelleHtml(id, Q.alle[id])).join('')}</ul>` : '<p class="leise">Für diese Aussage ist keine eigene Quelle hinterlegt.</p>'}
+    <p class="klein"><a class="link" href="#einstellungen/quellen" data-w="quellen">Woher das Wissen kommt – alle Quellen</a></p>`, { titel: 'Woher kommt das?' }).then((w) => { if (w === 'quellen') geh('einstellungen/quellen'); });
 }
 
 // ---------- Einwilligung abfragen (Knopf „Auf diesem Gerät merken“) ----------
@@ -316,13 +334,13 @@ async function offlineBereit() {
 
 // ---------- öffentliches Objekt ----------
 export const kern = {
-  VERSION, FORMAT, TEST, on, emit, geh, zurueck, route: () => leseRoute(), modul, module: MODULE,
+  VERSION, FORMAT, TEST, on, emit, geh, zurueck, route: () => leseRoute(), modul, exporte, module: MODULE,
   speicher, einst, setzeEinst, mass, ui, quellen, zeigeBeleg, frageEinwilligung, offlineBereit, weg
 };
 
 // ---------- Start ----------
 function rahmen() {
-  const SYM = { start: 'start', fragen: 'fragen', profil: 'profil', passt: 'passt', training: 'training', text: 'text' };
+  const SYM = { start: 'start', muster: 'muster', fragen: 'fragen', profil: 'profil', passt: 'passt', training: 'training', text: 'text' };
   document.getElementById('leiste').innerHTML = NAV.map(([id, n]) => `<a href="#${id}" data-r="${id}">${ui.sym(SYM[id])}<span>${n}</span></a>`).join('');
   document.getElementById('zurueck').addEventListener('click', zurueck);
   document.addEventListener('click', (e) => {

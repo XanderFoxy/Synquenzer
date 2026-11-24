@@ -1,12 +1,13 @@
-// M4 passt – Regelwerk: Ergebnisse (bigfive, interessen.*) → Aussagen mit Stufe, Quelle, Begründung („Weil …“).
-// Reine Rechnung ohne DOM und ohne kern.js → in Node testbar (test/passt/regeln-test.mjs).
-// Grundsätze: nur die Seite zeigen, auf der jemand liegt; im Mittelfeld nichts Bestimmtes behaupten; „klar“ nur, wenn das GANZE
-// Band außerhalb 45–55 liegt (KONZEPT §2.3); bei „eher“ steht „noch unsicher“ dabei. Profil-Name nur, wenn eindeutig.
-import { BEREICHE, BEREICH, FACETTE_NAME, RIASEC, STAERKEN, ARBEIT, LERNEN, GEEIGNET, SELBST, ANDERE, NICHT, WACHSTUM, VORHERSAGEN } from './texte.js';
+// M4 passt – Regelwerk: Ergebnisse (bigfive, interessen.*) → Aussagen mit Stufe, Quelle, Begründung in Worten („passt zu deiner Richtung …“).
+// Reine Rechnung ohne DOM und ohne kern.js → in Node testbar.
+// Grundsätze: nur die Seite zeigen, zu der jemand neigt; im Mittelfeld „beides gehört zu dir“; „klar“ nur, wenn das GANZE
+// Band außerhalb 45–55 liegt (KONZEPT §2.3), sonst „leicht“. Profil-Wort-Bild nur, wenn eindeutig.
+// KEINE Bewertung nach außen: Zahlen (T-Werte, Bänder, Ränge) werden nur intern gerechnet, nie angezeigt. Texte nur in Worten.
+import { BEREICHE, BEREICH, FACETTE_NAME, RIASEC, STAERKEN, ARBEIT, LERNEN, GEEIGNET, SELBST, ANDERE, NICHT, WACHSTUM, VORHERSAGEN, ALLTAG_REIHE, AESTE } from './texte.js';
 
 export const ABSCHNITTE = [
-  { id: 'staerken', titel: 'Stärken und ihr Preis', kurz: 'Was du gut kannst – und was es kostet' },
-  { id: 'arbeit', titel: 'Arbeitsweise', kurz: 'Struktur, Team, Druck, Lernen, beste Zeit' },
+  { id: 'staerken', titel: 'Stärken und wo sie reiben', kurz: 'Was dir liegt – und die andere Seite davon' },
+  { id: 'arbeit', titel: 'Arbeitsweise', kurz: 'Struktur, Team, Druck, Lernen, gute Zeiten' },
   { id: 'geeignet', titel: 'Wofür du geeignet bist', kurz: 'Tätigkeiten, Rollen, Projekte' },
   { id: 'selbst', titel: 'Umgang mit dir selbst', kurz: 'Erholung, innerer Kritiker, Gewohnheiten' },
   { id: 'andere', titel: 'Umgang mit anderen', kurz: 'Reden, Streit, Nähe und Abstand' },
@@ -19,12 +20,34 @@ export const FRAGEBOEGEN = {
   'interessen.ehrlichkeit': { route: 'fragen/interessen/ehrlichkeit', titel: 'Ehrlichkeit und Bescheidenheit' }
 };
 
-const WORTE = { '-2': 'deutlich niedriger als die meisten', '-1': 'eher niedriger als die meisten', '0': 'im Mittelfeld', '1': 'eher höher als die meisten', '2': 'deutlich höher als die meisten' };
 export const stufeT = (t) => (t < 35 ? -2 : t < 45 ? -1 : t <= 55 ? 0 : t <= 65 ? 1 : 2);
-export const wortT = (s) => WORTE[String(s)] || WORTE['0'];
 const zahl = (x) => typeof x === 'number' && isFinite(x);
-const rund = (x) => Math.round(x);
 export function uhrText(h) { if (!zahl(h)) return '–'; let m = Math.round((((h % 24) + 24) % 24) * 12) * 5; m %= 1440; return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`; }
+
+// ---------- Richtung in Worten ----------
+// deutlich: 'klar' (ganzes Band auf einer Seite) | 'leicht' (Richtung zeigt sich, Band reicht in die Mitte) | 'beides'
+export const deutlichAus = (l) => (!l || !l.pol ? 'beides' : l.sicher === 'klar' ? 'klar' : 'leicht');
+export const DEUTLICH_WORT = { klar: 'klar', leicht: 'leicht', beides: 'beides' };
+// Verträglichkeit mit älteren Aufrufern: Stufe → Wort (ohne Zahl, ohne Vergleich mit anderen)
+export const wortT = (s) => (Math.abs(s) >= 2 ? 'klar' : s ? 'leicht' : 'beides gehört zu dir');
+export function poleVon(id) {
+  if (BEREICH[id]) return [BEREICH[id].links, BEREICH[id].rechts];
+  if (id === 'ehrlichkeit') return ['Eigener Vorteil im Blick', 'Fair und bescheiden'];
+  if (id === 'rhythmus') return ['Abends wach', 'Morgens wach'];
+  return ['', ''];
+}
+// „klar in Richtung „Neugier auf Neues““ | „leicht in Richtung …“ | „beides gehört zu dir“
+export function richtungWort(id, l) {
+  const d = deutlichAus(l); if (d === 'beides') return 'beides gehört zu dir';
+  const [a, b] = poleVon(id); return `${d} in Richtung „${l.pol > 0 ? b : a}“`;
+}
+const INTERESSE_WORT = { 2: 'zieht dich klar an', 1: 'zieht dich an', 0: 'teils, teils', '-1': 'zieht dich weniger an', '-2': 'zieht dich kaum an' };
+export const interesseWort = (x) => INTERESSE_WORT[String(Math.max(-2, Math.min(2, Math.round(zahl(x && x.stufe) ? x.stufe : 0))))];
+export const RHYTHMUS_WORT = { frueh: 'klar in Richtung „Morgens wach“', 'eher-frueh': 'leicht in Richtung „Morgens wach“', mittel: 'beides gehört zu dir – weder ausgeprägt früh noch spät',
+  'eher-spaet': 'leicht in Richtung „Abends wach“', spaet: 'klar in Richtung „Abends wach“' };
+export const RHYTHMUS_SATZ = { frueh: 'Morgens bist du klar wacher als abends.', 'eher-frueh': 'Morgens bist du eher wacher als abends.', mittel: 'Morgens und abends – beides geht bei dir.',
+  'eher-spaet': 'Abends bist du eher wacher als morgens.', spaet: 'Abends bist du klar wacher als morgens.' };
+export const rhythmusDeutlich = (typ) => (/^(frueh|spaet)$/.test(typ) ? 'klar' : /^eher-/.test(typ) ? 'leicht' : 'beides');
 
 // ---------- Lage eines Bandes ----------
 // T-Skala: pol −1/0/1, sicher 'klar' (ganzes Band außerhalb 45–55) | 'eher' (Wert außerhalb, Band reicht hinein) | 'mitte'.
@@ -70,15 +93,14 @@ export function lagen(E) {
 }
 const rhythmusSeite = (y) => !y ? 0 : (y.typ === 'spaet' || y.typ === 'eher-spaet') ? -1 : (y.typ === 'frueh' || y.typ === 'eher-frueh') ? 1 : 0;
 
-// ---------- Begründung („Weil …“) mit Zahl und Vergleich ----------
+// ---------- Begründung in Worten („passt zu deiner Richtung …“) – ohne Zahl, ohne Vergleich mit anderen ----------
 export function weilT(id, l) {
   const B = BEREICH[id]; if (!B || !l) return '';
-  const lo = rund(Math.max(20, l.unten)), hi = rund(Math.min(80, l.oben));
-  return `${B.name}: ${wortT(l.stufe)} (Bereich ${lo}–${hi}, Mitte 50)${l.fraglich ? ' – Antworten fraglich' : l.sicher === 'eher' ? ' – noch unsicher' : ''}`;
+  return `${B.name}: ${l.fraglich ? 'noch offen' : richtungWort(id, l)}`;
 }
-function weilH(l) { return `Ehrlichkeit-Bescheidenheit: ${l.wort || (l.pol > 0 ? 'eher fair und bescheiden' : 'eher eigener Vorteil')}${l.sicher === 'eher' ? ' – noch unsicher' : ''}`; }
-function weilR(r, t) { const x = r.typen[t]; return `Interesse ${RIASEC[t].name}: ${x.wort || 'Platz ' + x.rang}${zahl(x.rang) ? ` (Platz ${x.rang} von 6)` : ''}`; }
-function weilY(y) { return `Tagesrhythmus: ${y.wort || y.typ}${zahl(y.schlafmitteKorr) ? `, Schlafmitte an freien Tagen ≈ ${uhrText(y.schlafmitteKorr)} Uhr` : ''}`; }
+export function weilH(l) { return `Ehrlichkeit und Bescheidenheit: ${richtungWort('ehrlichkeit', l)}`; }
+export function weilR(r, t) { return `Interesse ${RIASEC[t].name}: ${interesseWort(r.typen[t])}`; }
+export function weilY(y) { return `Tagesrhythmus: ${RHYTHMUS_WORT[y.typ] || 'beides gehört zu dir'}`; }
 
 const RANG = { klar: 0, eher: 1, mitte: 2 };
 function aussage(abschnitt, id, t, weil, sicher, extra = {}) {
@@ -108,10 +130,10 @@ export function profilName(L) {
   return { name, grund: 'eindeutig', achsen: [id1, id2] };
 }
 export function profilNameText(p) {
-  if (p.name) return `Nur ein Spitzname für dein Muster, kein Typ: Die zwei Bereiche ${p.achsen.map((a) => BEREICH[a].name).join(' und ')} liegen klar außerhalb der Mitte.`;
-  if (p.grund === 'mehrdeutig') return 'Kein Profil-Name: Mehrere Bereiche liegen klar außerhalb der Mitte, ohne dass zwei deutlich vorne liegen. Ein kurzer Name würde dich verkürzen – die Balken sagen mehr.';
-  if (p.grund === 'eine') return `Kein Profil-Name: Nur ein Bereich (${BEREICH[p.achsen[0]].name}) liegt klar außerhalb der Mitte. Ein Name braucht zwei.`;
-  return 'Kein Profil-Name: Gemischtes Profil – das ist häufig und kein Mangel. Die Bänder sind noch breit oder liegen nahe der Mitte.';
+  if (p.name) return `Ein Wort-Bild für dein Muster, kein Typ: ${p.achsen.map((a) => BEREICH[a].name).join(' und ')} zeigen bei dir klar in eine Richtung.`;
+  if (p.grund === 'mehrdeutig') return 'Kein Wort-Bild: Mehrere Richtungen zeigen sich klar, keine zwei stehen vorn. Ein kurzer Name würde dich verkürzen – die Sätze sagen mehr.';
+  if (p.grund === 'eine') return `Kein Wort-Bild: Klar zeigt sich bisher eine Richtung (${BEREICH[p.achsen[0]].name}). Ein Wort-Bild braucht zwei.`;
+  return 'Kein Wort-Bild: Bei dir gehört vieles beides zu dir – das ist häufig und ganz in Ordnung.';
 }
 
 // ---------- Konfliktstil (abgeleitet, Antonioni 1998) ----------
@@ -142,7 +164,7 @@ export function richtungen(L, F = {}) {
       const a = L.vertraeglichkeit ? L.vertraeglichkeit.pol : 0, e = L.extraversion ? L.extraversion.pol : 0;
       punkte = e > 0 ? (a > 0 ? 1 : 0) : a > 0 ? 2 : a < 0 ? 0 : 1;
     }
-    const weil = !l ? '' : quelle === 'facette' ? `Facette ${FACETTE_NAME[facette]}: ${wortT(l.stufe)}` : weilT(facette ? ERSATZ[facette] : r.richtung, l);
+    const weil = !l ? '' : quelle === 'facette' ? `Facette ${FACETTE_NAME[facette]}: ${l.pol > 0 ? 'zeigt sich' : l.pol < 0 ? 'zeigt sich wenig' : 'beides'}` : weilT(facette ? ERSATZ[facette] : r.richtung, l);
     return { ...r, punkte, weil, nr: i, lage: l || null };
   });
   liste.sort((a, b) => b.punkte - a.punkte || a.nr - b.nr);
@@ -157,7 +179,18 @@ export function richtungen(L, F = {}) {
   return { nahe, alle: liste, hatBF };
 }
 
-// ---------- Treffer-Probe ----------
+// ---------- Im Alltag (früher „Treffer-Probe“) ----------
+// Alle fünf Fragen, unabhängig vom Fragebogen. probe: { bereich: 'a'|'b' } (Speicher 'passt:probe', unverändert).
+// vergleich: 'gleich' (Wahl zeigt zur Richtung aus dem Fragebogen) | 'anders' (zur anderen Seite) | 'beides' (Fragebogen: beides) | null.
+export function alltag(L = {}, probe = {}) {
+  return ALLTAG_REIHE.map((id) => {
+    const v = VORHERSAGEN[id], w = probe && (probe[id] === 'a' || probe[id] === 'b') ? probe[id] : null, l = L[id] && !L[id].fraglich ? L[id] : null;
+    const seite = w ? (w === v.hoch ? 1 : -1) : 0;
+    const vergleich = !w || !l ? null : !l.pol ? 'beides' : l.pol === seite ? 'gleich' : 'anders';
+    return { bereich: id, frage: v.frage, a: v.a, b: v.b, hoch: v.hoch, wahl: w, seite, lage: l, vergleich, weil: l ? weilT(id, l) : '' };
+  });
+}
+// alt: nur die Fragen zu Bereichen außerhalb der Mitte (für ältere Aufrufer)
 export function vorhersagen(L, max = 3) {
   return seiten(L).slice(0, max).map(([id, l]) => {
     const v = VORHERSAGEN[id];
@@ -166,7 +199,7 @@ export function vorhersagen(L, max = 3) {
 }
 
 // ---------- Entwicklung zwischen zwei Big-Five-Ergebnissen ----------
-// Unterschied „deutlich“, wenn er größer ist als der Messfehler beider Messungen zusammen (95 %).
+// „verschoben“, wenn der Unterschied größer ist als der Messfehler beider Messungen zusammen (95 %). Nach außen nur Worte.
 export function entwicklung(alt, neu) {
   if (!alt || !neu || alt.skala !== 'T' || neu.skala !== 'T') return [];
   const r = [];
@@ -174,8 +207,9 @@ export function entwicklung(alt, neu) {
     const a = alt.bereiche && alt.bereiche[B.id], n = neu.bereiche && neu.bereiche[B.id];
     if (!lageT(a) || !lageT(n)) continue;
     const se = Math.sqrt(((a.oben - a.unten) / 2 / 1.96) ** 2 + ((n.oben - n.unten) / 2 / 1.96) ** 2);
-    const d = n.wert - a.wert;
-    r.push({ bereich: B.id, name: B.name, diff: Math.round(d), deutlich: Math.abs(d) > 1.96 * se, grenze: Math.round(1.96 * se) });
+    const d = n.wert - a.wert, verschoben = Math.abs(d) > 1.96 * se;
+    r.push({ bereich: B.id, name: B.name, verschoben, richtung: verschoben ? (d > 0 ? B.rechts : B.links) : '',
+      text: verschoben ? `hat sich in Richtung „${d > 0 ? B.rechts : B.links}“ verschoben` : 'ist etwa gleich geblieben' });
   }
   return r;
 }
@@ -201,8 +235,8 @@ export function auswerten(roh = {}, o = {}) {
   // Arbeitsweise
   for (const [id, l] of S) if (ARBEIT[id]) A.arbeit.push(aussage('arbeit', `ar-${id}-${l.pol}`, ARBEIT[id][String(l.pol)], weilT(id, l), l.sicher, { bereich: id, pol: l.pol, titel: ARBEIT[id].titel }));
   if (Y && Y.fokus && zahl(Y.fokus.von)) {
-    const f2 = Y.fokus2 && zahl(Y.fokus2.von) ? ` und noch einmal etwa von ${uhrText(Y.fokus2.von)} bis ${uhrText(Y.fokus2.bis)} Uhr` : '';
-    A.arbeit.push(aussage('arbeit', 'ar-zeit', { text: `Schwere Aufgaben gelingen dir vermutlich am besten etwa von ${uhrText(Y.fokus.von)} bis ${uhrText(Y.fokus.bis)} Uhr${f2}.`, stufe: 'abgeleitet', quellen: ['schmidt2007'] }, weilY(Y), 'eher', { bereich: 'rhythmus', titel: 'Beste Zeit für schwere Aufgaben' }));
+    const f2 = Y.fokus2 && zahl(Y.fokus2.von) ? ` und noch einmal etwa zwischen ${uhrText(Y.fokus2.von)} und ${uhrText(Y.fokus2.bis)} Uhr` : '';
+    A.arbeit.push(aussage('arbeit', 'ar-zeit', { text: `Vorschlag zum Ausprobieren: Leg schwere Aufgaben etwa zwischen ${uhrText(Y.fokus.von)} und ${uhrText(Y.fokus.bis)} Uhr${f2} – dort passt es vermutlich gut zu deiner inneren Uhr.`, stufe: 'abgeleitet', quellen: ['schmidt2007'] }, weilY(Y), 'eher', { bereich: 'rhythmus', titel: 'Gute Zeit für schwere Aufgaben' }));
     if (Y.ideen && zahl(Y.ideen.von)) A.arbeit.push(aussage('arbeit', 'ar-einfall', { text: `Für Aufgaben, die einen Einfall brauchen, kann die „falsche“ Tageszeit helfen – bei dir etwa ${uhrText(Y.ideen.von)} bis ${uhrText(Y.ideen.bis)} Uhr.`, stufe: 'abgeleitet', quellen: ['wieth2011'] }, weilY(Y), 'eher', { bereich: 'rhythmus', titel: 'Zeit für Einfälle' }));
   }
   A.arbeit.push(aussage('arbeit', 'ar-lernen', LERNEN.alle, 'gilt für alle Menschen, unabhängig vom Profil', 'alle', { titel: 'Lernen' }));
@@ -227,8 +261,7 @@ export function auswerten(roh = {}, o = {}) {
   if (E.bigfive) A.selbst.push(aussage('selbst', 'se-alle', SELBST.alle, 'gilt für alle Menschen', 'alle'));
   for (const [id, l] of S) (SELBST[id] && SELBST[id][String(l.pol)] || []).forEach((t, i) => A.selbst.push(aussage('selbst', `se-${id}-${l.pol}-${i}`, t, weilT(id, l), l.sicher, { bereich: id, pol: l.pol })));
   if (Y && zahl(Y.sozialerJetlag) && Y.sozialerJetlag >= 2) {
-    const h = (Math.round(Y.sozialerJetlag * 2) / 2).toLocaleString('de-DE');
-    A.selbst.push({ ...aussage('selbst', 'se-jetlag', SELBST.jetlag, weilY(Y) + `, Unterschied ${h} Std.`, 'klar', { bereich: 'rhythmus' }), text: SELBST.jetlag.text(h) });
+    A.selbst.push(aussage('selbst', 'se-jetlag', SELBST.jetlag, weilY(Y) + ' · dein Schlaf verschiebt sich zwischen freien Tagen und Tagen mit Termin deutlich', 'klar', { bereich: 'rhythmus' }));
     A.selbst.push(aussage('selbst', 'se-licht', SELBST.licht, weilY(Y), 'eher', { bereich: 'rhythmus' }));
   }
   if (ys < 0) A.selbst.push(aussage('selbst', 'se-morgen', SELBST.spaetMorgen, weilY(Y), 'eher', { bereich: 'rhythmus' }));
@@ -258,6 +291,88 @@ export function auswerten(roh = {}, o = {}) {
     eingaben: E, L, F, abschnitte: A, kurz, richtungen: W, name: profilName(L), streit: st,
     mitte: BEREICHE.filter((B) => L[B.id] && L[B.id].pol === 0 && !L[B.id].fraglich).map((B) => B.id),
     fraglich: !!(E.bigfive && E.bigfive.qualitaet && E.bigfive.qualitaet.fraglich),
-    vorhersagen: vorhersagen(L), nicht: NICHT, u16: o.alter === 'u16'
+    vorhersagen: vorhersagen(L), alltag: alltag(L, o.probe || {}), nicht: NICHT, u16: o.alter === 'u16'
   };
+}
+
+// ---------- Zusammenschau in Worten (Profil) ----------
+// Gibt Sätze ohne Zahl zurück. R = auswerten(…); wahl = Ergebnis passt.wachstum oder null.
+const gross = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+const liste = (xs) => (xs.length < 2 ? xs.join('') : xs.slice(0, -1).join(', ') + ' und ' + xs[xs.length - 1]);
+export function zusammenschau(R, wahl = null) {
+  const E = R.eingaben, L = R.L, saetze = [];
+  if (E.bigfive && !R.fraglich) {
+    const mit = BEREICHE.filter((B) => L[B.id]), klar = mit.filter((B) => deutlichAus(L[B.id]) === 'klar'), leicht = mit.filter((B) => deutlichAus(L[B.id]) === 'leicht');
+    const beides = mit.filter((B) => deutlichAus(L[B.id]) === 'beides');
+    if (klar.length) saetze.push(`Klar zeigt sich: ${gross(klar.map((B) => B.satz[String(L[B.id].pol)]).join('; '))}.`);
+    if (leicht.length) saetze.push(`Leicht zeigt sich: ${gross(leicht.map((B) => B.satz[String(L[B.id].pol)]).join('; '))}.`);
+    if (beides.length) saetze.push(`Beides gehört zu dir bei ${liste(beides.map((B) => B.name))} – dort kommt es auf die Lage an.`);
+  }
+  const h = L.ehrlichkeit;
+  if (h) saetze.push(!h.pol ? 'Bei Fairness und eigenem Vorteil gehört beides zu dir.' : h.pol > 0 ? `Fairness und Bescheidenheit sind dir ${deutlichAus(h) === 'klar' ? 'klar' : 'eher'} wichtig.` : `Deinen eigenen Vorteil behältst du ${deutlichAus(h) === 'klar' ? 'klar' : 'eher'} im Blick.`);
+  if (E.riasec) {
+    const top = E.riasec.top.slice(0, 3).filter((t) => RIASEC[t]);
+    if (top.length) saetze.push(`Am meisten ziehen dich ${liste(top.map((t) => RIASEC[t].adj))} Tätigkeiten an.`);
+  }
+  if (E.rhythmus && RHYTHMUS_SATZ[E.rhythmus.typ]) saetze.push(RHYTHMUS_SATZ[E.rhythmus.typ]);
+  if (wahl && wahl.titel) saetze.push(`Gerade möchtest du in Richtung „${wahl.titel}“ üben.`);
+  return saetze;
+}
+// Richtungen für die Profil-Karte: [{ id, titel, pole:[a,b], deutlich, seite (-1|0|1), text }]
+export function richtungsListe(R) {
+  const E = R.eingaben, L = R.L, r = [];
+  if (E.bigfive) for (const B of BEREICHE) if (L[B.id]) {
+    const l = L[B.id];
+    r.push({ id: B.id, titel: B.name, pole: [B.links, B.rechts], deutlich: l.fraglich ? 'beides' : deutlichAus(l), seite: l.fraglich ? 0 : l.pol, offen: !!l.fraglich,
+      text: l.fraglich ? 'noch offen – der letzte Durchgang ging sehr schnell' : richtungWort(B.id, l) });
+  }
+  if (L.ehrlichkeit) r.push({ id: 'ehrlichkeit', titel: 'Ehrlichkeit und Bescheidenheit', pole: poleVon('ehrlichkeit'), deutlich: deutlichAus(L.ehrlichkeit), seite: L.ehrlichkeit.pol, text: richtungWort('ehrlichkeit', L.ehrlichkeit) });
+  if (E.rhythmus) {
+    const t = E.rhythmus.typ, seite = /frueh/.test(t) ? 1 : /spaet/.test(t) ? -1 : 0;
+    r.push({ id: 'rhythmus', titel: 'Tagesrhythmus', pole: poleVon('rhythmus'), deutlich: rhythmusDeutlich(t), seite, text: RHYTHMUS_WORT[t] || 'beides gehört zu dir' });
+  }
+  return r;
+}
+
+// ---------- Muster (Vertrag muster(k)) ----------
+// Je Ast eine Richtung in Worten: aus dem Big-Five-Bereich (basis) und/oder der passenden Alltags-Wahl (alltag).
+export const AST = Object.fromEntries(AESTE.map((a) => [a.id, a]));
+const ALLTAG_TEXT = (x) => (x.wahl ? x[x.wahl] : '');
+export function musterAus(R, wahl = null) {
+  const L = R.L, A = Object.fromEntries((R.alltag || []).map((x) => [x.bereich, x])), out = [];
+  for (const ast of AESTE) {
+    if (!ast.basis || !ast.pole) continue;
+    const l = L[ast.basis] && !L[ast.basis].fraglich ? L[ast.basis] : null;
+    const x = ast.alltag ? A[ast.alltag] : null, seiteA = x && x.wahl ? x.seite : 0;
+    let seiteB = l ? l.pol : 0, dB = l ? deutlichAus(l) : null, quelleB = l ? `deiner Persönlichkeit (${BEREICH[ast.basis].name})` : '';
+    // Im Streit: der Konfliktstil (falls ableitbar) hat Vorrang vor der Verträglichkeit allein
+    if (ast.id === 'passt.andere_streit' && R.streit) {
+      const st = R.streit.stil; seiteB = st === 'ausweichen' ? 1 : st === 'durchsetzen' ? -1 : 0; dB = seiteB ? 'leicht' : 'beides'; quelleB = 'deiner Persönlichkeit (Extraversion, Verträglichkeit und Stabilität zusammen)';
+    }
+    if (!l && !seiteA && !(ast.id === 'passt.andere_streit' && R.streit)) continue;
+    const pol = (s) => ast.pole[s > 0 ? 1 : 0];
+    let richtung, deutlich, seite = 0;
+    const woher = [quelleB ? `aus ${quelleB}` : '', seiteA ? `aus deiner Wahl im Alltag („${ALLTAG_TEXT(x)}“)` : ''].filter(Boolean).join(' und ');
+    if (dB !== null && seiteA) {
+      if (seiteB && seiteB === seiteA) { deutlich = dB; seite = seiteB; richtung = `${gross(dB)} in Richtung „${pol(seiteB).name}“ – im Fragebogen wie im Alltag. ${pol(seiteB).text}`; }
+      else if (seiteB) { deutlich = 'beides'; richtung = `Beides gehört zu dir: im Fragebogen eher „${pol(seiteB).name}“, im Alltag eher „${pol(seiteA).name}“.`; }
+      else { deutlich = 'beides'; richtung = `Beides gehört zu dir – „${ast.pole[0].name}“ und „${ast.pole[1].name}“; im Alltag wählst du hier eher „${pol(seiteA).name}“.`; }
+    } else if (dB !== null) {
+      deutlich = dB; seite = seiteB;
+      richtung = seiteB ? `${gross(dB)} in Richtung „${pol(seiteB).name}“. ${pol(seiteB).text}` : `Beides gehört zu dir – „${ast.pole[0].name}“ und „${ast.pole[1].name}“, je nach Lage.`;
+    } else { deutlich = 'leicht'; seite = seiteA; richtung = `Leicht in Richtung „${pol(seiteA).name}“ – so wählst du im Alltag. ${pol(seiteA).text}`; }
+    if (deutlich === 'beides') seite = 0;
+    // zusätzlich (über den Vertrag hinaus, wie im Modul muster): wort = kurzes Richtungs-Wort, pol = Index des Pols (0|1) oder null
+    out.push({ ast: ast.id, titel: ast.titel, richtung, deutlich, woher: gross(woher) + '.', wort: seite ? pol(seite).name : 'beides', pol: seite ? (seite > 0 ? 1 : 0) : null });
+  }
+  const E = R.eingaben;
+  if (E.riasec) {
+    const top = E.riasec.top.slice(0, 3).filter((t) => RIASEC[t]), s0 = Math.round((E.riasec.typen[top[0]] || {}).stufe || 0);
+    if (top.length) out.push({ ast: 'passt.geeignet', titel: AST['passt.geeignet'].titel, deutlich: s0 >= 2 ? 'klar' : s0 >= 1 ? 'leicht' : 'beides',
+      richtung: `Am meisten ziehen dich ${liste(top.map((t) => RIASEC[t].adj))} Tätigkeiten an – eine passende Rolle im Team: ${RIASEC[top[0]].rolle}.`, woher: 'Aus deinen Antworten zu den Interessen.',
+      wort: RIASEC[top[0]].name, pol: null });
+  }
+  if (wahl && wahl.titel) out.push({ ast: 'passt.wachstum', titel: AST['passt.wachstum'].titel, deutlich: 'klar',
+    richtung: `Du möchtest gerade in Richtung „${wahl.titel}“ üben${wahl.warum ? ` – ${wahl.warum}` : ''}.`, woher: 'Aus deiner Wahl unter „Wachsen“.', wort: wahl.titel, pol: null });
+  return out;
 }
