@@ -15,7 +15,7 @@ const minus = (v) => (v < 0 ? '−' : '+') + Math.abs(v);
 
 // ---------------------------------------------------------------- Einstellungen
 
-const STD = { bpm: 120, taktart: '4/4', versatz: 0, teilung: '1/16', skala: 'chromatisch', grundton: 0, timing: 100, ton: 100,
+const STD = { bpm: 120, taktart: '4/4', versatz: 0, teilung: '1/16', skala: 'chromatisch', grundton: 0, timing: 100, ton: 100, instLaut: 70,
   rein: { klicks: true, brumm: true, rauschen: true, schmatzer: true, atmer: true, ausgleich: true } };
 let E = JSON.parse(JSON.stringify(STD));
 try { const s = JSON.parse(localStorage.getItem('w3-einst') || 'null'); if (s) E = Object.assign(E, s, { rein: Object.assign({}, STD.rein, s.rein) }); } catch (e) { /* ohne Speicher */ }
@@ -33,7 +33,7 @@ const naechsteLinie = (t) => { const g = rasterG(); return g > 0 ? E.versatz + M
 // ---------------------------------------------------------------- Zustand
 
 const Z = { name: '', v: null, sicht: { t0: 0, pps: 60, m0: 76, pph: 16 }, wahl: -1, auswahl: null, kopf: 0,
-  fein: false, schleife: false, metro: false, beschaeftigt: false, zug: null, fehlt: [] };
+  fein: false, schleife: false, metro: false, beschaeftigt: false, zug: null, fehlt: [], inst: null, mix: false, stellen: [] };
 const noten = () => (Z.v && Z.v.noten) || [];
 
 // ---------------------------------------------------------------- Rechen-Arbeiter (Module-Worker, sonst Hauptfaden)
@@ -205,6 +205,7 @@ function zeichnen() {
     if (zug.dt) { const x = xOf((n.peak ?? n.t0) + zug.dt); g.fillStyle = F.gold; g.fillRect(Math.round(x) - 1, R, 2, yBot - R); }
     blob(n, zug.i, zug.dt, zug.dm, d, mx, 'zug');
   }
+  if (v.silben && v.silben.liste.length) silbenZeichnen(v.silben.liste, N, tA, tB);
   g.restore();
   // Lineal
   g.fillStyle = F.lineal; g.fillRect(K, 0, W - K, R);
@@ -225,6 +226,12 @@ function zeichnen() {
     g.beginPath(); g.moveTo(x - 4, R - 8); g.lineTo(x + 4, R - 8); g.lineTo(x, R - 1); g.closePath(); g.fill();
   }
   if (Z.auswahl) { g.fillStyle = F.gold; const a = xOf(Z.auswahl.a), b = xOf(Z.auswahl.b); g.fillRect(Math.max(K, a), 0, Math.max(0, Math.min(W, b) - Math.max(K, a)), 3); }
+  // markierte Stellen (für „An Claude schicken“): rote Fähnchen im Lineal
+  for (const st of Z.stellen) {
+    if (st.s < tA || st.s > tB) continue;
+    const x = Math.round(xOf(st.s));
+    g.fillStyle = F.ton; g.fillRect(x - 1, 0, 2, R); g.fillRect(x, 1, 8, 7);
+  }
   // Tasten
   g.fillStyle = F.tasten; g.fillRect(0, 0, K, H);
   g.save(); g.beginPath(); g.rect(0, R, K, yBot - R); g.clip();
@@ -240,6 +247,28 @@ function zeichnen() {
   g.fillStyle = F.raster; g.fillRect(K - 1, 0, 1, H);
   g.fillStyle = F.linealText; g.font = '600 10px -apple-system,system-ui,sans-serif'; g.fillText('Takt', 6, R / 2);
   g.fillStyle = F.tasten; g.fillRect(0, yBot, K, B); g.fillStyle = F.tastenText; g.fillText('Welle', 5, yBot + B / 2);
+}
+
+// Silben: kleine Beschriftung über den Noten (Nummer; Silben eines Wort-Kandidaten mit Strich verbunden)
+function silbenZeichnen(L, N, tA, tB) {
+  const s = Z.sicht, hMax = Math.max(8, s.pph * 1.7);
+  let j = 0, letztX = -1e9;
+  g.font = '600 10px -apple-system,system-ui,sans-serif'; g.textBaseline = 'middle';
+  for (const sb of L) {
+    if (sb.t1 < tA || sb.t0 > tB) continue;
+    while (j < N.length && N[j].t1 < sb.kern) j++;
+    let m = null;
+    for (let k = Math.max(0, j - 1); k < Math.min(N.length, j + 2); k++) { const n = N[k]; if (n.t0 <= sb.kern && n.t1 >= sb.kern) { m = n.midi + (n.cent || 0) / 100; break; } }
+    if (m == null && sb.hz > 0) m = 69 + 12 * Math.log2(sb.hz / 440);
+    const y = m == null ? R + 14 : yOf(m) - hMax / 2 - 20, x0 = xOf(sb.t0), x1 = xOf(sb.t1);
+    g.fillStyle = F.gold; g.globalAlpha = 0.35 + 0.65 * Math.min(1, sb.staerke ?? 1);
+    g.fillRect(Math.round(x0), y + 6, 1.5, 6);
+    const xe = sb.weiter != null ? xOf(sb.weiter) : x1; // gleiches Wort: Strich bis zur nächsten Silbe
+    if (xe - x0 > 4) g.fillRect(x0, y + 11, xe - x0, 1);
+    g.globalAlpha = 1;
+    const txt = sb.text || String(sb.nr);
+    if (x0 - letztX > g.measureText(txt).width + 6) { g.fillStyle = F.fg; g.fillText(txt, x0 + 2, y); letztX = x0; }
+  }
 }
 
 function blob(n, i, dt, dm, d, mx, art) {
@@ -645,13 +674,13 @@ function tonhoeheMitte() {
 
 function sichtbar(an) {
   $('leer').hidden = an;
-  for (const id of ['werk', 'transport', 'zwiebel', 'export']) $(id).hidden = !an;
+  for (const id of ['werk', 'transport', 'werkzeuge', 'zwiebel', 'export']) $(id).hidden = !an;
   $('bAuto').disabled = !an || Z.beschaeftigt;
 }
 
 // ---------------------------------------------------------------- Abspielen, Schleife, Metronom
 
-let ac = null, quelle = null, spiel = null, puf = { id: null, b: null }, rafK = 0;
+let ac = null, quelle = null, spiel = null, puf = { id: null, b: null }, rafK = 0, instQ = null, instG = null;
 function acHolen() {
   if (!ac) { const C = window.AudioContext || window.webkitAudioContext; if (!C) return null; ac = new C(); }
   if (ac.state === 'suspended') ac.resume();
@@ -676,8 +705,18 @@ function abspielen(von, bis = null, schleife = false, a = null, vorhoer = false)
   q.buffer = b; q.connect(c.destination);
   von = klemm(von, 0, Math.max(0, v.dauer - 0.01));
   const t = c.currentTime + 0.03;
-  if (schleife && bis) { a = a ?? von; q.loop = true; q.loopStart = a; q.loopEnd = bis; q.start(t, klemm(von, a, bis - 0.01)); }
-  else if (bis) q.start(t, von, Math.max(0.02, bis - von)); else q.start(t, von);
+  // Instrumental: eigene Spur über eigenen Regler, startet auf denselben Takt der Audio-Uhr (nicht beim Vorhören)
+  const qs = [q];
+  if (Z.inst && !vorhoer) {
+    if (!Z.inst.b) { const ib = c.createBuffer(1, Z.inst.x.length, Z.inst.sr); if (ib.copyToChannel) ib.copyToChannel(Z.inst.x, 0); else ib.getChannelData(0).set(Z.inst.x); Z.inst.b = ib; }
+    if (!instG) { instG = c.createGain(); instG.connect(c.destination); }
+    instG.gain.value = E.instLaut / 100;
+    const qi = c.createBufferSource(); qi.buffer = Z.inst.b; qi.connect(instG); qs.push(qi); instQ = qi;
+  }
+  for (const qq of qs) {
+    if (schleife && bis) { a = a ?? von; qq.loop = true; qq.loopStart = a; qq.loopEnd = bis; qq.start(t, klemm(von, a, bis - 0.01)); }
+    else if (bis) qq.start(t, von, Math.max(0.02, bis - von)); else qq.start(t, von);
+  }
   q.onended = () => { if (quelle === q) stopp(!vorhoer); };
   quelle = q;
   spiel = { ctxT: t, off: schleife ? klemm(von, a, bis) : von, a: a ?? von, b: bis, loop: !!(schleife && bis), ende: bis ?? v.dauer, vorhoer };
@@ -685,6 +724,7 @@ function abspielen(von, bis = null, schleife = false, a = null, vorhoer = false)
 }
 function stopp(merken = true) {
   if (quelle) { const p = pos(); try { quelle.onended = null; quelle.stop(); } catch (e) { /* schon aus */ } quelle = null; if (merken && spiel && !spiel.vorhoer) Z.kopf = p; }
+  if (instQ) { try { instQ.stop(); } catch (e) { /* schon aus */ } instQ = null; }
   spiel = null; metroStopp(); spielKnopf(); kopfZeichnen(); zeitAnzeige(Z.kopf);
 }
 function vorhoeren(n) { if (n) abspielen(Math.max(0, n.t0 - 0.2), Math.min(Z.v.dauer, n.t1 + 0.25), false, null, true); }

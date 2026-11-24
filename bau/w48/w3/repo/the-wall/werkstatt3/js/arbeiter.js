@@ -13,6 +13,8 @@
 //   {typ:'warp', id, x, sr, anker} → {typ:'fertig', id, y}          (Ausschnitt; Anker relativ zum Ausschnitt)
 //   {typ:'ton', id, x, sr, note, cent} → {typ:'fertig', id, y, note} (Ausschnitt; Note relativ zum Ausschnitt)
 //   {typ:'analyse', id, x, sr}     → {typ:'fertig', id, noten}     (Tonhöhe/Noten ohne Änderung, z. B. fürs Original)
+//   {typ:'tempo', id, x, sr}       → {typ:'fertig', id, tempo:{bpm, offset, guete}}   (timing.js bpmSchaetzen(transienten))
+//   {typ:'silben', id, x, sr}      → {typ:'fertig', id, silben, woerter, hinweis, quelle}   (silben.js, ohne Sprachmodell)
 //   Fehler → {typ:'fehler', id, text}
 // Fehlt ein Modul (z. B. tonhoehe.js), springt ein einfacher Ersatz ein, damit die Seite trotzdem arbeitet.
 
