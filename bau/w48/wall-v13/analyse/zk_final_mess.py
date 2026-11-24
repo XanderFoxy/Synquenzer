@@ -77,7 +77,7 @@ for L in liste:
     h12['karte_t'] = round(hint12, 4)
     # Doppel roh: nahe an der Haupt-Zeit (DTW Haupt->Doppel), für Akzent-Silben am ersten Einsatz
     bezug = h['erst_t'] if L['id'] in AKZENT else h['spitze_t']
-    d = nah(lade('D_roh'), d_h2d(bezug), half=0.07, strafe=6.0)
+    d = nah(lade('D_roh'), bezug, half=0.09, strafe=6.0)   # Doppel singt dieselben Stellen: Suche um die Haupt-Zeit
     CHOR = [(62.9, 96.6), (126.9, 176.0), (222.9, 266.0)]   # v12: Doppel nur in diesen Fenstern hörbar (plan.json chor_fenster)
     if any(a <= d['spitze_t'] <= b for a, b in CHOR):
         d12 = nah(lade('D_v12'), d_d12(d['spitze_t']), half=0.06, strafe=6.0)

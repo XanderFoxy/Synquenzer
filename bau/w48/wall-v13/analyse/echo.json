@@ -1,0 +1,2042 @@
+{
+ "titel": "The Wall – Original-Echo-/Effektkette der Gesangsspuren (Cubasis)",
+ "stand": "2026-11-24",
+ "quelle_cbp": {
+  "v6": "/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/wall-v12/repo/the-wall/projekt/The-Wall-v6.cbp",
+  "v7": "/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/wall-v12/repo/the-wall/projekt7/The-Wall-v7.cbp",
+  "v8": "/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/wall-v12/v8/The-Wall-v8/The-Wall-v8.cbp",
+  "format": "8 Byte Kennung 996333700d0a1a0a + CBOR XOR 0x7C; Effekt-Parameter = Base64 von float64 (little endian)",
+  "effekte_v6_v7_v8_bitgleich": {
+   "VOX Haupt": {
+    "v6": true,
+    "v7": true
+   },
+   "VOX Doppel": {
+    "v6": true,
+    "v7": true
+   },
+   "VOX Chor 1": {
+    "v6": true,
+    "v7": true
+   },
+   "VOX Chor 2": {
+    "v6": true,
+    "v7": true
+   },
+   "VOX Chor 3": {
+    "v6": true,
+    "v7": true
+   },
+   "Send 1": {
+    "v6": true,
+    "v7": true
+   },
+   "Output 1": {
+    "v6": false,
+    "v7": false
+   }
+  }
+ },
+ "herkunft_legende": {
+  "cbp-roh": "Rohwert aus der Projektdatei",
+  "pdf": "Einstellungen-The-Wall-sauber.pdf / Anleitung-fuer-KI.pdf",
+  "audio-gemessen": "an original/Gesang-Platzhalter-3.wav und Doppel-Platzhalter-4.wav (Rohaufnahme mit alter Kette) gemessen",
+  "angenommen": "nicht messbar/nicht entschlüsselt, Annahme"
+ },
+ "signalweg": "Spur (mono) → Slot 0 Channel Strip → 1 StudioEQ → 2 Tune RT (aus) → 3 Compressor „Vocal 1“ → 4 Delay → 5 Stereo Delay → 6 RoomWorks SE → 7 Chorus → Fader/Pan → Output 1; Send 1 post-fader −22,2 dB → Delay 1/4 100 % nass fb 0,35 → Output 1",
+ "kette_haupt_und_doppel": {
+  "delay_slot4": {
+   "notenwert": {
+    "wert": "1/4 (0,500 s bei 120 BPM)",
+    "herkunft": "cbp-roh",
+    "roh": 2.0,
+    "bestaetigt": "audio-gemessen: Echo-Spitze bei 0,5000 s (±0,02 ms) in Haupt und Doppel"
+   },
+   "sync": {
+    "wert": true,
+    "herkunft": "cbp-roh",
+    "roh": 1.0
+   },
+   "feedback": {
+    "wert": 0.150586,
+    "herkunft": "cbp-roh",
+    "abfall_db_je_echo": -16.44,
+    "hinweis": "Abfall 20·log10(n) laut PDF BELEGT; in der Autokorrelation mit dem Rest des Modells verträglich"
+   },
+   "mix_roh": {
+    "wert": 0.090458,
+    "herkunft": "cbp-roh",
+    "anzeige": "9 %"
+   },
+   "erstes_echo_rel_direkt_db": {
+    "wert": -16.26,
+    "herkunft": "audio-gemessen",
+    "pdf": -15.0,
+    "sinusgesetz": -16.9,
+    "doppelgesetz": -14.85,
+    "messung": "Autokorrelation Rohaufnahme (Haupt 0,2448/0,1587/0,0424/0,0092 bei 0,5/1/1,5/2 s) + Energie in Echo-Zonen nach 27 Phrasenenden; Mitte → nass/trocken = 1,70·Mix",
+    "unsicher": "±1 dB: Autokorrelation allein spricht für −16,9 dB (Sinusgesetz), die Energie in den Echo-Zonen für ≈ −15,5 dB"
+   },
+   "filter": {
+    "wert": "keins",
+    "herkunft": "audio-gemessen",
+    "messung": "Echo-Autokorrelation in 6 Bändern 100 Hz–16 kHz gleich (0,240–0,255)"
+   }
+  },
+  "stereo_delay_slot5": {
+   "mix_roh": {
+    "wert": 0.065276,
+    "herkunft": "cbp-roh"
+   },
+   "zeit_links": {
+    "wert": "1/2 (1,000 s)",
+    "herkunft": "pdf+audio-gemessen",
+    "roh": 1.0,
+    "messung": "Echo-Spitze genau bei 1,0000 s; keine Echos bei anderen Abständen (0,25/0,75/0,375 s)"
+   },
+   "zeit_rechts": {
+    "wert": "1/2 (1,000 s)",
+    "herkunft": "audio-gemessen",
+    "roh": 1.0,
+    "messung": "v6-Stereo-Gesang: 1-s-Echo in L und R gleich stark (0,019/0,018), Kreuzkorrelation L↔R gleich"
+   },
+   "feedback": {
+    "wert": 0.0,
+    "herkunft": "audio-gemessen",
+    "messung": "Autokorrelation bei 2,0 s = 0,0092 (Haupt) – mit Feedback ≥ 0,15 wäre sie ≥ 0,028",
+    "roh_unklar": [
+     0.65,
+     0.500758,
+     0.5
+    ],
+    "hinweis": "Bedeutung der Rohwerte 2, 4, 5 nicht entschlüsselt; 0,500758 könnte ein bipolares Feedback ≈ 0 sein (nicht sicher)"
+   },
+   "echo_rel_direkt_db": {
+    "wert": -19.1,
+    "herkunft": "audio-gemessen",
+    "pdf": -18.0,
+    "sinusgesetz": -19.8,
+    "doppelgesetz": -17.7,
+    "unsicher": "±1 dB"
+   },
+   "filter": {
+    "wert": "keins",
+    "herkunft": "audio-gemessen",
+    "messung": "1-s-Autokorrelation in allen Bändern 0,156–0,171"
+   }
+  },
+  "roomworks_se_slot6": {
+   "hallzeit_s": {
+    "wert": 1.569,
+    "herkunft": "cbp-roh+pdf",
+    "roh": 0.519588,
+    "formel": "0,1·200^n s (PDF BELEGT)"
+   },
+   "mix": {
+    "wert": 0.045,
+    "herkunft": "cbp-roh",
+    "gesetz": "trocken √(1−m), nass √m (PDF BELEGT)",
+    "nass_db": -13.27
+   },
+   "vorverzoegerung": {
+    "wert": "20 ms",
+    "herkunft": "angenommen",
+    "roh": 0.055,
+    "hinweis": "Skala unbekannt; Messung am Audio (Hüllkurven-Regression) zu verrauscht"
+   },
+   "hoehen_daempfung": {
+    "wert": "Hallzeit über 6 kHz = 55 % der Nennzeit",
+    "herkunft": "angenommen",
+    "roh_unklar": [
+     0.5,
+     0.624196,
+     0.0,
+     0.1
+    ]
+   },
+   "algorithmus": {
+    "wert": "Rauschfahne je Band, L/R unkorreliert, 15 ms Einschwingen",
+    "herkunft": "angenommen",
+    "hinweis": "Steinberg-Algorithmus unbekannt; Nennzeit (T30 1,555 s) und Nassanteil (−13,4 dB im Mittenband) im Test getroffen"
+   }
+  },
+  "chorus_slot7": {
+   "mix_roh": {
+    "wert": 0.2,
+    "herkunft": "cbp-roh",
+    "hinweis": "Rohwert 4 = Mix vermutet (bei allen Chorus-Instanzen 0,2)"
+   },
+   "nass_rel_trocken_db": {
+    "wert": -9.37,
+    "herkunft": "angenommen",
+    "hinweis": "gleiches Gesetz wie die Delays; passt zur Dekorrelation c≈0,93 in der Autokorrelation (nicht sicher)"
+   },
+   "grundverzoegerung_ms": {
+    "wert": 8,
+    "herkunft": "angenommen",
+    "hinweis": "Bass-Chorus-Kerbe bei 63 Hz laut PDF → ≈ 8 ms"
+   },
+   "tiefe_ms": {
+    "wert": 2,
+    "herkunft": "angenommen"
+   },
+   "rate_hz": {
+    "wert": 0.6,
+    "herkunft": "angenommen",
+    "roh": 0.386513
+   },
+   "stereo": {
+    "wert": "L/R-LFO 90° versetzt",
+    "herkunft": "angenommen",
+    "roh": [
+     0.5,
+     0.5
+    ]
+   },
+   "breite": {
+    "wert": "Nachbau L/R-Korrelation 0.84, Seite/Mitte -10.6 dB; v6-Stereo-Gesang (mit Tune RT) 0,68 / −7,2 dB",
+    "herkunft": "audio-gemessen",
+    "hinweis": "Original ist breiter; Ursache (Chorus stärker oder Tune RT) nicht sicher"
+   }
+  },
+  "send1_echo_bus": {
+   "send_pegel": {
+    "wert": -22.22,
+    "herkunft": "cbp-roh",
+    "roh": 0.07742582092504913,
+    "einheit": "dB",
+    "post_fader": true,
+    "pdf": -22.2
+   },
+   "bus_delay_notenwert": {
+    "wert": "1/4 (0,500 s)",
+    "herkunft": "cbp-roh",
+    "roh": 2.0
+   },
+   "bus_delay_mix": {
+    "wert": "100 % nass",
+    "herkunft": "cbp-roh",
+    "roh": 1.0
+   },
+   "bus_delay_feedback": {
+    "wert": 0.35,
+    "herkunft": "cbp-roh",
+    "abfall_db": -9.12,
+    "bestaetigt": "audio-gemessen: später Schwanz nach dem Outro −9,23…−9,33 dB je 0,5 s in allen Bändern (Theorie −9,12)"
+   },
+   "empfaenger": {
+    "wert": [
+     "VOX Haupt",
+     "VOX Doppel",
+     "BASS Grundton (−20 dB)",
+     "BASS Offbeat-Roller (−20 dB)",
+     "RIFF Hook (−6 dB)",
+     "RIFF Hook Layer (−6 dB)"
+    ],
+    "herkunft": "cbp-roh"
+   }
+  },
+  "gesamt_erstes_echo_0_5s_rel_direkt_db": {
+   "wert": -12.72,
+   "herkunft": "audio-gemessen",
+   "hinweis": "Insert-Delay + Echo-Bus zusammen"
+  },
+  "gesamt_zweites_echo_1_0s_rel_direkt_db": {
+   "wert": -15.23,
+   "herkunft": "audio-gemessen",
+   "hinweis": "Stereo Delay + 2. Delay-Echo + Echo-Bus"
+  }
+ },
+ "kette_choere": {
+  "roomworks_se": {
+   "hallzeit_s": {
+    "wert": 1.5,
+    "herkunft": "cbp-roh+pdf",
+    "roh": 0.511115
+   },
+   "mix": {
+    "wert": 0.12,
+    "herkunft": "cbp-roh",
+    "nass_db": -8.65
+   }
+  },
+  "delay_stereo_delay_chorus": {
+   "wert": "aus",
+   "herkunft": "cbp-roh"
+  },
+  "send1": {
+   "wert": "kein Send",
+   "herkunft": "cbp-roh"
+  },
+  "gilt_fuer": [
+   "VOX Chor 1",
+   "VOX Chor 2",
+   "VOX Chor 3 (= Gegengesang)",
+   "VOX KI Oberterz",
+   "VOX KI Unterterz"
+  ]
+ },
+ "modell": {
+  "datei": "/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/wall-v13/bau/echo_cubasis.py",
+  "mischgesetz": "gemessen: trocken cos(m·π/2), nass/trocken = 1,70·m",
+  "parameter_haupt": {
+   "spur": "haupt",
+   "bpm": 120.0,
+   "gesetz": "gemessen",
+   "delay": {
+    "an": true,
+    "zeit": 0.5,
+    "fb": 0.150586,
+    "trocken": 0.9899220336920816,
+    "nass": 0.15222882445032113
+   },
+   "sdelay": {
+    "an": true,
+    "zeit_l": 1.0,
+    "zeit_r": 1.0,
+    "fb": 0.0,
+    "trocken": 0.9947478599673917,
+    "nass": 0.11038637422229348
+   },
+   "send": {
+    "an": true,
+    "pegel": 0.07742582092504913,
+    "zeit": 0.5,
+    "fb": 0.35
+   },
+   "chorus": {
+    "an": true,
+    "mix": 0.2,
+    "trocken": 0.9510565162951535,
+    "nass": 0.32335921554035224,
+    "grund": 0.008,
+    "tiefe": 0.002,
+    "rate": 0.6,
+    "phase_lr": 1.5707963267948966
+   },
+   "room": {
+    "an": true,
+    "rt60": 1.5688722213011812,
+    "mix": 0.045,
+    "trocken": 0.9772410142846032,
+    "nass": 0.21213203435596426,
+    "vorverz": 0.02,
+    "hf_faktor": 0.55,
+    "lf_faktor": 1.0
+   }
+  },
+  "parameter_chor": {
+   "spur": "chor",
+   "bpm": 120.0,
+   "gesetz": "gemessen",
+   "delay": {
+    "an": false
+   },
+   "sdelay": {
+    "an": false
+   },
+   "send": {
+    "an": false
+   },
+   "chorus": {
+    "an": false
+   },
+   "room": {
+    "an": true,
+    "rt60": 1.4999989195518735,
+    "mix": 0.12,
+    "trocken": 0.938083151964686,
+    "nass": 0.34641016151377546,
+    "vorverz": 0.02,
+    "hf_faktor": 0.55,
+    "lf_faktor": 1.0
+   }
+  }
+ },
+ "messungen": {
+  "autokorrelation_roh": {
+   "orig_30_100": [
+    0.247622074216641,
+    0.15867620996837584,
+    0.04122067202509444,
+    -7.486089239591805e-05,
+    -0.00019114897717673962,
+    -0.003681289083717053
+   ],
+   "orig_100_160": [
+    0.22746474916952514,
+    0.14621614964164703,
+    0.03634542552826538,
+    0.011636205798769271,
+    0.001962277808176781,
+    -0.0010082878973417498
+   ],
+   "orig_160_225": [
+    0.2438647981637727,
+    0.14629693154599258,
+    0.04377290748116526,
+    0.010552385358659246,
+    0.00887004280210374,
+    0.0050553979996827494
+   ],
+   "orig_225_266": [
+    0.2503248174101373,
+    0.1638813142082191,
+    0.04304574118734654,
+    0.019420290740197136,
+    0.01251361466005316,
+    0.009500723227468564
+   ],
+   "orig_30_266": [
+    0.24476325367253624,
+    0.15865390435259338,
+    0.04236962481840768,
+    0.00920205686704516,
+    0.004283316386974978,
+    0.0009911186213223144
+   ],
+   "origD_30_100": [
+    0.23767263112525713,
+    0.1637478876325998,
+    0.04378148846941542,
+    0.017800876198368887,
+    0.008337386527496927,
+    0.003929082485718556
+   ],
+   "origD_100_160": [
+    0.2374073754734946,
+    0.15562970916570823,
+    0.04038089899464396,
+    0.016902276657811143,
+    0.010972811855520369,
+    0.00024452207123456957
+   ],
+   "origD_160_225": [
+    0.23833081336783477,
+    0.15863706240492392,
+    0.04285561348414296,
+    0.008753902194610686,
+    0.004378773899775447,
+    0.0017012137170152638
+   ],
+   "origD_225_266": [
+    0.26109763003013003,
+    0.16910512508335046,
+    0.0401622398650549,
+    0.012217625318133496,
+    0.0103584182582057,
+    0.002712701811482301
+   ],
+   "origD_30_266": [
+    0.2453745558586752,
+    0.165328990407259,
+    0.043253873962617366,
+    0.014872898711853065,
+    0.008314947060865673,
+    0.001973013670643042
+   ]
+  },
+  "validierung": {
+   "haupt": {
+    "acf_original": [
+     0.2448,
+     0.1587,
+     0.0424,
+     0.0092
+    ],
+    "gesetze": {
+     "gemessen": {
+      "acf_nachbau": [
+       0.2505,
+       0.1648,
+       0.0475,
+       0.0174
+      ],
+      "zone1_orig_minus_nachbau_db": -0.02,
+      "zone1_iqr": [
+       -0.7,
+       0.56
+      ],
+      "zone2_orig_minus_nachbau_db": 0.76,
+      "zone2_iqr": [
+       0.66,
+       1.18
+      ],
+      "zonen": [
+       27,
+       15
+      ],
+      "stereo_korrelation": 0.839,
+      "seite_zu_mitte_db": -10.6
+     },
+     "sinus": {
+      "acf_nachbau": [
+       0.2389,
+       0.1561,
+       0.0445,
+       0.0165
+      ],
+      "zone1_orig_minus_nachbau_db": 0.33,
+      "zone1_iqr": [
+       -0.4,
+       0.95
+      ],
+      "zone2_orig_minus_nachbau_db": 1.21,
+      "zone2_iqr": [
+       1.09,
+       1.62
+      ],
+      "zonen": [
+       27,
+       15
+      ]
+     },
+     "doppelt": {
+      "acf_nachbau": [
+       0.2775,
+       0.1838,
+       0.0548,
+       0.0196
+      ],
+      "zone1_orig_minus_nachbau_db": -0.61,
+      "zone1_iqr": [
+       -1.45,
+       -0.27
+      ],
+      "zone2_orig_minus_nachbau_db": -0.12,
+      "zone2_iqr": [
+       -0.32,
+       0.07
+      ],
+      "zonen": [
+       27,
+       15
+      ]
+     }
+    }
+   },
+   "doppel": {
+    "acf_original": [
+     0.2454,
+     0.1653,
+     0.0433,
+     0.0149
+    ],
+    "gesetze": {
+     "gemessen": {
+      "acf_nachbau": [
+       0.2533,
+       0.168,
+       0.0434,
+       0.0185
+      ],
+      "zone1_orig_minus_nachbau_db": 1.0,
+      "zone1_iqr": [
+       0.12,
+       1.39
+      ],
+      "zone2_orig_minus_nachbau_db": 1.03,
+      "zone2_iqr": [
+       0.37,
+       1.57
+      ],
+      "zonen": [
+       29,
+       20
+      ],
+      "stereo_korrelation": 0.848,
+      "seite_zu_mitte_db": -10.8
+     },
+     "sinus": {
+      "acf_nachbau": [
+       0.2416,
+       0.1592,
+       0.0403,
+       0.0178
+      ],
+      "zone1_orig_minus_nachbau_db": 1.44,
+      "zone1_iqr": [
+       0.5,
+       1.77
+      ],
+      "zone2_orig_minus_nachbau_db": 1.53,
+      "zone2_iqr": [
+       0.85,
+       2.06
+      ],
+      "zonen": [
+       29,
+       20
+      ]
+     },
+     "doppelt": {
+      "acf_nachbau": [
+       0.2805,
+       0.1874,
+       0.0508,
+       0.0203
+      ],
+      "zone1_orig_minus_nachbau_db": 0.14,
+      "zone1_iqr": [
+       -0.69,
+       0.5
+      ],
+      "zone2_orig_minus_nachbau_db": 0.04,
+      "zone2_iqr": [
+       -0.64,
+       0.51
+      ],
+      "zonen": [
+       29,
+       20
+      ]
+     }
+    }
+   }
+  },
+  "echobus_schwanz": {
+   "orig": {
+    "(150, 600)": {
+     "perioden_db": [
+      5.0,
+      -1.2,
+      -12.7,
+      -23.1,
+      -32.8,
+      -42.4,
+      -51.6,
+      -60.8,
+      -70.2
+     ],
+     "schritt_db": [
+      -6.19,
+      -11.42,
+      -10.41,
+      -9.75,
+      -9.54,
+      -9.23,
+      -9.27,
+      -9.33
+     ],
+     "median_spaet": -9.33
+    },
+    "(600, 2400)": {
+     "perioden_db": [
+      6.2,
+      -2.8,
+      -13.6,
+      -23.8,
+      -33.9,
+      -43.2,
+      -52.5,
+      -61.7,
+      -71.1
+     ],
+     "schritt_db": [
+      -9.02,
+      -10.78,
+      -10.25,
+      -10.05,
+      -9.37,
+      -9.24,
+      -9.27,
+      -9.33
+     ],
+     "median_spaet": -9.33
+    },
+    "(2400, 9600)": {
+     "perioden_db": [
+      4.0,
+      -1.3,
+      -12.8,
+      -23.5,
+      -33.4,
+      -42.9,
+      -52.2,
+      -61.4,
+      -70.8
+     ],
+     "schritt_db": [
+      -5.26,
+      -11.51,
+      -10.73,
+      -9.86,
+      -9.49,
+      -9.29,
+      -9.26,
+      -9.33
+     ],
+     "median_spaet": -9.33
+    }
+   },
+   "origD": {
+    "(150, 600)": {
+     "perioden_db": [
+      -0.4,
+      -6.9,
+      -16.4,
+      -25.8,
+      -33.4,
+      -41.4,
+      -50.2,
+      -58.7,
+      -66.3
+     ],
+     "schritt_db": [
+      -6.48,
+      -9.48,
+      -9.41,
+      -7.64,
+      -7.95,
+      -8.8,
+      -8.54,
+      -7.52
+     ],
+     "median_spaet": -7.95
+    },
+    "(600, 2400)": {
+     "perioden_db": [
+      2.5,
+      -5.9,
+      -15.8,
+      -25.3,
+      -34.9,
+      -44.0,
+      -51.6,
+      -59.5,
+      -68.1
+     ],
+     "schritt_db": [
+      -8.37,
+      -9.92,
+      -9.52,
+      -9.52,
+      -9.17,
+      -7.54,
+      -7.94,
+      -8.64
+     ],
+     "median_spaet": -8.64
+    },
+    "(2400, 9600)": {
+     "perioden_db": [
+      -3.7,
+      -7.5,
+      -18.8,
+      -29.6,
+      -39.5,
+      -49.1,
+      -58.5,
+      -67.7,
+      -77.2
+     ],
+     "schritt_db": [
+      -3.8,
+      -11.35,
+      -10.79,
+      -9.93,
+      -9.59,
+      -9.34,
+      -9.29,
+      -9.45
+     ],
+     "median_spaet": -9.45
+    }
+   }
+  }
+ },
+ "spuren_v8": {
+  "VOX Haupt": {
+   "nummer": 23,
+   "id": 3729,
+   "fader_roh": 0.9440608762859234,
+   "fader_db": -0.5,
+   "pan_roh": 0.0,
+   "stumm": false,
+   "post_fader_ab_slot": 8,
+   "sends": [
+    {
+     "ziel": "Send 1",
+     "pegel_roh": 0.07742582092504913,
+     "pegel_db": -22.22,
+     "an": true,
+     "pre_fader": false
+    },
+    {
+     "ziel": "Output 1",
+     "pegel_roh": 1.0,
+     "pegel_db": 0.0,
+     "an": true,
+     "pre_fader": false
+    }
+   ],
+   "effekte": [
+    {
+     "slot": 0,
+     "name": "Channel Strip",
+     "an": true,
+     "preset": "",
+     "plugin_id": 30,
+     "roh": [
+      1.0,
+      0.0,
+      1.0,
+      0.0,
+      1.0,
+      0.0,
+      0.42857142857142855,
+      0.6166666666666667,
+      0.009009,
+      0.0707070707070707,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.13866699999999954,
+      0.0009,
+      0.141414,
+      0.421782,
+      0.009901,
+      1.0,
+      0.0,
+      0.0,
+      0.5,
+      1.0,
+      0.666667
+     ]
+    },
+    {
+     "slot": 1,
+     "name": "StudioEQ",
+     "an": true,
+     "preset": "",
+     "plugin_id": 11,
+     "roh": [
+      1.0,
+      3.0,
+      0.5,
+      0.326062,
+      0.052632,
+      1.0,
+      0.4583333333333333,
+      0.4143460162287649,
+      0.09473684210526315,
+      1.0,
+      0.6100000000000001,
+      0.6465799999999999,
+      0.052632,
+      1.0,
+      2.0,
+      0.6000000000000001,
+      0.817495,
+      0.45263200000000026
+     ]
+    },
+    {
+     "slot": 2,
+     "name": "Waves: Tune RT",
+     "an": false,
+     "preset": "",
+     "plugin_id": 241752747,
+     "roh": "(Waves-Datenblock, 9280 Zeichen)"
+    },
+    {
+     "slot": 3,
+     "name": "Compressor",
+     "an": true,
+     "preset": "Vocal 1",
+     "plugin_id": 6,
+     "roh": [
+      0.6812499761581421,
+      0.512499988079071,
+      0.5129891633987427,
+      0.020477816462516785,
+      0.16666666666666666
+     ]
+    },
+    {
+     "slot": 4,
+     "name": "Delay",
+     "an": true,
+     "preset": "Default",
+     "plugin_id": 2,
+     "roh": [
+      0.09045842709190606,
+      0.15058582484471408,
+      2.0,
+      1.0
+     ]
+    },
+    {
+     "slot": 5,
+     "name": "Stereo Delay",
+     "an": true,
+     "preset": "Default",
+     "plugin_id": 17,
+     "roh": [
+      0.06527631696350111,
+      1.0,
+      0.65,
+      1.0,
+      0.5007584217257406,
+      0.5
+     ]
+    },
+    {
+     "slot": 6,
+     "name": "RoomWorks SE",
+     "an": true,
+     "preset": "Default",
+     "plugin_id": 31,
+     "roh": [
+      0.05499999999999999,
+      0.5195879852771759,
+      0.5,
+      0.6241959929466248,
+      0.0,
+      0.045,
+      0.1
+     ]
+    },
+    {
+     "slot": 7,
+     "name": "Chorus",
+     "an": true,
+     "preset": "Default",
+     "plugin_id": 4,
+     "roh": [
+      0.3865125761820945,
+      0.5,
+      0.5,
+      0.20000000298023224
+     ]
+    }
+   ],
+   "clips_v8": 32
+  },
+  "VOX Doppel": {
+   "nummer": 24,
+   "id": 4012,
+   "fader_roh": 0.4216965034285822,
+   "fader_db": -7.5,
+   "pan_roh": 0.0,
+   "stumm": false,
+   "post_fader_ab_slot": 8,
+   "sends": [
+    {
+     "ziel": "Send 1",
+     "pegel_roh": 0.07742582092504913,
+     "pegel_db": -22.22,
+     "an": true,
+     "pre_fader": false
+    },
+    {
+     "ziel": "Output 1",
+     "pegel_roh": 1.0,
+     "pegel_db": 0.0,
+     "an": true,
+     "pre_fader": false
+    }
+   ],
+   "effekte": [
+    {
+     "slot": 0,
+     "name": "Channel Strip",
+     "an": true,
+     "preset": "",
+     "plugin_id": 30,
+     "roh": [
+      1.0,
+      0.0,
+      1.0,
+      0.0,
+      1.0,
+      0.0,
+      0.42857142857142855,
+      0.6166666666666667,
+      0.009009,
+      0.0707070707070707,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.13866699999999954,
+      0.0009,
+      0.141414,
+      0.421782,
+      0.009901,
+      1.0,
+      0.0,
+      0.0,
+      0.5,
+      1.0,
+      0.666667
+     ]
+    },
+    {
+     "slot": 1,
+     "name": "StudioEQ",
+     "an": true,
+     "preset": "",
+     "plugin_id": 11,
+     "roh": [
+      1.0,
+      3.0,
+      0.5,
+      0.3910620000000001,
+      0.052632,
+      1.0,
+      0.4583333333333333,
+      0.4143460162287649,
+      0.09473684210526315,
+      1.0,
+      0.6100000000000001,
+      0.6465799999999999,
+      0.052632,
+      1.0,
+      2.0,
+      0.6000000000000001,
+      0.817495,
+      0.45263200000000026
+     ]
+    },
+    {
+     "slot": 2,
+     "name": "Waves: Tune RT",
+     "an": false,
+     "preset": "",
+     "plugin_id": 241752747,
+     "roh": "(Waves-Datenblock, 9280 Zeichen)"
+    },
+    {
+     "slot": 3,
+     "name": "Compressor",
+     "an": true,
+     "preset": "Vocal 1",
+     "plugin_id": 6,
+     "roh": [
+      0.6812499761581421,
+      0.512499988079071,
+      0.5129891633987427,
+      0.020477816462516785,
+      0.16666666666666666
+     ]
+    },
+    {
+     "slot": 4,
+     "name": "Delay",
+     "an": true,
+     "preset": "Default",
+     "plugin_id": 2,
+     "roh": [
+      0.09045842709190606,
+      0.15058582484471408,
+      2.0,
+      1.0
+     ]
+    },
+    {
+     "slot": 5,
+     "name": "Stereo Delay",
+     "an": true,
+     "preset": "Default",
+     "plugin_id": 17,
+     "roh": [
+      0.06527631696350111,
+      1.0,
+      0.65,
+      1.0,
+      0.5007584217257406,
+      0.5
+     ]
+    },
+    {
+     "slot": 6,
+     "name": "RoomWorks SE",
+     "an": true,
+     "preset": "Default",
+     "plugin_id": 31,
+     "roh": [
+      0.05499999999999999,
+      0.5195879852771759,
+      0.5,
+      0.6241959929466248,
+      0.0,
+      0.045,
+      0.1
+     ]
+    },
+    {
+     "slot": 7,
+     "name": "Chorus",
+     "an": true,
+     "preset": "Default",
+     "plugin_id": 4,
+     "roh": [
+      0.3865125761820945,
+      0.5,
+      0.5,
+      0.20000000298023224
+     ]
+    }
+   ],
+   "clips_v8": 22
+  },
+  "VOX Chor 1": {
+   "nummer": 25,
+   "id": 3800,
+   "fader_roh": 0.33496543915782767,
+   "fader_db": -9.5,
+   "pan_roh": -0.6,
+   "stumm": false,
+   "post_fader_ab_slot": 8,
+   "sends": [
+    {
+     "ziel": "Output 1",
+     "pegel_roh": 1.0,
+     "pegel_db": 0.0,
+     "an": true,
+     "pre_fader": false
+    }
+   ],
+   "effekte": [
+    {
+     "slot": 0,
+     "name": "Channel Strip",
+     "an": true,
+     "preset": "",
+     "plugin_id": 30,
+     "roh": [
+      1.0,
+      0.0,
+      1.0,
+      0.0,
+      1.0,
+      0.0,
+      0.42857142857142855,
+      0.6166666666666667,
+      0.009009,
+      0.0707070707070707,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.13866699999999954,
+      0.0009,
+      0.141414,
+      0.421782,
+      0.009901,
+      1.0,
+      0.0,
+      0.0,
+      0.5,
+      1.0,
+      0.666667
+     ]
+    },
+    {
+     "slot": 1,
+     "name": "StudioEQ",
+     "an": true,
+     "preset": "",
+     "plugin_id": 11,
+     "roh": [
+      1.0,
+      3.0,
+      0.5,
+      0.371062,
+      0.052632,
+      0.0,
+      0.5,
+      0.5,
+      0.052632,
+      0.0,
+      0.6100000000000001,
+      0.6465799999999999,
+      0.052632,
+      0.0,
+      2.0,
+      0.6000000000000001,
+      0.817495,
+      0.45263200000000026
+     ]
+    },
+    {
+     "slot": 2,
+     "name": "Waves: Tune RT",
+     "an": false,
+     "preset": "V5 Db Major - Correction 80 - Zeiten pruefen",
+     "plugin_id": 241752747,
+     "roh": "(Waves-Datenblock, 9276 Zeichen)"
+    },
+    {
+     "slot": 3,
+     "name": "Compressor",
+     "an": true,
+     "preset": "Vocal 1",
+     "plugin_id": 6,
+     "roh": [
+      0.6812499761581421,
+      0.512499988079071,
+      0.5129891633987427,
+      0.020477816462516785,
+      0.16666666666666666
+     ]
+    },
+    {
+     "slot": 4,
+     "name": "Delay",
+     "an": false,
+     "preset": "Default",
+     "plugin_id": 2,
+     "roh": [
+      0.09045842709190606,
+      0.15058582484471408,
+      2.0,
+      1.0
+     ]
+    },
+    {
+     "slot": 5,
+     "name": "Stereo Delay",
+     "an": false,
+     "preset": "Default",
+     "plugin_id": 17,
+     "roh": [
+      0.06527631696350111,
+      1.0,
+      0.65,
+      1.0,
+      0.5007584217257406,
+      0.5
+     ]
+    },
+    {
+     "slot": 6,
+     "name": "RoomWorks SE",
+     "an": true,
+     "preset": "Default",
+     "plugin_id": 31,
+     "roh": [
+      0.05499999999999999,
+      0.5111151359486343,
+      0.5,
+      0.6241959929466248,
+      0.0,
+      0.12,
+      0.1
+     ]
+    },
+    {
+     "slot": 7,
+     "name": "Chorus",
+     "an": false,
+     "preset": "Default",
+     "plugin_id": 4,
+     "roh": [
+      0.3865125761820945,
+      0.5,
+      0.5,
+      0.20000000298023224
+     ]
+    }
+   ],
+   "clips_v8": 15
+  },
+  "VOX Chor 2": {
+   "nummer": 26,
+   "id": 3801,
+   "fader_roh": 0.29853826189179594,
+   "fader_db": -10.5,
+   "pan_roh": 0.6,
+   "stumm": false,
+   "post_fader_ab_slot": 8,
+   "sends": [
+    {
+     "ziel": "Output 1",
+     "pegel_roh": 1.0,
+     "pegel_db": 0.0,
+     "an": true,
+     "pre_fader": false
+    }
+   ],
+   "effekte": [
+    {
+     "slot": 0,
+     "name": "Channel Strip",
+     "an": true,
+     "preset": "",
+     "plugin_id": 30,
+     "roh": [
+      1.0,
+      0.0,
+      1.0,
+      0.0,
+      1.0,
+      0.0,
+      0.42857142857142855,
+      0.6166666666666667,
+      0.009009,
+      0.0707070707070707,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.13866699999999954,
+      0.0009,
+      0.141414,
+      0.421782,
+      0.009901,
+      1.0,
+      0.0,
+      0.0,
+      0.5,
+      1.0,
+      0.666667
+     ]
+    },
+    {
+     "slot": 1,
+     "name": "StudioEQ",
+     "an": true,
+     "preset": "",
+     "plugin_id": 11,
+     "roh": [
+      1.0,
+      3.0,
+      0.5,
+      0.371062,
+      0.052632,
+      0.0,
+      0.5,
+      0.5,
+      0.052632,
+      0.0,
+      0.6100000000000001,
+      0.6465799999999999,
+      0.052632,
+      0.0,
+      2.0,
+      0.6000000000000001,
+      0.817495,
+      0.45263200000000026
+     ]
+    },
+    {
+     "slot": 2,
+     "name": "Waves: Tune RT",
+     "an": false,
+     "preset": "V5 Db Major - Correction 80 - Zeiten pruefen",
+     "plugin_id": 241752747,
+     "roh": "(Waves-Datenblock, 9276 Zeichen)"
+    },
+    {
+     "slot": 3,
+     "name": "Compressor",
+     "an": true,
+     "preset": "Vocal 1",
+     "plugin_id": 6,
+     "roh": [
+      0.6812499761581421,
+      0.512499988079071,
+      0.5129891633987427,
+      0.020477816462516785,
+      0.16666666666666666
+     ]
+    },
+    {
+     "slot": 4,
+     "name": "Delay",
+     "an": false,
+     "preset": "Default",
+     "plugin_id": 2,
+     "roh": [
+      0.09045842709190606,
+      0.15058582484471408,
+      2.0,
+      1.0
+     ]
+    },
+    {
+     "slot": 5,
+     "name": "Stereo Delay",
+     "an": false,
+     "preset": "Default",
+     "plugin_id": 17,
+     "roh": [
+      0.06527631696350111,
+      1.0,
+      0.65,
+      1.0,
+      0.5007584217257406,
+      0.5
+     ]
+    },
+    {
+     "slot": 6,
+     "name": "RoomWorks SE",
+     "an": true,
+     "preset": "Default",
+     "plugin_id": 31,
+     "roh": [
+      0.05499999999999999,
+      0.5111151359486343,
+      0.5,
+      0.6241959929466248,
+      0.0,
+      0.12,
+      0.1
+     ]
+    },
+    {
+     "slot": 7,
+     "name": "Chorus",
+     "an": false,
+     "preset": "Default",
+     "plugin_id": 4,
+     "roh": [
+      0.3865125761820945,
+      0.5,
+      0.5,
+      0.20000000298023224
+     ]
+    }
+   ],
+   "clips_v8": 15
+  },
+  "VOX Chor 3": {
+   "nummer": 27,
+   "id": 36502,
+   "fader_roh": 0.23713737056616552,
+   "fader_db": -12.5,
+   "pan_roh": 0.0,
+   "stumm": false,
+   "post_fader_ab_slot": 7,
+   "sends": [
+    {
+     "ziel": "Output 1",
+     "pegel_roh": 1.0,
+     "pegel_db": 0.0,
+     "an": true,
+     "pre_fader": false
+    }
+   ],
+   "effekte": [
+    {
+     "slot": 0,
+     "name": "Channel Strip",
+     "an": true,
+     "preset": "",
+     "plugin_id": 30,
+     "roh": [
+      1.0,
+      0.0,
+      1.0,
+      0.0,
+      1.0,
+      0.0,
+      0.42857142857142855,
+      0.6166666666666667,
+      0.009009,
+      0.0707070707070707,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.13866699999999954,
+      0.0009,
+      0.141414,
+      0.421782,
+      0.009901,
+      1.0,
+      0.0,
+      0.0,
+      0.5,
+      1.0,
+      0.666667
+     ]
+    },
+    {
+     "slot": 1,
+     "name": "StudioEQ",
+     "an": true,
+     "preset": "",
+     "plugin_id": 11,
+     "roh": [
+      1.0,
+      3.0,
+      0.5,
+      0.20068666377598746,
+      0.052632,
+      0.0,
+      0.5,
+      0.5,
+      0.052632,
+      0.0,
+      0.6100000000000001,
+      0.6465799999999999,
+      0.052632,
+      0.0,
+      2.0,
+      0.6000000000000001,
+      0.817495,
+      0.45263200000000026
+     ]
+    },
+    {
+     "slot": 2,
+     "name": "Compressor",
+     "an": true,
+     "preset": "Vocal 1",
+     "plugin_id": 6,
+     "roh": [
+      0.6812499761581421,
+      0.512499988079071,
+      0.5129891633987427,
+      0.020477816462516785,
+      0.16666666666666666
+     ]
+    },
+    {
+     "slot": 3,
+     "name": "Delay",
+     "an": false,
+     "preset": "Default",
+     "plugin_id": 2,
+     "roh": [
+      0.09045842709190606,
+      0.15058582484471408,
+      2.0,
+      1.0
+     ]
+    },
+    {
+     "slot": 4,
+     "name": "Stereo Delay",
+     "an": false,
+     "preset": "Default",
+     "plugin_id": 17,
+     "roh": [
+      0.06527631696350111,
+      1.0,
+      0.65,
+      1.0,
+      0.5007584217257406,
+      0.5
+     ]
+    },
+    {
+     "slot": 5,
+     "name": "RoomWorks SE",
+     "an": true,
+     "preset": "Default",
+     "plugin_id": 31,
+     "roh": [
+      0.05499999999999999,
+      0.5111151359486343,
+      0.5,
+      0.6241959929466248,
+      0.0,
+      0.12,
+      0.1
+     ]
+    },
+    {
+     "slot": 6,
+     "name": "Chorus",
+     "an": false,
+     "preset": "Default",
+     "plugin_id": 4,
+     "roh": [
+      0.3865125761820945,
+      0.5,
+      0.5,
+      0.20000000298023224
+     ]
+    }
+   ],
+   "clips_v8": 16
+  },
+  "VOX KI Oberterz": {
+   "nummer": 28,
+   "id": 36714,
+   "fader_roh": 0.29853826189179594,
+   "fader_db": -10.5,
+   "pan_roh": -0.6000000238418579,
+   "stumm": true,
+   "post_fader_ab_slot": 8,
+   "sends": [
+    {
+     "ziel": "Output 1",
+     "pegel_roh": 1.0,
+     "pegel_db": 0.0,
+     "an": true,
+     "pre_fader": false
+    }
+   ],
+   "effekte": [
+    {
+     "slot": 0,
+     "name": "Channel Strip",
+     "an": true,
+     "preset": "",
+     "plugin_id": 30,
+     "roh": [
+      1.0,
+      0.0,
+      1.0,
+      0.0,
+      1.0,
+      0.0,
+      0.42857142857142855,
+      0.6166666666666667,
+      0.009009,
+      0.0707070707070707,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.13866699999999954,
+      0.0009,
+      0.141414,
+      0.421782,
+      0.009901,
+      1.0,
+      0.0,
+      0.0,
+      0.5,
+      1.0,
+      0.666667
+     ]
+    },
+    {
+     "slot": 1,
+     "name": "StudioEQ",
+     "an": true,
+     "preset": "",
+     "plugin_id": 11,
+     "roh": [
+      1.0,
+      3.0,
+      0.5,
+      0.371062,
+      0.052632,
+      0.0,
+      0.5,
+      0.5,
+      0.052632,
+      0.0,
+      0.6100000000000001,
+      0.6465799999999999,
+      0.052632,
+      0.0,
+      2.0,
+      0.6000000000000001,
+      0.817495,
+      0.45263200000000026
+     ]
+    },
+    {
+     "slot": 2,
+     "name": "Waves: Tune RT",
+     "an": false,
+     "preset": "V5 Db Major - Correction 80 - Zeiten pruefen",
+     "plugin_id": 241752747,
+     "roh": "(Waves-Datenblock, 9276 Zeichen)"
+    },
+    {
+     "slot": 3,
+     "name": "Compressor",
+     "an": true,
+     "preset": "Vocal 1",
+     "plugin_id": 6,
+     "roh": [
+      0.6812499761581421,
+      0.512499988079071,
+      0.5129891633987427,
+      0.020477816462516785,
+      0.16666666666666666
+     ]
+    },
+    {
+     "slot": 4,
+     "name": "Delay",
+     "an": false,
+     "preset": "Default",
+     "plugin_id": 2,
+     "roh": [
+      0.09045842709190606,
+      0.15058582484471408,
+      2.0,
+      1.0
+     ]
+    },
+    {
+     "slot": 5,
+     "name": "Stereo Delay",
+     "an": false,
+     "preset": "Default",
+     "plugin_id": 17,
+     "roh": [
+      0.06527631696350111,
+      1.0,
+      0.65,
+      1.0,
+      0.5007584217257406,
+      0.5
+     ]
+    },
+    {
+     "slot": 6,
+     "name": "RoomWorks SE",
+     "an": true,
+     "preset": "Default",
+     "plugin_id": 31,
+     "roh": [
+      0.05499999999999999,
+      0.5111151359486343,
+      0.5,
+      0.6241959929466248,
+      0.0,
+      0.12,
+      0.1
+     ]
+    },
+    {
+     "slot": 7,
+     "name": "Chorus",
+     "an": false,
+     "preset": "Default",
+     "plugin_id": 4,
+     "roh": [
+      0.3865125761820945,
+      0.5,
+      0.5,
+      0.20000000298023224
+     ]
+    }
+   ],
+   "clips_v8": 27
+  },
+  "VOX KI Unterterz": {
+   "nummer": 29,
+   "id": 36726,
+   "fader_roh": 0.29853826189179594,
+   "fader_db": -10.5,
+   "pan_roh": 0.6000000238418579,
+   "stumm": true,
+   "post_fader_ab_slot": 8,
+   "sends": [
+    {
+     "ziel": "Output 1",
+     "pegel_roh": 1.0,
+     "pegel_db": 0.0,
+     "an": true,
+     "pre_fader": false
+    }
+   ],
+   "effekte": [
+    {
+     "slot": 0,
+     "name": "Channel Strip",
+     "an": true,
+     "preset": "",
+     "plugin_id": 30,
+     "roh": [
+      1.0,
+      0.0,
+      1.0,
+      0.0,
+      1.0,
+      0.0,
+      0.42857142857142855,
+      0.6166666666666667,
+      0.009009,
+      0.0707070707070707,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.13866699999999954,
+      0.0009,
+      0.141414,
+      0.421782,
+      0.009901,
+      1.0,
+      0.0,
+      0.0,
+      0.5,
+      1.0,
+      0.666667
+     ]
+    },
+    {
+     "slot": 1,
+     "name": "StudioEQ",
+     "an": true,
+     "preset": "",
+     "plugin_id": 11,
+     "roh": [
+      1.0,
+      3.0,
+      0.5,
+      0.371062,
+      0.052632,
+      0.0,
+      0.5,
+      0.5,
+      0.052632,
+      0.0,
+      0.6100000000000001,
+      0.6465799999999999,
+      0.052632,
+      0.0,
+      2.0,
+      0.6000000000000001,
+      0.817495,
+      0.45263200000000026
+     ]
+    },
+    {
+     "slot": 2,
+     "name": "Waves: Tune RT",
+     "an": false,
+     "preset": "V5 Db Major - Correction 80 - Zeiten pruefen",
+     "plugin_id": 241752747,
+     "roh": "(Waves-Datenblock, 9276 Zeichen)"
+    },
+    {
+     "slot": 3,
+     "name": "Compressor",
+     "an": true,
+     "preset": "Vocal 1",
+     "plugin_id": 6,
+     "roh": [
+      0.6812499761581421,
+      0.512499988079071,
+      0.5129891633987427,
+      0.020477816462516785,
+      0.16666666666666666
+     ]
+    },
+    {
+     "slot": 4,
+     "name": "Delay",
+     "an": false,
+     "preset": "Default",
+     "plugin_id": 2,
+     "roh": [
+      0.09045842709190606,
+      0.15058582484471408,
+      2.0,
+      1.0
+     ]
+    },
+    {
+     "slot": 5,
+     "name": "Stereo Delay",
+     "an": false,
+     "preset": "Default",
+     "plugin_id": 17,
+     "roh": [
+      0.06527631696350111,
+      1.0,
+      0.65,
+      1.0,
+      0.5007584217257406,
+      0.5
+     ]
+    },
+    {
+     "slot": 6,
+     "name": "RoomWorks SE",
+     "an": true,
+     "preset": "Default",
+     "plugin_id": 31,
+     "roh": [
+      0.05499999999999999,
+      0.5111151359486343,
+      0.5,
+      0.6241959929466248,
+      0.0,
+      0.12,
+      0.1
+     ]
+    },
+    {
+     "slot": 7,
+     "name": "Chorus",
+     "an": false,
+     "preset": "Default",
+     "plugin_id": 4,
+     "roh": [
+      0.3865125761820945,
+      0.5,
+      0.5,
+      0.20000000298023224
+     ]
+    }
+   ],
+   "clips_v8": 21
+  },
+  "Send 1": {
+   "nummer": 1,
+   "id": 1284,
+   "fader_roh": 1.0,
+   "fader_db": 0.0,
+   "pan_roh": 0.0,
+   "stumm": false,
+   "post_fader_ab_slot": 1,
+   "sends": [
+    {
+     "ziel": "Output 1",
+     "pegel_roh": 1.0,
+     "pegel_db": 0.0,
+     "an": true,
+     "pre_fader": false
+    }
+   ],
+   "effekte": [
+    {
+     "slot": 0,
+     "name": "Delay",
+     "an": true,
+     "preset": "Default",
+     "plugin_id": 2,
+     "roh": [
+      1.0,
+      0.3499999940395355,
+      2.0,
+      1.0
+     ]
+    }
+   ],
+   "clips_v8": 0
+  },
+  "Output 1": {
+   "nummer": 1,
+   "id": 1283,
+   "fader_roh": 1.0,
+   "fader_db": 0.0,
+   "pan_roh": 0.0,
+   "stumm": false,
+   "post_fader_ab_slot": 2,
+   "sends": [],
+   "effekte": [
+    {
+     "slot": 0,
+     "name": "StudioEQ",
+     "an": true,
+     "preset": "",
+     "plugin_id": 11,
+     "roh": [
+      0.0,
+      3.0,
+      0.5,
+      0.2810622751712799,
+      0.05263157933950424,
+      1.0,
+      0.5416666666666666,
+      0.5,
+      0.0,
+      0.0,
+      0.5,
+      0.7265799045562744,
+      0.0,
+      1.0,
+      2.0,
+      0.46875,
+      0.817495,
+      0.45263200000000026
+     ]
+    },
+    {
+     "slot": 1,
+     "name": "Master Strip",
+     "an": true,
+     "preset": "Bottomless Tweak",
+     "plugin_id": 33,
+     "roh": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.8199999999999998,
+      0.79,
+      0.7849999999999996,
+      0.44285700000000017,
+      0.4978570000000001,
+      0.42285700000000004,
+      0.3799647722039179,
+      0.527000965387749,
+      0.570246904559464,
+      0.004613098254835645,
+      0.1732909253204154,
+      0.5,
+      0.0,
+      1.0,
+      1.0,
+      1.0,
+      0.3799647722039179,
+      0.4318598992099759,
+      0.527000965387749,
+      0.2705235712377826,
+      0.6204408709425283,
+      0.5,
+      0.5,
+      0.5,
+      0.4950000000000001,
+      0.505,
+      0.615,
+      0.5,
+      0.0,
+      0.48499999999999976,
+      0.7905742305435229,
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    {
+     "slot": 2,
+     "name": "Brickwall",
+     "an": true,
+     "preset": "",
+     "plugin_id": 12,
+     "roh": [
+      0.8450000286102295,
+      0.14744232594966888
+     ]
+    }
+   ],
+   "clips_v8": 0
+  }
+ },
+ "vergleich_v12": {
+  "cubasis_kette_auf_v12_lead": {
+   "refrains": {
+    "echo_zu_trocken_db": -10.9,
+    "hall_zu_trocken_db": -11.8,
+    "nass_gesamt_zu_trocken_db": -8.2
+   },
+   "strophen": {
+    "echo_zu_trocken_db": -10.9,
+    "hall_zu_trocken_db": -12.0,
+    "nass_gesamt_zu_trocken_db": -8.3
+   }
+  },
+  "v12_mix": {
+   "hall_direkt_refrain_db": -11.0,
+   "delay_direkt_refrain_db": -24.0,
+   "hall": "plate_ir 1,7 s, Vorverz. 62,5 ms",
+   "delay": "0,5 s, fb 0,18, 6 Taps, 300–5000 Hz, geduckt bis −10 dB"
+  }
+ }
+}
