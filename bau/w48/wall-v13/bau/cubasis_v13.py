@@ -183,6 +183,47 @@ def baue_projekt(spuren, ziel_zip, name='The-Wall-v13', basis='v8', modus='aussc
     return bericht
 
 
+# ------------------------------------------------------------------ Projekt wieder auslesen: Spur → WAV (trocken / mit Original-Effekten)
+def spur_aus_projekt(projekt, spurname, dauer_s=266.0):
+    """Clips einer Spur an ihre Pos legen (Gain, Mute beachtet) → mono Array. projekt = ZIP oder Ordner mit .cbp."""
+    spurname = SPUREN.get(spurname, spurname)
+    if str(projekt).endswith('.zip'):
+        z = zipfile.ZipFile(projekt); namen = z.namelist()
+        cbp_name = [n for n in namen if n.endswith('.cbp')][0]; ordner = cbp_name.split('/')[0]
+        proj = cc.cbor_lesen(cc.entschluesseln(z.read(cbp_name)))
+        lies = lambda fn: sf.read(io.BytesIO(z.read(ordner + '/' + fn)), dtype='float64', always_2d=False)
+    else:
+        cbp_name = [n for n in os.listdir(projekt) if n.endswith('.cbp')][0]
+        proj = cc.lade(os.path.join(projekt, cbp_name)); z = None
+        lies = lambda fn: sf.read(os.path.join(projekt, fn), dtype='float64', always_2d=False)
+    bus = {b['Name']: b for b in proj['Buses']}[spurname]
+    x = np.zeros(int(dauer_s * SR))
+    for r in bus['Track']['Regions']:
+        if r['Mute']: continue
+        y, sr = lies(r['FileName'])
+        if y.ndim == 2: y = y.mean(1)
+        a = r['InPoint'] * SAMPLES_JE_TICK; y = y[a:a + r['Length'] * SAMPLES_JE_TICK] * float(r['Gain'])
+        s = r['Pos'] * SAMPLES_JE_TICK; n = min(len(y), len(x) - s)
+        if n > 0: x[s:s + n] += y[:n]
+    if z is not None: z.close()
+    return x, proj
+
+
+def gesang_mit_effekten(projekt, spurname, gesetz='gemessen'):
+    """Wie „Mixdown einer Spur“: Clips → Original-Kette (Werte aus der .cbp dieses Projekts) → Stereo (N,2).
+    Ohne Slot 0–3 (Channel Strip/EQ/Compressor) und ohne Fader/Pan; Echo-Bus-Rücklauf ist enthalten."""
+    import echo_cubasis as ec, tempfile
+    spurname = SPUREN.get(spurname, spurname)
+    x, proj = spur_aus_projekt(projekt, spurname)
+    with tempfile.NamedTemporaryFile(suffix='.cbp', delete=False) as f:
+        f.write(cc.verschluesseln(cc.cbor_schreiben(proj))); tmp = f.name
+    R = ec.roh_aus_cbp(tmp, spurname); os.unlink(tmp)
+    art = 'haupt' if spurname in ('VOX Haupt', 'VOX Doppel') else 'chor'
+    P = ec.parameter(art, bpm=R['tempo'], gesetz=gesetz, roh=R)
+    tr, e, h = ec.kette(x, SR, art, bpm=R['tempo'], P=P)
+    return tr + e + h, dict(trocken=tr, echo=e, hall=h, parameter=P)
+
+
 # ------------------------------------------------------------------ Prüfung
 def pruefe_projekt(zip_pfad, basis='v8', erwartet=None, toleranz_samples=0):
     """Entschlüsselt die .cbp aus dem ZIP wieder und vergleicht mit der Vorlage: gleiche Busse/Effekte/Fader/Sends,

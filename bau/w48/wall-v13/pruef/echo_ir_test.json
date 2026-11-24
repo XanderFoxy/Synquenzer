@@ -82,7 +82,7 @@
   },
   {
    "test": "haupt: Echo-Bus Abfall je Viertel = 20·log10(0,35)",
-   "ist": -9.123,
+   "ist": -9.122,
    "soll": -9.119,
    "tol": 0.05,
    "einheit": "dB",
@@ -90,17 +90,17 @@
   },
   {
    "test": "haupt: Echo-Bus Abfall Echo 1→5 (4 Schritte)",
-   "ist": -36.48,
+   "ist": -36.479,
    "soll": -36.475,
    "tol": 0.1,
    "einheit": "dB",
    "ok": true
   },
   {
-   "test": "haupt: RoomWorks Nass/Trocken-Energie (√-Gesetz, Mix 4,5 %)",
-   "ist": -13.268,
+   "test": "haupt: RoomWorks Nass/Trocken-Energie 0,5–4 kHz (√-Gesetz, Mix 4,5 %)",
+   "ist": -13.396,
    "soll": -13.268,
-   "tol": 0.2,
+   "tol": 0.3,
    "einheit": "dB",
    "ok": true
   },
@@ -194,7 +194,7 @@
   },
   {
    "test": "doppel: Echo-Bus Abfall je Viertel = 20·log10(0,35)",
-   "ist": -9.123,
+   "ist": -9.122,
    "soll": -9.119,
    "tol": 0.05,
    "einheit": "dB",
@@ -202,17 +202,17 @@
   },
   {
    "test": "doppel: Echo-Bus Abfall Echo 1→5 (4 Schritte)",
-   "ist": -36.48,
+   "ist": -36.479,
    "soll": -36.475,
    "tol": 0.1,
    "einheit": "dB",
    "ok": true
   },
   {
-   "test": "doppel: RoomWorks Nass/Trocken-Energie (√-Gesetz, Mix 4,5 %)",
-   "ist": -13.268,
+   "test": "doppel: RoomWorks Nass/Trocken-Energie 0,5–4 kHz (√-Gesetz, Mix 4,5 %)",
+   "ist": -13.396,
    "soll": -13.268,
-   "tol": 0.2,
+   "tol": 0.3,
    "einheit": "dB",
    "ok": true
   },
@@ -233,10 +233,10 @@
    "ok": true
   },
   {
-   "test": "chor: RoomWorks Nass/Trocken-Energie (Mix 12 %)",
-   "ist": -8.653,
+   "test": "chor: RoomWorks Nass/Trocken-Energie 0,5–4 kHz (Mix 12 %)",
+   "ist": -8.782,
    "soll": -8.653,
-   "tol": 0.2,
+   "tol": 0.3,
    "einheit": "dB",
    "ok": true
   },

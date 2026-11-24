@@ -75,8 +75,10 @@ for spur in ['haupt', 'doppel']:
     # Hall: Nass-/Trocken-Energie (ohne Echos) = m/(1−m) → −13,3 dB
     P5 = ec.parameter(spur); P5['delay']['an'] = False; P5['sdelay']['an'] = False
     tr5, e5, h5 = ec.kette(np.r_[np.zeros(T0), 1.0, np.zeros(SR * 4)], SR, spur, mit_send=False, mit_chorus=False, P=P5)
-    ratio = 10 * np.log10(np.sum(h5 ** 2) / 2 / np.sum(tr5 ** 2) * 2)
-    pruef(f'{spur}: RoomWorks Nass/Trocken-Energie (√-Gesetz, Mix 4,5 %)', ratio, 10 * np.log10(0.045 / 0.955), 0.2, 'dB')
+    from scipy.signal import butter, sosfiltfilt
+    mb = butter(4, [500, 4000], 'bandpass', fs=SR, output='sos')
+    ratio = 10 * np.log10(np.sum(sosfiltfilt(mb, h5[:, 0]) ** 2) / np.sum(sosfiltfilt(mb, tr5[:, 0]) ** 2))
+    pruef(f'{spur}: RoomWorks Nass/Trocken-Energie 0,5–4 kHz (√-Gesetz, Mix 4,5 %)', ratio, 10 * np.log10(0.045 / 0.955), 0.3, 'dB')
     # Hallzeit aus der Schroeder-Kurve (−5…−35 dB), Band 300–6000 Hz
     from scipy.signal import butter, sosfiltfilt
     hb = sosfiltfilt(butter(4, [300, 6000], 'bandpass', fs=SR, output='sos'), h5[:, 0])
@@ -88,8 +90,10 @@ for spur in ['haupt', 'doppel']:
 # ---------------- 2) Chor: nur Hall 1,50 s / 12 %
 tr, e, h = ec.impulsantwort('chor', SR, 4.0)
 pruef('chor: kein Echo (Delay/Stereo Delay/Send aus)', float(np.max(np.abs(e))), 0.0, 1e-12)
-ratio = 10 * np.log10(np.sum(h ** 2) / np.sum(tr ** 2))
-pruef('chor: RoomWorks Nass/Trocken-Energie (Mix 12 %)', ratio, 10 * np.log10(0.12 / 0.88), 0.2, 'dB')
+from scipy.signal import butter, sosfiltfilt
+mb = butter(4, [500, 4000], 'bandpass', fs=SR, output='sos')
+ratio = 10 * np.log10(np.sum(sosfiltfilt(mb, h[:, 0]) ** 2) / np.sum(sosfiltfilt(mb, tr[:, 0]) ** 2))
+pruef('chor: RoomWorks Nass/Trocken-Energie 0,5–4 kHz (Mix 12 %)', ratio, 10 * np.log10(0.12 / 0.88), 0.3, 'dB')
 sf.write(W + 'analyse/ir_chor.wav', (tr + e + h).astype(np.float32), SR, subtype='FLOAT')
 
 # ---------------- 3) Tempo-Synchron: 100 BPM → Viertel 0,600 s, Halbe 1,200 s

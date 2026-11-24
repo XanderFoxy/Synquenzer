@@ -39,7 +39,7 @@ K_GEMESSEN = 1.70   # nass/trocken ≈ 1,70·m für kleine m (audio-gemessen: Au
 
 def mischung(m, gesetz='gemessen'):
     """(trocken, nass) für einen Mix-Rohwert m der Delays/des Chorus.
-    'gemessen' (Standard): nass/trocken = 1,75·m (Mitte der Messungen; 1. Echo Delay −16,0 dB, Stereo Delay −18,8 dB),
+    'gemessen' (Standard): nass/trocken = 1,70·m (Mitte der Messungen; 1. Echo Delay −16,3 dB, Stereo Delay −19,1 dB),
     'sinus'   = cos/sin(m·π/2)  (Autokorrelation ohne Chorus-Dekorrelation; −16,9 / −19,8 dB),
     'doppelt' = min(1,2(1−m)) / min(1,2m) (PDF-Angabe −15 / −18 dB),
     'wurzel'  = √(1−m)/√m (RoomWorks, PDF BELEGT)."""
@@ -63,11 +63,39 @@ def raum_zeit(n):            # RoomWorks SE: Hallzeit = 0,1·200^n s (PDF BELEGT
     return 0.1 * 200.0 ** n
 
 
-def parameter(spur='haupt', bpm=120.0, gesetz='gemessen'):
-    """Alle Größen der Kette als Zahlen (Sekunden, lineare Faktoren)."""
+def roh_aus_cbp(cbp_pfad, spurname):
+    """Rohwerte der Zeit-/Raum-Effekte einer Spur direkt aus einer .cbp lesen (Cubasis 3, z. B. The-Wall-v8.cbp
+    oder ein v13-Projekt). Ergebnis hat dieselbe Form wie ROH (+ 'an' je Effekt), für parameter(..., roh=...)."""
+    import base64, struct, os, sys
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import cbp_codec as cc
+    proj = cc.lade(cbp_pfad)
+    busse = {b['Name']: b for b in proj['Buses']}
+    bus = busse[spurname]
+    send_bus = [b for b in proj['Buses'] if b.get('Type') == 1][0]
+    def werte(e): b = base64.b64decode(e['Data']); return list(struct.unpack('<%dd' % (len(b) // 8), b))
+    R = dict(an={})
+    for e in bus['Effects']:
+        k = {'Delay': 'delay', 'Stereo Delay': 'sdelay', 'RoomWorks SE': 'room', 'Chorus': 'chorus'}.get(e['Name'])
+        if k and k not in R['an']:
+            R[k] = werte(e); R['an'][k] = bool(e['Enabled'])
+    R['send_pegel'] = 0.0
+    for o in bus['Outputs']:
+        if o['BusId'] == send_bus['Id'] and o['Enabled']: R['send_pegel'] = float(o['OutputLevel'])
+    R['send_delay'] = werte([e for e in send_bus['Effects'] if e['Name'] == 'Delay'][0])
+    R['an']['send'] = R['send_pegel'] > 0 and not send_bus['Mute']
+    R['tempo'] = float(proj['Arranger']['Tempo'])
+    return R
+
+
+def parameter(spur='haupt', bpm=120.0, gesetz='gemessen', roh=None):
+    """Alle Größen der Kette als Zahlen (Sekunden, lineare Faktoren).
+    roh=None: Werte aus ROH (The Wall v6/v7/v8); roh=roh_aus_cbp(...): Werte aus einer beliebigen .cbp."""
     viertel = 60.0 / bpm
     spur = {'gegen': 'chor', 'gegengesang': 'chor', 'ki': 'chor', 'lead': 'haupt'}.get(spur, spur)
     P = dict(spur=spur, bpm=bpm, gesetz=gesetz)
+    if roh is not None:
+        return _parameter_roh(roh, viertel, P, gesetz)
     if spur in ('haupt', 'doppel'):
         m, fb, idx, _ = ROH['delay']
         d, w = mischung(m, gesetz)
@@ -98,6 +126,37 @@ def parameter(spur='haupt', bpm=120.0, gesetz='gemessen'):
     return P
 
 
+def _parameter_roh(R, viertel, P, gesetz):
+    an = R['an']
+    if an.get('delay'):
+        m, fb, idx = R['delay'][0], R['delay'][1], R['delay'][2]
+        d, w = mischung(m, gesetz)
+        P['delay'] = dict(an=True, zeit=NOTEN.get(int(idx), 0.25) * 4 * viertel, fb=fb, trocken=d, nass=w,
+                          zeit_sicher=int(idx) == 2)
+    else:
+        P['delay'] = dict(an=False)
+    if an.get('sdelay'):
+        d2, w2 = mischung(R['sdelay'][0], gesetz)
+        P['sdelay'] = dict(an=True, zeit_l=2 * viertel, zeit_r=2 * viertel, fb=0.0, trocken=d2, nass=w2,
+                           hinweis='Zeiten/Feedback aus der Audio-Messung (Rohwerte 1–5 nicht entschlüsselt)')
+    else:
+        P['sdelay'] = dict(an=False)
+    if an.get('send'):
+        P['send'] = dict(an=True, pegel=R['send_pegel'], zeit=NOTEN.get(int(R['send_delay'][2]), 0.25) * 4 * viertel,
+                         fb=R['send_delay'][1], nass=mischung(R['send_delay'][0], gesetz)[1])
+    else:
+        P['send'] = dict(an=False)
+    P['chorus'] = dict(an=bool(an.get('chorus')), mix=R['chorus'][3] if 'chorus' in R else 0.0)
+    r = R['room']
+    dr, wr = mischung(r[5], 'wurzel')
+    P['room'] = dict(an=bool(an.get('room')), rt60=raum_zeit(r[1]), mix=r[5], trocken=dr if an.get('room') else 1.0,
+                     nass=wr if an.get('room') else 0.0, vorverz=0.020, hf_faktor=0.55, lf_faktor=1.0)
+    if P['chorus']['an']:
+        dc, wc = mischung(P['chorus']['mix'], gesetz)
+        P['chorus'].update(trocken=dc, nass=wc, grund=0.008, tiefe=0.002, rate=0.6, phase_lr=np.pi / 2)
+    return P
+
+
 # ---------------------------------------------------------------- Bausteine
 def kamm(x, D, fb):
     """Nassanteil eines Delays ohne Trocken: y[n] = x[n−D] + fb·y[n−D] (Echo 1 = 1·x, Echo k = fb^(k−1)·x)."""
@@ -122,7 +181,8 @@ _IR_CACHE = {}
 
 
 def hall_ir(sr, rt60, vorverz, hf_faktor=0.55, lf_faktor=1.0, seed=7):
-    """Stereo-Impulsantwort (Rauschfahne, je Band eigene Abklingzeit), je Kanal auf Energie 1 normiert.
+    """Stereo-Impulsantwort (Rauschfahne, je Band eigene Abklingzeit). Normierung: im Mittenband (300–6000 Hz) hat
+    der Nassanteil die Energie 1 (wie eine ungedämpfte Fahne), oben klingt er nur schneller ab (dunkler).
     ANNÄHERUNG an RoomWorks SE (der Steinberg-Algorithmus ist nicht bekannt)."""
     key = (sr, round(rt60, 4), round(vorverz, 4), hf_faktor, lf_faktor, seed)
     if key in _IR_CACHE:
@@ -131,11 +191,13 @@ def hall_ir(sr, rt60, vorverz, hf_faktor=0.55, lf_faktor=1.0, seed=7):
     t = np.arange(n) / sr
     rng = np.random.default_rng(seed)
     kan = []
-    # Bänder: < 300 Hz, 300–6000 Hz, > 6000 Hz mit eigener Abklingzeit
     grenzen = [(None, 300.0, lf_faktor), (300.0, 6000.0, 1.0), (6000.0, None, hf_faktor)]
+    tt = np.maximum(t - vorverz, 0)
+    anf = np.clip((t - vorverz) / 0.015, 0, 1)          # Diffusion baut sich in ≈ 15 ms auf
     for c in range(2):
         z = rng.standard_normal(n)
-        h = np.zeros(n)
+        h = np.zeros(n); h_flach = np.zeros(n)
+        hull_flach = np.exp(-6.907755 * tt / rt60) * anf
         for lo, hi, fak in grenzen:
             if lo is None:
                 sos = butter(4, hi, 'lowpass', fs=sr, output='sos')
@@ -144,14 +206,10 @@ def hall_ir(sr, rt60, vorverz, hf_faktor=0.55, lf_faktor=1.0, seed=7):
             else:
                 sos = butter(4, [lo, hi], 'bandpass', fs=sr, output='sos')
             zb = sosfilt(sos, z)
-            tt = np.maximum(t - vorverz, 0)
-            hull = np.exp(-6.907755 * tt / (rt60 * fak))      # −60 dB nach rt60·fak
-            hull[t < vorverz] = 0.0
-            h += zb * hull
-        # weicher Einsatz (Diffusion baut sich in ≈ 15 ms auf)
-        anf = np.clip((t - vorverz) / 0.015, 0, 1)
-        h *= anf
-        h /= np.sqrt(np.sum(h * h))
+            hull = np.exp(-6.907755 * tt / (rt60 * fak)) * anf      # −60 dB nach rt60·fak
+            h += zb * hull; h_flach += zb * hull_flach
+        Hf = np.abs(np.fft.rfft(h_flach)) ** 2; f = np.fft.rfftfreq(n, 1 / sr)
+        h /= np.sqrt(np.mean(Hf[(f >= 500) & (f <= 4000)]))     # |H|² = 1 im Mittenband (wie ein Impuls)
         kan.append(h)
     ir = np.stack(kan, 1)
     _IR_CACHE[key] = ir
@@ -217,7 +275,7 @@ def kette(x, sr=48000, spur='haupt', bpm=120.0, gesetz='gemessen', mit_send=True
         Sd = P['send']
         D = int(round(Sd['zeit'] * sr))
         summe = c_tr + c_ec + c_ha
-        bus = np.stack([kamm(summe[:, c], D, Sd['fb']) for c in range(2)], 1) * Sd['pegel']
+        bus = np.stack([kamm(summe[:, c], D, Sd['fb']) for c in range(2)], 1) * Sd['pegel'] * Sd.get('nass', 1.0)
         c_ec = c_ec + bus
     return c_tr, c_ec, c_ha
 
