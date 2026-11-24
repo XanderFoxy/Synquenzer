@@ -40,7 +40,7 @@ function umbrich(text, breite, px, gewicht, max, miss) {
 // Zustand eines Astes für den Baum
 export function zustand(S, a) {
   const e = S.richtung.get(a.id);
-  if (e) return { art: 'da', wort: e.deutlich === 'beides' ? (e.wort && e.wort !== 'beides' ? e.wort : 'beides') : `${e.deutlich} · ${e.wort}`, e };
+  if (e) return { art: 'da', wort: e.deutlich === 'beides' ? (e.wort && e.wort !== 'beides' ? e.wort : 'beides') : (e.wort ? `${e.deutlich} · ${e.wort}` : (e.deutlich || 'beantwortet')), e };
   if (a.nurLernen || a.bereich === 'Üben') return { art: 'lernen', wort: 'zum Entdecken', e: null };
   return { art: 'offen', wort: 'noch offen', e: null };
 }

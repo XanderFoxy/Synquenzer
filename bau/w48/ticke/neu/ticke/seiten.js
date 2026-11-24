@@ -54,7 +54,7 @@ function start({ el, kern }) {
       ${startKarten()}
       <a class="knopf haupt gross voll" href="#einstieg">Für mich starten</a>
       <p class="leise klein mitte">Etwa 15 Minuten für alles, gern in Etappen. Deine Antworten bleiben auf diesem Gerät und lassen sich jederzeit ändern.</p>
-      <a class="kachel spiel-kachel" href="#spiel">${sym('spiel')}<b>Oder erst: Entweder – oder</b><span>Immer zwei Aussagen, eine schnelle Wahl – etwa 4 Minuten</span></a>
+      <a class="kachel spiel-kachel" href="#spiel">${sym('spiel')}<b>Oder erst: Entweder – oder</b><span>Immer zwei Aussagen, eine schnelle Wahl – etwa 3 Minuten</span></a>
       <div class="karte">${kannHtml}</div>
       <div class="karte weich">${marken}</div>
       <p class="leise klein mitte">Live mit Gästen: kommt später.</p>${fuss()}`;
@@ -216,7 +216,7 @@ function fragen({ el, kern }) {
     <ol class="zeilen">${F.map((f) => { const r = erg[f.ergebnis];
       return `<li><a class="zeile" href="#${esc(f.route)}"><span><b>${esc(f.titel)}</b><small>${esc(f.kurz || '')}</small></span><span class="rechts">${r ? sym('haken') + ' ' + esc(datum(r.zeit)) : esc(f.dauer || '')}${sym('weiter')}</span></a></li>`; }).join('')}</ol>
     <p class="leise klein">Die Reihenfolge ist fest, damit spätere Wiederholungen vergleichbar bleiben. Pausen sind jederzeit möglich.</p>
-    <a class="karte akzent" href="#spiel">${sym('spiel')}<span><b>Entweder – oder</b><br><span class="klein leise">Immer zwei Aussagen, eine schnelle Wahl – etwa 4 Minuten</span></span><span class="rechts">${sym('weiter')}</span></a>
+    <a class="karte akzent" href="#spiel">${sym('spiel')}<span><b>Entweder – oder</b><br><span class="klein leise">Immer zwei Aussagen, eine schnelle Wahl – etwa 3 Minuten</span></span><span class="rechts">${sym('weiter')}</span></a>
     ${merkHinweis(kern)}
     <a class="knopf zweit voll" href="#antworten">${sym('stift')} Antworten ansehen und ändern</a>
     <a class="knopf zweit voll" href="#profil">Zum Profil</a>${fuss()}`;

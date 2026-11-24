@@ -6,7 +6,7 @@ import * as seiten from './seiten.js';
 import { mass } from './mass.js';
 import * as WEG from './weg.js';
 
-export const VERSION = '0.2.1';
+export const VERSION = '0.3.0';
 export const FORMAT = 1;                      // Format der gespeicherten Daten (ARCH.md §3); höher → MIGRATIONEN
 const P = 'ticke.v1.';                        // einziger Präfix in localStorage (Ursprung teilen sich alle Synquenzer-Apps!)
 const TEST = /[?&]test=1/.test(location.search);
