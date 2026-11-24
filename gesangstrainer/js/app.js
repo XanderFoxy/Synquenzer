@@ -29,6 +29,7 @@ function h(tag, attr, ...kinder) {
   }
   return el;
 }
+const fuelle = (el, ...k) => el.replaceChildren(...k.flat(Infinity).filter((x) => x != null && x !== false));
 const ic = (name, cls = 'ic') => h('span', { html: `<svg class="${cls}" aria-hidden="true"><use href="#i-${name}"/></svg>`, style: { display: 'contents' } });
 function versuch(f, ersatz) { try { const r = f(); return r === undefined ? ersatz : r; } catch (e) { console.warn(e); return ersatz; } }
 const istFn = (f) => typeof f === 'function';
@@ -326,6 +327,79 @@ function imHintergrund(auftrag, x, sr, opt) {
   });
 }
 
+// ================================================================ Stimmanalyse (Register, Sauberkeit) – erst bei Bedarf geladen
+let saVersprechen = null;
+const ladeSA = () => (saVersprechen = saVersprechen || import('./stimmanalyse.js').catch((e) => { saVersprechen = null; throw e; }));
+const REG_FARBE = { Brust: '#ff9a3d', Misch: '#b56cff', Kopf: '#33cdd0' };
+const ZONE_FARBE = { bequem: '#6fe3a8', sicher: '#8cc8ff', rand: '#ff8a9a' };
+const SAUBER_DECK = { klar: 1, 'meist klar': 0.68, wackelig: 0.42, unsauber: 0.2 };
+const SAUBER_WORTE = { klar: 'klar und ruhig', 'meist klar': 'meist klar', wackelig: 'etwas wackelig', unsauber: 'noch unsauber' };
+const ZONE_WORT = { bequem: 'bequem', sicher: 'sicher', rand: 'Rand' };
+async function analysiereDatei(datei, name, fortschritt) {
+  const sa = await ladeSA();
+  const { x, sr } = await ladeDatei(datei);
+  const a = await sa.imHintergrund(x, sr, { name, fortschritt });
+  const pool = (speicher.hole('stimmAnalysen', []) || []).filter((p) => p && p.name !== name || (p && p.datum && Date.now() - p.datum > 36e5));
+  pool.push(sa.kompakt(a));
+  speicher.merke('stimmAnalysen', pool.slice(-12));
+  return a;
+}
+/** Klaviatur-Karte: Zone je Ton (Tastenfarbe), Register-Band darüber, Sauberkeit als ruhige Farbstufen darunter. */
+function stimmKlaviatur(st) {
+  const toene = st.toene || {};
+  const ms = Object.keys(toene).map(Number).filter(isFinite);
+  if (!ms.length) return h('div');
+  const schwarz = (n) => [1, 3, 6, 8, 10].includes(((n % 12) + 12) % 12);
+  let von = Math.min(...ms) - 1, bis = Math.max(...ms) + 1;
+  while (schwarz(von)) von--; while (schwarz(bis)) bis++;
+  const weisse = []; for (let n = von; n <= bis; n++) if (!schwarz(n)) weisse.push(n);
+  const W = Math.max(12, Math.min(20, 380 / weisse.length)), RH = 14, KH = 60, SH = 10, oben = 26;
+  const xL = (n) => (!schwarz(n) ? weisse.indexOf(n) * W : (weisse.indexOf(n - 1) + 1) * W - W * 0.32);
+  const xR = (n) => xL(n) + (schwarz(n) ? W * 0.64 : W);
+  const mitte = (n) => (xL(n) + xR(n)) / 2;
+  const zelle = (n) => [n === von ? 0 : (mitte(n - 1) + mitte(n)) / 2, n === bis ? weisse.length * W : (mitte(n) + mitte(n + 1)) / 2];
+  const B = weisse.length * W, yK = oben + RH + 4, yS = yK + KH + 4, H = yS + SH + 16;
+  let s = `<svg class="klaviatur stimmkarte" viewBox="0 0 ${B} ${H}" role="img" aria-label="Deine Töne: Zone, Register und Sauberkeit">`;
+  const rw = st.register && st.register.wechsel;
+  if (rw && isFinite(rw[0])) {
+    const x1 = xL(rw[0]), x2 = xR(rw[1]);
+    s += `<path class="sk-klammer" d="M${x1} ${oben - 4} V${oben - 9} H${x2} V${oben - 4}"/><text class="beschr" x="${(x1 + x2) / 2}" y="${oben - 12}" text-anchor="middle">Wechsel</text>`;
+  } else if (st.register && isFinite(st.register.angedeutet)) {
+    const x = mitte(st.register.angedeutet);
+    s += `<text class="beschr" x="${x}" y="${oben - 10}" text-anchor="middle">Übergang?</text>`;
+  }
+  for (const m of ms) {
+    const t = toene[m], [a, b] = zelle(m), p = t.reg ? Math.max(...t.reg) : 0.5;
+    s += `<rect class="sk-reg" x="${a + 0.5}" y="${oben}" width="${Math.max(1, b - a - 1)}" height="${RH}" rx="3" fill="${REG_FARBE[t.register] || '#999'}" fill-opacity="${(0.35 + 0.65 * p).toFixed(2)}"><title>${nName(m)}: ${t.register}</title></rect>`;
+  }
+  for (const n of weisse) { const t = toene[n]; s += `<rect class="weiss" x="${xL(n) + .5}" y="${yK}" width="${W - 1}" height="${KH}" rx="3"${t && t.zone ? ` style="fill:${ZONE_FARBE[t.zone]}"` : ''}/>`; }
+  for (let n = von; n <= bis; n++) if (schwarz(n)) { const t = toene[n]; s += `<rect class="schwarz" x="${xL(n)}" y="${yK}" width="${W * 0.64}" height="${KH * 0.62}" rx="2"/>${t && t.zone ? `<rect x="${xL(n) + 1.5}" y="${yK + KH * 0.62 - 12}" width="${W * 0.64 - 3}" height="9" rx="2" fill="${ZONE_FARBE[t.zone]}"/>` : ''}`; }
+  for (const m of ms) { const t = toene[m], [a, b] = zelle(m); s += `<rect x="${a + 0.5}" y="${yS}" width="${Math.max(1, b - a - 1)}" height="${SH}" rx="3" fill="#1fb5c9" fill-opacity="${SAUBER_DECK[t.sauber] || 0.3}"><title>${nName(m)}: ${SAUBER_WORTE[t.sauber] || ''}</title></rect>`; }
+  for (const n of weisse) if (((n % 12) + 12) % 12 === 0) s += `<text class="beschr" x="${xL(n) + W / 2}" y="${H - 2}" text-anchor="middle">${nName(n)}</text>`;
+  s += '</svg>';
+  return h('div', { class: 'sk-rahmen', html: s });
+}
+function stimmLegende() {
+  const fleck = (f, o = 1) => h('i', { style: { background: f, opacity: String(o) } });
+  return h('div', { class: 'sk-legende' },
+    h('div', null, h('b', null, 'Tasten'), Object.entries(ZONE_FARBE).map(([z, f]) => h('span', null, fleck(f), ZONE_WORT[z]))),
+    h('div', null, h('b', null, 'Band oben'), Object.entries(REG_FARBE).map(([r, f]) => h('span', null, fleck(f), r === 'Misch' ? 'Misch' : `${r}stimme`))),
+    h('div', null, h('b', null, 'Streifen unten'), Object.entries(SAUBER_DECK).map(([w, o]) => h('span', null, fleck('#1fb5c9', o), SAUBER_WORTE[w]))));
+}
+function stimmKarte(st) {
+  const n = (st.aufnahmen || []).length;
+  const z = Object.values(st.toene || {});
+  const bequem = z.filter((t) => t.zone === 'bequem').map((t) => t.midi);
+  return h('section', { class: 'karte stimmkarte-karte frisch-rein' },
+    h('span', { class: 'band' }),
+    h('p', { class: 'leise klein' }, `Schätzung aus ${n === 1 ? 'einer Aufnahme' : `${n} Aufnahmen`} deiner Lieder`),
+    h('h3', { style: { fontSize: '24px', margin: '2px 0 4px' } }, st.fachText ? st.fachText.replace(/^am ehesten/, 'Am ehesten').replace(/^zwischen/, 'Zwischen') : (st.typ || 'Deine Lage')),
+    h('p', { class: 'leise klein', style: { margin: '0 0 10px' } }, [bequem.length ? `bequem ${nName(Math.min(...bequem))}–${nName(Math.max(...bequem))}` : null, isFinite(st.tief) ? `sicher ${nName(st.tief)}–${nName(st.hoch)}` : null].filter(Boolean).join(' · ')),
+    stimmKlaviatur(st), stimmLegende(),
+    st.text ? h('p', { style: { marginTop: '12px' } }, st.text) : null,
+    h('p', { class: 'sk-hinweis klein' }, ic('hinweis'), h('span', null, 'Die Tagesform schwankt: morgens, müde oder ohne Aufwärmen liegt die Grenze oft 1–2 Halbtöne anders. Mehrere Aufnahmen von verschiedenen Tagen machen die Schätzung genauer.')));
+}
+
 // ================================================================ Router
 let aufraeumen = [];
 function raeumeAuf() { for (const f of aufraeumen.splice(0)) try { f(); } catch (e) { /* egal */ } stoppeKlang(); }
@@ -505,12 +579,90 @@ async function seiteLied(id) {
   const eg = eignungVon(lied);
   const egKarte = eg ? eignungsKarte(lied, eg) : null;
   if (egKarte && frisch === id) { egKarte.classList.add('frisch'); frisch = ''; }
-  return [kopf, egKarte, umfKarte, h('h2', null, 'Dein Lernweg'),
+  return [kopf, egKarte, umfKarte, hoeheKarte(lied), h('h2', null, 'Dein Lernweg'),
     h('p', { class: 'leise klein', style: { marginTop: '-4px' } }, 'Teil für Teil: erst Melodie und Vokale, dann Übergänge, dann Text. Tippe einen Teil an.'),
     pfad,
     ohneGesang.length ? h('p', { class: 'leise klein' }, `Ohne Gesang: ${ohneGesang.map((t) => t.name).join(', ')} – Zeit zum Atmen.`) : null,
     ...extra];
 }
+// ================================================================ „Deine Höhe in diesem Lied“
+function merkeLiedHoehe(id, r, sa) {
+  const alle = { ...(speicher.hole('liedHoehe', {}) || {}) };
+  alle[id] = sa.liedHoeheKompakt(r);
+  const ids = Object.keys(alle).sort((a, b) => (alle[b].datum || 0) - (alle[a].datum || 0)).slice(0, 6);
+  speicher.merke('liedHoehe', Object.fromEntries(ids.map((k) => [k, alle[k]])));
+}
+function hoeheKarte(lied) {
+  const id = lied.id, ton = lied.tonart;
+  const box = h('section', { class: 'karte hoehe-karte' });
+  const hatSilben = lied.zeilen.some((z) => (z.silben || []).some((s) => isFinite(s.t)));
+  const laden = (titel) => h('label', { class: 'datei-feld', style: { marginTop: '12px' } }, ic('datei'), h('span', null, h('b', null, titel), h('br'), h('span', { class: 'leise klein' }, 'deine eigene Gesangsaufnahme dieses Lieds')),
+    h('input', { type: 'file', 'data-lied-aufnahme': '1', accept: 'audio/*,.wav,.mp3,.m4a,.aif,.aiff,.flac', onchange: (e) => e.target.files[0] && auswerten(e.target.files[0], e.target.files[0].name) }));
+  async function auswerten(datei, name) {
+    const balkenI = h('i');
+    fuelle(box, h('h3', null, 'Deine Höhe in diesem Lied'), h('div', { class: 'laden-kugeln', style: { justifyContent: 'center', marginTop: '10px' } }, h('span'), h('span'), h('span')),
+      h('p', { class: 'leise', style: { marginTop: '10px' } }, 'Deine Aufnahme wird ausgewertet …'), h('div', { class: 'zeit-balken', 'aria-hidden': 'true' }, balkenI));
+    try {
+      const sa = await ladeSA();
+      const a = await analysiereDatei(datei, name || lied.titel, (p) => { balkenI.style.transform = `scaleX(${p / 100})`; });
+      const r = sa.liedHoehe(lied, a);
+      merkeLiedHoehe(id, r, sa);
+      zeigeErgebnis(r, true);
+    } catch (e) { console.warn(e); meldung('Aufnahme ließ sich nicht auswerten: ' + (e && e.message || e), 5000); start(); }
+  }
+  function silbenZeile(z) {
+    return h('div', { class: 'hz-silben' }, z.silben.map((s) => h('span', { class: `hz-silbe ${s.q != null ? '' : 'leer'}`,
+      style: s.q != null ? `--r:${REG_FARBE[s.register]};--s:${SAUBER_DECK[s.sauber]}` : null,
+      title: s.q != null ? `${nName(s.midi, ton)} · ${s.register} · ${SAUBER_WORTE[s.sauber]}${s.angestrengt ? ' · angestrengt' : ''}` : '' }, s.text || '·', s.angestrengt ? h('b', { class: 'hz-druck', 'aria-label': 'angestrengt' }, '!') : null)));
+  }
+  function zeigeErgebnis(r, neu) {
+    if (!r || !r.zeilen || !r.zeilen.length && !(r.befunde || []).length) {
+      fuelle(box, h('h3', null, 'Deine Höhe in diesem Lied'), h('p', { class: 'leise' }, (r && r.text) || 'Keine klaren Töne gefunden.'), laden('Andere Aufnahme laden'));
+      return;
+    }
+    const zeilen = new Map(r.zeilen.map((z) => [z.zid, z]));
+    const bib = bibliothek();
+    const tipps = (r.tipps || []).slice(0, 4).map((t) => {
+      const u = bib.find((x) => x.id === t.uebung) || uebungVon(t.uebung);
+      let folge = null, gleiten = null;
+      if (isFinite(t.ziel)) {
+        if (t.sirene) { folge = [t.ziel - 7, t.ziel, t.ziel - 7]; gleiten = true; }
+        else if (u && u.folge && u.folge.length) { const d = t.ziel - Math.max(...u.folge); folge = u.folge.map((m) => m + d); }
+      }
+      return h('div', { class: 'hz-tipp' }, h('h4', null, t.titel), h('p', null, t.text),
+        u ? uebungsDetails(u, folge ? { folge, gleiten } : null) : null,
+        t.zid ? h('a', { class: 'knopf klein', href: `#lied/${enc(id)}/zeile/${enc(t.zid)}`, style: { marginTop: '8px' } }, ic('play'), 'Diese Zeile üben') : null);
+    });
+    fuelle(box, 
+      h('span', { class: 'band' }),
+      h('p', { class: 'leise klein' }, 'Schätzung aus deiner Aufnahme'),
+      h('h3', null, 'Deine Höhe in diesem Lied'),
+      h('p', { style: { marginTop: '6px' } }, r.text),
+      (r.befunde || []).length ? h('div', { class: 'hz-liste' }, r.befunde.slice(0, 4).map((b) => {
+        const z = zeilen.get(b.zid);
+        const was = [b.angestrengt ? 'wird lauter und drückt' : null, b.unsauber ? 'wird unruhiger' : null, b.kippt ? 'kippt Richtung Kopfstimme' : b.kopf ? 'in Misch-/Kopfstimme' : null].filter(Boolean).join(', ');
+        return h('a', { class: 'hz-zeile', href: `#lied/${enc(id)}/zeile/${enc(b.zid)}` }, z ? silbenZeile(z) : h('p', null, b.text),
+          h('p', { class: 'klein leise' }, `„${b.woerter.join(' … ')}“ (${nName(b.midi, ton)}): ${was}`));
+      })) : null,
+      h('div', { class: 'sk-legende', style: { marginTop: '10px' } },
+        h('div', null, h('b', null, 'Linie'), Object.entries(REG_FARBE).map(([k, f]) => h('span', null, h('i', { style: { background: f } }), k === 'Misch' ? 'Misch' : `${k}stimme`))),
+        h('div', null, h('b', null, 'Fläche'), Object.entries(SAUBER_DECK).map(([w, o]) => h('span', null, h('i', { style: { background: '#1fb5c9', opacity: String(o) } }), SAUBER_WORTE[w])))),
+      tipps.length ? h('div', { class: 'hz-tipps' }, h('p', { class: 'klein leise', style: { marginTop: '14px' } }, 'So übst du genau diese Stellen'), tipps) : null,
+      laden('Neue Aufnahme dieses Lieds laden'));
+    if (neu) box.classList.add('frisch');
+  }
+  function start() {
+    fuelle(box, h('h3', null, 'Deine Höhe in diesem Lied'),
+      h('p', { class: 'leise', style: { marginTop: '4px' } }, hatSilben ? 'Lade deine eigene Aufnahme dieses Lieds: Ich zeige dir je Zeile, wo es in der Höhe unsauber oder angestrengt wird, wo du in die Kopfstimme kippst – und wie du genau das übst.' : 'Zu diesem Lied gibt es noch keine Silbenzeiten – die Auswertung je Zeile braucht ein Lied mit Melodie.'),
+      hatSilben ? laden('Meine Aufnahme dieses Lieds laden') : null);
+  }
+  const alt = (speicher.hole('liedHoehe', {}) || {})[id];
+  if (alt) zeigeErgebnis(alt, false); else start();
+  // eigene gespeicherte Aufnahme dieses Lieds: gleich im Hintergrund auswerten
+  if (!alt && hatSilben && id !== 'the-wall') speicher.ladeAudio(id).then((b) => { if (b && box.isConnected) auswerten(b, lied.titel); }).catch(() => {});
+  return box;
+}
+
 // ================================================================ Eignung (Ampel-Karte) und „Weg zu diesem Lied“
 const AMPEL = { passt: ['#6fe3a8', '#1fb5c9'], 'mit Übung': ['#ffd36e', '#ff9a3d'], 'noch weit': ['#ff8a9a', '#d9367a'] };
 const STUFE_TITEL = { passt: 'Passt zu deiner Stimme', 'mit Übung': 'Mit Übung erreichbar', 'noch weit': 'Noch ein weiter Weg' };
@@ -1085,6 +1237,7 @@ function seiteStimme() {
   aufraeumen.push(stoppeAlles);
 
   function ergebnis(st) {
+    if (st.toene && Object.keys(st.toene).length) return stimmKarte(st);
     const baender = [{ ...BAND_GANZ, lo: st.tief, hi: st.hoch, name: `Bequem ${nName(st.tief)}–${nName(st.hoch)}` }];
     if (st.kern && isFinite(st.kern[0])) baender.push({ ...BAND_KERN, lo: st.kern[0], hi: st.kern[1], name: `Kern ${nName(st.kern[0])}–${nName(st.kern[1])}` });
     return h('section', { class: 'karte' },
@@ -1098,14 +1251,69 @@ function seiteStimme() {
   function zeigeUebersicht() {
     stoppeAlles();
     const st = stimme();
-    box.replaceChildren(
+    fuelle(box, 
       h('section', { class: 'held' }, h('h1', null, 'Meine Stimmlage'), h('p', null, 'Sing kurz ins Mikrofon, lade eine Gesangsaufnahme oder wähle deine Töne von Hand. Alles bleibt auf diesem Gerät.')),
       st && (isFinite(st.tief) || st.kern) ? ergebnis(st) : h('div', { class: 'karte leer' }, h('p', null, 'Noch keine Stimmlage gespeichert.')),
       h('button', { class: 'knopf haupt breit', onclick: gefuehrt }, ic('stimme'), st ? 'Neu ermitteln (singen)' : 'Jetzt singen – 3 kurze Schritte'),
       h('button', { class: 'knopf breit', style: { marginTop: '10px' }, onclick: vonHand }, ic('klavier'), 'Ton von Hand wählen (Klaviatur)'),
       h('label', { class: 'datei-feld' }, ic('datei'), h('span', null, h('b', null, 'Gesangsdatei laden'), h('br'), h('span', { class: 'leise klein' }, 'WAV, MP3, M4A – am besten nur Gesang')),
         h('input', { type: 'file', accept: 'audio/*,.wav,.mp3,.m4a,.aif,.aiff,.flac', onchange: (e) => e.target.files[0] && ausDatei(e.target.files[0]) })),
+      ausLiedernKarte(),
       st ? h('button', { class: 'knopf klein', onclick: () => { speicher.loescheStimme(); meldung('Stimmlage gelöscht'); zeigeUebersicht(); } }, ic('loeschen'), 'Gespeicherte Stimmlage löschen') : null);
+  }
+  // „Aus meinen Liedern ermitteln“: mehrere eigene Gesangsdateien oder gespeicherte Lieder mit Audio
+  function ausLiedernKarte() {
+    const pool = speicher.hole('stimmAnalysen', []) || [];
+    const liederBox = h('div', { class: 'chips', style: { marginTop: '8px' } });
+    const karte = h('section', { class: 'karte aus-liedern' },
+      h('h3', null, 'Aus meinen Liedern ermitteln'),
+      h('p', { class: 'leise', style: { margin: '4px 0 10px' } }, 'Unsicher beim Test? Deine Lieder zeigen, wo du wirklich viel, lange und sauber singst – und wo du in Misch- oder Kopfstimme wechselst. Mehrere Aufnahmen von verschiedenen Tagen werden zusammengeführt.'),
+      h('label', { class: 'datei-feld' }, ic('datei'), h('span', null, h('b', null, 'Gesangsdateien wählen (mehrere)'), h('br'), h('span', { class: 'leise klein' }, 'am besten nur Gesang, ohne Instrumente')),
+        h('input', { type: 'file', multiple: true, 'data-aus-liedern': '1', accept: 'audio/*,.wav,.mp3,.m4a,.aif,.aiff,.flac', onchange: (e) => e.target.files.length && ausLiedern([...e.target.files].map((f) => ({ datei: f, name: f.name }))) })),
+      liederBox,
+      pool.length ? h('div', { class: 'aufnahmen-liste' },
+        h('p', { class: 'klein leise', style: { marginTop: '12px' } }, `Schon ausgewertet: ${pool.length === 1 ? '1 Aufnahme' : `${pool.length} Aufnahmen`}`),
+        h('ul', null, pool.map((a, i) => h('li', null, h('span', null, kurz(a.name || 'Aufnahme', 34), h('span', { class: 'leise klein' }, a.datum ? ` · ${new Date(a.datum).toLocaleDateString('de-DE')}` : '')),
+          h('button', { class: 'knopf klein', 'aria-label': `${a.name || 'Aufnahme'} entfernen`, onclick: () => { const p = (speicher.hole('stimmAnalysen', []) || []).filter((_, k) => k !== i); speicher.merke('stimmAnalysen', p); neuBerechnen(p); } }, ic('loeschen'))))),
+        h('button', { class: 'knopf breit', style: { marginTop: '8px' }, onclick: () => neuBerechnen(speicher.hole('stimmAnalysen', []) || []) }, ic('schleife'), 'Stimmprofil aus allen neu berechnen')) : null);
+    // gespeicherte eigene Lieder mit Audio anbieten
+    speicher.lieder().then(async (ls) => {
+      for (const l of ls) {
+        const blob = await speicher.ladeAudio(l.id).catch(() => null);
+        if (!blob || !karte.isConnected && liederBox.childElementCount > 20) continue;
+        liederBox.append(h('button', { class: 'chip', onclick: () => ausLiedern([{ datei: blob, name: l.titel || 'Lied', liedId: l.id }]) }, ic('play'), `„${kurz(l.titel || 'Lied', 18)}“ auswerten`));
+      }
+    }).catch(() => {});
+    return karte;
+  }
+  async function neuBerechnen(pool) {
+    if (!pool.length) { meldung('Keine Aufnahmen mehr – das bisherige Profil bleibt'); zeigeUebersicht(); return; }
+    try { const sa = await ladeSA(); speichereLiederProfil(sa.stimmlageAusLiedern(pool)); }
+    catch (e) { meldung('Auswertung nicht möglich: ' + (e && e.message || e), 5000); }
+    zeigeUebersicht();
+  }
+  function speichereLiederProfil(p) {
+    if (!p || !isFinite(p.tief)) { meldung(p && p.text || 'Zu wenige klare Töne in den Aufnahmen', 5000); return; }
+    speicher.speichereStimme(p);
+    meldung('Dein Stimmprofil aus deinen Liedern ist gespeichert – Eignung und Übungen nutzen es jetzt');
+  }
+  async function ausLiedern(liste) {
+    stoppeAlles();
+    const stand = h('p', { style: { marginTop: '14px' } }, 'Aufnahme wird ausgewertet …');
+    const balkenI = h('i'), balken = h('div', { class: 'zeit-balken', 'aria-hidden': 'true' }, balkenI);
+    fuelle(box, h('div', { class: 'karte leer' }, h('div', { class: 'laden-kugeln', style: { justifyContent: 'center' } }, h('span'), h('span'), h('span')), stand, balken,
+      h('p', { class: 'leise klein' }, 'Tonhöhe, Sauberkeit und Register je Ton – alles auf diesem Gerät.')));
+    try {
+      const sa = await ladeSA();
+      for (let i = 0; i < liste.length; i++) {
+        const { datei, name, liedId } = liste[i];
+        stand.textContent = liste.length > 1 ? `Aufnahme ${i + 1} von ${liste.length}: ${kurz(name, 28)} …` : `${kurz(name, 34)} wird ausgewertet …`;
+        const a = await analysiereDatei(datei, name, (p) => { balkenI.style.transform = `scaleX(${Math.max(0, Math.min(1, (i + p / 100) / liste.length))})`; });
+        if (liedId) { const l = await holeLied(liedId); if (l) merkeLiedHoehe(liedId, sa.liedHoehe(l, a), sa); }
+      }
+      speichereLiederProfil(sa.stimmlageAusLiedern(speicher.hole('stimmAnalysen', []) || []));
+    } catch (e) { console.warn(e); meldung('Datei ließ sich nicht auswerten: ' + (e && e.message || e), 5000); }
+    zeigeUebersicht();
   }
   const typVon = (lo, hi) => { const m = (lo + hi) / 2; return m < 51 ? 'Bass' : m < 55.5 ? 'Bariton' : m < 60 ? 'Tenor' : m < 64 ? 'Alt' : m < 68 ? 'Mezzosopran' : 'Sopran'; };
   // Ersatz, falls stimmlage() aus den Live-Meldungen nichts Sicheres findet: Quantile der klar erkannten Töne
@@ -1124,7 +1332,7 @@ function seiteStimme() {
   }
   function fertig(st, quelle = 'aufnahme') {
     if (!st || !isFinite(st.tief)) {
-      box.replaceChildren(h('div', { class: 'karte leer' }, h('p', null, (st && st.text) || 'Es wurden zu wenige klare Töne erkannt. Bitte noch einmal – etwas lauter, näher am Mikrofon, Töne kurz halten.')),
+      fuelle(box, h('div', { class: 'karte leer' }, h('p', null, (st && st.text) || 'Es wurden zu wenige klare Töne erkannt. Bitte noch einmal – etwas lauter, näher am Mikrofon, Töne kurz halten.')),
         h('button', { class: 'knopf haupt breit', onclick: gefuehrt }, 'Noch einmal singen'), h('button', { class: 'knopf breit', style: { marginTop: '10px' }, onclick: vonHand }, ic('klavier'), 'Ton von Hand wählen'),
         h('button', { class: 'knopf breit', style: { marginTop: '10px' }, onclick: zeigeUebersicht }, 'Zurück'));
       return;
@@ -1136,7 +1344,7 @@ function seiteStimme() {
     zeigeUebersicht();
   }
   async function ausDatei(datei) {
-    box.replaceChildren(h('div', { class: 'karte leer' }, h('div', { class: 'laden-kugeln', style: { justifyContent: 'center' } }, h('span'), h('span'), h('span')), h('p', { style: { marginTop: '14px' } }, 'Aufnahme wird ausgewertet …')));
+    fuelle(box, h('div', { class: 'karte leer' }, h('div', { class: 'laden-kugeln', style: { justifyContent: 'center' } }, h('span'), h('span'), h('span')), h('p', { style: { marginTop: '14px' } }, 'Aufnahme wird ausgewertet …')));
     try {
       const { x, sr } = await ladeDatei(datei);
       const r = await imHintergrund('stimmlage', x, sr, {});
@@ -1152,7 +1360,7 @@ function seiteStimme() {
     const ring = h('div', { class: 'mic-ring' }, h('span', { class: 'welle' }), h('span', { class: 'welle' }), h('button', { class: 'rund-knopf', 'aria-label': 'Aufnahme starten', onclick: () => los() }, ic('stimme')));
     const info = h('p', { class: 'leise' }, 'Tippe auf das Mikrofon, wenn du bereit bist.');
     const leiste = h('div', { class: 'stufen-leiste' }, SCHRITTE.map((x, k) => h('div', { class: k === stufe ? 'an' : k < stufe ? 'fertig' : '' }, h('b', null, k < stufe ? '✓' : String(k + 1)), x.titel)));
-    box.replaceChildren(h('section', { class: 'karte' }, leiste),
+    fuelle(box, h('section', { class: 'karte' }, leiste),
       h('section', { class: 'karte mic-buehne' }, h('h3', { style: { fontSize: '22px' } }, s.titel), h('p', null, s.text), ring, blase, pegel, bisher, info),
       h('div', { class: 'knopf-reihe' }, h('button', { class: 'knopf', onclick: () => { stoppeAlles(); weiter(); } }, stufe < SCHRITTE.length - 1 ? 'Schritt überspringen' : 'Auswerten'),
         h('button', { class: 'knopf', onclick: zeigeUebersicht }, 'Abbrechen')));
@@ -1211,7 +1419,7 @@ function seiteStimme() {
         wahl[ziel] = m; if (ziel === 'tief') ziel = 'hoch'; male();
       } }, nName(m)));
     }
-    box.replaceChildren(
+    fuelle(box, 
       h('section', { class: 'held' }, h('h1', null, 'Ton von Hand wählen'), h('p', null, 'Tippe eine Taste: sie klingt. Sing sie nach – geht sie bequem? Dann ist sie dein tiefster bzw. höchster Ton.')),
       h('section', { class: 'karte' }, zielSeg, anzeige, tasten, speichern),
       h('button', { class: 'knopf breit', onclick: zeigeUebersicht }, ic('zurueck'), 'Zurück'));

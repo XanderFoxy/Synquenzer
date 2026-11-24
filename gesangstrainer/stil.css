@@ -417,3 +417,35 @@ details.ueb .pfeil { transition: transform .2s ease; }
 /* Wellen liegen über dem Mikrofon-Knopf: Tipps müssen durch sie hindurch zum Knopf gehen (iPhone-Fehler „Knopf ohne Funktion“) */
 .mic-ring .welle, .held::after, .held-kugeln { pointer-events: none; }
 .mic-ring .rund-knopf { position: relative; z-index: 2; }
+
+/* ---- Stimmanalyse: Klaviatur-Karte aus Liedern und „Deine Höhe in diesem Lied“ ---- */
+.stimmkarte-karte, .hoehe-karte { position: relative; overflow: hidden; padding-top: 22px; }
+.stimmkarte-karte .band, .hoehe-karte .band { position: absolute; inset: 0 0 auto 0; height: 6px; background: linear-gradient(90deg, #ff9a3d, #b56cff 55%, #33cdd0); }
+.stimmkarte-karte.frisch-rein, .hoehe-karte.frisch { animation: eg-pop .7s cubic-bezier(.2, .9, .25, 1.2) both; }
+.sk-rahmen { margin-top: 6px; }
+.stimmkarte .sk-klammer { fill: none; stroke: var(--leise); stroke-width: 1.5; }
+.stimmkarte .sk-reg { transition: fill-opacity .3s; }
+.sk-legende { display: grid; gap: 6px; margin-top: 10px; font-size: 14px; color: var(--leise); }
+.sk-legende > div { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+.sk-legende b { color: var(--text); font-weight: 700; min-width: 96px; }
+.sk-legende i { display: inline-block; width: 22px; height: 10px; border-radius: 6px; vertical-align: middle; margin-right: 6px; }
+.sk-hinweis { display: flex; gap: 8px; align-items: flex-start; margin-top: 10px; padding: 10px 12px; border-radius: 14px; background: var(--karte2); color: var(--leise); }
+.sk-hinweis .ic { flex: none; width: 20px; height: 20px; margin-top: 1px; }
+.aufnahmen-liste ul { list-style: none; margin: 6px 0 0; padding: 0; }
+.aufnahmen-liste li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 4px 0; border-top: 1px solid var(--linie); }
+.aufnahmen-liste li .knopf { min-height: 44px; min-width: 44px; }
+.aus-liedern .chips .chip { min-height: 44px; }
+.hz-liste { display: grid; gap: 8px; margin-top: 12px; }
+.hz-zeile { display: block; padding: 10px 12px; border-radius: 16px; background: var(--karte2); color: inherit; text-decoration: none; min-height: 44px; transition: transform .18s ease; }
+.hz-zeile:active { transform: scale(.98); }
+.hz-zeile p { margin: 6px 0 0; }
+.hz-silben { display: flex; flex-wrap: wrap; gap: 4px; }
+.hz-silbe { position: relative; padding: 3px 8px 5px; border-radius: 10px; font-weight: 650; font-size: 16px;
+  background: color-mix(in srgb, #1fb5c9 calc(var(--s, .3) * 42%), transparent); box-shadow: inset 0 -3px 0 var(--r, transparent); }
+.hz-silbe.leer { color: var(--schwach); background: none; box-shadow: none; }
+.hz-druck { position: absolute; top: -6px; right: -3px; width: 15px; height: 15px; border-radius: 50%; background: #ff8a9a; color: #2b1d24; font-size: 11px; line-height: 15px; text-align: center; }
+.hz-tipp { margin-top: 10px; padding: 12px; border-radius: 16px; border: 1px solid var(--linie); }
+.hz-tipp h4 { margin: 0 0 4px; font-size: 17px; }
+.hz-tipp p { margin: 0; }
+.hz-tipp .karte.ueb { margin-top: 10px; background: var(--karte2); }
+@media (prefers-reduced-motion: reduce) { .stimmkarte-karte.frisch-rein, .hoehe-karte.frisch { animation: none; } }
