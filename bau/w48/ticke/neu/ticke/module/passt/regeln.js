@@ -303,7 +303,7 @@ export function zusammenschau(R, wahl = null) {
     const mit = BEREICHE.filter((B) => L[B.id]), klar = mit.filter((B) => deutlichAus(L[B.id]) === 'klar'), leicht = mit.filter((B) => deutlichAus(L[B.id]) === 'leicht');
     const beides = mit.filter((B) => deutlichAus(L[B.id]) === 'beides');
     if (klar.length) saetze.push(`Klar zeigt sich: ${gross(klar.map((B) => B.satz[String(L[B.id].pol)]).join('; '))}.`);
-    if (leicht.length) saetze.push(`${klar.length ? 'Leichter' : 'Leicht'} zeigt sich: ${gross(leicht.map((B) => B.satz[String(L[B.id].pol)]).join('; '))}.`);
+    if (leicht.length) saetze.push(`Leicht zeigt sich: ${gross(leicht.map((B) => B.satz[String(L[B.id].pol)]).join('; '))}.`);
     if (beides.length) saetze.push(`Beides gehört zu dir bei ${liste(beides.map((B) => B.name))} – dort kommt es auf die Lage an.`);
   }
   const h = L.ehrlichkeit;

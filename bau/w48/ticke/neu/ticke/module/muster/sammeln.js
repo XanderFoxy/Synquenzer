@@ -140,7 +140,7 @@ export function baue(aeste, nachId, eintraege, stand = [], k = null) {
   const verbinde = (x, y) => { if (!x || !y || x === y || !nachbar.has(x) || !nachbar.has(y)) return; nachbar.get(x).add(y); nachbar.get(y).add(x); };
   for (const a of aeste) for (const v of a.verwandt) verbinde(a.id, finde(v));
   for (const [x, ys] of Object.entries(VERBINDUNGEN)) for (const y of ys) verbinde(finde(x), finde(y));
-  for (const a of aeste) a.verwandt = a.verwandt.map(finde).filter((v) => v && v !== a.id && nachId.has(v));
+  const verwandtVon = new Map(aeste.map((a) => [a.id, [...new Set(a.verwandt.map(finde))].filter((v) => v && v !== a.id && nachId.has(v))]));
   // Kombinationen
   const lagen = new Map();
   for (const [echt, kan] of kanon) { const e = richtung.get(echt); if (e) lagen.set(kan, { seiten: e.seiten, deutlich: e.deutlich }); }
@@ -148,7 +148,7 @@ export function baue(aeste, nachId, eintraege, stand = [], k = null) {
   // Bereiche in fester Reihenfolge
   const bereiche = [...new Set([...BEREICH_REIHE.filter((b) => aeste.some((a) => a.bereich === b)), ...aeste.map((a) => a.bereich)])]
     .map((name) => ({ name, slug: slug(name), aeste: aeste.filter((a) => a.bereich === name) }));
-  const S = { aeste, nachId, richtung, nachbar, regeln, bereiche, stand, finde, kanon, k };
+  const S = { aeste, nachId, richtung, nachbar, verwandtVon, regeln, bereiche, stand, finde, kanon, k };
   S.saetze = zusammensetzen(S);
   return S;
 }
@@ -197,7 +197,7 @@ export function springen(S, id) {
   const a = S.nachId.get(id); if (!a) return { verwandt: [], geschwister: [], ferne: [] };
   const gesehen = new Set([id]);
   const nimm = (ids, max = 99) => { const r = []; for (const x of ids) { if (r.length >= max) break; if (!x || gesehen.has(x) || !S.nachId.has(x)) continue; gesehen.add(x); r.push(S.nachId.get(x)); } return r; };
-  const verwandt = nimm([...a.verwandt, ...(S.nachbar.get(id) || [])], 6);
+  const verwandt = nimm([...(S.verwandtVon.get(id) || []), ...(S.nachbar.get(id) || [])], 6);
   const geschwister = nimm(S.aeste.filter((x) => x.bereich === a.bereich).map((x) => x.id), 8);
   const kan = S.kanon.get(id) || id;
   const kombi = kombiNachbarn(kan).map(S.finde).filter(Boolean);

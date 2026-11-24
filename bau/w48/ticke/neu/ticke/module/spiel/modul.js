@@ -82,7 +82,7 @@ function quelle(S) {
 }
 const VORN = { klar: 'Klar', leicht: 'Leicht' };
 function richtungSatz(B, b) {
-  if (!b.richtung || b.deutlich === 'beides') return `Beides gehört zu dir – ${B.satz[2]}`;   // satz[2] beginnt mit einem Hauptwort
+  if (!b.richtung || b.deutlich === 'beides') return `Beides gehört zu dir: ${B.satz[2]}`;   // satz[2] beginnt mit einem Hauptwort
   const pol = b.richtung > 0 ? B.rechts : B.links;
   return `${VORN[b.deutlich] || 'Leicht'} in Richtung „${pol}“ – ${klein(B.satz[b.richtung > 0 ? 0 : 1])}`;
 }
@@ -146,10 +146,22 @@ const HINWEIS = { paar: 'Nimm, was eher stimmt – auch wenn beides oder keins g
   kette: 'Nimm, was eher stimmt – auch wenn beides oder keins ganz passt.', duell: 'Egal, ob du es kannst – was würdest du lieber tun?' };
 // Im Wählen selbst sichtbar, solange nichts gemerkt wird: Neuladen (Safari tut das im Hintergrund oft) fängt sonst still von vorn an.
 const merkKnopf = () => (kern.speicher.einwilligung() ? '' : `<button type="button" class="sp-merk" data-aktion="merken" aria-label="Nicht gemerkt: Neuladen oder Schließen startet wieder bei Wahl 1. Antippen, um auf diesem Gerät zu merken.">${sym('schloss')}<span>Nicht gemerkt</span></button>`);
-// Zwei Pole als Worte, dazwischen eine ruhige Linie – ohne Zahl, ohne Markierung. Hervorgehoben: der Pol, zu dem die Wahlen neigen (bei „beides“ beide).
-function pole(B, b) {
-  const an = (seite) => (!b || !b.richtung || b.deutlich === 'beides' || b.richtung === seite ? ' sp-pol-an' : '');
-  return `<div class="sp-pole" aria-hidden="true"><span class="sp-pol${b ? an(-1) : ''}">${esc(B.links)}</span><span class="sp-pol-linie"></span><span class="sp-pol${b ? an(1) : ''}">${esc(B.rechts)}</span></div>`;
+// Zwei Pole als Worte, dazwischen eine ruhige Linie – ohne Zahl, ohne Markierung – und der Satz in Worten.
+// Nimmt ui.richtung() des Kerns, wenn es sie gibt (einheitliches Aussehen); sonst eigene, gleich aufgebaute Darstellung.
+function achse(B, b) {
+  const satz = b ? richtungSatz(B, b) : '';
+  if (b && typeof ui.richtung === 'function') {
+    try { return ui.richtung({ pole: [B.links, B.rechts], deutlich: b.deutlich, zu: b.deutlich === 'beides' || !b.richtung ? null : b.richtung > 0 ? 1 : 0, text: satz }); } catch {}
+  }
+  const an = (seite) => (b && (!b.richtung || b.deutlich === 'beides' || b.richtung === seite) ? ' sp-pol-an' : '');
+  return `<div class="sp-pole" aria-hidden="true"><span class="sp-pol${an(-1)}">${esc(B.links)}</span><span class="sp-pol-linie"></span><span class="sp-pol${an(1)}">${esc(B.rechts)}</span></div>
+    ${b ? `<p class="sp-satz">${esc(satz)}</p>` : ''}`;
+}
+// Beide Pole mit ihren Stärken (aus den Ästen), aufklappbar
+const AST = Object.fromEntries(AESTE.map((a) => [a.id, a]));
+function beideSeiten(B) {
+  const A = AST['spiel.' + B.id]; if (!A || !A.pole) return '';
+  return `<details class="sp-beide"><summary>Beide Seiten</summary>${A.pole.map((p) => `<p><b>${esc(p.name)}:</b> ${esc(p.text)}</p>`).join('')}</details>`;
 }
 function kurzMuster(e, n = 3) {
   const RANG = { klar: 0, leicht: 1, beides: 2 };
@@ -227,7 +239,7 @@ function runde(ctx) {
     el.innerHTML = `<section class="sp sp-ende sp-f1" aria-labelledby="sp-h">
       <h2 id="sp-h" tabindex="-1">Alle ${HAUPT_ANZAHL} Wahlen sind da</h2>
       <p>Danke fürs Wählen. Dein Muster steht in Worten bereit – und jede Wahl kannst du später noch ändern.</p>
-      ${liste ? `<div class="karte"><b>Erste Richtungen</b><ul class="sp-kurz">${liste}</ul></div>` : ''}
+      ${liste ? `<div class="karte"><b>Was sich zeigt</b><ul class="sp-kurz">${liste}</ul></div>` : ''}
       <a class="knopf haupt gross voll" href="#spiel/ergebnis">Dein Muster ansehen</a>
       ${offen ? `<div class="karte weich"><b>Noch ${zahlOffen(l, DUELLE)} Wahlen zu Tätigkeiten?</b><p>Freiwillig, etwa eine Minute: Was würdest du lieber tun? Daraus wird sichtbar, welche Arten von Tätigkeiten dich anziehen.</p>
         <button type="button" class="knopf voll" data-sp="duelle">Tätigkeiten wählen</button></div>` : ''}
@@ -322,9 +334,9 @@ function ergebnis(ctx) {
     const bereiche = BEREICHE.map((B) => {
       const b = e.bereiche[B.id];
       return `<section class="karte sp-ri" aria-labelledby="sp-r-${B.id}"><h3 id="sp-r-${B.id}">${esc(B.titel)}</h3>
-        ${pole(B, b)}
-        ${b ? `<p class="sp-satz">${esc(richtungSatz(B, b))}</p><p class="klein leise">${esc(woherBereich(B, b, q))}</p>`
-    : '<p class="sp-satz leise">Noch offen – dazu fehlen noch ein paar Wahlen.</p>'}
+        ${achse(B, b)}
+        ${b ? `<p class="klein leise">${esc(woherBereich(B, b, q))}</p>` : '<p class="sp-satz leise">Noch offen – dazu fehlen noch ein paar Wahlen.</p>'}
+        ${beideSeiten(B)}
         <a class="link sp-ast" href="#muster/ast/spiel.${B.id}">Mehr über diesen Ast: ${esc(B.titel)}${sym('weiter')}</a></section>`;
     }).join('');
 

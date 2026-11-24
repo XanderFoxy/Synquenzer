@@ -17,7 +17,7 @@ for (let i = 0; i < 30; i++) {
   let w = info ? ziel[info.b] : 3; if (info && info.k < 0) w = 6 - w;
   if (info && info.b === 'E') w = i % 2 ? 5 : 1;   // E: in verschiedene Richtungen
   await p.click(`.antwort[data-wert="${w}"]`);
-  await p.waitForTimeout(420);
+  await p.waitForTimeout(Number(process.env.PAUSE || 420));
 }
 await p.waitForSelector('.bf-bereich', { timeout: 8000 });
 const daten = await p.evaluate(() => Object.fromEntries(Object.keys(localStorage).filter((k) => k.startsWith('ticke.')).map((k) => [k, localStorage.getItem(k)])));

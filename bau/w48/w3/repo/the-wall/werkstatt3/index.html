@@ -85,6 +85,7 @@ summary .sl{white-space:nowrap}
 #transport::-webkit-scrollbar{display:none}
 #transport button{flex:0 0 auto;padding:0}
 #transport button.txt{padding:0 10px}
+@media (max-width:427px){#transport{flex-wrap:wrap;overflow:visible;row-gap:4px}#transport .zeit{flex:1 1 100%;min-width:0}#transport .zeit small{display:inline;margin-left:10px}} /* schmale iPhones: Zeit nicht abgeschnitten */
 button[aria-pressed=true]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
 #bSpiel{background:var(--gold);color:var(--goldfg);border-color:var(--gold)}
 .zeit{flex:1 1 84px;min-width:84px;font:600 15px/1.1 ui-monospace,Menlo,monospace;text-align:center;white-space:nowrap}

@@ -5,7 +5,7 @@
 // export async function laden(file)            → {x, sr, name, kanaele, bits, format, dauer}
 //        file: File | Blob | ArrayBuffer | Uint8Array. WAV (PCM 8/16/24/32, Float 32/64, Extensible)
 //        und AIFF/AIFC werden selbst gelesen (Abtastrate bleibt original), alles andere
-//        (mp3, m4a, flac, ogg, caf …) über decodeAudioData. Stereo/mehrkanalig → Mono-Mitte.
+//        (mp3, m4a, flac, ogg, caf …) über decodeAudioData (FLAC/MP3 in Original-Abtastrate). Stereo/mehrkanalig → Mono-Mitte.
 // export function wavLesen(buffer)             → {kanaele:[Float32Array…], sr, bits, format} oder null
 // export function wav(x, sr, bits=24, opt={})  → Blob (audio/wav). x: Float32Array oder [Float32Array…]
 //        bits 16 | 24 (PCM) | 32 (Float). opt.dither (TPDF, nur sinnvoll bei 16 bit), Standard aus.
@@ -27,7 +27,7 @@ export async function laden(file) {
   if (buf.byteLength < 12) throw new Error('Datei ist leer oder zu kurz');
 
   let r = wavLesen(buf) || aiffLesen(buf);
-  if (!r) r = await dekodieren(buf, flacRate(buf));
+  if (!r) r = await dekodieren(buf, flacRate(buf) || mp3Rate(buf));
   const x = mono(r.kanaele);
   return { x, sr: r.sr, name, kanaele: r.kanaele.length, bits: r.bits, format: r.format, dauer: x.length / r.sr };
 }
@@ -142,6 +142,23 @@ function flacRate(buf) { // FLAC STREAMINFO: originale Abtastrate, damit nicht u
   try {
     const u = new Uint8Array(buf, 0, Math.min(64, buf.byteLength));
     if (u[0] === 0x66 && u[1] === 0x4C && u[2] === 0x61 && u[3] === 0x43) return (u[18] << 12) | (u[19] << 4) | (u[20] >> 4);
+  } catch (e) { /* egal */ }
+  return 0;
+}
+
+function mp3Rate(buf) { // MP3-Rahmenkopf: originale Abtastrate (44,1 kHz bleibt 44,1 kHz statt auf 48 kHz umgerechnet)
+  try {
+    const u = new Uint8Array(buf);
+    let i = 0;
+    if (u[0] === 0x49 && u[1] === 0x44 && u[2] === 0x33) i = 10 + ((u[6] & 127) << 21 | (u[7] & 127) << 14 | (u[8] & 127) << 7 | (u[9] & 127)) + (u[5] & 16 ? 10 : 0);
+    else if (u[0] !== 0xFF || (u[1] & 0xE0) !== 0xE0) return 0; // kein MP3 (z. B. M4A) → nicht anfassen
+    const n = Math.min(u.length - 4, i + 8192);
+    for (; i < n; i++) {
+      if (u[i] !== 0xFF || (u[i + 1] & 0xE0) !== 0xE0) continue;
+      const ver = (u[i + 1] >> 3) & 3, lay = (u[i + 1] >> 1) & 3, br = u[i + 2] >> 4, si = (u[i + 2] >> 2) & 3;
+      if (ver === 1 || lay === 0 || br === 0 || br === 15 || si === 3) continue;
+      return [44100, 48000, 32000][si] / (ver === 3 ? 1 : ver === 2 ? 2 : 4);
+    }
   } catch (e) { /* egal */ }
   return 0;
 }

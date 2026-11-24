@@ -77,6 +77,10 @@
 .sp-pol.sp-pol-an{border-color:var(--akzent);background:var(--akzent-weich);color:var(--text);font-weight:650}
 .sp-pol-linie{flex:1 1 1rem;min-width:1rem;height:2px;border-radius:1px;background:var(--rand)}
 .sp-satz{margin:.2rem 0 .35rem}
+.sp-ri .richtung{margin:.2rem 0 .5rem}
+.sp-beide{margin:.3rem 0 0}
+.sp-beide summary{min-height:2.75rem;display:flex;align-items:center;cursor:pointer;color:var(--akzent);font-weight:600}
+.sp-beide p{margin:.2rem 0 .5rem}
 .sp-liste{margin:.3rem 0;padding-left:1.1rem}.sp-liste li{margin:.3rem 0}
 .sp-ast{display:inline-flex;align-items:center;gap:.2rem;min-height:2.75rem;font-weight:600}
 .sp-ast .sym{width:1.1rem;height:1.1rem}

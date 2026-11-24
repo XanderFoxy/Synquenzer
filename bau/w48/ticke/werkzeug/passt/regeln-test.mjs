@@ -24,7 +24,7 @@ const verboten = /%|Prozent|Punkte?\b|Platz \d|von \d|Rang|höher als|niedriger 
 for (const [w, t] of texte) {
   if (!t) continue;
   ok(!verboten.test(t), `Bewertungs-Wort in ${w}: ${t}`);
-  const ohne = t.replace(/\b\d{1,2}:\d{2}\b/g, '').replace(/\((19|20)\d\d\)/g, '').replace(/\b(19|20)\d\d\b/g, '').replace(/zwischen 20 und 40/g, '').replace(/19 Stichproben/g, '');
+  const ohne = t.replace(/\b\d{1,2}:\d{2}\b/g, '').replace(/\((19|20)\d\d\)/g, '').replace(/\b(19|20)\d\d\b/g, '').replace(/zwischen 20 und 40/gi, '').replace(/etwa 20 Minuten/g, '').replace(/19 Stichproben/g, '');
   ok(!/\d/.test(ohne), `Zahl in ${w}: ${t}`);
 }
 console.log('Zusammenschau:'); Z.forEach((s) => console.log('  ', s));
