@@ -913,4 +913,5 @@ verlauf.wiederherstellen().then((l) => {
 // für Tests und Fehlersuche
 window.werkstatt3 = { Z, E, verlauf, rufen, zeichnen: neu,
   ort(i) { const n = noten()[i], r = buehne.getBoundingClientRect(); if (!n) return null; const t = Math.min(n.t1 - 0.01, (n.peak ?? n.t0) + 0.03); return { x: r.left + xOf(t), y: r.top + yOf(n.midi + (n.cent || 0) / 100), sichtbar: xOf(t) > K && xOf(t) < W }; },
-  zeige(t) { Z.sicht.t0 = t; begrenzen(); neu(); } };
+  zeige(t) { Z.sicht.t0 = t; begrenzen(); neu(); },
+  hoertGerade() { if (!spiel || !puf.id) return null; const v = verlauf.liste().find((w) => w.id === puf.id); return v ? v.name : null; } };
