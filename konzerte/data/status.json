@@ -1,5 +1,5 @@
 {
- "stand": "2026-11-26T08:29:40.080Z",
+ "stand": "2026-11-26T13:05:57.250Z",
  "quellen": {
   "ticketmaster": {
    "ok": true,
@@ -13,7 +13,7 @@
    "treffer": 14,
    "fehler": [],
    "uebersprungen": null,
-   "ms": 12236
+   "ms": 12418
   },
   "seiten": {
    "ok": false,
@@ -22,7 +22,7 @@
     "Gothic meets Klassik: fetch failed"
    ],
    "uebersprungen": null,
-   "ms": 11080,
+   "ms": 11075,
    "geprueft": 3,
    "gesamt": 4
   },
@@ -31,23 +31,21 @@
    "treffer": 8,
    "fehler": [],
    "uebersprungen": null,
-   "ms": 73643
+   "ms": 45383
   },
   "mbevents": {
-   "ok": false,
+   "ok": true,
    "treffer": 0,
-   "fehler": [
-    "The Frozen Autumn: HTTP 503 musicbrainz.org"
-   ],
+   "fehler": [],
    "uebersprungen": null,
-   "ms": 70749
+   "ms": 50819
   },
   "deezer": {
    "ok": true,
    "treffer": 3,
    "fehler": [],
    "uebersprungen": null,
-   "ms": 2303
+   "ms": 3014
   }
  },
  "pushes": 0,
