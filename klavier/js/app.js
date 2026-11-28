@@ -297,7 +297,7 @@ async function seiteStart() {
     <header class="held"><img src="icon.svg" alt=""><div><h1>Klavier-Lernhilfe</h1><p>Noten sehen · Akkorde verstehen · Tasten finden</p></div></header>
     <button class="laden" type="button" id="laden"><span class="kreis">${ICON.datei}</span><span><b>Notenblatt laden</b><span>Tippen – oder Datei hierher ziehen</span></span></button>
     <div class="formate"><span class="ok">MusicXML</span><span class="ok">MXL</span><span class="ok">MIDI</span><span class="ok">Foto</span></div>
-    <a class="scanner-hinweis foto-karte" href="#scan"><span class="kreis">${ICON.scanner}</span><span><b>Noten aus Foto</b><small>Notenseite fotografieren – die App sucht Zeilen und Takte, Claude liest die Noten, du prüfst Takt für Takt</small></span>${ICON.pfeil}</a>
+    <a class="scanner-hinweis foto-karte" href="#scan"><span class="kreis">${ICON.scanner}</span><span><b>Noten aus Foto</b><small>Notenseite fotografieren – die App sucht Zeilen und Takte, die KI liest die Noten, du prüfst Takt für Takt</small></span>${ICON.pfeil}</a>
     <input type="file" id="datei" hidden accept=".musicxml,.xml,.mxl,.mid,.midi,application/vnd.recordare.musicxml+xml,application/vnd.recordare.musicxml,audio/midi,audio/x-midi,application/pdf,image/*">
     <h2 class="abschnitt">Meine Stücke</h2>
     <div class="liste" id="eigene"></div>

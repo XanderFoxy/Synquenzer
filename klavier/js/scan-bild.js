@@ -1,10 +1,13 @@
 // scan-bild.js – Noten-Foto vorbereiten, alles im Gerät (nichts wird gesendet):
-// Graustufen → Licht ausgleichen → Schwellwert → Schräglage (Projektion) → Notenlinien (waagrechte Projektion)
+// Graustufen → Licht ausgleichen → Schwellwert → Schräglage (Projektion) → bei sehr engen Notenlinien (kleines Foto,
+// Liederbuch) glatt vergrößern und neu binarisieren → Notenlinien (waagrechte Projektion)
 // → Klavier-Zeilen (Akkoladen) → Taktstriche (senkrechte Projektion je Zeile) → grobe Notenkopf-Zählung
 // → scharfe Zuschnitte je Zeile für die KI (unter der 1,2-Megapixel-Grenze, ab der die KI verkleinert).
 // Die reinen Rechen-Funktionen arbeiten auf Uint8Array (auch in Node testbar).
 
-export const GRENZEN = { analyse: 1600, meister: 3400, kiPixel: 1150000, kiKante: 2000, taktKante: 1600, minAbstandKi: 12 };
+// engAbstand/zielAbstand: Notenlinien enger als 8 px (kleines Foto, Liederbuch-Seite) → vor dem Schwellwert glatt auf ~12 px
+// vergrößern; analysePixel begrenzt dann die Arbeitsgröße (Speicher im iPhone).
+export const GRENZEN = { analyse: 1600, meister: 3400, kiPixel: 1150000, kiKante: 2000, taktKante: 1600, minAbstandKi: 12, engAbstand: 8, zielAbstand: 12, analysePixel: 4200000 };
 const ruhe = () => new Promise((r) => setTimeout(r, 0));
 
 // ───────── Grundbausteine (rein) ─────────
@@ -59,15 +62,15 @@ export function lichtAusgleich(g, w, h, { staerke = 1 } = {}) {
   return aus;
 }
 
-/** Schwellwert nach Otsu (trennt Tinte und Papier). */
-export function otsu(g) {
+/** Schwellwert nach Otsu (trennt Tinte und Papier). bis: nur Grauwerte ≤ bis (z. B. Kern und Rand der Tinte trennen). */
+export function otsu(g, bis = 255) {
   const hist = new Float64Array(256);
   for (let i = 0; i < g.length; i++) hist[g[i]]++;
-  let sum = 0; for (let i = 0; i < 256; i++) sum += i * hist[i];
-  let sB = 0, wB = 0, best = 0, t = 128;
-  for (let i = 0; i < 256; i++) {
+  let sum = 0, n = 0; for (let i = 0; i <= bis; i++) { sum += i * hist[i]; n += hist[i]; }
+  let sB = 0, wB = 0, best = 0, t = bis < 255 ? bis : 128;
+  for (let i = 0; i <= bis; i++) {
     wB += hist[i]; if (!wB) continue;
-    const wF = g.length - wB; if (!wF) break;
+    const wF = n - wB; if (!wF) break;
     sB += i * hist[i];
     const mB = sB / wB, mF = (sum - sB) / wF, v = wB * wF * (mB - mF) * (mB - mF);
     if (v > best) { best = v; t = i; }
@@ -128,20 +131,43 @@ export function notenlinien(bin, w, h, { dicke, abstand }) {
   const P = new Float32Array(h);
   for (let y = 0; y < h; y++) { let s = 0; const o = y * w; for (let x = x0; x < x1; x++) s += bin[o + x]; P[y] = s / band; }
   // Stärke: Deckung einer Zeile – eine leicht schräge/krumme Linie verteilt sich auf zwei Zeilen
+  // (für die Suche nicht bei 1 abgeschnitten: dicke, eng stehende Linien ergäben sonst ein Plateau über mehrere Linien hinweg)
   const Q = new Float32Array(h);
-  for (let y = 0; y < h; y++) Q[y] = Math.min(1, Math.max(P[y], P[y] + (P[y - 1] || 0) * 0.8, P[y] + (P[y + 1] || 0) * 0.8));
+  for (let y = 0; y < h; y++) Q[y] = Math.max(P[y], P[y] + (P[y - 1] || 0) * 0.8, P[y] + (P[y + 1] || 0) * 0.8);
   const kand = [];
   for (let y = 0; y < h; y++) if (Q[y] >= 0.42 && Q[y] >= (Q[y - 1] || 0) && Q[y] > (Q[y + 1] || 0)) kand.push(y);
   const radius = Math.max(2, abstand * 0.42);
   kand.sort((a, b) => Q[b] - Q[a]);
   const genommen = [];
   for (const y of kand) if (!genommen.some((z) => Math.abs(z - y) < radius)) genommen.push(y);
-  const fen = Math.max(1, Math.ceil(dicke / 2) + 1);
+  // Mitte der Linie: die Spitze von Q liegt bei dicken Linien am Rand des Plateaus – deshalb die ganze Linie nehmen
+  // (zusammenhängend, mindestens halb so dunkel wie ihr dunkelster Streifen, höchstens ±0,45 Abstände) und deren
+  // Schwerpunkt. Ein festes Fenster um die Spitze verschob dicke Linien um 1–2 px; die Fünfergruppe wurde dann zu
+  // ungleichmäßig und eine Hilfslinien-Reihe darüber als Notenlinie genommen (Foto vom Telefon, Liederbuch).
+  const fen = Math.max(1, Math.min(Math.ceil(dicke / 2) + 1, Math.floor(0.3 * abstand))), lim = Math.max(1, Math.floor(0.45 * abstand));
   return genommen.sort((a, b) => a - b).map((y) => {
+    let py = y;
+    for (let d = -fen; d <= fen; d++) { const yy = y + d; if (yy >= 0 && yy < h && P[yy] > P[py]) py = yy; }
+    const halb = 0.5 * P[py];
+    let a = py, e = py;
+    while (a - 1 >= 0 && py - (a - 1) <= lim && P[a - 1] >= halb) a--;
+    while (e + 1 < h && e + 1 - py <= lim && P[e + 1] >= halb) e++;
     let s = 0, m = 0;
-    for (let d = -fen; d <= fen; d++) { const yy = y + d; if (yy >= 0 && yy < h && P[yy] > 0.25) { s += P[yy]; m += P[yy] * yy; } }
-    return { y: s ? m / s : y, staerke: Q[y] };
+    for (let yy = a; yy <= e; yy++) { s += P[yy]; m += P[yy] * yy; }
+    return { y: s ? m / s : y, staerke: Math.min(1, Q[y]) };
   });
+}
+
+/** Längste schwarze Strecke entlang einer Bildzeile im mittleren Bereich (y ±1, leicht schräge Linien bleiben drin). */
+export function laengsterLauf(bin, w, h, y) {
+  const yy = Math.round(y), x0 = Math.floor(w * 0.18), x1 = Math.ceil(w * 0.82);
+  let lauf = 0, best = 0;
+  for (let x = x0; x < x1; x++) {
+    let s = 0;
+    for (let d = -1; d <= 1; d++) if (yy + d >= 0 && yy + d < h && bin[(yy + d) * w + x]) s = 1;
+    if (s) { lauf++; if (lauf > best) best = lauf; } else lauf = 0;
+  }
+  return best;
 }
 
 /** Je fünf gleich weit entfernte Linien = ein Notensystem. Gibt es mehrere Möglichkeiten, gewinnen die kräftigsten Linien. */
@@ -156,6 +182,7 @@ export function fuenferGruppen(linien, abstand) {
       for (let j = liste[liste.length - 1] + 1; j < ys.length && ys[j] < ziel + 0.4 * g; j++) { const d = Math.abs(ys[j] - ziel); if (d < bd) { bd = d; bj = j; } }
       if (bj < 0 || bd > 0.26 * g) { ok = false; break; }
       liste.push(bj); g = (ys[bj] - ys[i]) / k;
+      if (k === 1) g = (g + abstand) / 2; // ein einzelner Abstand ist unsicher (dicke, unscharfe Linien): mit dem gemessenen mitteln
     }
     if (!ok) continue;
     const luecken = liste.slice(1).map((j, k) => ys[j] - ys[liste[k]]);
@@ -197,7 +224,15 @@ export function ausdehnung(bin, w, h, st) {
   if (a >= 0) teile.push([a, letzt]);
   if (!teile.length) return { x0: 0, x1: w - 1 };
   teile.sort((p, q) => (q[1] - q[0]) - (p[1] - p[0]));
-  return { x0: teile[0][0], x1: teile[0][1] };
+  let [x0, x1] = teile[0];
+  // Klammer/Akkolade vor dem System: ein schmales Stück ganz links, durch eine Lücke vom Linienanfang getrennt –
+  // gehört nicht zur Zeile (sonst beginnt die Zeile zu weit links und Schlüssel/Vorzeichen fallen aus dem Kopf-Ausschnitt)
+  for (let n = 0; n < 2; n++) {
+    let e = x0; while (e < x1 && da[e + 1]) e++;
+    let a = e + 1; while (a < x1 && !da[a]) a++;
+    if (e - x0 + 1 <= 0.6 * st.g && a - e - 1 >= 0.4 * st.g && x1 - a > 12 * st.g) x0 = a; else break;
+  }
+  return { x0, x1 };
 }
 
 /** Sind zwei Notensysteme durch einen senkrechten Strich verbunden (Taktstrich/Klammer einer Klavier-Zeile)? */
@@ -213,7 +248,45 @@ export function verbunden(bin, w, h, a, b) {
     for (let y = y0; y < y1; y++) { const o = y * w + x; if (bin[o] || bin[o - 1] || bin[o + 1]) s++; else if (y - y0 - s > 0.08 * hoehe) break; }
     if (s >= 0.92 * hoehe) { treffer++; x += Math.ceil(g); }
   }
-  return treffer; // Anzahl verbindender Striche (0 = nicht verbunden)
+  // Anzahl verbindender Striche (0 = nicht verbunden); ohne geraden Strich zählt auch eine (gebogene) Klammer am Zeilenanfang
+  return treffer || (klammer(bin, w, h, a, b) ? 1 : 0);
+}
+
+/**
+ * Klammer (Akkolade) vor einer Klavier-Zeile: ein zusammenhängender, auch gebogener Strich vom unteren Rand von System a
+ * bis zum oberen Rand von System b – gesucht im Streifen links vom Zeilenanfang. Liedtext zwischen den Systemen
+ * (Liederbuch) unterbricht ihn nicht, Buchstaben ergeben keinen durchgehenden Weg.
+ */
+export function klammer(bin, w, h, a, b) {
+  const g = (a.g + b.g) / 2;
+  const xa = Math.max(0, Math.round(Math.min(a.x0, b.x0) - 4 * g)), xb = Math.min(w - 1, Math.round(Math.max(a.x0, b.x0) + 0.5 * g));
+  const y0 = Math.max(0, Math.round(a.y[4])), y1 = Math.min(h - 1, Math.round(b.y[0]));
+  const bw = xb - xa + 1;
+  if (bw < 3 || y1 - y0 < 2) return false;
+  // Rahmen um die Seite, Seitenrand, Schatten im Buchfalz: ein gerader Strich, der weit über beide Systeme hinausreicht,
+  // ist keine Klammer – solche Spalten zählen nicht (sonst „verbindet“ ein Rahmen alle Systeme der Seite zu einer Zeile)
+  const ra = Math.max(0, Math.round(a.y[0] - 2 * g)), rb = Math.min(h - 1, Math.round(b.y[4] + 2 * g));
+  const frei = new Uint8Array(bw).fill(1);
+  if (ra < Math.round(a.y[0]) && rb > Math.round(b.y[4])) {
+    for (let x = 0; x < bw; x++) {
+      const xx = xa + x; let n = 0;
+      for (let y = ra; y <= rb; y++) { const o = y * w + xx; if (bin[o] || (xx > 0 && bin[o - 1]) || (xx < w - 1 && bin[o + 1])) n++; }
+      if (n >= 0.9 * (rb - ra + 1)) frei[x] = 0;
+    }
+  }
+  const schwarz = (o, x) => bin[o + x] && frei[x];
+  let reich = new Uint8Array(bw), neu = new Uint8Array(bw), da = 0;
+  for (let x = 0; x < bw; x++) if ((reich[x] = schwarz(y0 * w + xa, x) ? 1 : 0)) da++;
+  for (let y = y0 + 1; y <= y1 && da; y++) {
+    const o = y * w + xa;
+    da = 0;
+    for (let x = 0; x < bw; x++) neu[x] = schwarz(o, x) && (reich[x] || (x > 0 && reich[x - 1]) || (x < bw - 1 && reich[x + 1])) ? 1 : 0;
+    for (let x = 1; x < bw; x++) if (!neu[x] && neu[x - 1] && schwarz(o, x)) neu[x] = 1; // entlang der schwarzen Strecke in der Zeile
+    for (let x = bw - 2; x >= 0; x--) if (!neu[x] && neu[x + 1] && schwarz(o, x)) neu[x] = 1;
+    for (let x = 0; x < bw; x++) da += neu[x];
+    [reich, neu] = [neu, reich];
+  }
+  return da > 0;
 }
 
 /** Notensysteme zu Zeilen gruppieren: verbundene gehören zusammen; sonst Paare nach Abstandsmuster (Klavier). */
@@ -225,6 +298,23 @@ export function zeilenBilden(bin, w, h, staves) {
     let akt = [0];
     verb.forEach((v, i) => { if (v) akt.push(i + 1); else { gruppen.push(akt); akt = [i + 1]; } });
     gruppen.push(akt);
+    // Klavier-Zeilen, deren Verbindung nicht zu sehen war (blasser Strich, Liedtext dazwischen): zwei einzelne Systeme
+    // nebeneinander zusammenfassen, wenn ihr Abstand dem der erkannten Paare entspricht – das Muster wiederholt sich
+    const paarL = gruppen.filter((gr) => gr.length === 2).map((gr) => staves[gr[1]].y[0] - staves[gr[0]].y[4]).sort((p, q) => p - q);
+    if (paarL.length) {
+      const m = paarL[paarL.length >> 1], neu = [];
+      const lueckeNach = (i) => (i + 1 < staves.length ? staves[i + 1].y[0] - staves[i].y[4] : null);
+      // nur bei einem echten Wechsel-Muster: die Lücke im Paar unterscheidet sich deutlich von den Lücken davor/danach
+      // (eine Melodie-Seite hat überall gleiche Lücken – ein einzelner Schein-Strich darf sie nicht in Paare teilen)
+      const anders = (l, x) => x == null || Math.abs(l - x) > 0.2 * Math.max(l, x);
+      for (let k = 0; k < gruppen.length; k++) {
+        const a = gruppen[k], b = gruppen[k + 1];
+        const l = b ? lueckeNach(a[0]) : null;
+        if (b && a.length === 1 && b.length === 1 && Math.abs(l - m) <= 0.2 * m && anders(l, a[0] > 0 ? lueckeNach(a[0] - 1) : null) && anders(l, lueckeNach(b[0]))) { neu.push([a[0], b[0]]); k++; continue; }
+        neu.push(a);
+      }
+      gruppen = neu;
+    }
     // Klavier-Zeilen dicht untereinander: ein Hals oder Schatten kann zwei Zeilen „verbinden“. Bei 4, 6 … Systemen
     // in Paare teilen, wenn die Verbindungen innerhalb der Paare deutlich mehr Striche haben als die zwischen ihnen.
     gruppen = gruppen.flatMap((gr) => {
@@ -240,7 +330,9 @@ export function zeilenBilden(bin, w, h, staves) {
     const l = staves.slice(1).map((s, i) => s.y[0] - staves[i].y[4]);
     const innen = l.filter((_, i) => i % 2 === 0), aussen = l.filter((_, i) => i % 2 === 1);
     const maxI = Math.max(...innen), minA = aussen.length ? Math.min(...aussen) : Infinity;
-    if (minA > maxI * 1.12) for (let i = 0; i < staves.length; i += 2) gruppen.push([i, i + 1]);
+    // auch umgekehrt (Liederbuch: drei Zeilen Liedtext zwischen Violin- und Bass-System): innen regelmäßig deutlich größer
+    const minI = Math.min(...innen), maxA = aussen.length ? Math.max(...aussen) : Infinity;
+    if (minA > maxI * 1.12 || (staves.length >= 4 && minI > maxA * 1.25)) for (let i = 0; i < staves.length; i += 2) gruppen.push([i, i + 1]);
     else gruppen = staves.map((_, i) => [i]);
   } else gruppen = staves.map((_, i) => [i]);
   return gruppen.map((idx) => {
@@ -255,35 +347,77 @@ export function zeilenBilden(bin, w, h, staves) {
 /** Taktstriche einer Zeile: Spalten, die jedes Notensystem ganz durchziehen und darüber/darunter frei sind.
  *  Auch leicht schräge Striche (Foto nicht ganz von oben: senkrechte Linien laufen zusammen) – bis etwa 7°. */
 const NEIGUNGEN = [0, 0.03, -0.03, 0.06, -0.06, 0.09, -0.09, 0.12, -0.12];
-export function taktstriche(bin, w, h, z) {
+export function taktstriche(bin, w, h, z, kopfBin = null) { // kopfBin: strenges Bild – bei unscharfen Bildern für die Kopf-Prüfung
   const g = z.g, ym = (z.top + z.bot) / 2;
   const xa = Math.max(1, Math.round(z.x0 + 0.7 * g)), xb = Math.min(w - 2, Math.round(z.x1 + 0.6 * g));
-  const deckung = (x, s, y0, y1) => {
+  const deckung = (x, s, y0, y1, b = bin) => {
     let n = 0;
     const ya = Math.max(0, Math.round(y0)), ye = Math.min(h - 1, Math.round(y1));
     for (let y = ya; y <= ye; y++) {
       const xx = Math.round(x + s * (y - ym));
       if (xx < 1 || xx > w - 2) continue;
-      const o = y * w + xx; if (bin[o] || bin[o - 1] || bin[o + 1]) n++;
+      const o = y * w + xx; if (b[o] || b[o - 1] || b[o + 1]) n++;
     }
     return n / Math.max(1, Math.round(y1) - Math.round(y0) + 1);
   };
   const dick = Math.max(1, Math.round(z.dicke || 1));
-  const mitKopf = (x, s) => {
+  const zeilenKopf = (x, s) => {
     let n = 0, breit = 0;
-    const grenze = 0.65 * g, weit = Math.ceil(g);
+    // „breit“ = deutlich breiter als ein Strich (bei fetten Strichen nach der gemessenen Strichdicke)
+    const grenze = Math.max(0.65 * g, 1.6 * (z.strich || 0)), weit = Math.ceil(2.2 * g), lang = 2 * g;
     for (const st of z.staves) for (let y = Math.round(st.y[0]); y <= Math.round(st.y[4]); y++) {
       if (st.y.some((ly) => Math.abs(y - ly) <= dick)) continue; // Zeilen der Notenlinien selbst nicht
       const xx = Math.round(x + s * (y - ym)), o = y * w;
       if (xx < 1 || xx > w - 2 || !(bin[o + xx] || bin[o + xx - 1] || bin[o + xx + 1])) continue;
-      n++;
       let l = xx, r = xx;
       while (l > xx - weit && l > 0 && bin[o + l - 1]) l--;
       while (r < xx + weit && r < w - 1 && bin[o + r + 1]) r++;
+      // weit zu einer Seite schwarz: eine (leicht schräge) Notenlinie, ihr Ende am Schlussstrich oder ein Balken –
+      // sagt nichts über einen Kopf (Köpfe ragen höchstens ~1,5 Abstände neben den Hals)
+      if (xx - l >= lang || r - xx >= lang) continue;
+      n++;
       if (r - l + 1 > grenze) breit++;
     }
     return n > 0 && breit / n > 0.15;
   };
+  // Unscharfes (vergrößertes) Bild: Ränder von Linien und Strichen sind dort breit und zufällig – zuverlässiger ist der Kern
+  // eines Kopfes im strengen Bild: ein Fleck, in den ein Quadrat von ½ Linienabstand ganz hineinpasst (Linien und Striche
+  // sind dafür zu dünn). Liegt so ein Kern dicht neben dem Strich, ist es ein Hals.
+  let kopfNahe = null;
+  if (kopfBin) {
+    const k = Math.max(2, Math.round(0.5 * g)), r = k >> 1, voll = k * k - 1;
+    const rx0 = Math.max(0, Math.floor(z.x0 - 2 * g)), rx1 = Math.min(w - 1, Math.ceil(z.x1 + 2 * g));
+    const ry0 = Math.max(0, Math.floor(z.top - g)), ry1 = Math.min(h - 1, Math.ceil(z.bot + g));
+    const rw = rx1 - rx0 + 1, rh = ry1 - ry0 + 1;
+    const I = new Uint32Array((rw + 1) * (rh + 1));
+    for (let y = 0; y < rh; y++) { let sum = 0; const o = (y + ry0) * w + rx0; for (let x = 0; x < rw; x++) { sum += kopfBin[o + x]; I[(y + 1) * (rw + 1) + x + 1] = I[y * (rw + 1) + x + 1] + sum; } }
+    // je Bildzeile: Anzahl Kernpunkte links von x (Präfixsumme) – Abfrage eines waagrechten Bereichs in O(1)
+    const P = new Uint32Array(rh * (rw + 1));
+    for (let y = 0; y < rh; y++) {
+      const o = y * (rw + 1);
+      for (let x = 0; x < rw; x++) {
+        let kern = 0;
+        const ya = y - r, xa = x - r;
+        if (ya >= 0 && xa >= 0 && ya + k <= rh && xa + k <= rw) kern = I[(ya + k) * (rw + 1) + xa + k] - I[ya * (rw + 1) + xa + k] - I[(ya + k) * (rw + 1) + xa] + I[ya * (rw + 1) + xa] >= voll ? 1 : 0;
+        P[o + x + 1] = P[o + x] + kern;
+      }
+    }
+    const nah = Math.round(1.05 * g), frei = Math.max(1, Math.round(0.3 * g)), genug = Math.max(3, 0.12 * g * g);
+    const zaehle = (y, a, b) => { a = Math.max(0, a - rx0); b = Math.min(rw - 1, b - rx0); return b < a ? 0 : P[(y - ry0) * (rw + 1) + b + 1] - P[(y - ry0) * (rw + 1) + a]; };
+    // Hals nur, wenn in JEDEM System der Zeile ein Kopf dicht daneben liegt: ein Strich, der beide Systeme ganz durchzieht,
+    // ist dort entweder ein Taktstrich (Noten stehen manchmal dicht davor/dahinter – im Liederbuch oft nur in einem System)
+    // oder zwei Hälse übereinander (dann hat jedes System seinen Kopf). Vorher genügte ein Kopf irgendwo: bei kleinen Fotos
+    // (90 %, 75 % der Liederbuch-Seite) fielen so echte Taktstriche weg.
+    kopfNahe = (x, s) => z.staves.every((st) => {
+      let n = 0;
+      for (let y = Math.max(ry0, Math.round(st.y[0] - 0.5 * g)); y <= Math.min(ry1, Math.round(st.y[4] + 0.5 * g)); y++) {
+        const xx = Math.round(x + s * (y - ym));
+        // der Strich selbst (±0,3 Abstände) zählt nicht: wo er eine Notenlinie kreuzt, passt das Quadrat manchmal auch hinein
+        n += zaehle(y, xx - nah, xx - frei) + zaehle(y, xx + frei, xx + nah);
+      }
+      return n >= genug; // ein Kopf-Kern hat ~0,4 Abstände², Kreuzungspunkte nur wenige Pixel
+    });
+  }
   const spalten = [];
   for (let x = xa; x <= xb; x++) {
     let neig = null;
@@ -297,14 +431,20 @@ export function taktstriche(bin, w, h, z) {
     const oben = deckung(x, neig, z.top - 1.3 * g, z.top - 0.35 * g), unten = deckung(x, neig, z.bot + 0.35 * g, z.bot + 1.3 * g);
     if (oben > 0.6 || unten > 0.6) continue;
     // ein Hals hat einen Notenkopf: dort ist die Tinte quer viel breiter als ein Strich (wichtig bei einzelnen Systemen)
-    if (mitKopf(x, neig)) continue;
+    if (kopfNahe ? kopfNahe(x, neig) : zeilenKopf(x, neig)) continue;
     spalten.push({ x, s: neig });
   }
-  const gruppen = [];
+  let gruppen = [];
   for (const { x, s } of spalten) {
     const l = gruppen[gruppen.length - 1];
     // neue Gruppe auch bei anderer Neigung: sonst verbindet eine schräge Spalte zwei nahe Striche (Schlussstrich) zu einem breiten
     if (l && x - l.x1 <= 1 && l.s === s) l.x1 = x; else gruppen.push({ x0: x, x1: x, s });
+  }
+  if (kopfBin) {
+    // ein Taktstrich ist auch im strengen Bild durchgehend schwarz; eine schräge „Spalte“ quer durch Hals, Fähnchen und
+    // Köpfe im fetten Bild oder der Rand eines Halses neben seinem Kopf ist es dort nicht
+    const durchgehend = (q) => z.staves.every((st) => { let m = 0; for (let x = q.x0; x <= q.x1; x++) m = Math.max(m, deckung(x, q.s, st.y[0], st.y[4], kopfBin)); return m >= 0.85; });
+    gruppen = gruppen.filter(durchgehend);
   }
   let schmal = gruppen.filter((q) => q.x1 - q.x0 + 1 <= Math.max(4, 0.9 * g));
   // Klavier: Taktstriche gehen meist durch die Lücke zwischen den Systemen – Hälse und Taktangaben nicht.
@@ -343,7 +483,32 @@ export function tinte(bin, w, h, z, xa, xb) {
 
 /** Takt-Grenzen aus den Taktstrichen. Hinter dem letzten Strich zählt ein Takt nur, wenn dort Noten stehen. */
 export function taktGrenzen(z, striche, bin, w, h) { // bin: strenger Schwellwert (Rauschen zählt nicht als Tinte)
-  const g = z.g, xs = striche.map((s) => s.x).filter((x) => x > z.x0 + 3 * g); // davor steht höchstens der Anfangsstrich (Schlüssel braucht Platz)
+  const g = z.g;
+  let st0 = striche.filter((s) => s.x > z.x0 + 3 * g); // davor steht höchstens der Anfangsstrich (Schlüssel braucht Platz)
+  // Taktart (zwei fette Ziffern übereinander) oder Wiederholungs-Anfang gleich hinter dem Schlüssel: breit/doppelt, und
+  // zwischen Schlüssel und „Strich“ steht nichts – das ist kein Taktstrich (sonst ein leerer erster Takt)
+  if (bin && st0.length >= 2 && st0[0].x < z.x0 + 10 * g) {
+    const dk = Math.max(1, Math.round(z.dicke || 1));
+    const spalte = (x) => { // Tinte einer Spalte in den Systemen, ohne die Notenlinien selbst
+      let n = 0;
+      for (const st of z.staves) for (let y = Math.max(0, Math.round(st.y[0] - 0.5 * g)); y <= Math.min(h - 1, Math.round(st.y[4] + 0.5 * g)); y++) if (!st.y.some((ly) => Math.abs(y - ly) <= dk)) n += bin[y * w + x];
+      return n;
+    };
+    // links vom „Strich“ bis zur ersten freien Spalte: das gehört zum selben Zeichen (die Ziffern der Taktart, höchstens
+    // ~1,6 Abstände breit). Ohne freie Spalte in der Nähe (Note, Balken berührt den Strich) zählt alles davor mit.
+    // Schlüssel: endet an der ersten freien Spalte (breite Schlüssel reichen bis ~4 Abstände)
+    let xa = Math.max(0, Math.round(z.x0 + 2.2 * g));
+    const xaMax = Math.min(Math.round(z.x0 + 5 * g), Math.round(st0[0].x0) - 1);
+    while (xa < xaMax && spalte(xa) > 1) xa++;
+    const grenze = Math.round(st0[0].x0 - 1.6 * g);
+    let xe = Math.min(w - 1, Math.round(st0[0].x0) - 1);
+    while (xe > xa && xe > grenze && spalte(xe) > 1) xe--;
+    if (xe <= grenze && xe > xa) xe = Math.round(st0[0].x0 - 0.4 * g);
+    let n = 0;
+    for (let x = xa; x <= xe; x++) n += spalte(x);
+    if (n < 0.5 * g * g * z.staves.length) st0 = st0.slice(1);
+  }
+  const xs = st0.map((s) => s.x);
   const grenzen = [z.x0, ...xs];
   const letzt = grenzen[grenzen.length - 1];
   z.restTinte = z.x1 - letzt > 4 * g && bin ? tinte(bin, w, h, z, letzt + 0.6 * g, z.x1 - 0.3 * g) : null;
@@ -471,10 +636,10 @@ function gedreht(quelle, sw, sh, w, h, grad) {
 }
 
 /**
- * Ganze Seite vorbereiten.
+ * Ganze Seite vorbereiten. pruef: optionales Objekt, bekommt Zwischenergebnisse (nur für Prüfskripte).
  * @returns {Promise<{ok, w, h, winkel, masse, zeilen:[…], vorschau:{blob,w,h}, hinweise:string[]}>}
  */
-export async function seiteVorbereiten(datei, { schritt = () => {} } = {}) {
+export async function seiteVorbereiten(datei, { schritt = () => {}, pruef = null } = {}) {
   schritt('Bild öffnen');
   const geoeffnet = await bildOeffnen(datei);
   let img = geoeffnet.img, meister = null, ana = null;
@@ -485,7 +650,7 @@ export async function seiteVorbereiten(datei, { schritt = () => {} } = {}) {
     // 1) Arbeitsgröße (auch bei sehr langen/schmalen Bildern begrenzt), Graustufen, Licht, Schwellwert, Schräglage
     let fa = Math.min(1, GRENZEN.analyse / W0, (GRENZEN.analyse * 1.45) / H0);
     if (W0 * fa < 200) fa = Math.min(200 / W0, (GRENZEN.analyse * 2.5) / H0);
-    const aw = Math.max(1, Math.round(W0 * fa)), ah = Math.max(1, Math.round(H0 * fa));
+    let aw = Math.max(1, Math.round(W0 * fa)), ah = Math.max(1, Math.round(H0 * fa));
     schritt('Licht ausgleichen');
     ana = gedreht(img, W0, H0, aw, ah, 0);
     let g = lichtAusgleich(grauVon(ana), aw, ah, { staerke: 0.5 });
@@ -494,25 +659,46 @@ export async function seiteVorbereiten(datei, { schritt = () => {} } = {}) {
     await ruhe();
     schritt('Schräglage messen');
     const winkel = schraeglage(bin, aw, ah, 12);
+    // Sehr enge Notenlinien (kleines Bild, Liederbuch, Seite aus der Entfernung): bei 4–6 px verschmelzen Linien und
+    // Notenköpfe im Schwellwert. Dann das Bild erst glatt vergrößern (Linienabstand ~12 px) und danach neu binarisieren.
+    const grob = linienMasse(bin, aw, ah);
+    const abstandFoto = grob.abstand / fa; // Linienabstand im Originalbild (grob)
+    let zoom = 1, gekappt = false;
+    // (auch bei etwas größerem Abstand, wenn die Linien im Verhältnis sehr dick sind: altes Liederbuch, unscharfes Foto)
+    if (grob.abstand < GRENZEN.engAbstand || (grob.abstand < GRENZEN.zielAbstand && grob.dicke >= 0.35 * grob.abstand)) {
+      const wunsch = GRENZEN.zielAbstand / grob.abstand, zMax = Math.min(Math.sqrt(GRENZEN.analysePixel / (aw * ah)), 4);
+      const z = Math.min(wunsch, zMax);
+      if (z > 1.2) zoom = z;
+      // großes Foto, Noten darauf winzig (Seite aus der Entfernung): mehr Vergrößerung bräuchte zu viel Speicher
+      gekappt = wunsch > 1.3 * Math.max(1, zMax);
+    }
     bin = null;
     await ruhe();
     // 2) Meister (scharf, ausgerichtet) und ausgerichtete Arbeitsgröße
     schritt('Ausrichten');
-    const fm = Math.min(1, GRENZEN.meister / Math.max(W0, H0));
+    let fm = Math.min(1, GRENZEN.meister / Math.max(W0, H0));
+    // Zuschnitte für die KI aus einem vergrößerten, geglätteten Meister: Linienabstand mindestens GRENZEN.minAbstandKi
+    if (zoom > 1 && abstandFoto * fm < GRENZEN.minAbstandKi * 1.1) fm = Math.max(fm, Math.min(GRENZEN.meister / Math.max(W0, H0), (GRENZEN.minAbstandKi * 1.15) / abstandFoto));
     const MW = Math.max(1, Math.round(W0 * fm)), MH = Math.max(1, Math.round(H0 * fm));
     meister = gedreht(img, W0, H0, MW, MH, winkel);
-    if (Math.abs(winkel) >= 0.05) { weg(ana); ana = gedreht(img, W0, H0, aw, ah, winkel); }
+    if (zoom > 1) { aw = Math.max(1, Math.round(aw * zoom)); ah = Math.max(1, Math.round(ah * zoom)); fa = aw / W0; }
+    if (Math.abs(winkel) >= 0.05 || zoom > 1) { weg(ana); ana = gedreht(img, W0, H0, aw, ah, winkel); }
     img = null; frei(); // das volle Foto wird nicht mehr gebraucht – Speicher sofort freigeben
     g = lichtAusgleich(grauVon(ana), aw, ah, { staerke: 0.5 });
     t = otsu(g);
     const binL = binaer(g, Math.min(215, Math.round((t + 255) / 2))); // großzügig: auch blasse Linien
-    const binQ = binaer(g, t); // streng: für Notenköpfe
+    const masse = linienMasse(binL, aw, ah);
+    // „unscharf“: vergrößert oder Linien im Verhältnis zum Abstand sehr dick (altes Liederbuch, kleines/unscharfes Foto).
+    // Dort ist der Rand jedes Strichs ein breiter Grauverlauf – für Köpfe zählt dann nur der dunkle Kern (streng: Mitte
+    // zwischen Otsu und der Otsu-Trennung innerhalb der Tinte), sonst verschmelzen Köpfe, Linien und Text.
+    const unscharf = zoom > 1 || masse.dicke >= 0.35 * masse.abstand;
+    const tQ = unscharf ? Math.round((t + otsu(g, t)) / 2) : t;
+    const binQ = binaer(g, tQ);
     g = null;
     ana = weg(ana);
     await ruhe();
     // 3) Linien, Systeme, Zeilen, Taktstriche
     schritt('Notenlinien suchen');
-    const masse = linienMasse(binL, aw, ah);
     let linien = notenlinien(binL, aw, ah, masse);
     let staves = fuenferGruppen(linien, masse.abstand);
     if (!staves.length && linien.length >= 5) {
@@ -523,6 +709,13 @@ export async function seiteVorbereiten(datei, { schritt = () => {} } = {}) {
     }
     for (const st of staves) Object.assign(st, ausdehnung(binL, aw, ah, st));
     staves = staves.filter((st) => st.x1 - st.x0 > 12 * st.g);
+    // Zeichnung, Verzierung, Titel-Schrift: ein kurzes „System“ abseits vom gemeinsamen Zeilenanfang gehört nicht zu den Noten
+    const breiteste = Math.max(0, ...staves.map((st) => st.x1 - st.x0));
+    const anfaenge = staves.filter((st) => st.x1 - st.x0 >= 0.6 * breiteste).map((st) => st.x0).sort((a, b) => a - b);
+    if (anfaenge.length >= 2) {
+      const x0m = anfaenge[anfaenge.length >> 1];
+      staves = staves.filter((st) => st.x1 - st.x0 >= 0.5 * breiteste || Math.abs(st.x0 - x0m) <= 4 * st.g);
+    }
     const hinweise = [];
     // Heft-/Schreibpapier: gleichmäßige Linien ohne Lücken zwischen den „Systemen“ – das sind keine Notenzeilen
     const eng = staves.filter((st, i) => i > 0 && st.y[0] - staves[i - 1].y[4] < 1.8 * st.g).length;
@@ -530,20 +723,29 @@ export async function seiteVorbereiten(datei, { schritt = () => {} } = {}) {
     const zeilen = zeilenBilden(binL, aw, ah, staves);
     schritt('Takte zählen');
     for (const z of zeilen) {
-      z.dicke = masse.dicke;
-      z.striche = taktstriche(binL, aw, ah, z);
+      // sehr dicke Linien (enger Abstand, vergrößert, großzügiger Schwellwert) nicht überbewerten: höchstens 0,3 Abstände
+      z.dicke = Math.min(masse.dicke, Math.max(1, Math.round(0.3 * z.g)));
+      z.strich = masse.dicke;
+      // unscharf: das strenge Bild prüft auf Notenköpfe – der großzügige Schwellwert macht dort jeden Strich fett, und die
+      // ausgefransten Ränder der Notenlinien sähen neben einem Taktstrich wie ein Kopf aus
+      z.striche = taktstriche(binL, aw, ah, z, unscharf ? binQ : null);
       z.takte = taktGrenzen(z, z.striche, binQ, aw, ah);
       z.koepfe = koepfeFinden(binQ, aw, ah, z);
+      // aus einem unscharfen Bild ist die Kopf-Zählung zu ungenau für den Vergleich mit der KI-Lesung
+      z.koepfeUnsicher = unscharf;
       z.tinte = tinte(binQ, aw, ah, z, z.x0 + 0.5 * z.g, z.x1);
     }
+    if (pruef) Object.assign(pruef, { aw, ah, fa, zoom, fm, grob, masse, unscharf, binL, binQ, linien, staves, verb: staves.slice(1).map((s, i) => verbunden(binL, aw, ah, staves[i], s)), zeilen });
     // leere Notenzeilen (nur Linien, kein Schlüssel, keine Noten) nicht an die KI schicken
     const leer = zeilen.filter((z) => z.tinte < 2.5 * z.staves.length && !z.koepfe.length);
     const volle = zeilen.filter((z) => !leer.includes(z));
     if (leer.length) hinweise.push(leer.length === zeilen.length ? 'Nur leere Notenlinien gefunden – keine Noten darauf.' : `${leer.length} leere Notenzeile${leer.length === 1 ? '' : 'n'} übersprungen.`);
     // Zeilen vermutlich übersehen? Linien, die zu keinem System gehören, oder einzelne Systeme neben Klavier-Paaren
     const benutzt = (y) => staves.some((st) => y > st.y[0] - 0.6 * st.g && y < st.y[4] + 0.6 * st.g);
-    // (drei kräftige freie Linien im Abstand der Notenlinien – dicke Ränder/Schattenkanten zählen nicht)
-    const frei_ = linien.filter((l) => l.staerke >= 0.6 && !benutzt(l.y) && l.y > 4 * masse.abstand && l.y < ah - 4 * masse.abstand); // Bildrand: Tischkante
+    // (drei kräftige freie Linien im Abstand der Notenlinien – dicke Ränder/Schattenkanten zählen nicht; jede muss lang
+    // durchgehen wie eine Notenlinie: Titel-Schrift, Liedtext, Zeichnungen und Fließtext ergeben nur kurze Stücke)
+    const frei_ = linien.filter((l) => l.staerke >= 0.6 && !benutzt(l.y) && l.y > 4 * masse.abstand && l.y < ah - 4 * masse.abstand // Bildrand: Tischkante
+      && laengsterLauf(binL, aw, ah, l.y) >= 12 * masse.abstand);
     let haufen = 0;
     for (let i = 0, n = 1; i < frei_.length; i++) {
       const d = i ? frei_[i].y - frei_[i - 1].y : 0;
@@ -551,11 +753,24 @@ export async function seiteVorbereiten(datei, { schritt = () => {} } = {}) {
       if (n === 3) haufen++;
     }
     const gemischt = volle.some((z) => z.staves.length === 2) && volle.some((z) => z.staves.length === 1);
-    if (volle.length && (haufen || gemischt)) hinweise.push('Vermutlich wurde nicht jede Notenzeile sauber erkannt (Foto schräg von der Seite oder gewellt?). Schau in der Lupe nach, ob alle Zeilen umrahmt sind – sonst neues Foto, gerade von oben.');
+    // die zwei Systeme einer Klavier-Zeile sind gleich lang – ist eines viel kürzer, war das Foto verzerrt
+    const ungleich = volle.some((z) => z.staves.length === 2 && Math.min(...z.staves.map((st) => st.x1 - st.x0)) < 0.7 * Math.max(...z.staves.map((st) => st.x1 - st.x0)));
+    if (volle.length && (haufen || gemischt || ungleich)) hinweise.push('Vermutlich wurde nicht jede Notenzeile sauber erkannt (Foto schräg von der Seite oder gewellt?). Schau in der Lupe nach, ob alle Zeilen umrahmt sind – sonst neues Foto, gerade von oben.');
+    // Takt auffällig breit (Taktstrich im kleinen/unscharfen Foto übersehen): Nummer nennen, damit man gezielt nachsieht.
+    // Gemessen ohne Schlüssel-Bereich am Zeilenanfang; Vergleich mit dem typischen Takt der Seite, dazu eine feste Obergrenze.
+    const breiten = [];
+    volle.forEach((z) => z.takte.forEach((tk, k) => breiten.push((tk.x1 - tk.x0 - (k === 0 ? 5 * z.g : 0)) / z.g)));
+    if (breiten.length) {
+      const med = [...breiten].sort((a, b) => a - b)[breiten.length >> 1];
+      const breit = breiten.map((b, i) => ((breiten.length >= 4 && b > 1.75 * med) || b > 60 ? i + 1 : 0)).filter(Boolean);
+      if (breit.length) hinweise.push(`${breit.length === 1 ? `Takt ${breit[0]} ist` : `Die Takte ${breit.join(', ')} sind`} auffällig breit – vielleicht wurde dort ein Taktstrich übersehen. Schau in der Lupe nach.`);
+    }
     await ruhe();
     // 4) in Meister-Koordinaten umrechnen und zuschneiden
     const f = MW / aw;
     if (!staves.length && !hinweise.length) hinweise.push('Keine Notenlinien gefunden.');
+    // (großes Foto ohne erkannte Zeilen: oft ist die Seite nur klein darauf – die Linien-Messung ist dann selbst unsicher)
+    if (!staves.length && (gekappt || fa < 0.6)) hinweise.push('Falls Noten auf dem Foto sind, waren sie vermutlich zu klein oder zu unscharf: Geh näher heran, sodass die Notenseite das Bild füllt (gerade von oben, hell) – oder schneide das Foto vorher zu.');
     if (volle.some((z) => z.zuviel)) hinweise.push('Eine Zeile hat mehr als zwei Notensysteme – gelesen werden die unteren zwei (Klavier).');
     const mz = volle.map((z, i) => {
       const s = (v) => v * f;
@@ -565,7 +780,7 @@ export async function seiteVorbereiten(datei, { schritt = () => {} } = {}) {
         takte: z.takte.map((tk) => ({ x0: s(tk.x0), x1: s(tk.x1) })),
         striche: z.striche.map((q) => s(q.x)),
         koepfe: z.koepfe.map((k) => ({ x: s(k.x), y: s(k.y), n: k.n, staff: k.staff })),
-        zuviel: z.zuviel, restTinte: z.restTinte,
+        zuviel: z.zuviel, restTinte: z.restTinte, koepfeUnsicher: z.koepfeUnsicher,
       };
     });
     schritt('Zeilen zuschneiden');

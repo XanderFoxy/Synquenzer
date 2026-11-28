@@ -85,16 +85,16 @@ function kiStart() {
   return kiVersprechen;
 }
 const SPERR = {
-  not_granted: 'Du hast der Seite die Nutzung von Claude nicht erlaubt. Die Erkennung bleibt aus, bis du die Seite neu öffnest.',
-  sampling_disabled: 'Claude ist für dieses Konto gerade nicht verfügbar.',
-  not_declared: 'Diese Fassung der Seite darf Claude nicht fragen.',
-  capability_disabled: 'Claude ist in dieser Ansicht nicht nutzbar.',
-  capability_removed: 'Claude ist in dieser Ansicht nicht nutzbar.',
-  images_unavailable: 'In dieser Ansicht können keine Bilder an Claude geschickt werden.',
+  not_granted: 'Du hast der Seite die Nutzung der KI nicht erlaubt. Die Erkennung bleibt aus, bis du die Seite neu öffnest.',
+  sampling_disabled: 'Die KI ist für dieses Konto gerade nicht verfügbar.',
+  not_declared: 'Diese Fassung der Seite darf die KI nicht fragen.',
+  capability_disabled: 'Die KI ist in dieser Ansicht nicht nutzbar.',
+  capability_removed: 'Die KI ist in dieser Ansicht nicht nutzbar.',
+  images_unavailable: 'In dieser Ansicht können keine Bilder an die KI geschickt werden.',
 };
 const FEHLER = {
   image_rejected: 'Das Bild wurde nicht angenommen. Versuche ein anderes Foto.',
-  refused: 'Claude hat diesen Ausschnitt nicht bearbeitet.',
+  refused: 'Die KI hat diesen Ausschnitt nicht bearbeitet.',
   empty_completion: 'Keine Antwort bekommen.',
   prompt_too_large: 'Die Anfrage war zu groß.',
   session_expired: 'Bitte melde dich neu an und tippe dann noch einmal.',
@@ -242,7 +242,7 @@ function kontexte() {
 /** gefüllte Notenköpfe im Bild für einen Takt (grobe Pixel-Zählung) */
 function pixelKoepfe(t, ctx, i) {
   const z = zeileVon(t);
-  if (!z || t.k == null || t.extra) return null;
+  if (!z || t.k == null || t.extra || z.koepfeUnsicher) return null; // unscharfes oder sehr kleines Foto: Kopf-Zählung zu grob
   const tk = z.takte[t.k];
   const ersteZeile = S.takte.findIndex((x) => x.seite === t.seite && x.zeile === t.zeile) === i && i === 0;
   const ab = t.k === 0 ? z.x0 + (4.0 + Math.abs(ctx.key || 0) * 1.0 + (ersteZeile ? 2.6 : 0)) * z.g : tk.x0 + 0.3 * z.g;
@@ -362,7 +362,7 @@ function zeileEintragen(p, zi, z, antworten, eigene, vonGesendet) {
     const neue = gelesen.map((g, j) => ({ schluessel: `${p.id}|ganz|${j}`, seite: p.id, zeile: 'ganz', k: null, lesung: g, status: 'offen', gruende: [], varianten: [], lesungen: 1 }));
     if (!neue.length) {
       p.ohneTakte = true;
-      p.kiHinweis = antworten.some((a) => a.keine) ? 'Claude hat auf diesem Bild keine Noten gefunden.' : 'Claude hat für dieses Bild keine lesbaren Takte geschickt. Versuche ein schärferes, gerades Foto.';
+      p.kiHinweis = antworten.some((a) => a.keine) ? 'Die KI hat auf diesem Bild keine Noten gefunden.' : 'Die KI hat für dieses Bild keine lesbaren Takte geschickt. Versuche ein schärferes, gerades Foto.';
     }
     S.takte.splice(platz, S.takte.filter((t) => t.seite === p.id && t.zeile === 'ganz').length, ...neue);
     if (neue[0]) neue[0].zeilenKopf = { key: a0.key, time: a0.time, clefs: a0.clefs };
@@ -393,14 +393,14 @@ function zeileEintragen(p, zi, z, antworten, eigene, vonGesendet) {
   }
   if (M !== N) {
     // Nummern passten eindeutig: nur die fehlenden Takte sind fraglich; sonst die ganze Zeile
-    const grund = !M ? { art: 'format', text: keine ? 'Claude sieht in dieser Zeile keine Noten.' : 'Die Antwort kam nicht im erwarteten Format – für diese Zeile wurden keine Takte gelesen.' }
+    const grund = !M ? { art: 'format', text: keine ? 'Die KI sieht in dieser Zeile keine Noten.' : 'Die Antwort kam nicht im erwarteten Format – für diese Zeile wurden keine Takte gelesen.' }
       : { art: 'taktzahl', text: `In dieser Zeile fand die App ${N} Takt${N === 1 ? '' : 'e'}, gelesen wurden ${M}.` };
     for (const t of eigene) if (!nachNummer || !t.lesung) t.zeilenGrund = grund;
   }
   if (antworten.some((a) => a.abgeschnitten)) for (const t of eigene.slice(-2)) t.zeilenGrund = { art: 'abgeschnitten', text: 'Die Antwort wurde abgeschnitten.' };
   bewerten(eigene);
   // nur ein Hinweis (kein Grund zum Nachlesen): der Inhalt ist Claudes Lesung, nur in anderer Schreibweise
-  if (antworten.some((a) => a.ausXml)) for (const t of eigene) t.gruende.push({ art: 'info', text: 'Claude hat MusicXML statt des verlangten Formats geschickt – die App hat es umgewandelt.' });
+  if (antworten.some((a) => a.ausXml)) for (const t of eigene) t.gruende.push({ art: 'info', text: 'Die KI hat MusicXML statt des verlangten Formats geschickt – die App hat es umgewandelt.' });
   if (keine) for (const t of eigene) t.lesungen = 3; // nicht automatisch Takt für Takt nachfragen – „Neu lesen“ geht weiter
 }
 
@@ -625,23 +625,23 @@ function zeichneKi() {
   if (zust === 'pruefe') h = `<div class="sc-ki-kopf"><span class="sc-ki-ico">${ICO.lesen}</span><div><b>Noten erkennen</b><small>Verbinde …</small></div></div>`;
   else if (zust !== 'da') {
     const text = zust === 'gesperrt' || zust === 'ohneBild' ? S.ki.sperre || SPERR.images_unavailable
-      : 'Die Noten-Erkennung braucht Claude. Sie läuft in der Claude-Fassung dieser App (dort angemeldet öffnen). Hier im Browser klappt alles andere – auch die Bildvorbereitung oben: Du siehst, welche Zeilen und Takte die App findet.';
+      : 'Die Noten-Erkennung braucht die KI. Sie läuft in der KI-Fassung dieser App (dort angemeldet öffnen). Hier im Browser klappt alles andere – auch die Bildvorbereitung oben: Du siehst, welche Zeilen und Takte die App findet.';
     const url = opt.artifactUrl;
-    h = `<div class="sc-ki-kopf"><span class="sc-ki-ico aus">${ICO.lesen}</span><div><b>Noten erkennen</b><small>hier nicht verfügbar</small></div></div><p class="sc-text">${esc(text)}</p>${url && zust !== 'gesperrt' ? `<a class="sc-knopf zweit" href="${esc(url)}" target="_blank" rel="noopener">${ICO.lesen}<span>Zur Claude-Fassung</span></a>` : ''}`;
+    h = `<div class="sc-ki-kopf"><span class="sc-ki-ico aus">${ICO.lesen}</span><div><b>Noten erkennen</b><small>hier nicht verfügbar</small></div></div><p class="sc-text">${esc(text)}</p>${url && zust !== 'gesperrt' ? `<a class="sc-knopf zweit" href="${esc(url)}" target="_blank" rel="noopener">${ICO.lesen}<span>Zur KI-Fassung</span></a>` : ''}`;
   } else {
     const anzahl = einheiten().reduce((a, e) => a + (e.z && e.z.ki.length > (S.ki.limits?.images?.maxCount || 1) ? e.z.ki.length : 1), 0);
     if (J?.laeuft) {
       const zeilen = [...J.aktiv.values()].map((f) => `<li><span class="sc-pille liest"><i></i>${esc(f.zeile)}</span><span>${esc(f.text)}</span></li>`).join('');
-      h = `<div class="sc-ki-kopf"><span class="sc-ki-ico an">${ICO.lesen}</span><div><b>Wird gelesen …</b><small>${J.aufrufe} Anfrage${J.aufrufe === 1 ? '' : 'n'} an Claude</small></div><button class="sc-knopf klein" type="button" data-tun="stopp">${ICO.stopp}<span>Stopp</span></button></div>
+      h = `<div class="sc-ki-kopf"><span class="sc-ki-ico an">${ICO.lesen}</span><div><b>Wird gelesen …</b><small>${J.aufrufe} Anfrage${J.aufrufe === 1 ? '' : 'n'} an die KI</small></div><button class="sc-knopf klein" type="button" data-tun="stopp">${ICO.stopp}<span>Stopp</span></button></div>
         <div class="sc-band" aria-hidden="true"><i></i></div>
         ${zeilen ? `<ul class="sc-aktiv">${zeilen}</ul>` : ''}${J.text ? `<p class="sc-text">${esc(J.text)}${J.nachGesamt ? ` (${J.nach} von ${J.nachGesamt})` : ''}</p>` : ''}`;
     } else {
       const b = bilanz();
       const weiter = offen || nochAuffaellig();
       const knopfText = !fertig ? 'Noten erkennen' : weiter ? (b.s || b.m || S.takte.some((t) => t.gruende?.length) ? 'Weiter lesen' : 'Noten erkennen') : 'Alles gelesen';
-      h = `<div class="sc-ki-kopf"><span class="sc-ki-ico">${ICO.lesen}</span><div><b>Noten erkennen</b><small>${fertig && offen ? `${anzahl} Anfrage${anzahl === 1 ? '' : 'n'} an Claude – je Zeile eine` : fertig && weiter ? `${nochAuffaellig()} auffällige Takte nachlesen` : fertig && !S.takte.length ? 'keine Noten zum Lesen – siehe Seite oben' : fertig ? 'fertig – unten prüfen' : 'zuerst ein Foto wählen'}</small></div></div>
+      h = `<div class="sc-ki-kopf"><span class="sc-ki-ico">${ICO.lesen}</span><div><b>Noten erkennen</b><small>${fertig && offen ? `${anzahl} Anfrage${anzahl === 1 ? '' : 'n'} an die KI – je Zeile eine` : fertig && weiter ? `${nochAuffaellig()} auffällige Takte nachlesen` : fertig && !S.takte.length ? 'keine Noten zum Lesen – siehe Seite oben' : fertig ? 'fertig – unten prüfen' : 'zuerst ein Foto wählen'}</small></div></div>
         <button class="sc-knopf haupt" type="button" data-tun="erkennen"${fertig && weiter ? '' : ' disabled'}>${ICO.lesen}<span>${knopfText}</span></button>
-        <p class="sc-klein">Jede Zeile wird einzeln und scharf an Claude geschickt. Auffällige Takte (Notenwerte passen nicht, Kopfzahl im Bild weicht ab, unleserlich) liest die App danach noch zweimal einzeln – höchstens ${MAX_NACHLESEN} Takte, je zwei Anfragen. Alles zählt zu deinem Nutzungskontingent.</p>`;
+        <p class="sc-klein">Jede Zeile wird einzeln und scharf an die KI geschickt. Auffällige Takte (Notenwerte passen nicht, Kopfzahl im Bild weicht ab, unleserlich) liest die App danach noch zweimal einzeln – höchstens ${MAX_NACHLESEN} Takte, je zwei Anfragen. Alles zählt zu deinem Nutzungskontingent.</p>`;
     }
     if (J?.fehler) h += `<p class="sc-meldung rot">${ICO.warn}<span>${esc(J.fehler)}</span></p>`;
   }
