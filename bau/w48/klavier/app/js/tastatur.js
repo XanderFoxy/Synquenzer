@@ -29,11 +29,12 @@ const STIL = `
 .kl-s .kl-name{bottom:auto;top:6px;color:#c9ced6;font-size:9px;line-height:1.15;font-weight:500}
 .kl-tastatur[data-namen="aus"] .kl-name,.kl-tastatur[data-namen="c"] .kl-name:not(.kl-c),.kl-tastatur[data-namen="c"] .kl-s .kl-name{display:none}
 .kl-mitte .kl-name{color:#3b82f6}
-.kl-iv{position:absolute;left:3px;right:3px;bottom:62px;height:17px;border-radius:9px;background:var(--kl-ivf,#5b5bd6);color:#fff;
+.kl-iv{position:absolute;left:3px;right:3px;bottom:5px;height:17px;border-radius:9px;background:var(--kl-ivf,#5b5bd6);color:#fff;
  font:700 10px/17px system-ui,-apple-system,sans-serif;text-align:center;white-space:nowrap;overflow:hidden;letter-spacing:-.01em;pointer-events:none;
  opacity:0;transform:translateY(5px);transition:opacity .2s ease,transform .2s ease;box-shadow:0 1px 3px rgba(0,0,0,.25)}
 .kl-s .kl-iv{left:1px;right:1px;bottom:34px;height:15px;font-size:8.5px;line-height:15px;border-radius:7px}
 .kl-iv.kl-zeigt{opacity:1;transform:none}
+.kl-mit-iv .kl-name{opacity:0}
 .kl-bezug{box-shadow:inset 0 0 0 3px var(--kl-ivf,#5b5bd6)}
 .kl-band{position:absolute;top:-16px;height:12px;border-radius:6px;background:var(--kl-bf,#3b82f6);opacity:.22;pointer-events:none}
 .kl-bandtext{position:absolute;top:-17px;font:600 10px/14px system-ui,-apple-system,sans-serif;color:var(--kl-name);white-space:nowrap;pointer-events:none;padding-left:6px}
@@ -162,11 +163,11 @@ export function tastatur(el, opt = {}) {
     },
     /** Intervall-Schilder: texte = Map midi → kurzer Text (z. B. „gr. 3“), bezug = midi des Bezugstons (Rahmen + „Bezug“). */
     intervalle(texte, bezug) {
-      for (const m of ivAn) { const t = tasten.get(m); if (!t) continue; t.querySelector('.kl-iv').classList.remove('kl-zeigt'); t.classList.remove('kl-bezug'); }
+      for (const m of ivAn) { const t = tasten.get(m); if (!t) continue; t.querySelector('.kl-iv').classList.remove('kl-zeigt'); t.classList.remove('kl-bezug', 'kl-mit-iv'); }
       ivAn.clear();
       const setze = (m, txt) => {
         const t = tasten.get(m); if (!t) return;
-        const s = t.querySelector('.kl-iv'); s.textContent = txt; s.classList.add('kl-zeigt');
+        const s = t.querySelector('.kl-iv'); s.textContent = txt; s.classList.add('kl-zeigt'); t.classList.add('kl-mit-iv');
         ivAn.add(m);
       };
       if (texte) for (const [m, txt] of (texte.entries ? texte.entries() : Object.entries(texte))) setze(+m, txt);

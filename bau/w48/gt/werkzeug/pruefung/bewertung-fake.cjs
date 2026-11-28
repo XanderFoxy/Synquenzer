@@ -67,7 +67,10 @@ async function lauf(b, name, route, cfg, { tempoMax = true, durch = 1, wahl = []
   for (let i = 0; i < 600 && werte.length < durch; i++) {
     await p.waitForTimeout(100);
     const n = await p.locator('.tr-chip').count();
-    if (n > werte.length) werte.push(await p.evaluate(() => { const e = window.__gtLetzte && window.__gtLetzte.e; return e ? { g: e.gesamt, ok: e.gueltig, gh: e.gehoert, teile: (e.teile || []).map((t) => t.id + ':' + (t.wert == null ? '-' : Math.round(t.wert * 100))).join(' '), tipp: e.tipp } : null; }));
+    if (n > werte.length) werte.push(await p.evaluate(() => { const e = window.__gtLetzte && window.__gtLetzte.e; const A = window.__gtAktiv, q = (v, k) => { v = v.slice().sort((a, b) => a - b); return v.length ? Math.round(v[Math.floor(k * (v.length - 1))]) : null; };
+      const fv = A.frames.filter((f) => f.t > A.T0 + 0.3 && f.t < A.tZ - 0.05).map((f) => f.p), fs = A.frames.filter((f) => f.t > A.tS && f.t < A.tE).map((f) => f.p);
+      const pg = `vor ${q(fv, 0.5)}/${q(fv, 0.8)}/${q(fv, 0.95)} sing ${q(fs, 0.5)}/${q(fs, 0.8)}/${q(fs, 0.95)}`;
+      return e ? { pg, g: e.gesamt, ok: e.gueltig, gh: e.gehoert, teile: (e.teile || []).map((t) => t.id + ':' + (t.wert == null ? '-' : Math.round(t.wert * 100))).join(' '), tipp: e.tipp } : null; }));
   }
   if (await p.locator('.tr-start.puls').count()) await p.locator('.tr-start').tap({ force: true });
   await ctx.close();
@@ -90,6 +93,8 @@ async function lauf(b, name, route, cfg, { tempoMax = true, durch = 1, wahl = []
     ['still + Leck 0.7', '#uebung/arpeggio', { singen: false, leck: true, leckGain: 0.7 }],
     ['still+Leck Stimme', '#uebung/vokal-leiter', { singen: false, leck: true, leckGain: 0.5 }],
     ['still+Leck Bord.', '#uebung/ng-sirene', { singen: false, leck: true, leckGain: 0.5 }],
+    ['richtig+Leck 0.7', '#uebung/arpeggio', { singen: true, leck: true, leckGain: 0.7 }],
+    ['richt+Leck St 0.5', '#uebung/vokal-leiter', { singen: true, leck: true, leckGain: 0.5 }],
     ['Sirene richtig', '#uebung/ng-sirene', { singen: true }],
     ['Sirene +1 HT', '#uebung/ng-sirene', { singen: true, cent: 100 }],
     ['Staccato richtig', '#uebung/staccato', { singen: true }],
@@ -99,6 +104,6 @@ async function lauf(b, name, route, cfg, { tempoMax = true, durch = 1, wahl = []
   const liste = faelle.filter(([n]) => !nur || nur.test(n));
   const erg = [];
   for (let i = 0; i < liste.length; i += 3) erg.push(...await Promise.all(liste.slice(i, i + 3).map(([n, r, c]) => lauf(b, n, r, c))));
-  for (const e of erg) console.log(e.name.padEnd(16), e.werte.map((w) => (w ? `${w.ok ? '' : '(ungültig) '}${w.g} % gehört ${w.gh} | ${w.teile} | ${w.tipp}` : 'kein Ergebnis')).join(' || '), e.fehler.length ? ' FEHLER ' + e.fehler.join('; ') : '');
+  for (const e of erg) console.log(e.name.padEnd(16), e.werte.map((w) => (w ? `${w.ok ? '' : '(ungültig) '}${w.g} % gehört ${w.gh} [${w.pg}] | ${w.teile} | ${w.tipp}` : 'kein Ergebnis')).join(' || '), e.fehler.length ? ' FEHLER ' + e.fehler.join('; ') : '');
   await b.close();
 })().catch((e) => { console.error('ABBRUCH', e); process.exit(1); });

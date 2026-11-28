@@ -257,9 +257,10 @@ h2.abschnitt { font-size: 13px; text-transform: uppercase; letter-spacing: .08em
 .schalter.nur-ico { width: 44px; min-width: 44px; padding: 0; justify-content: center; flex: none; }
 
 /* ── Intervalle in der Akkordkarte ────────────── */
-.akkordkarte { max-height: 42vh; max-height: 42dvh; overflow-y: auto; overscroll-behavior: contain; }
+.akkordkarte { max-height: 34vh; max-height: 34dvh; overflow-y: auto; overscroll-behavior: contain; }
 .akkordkarte.nur-iv { grid-template-columns: minmax(0, 1fr); }
-.iv { grid-column: 1 / -1; display: grid; gap: 6px; margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--rand); }
+.iv { grid-column: 1 / -1; display: grid; gap: 6px; margin-top: 4px; padding: 8px 0 4px; border-top: 1px solid var(--rand); border-bottom: 1px solid var(--rand); }
+.akkordkarte.nur-iv .iv { border: 0; margin: 0; padding: 0; }
 .iv-kopf { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; font-weight: 600; color: var(--leise); }
 .iv-kopf b { color: var(--text); font-size: 16px; }
 .iv-weg { width: 44px; height: 44px; margin: -8px -6px -8px 0; border: 0; border-radius: 50%; background: none; color: var(--leise); display: grid; place-items: center; flex: none; }
@@ -309,11 +310,16 @@ h2.abschnitt { font-size: 13px; text-transform: uppercase; letter-spacing: .08em
       damit das Notenblatt die volle Breite und mehr Höhe bekommt ── */
 @media (min-width: 700px) and (max-width: 899px) and (orientation: portrait) {
   .stueck {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr) auto auto;
     grid-template-areas: "kopf kopf" "noten noten" "akkord steuer" "tasten tasten";
   }
   .akkordkarte { margin-right: 0; align-self: stretch; align-content: start; max-height: 30vh; max-height: 30dvh; }
-  .steuer { align-self: center; padding-top: 8px; }
+  .steuer { align-self: center; padding-top: 8px; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "spiel bereich schleife" "spiel tempo tempo" "hand hand speichern"; }
+  .hand { justify-self: stretch; }
+  .hand button { flex: 1; }
   .tastenflaeche .kl-tastatur { --kl-h: 150px; --kl-w: 46px; }
 }
+/* Seitenspalte (quer / groß): Karte darf die ganze Spalte nutzen */
+@media (orientation: landscape) and (max-height: 600px) { .akkordkarte { max-height: none; } }
+@media (min-width: 900px) and (min-height: 700px) { .akkordkarte { max-height: none; } }

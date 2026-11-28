@@ -427,7 +427,7 @@ async function seiteStueck(id) {
     karte.innerHTML = `<div class="gross">${esc(kurzBass)}<small>${esc(s.name)}</small></div>
       <div><span class="umk">${esc(s.umkehrungText)}${s.art !== 'einzelton' ? ' · ' + (s.lage === 'weit' ? 'weite Lage' : 'enge Lage') : ''}</span><div class="toene">${toene.map((n) => tonChip(n, s.rollen.get(n.id), getippt && getippt.midi === n.midi)).join('')}</div></div>
       <button class="rund hoer" type="button" aria-label="Akkord anhören">${ICON.ohr}</button>
-      <p class="erkl">${erkl}</p>${ivHtml(s)}`;
+      ${ivHtml(s)}<p class="erkl">${erkl}</p>`;
     $('.hoer', karte).onclick = () => akkordGewaehlt(i, true);
     tastenZeigen(s, toene);
   }
@@ -458,17 +458,21 @@ async function seiteStueck(id) {
     const liste = [...proTaste.values()];
     if (liste.length < 2) return '';
     const bass = liste[0];
-    const vomBass = liste.slice(1).map((n) => ivChip(notenName(n.schreibweise || n.midi), intervall(bass, n)));
+    const bassIv = liste.slice(1).map((n) => ({ n, iv: intervall(bass, n) }));
+    const vomBass = bassIv.map(({ n, iv }) => ivChip(notenName(n.schreibweise || n.midi), iv));
     const wurzelNote = liste.find((n) => ((n.midi % 12) + 12) % 12 === s.grundtonPc);
     const wurzelSw = wurzelNote?.schreibweise || schreibweiseAus(s.grundtonPc + 60);
     const proKlasse = new Map();
     for (const n of liste) { const pc = ((n.midi % 12) + 12) % 12; if (pc !== s.grundtonPc && !proKlasse.has(pc)) proKlasse.set(pc, n); }
-    const vomGrund = [...proKlasse.values()].map((n) => ({ n, iv: vomGrundton(wurzelSw, n.schreibweise || schreibweiseAus(n.midi)) }))
-      .sort((a, b) => a.iv.zahl - b.iv.zahl || a.iv.halbtoene - b.iv.halbtoene).map(({ n, iv }) => ivChip(notenName(n.schreibweise || n.midi, false), iv));
+    const grundIv = [...proKlasse.values()].map((n) => ({ n, iv: vomGrundton(wurzelSw, n.schreibweise || schreibweiseAus(n.midi)) }))
+      .sort((a, b) => a.iv.zahl - b.iv.zahl || a.iv.halbtoene - b.iv.halbtoene);
+    const vomGrund = grundIv.map(({ n, iv }) => ivChip(notenName(n.schreibweise || n.midi, false), iv));
     const bassName = notenName(bass.schreibweise || bass.midi), grundName = notenName(wurzelSw, false);
-    const gleich = ((bass.midi % 12) + 12) % 12 === s.grundtonPc && vomBass.join('') === vomGrund.join('');
+    // Grundstellung in enger Lage: beide Reihen wären gleich → nur eine zeigen
+    const gleich = ((bass.midi % 12) + 12) % 12 === s.grundtonPc && bassIv.map((x) => x.iv.kurz).join() === grundIv.map((x) => x.iv.kurz).join();
+    if (gleich) return `<div class="iv-basis"><span class="iv-bl">Vom Grundton = Bass ${esc(bassName)}</span>${vomBass.join('')}</div>`;
     return `<div class="iv-basis"><span class="iv-bl">Vom Bass ${esc(bassName)}</span>${vomBass.join('')}</div>`
-      + (gleich ? '' : `<div class="iv-basis"><span class="iv-bl">Vom Grundton ${esc(grundName)}</span>${vomGrund.join('')}</div>`);
+      + `<div class="iv-basis"><span class="iv-bl">Vom Grundton ${esc(grundName)}</span>${vomGrund.join('')}</div>`;
   }
   function ivHtml(s) {
     let h = '';
