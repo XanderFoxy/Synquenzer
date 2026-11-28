@@ -68,6 +68,9 @@ export function schreibweiseAus(midi, tonart = { quinten: 0, modus: 'dur' }) {
   // 3. sonst: Kreuz-Tonarten Kreuze, B-Tonarten Bs; in C: Cis, Es, Fis, Gis, B
   const KREUZ = { 1: 'C', 3: 'D', 6: 'F', 8: 'G', 10: 'A' };
   const BE = { 1: 'D', 3: 'E', 6: 'G', 8: 'A', 10: 'H' };
+  // weiße Taste, die die Tonart verändert (H in F-Dur, F in G-Dur): mit Auflösungszeichen schreiben
+  const NATUR = { 0: 'C', 2: 'D', 4: 'E', 5: 'F', 7: 'G', 9: 'A', 11: 'H' };
+  if (NATUR[pc]) return mitStamm(NATUR[pc]);
   if (q > 0) return mitStamm(KREUZ[pc]);
   if (q < 0) return mitStamm(BE[pc]);
   return mitStamm(pc === 3 || pc === 10 ? BE[pc] : KREUZ[pc]);
