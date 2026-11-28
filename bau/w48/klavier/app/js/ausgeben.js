@@ -9,9 +9,11 @@ const STEP = { C: 'C', D: 'D', E: 'E', F: 'F', G: 'G', A: 'A', H: 'B' };
 const AKZ = { '-2': 'flat-flat', '-1': 'flat', 0: 'natural', 1: 'sharp', 2: 'double-sharp' };
 const rund = (x) => Math.round(x * 960) / 960;
 
-/** Dateiname ohne verbotene Zeichen. */
+/** Dateiname, der überall funktioniert (Umlaute umschreiben: manche Systeme verwerfen sonst den Namen). */
 export function dateiname(titel, endung) {
-  const t = String(titel || 'Stück').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, '-').replace(/\s+/g, ' ').trim().slice(0, 80) || 'Stück';
+  const UM = { ä: 'ae', ö: 'oe', ü: 'ue', Ä: 'Ae', Ö: 'Oe', Ü: 'Ue', ß: 'ss', '–': '-', '—': '-', '’': "'", '„': '', '“': '', '”': '' };
+  const t = String(titel || 'Stueck').replace(/[äöüÄÖÜß–—’„“”]/g, (c) => UM[c]).normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z0-9 ._,()'+&-]+/g, '-').replace(/\s+/g, ' ').replace(/-{2,}/g, '-').trim().slice(0, 80) || 'Stueck';
   return `${t}.${endung}`;
 }
 

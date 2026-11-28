@@ -69,7 +69,7 @@ async function lauf(b, name, route, cfg, { tempoMax = true, durch = 1, wahl = []
     const n = await p.locator('.tr-chip').count();
     if (n > werte.length) werte.push(await p.evaluate(() => { const e = window.__gtLetzte && window.__gtLetzte.e; return e ? { g: e.gesamt, ok: e.gueltig, gh: e.gehoert, teile: (e.teile || []).map((t) => t.id + ':' + (t.wert == null ? '-' : Math.round(t.wert * 100))).join(' '), tipp: e.tipp } : null; }));
   }
-  if (await p.locator('.tr-start.puls').count()) await p.locator('.tr-start').tap();
+  if (await p.locator('.tr-start.puls').count()) await p.locator('.tr-start').tap({ force: true });
   await ctx.close();
   return { name, werte, fehler };
 }
