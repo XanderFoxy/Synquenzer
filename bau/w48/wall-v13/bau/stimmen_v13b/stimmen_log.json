@@ -1,0 +1,63 @@
+{
+ "hyp_no": {
+  "kuerzung_ms": 87.79,
+  "schnitt_hyp_s": 114.506,
+  "verlaengerung_no_s": 115.1083,
+  "korrelation": 0.82,
+  "blende_ms": 10
+ },
+ "no_einsatz_s": {
+  "v12": 114.75,
+  "v13": 114.75,
+  "v13b": 114.665
+ },
+ "ti_einsatz_s": {
+  "v13": 115.37,
+  "v13b": 115.37
+ },
+ "stellen": [
+  {
+   "name": "see",
+   "von_s": 103.3,
+   "bis_s": 111.05,
+   "pegel_db": -0.02,
+   "blende_ms": 30,
+   "rand_pegel_v12_dbfs": [
+    -240.0,
+    -240.0
+   ]
+  },
+  {
+   "name": "hypnotized",
+   "von_s": 111.9025,
+   "bis_s": 117.4,
+   "pegel_db": -0.6,
+   "blende_ms": 30,
+   "rand_pegel_v12_dbfs": [
+    -45.8,
+    -240.0
+   ]
+  }
+ ],
+ "doppel_v12_an_stellen_max_dbfs": [
+  -600.0,
+  -600.0
+ ],
+ "doppel_v13_roh_an_stellen_rms_dbfs": [
+  -31.5,
+  -30.5
+ ],
+ "beleg": {
+  "haupt_ausserhalb_max_dbfs": -600.0,
+  "haupt_ausserhalb_bitgleich": true,
+  "doppel_max_dbfs": -600.0,
+  "doppel_bitgleich": true,
+  "zwischenteil_192_224_haupt_bitgleich": true,
+  "zwischenteil_192_224_doppel_bitgleich": true,
+  "strophe1_30_64_haupt_bitgleich": true,
+  "refrains_haupt_bitgleich": true,
+  "geaendert_haupt_s": 13.106,
+  "vgl_v13_vorhoer_haupt_ausserhalb_max_dbfs": -4.8,
+  "haupt_datei_ausserhalb_max_dbfs_gegen_v12_float32": -600.0
+ }
+}
