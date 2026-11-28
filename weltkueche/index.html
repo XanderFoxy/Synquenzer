@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Weltküche – ein Gericht aus jedem Land</title>
+<meta name="description" content="Von jedem Land das typische Nationalgericht: woher es kommt, wer es berühmt machte, das Ur-Rezept, was heute daraus wurde – mit Portionsrechner und Kochmodus.">
+<meta name="theme-color" content="#fbf4e8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1d1611" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Weltküche">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preload" href="daten/app/index.json" as="fetch" crossorigin="anonymous">
+<link rel="stylesheet" href="stil.css">
+<script defer src="app.js"></script>
+</head>
+<body>
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <!-- Gerichte-Symbole: selbst gezeichnet, 24×24, Strich in der Kontinentfarbe -->
+  <symbol id="s-suppe" viewBox="0 0 24 24"><path d="M3 11.5h18a9 7.5 0 0 1-18 0z"/><path d="M9 20.5h6"/><path d="M8.5 8.4c-1-1.2.9-2.1 0-3.4M12 7.9c-1-1.2.9-2.1 0-3.4M15.5 8.4c-1-1.2.9-2.1 0-3.4"/></symbol>
+  <symbol id="s-eintopf" viewBox="0 0 24 24"><path d="M5 10.5h14V16a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4z"/><path d="M3.5 10.5h17"/><path d="M5 12.8H3M19 12.8h2"/><path d="M6.6 10.5a5.4 3.3 0 0 1 10.8 0"/><path d="M12 7.2V5.8"/></symbol>
+  <symbol id="s-reis" viewBox="0 0 24 24"><path d="M3 12.5h18a9 7 0 0 1-18 0z"/><path d="M6.2 12.5a5.8 4.4 0 0 1 11.6 0"/><path d="M14.2 4.2l6.6 4.6M16.6 2.8l5.2 4.4"/><path d="M10 10.4h.01M12.6 9.6h.01M11.2 11.4h.01" class="dick"/></symbol>
+  <symbol id="s-nudeln" viewBox="0 0 24 24"><path d="M3 12.5h18a9 7 0 0 1-18 0z"/><path d="M9.2 12.5c0-2.6 1.6-3.1 1.6-5.6M12.3 12.5c0-2.6 1.6-3.1 1.6-5.6M15.4 12.5c0-2.2 1.2-2.9 1.2-5"/><path d="M6.5 6.6l14.5-1.3M7 4.4l14-2"/></symbol>
+  <symbol id="s-teigtasche" viewBox="0 0 24 24"><path d="M3 15.5c.6-5 4.6-8.5 9-8.5s8.4 3.5 9 8.5c-3 1.4-15 1.4-18 0z"/><path d="M8 8.7l1 2.6M12 7.1V10M16 8.7l-1 2.6"/><path d="M4.5 19.5h15"/></symbol>
+  <symbol id="s-fladen" viewBox="0 0 24 24"><ellipse cx="12" cy="13" rx="9.2" ry="5.6"/><path d="M8 12.2h.01M11.6 14.8h.01M15.2 11.5h.01M14.6 15.2h.01M9.5 15.4h.01M12.4 10.6h.01" class="dick"/></symbol>
+  <symbol id="s-brot" viewBox="0 0 24 24"><path d="M4 11.5a8 5.5 0 0 1 16 0z"/><path d="M3.5 14c1.4-1 2.8 1 4.2 0s2.8 1 4.3 0 2.8 1 4.3 0 2.8 1 4.2 0"/><path d="M4 16.5h16v.4a2.6 2.6 0 0 1-2.6 2.6H6.6A2.6 2.6 0 0 1 4 16.9z"/><path d="M9 8.6h.01M12 7.6h.01M15 8.6h.01" class="dick"/></symbol>
+  <symbol id="s-grill" viewBox="0 0 24 24"><path d="M3.2 20.8L20.8 3.2"/><rect x="5.7" y="13.5" width="4.8" height="4.8" rx="1.3" transform="rotate(45 8.1 15.9)" class="voll"/><rect x="9.6" y="9.6" width="4.8" height="4.8" rx="1.3" transform="rotate(45 12 12)" class="voll"/><rect x="13.5" y="5.7" width="4.8" height="4.8" rx="1.3" transform="rotate(45 15.9 8.1)" class="voll"/></symbol>
+  <symbol id="s-fisch" viewBox="0 0 24 24"><path d="M2.5 12c2.6-4 6.4-5.5 10-5.5 3 0 5.2 1.4 6.8 3.3L21.5 7v10l-2.2-2.8c-1.6 1.9-3.8 3.3-6.8 3.3-3.6 0-7.4-1.5-10-5.5z"/><path d="M10.2 9.2c.8 1.8.8 3.8 0 5.6"/><path d="M6.6 11.2h.01" class="dick"/></symbol>
+  <symbol id="s-fleisch" viewBox="0 0 24 24"><path d="M2.5 18.5h19"/><path d="M4.5 18.5a7.5 7.2 0 0 1 15 0"/><path d="M9 12.4v6.1M12 11.4v7.1M15 12.4v6.1"/></symbol>
+  <symbol id="s-wurst" viewBox="0 0 24 24"><path d="M5.2 18.8c-1.8-1.8-1.3-4.9 1.2-7.4l4.1-4.1c2.5-2.5 5.6-3 7.4-1.2s1.3 4.9-1.2 7.4l-4.1 4.1c-2.5 2.5-5.6 3-7.4 1.2z"/><path d="M4.3 19.7l-1.6 1.6M19.7 4.3l1.6-1.6"/><path d="M9.6 10.8l3-3"/></symbol>
+  <symbol id="s-suess" viewBox="0 0 24 24"><path d="M3 12h18v7.5H3z"/><path d="M3 12l14.6-4.9L21 12"/><path d="M3 15.6h18"/><circle cx="17.6" cy="4.6" r="1.5"/></symbol>
+  <symbol id="s-gebaeck" viewBox="0 0 24 24"><path d="M3 13h18l-1.8 5.2a2 2 0 0 1-1.9 1.3H6.7a2 2 0 0 1-1.9-1.3z"/><path d="M4 13c.8-3.8 4.2-6 8-6s7.2 2.2 8 6"/><path d="M9.4 10.1l1 1.3M14.6 10.1l-1 1.3M12 8.9v1.7"/></symbol>
+  <symbol id="s-auflauf" viewBox="0 0 24 24"><path d="M4 11h16v6a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17z"/><path d="M4 13.2H2M20 13.2h2"/><path d="M6 11c.8-1.6 2.2-1.6 3 0 .8-1.6 2.2-1.6 3 0 .8-1.6 2.2-1.6 3 0 .8-1.6 2.2-1.6 3 0"/><path d="M10 7.6c-.8-1 .8-1.8 0-3M14 7.6c-.8-1 .8-1.8 0-3"/></symbol>
+  <symbol id="s-brei" viewBox="0 0 24 24"><path d="M2.5 16.5h19"/><path d="M3 16.8c.8 1.9 4.6 3.2 9 3.2s8.2-1.3 9-3.2"/><path d="M5.6 16.5c0-4.2 2.9-7.6 6.4-7.6s6.4 3.4 6.4 7.6"/><path d="M10.4 11.6c1 .7 2.2.7 3.2 0"/></symbol>
+  <symbol id="s-salat" viewBox="0 0 24 24"><path d="M3 12.5h18a9 7 0 0 1-18 0z"/><path d="M6.8 12.4c-.8-2.8.6-5.3 3.5-6.2.6 2.8-.8 5.2-3.5 6.2z"/><path d="M13 12.4c0-3 1.9-5 5-5.3-.1 3-2 5-5 5.3z"/><circle cx="11.8" cy="10.2" r="1.6"/></symbol>
+  <symbol id="s-kaese" viewBox="0 0 24 24"><path d="M3 18.5v-6l12-6 6 6v6z"/><path d="M3 12.5h18"/><circle cx="8" cy="15.6" r="1.2"/><circle cx="15.4" cy="15.9" r="1.6"/><circle cx="13.4" cy="10.2" r=".9"/></symbol>
+  <symbol id="s-ei" viewBox="0 0 24 24"><circle cx="10" cy="13" r="7"/><path d="M15 8l6-4.5"/><path d="M6.6 13.6c-.4-2.5 1.4-4.5 3.6-4.3 1.3.1 1.8.9 3 1.2 1.5.4 1.6 2.4.6 3.6-1.3 1.6-3.2 2.4-4.9 2-1.2-.3-2.1-1.2-2.3-2.5z"/><circle cx="10.1" cy="12.6" r="1.5" class="voll"/></symbol>
+  <symbol id="s-blatt" viewBox="0 0 24 24"><path d="M4.5 19.5C4.5 10.5 10.5 4.5 19.5 4.5c0 9-6 15-15 15z"/><path d="M4.5 19.5L14.5 9.5"/><path d="M8.6 15.4h3.6M11.6 12.4V8.8"/></symbol>
+  <!-- Bedien-Symbole -->
+  <symbol id="i-suche" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L20.5 20.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-zurueck" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-weiter" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+  <symbol id="i-merken" viewBox="0 0 24 24"><path d="M6.5 3.5h11a1 1 0 0 1 1 1v16l-6.5-4.4-6.5 4.4v-16a1 1 0 0 1 1-1z"/></symbol>
+  <symbol id="i-wuerfel" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4.2"/><circle cx="8.3" cy="8.3" r="1.35" class="voll"/><circle cx="15.7" cy="8.3" r="1.35" class="voll"/><circle cx="12" cy="12" r="1.35" class="voll"/><circle cx="8.3" cy="15.7" r="1.35" class="voll"/><circle cx="15.7" cy="15.7" r="1.35" class="voll"/></symbol>
+  <symbol id="i-uhr" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-personen" viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19.5a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9.5" r="2.5"/><path d="M15.6 14.4a4.5 4.5 0 0 1 5.4 4.6"/></symbol>
+  <symbol id="i-topf" viewBox="0 0 24 24"><path d="M5 10.5h14V16a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4z"/><path d="M3.5 10.5h17M5 12.8H3M19 12.8h2"/><path d="M9 7.6c-.8-1 .8-1.8 0-3M12 7.1c-.8-1 .8-1.8 0-3M15 7.6c-.8-1 .8-1.8 0-3"/></symbol>
+  <symbol id="i-haken" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M14 4.5h5.5V10M19.5 4.5l-8 8"/><path d="M17 13.5v4.5a1.5 1.5 0 0 1-1.5 1.5h-10A1.5 1.5 0 0 1 4 18V8a1.5 1.5 0 0 1 1.5-1.5H10"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M6 12h12"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M6 12h12M12 6v12"/></symbol>
+  <symbol id="i-wecker" viewBox="0 0 24 24"><circle cx="12" cy="13" r="7.5"/><path d="M12 9v4l2.5 1.5M4 5.5l3-2.5M20 5.5l-3-2.5"/></symbol>
+  <symbol id="i-sonne" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/></symbol>
+  <symbol id="i-liste" viewBox="0 0 24 24"><path d="M9 6.5h11M9 12h11M9 17.5h11"/><path d="M4.5 6.5h.01M4.5 12h.01M4.5 17.5h.01" class="dick"/></symbol>
+  <symbol id="i-ort" viewBox="0 0 24 24"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></symbol>
+  <symbol id="i-buch" viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v15.5H5.5A1.5 1.5 0 0 1 4 18z"/><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v15.5h5.5A1.5 1.5 0 0 0 20 18z"/></symbol>
+  <symbol id="i-stern" viewBox="0 0 24 24"><path d="M12 3.6l2.5 5.3 5.8.7-4.3 4 1.1 5.7L12 16.5l-5.1 2.8 1.1-5.7-4.3-4 5.8-.7z"/></symbol>
+  <symbol id="i-heute" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><path d="M8 13.5h3v3H8z" class="voll"/></symbol>
+  <symbol id="i-welt" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.6 2.4 3.8 5.2 3.8 8.5s-1.2 6.1-3.8 8.5M12 3.5C9.4 5.9 8.2 8.7 8.2 12s1.2 6.1 3.8 8.5"/></symbol>
+</svg>
+
+<a class="sprung" href="#ansicht">Zum Inhalt</a>
+<header class="kopf" id="kopf">
+  <a class="kopf-knopf" id="zurueck" href="#/" aria-label="Zurück" hidden><svg><use href="#i-zurueck"/></svg></a>
+  <a class="kopf-marke" id="marke" href="#/" aria-label="Weltküche, Startseite">
+    <svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="11" class="logo-grund"/><path d="M15.6 13.2c-1.4-1.7 1.4-2.8 0-4.9M20 12.4c-1.4-1.7 1.4-2.8 0-4.9M24.4 13.2c-1.4-1.7 1.4-2.8 0-4.9" class="logo-dampf"/><path d="M11 17.4v6.6a7.2 7.2 0 0 0 7.2 7.2h3.6a7.2 7.2 0 0 0 7.2-7.2v-6.6z" class="logo-topf"/><path d="M9.2 17.4h21.6M11 20.2H8.4M29 20.2h2.6" class="logo-rand"/><path d="M20 18.4v12.2M16 18.6c-.9 4-.8 8.6 1.3 12M24 18.6c.9 4 .8 8.6-1.3 12M11.6 23.4h16.8" class="logo-welt"/></svg>
+    <span class="kopf-titel"><b>Weltküche</b><small>ein Gericht aus jedem Land</small></span>
+  </a>
+  <span class="kopf-seitentitel" id="seitentitel"></span>
+  <a class="kopf-knopf merk-knopf" id="merkliste-knopf" href="#/merkliste" aria-label="Merkliste"><svg><use href="#i-merken"/></svg><span class="zaehler" id="merk-zahl" hidden>0</span></a>
+</header>
+<div class="offline-hinweis" id="offline" hidden>Offline – schon geöffnete Gerichte gehen weiter</div>
+
+<main id="ansicht" tabindex="-1">
+  <section id="start" class="ansicht-start">
+    <div class="held">
+      <h1 class="held-titel">Was man einmal im Leben probiert haben muss</h1>
+      <p class="held-text">Von jedem Land das typische Nationalgericht: woher es kommt, wer es berühmt machte, das Ur-Rezept und was heute daraus wurde.</p>
+      <p class="held-zahlen" id="zahlen">&nbsp;</p>
+    </div>
+    <div class="werkzeug" id="werkzeug">
+      <div class="suchzeile">
+        <label class="suche">
+          <svg aria-hidden="true"><use href="#i-suche"/></svg>
+          <input id="suche" type="search" placeholder="Land oder Gericht" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search" aria-label="Land oder Gericht suchen">
+          <button type="button" class="suche-x" id="suche-x" aria-label="Suche leeren" hidden><svg><use href="#i-x"/></svg></button>
+        </label>
+        <button type="button" class="zufall-knopf" id="zufall-knopf"><svg aria-hidden="true"><use href="#i-wuerfel"/></svg><span>Zufallsgericht</span></button>
+      </div>
+      <div class="chips" id="chips" role="group" aria-label="Kontinent wählen"></div>
+    </div>
+    <div id="start-inhalt">
+      <div class="lade-raster" aria-busy="true"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+    </div>
+    <footer class="fuss" id="fuss"></footer>
+  </section>
+  <section id="seite" class="ansicht-gericht" hidden></section>
+  <section id="merk" class="ansicht-merk" hidden></section>
+  <noscript><p class="hinweis-box">Diese App braucht JavaScript.</p></noscript>
+</main>
+
+<div class="aktionsleiste" id="aktionsleiste" hidden>
+  <button type="button" class="aktion-merken" id="aktion-merken" aria-pressed="false"><svg aria-hidden="true"><use href="#i-merken"/></svg><span>Merken</span></button>
+  <button type="button" class="aktion-kochen" id="aktion-kochen"><svg aria-hidden="true"><use href="#i-topf"/></svg><span>Kochmodus starten</span></button>
+</div>
+
+<div class="zufall-schicht" id="zufall" hidden>
+  <div class="zufall-hinten" data-zu></div>
+  <div class="zufall-blatt" role="dialog" aria-modal="true" aria-labelledby="zufall-titel">
+    <button type="button" class="blatt-zu" data-zu aria-label="Schließen"><svg><use href="#i-x"/></svg></button>
+    <div class="zufall-wuerfel" id="zufall-wuerfel" aria-hidden="true"><svg><use href="#i-wuerfel"/></svg></div>
+    <p class="zufall-aus" id="zufall-aus"></p>
+    <div class="zufall-karte" id="zufall-karte"></div>
+    <div class="zufall-knoepfe">
+      <button type="button" class="knopf zweit" id="zufall-nochmal"><svg aria-hidden="true"><use href="#i-wuerfel"/></svg>Noch mal</button>
+      <a class="knopf erst" id="zufall-ansehen" href="#/">Ansehen</a>
+    </div>
+  </div>
+</div>
+
+<div class="kochen" id="kochen" hidden role="dialog" aria-modal="true" aria-labelledby="kochen-titel">
+  <div class="kochen-kopf">
+    <button type="button" class="kochen-rund" id="kochen-zu" aria-label="Kochmodus schließen"><svg><use href="#i-x"/></svg></button>
+    <div class="kochen-titel"><small id="kochen-land"></small><b id="kochen-titel"></b></div>
+    <button type="button" class="kochen-rund" id="kochen-zutaten-knopf" aria-label="Zutaten zeigen" aria-expanded="false"><svg><use href="#i-liste"/></svg></button>
+  </div>
+  <div class="kochen-leiste"><span id="kochen-fortschritt"></span></div>
+  <div class="kochen-status">
+    <button type="button" class="wach" id="wach" data-zustand="aus"><svg aria-hidden="true"><use href="#i-sonne"/></svg><span id="wach-text">Bildschirm …</span></button>
+    <span class="kochen-zaehler" id="kochen-zaehler"></span>
+  </div>
+  <div class="kochen-buehne" id="kochen-buehne">
+    <p class="kochen-schritt" id="kochen-schritt" aria-live="polite"></p>
+    <div class="kochen-timer" id="kochen-timer"></div>
+  </div>
+  <div class="kochen-unten">
+    <button type="button" class="kochen-nav zurueck" id="kochen-zurueck"><svg aria-hidden="true"><use href="#i-zurueck"/></svg><span>Zurück</span></button>
+    <button type="button" class="kochen-nav weiter" id="kochen-weiter"><span>Weiter</span><svg aria-hidden="true"><use href="#i-weiter"/></svg></button>
+  </div>
+  <div class="kochen-zutaten" id="kochen-zutaten" hidden>
+    <div class="kochen-zutaten-kopf"><b>Zutaten</b><span id="kochen-zutaten-portionen"></span><button type="button" class="kochen-rund klein" id="kochen-zutaten-zu" aria-label="Zutaten schließen"><svg><use href="#i-x"/></svg></button></div>
+    <ul id="kochen-zutaten-liste"></ul>
+  </div>
+</div>
+
+<div class="timer-pille" id="timer-pille" hidden><svg aria-hidden="true"><use href="#i-wecker"/></svg><span id="timer-pille-text"></span></div>
+<div class="meldung" id="meldung" role="status" aria-live="polite"></div>
+</body>
+</html>

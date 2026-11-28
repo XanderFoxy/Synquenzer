@@ -1,0 +1,6 @@
+{ "id": "./", "start_url": "./", "scope": "./", "name": "Weltküche – ein Gericht aus jedem Land", "short_name": "Weltküche", "lang": "de",
+  "display": "standalone", "orientation": "any", "background_color": "#fbf4e8", "theme_color": "#c4512f",
+  "description": "Von jedem Land das typische Nationalgericht: woher es kommt, wer es berühmt machte, das Ur-Rezept, was heute daraus wurde – mit Portionsrechner und Kochmodus.",
+  "icons": [ {"src":"icon-192.png","sizes":"192x192","type":"image/png"}, {"src":"icon-512.png","sizes":"512x512","type":"image/png"},
+             {"src":"icon-512.png","sizes":"512x512","type":"image/png","purpose":"maskable"},
+             {"src":"icon.svg","sizes":"any","type":"image/svg+xml"} ] }
