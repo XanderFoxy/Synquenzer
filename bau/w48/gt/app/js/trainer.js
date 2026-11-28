@@ -316,6 +316,7 @@ export function spieler(wurzel, plan, opt = {}) {
       if (!micOk) hinweis.textContent = `${SZ.fehler || 'Ohne Mikrofon.'} Die Übung läuft trotzdem im Takt – nur ohne Rückmeldung.`;
       else if (!speicher.hole('kopfhoererGesagt', false)) { hinweis.textContent = 'Tipp: Mit Kopfhörern misst die App genauer – dann kommt die Begleitung nicht ins Mikrofon. Kabel-Kopfhörer sind am pünktlichsten; Bluetooth-Kopfhörer hängen etwas nach, dann wirkt dein Einsatz ein wenig später.'; speicher.merke('kopfhoererGesagt', true); }
     }
+    if (SZ.ctx && SZ.ctx.state !== 'running') { try { await Promise.race([SZ.ctx.resume(), new Promise((r) => setTimeout(r, 1500))]); } catch (e) { /* egal */ } }
     if (weg()) return;
     if (SZ.ctx && SZ.ctx.state !== 'running') { // iOS hat den Ton noch gesperrt: ehrlich sagen statt stumm weiterlaufen
       stopp(); hinweis.textContent = 'Der Ton ist auf diesem Gerät noch gesperrt – tippe bitte noch einmal auf Start. (Stummschalter und Lautstärke prüfen.)'; return;
@@ -336,11 +337,11 @@ export function spieler(wurzel, plan, opt = {}) {
         if (begleitung === 'original') begleitung = 'akkord';
       }
     }
-    if (!laeuft) return;
+    if (weg()) return;
     for (let k = 0; k < plan.durchgaenge.length; k++) {
-      if (!laeuft) return;
+      if (weg()) return;
       const e = await durchgang(k);
-      if (!laeuft) return;
+      if (weg()) return;
       ergebnisse.push(e);
       chip(k, e);
       try { opt.onDurchgang && opt.onDurchgang(k + 1, plan.durchgaenge.length, e); } catch (err) { console.warn(err); }
@@ -378,7 +379,7 @@ export function spieler(wurzel, plan, opt = {}) {
       const gesamtB = vorB + 4 + D.laenge;
       for (let b = 0; b < gesamtB; b++) {
         const imZaehl = b >= vorB && b < vorB + 4;
-        if (ein.klick || imZaehl || !singt) pl.klick(T0 + b * sb, b % 4 === 0, imZaehl ? 1 : 0.75);
+        if (ein.klick || imZaehl) pl.klick(T0 + b * sb, b % 4 === 0, imZaehl ? 1 : 0.75);
       }
       // Vorsingen
       if (vorB) {
@@ -408,6 +409,7 @@ export function spieler(wurzel, plan, opt = {}) {
         try { e = micOk ? auswerten(A) : null; } catch (err) { console.warn(err); e = null; }
         if (plan.art === 'bewegung') e = { bewegung: true, gueltig: false, gesamt: null };
         A.e = e; SZ.hoerer = null;
+        if (A.leck > -42) hinweis.textContent = 'Beim Vorsingen war es im Mikrofon laut (Begleitung aus dem Lautsprecher oder Mitsingen). Mit Kopfhörern und still zuhören misst die App verlässlicher.';
         try { window.__gtLetzte = { e, frames: frames.length, stimme: frames.filter((f) => f.m != null).map((f) => Math.round(f.m * 10) / 10).slice(-40) }; } catch (err) { /* egal */ }
         setTimeout(() => pl.stopp(), 600);
         male(); fertig(e);
@@ -417,12 +419,15 @@ export function spieler(wurzel, plan, opt = {}) {
   function auswerten(A) {
     if (!A.frames.length) return null;
     const rel = A.frames.filter((f) => f.t >= A.tZ - 0.1).map((f) => ({ ...f, t: f.t - A.tS }));
-    let schwelle = -56;
-    if (A.vorB) { // Übersprechen der App ins Mikrofon (ohne Kopfhörer): Pegel beim Vorsingen
-      const v = A.frames.filter((f) => f.t > A.T0 + 0.3 && f.t < A.tZ - 0.05).map((f) => f.p).sort((a, b) => a - b);
-      if (v.length > 10) schwelle = Math.max(-58, Math.min(-40, v[v.length >> 1] + 4));
-    }
     if (plan.art === 'atem') return bewerteAtem(A.D.phasen.map((p) => ({ t: p.b * A.sb, dauer: p.d * A.sb, art: p.art })), rel);
+    let schwelle = -56;
+    // Übersprechen der App ins Mikrofon (ohne Kopfhörer): Pegel, solange nur die App klingt (Vorsingen, sonst Einzähler mit Startton)
+    const v = A.frames.filter((f) => (A.vorB ? f.t > A.T0 + 0.3 && f.t < A.tZ - 0.05 : f.t > A.tZ + 0.15 && f.t < A.tS - 0.05)).map((f) => f.p).sort((a, b) => a - b);
+    if (v.length > 10) {
+      const L = v[v.length >> 1]; A.leck = L;
+      // leise Umgebung: knapp darüber; laute Begleitung im Mikrofon: die Stimme muss klar darüber liegen, sonst zählt die App sich selbst
+      schwelle = Math.max(-58, Math.min(-40, L + 4), Math.min(-30, L - 4));
+    }
     const ziel = A.D.noten.map((n) => ({ t: n.b * A.sb, dauer: n.d * A.sb, midi: n.midi, bis: n.bis, vokal: n.vokal, gleit: n.gleit, silbe: n.silbe, einsatz: n.einsatz }));
     return bewerte(ziel, rel, { schwelle, vokale: !!(plan.vokale && FORM), formanten: FORM, name: (m) => nName(m, ton), sprechen: plan.art === 'sprechen' });
   }

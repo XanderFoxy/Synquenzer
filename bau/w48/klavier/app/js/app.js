@@ -213,7 +213,7 @@ function speichernBlatt(e) {
         <button class="format-knopf" type="button" data-format="musicxml"><span class="fk-ico">${ICON.blatt}</span><span><b>MusicXML</b><small>.musicxml · Noten mit Tonart, Bögen, Fingersatz</small></span></button>
         <button class="format-knopf" type="button" data-format="midi"><span class="fk-ico">${ICON.klaviatur}</span><span><b>MIDI</b><small>.mid · Töne und Tempo für Klavier-Apps und Keyboards</small></span></button>
       </div>
-      <p class="klein">${teilen ? 'Auf dem iPhone öffnet sich „Teilen“ – dort „In Dateien sichern“ wählen.' : 'Die Datei landet in deinen Downloads.'} Alles bleibt im Gerät, nichts wird hochgeladen.</p>`,
+      <p class="klein">${teilen ? 'Auf dem Handy öffnet sich „Teilen“ – dort „In Dateien sichern“ wählen.' : 'Die Datei landet in deinen Downloads.'} Alles bleibt im Gerät, nichts wird hochgeladen.</p>`,
   });
   for (const b of el.querySelectorAll('[data-format]')) b.onclick = async (ev) => {
     ev.stopPropagation();

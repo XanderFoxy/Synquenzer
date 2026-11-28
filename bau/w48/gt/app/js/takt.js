@@ -65,8 +65,12 @@ export function neuerPlan(ctx, ziel = ctx.destination) {
       const g = ctx.createGain(); g.gain.setValueAtTime(0, zeit); g.gain.linearRampToValueAtTime(laut, zeit + 0.02);
       g.gain.setValueAtTime(laut, zeit + Math.max(0.03, dauer - 0.08)); g.gain.linearRampToValueAtTime(0, zeit + dauer);
       q.connect(g).connect(bus);
-      const start = Math.max(0, ab);
-      q.start(zeit + Math.max(0, -ab), start, Math.max(0.05, Math.min(dauer, buffer.duration - start)));
+      let wann = zeit + Math.max(0, -ab), start = Math.max(0, ab), lang = Math.min(dauer, buffer.duration - start);
+      // kam die Aufnahme erst nach ihrem Zeitpunkt an (während der Übung geladen): an der Uhr weiterlaufen statt verrutscht
+      const spaet = ctx.currentTime + 0.02 - wann;
+      if (spaet > 0) { wann += spaet; start += spaet; lang -= spaet; }
+      if (start >= buffer.duration) return null;
+      q.start(wann, start, Math.max(0.05, lang));
       merk(q); return q;
     },
     stopp() {

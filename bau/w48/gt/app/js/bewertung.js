@@ -172,8 +172,11 @@ export function bewerte(ziel0, rahmen0, opt = {}) {
   // Gewichte – fehlende Teile werden herausgerechnet
   const gew = opt.sprechen ? { timing: 1 } : vok != null ? { treff: 0.38, timing: 0.2, stab: 0.22, vok: 0.2 } : { treff: 0.45, timing: 0.25, stab: 0.3 };
   const werte = { treff, timing, stab, vok };
+  // Pünktlich, ruhig und klarer Vokal zählen nur voll, wenn die Töne auch getroffen sind –
+  // ein ruhiger, pünktlicher, aber falscher Ton (z. B. durchgehend einen Halbton daneben) ist kein gutes Ergebnis.
+  const fTreff = treff == null ? 1 : 0.3 + 0.7 * klemme(treff / 0.6);
   let s = 0, g = 0;
-  for (const [k, w] of Object.entries(gew)) if (werte[k] != null) { s += werte[k] * w; g += w; }
+  for (const [k, w] of Object.entries(gew)) if (werte[k] != null) { s += werte[k] * w * (k === 'treff' ? 1 : fTreff); g += w; }
   const gueltig = gehoert >= 0.1;
   const gesamtWert = gueltig && g ? s / g : 0;
 
