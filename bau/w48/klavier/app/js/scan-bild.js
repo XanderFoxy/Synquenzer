@@ -9,40 +9,51 @@ const ruhe = () => new Promise((r) => setTimeout(r, 0));
 
 // ───────── Grundbausteine (rein) ─────────
 
-/** Papierhelligkeit je Block schätzen und herausrechnen: Schatten und Lichtverlauf eines Fotos verschwinden. */
-export function lichtAusgleich(g, w, h) {
-  const B = Math.max(12, Math.round(Math.max(w, h) / 40));
-  const bw = Math.ceil(w / B), bh = Math.ceil(h / B);
-  let hell = new Float32Array(bw * bh);
-  for (let by = 0; by < bh; by++) for (let bx = 0; bx < bw; bx++) {
-    let m = 0;
-    const y1 = Math.min(h, (by + 1) * B), x1 = Math.min(w, (bx + 1) * B);
-    for (let y = by * B; y < y1; y += 2) { const o = y * w; for (let x = bx * B; x < x1; x += 2) { const v = g[o + x]; if (v > m) m = v; } }
-    hell[by * bw + bx] = m;
+/** Gleitendes Maximum (art 1) oder Minimum (art -1) über 2r+1 Werte (van Herk: drei Vergleiche je Wert). */
+function gleitend(q, n, r, art, tmpA, tmpB, tmpC) {
+  const k = 2 * r + 1, N = n + 2 * r, rand = art > 0 ? 0 : 255;
+  const p = tmpA, vor = tmpB, rueck = tmpC;
+  for (let i = 0; i < N; i++) p[i] = i < r || i >= n + r ? rand : q[i - r];
+  for (let i = 0; i < N; i++) vor[i] = i % k === 0 ? p[i] : art > 0 ? Math.max(vor[i - 1], p[i]) : Math.min(vor[i - 1], p[i]);
+  for (let i = N - 1; i >= 0; i--) rueck[i] = i % k === k - 1 || i === N - 1 ? p[i] : art > 0 ? Math.max(rueck[i + 1], p[i]) : Math.min(rueck[i + 1], p[i]);
+  for (let i = 0; i < n; i++) q[i] = art > 0 ? Math.max(rueck[i], vor[i + 2 * r]) : Math.min(rueck[i], vor[i + 2 * r]);
+}
+/** Quadratisches Maximum/Minimum (Radius r) auf einem Graubild – getrennt nach Zeilen und Spalten. */
+function quadratFilter(b, w, h, r, art) {
+  const L = Math.max(w, h) + 2 * r;
+  const A = new Uint8Array(L), Bv = new Uint8Array(L), C = new Uint8Array(L), z = new Uint8Array(Math.max(w, h));
+  for (let y = 0; y < h; y++) { const o = y * w; for (let x = 0; x < w; x++) z[x] = b[o + x]; gleitend(z, w, r, art, A, Bv, C); for (let x = 0; x < w; x++) b[o + x] = z[x]; }
+  for (let x = 0; x < w; x++) { for (let y = 0; y < h; y++) z[y] = b[y * w + x]; gleitend(z, h, r, art, A, Bv, C); for (let y = 0; y < h; y++) b[y * w + x] = z[y]; }
+}
+
+/**
+ * Papierhelligkeit schätzen und herausrechnen: Schatten und Lichtverlauf eines Fotos verschwinden.
+ * Hintergrund = morphologisches Schließen (erst Maximum, dann Minimum) auf halber Auflösung: Noten und Linien
+ * verschwinden darin, eine harte Schattenkante bleibt aber scharf (sonst würde sie als dunkler Streifen zu „Tinte“).
+ * staerke 1: volle Aufhellung (Bilder für die KI); 0,5: Rauschen in dunklen Bereichen (Tisch, tiefer Schatten)
+ * wird weniger verstärkt – für die Analyse.
+ */
+export function lichtAusgleich(g, w, h, { staerke = 1 } = {}) {
+  const w2 = Math.max(1, Math.ceil(w / 2)), h2 = Math.max(1, Math.ceil(h / 2));
+  const klein = new Uint8Array(w2 * h2);
+  for (let y = 0; y < h2; y++) for (let x = 0; x < w2; x++) {
+    const xa = 2 * x, ya = 2 * y, xb = Math.min(w - 1, xa + 1), yb = Math.min(h - 1, ya + 1);
+    klein[y * w2 + x] = (g[ya * w + xa] + g[ya * w + xb] + g[yb * w + xa] + g[yb * w + xb] + 2) >> 2;
   }
-  // erst das Maximum der Nachbarn (ein fast schwarzer Block nimmt die Papierfarbe daneben an), dann zweimal glätten
-  const filter = (quelle, art) => {
-    const aus = new Float32Array(quelle.length);
-    for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) {
-      let s = 0, n = 0, m = 0;
-      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-        const yy = y + dy, xx = x + dx;
-        if (yy < 0 || yy >= bh || xx < 0 || xx >= bw) continue;
-        const v = quelle[yy * bw + xx]; s += v; n++; if (v > m) m = v;
-      }
-      aus[y * bw + x] = art === 'max' ? m : s / n;
-    }
-    return aus;
-  };
-  hell = filter(filter(filter(hell, 'max'), 'mittel'), 'mittel');
+  const r = Math.max(4, Math.round(Math.max(w2, h2) / 80));
+  quadratFilter(klein, w2, h2, r, 1);
+  quadratFilter(klein, w2, h2, r, -1);
   const aus = new Uint8ClampedArray(w * h);
+  const verst = new Float32Array(256);
+  for (let v = 0; v < 256; v++) verst[v] = Math.pow(255 / Math.max(48, v), staerke);
   for (let y = 0; y < h; y++) {
-    const fy = Math.min(bh - 1, Math.max(0, (y + 0.5) / B - 0.5)), y0 = Math.floor(fy), y1 = Math.min(bh - 1, y0 + 1), ty = fy - y0;
+    const fy = Math.min(h2 - 1, Math.max(0, (y + 0.5) / 2 - 0.5)), y0 = Math.floor(fy), y1 = Math.min(h2 - 1, y0 + 1), ty = fy - y0;
     for (let x = 0; x < w; x++) {
-      const fx = Math.min(bw - 1, Math.max(0, (x + 0.5) / B - 0.5)), x0 = Math.floor(fx), x1 = Math.min(bw - 1, x0 + 1), tx = fx - x0;
-      const a = hell[y0 * bw + x0] * (1 - tx) + hell[y0 * bw + x1] * tx, b = hell[y1 * bw + x0] * (1 - tx) + hell[y1 * bw + x1] * tx;
+      const fx = Math.min(w2 - 1, Math.max(0, (x + 0.5) / 2 - 0.5)), x0 = Math.floor(fx), x1 = Math.min(w2 - 1, x0 + 1), tx = fx - x0;
+      const a = klein[y0 * w2 + x0] * (1 - tx) + klein[y0 * w2 + x1] * tx, b = klein[y1 * w2 + x0] * (1 - tx) + klein[y1 * w2 + x1] * tx;
       const bg = Math.max(48, a * (1 - ty) + b * ty);
-      aus[y * w + x] = (g[y * w + x] * 255) / bg;
+      const d = bg - g[y * w + x];
+      aus[y * w + x] = d <= 0 ? 255 : 255 - d * verst[bg | 0];
     }
   }
   return aus;
@@ -369,15 +380,23 @@ export function koepfeFinden(binQ, w, h, z) {
 
 function leinwand(w, h) { const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h)); return c; }
 const ctx2d = (c) => c.getContext('2d', { willReadFrequently: true });
+// In Streifen lesen/schreiben: ein ganzes RGBA-Abbild des großen Bilds (bis ~46 MB) würde den Speicher eines iPhones unnötig füllen.
+const STREIFEN = 256;
 function grauVon(c) {
-  const d = ctx2d(c).getImageData(0, 0, c.width, c.height).data, g = new Uint8ClampedArray(c.width * c.height);
-  for (let i = 0, j = 0; i < g.length; i++, j += 4) g[i] = (d[j] * 77 + d[j + 1] * 150 + d[j + 2] * 29) >> 8;
+  const ctx = ctx2d(c), W = c.width, H = c.height, g = new Uint8ClampedArray(W * H);
+  for (let y0 = 0; y0 < H; y0 += STREIFEN) {
+    const sh = Math.min(STREIFEN, H - y0), d = ctx.getImageData(0, y0, W, sh).data, o = y0 * W;
+    for (let i = 0, j = 0; i < W * sh; i++, j += 4) g[o + i] = (d[j] * 77 + d[j + 1] * 150 + d[j + 2] * 29) >> 8;
+  }
   return g;
 }
 function grauSchreiben(c, g) {
-  const ctx = ctx2d(c), id = ctx.createImageData(c.width, c.height), d = id.data;
-  for (let i = 0, j = 0; i < g.length; i++, j += 4) { d[j] = d[j + 1] = d[j + 2] = g[i]; d[j + 3] = 255; }
-  ctx.putImageData(id, 0, 0);
+  const ctx = ctx2d(c), W = c.width, H = c.height;
+  for (let y0 = 0; y0 < H; y0 += STREIFEN) {
+    const sh = Math.min(STREIFEN, H - y0), id = ctx.createImageData(W, sh), d = id.data, o = y0 * W;
+    for (let i = 0, j = 0; i < W * sh; i++, j += 4) { d[j] = d[j + 1] = d[j + 2] = g[o + i]; d[j + 3] = 255; }
+    ctx.putImageData(id, 0, y0);
+  }
 }
 const alsBlob = (c, typ = 'image/png', q) => new Promise((ok, nein) => c.toBlob((b) => (b ? ok(b) : nein(new Error('Bild ließ sich nicht speichern'))), typ, q));
 /** Für die KI: PNG (scharf); bei verrauschten Fotos wird PNG groß → dann JPEG hoher Qualität (schneller hochgeladen). */
