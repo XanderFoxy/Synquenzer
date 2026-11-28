@@ -271,13 +271,20 @@ export function taktstriche(bin, w, h, z) {
   return striche.map((q) => ({ x: (q.x0 + q.x1) / 2, x0: q.x0, x1: q.x1, doppelt: q.n > 1 }));
 }
 
-/** Tinte (ohne Notenlinien) in einem Bereich einer Zeile – in Linienabstand² gemessen. */
+/** Tinte (ohne Notenlinien) in einem Bereich einer Zeile – in Linienabstand² gemessen.
+ *  Gezählt werden nur senkrecht dickere Stellen als eine Linie (so stört auch eine leicht schräge Linie nicht). */
 export function tinte(bin, w, h, z, xa, xb) {
   let n = 0;
-  const linie = new Set();
-  for (const st of z.staves) for (const y of st.y) for (let d = -Math.ceil((z.dicke || 1) / 2) - 1; d <= Math.ceil((z.dicke || 1) / 2) + 1; d++) linie.add(Math.round(y) + d);
+  const grenze = Math.max(3, 2 * (z.dicke || 1) + 1);
   const y0 = Math.max(0, Math.round(z.top - 3 * z.g)), y1 = Math.min(h - 1, Math.round(z.bot + 3 * z.g));
-  for (let y = y0; y <= y1; y++) { if (linie.has(y)) continue; const o = y * w; for (let x = Math.max(0, Math.round(xa)); x <= Math.min(w - 1, Math.round(xb)); x++) n += bin[o + x]; }
+  for (let x = Math.max(0, Math.round(xa)); x <= Math.min(w - 1, Math.round(xb)); x++) {
+    let lauf = 0;
+    for (let y = y0; y <= y1 + 1; y++) {
+      if (y <= y1 && bin[y * w + x]) { lauf++; continue; }
+      if (lauf > grenze && lauf <= 5 * z.g) n += lauf; // sehr lange Läufe: Bildrand/Hintergrund, keine Noten
+      lauf = 0;
+    }
+  }
   return n / (z.g * z.g);
 }
 
@@ -286,7 +293,8 @@ export function taktGrenzen(z, striche, bin, w, h) { // bin: strenger Schwellwer
   const g = z.g, xs = striche.map((s) => s.x).filter((x) => x > z.x0 + 1.5 * g);
   const grenzen = [z.x0, ...xs];
   const letzt = grenzen[grenzen.length - 1];
-  if (z.x1 - letzt > 4 * g && (!bin || tinte(bin, w, h, z, letzt + 0.6 * g, z.x1 - 0.3 * g) > 2.5)) grenzen.push(z.x1);
+  z.restTinte = z.x1 - letzt > 4 * g && bin ? tinte(bin, w, h, z, letzt + 0.6 * g, z.x1 - 0.3 * g) : null;
+  if (z.x1 - letzt > 4 * g && (z.restTinte == null || z.restTinte > 2.5)) grenzen.push(z.x1);
   const takte = [];
   for (let i = 0; i + 1 < grenzen.length; i++) if (grenzen[i + 1] - grenzen[i] > 1.5 * g) takte.push({ x0: grenzen[i], x1: grenzen[i + 1] });
   if (!takte.length) takte.push({ x0: z.x0, x1: z.x1 });
@@ -461,7 +469,7 @@ export async function seiteVorbereiten(datei, { schritt = () => {} } = {}) {
         takte: z.takte.map((tk) => ({ x0: s(tk.x0), x1: s(tk.x1) })),
         striche: z.striche.map((q) => s(q.x)),
         koepfe: z.koepfe.map((k) => ({ x: s(k.x), y: s(k.y), n: k.n, staff: k.staff })),
-        zuviel: z.zuviel,
+        zuviel: z.zuviel, restTinte: z.restTinte,
       };
     });
     schritt('Zeilen zuschneiden');
