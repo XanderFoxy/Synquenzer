@@ -285,14 +285,16 @@ export function taktstriche(bin, w, h, z) {
   const gruppen = [];
   for (const { x, s } of spalten) {
     const l = gruppen[gruppen.length - 1];
-    if (l && x - l.x1 <= 1) l.x1 = x; else gruppen.push({ x0: x, x1: x, s });
+    // neue Gruppe auch bei anderer Neigung: sonst verbindet eine schräge Spalte zwei nahe Striche (Schlussstrich) zu einem breiten
+    if (l && x - l.x1 <= 1 && l.s === s) l.x1 = x; else gruppen.push({ x0: x, x1: x, s });
   }
   let schmal = gruppen.filter((q) => q.x1 - q.x0 + 1 <= Math.max(4, 0.9 * g));
   // Klavier: Taktstriche gehen meist durch die Lücke zwischen den Systemen – Hälse und Taktangaben nicht.
   if (z.staves.length === 2) {
     const a = z.staves[0].y[4] + 1, b = z.staves[1].y[0] - 1;
     for (const q of schmal) { let m = 0; for (let x = q.x0; x <= q.x1; x++) m = Math.max(m, deckung(x, q.s, a, b)); q.luecke = m; }
-    const durch = schmal.filter((q) => q.luecke >= 0.9);
+    // der Strich am Ende des Systems ist immer ein Taktstrich (Schlussstriche sind oft je System gezeichnet)
+    const durch = schmal.filter((q) => q.luecke >= 0.9 || z.x1 - q.x1 < 1.2 * g);
     if (durch.length >= Math.max(2, 0.6 * schmal.length)) schmal = durch;
   }
   // doppelte Striche, Schluss- und Wiederholungsstriche zu einem zusammenfassen
@@ -522,9 +524,14 @@ export async function seiteVorbereiten(datei, { schritt = () => {} } = {}) {
     if (leer.length) hinweise.push(leer.length === zeilen.length ? 'Nur leere Notenlinien gefunden – keine Noten darauf.' : `${leer.length} leere Notenzeile${leer.length === 1 ? '' : 'n'} übersprungen.`);
     // Zeilen vermutlich übersehen? Linien, die zu keinem System gehören, oder einzelne Systeme neben Klavier-Paaren
     const benutzt = (y) => staves.some((st) => y > st.y[0] - 0.6 * st.g && y < st.y[4] + 0.6 * st.g);
+    // (drei kräftige freie Linien im Abstand der Notenlinien – dicke Ränder/Schattenkanten zählen nicht)
     const frei_ = linien.filter((l) => l.staerke >= 0.6 && !benutzt(l.y));
     let haufen = 0;
-    for (let i = 0, n = 0; i < frei_.length; i++) { n = i && frei_[i].y - frei_[i - 1].y < 2.2 * masse.abstand ? n + 1 : 1; if (n === 3) haufen++; }
+    for (let i = 0, n = 1; i < frei_.length; i++) {
+      const d = i ? frei_[i].y - frei_[i - 1].y : 0;
+      n = i && d > 0.75 * masse.abstand && d < 1.3 * masse.abstand ? n + 1 : 1;
+      if (n === 3) haufen++;
+    }
     const gemischt = volle.some((z) => z.staves.length === 2) && volle.some((z) => z.staves.length === 1);
     if (volle.length && (haufen || gemischt)) hinweise.push('Vermutlich wurde nicht jede Notenzeile sauber erkannt (Foto schräg von der Seite oder gewellt?). Schau in der Lupe nach, ob alle Zeilen umrahmt sind – sonst neues Foto, gerade von oben.');
     await ruhe();
