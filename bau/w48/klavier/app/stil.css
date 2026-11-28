@@ -252,3 +252,4 @@ h2.abschnitt { font-size: 13px; text-transform: uppercase; letter-spacing: .08em
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
 }
+.schalter.nur-ico { width: 44px; min-width: 44px; padding: 0; justify-content: center; flex: none; }

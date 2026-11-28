@@ -25,6 +25,7 @@ const ICON = {
   x: I(`<path d="M7 7l10 10M17 7L7 17" ${S} stroke-width="2.2"/>`, 'ico-k'),
   weg: I(`<path d="M5 7h14M10 11v6M14 11v6M6 7l1 12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-12M9 7V4h6v3" ${S}/>`, 'ico-k'),
   ohr: I(`<path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7" ${S}/>`, 'ico-k'),
+  takt: I(`<path d="M8 21h8l-2.6-17h-2.8z" ${S}/><path d="M12 15l5-8" ${S}/><path d="M7 21h10" ${S}/>`, 'ico-k'),
   namen: I(`<rect x="3" y="5" width="18" height="14" rx="2" ${S}/><path d="M9 5v8M15 5v8" ${S}/><path d="M7.5 17h3M13.5 17h3" ${S}/>`, 'ico-k'),
   bild: I(`<rect x="3" y="4" width="18" height="16" rx="3" ${S}/><circle cx="9" cy="10" r="2" ${S}/><path d="M21 16l-5-5-8 8" ${S}/>`),
   bass: I('<path d="M6 7.5c3.5-2.6 9-1.5 8.6 3.6-.3 4.2-4.6 6.8-8.6 8.4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="6.8" cy="9.6" r="1.8" fill="currentColor"/><circle cx="18" cy="8.5" r="1.2" fill="currentColor"/><circle cx="18" cy="13" r="1.2" fill="currentColor"/>'),
@@ -224,6 +225,7 @@ async function seiteStueck(id) {
       <h1>${esc(e.titel)}<small>${esc(e.wer || '')}</small></h1>
       <button class="schalter" id="farben" type="button" aria-pressed="true" aria-label="Akkordfarben"><span class="regen"><i style="background:var(--r1)"></i><i style="background:var(--r3)"></i><i style="background:var(--r5)"></i></span>Farben</button>
       <button class="schalter" id="namen" type="button" aria-pressed="false" aria-label="Tastennamen">${ICON.namen}Namen</button>
+      <button class="schalter nur-ico" id="takt" type="button" aria-pressed="false" aria-label="Metronom-Klick">${ICON.takt}</button>
     </header>
     <div class="notenflaeche" id="flaeche"><svg id="noten" role="img" aria-label="Notenblatt"></svg></div>
     <section class="akkordkarte leer-k" id="karte" aria-live="polite"></section>
@@ -248,7 +250,7 @@ async function seiteStueck(id) {
   segmente.forEach((s, i) => { for (const id of s.neu) if (!segNachNote.has(id)) segNachNote.set(id, i); });
 
   const Z = {
-    farben: true, namen: false, schleife: true, hand: null, tempo: 0.7,
+    farben: true, namen: false, schleife: true, hand: null, tempo: 0.7, metronom: false,
     von: erster, bis: letzter, wahl: 0, // wahl: 0 = nächster Tipp setzt Anfang, 1 = nächster Tipp setzt Ende
     gewaehlt: -1, aktSeg: -1, zeile: -1, layout: null, klingt: new Set(), schmutzig: false, kopfRaum: 0,
   };
@@ -423,7 +425,7 @@ async function seiteStueck(id) {
   function starten() {
     audioKontext();
     Z.klingt.clear(); tast.alleAus(); Z.zeile = -1; Z.aktSeg = -1; Z.gewaehlt = -1; markiereAkkord();
-    sp.spiele(Z.von, Z.bis, { schleife: Z.schleife, tempoFaktor: Z.tempo, nurHand: Z.hand });
+    sp.spiele(Z.von, Z.bis, { schleife: Z.schleife, tempoFaktor: Z.tempo, nurHand: Z.hand, metronom: Z.metronom });
     const k = $('#spiel'); k.innerHTML = ICON.pause; k.setAttribute('aria-label', 'Anhalten');
   }
   function gestoppt() {
@@ -447,6 +449,7 @@ async function seiteStueck(id) {
     faerbe(svg, Z.farben ? farbenKarte : new Map());
     if (Z.gewaehlt >= 0) karteZeigen(Z.gewaehlt); else if (Z.aktSeg >= 0) karteZeigen(Z.aktSeg);
   };
+  $('#takt').onclick = (ev) => { audioKontext(); Z.metronom = !Z.metronom; ev.currentTarget.setAttribute('aria-pressed', Z.metronom); toast(Z.metronom ? 'Klick an' : 'Klick aus'); if (sp.laeuft) sp.setzeMetronom(Z.metronom); };
   $('#namen').onclick = (ev) => { Z.namen = !Z.namen; ev.currentTarget.setAttribute('aria-pressed', Z.namen); tast.setNamen(Z.namen ? 'alle' : 'c'); };
 
   // Hell/dunkel live: Farben neu berechnen
