@@ -332,13 +332,13 @@ function zeileEintragen(p, zi, z, antworten, eigene, vonGesendet) {
     return;
   }
   const N = eigene.length, M = gelesen.length;
-  let zuordnung = gelesen.slice(0, N);
+  let zuordnung = gelesen.slice(0, N), nachNummer = false;
   void vonGesendet;
   if (M !== N) {
     // die KI schreibt die blauen Nummern der Zeile (1 … N): danach zuordnen, wenn sie eindeutig passen
     const nrs = gelesen.map((g) => g.nr);
     const passend = nrs.every((n) => n >= 1 && n <= N) && new Set(nrs).size === nrs.length;
-    if (passend) { zuordnung = Array(N).fill(null); for (const g of gelesen) zuordnung[g.nr - 1] = g; }
+    if (passend) { zuordnung = Array(N).fill(null); for (const g of gelesen) zuordnung[g.nr - 1] = g; nachNummer = true; }
   }
   eigene.forEach((t, j) => { t.lesung = zuordnung[j] || null; t.lesungen = 1; t.zeilenGrund = null; t.zeilenKopf = null; });
   eigene[0].zeilenKopf = { key: a0.key, time: a0.time, clefs: a0.clefs };
@@ -352,8 +352,9 @@ function zeileEintragen(p, zi, z, antworten, eigene, vonGesendet) {
     nummern();
   }
   if (M !== N) {
+    // Nummern passten eindeutig: nur die fehlenden Takte sind fraglich; sonst die ganze Zeile
     const grund = { art: 'taktzahl', text: `In dieser Zeile fand die App ${N} Takt${N === 1 ? '' : 'e'}, gelesen wurden ${M}.` };
-    for (const t of eigene) t.zeilenGrund = grund;
+    for (const t of eigene) if (!nachNummer || !t.lesung) t.zeilenGrund = grund;
   }
   if (antworten.some((a) => a.abgeschnitten)) for (const t of eigene.slice(-2)) t.zeilenGrund = { art: 'abgeschnitten', text: 'Die Antwort wurde abgeschnitten.' };
   bewerten(eigene);
