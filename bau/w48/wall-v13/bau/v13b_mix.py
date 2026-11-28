@@ -31,11 +31,12 @@ _, _, chh = ec.kette(chor.mean(1), SR, spur='chor'); ch = chor + chh
 vox = lead + dop + g2 + ch
 mix = musik + vox
 del lead, dop, g2, ch, gh, chh, chor, gegen, lead12, dop12, musik
-dec = -1.55
+dec = -1.76   # aus Lauf 1 (−1,55/−1,65 gaben MP3-TP −0,95/−0,94)
+g = 2.1
 for runde in range(4):
-    g = 0.0
-    for it in range(5):
-        y, _ = limiter(mix * undb(g), dec, 5.0, 25.0); g += -10.0 - meter.integrated_loudness(y)
+    for it in range(12):
+        y, _ = limiter(mix * undb(g), dec, 5.0, 25.0); err = -10.0 - meter.integrated_loudness(y); g += 1.6 * err
+        if abs(err) < 0.03: break
     y, grl = limiter(mix * undb(g), dec, 5.0, 25.0)
     y44 = resample_poly(y, 147, 160, axis=0)
     tp44 = true_peak(y44)
