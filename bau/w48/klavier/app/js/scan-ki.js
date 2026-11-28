@@ -253,6 +253,7 @@ export function baueStueck(takte, grund) {
   takte.forEach((tk, i) => {
     if (tk.key != null) key = tk.key;
     if (tk.time) time = tk.time;
+    if (tk.clefs) { clefs.oben = tk.clefs[0] || clefs.oben; clefs.unten = tk.clefs[1] || clefs.unten; }
     const r = taktNoten({ ...tk, key, time }, { key, time, clefs, boegen });
     const [z, n] = time.split('/').map(Number);
     let dauer = r.laenge;

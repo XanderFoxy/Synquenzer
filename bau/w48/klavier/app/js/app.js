@@ -8,8 +8,11 @@ import { tastatur } from './tastatur.js';
 import { spieler, klinge, audioKontext } from './wiedergabe.js';
 import { uebungen } from './uebungen.js';
 
-// Noten-Scanner (Bild/Foto → MusicXML): Link trägt die Hauptsitzung ein. Leer = Hinweis ausgeblendet.
-const SCANNER_URL = 'https://claude.ai/artifact/W8f617Bx9KDrKBHteyz5zo';
+// Noten aus Foto (#scan) ist eingebaut. Die KI-Erkennung gibt es nur in der Claude-Fassung dieser App:
+// ARTIFACT_URL = Link auf diese Fassung (trägt die Hauptsitzung ein; leer = Hinweis ohne Link).
+const ARTIFACT_URL = '';
+let scanModul = null;
+const scanHolen = () => (scanModul ||= import('./scan.js'));
 
 const $ = (s, el = document) => el.querySelector(s);
 const app = $('#app');
@@ -102,7 +105,7 @@ async function stueckHolen(id) {
     const roh = await eigenesHolen(id);
     if (!roh) throw new Error('Stück nicht gefunden');
     const st = await einlesen(roh.daten, roh.name, { haende: roh.haende });
-    e = { titel: roh.titel || st.titel, wer: roh.name, stück: st, eigen: true };
+    e = { titel: roh.titel || st.titel, wer: roh.scan ? 'Aus Foto erkannt' : roh.name, stück: st, eigen: true, scan: roh.scan || null };
   }
   geladen.set(id, e);
   return e;
@@ -141,11 +144,9 @@ async function dateiLaden(datei) {
     location.hash = '#stueck/' + id;
   } catch (e) {
     if (e && e.art === 'nicht-verfuegbar') {
-      hinweis({
-        bild: SCANNER_URL ? ICON.scanner : ICON.bild,
-        titel: 'Bild oder PDF – noch nicht direkt',
-        text: `<p>${esc(e.text)}.</p>${SCANNER_URL ? `<p>Dafür gibt es den <b>Noten-Scanner</b>: Foto hinein, er macht daraus MusicXML oder MIDI – die Datei lädst du dann hier.</p><a class="scanner-knopf" href="${esc(SCANNER_URL)}" target="_blank" rel="noopener">${ICON.scanner}<span>Zum Noten-Scanner</span></a>` : ''}<p>Was hier <b>sofort</b> klappt: <b>MusicXML</b> (.musicxml, .xml, .mxl) und <b>MIDI</b> (.mid). Viele Notenseiten und Notenprogramme bieten diese Formate zum Herunterladen an.</p><p>Ich erfinde keine Noten aus einem Bild – lieber ehrlich als falsch geübt.</p>`,
-      });
+      // Foto oder PDF → „Noten aus Foto“ (dort: Bildvorbereitung, Erkennung, Korrektur)
+      (await scanHolen()).dateienDazu([datei]);
+      location.hash = '#scan';
     } else {
       hinweis({ bild: ICON.datei, titel: 'Das konnte ich nicht lesen', text: `<p>${esc((e && e.text) || (e && e.message) || 'Unbekannter Fehler')}</p><p>Möglich sind MusicXML (.musicxml, .xml, .mxl) und MIDI (.mid).</p>` });
     }
@@ -188,8 +189,41 @@ let ausgebenModul = null, ausgebenLaden = null;
 const ausgebenHolen = () => (ausgebenLaden ||= import('./ausgeben.js').then((m) => (ausgebenModul = m)));
 const kannTeilen = () => { try { return !!(navigator.share && navigator.canShare); } catch { return false; } };
 
-/** iPhone: Teilen-Menü mit Datei (dort „In Dateien sichern“). Sonst: normaler Download. */
+// In der Claude-Fassung läuft die Seite in einem Rahmen: Dateien gehen dort nur über die Fähigkeit „downloads“,
+// und die nimmt .musicxml/.mid nicht an → als ZIP (ohne Kompression) mit der Datei darin.
+let dlVersprechen = null;
+function downloadsHolen() {
+  if (dlVersprechen) return dlVersprechen;
+  const c = window.claude;
+  if (!c || typeof c.use !== 'function') return (dlVersprechen = Promise.resolve(null));
+  dlVersprechen = Promise.race([Promise.resolve().then(() => c.use('downloads')).catch(() => null), new Promise((ok) => setTimeout(() => ok(null), 4000))]);
+  return dlVersprechen;
+}
+const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function zipEine(name, daten) {
+  const enc = new TextEncoder(), nb = enc.encode(name);
+  let crc = 0xFFFFFFFF; for (let i = 0; i < daten.length; i++) crc = CRC[(crc ^ daten[i]) & 255] ^ (crc >>> 8); crc = (crc ^ 0xFFFFFFFF) >>> 0;
+  const d = new Date(), zeit = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1), datum = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  const lh = new DataView(new ArrayBuffer(30)), cd = new DataView(new ArrayBuffer(46)), en = new DataView(new ArrayBuffer(22));
+  [[0, 0x04034b50, 4], [4, 20, 2], [6, 0x0800, 2], [10, zeit, 2], [12, datum, 2], [14, crc, 4], [18, daten.length, 4], [22, daten.length, 4], [26, nb.length, 2]].forEach(([o, v, n]) => (n === 4 ? lh.setUint32(o, v, true) : lh.setUint16(o, v, true)));
+  [[0, 0x02014b50, 4], [4, 20, 2], [6, 20, 2], [8, 0x0800, 2], [12, zeit, 2], [14, datum, 2], [16, crc, 4], [20, daten.length, 4], [24, daten.length, 4], [28, nb.length, 2]].forEach(([o, v, n]) => (n === 4 ? cd.setUint32(o, v, true) : cd.setUint16(o, v, true)));
+  [[0, 0x06054b50, 4], [8, 1, 2], [10, 1, 2], [12, 46 + nb.length, 4], [16, 30 + nb.length + daten.length, 4]].forEach(([o, v, n]) => (n === 4 ? en.setUint32(o, v, true) : en.setUint16(o, v, true)));
+  return new Blob([lh.buffer, nb, daten, cd.buffer, nb, en.buffer], { type: 'application/zip' });
+}
+
+/** iPhone: Teilen-Menü mit Datei (dort „In Dateien sichern“). Sonst: normaler Download. In der Claude-Fassung: ZIP über „downloads“. */
 async function teilenOderLaden(blob, name) {
+  const dl = await downloadsHolen();
+  if (dl) {
+    const zipName = name.replace(/\.[^.]+$/, '') + (name.endsWith('.mid') ? ' MIDI' : ' MusicXML') + '.zip';
+    try {
+      await dl.save({ filename: zipName, data: zipEine(name, new Uint8Array(await blob.arrayBuffer())) });
+      return 'zip';
+    } catch (err) {
+      if (err && err.code === 'declined') return 'abgebrochen';
+      // sonst: normalen Weg versuchen
+    }
+  }
   if (kannTeilen()) {
     try {
       const datei = new File([blob], name, { type: blob.type });
@@ -208,6 +242,7 @@ async function teilenOderLaden(blob, name) {
 }
 function speichernBlatt(e) {
   ausgebenHolen();
+  downloadsHolen();
   const teilen = kannTeilen();
   const { el, zu } = hinweis({
     bild: ICON.teilen, titel: 'Speichern als …', knopf: 'Schließen', klasse: 'speichern-blatt',
@@ -229,7 +264,7 @@ function speichernBlatt(e) {
       name = m.dateiname(e.titel, xml ? 'musicxml' : 'mid');
     } catch (err) { toast('Speichern ging nicht: ' + (err.message || err)); return; }
     const ergebnis = await teilenOderLaden(blob, name);
-    if (ergebnis !== 'abgebrochen') { zu(); toast(ergebnis === 'geteilt' ? 'Geteilt: ' + name : 'Gespeichert: ' + name); }
+    if (ergebnis !== 'abgebrochen') { zu(); toast(ergebnis === 'geteilt' ? 'Geteilt: ' + name : ergebnis === 'zip' ? 'Als ZIP gespeichert – darin: ' + name : 'Gespeichert: ' + name); }
   };
 }
 
@@ -242,6 +277,7 @@ function route() {
   const [seite, arg] = h.split('/');
   if (seite === 'stueck' && arg) return seiteStueck(decodeURIComponent(arg));
   if (seite === 'uebungen') return seiteUeben(arg);
+  if (seite === 'scan') return seiteScan();
   return seiteStart();
 }
 addEventListener('hashchange', route);
@@ -254,8 +290,8 @@ async function seiteStart() {
   app.innerHTML = `<div class="start seite">
     <header class="held"><img src="icon.svg" alt=""><div><h1>Klavier-Lernhilfe</h1><p>Noten sehen · Akkorde verstehen · Tasten finden</p></div></header>
     <button class="laden" type="button" id="laden"><span class="kreis">${ICON.datei}</span><span><b>Notenblatt laden</b><span>Tippen – oder Datei hierher ziehen</span></span></button>
-    <div class="formate"><span class="ok">MusicXML</span><span class="ok">MXL</span><span class="ok">MIDI</span><span>PDF / Foto: Hinweis</span></div>
-    ${SCANNER_URL ? `<a class="scanner-hinweis" href="${esc(SCANNER_URL)}" target="_blank" rel="noopener"><span class="kreis">${ICON.scanner}</span><span><b>Bild oder Foto?</b> → Noten-Scanner</span>${ICON.pfeil}</a>` : ''}
+    <div class="formate"><span class="ok">MusicXML</span><span class="ok">MXL</span><span class="ok">MIDI</span><span class="ok">Foto</span></div>
+    <a class="scanner-hinweis foto-karte" href="#scan"><span class="kreis">${ICON.scanner}</span><span><b>Noten aus Foto</b><small>Notenseite fotografieren – die App sucht Zeilen und Takte, Claude liest die Noten, du prüfst Takt für Takt</small></span>${ICON.pfeil}</a>
     <input type="file" id="datei" hidden accept=".musicxml,.xml,.mxl,.mid,.midi,application/vnd.recordare.musicxml+xml,application/vnd.recordare.musicxml,audio/midi,audio/x-midi,application/pdf,image/*">
     <h2 class="abschnitt">Meine Stücke</h2>
     <div class="liste" id="eigene"></div>
@@ -303,6 +339,32 @@ function seiteUeben(art) {
   aufraeumen = () => u.zerstoere();
 }
 
+// ───────── Noten aus Foto ─────────
+async function seiteScan() {
+  document.title = 'Noten aus Foto · Klavier-Lernhilfe';
+  if (!scanModul) app.innerHTML = '<div class="lade"><span class="lade-punkt"></span></div>';
+  const m = await scanHolen();
+  if (!location.hash.startsWith('#scan')) return;
+  aufraeumen = m.seiteScan(app, {
+    artifactUrl: ARTIFACT_URL, hinweis, toast,
+    async uebernehmen({ titel, xml, scan }) {
+      const st = await einlesen(xml, titel + '.musicxml');
+      const id = 'eigen-' + Date.now().toString(36);
+      await eigenesSpeichern({ id, titel, name: titel + '.musicxml', daten: xml, datum: Date.now(), scan });
+      geladen.set(id, { titel, wer: 'Aus Foto erkannt', stück: st, eigen: true, scan });
+      toast('Übernommen: ' + titel);
+      location.hash = '#stueck/' + id;
+    },
+  });
+}
+
+/** Hinweis über dem Notenblatt, wenn das Stück aus einem Foto erkannt wurde */
+function scanHtml(scan) {
+  if (!scan) return '';
+  const m = scan.markiert || [];
+  return `<div class="quelle scan-quelle"><p><span class="q-marke">Foto</span> Aus einem Foto erkannt: <b>${scan.sicher} von ${scan.gesamt} Takten sicher</b>${m.length ? ` · markiert: Takt ${m.slice(0, 12).join(', ')}${m.length > 12 ? ' …' : ''}` : ''}. Bitte mit dem Original vergleichen, bevor du übst.</p></div>`;
+}
+
 // ───────── Stück ─────────
 async function seiteStueck(id) {
   app.innerHTML = '<div class="lade"><span class="lade-punkt"></span></div>';
@@ -325,7 +387,7 @@ async function seiteStueck(id) {
       <button class="schalter" id="namen" type="button" aria-pressed="false" aria-label="Tastennamen">${ICON.namen}Namen</button>
       <button class="schalter nur-ico" id="takt" type="button" aria-pressed="false" aria-label="Metronom-Klick">${ICON.takt}</button>
     </header>
-    <div class="notenflaeche" id="flaeche">${quelleHtml(st.quelle)}<svg id="noten" role="img" aria-label="Notenblatt"></svg></div>
+    <div class="notenflaeche" id="flaeche">${quelleHtml(st.quelle)}${scanHtml(e.scan)}<svg id="noten" role="img" aria-label="Notenblatt"></svg></div>
     <section class="akkordkarte leer-k" id="karte" aria-live="polite"></section>
     <div class="steuer">
       <button class="spielen" id="spiel" type="button" aria-label="Abspielen">${ICON.spielen}</button>

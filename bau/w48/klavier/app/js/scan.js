@@ -61,7 +61,7 @@ const S = {
 let naechsteId = 1;
 let root = null, opt = {}, renderGeplant = false;
 
-const STATUS_TEXT = { offen: 'noch nicht gelesen', sicher: 'sicher', geprueft: 'geprüft', markiert: 'markiert', unleserlich: 'unleserlich', auffaellig: 'wird nachgelesen' };
+const STATUS_TEXT = { offen: 'noch nicht gelesen', sicher: 'sicher', geprueft: 'geprüft', markiert: 'markiert', unleserlich: 'unleserlich', auffaellig: 'auffällig' };
 const istSicher = (t) => t.status === 'sicher' || t.status === 'geprueft';
 const istMarkiert = (t) => t.status === 'markiert' || t.status === 'unleserlich' || t.status === 'auffaellig';
 
@@ -224,11 +224,11 @@ function pixelKoepfe(t, ctx, i) {
   return n;
 }
 
-function pruefen(t, i, kx) {
+function pruefen(t, i, kx, { ohneZeile = false } = {}) {
   const ctx = kx[i];
   if (!t.lesung) return [{ art: 'leer', text: 'Für diesen Takt gibt es noch keine Lesung.' }];
   const g = KI.pruefeTakt(t.lesung, { ...ctx, erster: i === 0, letzter: i === S.takte.length - 1, pixel: pixelKoepfe(t, ctx, i) });
-  if (t.zeilenGrund) g.push(t.zeilenGrund);
+  if (t.zeilenGrund && !ohneZeile) g.push(t.zeilenGrund);
   return g;
 }
 const harteGruende = (g) => g.filter((x) => x.art !== 'bild' && x.art !== 'info');
@@ -245,6 +245,7 @@ function einheiten() {
   return aus;
 }
 const zuLesen = () => einheiten().length;
+const nochAuffaellig = () => S.takte.filter((t) => t.status === 'auffaellig' && hatBild(t)).length;
 
 async function erkennen() {
   if (S.job?.laeuft || S.ki.zustand !== 'da') return;
@@ -304,7 +305,7 @@ async function leseZeile(e, job) {
       a.abgeschnitten = r.truncated;
       antworten.push(a);
     }
-    zeileEintragen(p, zi, z, antworten, eigene);
+    zeileEintragen(p, zi, z, antworten, eigene, von);
   } catch (err) {
     if (err instanceof Halt) throw err;
     for (const t of eigene) { t.status = 'markiert'; t.gruende = [{ art: 'fehler', text: (err && err.message) || 'Lesen fehlgeschlagen.' }]; }
@@ -312,7 +313,7 @@ async function leseZeile(e, job) {
   } finally { job.aktiv.delete(schluessel); plane(); }
 }
 
-function zeileEintragen(p, zi, z, antworten, eigene) {
+function zeileEintragen(p, zi, z, antworten, eigene, vonGesendet) {
   const a0 = antworten[0];
   const gelesen = antworten.flatMap((a) => a.takte);
   if (S.grund.time == null) {
@@ -330,7 +331,7 @@ function zeileEintragen(p, zi, z, antworten, eigene) {
   }
   const N = eigene.length, M = gelesen.length;
   let zuordnung = gelesen.slice(0, N);
-  const von = eigene[0].nr;
+  const von = vonGesendet ?? eigene[0].nr;
   if (M !== N) {
     const nrs = gelesen.map((g) => g.nr);
     const passend = nrs.every((n) => n >= von && n <= von + N - 1) && new Set(nrs).size === nrs.length;
@@ -363,7 +364,8 @@ function bewerten(liste, info) {
     t.gruende = pruefen(t, i, kx);
     if (info) t.gruende.push({ art: 'info', text: info });
     const hart = harteGruende(t.gruende);
-    t.status = t.gruende.some((g) => g.art === 'unleserlich') ? 'unleserlich' : t.gruende.length && !(info && !hart.length) ? 'auffaellig' : 'sicher';
+    void hart;
+    t.status = t.gruende.some((g) => g.art === 'unleserlich') ? 'unleserlich' : t.gruende.length ? 'auffaellig' : 'sicher';
     t.varianten = t.lesung ? [{ name: 'Lesung 1', lesung: t.lesung }] : [];
   }
   S.stueck = null;
@@ -410,7 +412,7 @@ function entscheiden(t, A, B) {
   const i = S.takte.indexOf(t), kx = kontexte(), ctx = kx[i];
   const eins = t.lesung;
   const kand = [{ name: t.bearbeitet ? 'Deine Fassung' : 'Lesung 1', lesung: eins }, { name: 'Lesung 2', lesung: A }, { name: 'Lesung 3', lesung: B }].filter((x) => x.lesung);
-  const gr = (l) => { const alt = t.lesung; t.lesung = l; const g = pruefen(t, i, kx); t.lesung = alt; return g; };
+  const gr = (l) => { const alt = t.lesung; t.lesung = l; const g = pruefen(t, i, kx, { ohneZeile: true }); t.lesung = alt; return g; };
   const v = (a, b) => a && b && KI.vergleiche(a, b, ctx).gleich;
   let wahl = null, grund = '';
   const unl = (l) => l && gr(l).some((g) => g.art === 'unleserlich');
@@ -421,11 +423,11 @@ function entscheiden(t, A, B) {
   const eindeutig = [];
   for (const k of kand) if (!eindeutig.some((x) => KI.vergleiche(x.lesung, k.lesung, ctx).gleich)) eindeutig.push(k);
   if (wahl) {
-    t.lesung = wahl; t.gruende = gr(wahl).concat([{ art: 'info', text: grund }]); t.status = 'sicher';
+    t.lesung = wahl; t.zeilenGrund = null; t.gruende = gr(wahl).concat([{ art: 'info', text: grund }]); t.status = 'sicher';
   } else {
     const bewertet = kand.map((k) => ({ ...k, g: gr(k.lesung) })).sort((a, b) => harteGruende(a.g).length - harteGruende(b.g).length || a.g.length - b.g.length);
     const beste = bewertet[0];
-    if (beste) { t.lesung = beste.lesung; t.gruende = beste.g; }
+    if (beste) { t.lesung = beste.lesung; t.gruende = t.zeilenGrund ? beste.g.concat([t.zeilenGrund]) : beste.g; }
     if (eindeutig.length > 1) t.gruende.push({ art: 'verschieden', text: `Die Lesungen sind verschieden (${eindeutig.length} Fassungen) – bitte mit dem Bild vergleichen.` });
     t.status = beste && !unl(beste.lesung) ? 'markiert' : 'unleserlich';
   }
@@ -439,20 +441,17 @@ function stueck() {
   const kx = kontexte();
   const takte = S.takte.map((t, i) => {
     const ctx = kx[i];
-    const l = t.lesung && !KI.STIMMEN.some((sk) => t.lesung.stimmen?.[sk] === '?') ? t.lesung : { stimmen: { U: [{ n: [], d: 1, p: 0, t: false, r: true, ganz: true }], ...(ctx.staves === 1 ? {} : { L: [{ n: [], d: 1, p: 0, t: false, r: true, ganz: true }] }) } };
-    const aus = { stimmen: l.stimmen, key: ctx.key, time: ctx.time };
+    const R = () => [{ n: [], d: 1, p: 0, t: false, r: true, ganz: true }];
+    const stimmen = {};
+    const roh = t.lesung?.stimmen || {};
+    for (const sk of KI.STIMMEN) if (roh[sk] !== undefined) stimmen[sk] = roh[sk] === '?' ? R() : roh[sk];
+    if (!stimmen.U) stimmen.U = R();
+    if (!stimmen.L && ctx.staves !== 1) stimmen.L = R();
+    const aus = { stimmen, key: ctx.key, time: ctx.time };
     if (t.zeilenKopf?.clefs) aus.clefs = t.zeilenKopf.clefs;
     return aus;
   });
-  // Schlüssel am Zeilenanfang (CLEFS) → als Wechsel einsetzen
-  const mitSchl = takte.map((tk) => {
-    if (!tk.clefs) return tk;
-    const st = { ...tk.stimmen };
-    if (Array.isArray(st.U)) st.U = [{ schl: tk.clefs[0] }, ...st.U];
-    if (Array.isArray(st.L)) st.L = [{ schl: tk.clefs[1] }, ...st.L];
-    return { ...tk, stimmen: st };
-  });
-  S.stueck = KI.baueStueck(mitSchl, { key: S.grund.key ?? 0, time: S.grund.time || '4/4', clefs: S.grund.clefs || ['G', 'F'], titel: S.titel || standardTitel() });
+  S.stueck = KI.baueStueck(takte, { key: S.grund.key ?? 0, time: S.grund.time || '4/4', clefs: S.grund.clefs || ['G', 'F'], titel: S.titel || standardTitel() });
   return S.stueck;
 }
 function standardTitel() { const d = new Date(); return `Foto-Noten ${d.getDate()}.${d.getMonth() + 1}.`; }
@@ -580,9 +579,10 @@ function zeichneKi() {
         ${zeilen ? `<ul class="sc-aktiv">${zeilen}</ul>` : ''}${J.text ? `<p class="sc-text">${esc(J.text)}${J.nachGesamt ? ` (${J.nach} von ${J.nachGesamt})` : ''}</p>` : ''}`;
     } else {
       const b = bilanz();
-      const knopfText = !fertig ? 'Noten erkennen' : offen ? (b.s || b.m ? 'Weiter lesen' : 'Noten erkennen') : 'Alles gelesen';
-      h = `<div class="sc-ki-kopf"><span class="sc-ki-ico">${ICO.lesen}</span><div><b>Noten erkennen</b><small>${fertig && offen ? `${anzahl} Anfrage${anzahl === 1 ? '' : 'n'} an Claude – je Zeile eine` : fertig ? 'fertig – unten prüfen' : 'zuerst ein Foto wählen'}</small></div></div>
-        <button class="sc-knopf haupt" type="button" data-tun="erkennen"${fertig && offen ? '' : ' disabled'}>${ICO.lesen}<span>${knopfText}</span></button>
+      const weiter = offen || nochAuffaellig();
+      const knopfText = !fertig ? 'Noten erkennen' : weiter ? (b.s || b.m ? 'Weiter lesen' : 'Noten erkennen') : 'Alles gelesen';
+      h = `<div class="sc-ki-kopf"><span class="sc-ki-ico">${ICO.lesen}</span><div><b>Noten erkennen</b><small>${fertig && offen ? `${anzahl} Anfrage${anzahl === 1 ? '' : 'n'} an Claude – je Zeile eine` : fertig && weiter ? `${nochAuffaellig()} auffällige Takte nachlesen` : fertig ? 'fertig – unten prüfen' : 'zuerst ein Foto wählen'}</small></div></div>
+        <button class="sc-knopf haupt" type="button" data-tun="erkennen"${fertig && weiter ? '' : ' disabled'}>${ICO.lesen}<span>${knopfText}</span></button>
         <p class="sc-klein">Jede Zeile wird einzeln und scharf an Claude geschickt. Auffällige Takte (Notenwerte passen nicht, Kopfzahl im Bild weicht ab, unleserlich) liest die App danach noch zweimal einzeln – höchstens ${MAX_NACHLESEN} Takte, je zwei Anfragen. Alles zählt zu deinem Nutzungskontingent.</p>`;
     }
     if (J?.fehler) h += `<p class="sc-meldung rot">${ICO.warn}<span>${esc(J.fehler)}</span></p>`;
@@ -597,19 +597,26 @@ function zeichneErgebnis() {
   const gelesen = S.takte.some((t) => t.status !== 'offen');
   box.hidden = !gelesen;
   if (!gelesen) return;
+  if (!box.querySelector('#scErgInhalt')) {
+    // fest: Namensfeld und Knöpfe (werden nicht neu gezeichnet – sonst ginge beim Tippen der Fokus verloren)
+    box.innerHTML = `<div id="scErgInhalt"></div>
+      <label class="sc-feld">Name des Stücks<input id="scTitel" type="text" autocomplete="off" enterkeyhint="done" placeholder="${esc(standardTitel())}"></label>
+      <div class="sc-knoepfe"><a class="sc-knopf zweit" id="scPruefen" href="#scan/takt/1">${ICO.ok}<span>Takte prüfen</span></a><button class="sc-knopf haupt" type="button" id="scUeber" data-tun="uebernehmen">${ICO.rechts}<span>Übernehmen</span></button></div>
+      <p class="sc-klein">„Übernehmen“ öffnet das Stück wie eine geladene Datei – mit Akkorden, Intervallen, Abspielen und Speichern. Markierte Takte bleiben so, wie sie gelesen wurden.</p>`;
+    $('#scTitel', box).value = S.titel;
+  }
   const pct = b.n ? b.s / b.n : 0, R = 30, U = 2 * Math.PI * R;
   const ring = `<svg class="sc-ring" viewBox="0 0 76 76" aria-hidden="true"><circle cx="38" cy="38" r="${R}" class="sc-ring-g"/><circle cx="38" cy="38" r="${R}" class="sc-ring-w" stroke-dasharray="${(U * pct).toFixed(1)} ${U.toFixed(1)}" transform="rotate(-90 38 38)"/><text x="38" y="44" text-anchor="middle">${Math.round(pct * 100)}%</text></svg>`;
   const chips = S.takte.map((t, i) => `<a class="sc-tchip ${t.status}" href="#scan/takt/${i + 1}" aria-label="Takt ${t.nr}: ${esc(STATUS_TEXT[t.status])}">${t.nr}</a>`).join('');
-  const k = kontexte()[0] || {};
-  const tonart = `${Math.abs(S.grund.key || 0) || 'keine'} ${S.grund.key > 0 ? '♯' : S.grund.key < 0 ? '♭' : 'Vorzeichen'}`;
+  const k = S.grund.key || 0;
+  const tonart = k ? `${Math.abs(k)} ${k > 0 ? '♯' : '♭'}` : 'keine Vorzeichen';
   const ersterMarkiert = S.takte.findIndex(istMarkiert);
-  box.innerHTML = `<div class="sc-bilanz">${ring}<div><b>${b.s} von ${b.n} Takten sicher</b><small>${b.m ? `${b.m} markiert – bitte ansehen` : b.offen ? `${b.offen} noch nicht gelesen` : 'nichts markiert – trotzdem kurz mit dem Original vergleichen'}</small></div></div>
-    <div class="sc-grund"><span>Tonart <b>${esc(tonart)}</b></span><span>Takt <b>${esc(S.grund.time || k.time || '–')}</b></span><button class="sc-mini" type="button" data-tun="grund" aria-label="Tonart und Taktart ändern">ändern</button></div>
+  $('#scErgInhalt', box).innerHTML = `<div class="sc-bilanz">${ring}<div><b>${b.s} von ${b.n} Takten sicher</b><small>${b.m ? `${b.m} markiert – bitte ansehen` : b.offen ? `${b.offen} noch nicht gelesen` : 'nichts markiert – trotzdem kurz mit dem Original vergleichen'}</small></div></div>
+    <div class="sc-grund"><span>Tonart <b>${esc(tonart)}</b></span><span>Takt <b>${esc(S.grund.time || '–')}</b></span><button class="sc-mini" type="button" data-tun="grund" aria-label="Tonart und Taktart ändern">ändern</button></div>
     <div class="sc-tchips">${chips}</div>
-    <div class="sc-legende"><span class="sicher">sicher</span><span class="markiert">markiert</span><span class="unleserlich">unleserlich</span><span class="geprueft">geprüft</span></div>
-    <label class="sc-feld">Name des Stücks<input id="scTitel" type="text" autocomplete="off" enterkeyhint="done" value="${esc(S.titel)}" placeholder="${esc(standardTitel())}"></label>
-    <div class="sc-knoepfe"><a class="sc-knopf zweit" href="#scan/takt/${(ersterMarkiert >= 0 ? ersterMarkiert : 0) + 1}">${ICO.ok}<span>Takte prüfen</span></a><button class="sc-knopf haupt" type="button" data-tun="uebernehmen"${S.job?.laeuft || b.offen === b.n ? ' disabled' : ''}>${ICO.rechts}<span>Übernehmen</span></button></div>
-    <p class="sc-klein">„Übernehmen“ öffnet das Stück wie eine geladene Datei – mit Akkorden, Intervallen, Abspielen und Speichern. Markierte Takte bleiben so, wie sie gelesen wurden.</p>`;
+    <div class="sc-legende"><span class="sicher">sicher</span><span class="geprueft">geprüft</span><span class="markiert">markiert</span><span class="unleserlich">unleserlich</span></div>`;
+  $('#scPruefen', box).setAttribute('href', `#scan/takt/${(ersterMarkiert >= 0 ? ersterMarkiert : 0) + 1}`);
+  $('#scUeber', box).disabled = !!S.job?.laeuft || b.offen === b.n;
 }
 
 function grundAendern() {
@@ -709,6 +716,9 @@ async function bildZeigen(t) {
   }
   txt.textContent = t.extra ? 'Zusatz-Takt: im Bild nicht abgegrenzt – ganze Zeile' : S.pruef.ganzeZeile ? 'Ganze Zeile – der Takt ist orange umrandet' : 'Ausschnitt aus deinem Foto';
   const breite = Math.max(200, c.parentElement.clientWidth || 360);
+  const schl = `${t.schluessel}|${S.pruef.ganzeZeile}|${breite}`;
+  if (c.dataset.schl === schl) return;
+  c.dataset.schl = schl;
   await taktZeigen(c, z, t.k, { ganzeZeile: S.pruef.ganzeZeile || !!t.extra, breite, dpr: Math.min(2, window.devicePixelRatio || 1) });
   if (nr !== bildAuftrag) return;
   c.classList.toggle('breit', S.pruef.ganzeZeile || !!t.extra);
@@ -836,8 +846,8 @@ function nachBearbeiten(t) {
   S.stueck = null;
   const kx = kontexte();
   for (const [i, x] of S.takte.entries()) if (x.lesung && (x === t || !t)) {
-    x.gruende = pruefen(x, i, kx).filter((g) => g.art !== 'bild' || !x.bearbeitet);
-    if (x.status !== 'geprueft' && x.status !== 'offen' && x.bearbeitet) x.status = harteGruende(x.gruende).length ? 'markiert' : 'markiert';
+    x.gruende = pruefen(x, i, kx);
+    if (x === t && x.status !== 'geprueft') x.status = 'markiert'; // Geändertes zählt erst nach „Stimmt so“ als sicher
   }
   plane();
 }
@@ -874,7 +884,7 @@ function bearbeite(t, tun, b) {
   else if (tun === 'triole') { ev.t = !ev.t; ev.ganz = false; }
   else if (tun === 'bogen') ev.bo = !ev.bo;
   else if (tun === 'pause') {
-    if (ev.r) { ev.r = false; ev.ganz = false; if (!ev.n.length) ev.n = [{ s: s.sk.startsWith('U') ? 'H' : 'D', a: null, o: s.sk.startsWith('U') ? 4 : 3 }]; if (ev.d === 1 && ev.ganz) ev.d = 1; }
+    if (ev.r) { if (ev.ganz) { ev.ganz = false; ev.d = 4; } ev.r = false; if (!ev.n.length) ev.n = [{ s: s.sk.startsWith('U') ? 'H' : 'D', a: null, o: s.sk.startsWith('U') ? 4 : 3 }]; }
     else { ev.r = true; ev.n = []; ev.bo = false; }
     S.pruef.sel = { ...s, ni: 0 };
   } else if (tun === 'akkordton') {
@@ -900,7 +910,7 @@ async function klickPruefen(ev) {
   if (tun === 'zeile') { S.pruef.ganzeZeile = !S.pruef.ganzeZeile; return plane(); }
   if (tun === 'ev') return waehle({ sk: b.dataset.sk, ei: +b.dataset.ei, ni: 0 });
   if (tun === 'variante') { const v = t.varianten[+b.dataset.j]; if (v) { merken(t); t.lesung = v.lesung; S.pruef.sel = null; S.stueck = null; const kx = kontexte(); t.gruende = pruefen(t, S.pruef.i, kx); plane(); } return; }
-  if (tun === 'stimmt') { if (t.lesung) { t.status = 'geprueft'; S.stueck = null; const n = S.takte.findIndex((x, j) => j > S.pruef.i && istMarkiert(x)); plane(); if (n >= 0) setTimeout(() => { location.hash = '#scan/takt/' + (n + 1); }, ruhig() ? 0 : 180); } return; }
+  if (tun === 'stimmt') { if (t.lesung) { t.status = t.status === 'geprueft' ? 'markiert' : 'geprueft'; S.stueck = null; const n = S.takte.findIndex((x, j) => j > S.pruef.i && istMarkiert(x)); plane(); if (n >= 0) setTimeout(() => { location.hash = '#scan/takt/' + (n + 1); }, ruhig() ? 0 : 180); } return; }
   if (tun === 'rueck') { const l = S.rueck.get(t); const v = l?.pop(); if (v) { t.lesung = v.lesung; S.pruef.sel = v.sel; nachBearbeiten(t); } return; }
   if (tun === 'neulesen') return taktNeuLesen(t);
   bearbeite(t, tun, b);
