@@ -468,13 +468,13 @@ function stil(doc) { if (doc.getElementById('aw-stil')) return; const s = doc.cr
 const MODELL_FUER = { antippen: ['gesicht-landmarken', 'antippen'], haut: ['klassen'], haar: ['klassen'], kleidung: ['klassen'], person: ['klassen'], hintergrund: ['klassen'], gesicht: ['gesicht-landmarken'] };
 
 /**
- * Auswahl-Bedienung. opts: { app, werkzeug?: HTMLElement (Leiste), onFertig(ref: MaskenRef) }.
+ * Auswahl-Bedienung. opts: { app, werkzeug?: HTMLElement (Leiste), onFertig(ref: MaskenRef), ohneLokal?: boolean (keine lokalen Regler danach), werkzeuge?: string[] (Auswahl der Werkzeuge) }.
  * Ablauf: Werkzeug wählen → antippen/malen → Plus/Minus/Schnitt → Kante/Weichheit → Fertig → lokale Regler.
  */
 export function auswahlUI(container, opts) {
   const { app } = opts, doc = container.ownerDocument; stil(doc);
   const aus = [];   // Aufräumen
-  const st = { werkzeug: 'antippen', modus: 'plus', teile: [], weich: 0.15, verfeinern: true, umkehren: false, maske: null, rasterIds: {}, pinsel: 0.03,
+  const st = { werkzeug: opts.werkzeuge?.[0] || 'antippen', modus: 'plus', teile: [], weich: 0.15, verfeinern: true, umkehren: false, maske: null, rasterIds: {}, pinsel: 0.03,
     kontext: null, klassen: null, fuehrung: null, maskeId: neueId('maske'), lokal: null, ohneModell: new Set() };
   const wurzel = doc.createElement('div'); wurzel.className = 'aw'; container.appendChild(wurzel);
   wurzel.innerHTML = `
@@ -491,7 +491,7 @@ export function auswahlUI(container, opts) {
   const fortschritt = (f) => { balken.hidden = f == null || f >= 1; balken.firstElementChild.style.width = `${Math.round((f || 0) * 100)}%`; };
 
   if (opts.werkzeug) {
-    const wz = opts.werkzeug; wz.innerHTML = WERKZEUGE.map(([id, t]) => `<button class="chip" data-wz="${id}" aria-pressed="${id === st.werkzeug}">${t}</button>`).join('');
+    const wz = opts.werkzeug; wz.innerHTML = WERKZEUGE.filter(([id]) => !opts.werkzeuge || opts.werkzeuge.includes(id)).map(([id, t]) => `<button class="chip" data-wz="${id}" aria-pressed="${id === st.werkzeug}">${t}</button>`).join('');
     wz.onclick = (e) => { const k = e.target.closest('[data-wz]'); if (k) waehle(k.dataset.wz); };
     aus.push(() => { wz.onclick = null; });
   }
@@ -602,7 +602,7 @@ export function auswahlUI(container, opts) {
   // Malen / Verlauf ziehen auf der Bildfläche
   const flaeche = app.bildflaeche, ueber = doc.createElement('canvas'); ueber.className = 'aw-ueber';
   if (flaeche) { if (getComputedStyle(flaeche).position === 'static') flaeche.style.position = 'relative'; flaeche.appendChild(ueber); aus.push(() => ueber.remove()); }
-  let zug = null;
+  let zug = null; const finger = new Set();   // 0.7: zwei Finger = zoomen, nie malen
   const zuQuelle = async (e) => { const r = flaeche.getBoundingClientRect(); const Z = await import('./zuschnitt.js'); const d = app.zustand().doc;
     return Z.bildschirmZuQuelle({ x: e.clientX - r.left, y: e.clientY - r.top }, app.ansicht(), d.geometrie, d.quelle.b, d.quelle.h); };
   const zeichneZug = () => {
@@ -613,11 +613,14 @@ export function auswahlUI(container, opts) {
     c.lineWidth = st.werkzeug === 'pinsel' ? Math.max(4, st.pinsel * Math.min(r.width, r.height) * 2 * (app.ansicht().zoom || 1)) : 3;
     c.beginPath(); zug.css.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.stroke();
   };
-  const runter = (e) => { if (!['pinsel', 'verlauf'].includes(st.werkzeug) || st.lokal || !app.zustand().doc) return; const r = flaeche.getBoundingClientRect();
+  const runter = (e) => { finger.add(e.pointerId); if (finger.size > 1) { if (zug) { zug = null; zeichneZug(); } return; }
+    if (!['pinsel', 'verlauf'].includes(st.werkzeug) || st.lokal || !app.zustand().doc) return; const r = flaeche.getBoundingClientRect();
     zug = { id: e.pointerId, css: [[e.clientX - r.left, e.clientY - r.top]], ev: [e] }; };
   const bewegt = (e) => { if (!zug || e.pointerId !== zug.id) return; const r = flaeche.getBoundingClientRect(); zug.css.push([e.clientX - r.left, e.clientY - r.top]); zug.ev.push(e); requestAnimationFrame(zeichneZug); };
   const hoch = async (e) => {
+    finger.delete(e.pointerId);
     if (!zug || e.pointerId !== zug.id) return; const z = zug; zug = null; zeichneZug();
+    if (e.type === 'pointercancel') return;
     const pts = []; const schritt = Math.max(1, Math.floor(z.ev.length / 400));
     for (let i = 0; i < z.ev.length; i += schritt) pts.push(await zuQuelle(z.ev[i]));
     if (st.werkzeug === 'pinsel') ausfuehren({ werkzeug: 'pinsel', strich: { punkte: pts, radiusAnteil: st.pinsel, haerte: 0.6, modus: 'plus' } }).catch(fehler);
@@ -631,7 +634,7 @@ export function auswahlUI(container, opts) {
     const r = ref(); r.rasterId = await app.raster.lege(st.maske, 'maske'); app.pipeline.setzeRaster(r.rasterId, st.maske);
     app.zeigeMaske(null); app.tippModus = false; app.pipeline.entferneRaster?.(st.maskeId);   // Vorschau-Raster freigeben (GPU)
     opts.onFertig?.(r);
-    zeigeLokal(r);
+    if (!opts.ohneLokal) zeigeLokal(r);   // 0.7: Haare/Hintergrund nutzen die Auswahl nur für die Maske
   }
   /** Lokale Regler für den eben angelegten Schritt (alle Regler außer Kurve). */
   async function zeigeLokal(r) {

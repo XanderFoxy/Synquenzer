@@ -305,16 +305,16 @@ KETTE_LOKAL.push(...STUFEN.filter((m) => ['wb', 'belichtung', 'ton', 'praesenz',
 export const SHADER = Object.freeze(Object.fromEntries(Object.entries(FS).map(([k, v]) => ['regler-' + k, v])));
 
 // ================================================================ Bedienung
-const CSS = `.rg{font:15px system-ui,-apple-system,sans-serif;color:#e8e8e6;user-select:none;-webkit-user-select:none}
-.rg h3{font-size:13px;font-weight:600;color:#9aa0a6;margin:12px 4px 2px;text-transform:none;letter-spacing:.02em}
-.rg-z{position:relative;display:flex;align-items:center;justify-content:space-between;min-height:44px;padding:0 12px;margin:2px 0;border-radius:10px;background:#17191c;touch-action:pan-y;cursor:ew-resize;overflow:hidden}
-.rg-z.zieh{background:#1f2226}.rg-z .bal{position:absolute;top:auto;bottom:6px;height:3px;background:#d9a441;border-radius:2px;opacity:.85}
-.rg-z .mitte{position:absolute;bottom:4px;width:1px;height:7px;background:#2a2e33}
-.rg-z .wert{font-variant-numeric:tabular-nums;color:#9aa0a6;font-size:15px}.rg-z.geaendert .wert{color:#d9a441}
-.rg-k{display:block;width:100%;max-width:340px;aspect-ratio:1;margin:6px auto;background:#17191c;border-radius:10px;touch-action:none}
-.rg-chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}.rg-chips button{min-width:44px;min-height:44px;border-radius:22px;border:1px solid #2a2e33;background:#17191c;color:#e8e8e6;font:13px system-ui;padding:0 12px}
-.rg-chips button[aria-pressed=true]{border-color:#d9a441;color:#d9a441}.rg-chips .punkt{display:inline-block;width:10px;height:10px;border-radius:5px;margin-right:6px;vertical-align:-1px}
-@media (prefers-reduced-motion:no-preference){.rg-z{transition:background .15s}}`;
+const CSS = `.rg{font:15px system-ui,-apple-system,sans-serif;color:var(--text,#e8e8e6);user-select:none;-webkit-user-select:none}
+.rg h3{font-size:11px;font-weight:600;color:var(--leise,#9aa0a6);margin:12px 4px 4px;text-transform:uppercase;letter-spacing:.09em}
+.rg-z{position:relative;display:flex;align-items:center;justify-content:space-between;min-height:44px;padding:0 12px;margin:3px 0;border-radius:12px;background:var(--flaeche2,#17191c);border:1px solid transparent;touch-action:pan-y;cursor:ew-resize;overflow:hidden}
+.rg-z.zieh{background:var(--flaeche3,#1f2226);border-color:var(--akzent,#d9a441)}.rg-z .bal{position:absolute;top:auto;bottom:6px;height:3px;background:var(--akzent,#d9a441);border-radius:2px;opacity:.9}
+.rg-z .mitte{position:absolute;bottom:4px;width:1px;height:7px;background:var(--linie,#2a2e33)}
+.rg-z .wert{font-variant-numeric:tabular-nums;color:var(--leise,#9aa0a6);font-size:15px}.rg-z.geaendert .wert{color:var(--akzent,#d9a441)}
+.rg-k{display:block;width:100%;max-width:340px;aspect-ratio:1;margin:6px auto;background:var(--flaeche2,#17191c);border-radius:10px;touch-action:none}
+.rg-chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}.rg-chips button{min-width:44px;min-height:44px;border-radius:22px;border:1px solid var(--linie,#2a2e33);background:var(--flaeche2,#17191c);color:var(--text,#e8e8e6);font:13px system-ui;padding:0 12px}
+.rg-chips button[aria-pressed=true]{border-color:var(--akzent,#d9a441);color:var(--akzent,#d9a441)}.rg-chips .punkt{display:inline-block;width:10px;height:10px;border-radius:5px;margin-right:6px;vertical-align:-1px}
+@media (prefers-reduced-motion:no-preference){.rg-z{transition:background-color .15s,border-color .15s}}`;
 function stil(container) {
   const doc = container.ownerDocument; if (doc.getElementById('rg-stil')) return;
   const s = doc.createElement('style'); s.id = 'rg-stil'; s.textContent = CSS; doc.head.appendChild(s);
@@ -322,6 +322,8 @@ function stil(container) {
 const zeige = (d, v) => {
   if (v == null) return d.id === 'temperatur' ? 'Wie Aufnahme' : '0';
   if (d.einheit === 'EV') return (v > 0 ? '+' : '') + v.toFixed(2).replace('.', ',');
+  if (d.einheit === '%') return Math.round(v) + ' %';
+  if (d.einheit === 'px') return Math.round(v) + ' px';
   if (d.einheit === 'K') return Math.round(v) + ' K';
   return (v > 0 && d.min < 0 ? '+' : '') + Math.round(v);
 };
@@ -357,6 +359,10 @@ function zeile(eltern, d, wert, onAendern) {
   z.addEventListener('keydown', (e) => { const s = (d.schritt || 1) * (e.shiftKey ? 10 : 1); if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { const w = runde((v ?? neutral) + (e.key === 'ArrowRight' ? s : -s)); setze(w); onAendern(d.id, w, 'ende'); e.preventDefault(); } });
   return { setze, el: z };
 }
+/** 0.7 Oberfläche: eine einzelne Reglerzeile (gleiche Bedienung wie reglerUI) für andere Module. d: { id, titel, min, max, standard, schritt?, einheit? }. */
+export function reglerZeile(eltern, d, wert, onAendern) { stil(eltern); return zeile(eltern, d, wert, onAendern); }
+/** 0.7: Wert so anzeigen wie in der Reglerzeile (für die Statuszeile). */
+export const reglerWert = (d, v) => zeige(d, v);
 /** @returns {import('./typen.js').UIHandle} */
 export function reglerUI(container, opts) {
   stil(container); const defs = opts.defs || REGLER, wurzel = container.ownerDocument.createElement('div'); wurzel.className = 'rg'; container.appendChild(wurzel);

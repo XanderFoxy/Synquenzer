@@ -4,7 +4,7 @@ import { VERSION } from './typen.js';
 import * as analyse from './analyse.js';
 import * as zuschnitt from './zuschnitt.js';
 // INTEGRATION (Ladezeit): Auswahl/Entfernen/Hoch erst beim ersten Auftrag laden (Start ohne ~150 KB Modul-Code)
-const auswahlM = () => import('./auswahl.js'), entfernenM = () => import('./entfernen.js'), hochM = () => import('./hoch.js');
+const auswahlM = () => import('./auswahl.js'), entfernenM = () => import('./entfernen.js'), hochM = () => import('./hoch.js'), laborM = () => import('./labor.js');
 
 bediene(self, {
   async hallo() { return { version: VERSION, worker: 'rechnen' }; },
@@ -25,4 +25,14 @@ bediene(self, {
   async flickensuche({ bild, maske, opts }) { return (await entfernenM()).flickenSuche(bild, maske, opts); },
   async einblenden({ original, gefuellt, maske, opts }) { return (await entfernenM()).einblenden(original, gefuellt, maske, opts); },
   async 'hoch-klassisch'({ kachel, faktor }) { return (await hochM()).hochskaliereKlassisch(kachel, faktor); },
+  // 0.6 Labor: Energie je Schärfe-Band (Ausschnitt in Quell-Auflösung) und Grenze „nur zusammenhängend“ für Bereiche
+  async 'labor-energie'({ bild, sigmaL, kurzQuelle }) {
+    const L = await laborM(); let px = bild;
+    if (typeof ImageBitmap !== 'undefined' && bild instanceof ImageBitmap) {
+      const c = new OffscreenCanvas(bild.width, bild.height), x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(bild, 0, 0);
+      px = { b: bild.width, h: bild.height, daten: x.getImageData(0, 0, bild.width, bild.height).data }; bild.close?.();
+    }
+    return L.bandEnergie(px, { sigmaL, kurzQuelle });
+  },
+  async 'labor-bereich'({ bild, params }) { return (await laborM()).bereichGate(bild, params); },
 });

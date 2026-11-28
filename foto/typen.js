@@ -23,7 +23,7 @@
  * @typedef {{setze(params:object):void,zerstoere():void}} UIHandle
  */
 
-export const VERSION = '0.5.0';
+export const VERSION = '0.7.0';
 export const ARBEITS_KANTE = 2048;   // lange Seite Arbeitsbild (Vorschau, Masken)
 export const ANALYSE_KANTE = 1024;   // lange Seite Analysebild
 export const KACHEL = 1024;          // Export-Kachel ohne Rand
@@ -35,18 +35,24 @@ export const DB_VERSION = 1;
 export const STUFE = Object.freeze({
   RETUSCHE: 10, HOCH: 15, WB: 20, BELICHTUNG: 30, TON: 40, PRAESENZ: 50, KURVE: 60, HSL: 70,
   LOOK: 80, LOKAL: 90, DETAILS: 100, EFFEKTE: 110, GEOMETRIE: 120,
+  // 0.6 Labor (labor.js): Haarfarbe nach den Farbtönen, Licht & Schatten nach den Looks, Bereiche nach den lokalen Masken,
+  // Hintergrund-Fokus vor Tiefenschärfe/Vignette/Korn. Mehrband-Schärfe läuft in DETAILS.
+  HAARFARBE: 72, PLASTIK: 85, BEREICH: 92, FOKUS: 108,
 });
 
 /** Schritt-Arten. */
 export const ART = Object.freeze({
   AUTO_TON: 'auto-ton', REGLER: 'regler', KURVE: 'kurve', HSL: 'hsl', LOOK: 'look', LOKAL: 'lokal',
   SCHAERFE: 'schaerfe', RAUSCHEN: 'rauschen', EFFEKTE: 'effekte', ENTFERNEN: 'entfernen', AUFFRISCHEN: 'auffrischen',
+  // 0.6 Labor (labor.js)
+  MEHRBAND: 'mehrband', PLASTIK: 'plastik', BEREICH: 'bereich', HAARFARBE: 'haarfarbe', FOKUS: 'fokus',
 });
 
 export const STUFE_VON_ART = Object.freeze({
   'auto-ton': STUFE.BELICHTUNG, regler: STUFE.TON, kurve: STUFE.KURVE, hsl: STUFE.HSL, look: STUFE.LOOK,
   lokal: STUFE.LOKAL, schaerfe: STUFE.DETAILS, rauschen: STUFE.DETAILS, effekte: STUFE.EFFEKTE,
   entfernen: STUFE.RETUSCHE, auffrischen: STUFE.RETUSCHE,
+  mehrband: STUFE.DETAILS, plastik: STUFE.PLASTIK, bereich: STUFE.BEREICH, haarfarbe: STUFE.HAARFARBE, fokus: STUFE.FOKUS,
 });
 
 /** Klassen der Mehrklassen-Segmentierung. */
@@ -95,6 +101,12 @@ export const STANDARD = Object.freeze({
   rauschen: { luminanz: 0, farbe: 0 },
   effekte: { vignette: 0, korn: 0, tiefenschaerfe: null },
   entfernen: {}, auffrischen: { staerke: 0.6, augen: 1, haut: 0.5, haare: 0.8 },
+  // 0.6 Labor – Bedeutung der Werte: labor.js (Kopf-Kommentar) und README „Labor-Schnittstelle“
+  mehrband: { fein: 0, haare: 0, textur: 0, kanten: 0, plastizitaet: 0, rauschSchwelle: 40, halo: 60, hautschutz: 60, hautRaster: null },
+  plastik: { stil: 'plastisch', staerke: 50, auto: true, fein: {}, pinsel: { striche: [] }, pinselStaerke: 100 },
+  bereich: { punkt: null, ziel: null, modus: 'zusammen', toleranz: 35, weich: 30, belichtung: 0, lichter: 0, leuchten: 0, waerme: 0, saettigung: 0 },
+  haarfarbe: { farbe: '#8a4b2a', staerke: 80, helligkeit: 0, glanz: 60 },
+  fokus: { unschaerfe: 50, abdunkeln: 15, entsaettigen: 15, kante: 40, lichter: 50 },
 });
 
 let zaehler = 0;

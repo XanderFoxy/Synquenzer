@@ -11,10 +11,17 @@ export const MAX_AUSGABE_PX = 16.7e6;
 /** So lange nach einem Tipp darf das Teilen-Blatt noch öffnen (Safari: Nutzer-Geste läuft ab). */
 const GESTE_MS = 2500;
 
-export const REITER = Object.freeze([
-  { id: 'auto', titel: 'Auto' }, { id: 'regler', titel: 'Regler' }, { id: 'looks', titel: 'Looks' },
-  { id: 'auswahl', titel: 'Auswahl' }, { id: 'retusche', titel: 'Retusche' }, { id: 'zuschnitt', titel: 'Zuschnitt' },
+/** 0.7: Modi der Werkzeugleiste (unten). labor = Oberfläche in modi.js, Rechnung in labor.js (beide erst bei Bedarf geladen). */
+export const MODI = Object.freeze([
+  { id: 'auto', titel: 'Auto', lang: 'Automatisch' }, { id: 'looks', titel: 'Look', lang: 'Look' },
+  { id: 'licht', titel: 'Licht', lang: 'Licht und Schatten', labor: true }, { id: 'schaerfe', titel: 'Schärfe', lang: 'Schärfe in Stufen', labor: true },
+  { id: 'bereiche', titel: 'Bereiche', lang: 'Bereiche', labor: true }, { id: 'haare', titel: 'Haare', lang: 'Haarfarbe', labor: true },
+  { id: 'hintergrund', titel: 'Hintergrund', lang: 'Hintergrund', labor: true }, { id: 'regler', titel: 'Regler', lang: 'Regler' },
+  { id: 'auswahl', titel: 'Auswahl', lang: 'Auswahl' }, { id: 'retusche', titel: 'Retusche', lang: 'Retusche' }, { id: 'zuschnitt', titel: 'Zuschnitt', lang: 'Zuschnitt' },
 ]);
+export const REITER = MODI;   // alter Name (Schnittstelle)
+/** Kurzer Hinweis je Modus, wenn die Werkzeugleiste sonst leer bliebe. */
+const MODUS_HINWEIS = { zuschnitt: 'Ecken und Kanten ziehen · Fertig übernimmt', auswahl: '' };
 const S = (d) => `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 export const ICON = {
   menue: S('<path d="M4 7h16M4 12h16M4 17h16"/>'), ebenen: S('<path d="M12 4l8 4-8 4-8-4z"/><path d="M4 12l8 4 8-4"/><path d="M4 16l8 4 8-4"/>'),
@@ -26,6 +33,16 @@ export const ICON = {
   retusche: S('<path d="M4 20l9-9"/><path d="M14 4l1 3 3 1-3 1-1 3-1-3-3-1 3-1z"/>'), zuschnitt: S('<path d="M7 3v14h14"/><path d="M3 7h14v14"/>'),
   zu: S('<path d="M6 6l12 12M18 6L6 18"/>'), auge: S('<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),
   muell: S('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'),
+  // 0.7 Modi und Bildleiste
+  licht: S('<circle cx="12" cy="12" r="7.5"/><path d="M12 4.5a7.5 7.5 0 0 1 0 15z" fill="currentColor" stroke="none"/><path d="M12 1.5v1.5M12 21v1.5M1.5 12H3M21 12h1.5"/>'),
+  schaerfe: S('<path d="M12 3l9 9-9 9-9-9z"/><path d="M12 8l4 4-4 4-4-4z"/><path d="M12 11v2"/>'),
+  bereiche: S('<path d="M15 3.5l5.5 5.5-2.2 2.2-5.5-5.5z"/><path d="M13.6 7.6L5 16.2V19h2.8l8.6-8.6"/><circle cx="18.5" cy="18.5" r="2" fill="currentColor" stroke="none"/>'),
+  haare: S('<path d="M5 20c.5-4 1.5-6 1-10a6 6 0 0 1 12 0c-.5 4 .5 6 1 10"/><path d="M9.5 20c0-3.5 1-6 1-9M14.5 20c0-3.5-1-6-1-9"/><path d="M7.5 7.5c2 1 6.5 1.2 9 0"/>'),
+  hintergrund: S('<circle cx="12" cy="9.5" r="3"/><path d="M6.5 20.5c.4-3.3 2.6-5.5 5.5-5.5s5.1 2.2 5.5 5.5"/><circle cx="4" cy="5" r="1.4" fill="currentColor" stroke="none" opacity=".55"/><circle cx="20" cy="4.5" r="2" fill="currentColor" stroke="none" opacity=".4"/><circle cx="20.5" cy="12.5" r="1.2" fill="currentColor" stroke="none" opacity=".55"/><circle cx="3.5" cy="13" r="1.8" fill="currentColor" stroke="none" opacity=".4"/>'),
+  maske: S('<circle cx="12" cy="12" r="8"/><path d="M7 17l10-10M5 13l8-8M11 19l8-8"/>'),
+  vorher: S('<path d="M12 4a8 8 0 1 0 0 16z" fill="currentColor" stroke="none" opacity=".85"/><circle cx="12" cy="12" r="8"/>'),
+  pinsel: S('<path d="M14.5 4.5l5 5-7.5 7.5-5-5z"/><path d="M7 12c-2.5 0-3.5 2-3.5 4.5S2 20 2 20s5 .5 6.5-1.5S9 15 9 14"/>'),
+  karte: S('<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 15l5-5 4 4 3-3 4 4"/>'),
 };
 
 // ---------- IndexedDB ----------
@@ -62,8 +79,9 @@ export async function starte(wurzel, opts = {}) {
   const hoerer = new Map();
   const emit = (n, d) => { for (const f of hoerer.get(n) || []) try { f(d); } catch (e) { console.error(e); } };
   const flaeche = $('#bildflaeche'), canvas = $('#bild');
+  let tippModusWert = false;   // app.tippModus (Pinsel aktiv: ein Finger malt) – Getter/Setter unten
   const z = { doc: null, auswahl: null, reiter: 'auto', ansicht: { zoom: 1, mitteX: 0.5, mitteY: 0.5 }, vergleich: 'nachher', qualitaet: 'voll',
-    zuschnittLive: null, maskeZeigen: null, randVorschlag: null, bitmap: null, analyseLaeuft: false };
+    zuschnittLive: null, maskeZeigen: null, randVorschlag: null, bitmap: null, analyseLaeuft: false, anzeige: null };
   const pipeline = erstellePipeline(canvas);
   const rechnen = kanal(new Worker(new URL('./wk-rechnen.js', import.meta.url), { type: 'module' }));
   const ki = kanal(new Worker(new URL('./wk-ki.js', import.meta.url), { type: 'module' }));
@@ -125,11 +143,34 @@ export async function starte(wurzel, opts = {}) {
     z.doc = { ...neu, geaendert: Date.now() };
     nachAenderung();
   }
-  function nachAenderung() { emit('zustand', app.zustand()); kopfAktualisieren(); plane(); sichereBald(); if (z.doc?.schritte.some((s) => s.maske)) bauFehlendeMasken(); }
+  function nachAenderung() { emit('zustand', app.zustand()); kopfAktualisieren(); plane(); sichereBald(); if (z.doc?.schritte.some((s) => s.maske)) bauFehlendeMasken(); laborBereit(); }
+  // 0.6 Labor: Modul erst laden, wenn ein Dokument Labor-Schritte hat (oder die Oberfläche app.labor() ruft); danach
+  // fehlende Raster (Bereichs-Grenzen, Hautschutz) im Hintergrund nachbauen.
+  const LABOR_ARTEN = new Set([ART.MEHRBAND, ART.PLASTIK, ART.BEREICH, ART.HAARFARBE, ART.FOKUS]);
+  let laborP = null;
+  function laborModul() {
+    if (!laborP) laborP = lade('labor').then((L) => {
+      pipeline.registriereStufen(L.STUFEN); plane();
+      setTimeout(() => L.vorwaermen(app).catch(() => {}), 60);   // Shader übersetzen + Karten des Bildes in Ruhe vorrechnen
+      return L;
+    }).catch((e) => { laborP = null; throw e; });
+    return laborP;
+  }
+  function laborBereit() {
+    if (!z.doc || !z.doc.schritte.some((s) => LABOR_ARTEN.has(s.art))) return;
+    laborModul().then((L) => L.sichereRaster(app)).catch((e) => console.warn('Labor', e));
+  }
   const zugEnde = () => { letzterSchluessel = null; };
   addEventListener('pointerup', () => setTimeout(zugEnde, 0), true); addEventListener('pointercancel', () => setTimeout(zugEnde, 0), true);
-  function rueckgaengig() { if (!vergangen.length || !z.doc) return; zukunft.push(schnapp(z.doc)); const s = vergangen.pop(); z.doc = { ...z.doc, schritte: s.schritte, geometrie: s.geometrie }; letzterSchluessel = null; nachAenderung(); reiterNeu(); }
-  function wiederholen() { if (!zukunft.length || !z.doc) return; vergangen.push(schnapp(z.doc)); const s = zukunft.pop(); z.doc = { ...z.doc, ...s }; letzterSchluessel = null; nachAenderung(); reiterNeu(); }
+  // 0.7: Rückgängig/Wiederholen sagen, was sie tun („Rückgängig: Bereich 2 – Gelb“)
+  function rueckgaengig() {
+    if (!vergangen.length || !z.doc) return; const s = vergangen.pop(); zukunft.push({ ...schnapp(z.doc), name: s.name });
+    z.doc = { ...z.doc, schritte: s.schritte, geometrie: s.geometrie }; letzterSchluessel = null; nachAenderung(); reiterNeu(); meldung(`Rückgängig: ${s.name}`);
+  }
+  function wiederholen() {
+    if (!zukunft.length || !z.doc) return; const s = zukunft.pop(); vergangen.push({ ...schnapp(z.doc), name: s.name });
+    z.doc = { ...z.doc, schritte: s.schritte, geometrie: s.geometrie }; letzterSchluessel = null; nachAenderung(); reiterNeu(); meldung(`Wiederholt: ${s.name}`);
+  }
 
   // ---------- Rendern ----------
   const renderZeiten = []; let geplant = 0;
@@ -140,14 +181,14 @@ export async function starte(wurzel, opts = {}) {
     return z.doc;
   }
   function renderZustand(extra = {}) {
-    return { doc: renderDoc(), ansicht: { ...z.ansicht, ...cssGroesse() }, vergleich: z.vergleich, qualitaet: z.qualitaet, maskeZeigen: z.maskeZeigen, ...extra };
+    return { doc: renderDoc(), ansicht: { ...z.ansicht, ...cssGroesse() }, vergleich: z.vergleich, qualitaet: z.qualitaet, maskeZeigen: z.maskeZeigen, anzeige: z.anzeige, ...extra };
   }
   function plane() { if (geplant) return; geplant = requestAnimationFrame(rendere); }
   function rendere() {
     geplant = 0; const t0 = performance.now();
     try { pipeline.rendereVorschau(renderZustand()); } catch (e) { console.error(e); }
     renderZeiten.push(performance.now() - t0); if (renderZeiten.length > 400) renderZeiten.shift();
-    teilungZeigen(); emit('gerendert');
+    teilungZeigen(); zoomZeigen(); emit('gerendert');
   }
   const groesse = () => {
     const dpr = Math.min(3, devicePixelRatio || 1);
@@ -176,14 +217,17 @@ export async function starte(wurzel, opts = {}) {
   const lokal = (e) => { const r = flaeche.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
   flaeche.addEventListener('pointerdown', (e) => {
     if (!z.doc || e.target.closest('.zs-rahmen,.teilung,.toast')) return;
-    flaeche.setPointerCapture?.(e.pointerId); zeiger.set(e.pointerId, lokal(e));
+    try { flaeche.setPointerCapture?.(e.pointerId); } catch { /* künstliche Zeiger (Test) */ }
+    zeiger.set(e.pointerId, lokal(e));
     if (zeiger.size === 1) {
       const p = lokal(e); geste = { art: 'eins', start: p, letzt: p, t: performance.now(), bewegt: false };
       clearTimeout(halteTimer);
-      halteTimer = setTimeout(() => { if (geste?.art === 'eins' && !geste.bewegt && z.reiter !== 'zuschnitt') { geste.art = 'halten'; z.vergleichVorHalten = z.vergleich; z.vergleich = 'vorher'; hinweisVorher(true); plane(); } }, 280);
+      // Gedrückt halten = Vorher – nicht, solange ein Pinsel aktiv ist (dann malt der Finger)
+      halteTimer = setTimeout(() => { if (geste?.art === 'eins' && !geste.bewegt && z.reiter !== 'zuschnitt' && !app.tippModus) { geste.art = 'halten'; z.vergleichVorHalten = z.vergleich; z.vergleich = 'vorher'; hinweisVorher(true); plane(); } }, 280);
     } else if (zeiger.size === 2) {
       clearTimeout(halteTimer); const [a, b] = [...zeiger.values()];
       const mitte = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      if (geste?.art === 'halten') { z.vergleich = z.vergleichVorHalten || 'nachher'; hinweisVorher(false); }
       geste = { art: 'zwei', dist: Math.hypot(a.x - b.x, a.y - b.y) || 1, zoom: z.ansicht.zoom, o: ausgabePunkt(mitte) };
       z.qualitaet = 'zieh';
     }
@@ -235,18 +279,29 @@ export async function starte(wurzel, opts = {}) {
   teilEl.addEventListener('pointermove', (e) => { if (!teilEl.dataset.zieh) return; const p = lokal(e); z.vergleich = { teilung: Math.min(0.98, Math.max(0.02, p.x / canvas.clientWidth)) }; plane(); });
   const teilEnde = () => { delete teilEl.dataset.zieh; }; teilEl.addEventListener('pointerup', teilEnde); teilEl.addEventListener('pointercancel', teilEnde);
 
-  // ---------- Gerüst ----------
-  $('#kopf').innerHTML = `<button data-k="menue" aria-label="Menü">${ICON.menue}</button><button data-k="ebenen" aria-label="Ebenen">${ICON.ebenen}</button><button data-k="vergleich" aria-label="Vergleich" aria-pressed="false">${ICON.vergleich}</button><span class="platz"></span><button data-k="rueck" aria-label="Rückgängig">${ICON.rueck}</button><button data-k="vor" aria-label="Wiederholen">${ICON.vor}</button><button data-k="sichern" aria-label="Sichern" class="haupt">${ICON.sichern}</button>`;
-  $('#reiter').innerHTML = REITER.map((r) => `<button role="tab" data-r="${r.id}" aria-selected="${r.id === z.reiter}">${ICON[r.id]}<span>${r.titel}</span></button>`).join('');
+  // ---------- Gerüst (0.7: Statuszeile oben, Modus-Leiste unten, Bildleiste über dem Bild) ----------
+  $('#kopf').innerHTML = `<button data-k="menue" aria-label="Menü">${ICON.menue}</button>
+    <div class="status" role="status" aria-live="polite"><span class="st-symbol" aria-hidden="true"></span><span class="st-text"><small class="st-vor"></small><strong class="st-haupt"></strong></span></div>
+    <button data-k="rueck" aria-label="Rückgängig">${ICON.rueck}</button><button data-k="vor" aria-label="Wiederholen">${ICON.vor}</button><button data-k="sichern" aria-label="Sichern und teilen" class="haupt">${ICON.sichern}</button>`;
+  $('#reiter').innerHTML = MODI.map((r) => `<button role="tab" data-r="${r.id}" aria-selected="${r.id === z.reiter}" aria-label="${r.lang}">${ICON[r.id]}<span>${r.titel}</span></button>`).join('');
+  const leiste = document.createElement('div'); leiste.id = 'bildleiste'; leiste.hidden = true;
+  leiste.innerHTML = `<div class="bl-gruppe"><button data-b="vorher" aria-label="Vorher zeigen, solange gedrückt">${ICON.vorher}<span>Vorher</span></button><button data-b="maske" aria-pressed="false" hidden>${ICON.maske}<span>Maske</span></button></div>
+    <div class="bl-gruppe"><button data-b="zoom" hidden aria-label="Ganzes Bild zeigen"><span>100 %</span></button><button data-b="vergleich" aria-pressed="false" aria-label="Vergleich mit Linie">${ICON.vergleich}</button><button data-b="ebenen" aria-label="Ebenen">${ICON.ebenen}</button></div>`;
+  const pinselHinweis = document.createElement('div'); pinselHinweis.id = 'pinselhinweis'; pinselHinweis.hidden = true;
+  pinselHinweis.innerHTML = `${ICON.pinsel}<span><b>Pinsel aktiv</b> · ein Finger malt · zwei Finger zoomen</span>`;
+  wurzel.append(leiste, pinselHinweis);
   const dateiEins = document.createElement('input'); dateiEins.type = 'file'; dateiEins.accept = 'image/*,.heic,.heif'; dateiEins.hidden = true;
   const dateiViele = document.createElement('input'); dateiViele.type = 'file'; dateiViele.accept = 'image/*,.heic,.heif'; dateiViele.multiple = true; dateiViele.hidden = true;
   wurzel.append(dateiEins, dateiViele);
   dateiEins.addEventListener('change', () => { const f = dateiEins.files[0]; dateiEins.value = ''; if (f) app.oeffne(f, { name: f.name }).catch(fehler); });
   dateiViele.addEventListener('change', () => { const f = [...dateiViele.files]; dateiViele.value = ''; if (f.length) oeffneBatch(f); });
+  const BLENDE = (() => { let d = ''; for (let k = 0; k < 6; k++) { const a = (k * Math.PI) / 3, b = a + 1.95; d += `M${(32 + 25 * Math.cos(a)).toFixed(1)} ${(32 + 25 * Math.sin(a)).toFixed(1)}L${(32 + 11 * Math.cos(b)).toFixed(1)} ${(32 + 11 * Math.sin(b)).toFixed(1)}`; } return d; })();
   async function startZeigen() {
     const s = $('#start'); s.hidden = !!z.doc; if (z.doc) return;
-    s.innerHTML = '<button data-k="oeffnen" class="haupt">Foto öffnen</button><button data-k="mehrere">Mehrere Fotos</button><div class="leise">Alles bleibt auf diesem Gerät.</div><div class="zuletzt"></div>';
-    const liste = await zuletzt(); if (!liste.length) return;
+    s.innerHTML = `<div class="start-karte"><svg class="start-logo" viewBox="0 0 64 64" width="72" height="72" aria-hidden="true"><circle cx="32" cy="32" r="25" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="32" cy="32" r="29.5" fill="none" stroke="currentColor" stroke-width="1" opacity=".35"/><path d="${BLENDE}" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+      <h1>Bildwerk</h1><p class="leise">Deine Dunkelkammer. Alles bleibt auf diesem Gerät.</p>
+      <button data-k="oeffnen" class="haupt gross">Foto öffnen</button><button data-k="mehrere">Mehrere Fotos</button><div class="zuletzt"></div></div>`;
+    const liste = await zuletzt(); if (!liste.length || z.doc) return;
     s.querySelector('.zuletzt').innerHTML = '<div class="leise">Zuletzt bearbeitet</div>' + liste.slice(0, 4).map((d) => `<button data-weiter="${d.id}">${esc(d.name)}</button>`).join('');
   }
   async function zuletzt() { if (!db) return []; try { const l = await idb(db, 'dokumente', 'readonly', (s) => s.getAll()); return (l || []).sort((a, b) => b.geaendert - a.geaendert); } catch { return []; } }
@@ -259,14 +314,64 @@ export async function starte(wurzel, opts = {}) {
     else if (was === 'mehrere') dateiViele.click();
     else if (was === 'rueck') rueckgaengig();
     else if (was === 'vor') wiederholen();
-    else if (was === 'vergleich') { if (!z.doc) return; z.vergleich = typeof z.vergleich === 'object' ? 'nachher' : { teilung: 0.5 }; k.setAttribute('aria-pressed', String(typeof z.vergleich === 'object')); plane(); }
     else if (was === 'sichern') sichernBlatt();
-    else if (was === 'ebenen') ebenenBlatt();
     else if (was === 'menue') menueBlatt();
   });
+  // Bildleiste: Vorher (gedrückt halten), Maske/Karte, Zoom zurück, Vergleichslinie, Ebenen
+  const vorherKnopf = leiste.querySelector('[data-b="vorher"]'), maskeKnopf = leiste.querySelector('[data-b="maske"]'), zoomKnopf = leiste.querySelector('[data-b="zoom"]');
+  const vorherAn = (e) => { if (!z.doc || z.vorherKnopf) return; e.preventDefault(); try { vorherKnopf.setPointerCapture(e.pointerId); } catch {} z.vorherKnopf = true; z.vergleichVorKnopf = z.vergleich; z.vergleich = 'vorher'; vorherKnopf.setAttribute('aria-pressed', 'true'); hinweisVorher(true); plane(); };
+  const vorherAus = () => { if (!z.vorherKnopf) return; z.vorherKnopf = false; z.vergleich = z.vergleichVorKnopf || 'nachher'; vorherKnopf.setAttribute('aria-pressed', 'false'); hinweisVorher(false); plane(); };
+  vorherKnopf.addEventListener('pointerdown', vorherAn); for (const t of ['pointerup', 'pointercancel', 'lostpointercapture']) vorherKnopf.addEventListener(t, vorherAus);
+  vorherKnopf.addEventListener('contextmenu', (e) => e.preventDefault());
+  leiste.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-b]'); if (!b || !z.doc) return;
+    const was = b.dataset.b;
+    if (was === 'maske') { if (!maskeS.fn) return; maskeS.an = !maskeS.an; try { maskeS.fn(maskeS.an); } catch (err) { console.warn(err); } maskeKnopfZeigen(); }
+    else if (was === 'zoom') { z.ansicht = { zoom: 1, mitteX: 0.5, mitteY: 0.5 }; plane(); }
+    else if (was === 'vergleich') { z.vergleich = typeof z.vergleich === 'object' ? 'nachher' : { teilung: 0.5 }; b.setAttribute('aria-pressed', String(typeof z.vergleich === 'object')); plane(); }
+    else if (was === 'ebenen') ebenenBlatt();
+  });
+  /** Masken-Schalter: der aktive Modus meldet, wie seine Maske (oder Karte) gezeigt wird. fn(an) | null. */
+  const maskeS = { fn: null, an: false, titel: 'Maske' };
+  function setzeMaskenSchalter(fn, titel = 'Maske') {
+    const warAn = maskeS.an;
+    if (!fn && warAn && maskeS.fn) try { maskeS.fn(false); } catch {}
+    maskeS.fn = fn || null; maskeS.titel = titel;
+    if (!fn) maskeS.an = false; else if (warAn) try { fn(true); } catch {}
+    maskeKnopfZeigen();
+  }
+  function maskeAus() { if (maskeS.an && maskeS.fn) try { maskeS.fn(false); } catch {} maskeS.an = false; maskeKnopfZeigen(); }
+  function maskeKnopfZeigen() {
+    maskeKnopf.hidden = !maskeS.fn; maskeKnopf.setAttribute('aria-pressed', String(maskeS.an));
+    maskeKnopf.innerHTML = `${maskeS.titel === 'Karte' ? ICON.karte : ICON.maske}<span>${maskeS.titel}</span>`;
+    maskeKnopf.setAttribute('aria-label', maskeS.an ? `${maskeS.titel} ausblenden` : `${maskeS.titel} zeigen`);
+  }
+  function zoomZeigen() {
+    if (!z.doc) { zoomKnopf.hidden = true; return; }
+    const an = z.ansicht.zoom > 1.01, pz = Math.round(fit() * z.ansicht.zoom * cssGroesse().dpr * 100);
+    zoomKnopf.hidden = !an; if (an) { const t = `${pz} %`; if (zoomKnopf.textContent !== t) zoomKnopf.firstElementChild.textContent = t; }
+  }
+  // Statuszeile: „Du bearbeitest: Bereich 2 – Gelb“ / „Pinsel: Abwedeln 30 %“; beim Ziehen kurz der Wert.
+  const stEl = { vor: $('.st-vor'), haupt: $('.st-haupt'), sym: $('.st-symbol') };
+  const stZ = { basis: { vor: 'Bildwerk', haupt: 'Foto öffnen, um zu beginnen' }, temp: null, timer: 0 };
+  function statusMalen() {
+    const x = stZ.temp || stZ.basis;
+    if (stEl.vor.textContent !== x.vor) stEl.vor.textContent = x.vor;
+    if (stEl.haupt.textContent !== x.haupt) stEl.haupt.textContent = x.haupt;
+    stEl.haupt.parentElement.parentElement.classList.toggle('wert', !!stZ.temp);
+  }
+  function setzeStatus(vor, haupt) { stZ.basis = { vor: vor || '', haupt: haupt || '' }; statusMalen(); }
+  function statusWert(vor, haupt, phase) {
+    clearTimeout(stZ.timer); stZ.temp = { vor: vor || '', haupt: haupt || '' }; statusMalen();
+    if (phase === 'ende') stZ.timer = setTimeout(() => { stZ.temp = null; statusMalen(); }, 1100);
+  }
+  function statusSymbol() { const m = MODI.find((x) => x.id === z.reiter); stEl.sym.innerHTML = z.doc && m ? ICON[m.id] : ''; }
+  function pinselHinweisZeigen() { pinselHinweis.hidden = !(tippModusWert && z.doc); }
   function kopfAktualisieren() {
-    $('[data-k="rueck"]').disabled = !vergangen.length; $('[data-k="vor"]').disabled = !zukunft.length;
-    for (const n of ['sichern', 'ebenen', 'vergleich']) $(`[data-k="${n}"]`).disabled = !z.doc;
+    const r = $('[data-k="rueck"]'), v = $('[data-k="vor"]');
+    r.disabled = !vergangen.length; v.disabled = !zukunft.length;
+    r.setAttribute('aria-label', vergangen.length ? `Rückgängig: ${vergangen[vergangen.length - 1].name}` : 'Rückgängig');
+    $('[data-k="sichern"]').disabled = !z.doc; leiste.hidden = !z.doc; wurzel.classList.toggle('leer', !z.doc); pinselHinweisZeigen();
   }
   const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -295,8 +400,9 @@ export async function starte(wurzel, opts = {}) {
     z.doc = doc; z.ansicht = { zoom: 1, mitteX: 0.5, mitteY: 0.5 }; z.vergleich = 'nachher'; z.randVorschlag = null;
     if (neu) { vergangen.length = 0; zukunft.length = 0; letzterSchluessel = null; }
     $('#start').hidden = true; nachAenderung(); reiterNeu();
-    retuscheStufen(doc).catch((e) => console.warn('Retusche-Stufen', e)); bauFehlendeMasken();
+    z.anzeige = null; retuscheStufen(doc).catch((e) => console.warn('Retusche-Stufen', e)); bauFehlendeMasken();
     z.gesichterGeprueft = null; analysiere().catch((e) => console.warn('Analyse', e));
+    if (laborP) laborP.then((L) => setTimeout(() => L.vorwaermen(app).catch(() => {}), 400)).catch(() => {});   // Labor schon benutzt: Karten des neuen Bildes vorrechnen
   }
   async function oeffne(datei, o = {}) {
     const t0 = performance.now();
@@ -429,19 +535,39 @@ export async function starte(wurzel, opts = {}) {
   let zuschnittUIHandle = null;
   $('#reiter').addEventListener('click', (e) => { const b = e.target.closest('[data-r]'); if (!b) return; wechsleReiter(b.dataset.r); });
   function wechsleReiter(id) {
+    if (!MODI.some((m) => m.id === id)) return;
     if (z.reiter === 'zuschnitt' && id !== 'zuschnitt') zuschnittUebernehmen();
-    z.reiter = id; for (const x of $('#reiter').children) x.setAttribute('aria-selected', String(x.dataset.r === id));
+    z.reiter = id; const leisteR = $('#reiter');
+    for (const x of leisteR.children) x.setAttribute('aria-selected', String(x.dataset.r === id));
+    const b = leisteR.querySelector(`[data-r="${id}"]`);   // aktiven Modus in der Leiste sichtbar halten (nur die Leiste scrollt)
+    if (b) { const l = leisteR.getBoundingClientRect(), r = b.getBoundingClientRect(); if (r.left < l.left) leisteR.scrollLeft -= l.left - r.left + 24; else if (r.right > l.right) leisteR.scrollLeft += r.right - l.right + 24; if (r.top < l.top) leisteR.scrollTop -= l.top - r.top + 12; else if (r.bottom > l.bottom) leisteR.scrollTop += r.bottom - l.bottom + 12; }
     reiterNeu(); plane();
   }
-  function aufraeumen() { for (const f of reiterAufraeumen) try { f(); } catch {} reiterAufraeumen = []; $('#werkzeug').innerHTML = ''; $('#regler').innerHTML = ''; zuschnittUIHandle = null; }
+  function aufraeumen() {
+    for (const f of reiterAufraeumen) try { f(); } catch {} reiterAufraeumen = [];
+    setzeMaskenSchalter(null); if (z.anzeige) { z.anzeige = null; plane(); } app.tippModus = false; clearTimeout(stZ.timer); stZ.temp = null;
+    const wz = $('#werkzeug'), rg = $('#regler'); wz.innerHTML = ''; rg.innerHTML = ''; wz.onclick = null; wz.scrollLeft = 0; rg.scrollTop = 0; zuschnittUIHandle = null;
+  }
+  const hinweisZeile = (t) => `<p class="wz-hinweis">${esc(t)}</p>`;
   function platzhalter(el, e) { el.innerHTML = `<p class="leise platzhalter">${esc(platzhalterText(e))}</p>`; }
   function kachel(titel, attr = '', klasse = '') { return `<button class="kachel ${klasse}" ${attr}>${esc(titel)}</button>`; }
   async function reiterNeu() {
     aufraeumen(); const wz = $('#werkzeug'), rg = $('#regler');
-    if (!z.doc) { rg.innerHTML = '<p class="leise platzhalter">Öffne ein Foto, um zu beginnen.</p>'; return; }
-    const id = z.reiter; const nr = ++reiterNeu.nr;
+    statusSymbol();
+    if (!z.doc) { setzeStatus('Bildwerk', 'Foto öffnen, um zu beginnen'); rg.innerHTML = '<p class="leise platzhalter">Öffne ein Foto, um zu beginnen.</p>'; return; }
+    const id = z.reiter; const nr = ++reiterNeu.nr; const modus = MODI.find((m) => m.id === id);
+    setzeStatus('Du bearbeitest', modus?.lang || id);
     try {
-      if (id === 'auto') {
+      if (modus?.labor) {
+        // 0.7 Labor-Modi: Oberfläche (modi.js) und Rechnung (labor.js) erst jetzt laden
+        rg.innerHTML = '<p class="leise platzhalter">Lädt …</p>';
+        const [Mo, L] = await Promise.all([lade('modi'), laborModul()]); if (nr !== reiterNeu.nr) return;
+        rg.innerHTML = '';
+        const wertAus = () => { clearTimeout(stZ.timer); stZ.temp = null; statusMalen(); };
+        const h = Mo.modusUI(id, { app, L, wz, rg, meldung, fehler, ui: { status: setzeStatus, wert: statusWert, wertAus, maske: setzeMaskenSchalter, maskeAn: () => maskeS.an, maskeAus } });
+        reiterAufraeumen.push(() => h?.zerstoere?.());
+      } else if (id === 'auto') {
+        setzeStatus('Du bearbeitest', 'Auto – Vorschläge');
         const vs = vorschlaegeListe();
         wz.innerHTML = kachel('Alles automatisch', 'data-auto', 'haupt') + vs.map((v, i) => kachel(v.titel, `data-vs="${i}" title="${esc(v.grund || '')}"`)).join('');
         wz.onclick = (e) => { if (e.target.closest('[data-auto]')) autoAnwenden().catch(fehler); const v = e.target.closest('[data-vs]'); if (v) vorschlagAnwenden(vs[Number(v.dataset.vs)]).catch(fehler); };
@@ -454,10 +580,13 @@ export async function starte(wurzel, opts = {}) {
         wz.innerHTML = gruppen.map(([g, t]) => kachel(t, `data-g="${g}" aria-pressed="${g === z.reglerGruppe}"`, 'chip')).join('');
         wz.onclick = (e) => { const b = e.target.closest('[data-g]'); if (b) { z.reglerGruppe = b.dataset.g; reiterNeu(); } };
         const params = globalerRegler(z.doc)?.params || neuerSchritt(ART.REGLER).params; let h;
+        const gTitel = gruppen.find(([g]) => g === z.reglerGruppe)?.[1] || 'Regler';
+        setzeStatus('Du bearbeitest', `Regler – ${gTitel}`);
+        const FT = { ton: 'Farbton', saett: 'Sättigung', lum: 'Luminanz' }, KT = { rgb: 'Alle', r: 'Rot', g: 'Grün', b: 'Blau' };
         try {
-          if (z.reglerGruppe === 'kurve') h = R.kurveUI(rg, { punkte: params.kurve.rgb, kanal: 'rgb', onAendern: (punkte, phase) => setzeRegler('kurve.rgb', punkte, phase) });
-          else if (z.reglerGruppe === 'hsl') h = R.hslUI(rg, { params: params.hsl, onAendern: (b, f, w, phase) => setzeRegler(`hsl.${b}.${f}`, w, phase) });
-          else h = R.reglerUI(rg, { params, defs: R.REGLER.filter((d) => d.gruppe === z.reglerGruppe), onAendern: setzeRegler });
+          if (z.reglerGruppe === 'kurve') h = R.kurveUI(rg, { punkte: params.kurve, kanal: 'rgb', onAendern: (punkte, phase, kanal = 'rgb') => { setzeRegler('kurve.' + kanal, punkte, phase); statusWert('Kurve', `Kanal ${KT[kanal] || kanal} · ${punkte.length} Punkte`, phase); } });
+          else if (z.reglerGruppe === 'hsl') h = R.hslUI(rg, { params: params.hsl, onAendern: (b, f, w, phase) => { setzeRegler(`hsl.${b}.${f}`, w, phase); statusWert('Farbtöne', `${b[0].toUpperCase() + b.slice(1)} · ${FT[f] || f} ${w > 0 ? '+' : ''}${w}`, phase); } });
+          else h = R.reglerUI(rg, { params, defs: R.REGLER.filter((d) => d.gruppe === z.reglerGruppe), onAendern: (rid, w, phase) => { setzeRegler(rid, w, phase); const d = R.REGLER.find((x) => x.id === rid); if (d) statusWert(gTitel, `${d.titel} ${R.reglerWert ? R.reglerWert(d, w) : w}`, phase); } });
         } catch (e) { platzhalter(rg, e); }
         if (h) { const ab = app.on('zustand', () => h.setze(globalerRegler(z.doc)?.params || neuerSchritt(ART.REGLER).params)); reiterAufraeumen.push(() => { ab(); h.zerstoere(); }); }
       } else if (id === 'looks') {
@@ -474,12 +603,19 @@ export async function starte(wurzel, opts = {}) {
           meldung('Schärfe auf den angetippten Punkt gelegt');
         }));
         if (aktiv) {
-          rg.innerHTML = ''; regel(rg, { titel: 'Stärke', min: 0, max: 100, wert: Math.round((aktiv.params.staerke ?? 0.7) * 100), einheit: '%' }, (w, phase) => {
+          const def = L.LOOKS.find((l) => l.id === aktiv.params.id), lName = def?.titel || aktiv.params.id;
+          const lStatus = () => { const s = z.doc?.schritte.find((x) => x.id === aktiv.id); setzeStatus('Du bearbeitest', `Look: ${lName} ${Math.round((s?.params.staerke ?? 0.7) * 100)} %`); };
+          lStatus();
+          rg.innerHTML = ''; const R = await lade('regler'); if (nr !== reiterNeu.nr) return;
+          const box = document.createElement('div'); box.className = 'rg'; rg.appendChild(box);
+          const dS = { id: 'staerke', titel: 'Stärke', min: 0, max: 100, standard: 70, einheit: '%' };
+          R.reglerZeile(box, dS, Math.round((aktiv.params.staerke ?? 0.7) * 100), (_, w, phase) => {
             if (phase === 'start') z.qualitaet = 'zieh';
-            aendere((d) => { const s = d.schritte.find((x) => x.id === aktiv.id); if (s) s.params.staerke = w / 100; return d; }, { zusammenfassen: 'look-staerke' });
-            if (phase === 'ende') { z.qualitaet = 'voll'; plane(); }
+            aendere((d) => { const s = d.schritte.find((x) => x.id === aktiv.id); if (s) s.params.staerke = w / 100; return d; }, { zusammenfassen: 'look-staerke', name: `Look ${lName}` });
+            statusWert(`Look: ${lName}`, `Stärke ${Math.round(w)} %`, phase);
+            if (phase === 'ende') { z.qualitaet = 'voll'; zugEnde(); plane(); lStatus(); }
           });
-          const def = L.LOOKS.find((l) => l.id === aktiv.params.id);
+          if (def?.feinregler?.length && !z.lookFein) { const f = document.createElement('p'); f.className = 'leise'; f.textContent = 'Den Look noch einmal antippen: Feinregler.'; rg.appendChild(f); }
           if (z.lookFein && def?.feinregler?.length) {
             const box = document.createElement('div'); rg.appendChild(box);
             try { const R = await lade('regler'); const h = R.reglerUI(box, { params: aktiv.params.fein || {}, defs: def.feinregler, onAendern: (fid, w, phase) => {
@@ -491,16 +627,23 @@ export async function starte(wurzel, opts = {}) {
           if (['tiefe', 'kombination'].includes(aktiv.params.id)) { const h = document.createElement('p'); h.className = 'leise'; h.textContent = 'Ins Bild tippen, um den Schärfepunkt zu setzen.'; rg.appendChild(h); }
           const weg = document.createElement('button'); weg.textContent = 'Look entfernen'; weg.className = 'leise-knopf'; rg.appendChild(weg);
           weg.onclick = () => aendere((d) => { d.schritte = d.schritte.filter((s) => s.id !== aktiv.id); return d; }, { name: 'Look entfernen' });
-        } else rg.innerHTML = '<p class="leise platzhalter">Look antippen. Zweiter Tipp öffnet die Feinregler.</p>';
+        } else { setzeStatus('Look', 'Look antippen'); rg.innerHTML = '<p class="leise platzhalter">Look antippen. Zweiter Tipp öffnet die Feinregler.</p>'; }
       } else if (id === 'auswahl') {
+        setzeStatus('Auswahl', 'Lokal anpassen');
         const A = await lade('auswahl'); if (nr !== reiterNeu.nr) return;
         try {
-          const h = A.auswahlUI(rg, { app, werkzeug: wz, onFertig: (ref) => aendere((d) => { d.schritte.push(neuerSchritt(ART.LOKAL, { regler: {} }, { maske: ref, name: 'Lokal' })); return d; }, { name: 'Auswahl' }) });
+          const h = A.auswahlUI(rg, { app, werkzeug: wz, onFertig: (ref) => {
+            aendere((d) => { d.schritte.push(neuerSchritt(ART.LOKAL, { regler: {} }, { maske: ref, name: 'Lokal' })); return d; }, { name: 'Auswahl' });
+            setzeStatus('Du bearbeitest', 'Lokal – nur in der Auswahl');
+            // Maske der fertigen Auswahl ein-/ausblenden (rote Überlagerung)
+            setzeMaskenSchalter((an) => { if (an) z.maskeZeigen = ref.rasterId; else if (z.maskeZeigen === ref.rasterId) z.maskeZeigen = null; plane(); });
+          } });
           reiterAufraeumen.push(() => h?.zerstoere?.());
         } catch (e) { platzhalter(rg, e); }
       } else if (id === 'retusche') {
         wz.innerHTML = kachel('Entfernen', 'data-ret="entfernen"', 'chip') + kachel('Gesicht auffrischen', 'data-ret="auffrischen"', 'chip') + kachel('Hochskalieren', 'data-ret="hoch"', 'chip');
         z.retusche ||= 'entfernen'; for (const b of wz.querySelectorAll('[data-ret]')) b.setAttribute('aria-pressed', String(b.dataset.ret === z.retusche));
+        setzeStatus('Retusche', { entfernen: 'Entfernen – übermalen', auffrischen: 'Gesicht auffrischen', hoch: 'Hochskalieren' }[z.retusche]);
         wz.onclick = (e) => { const b = e.target.closest('[data-ret]'); if (b) { z.retusche = b.dataset.ret; reiterNeu(); } };
         try {
           let h;
@@ -512,7 +655,7 @@ export async function starte(wurzel, opts = {}) {
       } else if (id === 'zuschnitt') {
         const Z = await import('./zuschnitt.js'); if (nr !== reiterNeu.nr) return;
         z.zuschnittLive = structuredClone(z.doc.geometrie); z.ansicht = { zoom: 0.88, mitteX: 0.5, mitteY: 0.5 };   // Luft für die Griffe
-        wz.innerHTML = '';
+        wz.innerHTML = hinweisZeile(MODUS_HINWEIS.zuschnitt); setzeStatus('Du bearbeitest', 'Zuschnitt und Drehen');
         zuschnittUIHandle = Z.zuschnittUI(rg, {
           doc: z.doc, vorschlag: z.randVorschlag, flaeche,
           ansicht: () => ({ ...z.ansicht, ...cssGroesse() }),
@@ -587,7 +730,8 @@ export async function starte(wurzel, opts = {}) {
   }
 
   // ---------- Ebenen ----------
-  const ART_TITEL = { 'auto-ton': 'Auto-Ton', regler: 'Regler', kurve: 'Kurve', hsl: 'Farbtöne', look: 'Look', lokal: 'Lokal', schaerfe: 'Schärfe', rauschen: 'Rauschen', effekte: 'Effekte', entfernen: 'Entfernen', auffrischen: 'Auffrischen' };
+  const ART_TITEL = { 'auto-ton': 'Auto-Ton', regler: 'Regler', kurve: 'Kurve', hsl: 'Farbtöne', look: 'Look', lokal: 'Lokal', schaerfe: 'Schärfe', rauschen: 'Rauschen', effekte: 'Effekte', entfernen: 'Entfernen', auffrischen: 'Auffrischen',
+    mehrband: 'Schärfe in Stufen', plastik: 'Licht und Schatten', bereich: 'Bereich', haarfarbe: 'Haarfarbe', fokus: 'Hintergrund' };
   function ebenenBlatt() {
     if (!z.doc) return;
     blatt('Ebenen', (c) => {
@@ -616,9 +760,9 @@ export async function starte(wurzel, opts = {}) {
       const st = { format: 'image/jpeg', qualitaet: 92, skala: 1 };
       c.innerHTML = `<div class="zeile" role="group" aria-label="Format"><button data-f="image/jpeg" aria-pressed="true">JPEG</button><button data-f="image/png" aria-pressed="false">PNG</button></div>
         <div class="zeile" role="group" aria-label="Größe"><button data-s="1" aria-pressed="true">Original<br><small>${gm.ausgabeB}×${gm.ausgabeH}</small></button>${[2, 4].map((f) => { const zuGross = gm.ausgabeB * gm.ausgabeH * f * f > MAX_AUSGABE_PX; return `<button data-s="${f}" aria-pressed="false"${zuGross ? ' disabled' : ''}>×${f}${zuGross ? '<br><small>zu groß</small>' : ''}</button>`; }).join('')}</div>
-        ${gm.ausgabeB * gm.ausgabeH * 4 > MAX_AUSGABE_PX ? `<p class="leise">Mehr als ${(MAX_AUSGABE_PX / 1e6).toFixed(1).replace('.', ',')} MP kann das iPhone nicht sichern – größer nur über Zuschnitt.</p>` : ''}
+        ${gm.ausgabeB * gm.ausgabeH * 4 > MAX_AUSGABE_PX ? `<p class="leise">Mehr als ${(MAX_AUSGABE_PX / 1e6).toFixed(1).replace('.', ',')} MP kann dieses Gerät nicht sichern – größer nur über Zuschnitt.</p>` : ''}
         <div class="qual"></div><div class="fortschritt" hidden><div></div></div><p class="leise status"></p>
-        <button class="haupt breit" data-los>Teilen / In Fotos sichern</button>`;
+        <button class="haupt breit" data-los>Teilen / In Fotos sichern</button><p class="leise">Gesichert wird in voller Auflösung mit allen Ebenen.</p>`;
       regel(c.querySelector('.qual'), { titel: 'Qualität', min: 60, max: 100, wert: 92, einheit: '%' }, (w) => { st.qualitaet = w; });
       let ac = null, bereit = null;
       c.addEventListener('click', async (e) => {
@@ -670,12 +814,39 @@ export async function starte(wurzel, opts = {}) {
     return { ergebnis: 'download' };
   }
 
+  // ---------- Einführung (0.7): beim ersten Öffnen drei kurze Schritte, danach nie wieder ----------
+  const EINF_SCHLUESSEL = 'bildwerk-einfuehrung';
+  const handy = (innen) => `<svg viewBox="0 0 160 200" width="160" height="200" aria-hidden="true"><rect x="40" y="6" width="80" height="188" rx="14" fill="#14120f" stroke="#4a4239" stroke-width="2"/><rect x="46" y="24" width="68" height="150" rx="4" fill="#0b0a09"/>${innen}</svg>`;
+  const EINF = [
+    { titel: 'Werkzeug wählen', text: 'Unten liegen die Werkzeuge: Look, Licht, Schärfe, Bereiche, Haare, Hintergrund und mehr. Darüber erscheinen die passenden Regler.',
+      bild: handy('<rect x="46" y="64" width="68" height="62" fill="#3a3128"/><rect x="50" y="132" width="60" height="7" rx="3.5" fill="#26221d"/><rect x="50" y="143" width="60" height="7" rx="3.5" fill="#26221d"/><rect x="50" y="132" width="34" height="7" rx="3.5" fill="#e2a64b" opacity=".8"/><rect x="44" y="158" width="72" height="18" rx="4" fill="none" stroke="#e2a64b" stroke-width="2.5"/><g fill="#a39a8c"><circle cx="54" cy="167" r="3.2"/><circle cx="68" cy="167" r="3.2"/><circle cx="96" cy="167" r="3.2"/><circle cx="110" cy="167" r="3.2"/></g><circle cx="82" cy="167" r="4.2" fill="#e2a64b"/><path d="M128 167h20" stroke="#e2a64b" stroke-width="2.5" stroke-linecap="round"/><path d="M140 160l8 7-8 7" fill="none" stroke="#e2a64b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>') },
+    { titel: 'Immer wissen, wo du bist', text: 'Oben steht, was du gerade bearbeitest – zum Beispiel „Bereich 2 – Gelb“. Regler: über die Zeile ziehen. Doppeltipp setzt ihn zurück.',
+      bild: handy('<rect x="44" y="22" width="72" height="18" rx="4" fill="none" stroke="#e2a64b" stroke-width="2.5"/><rect x="58" y="27" width="44" height="3" rx="1.5" fill="#a39a8c"/><rect x="58" y="33" width="34" height="4" rx="2" fill="#efe8dc"/><rect x="46" y="46" width="68" height="70" fill="#3a3128"/><rect x="50" y="126" width="60" height="14" rx="5" fill="#26221d" stroke="#e2a64b" stroke-width="1.5"/><rect x="54" y="135" width="30" height="2.5" rx="1.2" fill="#e2a64b"/><circle cx="86" cy="133" r="7" fill="#efe8dc" opacity=".85"/><path d="M70 152h32M70 152l5-4M70 152l5 4M102 152l-5-4M102 152l-5 4" stroke="#efe8dc" stroke-width="2" stroke-linecap="round" fill="none"/>') },
+    { titel: 'Vergleichen und zoomen', text: 'Gedrückt halten zeigt das Vorher. Zwei Finger zoomen und schieben. Ist ein Pinsel aktiv, malt ein Finger – zwei Finger zoomen trotzdem.',
+      bild: handy('<rect x="46" y="24" width="68" height="150" rx="4" fill="#3a3128"/><path d="M80 24v150" stroke="#efe8dc" stroke-width="1.5" stroke-dasharray="4 4"/><rect x="46" y="24" width="34" height="150" fill="#0b0a09" opacity=".45"/><circle cx="66" cy="92" r="9" fill="#efe8dc" opacity=".85"/><circle cx="96" cy="118" r="9" fill="#efe8dc" opacity=".85"/><path d="M58 84l-8-8M50 76v6M50 76h6M104 126l8 8M112 134v-6M112 134h-6" stroke="#e2a64b" stroke-width="2.5" stroke-linecap="round" fill="none"/><circle cx="80" cy="152" r="10" fill="none" stroke="#e2a64b" stroke-width="2.5"/><circle cx="80" cy="152" r="4" fill="#e2a64b"/>') },
+  ];
+  function einfuehrung(erzwingen) {
+    if (!erzwingen) { let gesehen = true; try { gesehen = localStorage.getItem(EINF_SCHLUESSEL) === '1'; } catch { gesehen = true; } if (gesehen) return; }
+    wurzel.querySelector('.einf')?.remove();
+    const el = document.createElement('div'); el.className = 'einf'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Kurze Einführung');
+    let i = 0;
+    const fertig = () => { try { localStorage.setItem(EINF_SCHLUESSEL, '1'); } catch {} el.classList.remove('an'); setTimeout(() => el.remove(), 220); };
+    const zeige = () => {
+      const x = EINF[i];
+      el.innerHTML = `<div class="einf-karte"><div class="einf-bild">${x.bild}</div><small>Schritt ${i + 1} von ${EINF.length}</small><h2>${x.titel}</h2><p>${x.text}</p>
+        <div class="einf-punkte" aria-hidden="true">${EINF.map((_, k) => `<i class="${k === i ? 'an' : ''}"></i>`).join('')}</div>
+        <div class="einf-knoepfe"><button data-e="weg">Überspringen</button><button class="haupt" data-e="weiter">${i < EINF.length - 1 ? 'Weiter' : 'Los geht’s'}</button></div></div>`;
+    };
+    el.addEventListener('click', (e) => { const b = e.target.closest('[data-e]'); if (!b) return; if (b.dataset.e === 'weg' || i >= EINF.length - 1) fertig(); else { i++; zeige(); } });
+    zeige(); wurzel.appendChild(el); requestAnimationFrame(() => el.classList.add('an'));
+  }
+
   // ---------- Menü + Batch ----------
   function menueBlatt() {
     blatt('Bildwerk', (c) => {
-      c.innerHTML = `<button class="breit" data-m="oeffnen">Foto öffnen</button><button class="breit" data-m="batch">Mehrere Fotos (Batch)</button><div class="zuletzt"></div><p class="leise">Alles läuft auf diesem Gerät, keine Bilder verlassen es. Version ${VERSION}.</p>`;
+      c.innerHTML = `<button class="breit haupt" data-m="oeffnen">Foto öffnen</button><button class="breit" data-m="batch">Mehrere Fotos (Batch)</button><div class="zuletzt"></div><button class="breit" data-m="einf">Kurze Einführung zeigen</button><p class="leise">Alles läuft auf diesem Gerät, keine Bilder verlassen es. Version ${VERSION}.</p>`;
       zuletzt().then((l) => { const el = c.querySelector('.zuletzt'); if (el && l.length) el.innerHTML = '<p class="leise">Zuletzt bearbeitet</p>' + l.slice(0, 6).map((d) => `<button class="breit" data-weiter="${d.id}">${esc(d.name)}</button>`).join(''); });
-      c.addEventListener('click', (e) => { const m = e.target.closest('[data-m]'); if (!m) return; offenesBlatt?.schliesse(); if (m.dataset.m === 'oeffnen') dateiEins.click(); else dateiViele.click(); });
+      c.addEventListener('click', (e) => { const m = e.target.closest('[data-m]'); if (!m) return; offenesBlatt?.schliesse(); if (m.dataset.m === 'oeffnen') dateiEins.click(); else if (m.dataset.m === 'einf') einfuehrung(true); else dateiViele.click(); });
       return { setze() {}, zerstoere() {} };
     });
   }
@@ -706,12 +877,20 @@ export async function starte(wurzel, opts = {}) {
     arbeitsbild: (o) => pipeline.leseArbeitsbild(o), quelleBitmap: () => z.bitmap,
     hochKachel, meldung, blatt,
     // Erweiterungen (Doku in LOG.md): Ansicht/Fläche für Tipp-Werkzeuge, Masken-Überlagerung, Batch-Pipeline, Neu-Rendern
-    ansicht: () => ({ ...z.ansicht, ...cssGroesse() }), bildflaeche: flaeche, tippModus: false,
+    ansicht: () => ({ ...z.ansicht, ...cssGroesse() }), bildflaeche: flaeche,
     zeigeMaske(id) { z.maskeZeigen = id || null; plane(); }, setzeAuswahl(id) { z.auswahl = id; emit('zustand', app.zustand()); },
     neuePipeline, neuZeichnen: plane, wechsleReiter, zugEnde,
     setzeQualitaet(q) { z.qualitaet = q; plane(); },
     setzeGesichter,   // INTEGRATION: erkannte Gesichter → doc.gesichter (nicht im Undo), Ereignis 'gesichter'
+    /** 0.6 Labor: Modul laden + Stufen registrieren (einmal). @returns {Promise<typeof import('./labor.js')>} */
+    labor: laborModul,
+    /** 0.6 Labor: Vorschau-Ansicht (nur Bildschirm, nie Export/Undo), z. B. { schritt, art: 'band', band: 2 } | { schritt, art: 'karte' } | { schritt, art: 'maske' } | null. */
+    setzeAnzeige(a) { z.anzeige = a || null; plane(); }, anzeige: () => z.anzeige,
+    /** 0.7 Oberfläche: Statuszeile („Du bearbeitest: …“), Wert beim Ziehen, Masken-Schalter der Bildleiste, Einführung. */
+    setzeStatus, statusWert, setzeMaskenSchalter, einfuehrung: () => einfuehrung(true),
   };
+  /** Pinsel aktiv (ein Finger malt, kein Verschieben mit einem Finger, kein „Halten = Vorher“). Module setzen app.tippModus wie bisher. */
+  Object.defineProperty(app, 'tippModus', { enumerable: true, get: () => tippModusWert, set: (v) => { tippModusWert = !!v; pinselHinweisZeigen(); } });
   if (opts.test) {
     const langeAufgaben = [];
     try { new PerformanceObserver((l) => { for (const e of l.getEntries()) langeAufgaben.push(e.duration); }).observe({ type: 'longtask', buffered: true }); } catch {}
@@ -729,6 +908,7 @@ export async function starte(wurzel, opts = {}) {
     plane();
   });
   new ResizeObserver(groesse).observe(flaeche); groesse(); kopfAktualisieren(); startZeigen(); reiterNeu();
+  einfuehrung(false);
   canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); meldung('Grafik wurde zurückgesetzt – Bild wird neu geladen', 'warnung'); });
   // nach iOS-Tab-Abwurf: letztes Dokument wiederherstellen
   try { const offen = sessionStorage.getItem('bildwerk-offen'); if (offen && db && !opts.test) weiterBearbeiten(offen); } catch {}

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Erfinder-Check – Wer war's wirklich?</title>
+<meta name="description" content="Wer hat eine Erfindung bekannt gemacht, wer war vorher dran, wer zur selben Zeit – und wem stehen die Credits zu? 139 Akten im Vergleich, mit Zeitleiste und Quellen.">
+<meta name="theme-color" content="#f4ecdc" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#10161f" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Erfinder-Check">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preload" href="daten/app/register.json" as="fetch" crossorigin="anonymous">
+<link rel="stylesheet" href="stil.css">
+<script defer src="app.js"></script>
+</head>
+<body>
+<a class="sprung" href="#ansicht">Zum Inhalt</a>
+<header class="leiste-oben" id="kopf">
+  <a class="kopf-zurueck" id="zurueck" href="#/" aria-label="Zurück" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+  </a>
+  <a class="kopf-marke" id="marke" href="#/" aria-label="Erfinder-Check, Startseite">
+    <svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><circle cx="17" cy="17" r="11.5" class="logo-glas"/><path d="M25.5 25.5l9 9" class="logo-griff"/><path d="M13.6 13.4a3.6 3.6 0 1 1 5.3 3.2c-1.2.7-1.9 1.4-1.9 2.8" class="logo-frage"/><circle cx="17" cy="22.6" r="1.4" class="logo-punkt"/></svg>
+    <span class="kopf-titel"><b>Erfinder-Check</b><small>Wer war's wirklich?</small></span>
+  </a>
+  <span class="kopf-seitentitel" id="seitentitel"></span>
+  <span class="kopf-aktion" id="kopfaktion"></span>
+</header>
+<div class="offline-hinweis" id="offline" hidden>Offline – gespeicherte Akten</div>
+<main id="ansicht" tabindex="-1">
+  <div class="lade-schale" aria-busy="true">
+    <div class="lade-zeile breit"></div><div class="lade-zeile"></div>
+    <div class="lade-raster"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+  </div>
+  <noscript><p class="hinweis-box">Diese App braucht JavaScript.</p></noscript>
+</main>
+<nav class="leiste-unten" aria-label="Hauptbereiche">
+  <a href="#/" data-tab="akten"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.5V18a1.5 1.5 0 0 0 1.5 1.5h15A1.5 1.5 0 0 0 21 18V9a1.5 1.5 0 0 0-1.5-1.5h-8L9.6 5.2a1.5 1.5 0 0 0-1.2-.7H4.5A1.5 1.5 0 0 0 3 6z"/><path d="M3 10.5h18"/></svg><span>Akten</span></a>
+  <a href="#/personen" data-tab="personen"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2A4.5 4.5 0 0 1 21 18.5"/></svg><span>Personen</span></a>
+  <a href="#/info" data-tab="info"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r=".6" class="voll"/></svg><span>So geprüft</span></a>
+</nav>
+<div class="meldung" id="meldung" role="status" aria-live="polite"></div>
+</body>
+</html>

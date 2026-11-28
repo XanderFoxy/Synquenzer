@@ -171,14 +171,17 @@ export function erstellePipeline(canvas, opts = {}) {
     return t.fbo;
   }
   function loescheTex(t) { if (!t) return; if (t.fbo) gl.deleteFramebuffer(t.fbo); gl.deleteTexture(t.tex); }
-  const pool = new Map(); let ausgegeben = new Set(); let poolBytes = 0;
+  const pool = new Map(); let ausgegeben = new Set(); let poolBytes = 0, poolUhr = 0;
+  // 0.6: Pool-Budget. Freie Texturen werden sonst nie gelöscht – jede Kachelgröße (Randkacheln, Verkleinerungsstufen) legte
+  // neue an (12 MP mit Look „Intensiv“: ~2 GB). Nach jeder Kachel / jedem Vorschau-Bild: am längsten Unbenutzte löschen.
+  const POOL_BUDGET = 256 * 1048576;
   const BPP = { rgba16f: 8, rgba32f: 16, r16f: 2, rgba8: 4, srgb8: 4, r8: 1 };
   function temp(format = ARBEIT, b, h) {
     if (format === 'rgba16f' && !halfRender) format = 'rgba8';
     if (format === 'r16f' && !halfRender) format = 'rgba8';
     const k = `${format}:${b}x${h}`; const l = pool.get(k);
     const t = l && l.length ? l.pop() : (poolBytes += b * h * BPP[format], neueTex(format, b, h));
-    ausgegeben.add(t); return t;
+    t.zeit = ++poolUhr; ausgegeben.add(t); if (poolBytes > statistik.poolSpitze) statistik.poolSpitze = poolBytes; return t;
   }
   function frei(t) {
     if (!t || !ausgegeben.has(t)) return; ausgegeben.delete(t);
@@ -186,6 +189,16 @@ export function erstellePipeline(canvas, opts = {}) {
   }
   function alleFrei(ausser = []) { for (const t of [...ausgegeben]) if (!ausser.includes(t)) frei(t); }
   function poolLeeren() { for (const l of pool.values()) for (const t of l) loescheTex(t); pool.clear(); poolBytes = 0; }
+  function poolKappen(budget = POOL_BUDGET) {
+    if (poolBytes <= budget) return;
+    const frei = []; for (const [k, l] of pool) for (const t of l) frei.push([k, t]);
+    frei.sort((a, b) => (a[1].zeit || 0) - (b[1].zeit || 0));
+    for (const [k, t] of frei) {
+      if (poolBytes <= budget) break;
+      const l = pool.get(k); l.splice(l.indexOf(t), 1); if (!l.length) pool.delete(k);
+      loescheTex(t); poolBytes -= t.b * t.h * BPP[t.format];
+    }
+  }
 
   function zeichne(p, uniforms, eingaenge, ziel) {
     gl.bindFramebuffer(gl.FRAMEBUFFER, ziel ? fbo(ziel) : null);
@@ -209,8 +222,12 @@ export function erstellePipeline(canvas, opts = {}) {
   let q = null;                      // { bild, b, h, voll: Tex|null, arbeit: Tex, arbeitB, arbeitH, farbraum }
   let basisCache = new Map();
   let einleseCache = null;           // { schluessel, tex, vorherTex }
+  // 0.6 Labor: globale Karten (einmal je Bild auf dem ganzen Arbeitsbild gerechnet, z. B. Licht-/Schatten-Karte) und
+  // Texturen aus CPU-Daten (z. B. Pinsel-Raster). Beide eigene Texturen (nicht im Pool), LRU-begrenzt, beim Bildwechsel weg.
+  const karten = new Map(), texturen = new Map(); let lruUhr = 0;
+  function lruKappen(m, max) { while (m.size > max) { let alt = null; for (const [k, v] of m) if (!alt || v.zeit < alt[1].zeit) alt = [k, v]; loescheTex(alt[1].tex); m.delete(alt[0]); } }
   const neutral = {};
-  const statistik = { renders: 0, letzteMs: 0, passe: 0 };
+  const statistik = { renders: 0, letzteMs: 0, passe: 0, poolSpitze: 0 };
 
   function neutralTex(wert) {
     if (!neutral[wert]) { neutral[wert] = neueTex('rgba8', 1, 1, new Uint8Array([wert, wert, wert, 255])); }
@@ -218,7 +235,7 @@ export function erstellePipeline(canvas, opts = {}) {
   }
 
   // Regions-Kontext. reg = {x,y,b,h} in Quell-Pixeln, ziel = {b,h} Pixel der Regions-Textur.
-  function kontext(reg, zielB, zielH, skala, qualitaet, analyse, gesichter) {
+  function kontext(reg, zielB, zielH, skala, qualitaet, analyse, gesichter, extra = {}) {
     const regN = [reg.x / q.b, reg.y / q.h, reg.b / q.b, reg.h / q.h];
     const pxProQuelle = zielB / reg.b;
     const kurzeSeite = Math.min(q.b, q.h) * pxProQuelle;
@@ -236,7 +253,21 @@ export function erstellePipeline(canvas, opts = {}) {
       basis(name) { return ausschnitt('basis:' + name, basisTex(name)); },
       lut(id, daten, breite) { return lut(id, daten, breite); },
       raster(id) { const t = raster.get(id); return t ? ausschnitt('raster:' + id, t) : null; },
+      // ---- 0.6 Labor ----
+      /** Nur Vorschau: { schritt, art, … } – Stufe darf eine Ansicht (Maske/Karte) statt des Ergebnisses liefern und setzt dann ctx.anzeigeFertig. */
+      anzeige: extra.anzeige || null, anzeigeFertig: false,
+      /** Eingang der Region vor allen Schritten (linear, Region-Größe) – für Auswahl nach Farbe am Original. */
+      original: null,
+      /**
+       * Globale Karte: erzeuger(g, quelle) rechnet EINMAL auf dem ganzen Arbeitsbild (g = Kontext des ganzen Bildes in
+       * Arbeitsauflösung, quelle = Arbeitsbild linear) und gibt eine Pool-Textur zurück. Ergebnis wird je Schlüssel
+       * zwischengespeichert und hier als Region-Ausschnitt (Region-Größe) geliefert. Kacheln = Ganzbild, kein Rand nötig.
+       */
+      karte(schluessel, erzeuger) { const t = karteTex(schluessel, erzeuger, analyse, gesichter); return t ? ausschnitt('karte:' + schluessel, t) : null; },
+      /** Textur aus CPU-Daten { b, h, daten: Uint8Array RGBA } (in Quell-Koordinaten), gecacht je id + version, als Region-Ausschnitt. */
+      textur(id, version, erzeuge) { const t = texturTex(id, version, erzeuge); return t ? ausschnitt('textur:' + id + ':' + version, t) : null; },
     };
+    ctx._ausschnitte = () => [...ausschnittCache.values()];
     function ausschnitt(schluessel, t) {
       if (t.b === 1 && t.h === 1) return t;
       if (ausschnittCache.has(schluessel)) return ausschnittCache.get(schluessel);
@@ -296,6 +327,24 @@ export function erstellePipeline(canvas, opts = {}) {
     }
     return ctx;
   }
+  function karteTex(schluessel, erzeuger, analyse, gesichter) {
+    const e = karten.get(schluessel); if (e) { e.zeit = ++lruUhr; return e.tex; }
+    if (!q) return null;
+    const g = kontext({ x: 0, y: 0, b: q.b, h: q.h }, q.arbeitB, q.arbeitH, 1, 'voll', analyse, gesichter);
+    const t = erzeuger(g, q.arbeit); if (!t) return null;
+    const k = neueTex(t.format, t.b, t.h); zeichne(programm('_kopie', FS_KOPIE), {}, { q: t }, k); frei(t);
+    for (const a of g._ausschnitte()) frei(a);
+    karten.set(schluessel, { tex: k, zeit: ++lruUhr }); lruKappen(karten, 10);
+    return k;
+  }
+  function texturTex(id, version, erzeuge) {
+    const e = texturen.get(id); if (e && e.version === version) { e.zeit = ++lruUhr; return e.tex; }
+    const d = erzeuge(); if (!d || !d.daten) return null;
+    if (e) { loescheTex(e.tex); texturen.delete(id); }
+    const tex = neueTex('rgba8', d.b, d.h, new Uint8Array(d.daten.buffer, d.daten.byteOffset, d.daten.byteLength));
+    texturen.set(id, { tex, version, zeit: ++lruUhr }); lruKappen(texturen, 8);
+    return tex;
+  }
   function lut(id, daten, breite) {
     const alt = luts.get(id);
     if (alt && alt.daten === daten) return alt.tex;
@@ -339,13 +388,13 @@ export function erstellePipeline(canvas, opts = {}) {
   }
 
   /** Rendert die Schritte für einen Quell-Ausschnitt. Gibt Textur (mit Rand) + innere Lage zurück. */
-  function rendereRegion(doc, reg, pxProQuelle, { qualitaet = 'voll', quelleArt, mitSchritten = true, bisStufe = Infinity, abStufe = -Infinity, eingang = null, randVonAllen = false, analyse, gesichter } = {}) {
-    const probe = { b: 1, h: 1, kurzeSeite: Math.min(q.b, q.h) * pxProQuelle, qualitaet, analyse, gesichter };
+  function rendereRegion(doc, reg, pxProQuelle, { qualitaet = 'voll', quelleArt, mitSchritten = true, bisStufe = Infinity, abStufe = -Infinity, eingang = null, randVonAllen = false, analyse, gesichter, anzeige = null } = {}) {
+    const probe = { b: 1, h: 1, kurzeSeite: Math.min(q.b, q.h) * pxProQuelle, qualitaet, analyse, gesichter, pxProQuelle, anzeige };
     const alle = mitSchritten ? aktiveStufen(doc, probe) : [];
     const paare = alle.filter((p) => p.m.stufe < bisStufe && p.m.stufe >= abStufe);
     let randPx = 0;
     // INTEGRATION: Ränder aufeinanderfolgender Stufen addieren sich (Einzugsbereich wächst je Stufe), daher Summe statt Maximum.
-    for (const { m, s } of (randVonAllen ? alle : paare)) { try { randPx += Math.max(0, m.rand(s, probe.kurzeSeite) || 0); } catch {} }
+    for (const { m, s } of (randVonAllen ? alle : paare)) { try { randPx += Math.max(0, m.rand(s, probe.kurzeSeite, probe) || 0); } catch {} }
     const randQ = eingang ? 0 : Math.ceil(randPx / pxProQuelle);
     // Region um den Rand erweitern, auf das Bild begrenzen, an Ziel-Pixelraster ausrichten
     const x0 = Math.max(0, reg.x - randQ), y0 = Math.max(0, reg.y - randQ);
@@ -357,13 +406,13 @@ export function erstellePipeline(canvas, opts = {}) {
     const zielB = eingang ? eingang.b : Math.max(1, zx1 - zx0), zielH = eingang ? eingang.h : Math.max(1, zy1 - zy0);
     const erw = eingang ? { ...reg } : { x: zx0 / pxProQuelle, y: zy0 / pxProQuelle, b: zielB / pxProQuelle, h: zielH / pxProQuelle };
     const skala = pxProQuelle / (q.arbeitB / q.b);
-    const ctx = kontext(erw, zielB, zielH, skala, qualitaet, analyse, gesichter);
+    const ctx = kontext(erw, zielB, zielH, skala, qualitaet, analyse, gesichter, { anzeige });
     let tex = eingang;
     if (!tex) {
       const art = quelleArt || (pxProQuelle > (q.arbeitB / q.b) * 1.05 && q.voll ? 'voll' : 'arbeit');
       tex = einlesen(art, erw, zielB, zielH);
     }
-    const start = tex;
+    const start = tex; ctx.original = start;
     for (const { m, s } of paare) {
       const maske = s.maske ? (ctx.raster(s.maske.rasterId || s.maske.id)) : null;
       if (s.maske && !maske) continue;           // Maske noch nicht gebaut -> Schritt überspringen
@@ -374,6 +423,7 @@ export function erstellePipeline(canvas, opts = {}) {
       if (d < 0.999 && !m.mischtSelbst) { const mix = temp(ARBEIT, zielB, zielH); zeichne(programm('_misch', FS_MISCH), { d, mitMaske: 0 }, { a: tex, b: aus, m: aus }, mix); if (aus !== start) frei(aus); aus = mix; }
       if (tex !== start) frei(tex);
       tex = aus;
+      if (ctx.anzeigeFertig) break;              // 0.6: Stufe zeigt eine Ansicht (Maske/Karte) – nichts mehr darüber rechnen
     }
     return { tex, start, erw, zielB, zielH, regN: [erw.x / q.b, erw.y / q.h, erw.b / q.b, erw.h / q.h] };
   }
@@ -491,7 +541,7 @@ export function erstellePipeline(canvas, opts = {}) {
       const px = await leseAsync(ziel, 0, 0, ob, oh, 'u8');
       if (l2d) l2d.putImageData(new ImageData(px, ob, oh), ox, oy);
       else for (let y = 0; y < oh; y++) daten.set(px.subarray(y * ob * 4, (y + 1) * ob * 4), ((oy + y) * ausB + ox) * 4);
-      alleFrei();
+      alleFrei(); poolKappen();
       fertig++; o.onFortschritt?.(fertig / gesamt, `Kachel ${fertig}/${gesamt}`);
       await new Promise((ok) => setTimeout(ok, 0));
     }
@@ -524,6 +574,7 @@ export function erstellePipeline(canvas, opts = {}) {
     entladeQuelle() {
       if (!q) return; if (q.voll) loescheTex(q.voll); if (q.arbeit) loescheTex(q.arbeit);
       for (const t of basisCache.values()) loescheTex(t); basisCache = new Map(); q = null; poolLeeren();
+      for (const m of [karten, texturen]) { for (const v of m.values()) loescheTex(v.tex); m.clear(); }
     },
     hatQuelle: () => !!q, quelleGroesse: () => (q ? { b: q.b, h: q.h, arbeitB: q.arbeitB, arbeitH: q.arbeitH } : null),
     async leseArbeitsbild(o = {}) {
@@ -568,11 +619,11 @@ export function erstellePipeline(canvas, opts = {}) {
       px = Math.min(px, 1);                                                                    // nie über Quell-Auflösung
       const vergleich = zustand.vergleich || 'nachher';
       const nurVorher = vergleich === 'vorher';
-      const r = rendereRegion(zustand.doc, sr.reg, px, { qualitaet: zustand.qualitaet || 'voll', mitSchritten: !nurVorher, analyse: zustand.doc.analyse, gesichter: zustand.doc.gesichter });
+      const r = rendereRegion(zustand.doc, sr.reg, px, { qualitaet: zustand.qualitaet || 'voll', mitSchritten: !nurVorher, analyse: zustand.doc.analyse, gesichter: zustand.doc.gesichter, anzeige: zustand.anzeige || null });
       const vor = typeof vergleich === 'object' ? { tex: r.start, regN: r.regN } : null;
       const maske = zustand.maskeZeigen && raster.has(zustand.maskeZeigen) ? raster.get(zustand.maskeZeigen) : null;
       ausgabe(null, { zielZuAusgabe: sr.am, ausgabeZuQuelle: sr.gm.matrix, nach: r, vor, teil: vor ? vergleich.teilung : -1, flipY: true, kodiere: 1, zielH: H, maske });
-      alleFrei();
+      alleFrei(); poolKappen();
       statistik.renders++; statistik.letzteMs = performance.now() - t0;
     },
     async rendereMini(zustand, kante = 160) {
@@ -582,7 +633,7 @@ export function erstellePipeline(canvas, opts = {}) {
       const r = rendereRegion(zustand.doc, { x: 0, y: 0, b: q.b, h: q.h }, Math.min(1, f), { qualitaet: 'voll', mitSchritten: zustand.vergleich !== 'vorher', analyse: zustand.doc.analyse, gesichter: zustand.doc.gesichter });
       const ziel = temp('rgba8', b, h);
       ausgabe(ziel, { zielZuAusgabe: new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]), ausgabeZuQuelle: gm.matrix, nach: r, flipY: false, kodiere: 1, zielH: h });
-      const px = await leseAsync(ziel, 0, 0, b, h, 'u8'); alleFrei();
+      const px = await leseAsync(ziel, 0, 0, b, h, 'u8'); alleFrei(); poolKappen();
       return createImageBitmap(new ImageData(px, b, h));
     },
     rendereLupe(zustand, mitte, zoom = 1) {
@@ -601,7 +652,9 @@ export function erstellePipeline(canvas, opts = {}) {
       for (let i = 0; i < (h >> 1); i++) { const o1 = i * zeile, o2 = (h - 1 - i) * zeile; tmp.set(aus.subarray(o1, o1 + zeile)); aus.copyWithin(o1, o2, o2 + zeile); aus.set(tmp, o2); }
       return aus;
     },
-    speicher: () => ({ poolBytes, raster: raster.size, programme: programme.size }),
+    speicher: () => ({ poolBytes, raster: raster.size, programme: programme.size, karten: karten.size, texturen: texturen.size }),
+    /** 0.6: Karten verwerfen (z. B. nach neuem Original); Schlüssel-Präfix optional. */
+    vergissKarten(praefix = '') { for (const [k, v] of [...karten]) if (k.startsWith(praefix)) { loescheTex(v.tex); karten.delete(k); } },
     zerstoere() { api.entladeQuelle(); for (const t of raster.values()) loescheTex(t); raster.clear(); gl.getExtension('WEBGL_lose_context')?.loseContext(); },
     _stufen: stufen,
   };

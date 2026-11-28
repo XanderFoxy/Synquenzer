@@ -359,16 +359,17 @@ export function entfernenUI(container, opts) {
   app.tippModus = true;
   const flaeche = app.bildflaeche, ueber = doc.createElement('canvas'); ueber.className = 'ef-ueber';
   if (flaeche) { if (getComputedStyle(flaeche).position === 'static') flaeche.style.position = 'relative'; flaeche.appendChild(ueber); }
-  let zug = null;
+  let zug = null; const finger = new Set();   // 0.7: zwei Finger = zoomen, nie malen
   const zeichne = () => {
     const r = flaeche.getBoundingClientRect(), dpr = devicePixelRatio || 1; ueber.width = r.width * dpr; ueber.height = r.height * dpr; ueber.style.width = r.width + 'px'; ueber.style.height = r.height + 'px';
     const c = ueber.getContext('2d'); c.clearRect(0, 0, ueber.width, ueber.height); if (!zug) return; c.scale(dpr, dpr);
     c.strokeStyle = 'rgba(255,77,77,0.45)'; c.lineCap = c.lineJoin = 'round'; c.lineWidth = zug.breite; c.beginPath(); zug.css.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); if (zug.css.length === 1) c.lineTo(zug.css[0][0] + 0.1, zug.css[0][1]); c.stroke();
   };
-  const runter = (e) => { if (st.laeuft || !app.zustand().doc) return; const r = flaeche.getBoundingClientRect(), a = app.ansicht();
+  const runter = (e) => { finger.add(e.pointerId); if (finger.size > 1) { if (zug) { zug = null; requestAnimationFrame(zeichne); } return; }
+    if (st.laeuft || !app.zustand().doc) return; const r = flaeche.getBoundingClientRect(), a = app.ansicht();
     const breite = Math.max(8, st.groesse * Math.min(r.width, r.height) * 2 * (a.zoom || 1)); zug = { id: e.pointerId, css: [[e.clientX - r.left, e.clientY - r.top]], breite }; requestAnimationFrame(zeichne); };
   const bewegt = (e) => { if (!zug || e.pointerId !== zug.id) return; const r = flaeche.getBoundingClientRect(); zug.css.push([e.clientX - r.left, e.clientY - r.top]); requestAnimationFrame(zeichne); };
-  const hoch = (e) => { if (!zug || e.pointerId !== zug.id) return; const z = zug; zug = null; ausfuehren(z).catch((err) => { st.laeuft = false; fortschritt(null); zeichne(); status(err.text || err.message || String(err)); }); };
+  const hoch = (e) => { finger.delete(e.pointerId); if (!zug || e.pointerId !== zug.id) return; const z = zug; zug = null; if (e.type === 'pointercancel') { requestAnimationFrame(zeichne); return; } ausfuehren(z).catch((err) => { st.laeuft = false; fortschritt(null); zeichne(); status(err.text || err.message || String(err)); }); };
   async function ausfuehren(z) {
     if (st.modell == null) { await frageModell(); modusAnzeigen(); }
     st.laeuft = true; status('Wird gefüllt …'); fortschritt(0.05);

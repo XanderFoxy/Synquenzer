@@ -80,6 +80,20 @@ const H = {
     });
   },
 
+  /** 0.6 Labor: Haare fein (Hair Segmenter, 0,8 MB; Klassen 0 = Hintergrund, 1 = Haar) → MaskeU8 in (b,h). */
+  async haar({ bild, b, h }) {
+    return mitBild(bild, async () => {
+      const t = await modelle.mediapipeAufgabe('haar');
+      const c = verkleinert(bild, 512);
+      const r = t.segment(c);
+      const masken = r.confidenceMasks || []; if (!masken.length) throw new BildwerkFehler(FEHLER.KEIN_MODELL, 'Haar-Modell lieferte keine Maske');
+      const m = masken[Math.min(1, masken.length - 1)], rb = m.width, rh = m.height, f = Float32Array.from(m.getAsFloat32Array());
+      for (const x of masken) x.close?.(); r.categoryMask?.close?.();
+      const B = b || bild.width, Hh = h || bild.height;
+      return { b: B, h: Hh, daten: zuU8(skaliere(f, rb, rh, B, Hh)) };
+    });
+  },
+
   /** Interaktiv: Striche { modus: 'plus'|'minus'|'lasso', punkte:[{x,y}] } → Deckung. */
   async antippen({ bild, striche, bildId }) {
     return mitBild(bild, async () => {
