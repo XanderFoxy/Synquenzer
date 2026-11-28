@@ -25,6 +25,8 @@ export function neuerPlan(ctx, ziel = ctx.destination) {
   const bus = ctx.createGain(); bus.gain.value = 1; bus.connect(ziel);
   return {
     bus,
+    merke: (n) => merk(n),
+    instrument: (i) => { if (i) instrumente.add(i); return i; },
     /** Holzklick (gefiltertes Rauschen + kurzer Ton): kaum Tonhöhe, stört die Stimm-Erkennung nicht. */
     klick(zeit, betont = false, laut = 1) {
       const q = ctx.createBufferSource(); q.buffer = rauschen(ctx);
