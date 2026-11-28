@@ -9,7 +9,7 @@ import { spieler, klinge, audioKontext } from './wiedergabe.js';
 import { uebungen } from './uebungen.js';
 
 // Noten-Scanner (Bild/Foto → MusicXML): Link trägt die Hauptsitzung ein. Leer = Hinweis ausgeblendet.
-const SCANNER_URL = '';
+const SCANNER_URL = 'https://claude.ai/artifact/W8f617Bx9KDrKBHteyz5zo';
 
 const $ = (s, el = document) => el.querySelector(s);
 const app = $('#app');
