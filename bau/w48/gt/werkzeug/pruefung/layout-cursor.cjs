@@ -92,6 +92,7 @@ const pruefeLayout = (p, name) => p.evaluate((name) => {
     const maxB = ok.length ? Math.max(...ok.map((a) => Math.abs(a.beat))) : null;
     befunde.push(`Cursor: ${ok.length} Proben (${ok.filter((a) => a.farbe === 'grau').length} beim Vorsingen, ${ok.filter((a) => a.farbe === 'pink').length} beim Nachsingen), größte Abweichung ${maxB == null ? '–' : (maxB * 1000 / 1000).toFixed(3)} Schläge (${ok.length ? Math.max(...ok.map((a) => Math.abs(a.dx))).toFixed(1) : '–'} px), ohne Cursor gefunden: ${fehlt}`);
     befunde.push('Phasen: ' + [...phasen].join(' → '));
+    befunde.push('Proben dx (Schläge): ' + ok.map((a) => a.farbe[0] + a.beat.toFixed(2)).join(' '));
     await p.screenshot({ path: G + 'fotos/p-hoch-lauf.png' });
     befunde.push(...await pruefeLayout(p, 'hoch, Lauf'));
     await p.locator('.tr-start').tap({ force: true }); await p.waitForTimeout(200);
@@ -99,6 +100,7 @@ const pruefeLayout = (p, name) => p.evaluate((name) => {
     p.fehler.forEach((f) => befunde.push('FEHLER ' + f));
     await ctx.close();
   }
+  if (process.argv[2] === 'cursor') { console.log(befunde.join('\n')); await b.close(); return; }
   // ---------- 2. Atem: Klick-Schalter wirkt (Klicks im Ablauf gezählt)
   {
     const { ctx, p } = await seite(b, 428, 926);
