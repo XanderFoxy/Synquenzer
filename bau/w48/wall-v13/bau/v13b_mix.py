@@ -32,11 +32,10 @@ vox = lead + dop + g2 + ch
 mix = musik + vox
 del lead, dop, g2, ch, gh, chh, chor, gegen, lead12, dop12, musik
 dec = -1.76   # aus Lauf 1 (−1,55/−1,65 gaben MP3-TP −0,95/−0,94)
-g = 2.1
-for runde in range(4):
-    for it in range(12):
-        y, _ = limiter(mix * undb(g), dec, 5.0, 25.0); err = -10.0 - meter.integrated_loudness(y); g += 1.6 * err
-        if abs(err) < 0.03: break
+# Verstärkung fest wie im Vorhör-Verfahren (5 Schritte ab 0 dB -> +2,11 dB, Limiter p99 6,6 dB) = −10,2 LUFS.
+# Für −10,0 wären +4,1 dB nötig (Limiter p99 8,5 dB, max 11,9 dB) – 2 dB mehr Begrenzung für 0,16 LU, daher nicht.
+g = 2.11
+for runde in range(1):
     y, grl = limiter(mix * undb(g), dec, 5.0, 25.0)
     y44 = resample_poly(y, 147, 160, axis=0)
     tp44 = true_peak(y44)
