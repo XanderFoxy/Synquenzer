@@ -1,5 +1,5 @@
 {
- "stand": "2026-11-27T21:14:39.419Z",
+ "stand": "2026-11-28T01:56:23.617Z",
  "quellen": {
   "ticketmaster": {
    "ok": true,
@@ -13,7 +13,7 @@
    "treffer": 16,
    "fehler": [],
    "uebersprungen": null,
-   "ms": 12333
+   "ms": 12312
   },
   "seiten": {
    "ok": false,
@@ -22,32 +22,30 @@
     "Gothic meets Klassik: fetch failed"
    ],
    "uebersprungen": null,
-   "ms": 12753,
+   "ms": 12464,
    "geprueft": 3,
    "gesamt": 4
   },
   "musicbrainz": {
-   "ok": false,
+   "ok": true,
    "treffer": 8,
-   "fehler": [
-    "Alphaville: HTTP 503 musicbrainz.org"
-   ],
+   "fehler": [],
    "uebersprungen": null,
-   "ms": 107151
+   "ms": 37321
   },
   "mbevents": {
    "ok": true,
    "treffer": 0,
    "fehler": [],
    "uebersprungen": null,
-   "ms": 102000
+   "ms": 42866
   },
   "deezer": {
    "ok": true,
    "treffer": 1,
    "fehler": [],
    "uebersprungen": null,
-   "ms": 2562
+   "ms": 3678
   }
  },
  "pushes": 0,
