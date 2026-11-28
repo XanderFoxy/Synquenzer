@@ -398,7 +398,9 @@ function zeileEintragen(p, zi, z, antworten, eigene, vonGesendet) {
     for (const t of eigene) if (!nachNummer || !t.lesung) t.zeilenGrund = grund;
   }
   if (antworten.some((a) => a.abgeschnitten)) for (const t of eigene.slice(-2)) t.zeilenGrund = { art: 'abgeschnitten', text: 'Die Antwort wurde abgeschnitten.' };
-  bewerten(eigene, antworten.some((a) => a.ausXml) ? 'Claude hat MusicXML statt des verlangten Formats geschickt – die App hat es umgewandelt.' : '');
+  bewerten(eigene);
+  // nur ein Hinweis (kein Grund zum Nachlesen): der Inhalt ist Claudes Lesung, nur in anderer Schreibweise
+  if (antworten.some((a) => a.ausXml)) for (const t of eigene) t.gruende.push({ art: 'info', text: 'Claude hat MusicXML statt des verlangten Formats geschickt – die App hat es umgewandelt.' });
   if (keine) for (const t of eigene) t.lesungen = 3; // nicht automatisch Takt für Takt nachfragen – „Neu lesen“ geht weiter
 }
 
