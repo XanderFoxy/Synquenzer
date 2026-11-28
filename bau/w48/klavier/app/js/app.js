@@ -10,7 +10,7 @@ import { uebungen } from './uebungen.js';
 
 // Noten aus Foto (#scan) ist eingebaut. Die KI-Erkennung gibt es nur in der Claude-Fassung dieser App:
 // ARTIFACT_URL = Link auf diese Fassung (trägt die Hauptsitzung ein; leer = Hinweis ohne Link).
-const ARTIFACT_URL = '';
+const ARTIFACT_URL = 'https://claude.ai/artifact/YMHsqGateP27i7bp55j29U';
 let scanModul = null;
 const scanHolen = () => (scanModul ||= import('./scan.js'));
 
