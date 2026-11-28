@@ -132,6 +132,12 @@ function toast(text) {
 const MAX_DATEI = 30 * 1024 * 1024; // größer ist kein Klavierstück mehr – und würde das Gerät lange blockieren
 async function dateiLaden(datei) {
   if (!datei) return;
+  // Foto oder PDF gleich zu „Noten aus Foto“ – ohne die Datei vorher ganz in den Speicher zu lesen
+  if (/^image\//.test(datei.type) || /pdf$/i.test(datei.type) || /\.(jpe?g|png|webp|gif|heic|heif|bmp|pdf)$/i.test(datei.name || '')) {
+    (await scanHolen()).dateienDazu([datei]);
+    location.hash = '#scan';
+    return;
+  }
   try {
     if (datei.size > MAX_DATEI) throw Object.assign(new Error('gross'), { text: `Die Datei ist zu groß (${(datei.size / 1048576).toFixed(0)} MB, bis ${MAX_DATEI / 1048576} MB gehen). Teile das Stück in kürzere Abschnitte.` });
     const daten = await datei.arrayBuffer();

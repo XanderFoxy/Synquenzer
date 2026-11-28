@@ -354,6 +354,7 @@ h2.abschnitt { font-size: 13px; text-transform: uppercase; letter-spacing: .08em
 .sc-sinfo { display: grid; gap: 5px; min-width: 0; }
 .sc-sinfo b { font-size: 16px; }
 .sc-sinfo small { color: var(--leise); font-size: 12.5px; line-height: 1.35; }
+.sc-sinfo small.sc-ki-hinweis { color: var(--text, inherit); font-weight: 600; padding-left: 8px; border-left: 3px solid var(--r1); }
 .sc-fakten { display: flex; flex-wrap: wrap; gap: 4px; }
 .sc-fakten span { font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 9px; background: var(--flaeche2); color: var(--leise); }
 .sc-weg { width: 44px; height: 44px; border: 0; border-radius: 12px; background: none; color: var(--leise); display: grid; place-items: center; }

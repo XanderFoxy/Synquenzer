@@ -1,4 +1,4 @@
-# Stand 28.11.19:03 UTC
+# Stand 28.11.19:05 UTC
 ## arp2
 # ARP2 Stand
 - Start 15:2x; Punkte a–e nachstellen

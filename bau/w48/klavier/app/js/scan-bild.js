@@ -454,7 +454,7 @@ export async function bildOeffnen(datei) {
   const img = new Image();
   img.decoding = 'async';
   img.src = url;
-  try { await img.decode(); } catch { URL.revokeObjectURL(url); throw Object.assign(new Error('decode'), { text: 'Dieses Bild lässt sich nicht öffnen. Bitte ein Foto als JPEG oder PNG wählen.' }); }
+  try { await img.decode(); } catch { URL.revokeObjectURL(url); throw Object.assign(new Error('decode'), { text: 'Dieses Bild lässt sich nicht öffnen – vielleicht ein ungewohntes Format oder zu groß für den Speicher. Bitte ein Foto als JPEG oder PNG wählen (oder ein Bildschirmfoto der Seite).' }); }
   if (!img.naturalWidth || !img.naturalHeight) { URL.revokeObjectURL(url); throw Object.assign(new Error('leer'), { text: 'Das Bild ist leer.' }); }
   return { img, w: img.naturalWidth, h: img.naturalHeight, frei: () => URL.revokeObjectURL(url) };
 }

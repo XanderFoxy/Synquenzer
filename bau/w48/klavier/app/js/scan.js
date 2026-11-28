@@ -7,7 +7,7 @@ import * as KI from './scan-ki.js';
 import { zeichne, markiere } from './notensatz.js';
 import { notenName } from './akkorde.js';
 
-const MAX_SEITEN = 8, MAX_NACHLESEN = 12, GLEICHZEITIG = 2;
+const MAX_SEITEN = 8, MAX_NACHLESEN = 12, GLEICHZEITIG = 2, MAX_BILD = 40 * 1048576;
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const $ = (s, el = document) => el.querySelector(s);
 const ruhig = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } };
@@ -114,7 +114,9 @@ async function frage(prompt, bilder, { onText, neu = false, job } = {}) {
   if (neu) o.cache = false;
   if (job) job.aufrufe++;
   try {
-    return await S.ki.sample(prompt, o);
+    const r = await S.ki.sample(prompt, o);
+    if (ctl.signal.aborted) throw { code: 'cancelled' };
+    return r;
   } catch (e) {
     const code = (e && e.code) || 'upstream_error';
     if (code === 'cancelled') throw new Halt('Angehalten.', 'cancelled');
@@ -127,6 +129,29 @@ async function frage(prompt, bilder, { onText, neu = false, job } = {}) {
   } finally { job?.ctl.delete(ctl); }
 }
 
+/**
+ * Antwort lesen. Schickt Claude trotz Anweisung MusicXML, wird es – wenn es vollständig und gültig ist – mit dem
+ * eigenen MusicXML-Leser übersetzt; sonst bleiben die Takte leer und werden als „nicht im erwarteten Format“ markiert.
+ */
+async function antwortLesen(text) {
+  const a = KI.leseAntwort(text);
+  if (a.takte.length || !a.format) return a;
+  const t = String(text), start = t.search(/<\?xml|<score-partwise/i), ende = t.lastIndexOf('</score-partwise>');
+  if (start < 0 || ende < start) return a;
+  try {
+    const { einlesen } = await import('./einlesen.js');
+    const st = await einlesen(t.slice(start, ende + '</score-partwise>'.length), 'antwort.musicxml');
+    if (!st.takte?.length || !st.noten?.length) return a;
+    const t0 = st.takte[0], key = t0.tonart?.quinten ?? 0;
+    const z = [`CLEFS ${t0.schluessel?.oben || 'G'} ${t0.schluessel?.unten || 'F'}`, `KEY ${key}`, `TIME ${(t0.taktart || [4, 4]).join('/')}`];
+    st.takte.forEach((tk, i) => z.push(KI.taktAlsText(st, tk.nr, { key }).replace(/^M-?\d+/, 'M' + (i + 1))));
+    const b = KI.leseAntwort(z.join('\n'));
+    if (!b.takte.length) return a;
+    b.ausXml = true;
+    return b;
+  } catch { return a; }
+}
+
 // ───────── Seiten (Fotos) ─────────
 export function dateienDazu(liste) {
   const dateien = [...(liste || [])];
@@ -137,6 +162,7 @@ export function dateienDazu(liste) {
   else S.meldung = '';
   for (const f of bilder) {
     if (S.seiten.length >= MAX_SEITEN) { S.meldung = `Höchstens ${MAX_SEITEN} Seiten auf einmal.`; break; }
+    if (f.size > MAX_BILD) { S.meldung = `„${f.name || 'Bild'}“ ist zu groß (${Math.round(f.size / 1048576)} MB, bis ${MAX_BILD / 1048576} MB gehen). Ein normales Handyfoto oder ein Bildschirmfoto reicht.`; continue; }
     const p = { id: naechsteId++, name: f.name || 'Foto', status: 'bereite', schritt: 'wartet', daten: null, url: '', fehler: '' };
     S.seiten.push(p);
     vorbereiten(p, f);
@@ -149,6 +175,7 @@ function vorbereiten(p, f) {
     if (!S.seiten.includes(p)) return;
     try {
       const d = await seiteVorbereiten(f, { schritt: (t) => { p.schritt = t; plane(); } });
+      if (!S.seiten.includes(p)) return; // während der Vorbereitung entfernt
       p.daten = d; p.url = URL.createObjectURL(d.vorschau.blob);
       p.status = 'fertig';
     } catch (e) {
@@ -180,7 +207,7 @@ function takteNeu() {
     else {
       const eig = S.takte.filter((t) => t.seite === p.id && t.zeile === 'ganz');
       if (eig.length) neu.push(...eig);
-      else neu.push({ schluessel: `${p.id}|ganz|0`, seite: p.id, zeile: 'ganz', k: null, lesung: null, status: 'offen', gruende: [], varianten: [], lesungen: 0, platzhalter: true });
+      else if (d.ganz && !p.ohneTakte) neu.push({ schluessel: `${p.id}|ganz|0`, seite: p.id, zeile: 'ganz', k: null, lesung: null, status: 'offen', gruende: [], varianten: [], lesungen: 0, platzhalter: true });
     }
     for (const t of S.takte) if (t.seite === p.id && t.extra && !neu.includes(t)) neu.push(t);
   }
@@ -302,7 +329,7 @@ async function leseZeile(e, job) {
     for (const gr of gruppen) {
       const prompt = KI.zeilenAnweisung({ zeile: z ? zi + 1 : 1, zeilen: zeilenAufSeite || 1, von: gr.von, bis: gr.bis, staves: z ? z.staves.length : 2, kontext: antworten.length ? { ...kontext, key: antworten[0].key ?? kontext?.key, time: antworten[0].time ?? kontext?.time, clefs: antworten[0].clefs ?? kontext?.clefs } : kontext, teile: gr.teile, ganzeSeite: !z });
       const r = await frage(prompt, gr.blobs, { job, onText: ({ text }) => { fort.takte = (text.match(/^\s*M\s*\d+/gm) || []).length; fort.text = fort.takte ? `${fort.takte} Takt${fort.takte === 1 ? '' : 'e'} …` : 'schreibt …'; plane(); } });
-      const a = KI.leseAntwort(r.text);
+      const a = await antwortLesen(r.text);
       a.abgeschnitten = r.truncated;
       // Nummern der Antwort (blau, je Bild ab 1 … bzw. ab dem ersten Takt des Teils) → Nummer innerhalb der Zeile
       if (gr.erst > 1 && a.takte.length && a.takte[0].nr === 1) for (const t of a.takte) t.nr += gr.erst - 1;
@@ -311,8 +338,15 @@ async function leseZeile(e, job) {
     zeileEintragen(p, zi, z, antworten, eigene, von);
   } catch (err) {
     if (err instanceof Halt) throw err;
-    for (const t of eigene) { t.status = 'markiert'; t.gruende = [{ art: 'fehler', text: (err && err.message) || 'Lesen fehlgeschlagen.' }]; }
-    job.fehler = 'Eine Zeile konnte nicht gelesen werden: ' + ((err && err.message) || '') + ' Ihre Takte sind markiert – „Takt neu lesen“ hilft.';
+    const text = (err && err.message) || 'Lesen fehlgeschlagen.';
+    if (!err?.code || err.code === 'upstream_error') {
+      // Verbindung kurz weg: die Zeile bleibt offen, „Weiter lesen“ fragt sie mit einer Anfrage noch einmal
+      for (const t of eigene) { if (t.status === 'offen') t.gruende = [{ art: 'fehler', text }]; }
+      job.fehler = `${fort.zeile} konnte nicht gelesen werden (${text}) Tippe auf „Weiter lesen“, dann wird sie noch einmal gefragt.`;
+    } else {
+      for (const t of eigene) { t.status = 'markiert'; t.gruende = [{ art: 'fehler', text }]; }
+      job.fehler = 'Eine Zeile konnte nicht gelesen werden: ' + text + ' Ihre Takte sind markiert – „Neu lesen“ im Takt hilft.';
+    }
   } finally { job.aktiv.delete(schluessel); plane(); }
 }
 
@@ -326,6 +360,10 @@ function zeileEintragen(p, zi, z, antworten, eigene, vonGesendet) {
     // ganze Seite: Takte entstehen aus der Antwort
     const platz = S.takte.findIndex((t) => t.seite === p.id && t.zeile === 'ganz');
     const neue = gelesen.map((g, j) => ({ schluessel: `${p.id}|ganz|${j}`, seite: p.id, zeile: 'ganz', k: null, lesung: g, status: 'offen', gruende: [], varianten: [], lesungen: 1 }));
+    if (!neue.length) {
+      p.ohneTakte = true;
+      p.kiHinweis = antworten.some((a) => a.keine) ? 'Claude hat auf diesem Bild keine Noten gefunden.' : 'Claude hat für dieses Bild keine lesbaren Takte geschickt. Versuche ein schärferes, gerades Foto.';
+    }
     S.takte.splice(platz, S.takte.filter((t) => t.seite === p.id && t.zeile === 'ganz').length, ...neue);
     if (neue[0]) neue[0].zeilenKopf = { key: a0.key, time: a0.time, clefs: a0.clefs };
     nummern();
@@ -333,6 +371,7 @@ function zeileEintragen(p, zi, z, antworten, eigene, vonGesendet) {
     return;
   }
   const N = eigene.length, M = gelesen.length;
+  const keine = !M && antworten.some((a) => a.keine);
   let zuordnung = gelesen.slice(0, N), nachNummer = false;
   void vonGesendet;
   if (M !== N) {
@@ -347,18 +386,20 @@ function zeileEintragen(p, zi, z, antworten, eigene, vonGesendet) {
   for (const t of S.takte.filter((x) => x.seite === p.id && x.zeile === zi && x.extra)) S.takte.splice(S.takte.indexOf(t), 1);
   if (M > N && zuordnung.length === N && !zuordnung.includes(null)) {
     const nachDem = S.takte.indexOf(eigene[N - 1]);
-    const extra = gelesen.slice(N).map((g, j) => ({ schluessel: `${p.id}|${zi}|x${j}`, seite: p.id, zeile: zi, k: eigene[N - 1].k, extra: j + 1, lesung: g, status: 'offen', gruende: [], varianten: [], lesungen: 1 }));
+    const extra = gelesen.slice(N, N + Math.max(4, N)).map((g, j) => ({ schluessel: `${p.id}|${zi}|x${j}`, seite: p.id, zeile: zi, k: eigene[N - 1].k, extra: j + 1, lesung: g, status: 'offen', gruende: [], varianten: [], lesungen: 1 }));
     S.takte.splice(nachDem + 1, 0, ...extra);
     eigene.push(...extra);
     nummern();
   }
   if (M !== N) {
     // Nummern passten eindeutig: nur die fehlenden Takte sind fraglich; sonst die ganze Zeile
-    const grund = { art: 'taktzahl', text: `In dieser Zeile fand die App ${N} Takt${N === 1 ? '' : 'e'}, gelesen wurden ${M}.` };
+    const grund = !M ? { art: 'format', text: keine ? 'Claude sieht in dieser Zeile keine Noten.' : 'Die Antwort kam nicht im erwarteten Format – für diese Zeile wurden keine Takte gelesen.' }
+      : { art: 'taktzahl', text: `In dieser Zeile fand die App ${N} Takt${N === 1 ? '' : 'e'}, gelesen wurden ${M}.` };
     for (const t of eigene) if (!nachNummer || !t.lesung) t.zeilenGrund = grund;
   }
   if (antworten.some((a) => a.abgeschnitten)) for (const t of eigene.slice(-2)) t.zeilenGrund = { art: 'abgeschnitten', text: 'Die Antwort wurde abgeschnitten.' };
-  bewerten(eigene);
+  bewerten(eigene, antworten.some((a) => a.ausXml) ? 'Claude hat MusicXML statt des verlangten Formats geschickt – die App hat es umgewandelt.' : '');
+  if (keine) for (const t of eigene) t.lesungen = 3; // nicht automatisch Takt für Takt nachfragen – „Neu lesen“ geht weiter
 }
 
 function bewerten(liste, info) {
@@ -397,8 +438,9 @@ async function leseTakt(t, variante, job) {
   const bild = await taktFuerKi(z, t.k, { quinten: ctx.key, variante });
   const prompt = KI.taktAnweisung({ nr: t.nr, clefs: ctx.clefs, key: ctx.key, time: ctx.time, staves: ctx.staves, mitKopf: bild.mitKopf, auftakt: i === 0, variante });
   const r = await frage(prompt, [bild.blob], { neu: true, job });
-  const a = KI.leseAntwort(r.text);
-  const g = a.takte[0] || null;
+  const a = await antwortLesen(r.text);
+  // gemeint ist Takt t.nr (oder M1); schreibt Claude den Bezugs-Ausschnitt links mit ab, steht der Takt am Ende
+  const g = a.takte.find((x) => x.nr === t.nr) || a.takte[a.takte.length - 1] || null;
   if (g) { if (t.lesung?.key != null) g.key = t.lesung.key; if (t.lesung?.time) g.time = t.lesung.time; }
   return g;
 }
@@ -468,15 +510,21 @@ function bilanz() {
   return { n, s, m, offen: S.takte.filter((t) => t.status === 'offen').length };
 }
 
+let uebernimmt = false;
 async function uebernehmen() {
   const b = bilanz();
-  if (!b.n || b.offen === b.n) return;
-  const st = stueck();
-  const titel = (S.titel || '').trim() || standardTitel();
-  const { alsMusicXML } = await import('./ausgeben.js');
-  const xml = alsMusicXML(st, { titel });
-  const markiert = S.takte.filter((t) => istMarkiert(t) || t.status === 'offen').map((t) => t.nr);
-  await opt.uebernehmen?.({ titel, xml, scan: { gesamt: b.n, sicher: b.s, geprueft: S.takte.filter((t) => t.status === 'geprueft').length, markiert } });
+  if (!b.n || b.offen === b.n || uebernimmt || S.job?.laeuft) return;
+  uebernimmt = true; // doppeltes Tippen legt sonst zwei Stücke an
+  try {
+    const st = stueck();
+    const titel = (S.titel || '').trim() || standardTitel();
+    const { alsMusicXML } = await import('./ausgeben.js');
+    const xml = alsMusicXML(st, { titel });
+    const markiert = S.takte.filter((t) => istMarkiert(t) || t.status === 'offen').map((t) => t.nr);
+    await opt.uebernehmen?.({ titel, xml, scan: { gesamt: b.n, sicher: b.s, geprueft: S.takte.filter((t) => t.status === 'geprueft').length, markiert } });
+  } catch (e) {
+    opt.hinweis?.({ bild: ICO.warn, titel: 'Übernehmen ging nicht', text: `<p>${esc((e && (e.text || e.message)) || 'Unbekannter Fehler')}</p><p>Die gelesenen Takte bleiben hier erhalten. Prüfe die markierten Takte und tippe dann noch einmal auf „Übernehmen“.</p>` });
+  } finally { uebernimmt = false; }
 }
 
 // ───────── Darstellung: Hauptseite ─────────
@@ -534,9 +582,9 @@ function zeichneFoto() {
     else if (p.status === 'fehler') inhalt = `<div class="sc-sinfo"><b>Seite ${i + 1}</b><span class="sc-pille rot"><i></i>${esc(p.fehler)}</span></div>`;
     else {
       const d = p.daten, nt = d.zeilen.reduce((a, z) => a + z.takte.length, 0);
-      const fakten = d.zeilen.length ? [`${d.zeilen.length} Zeile${d.zeilen.length === 1 ? '' : 'n'}`, `${nt} Takt${nt === 1 ? '' : 'e'}`, d.zeilen.some((z) => z.staves.length === 1) ? 'auch einzeilig' : '', Math.abs(d.winkel) >= 0.1 ? `${String(Math.abs(d.winkel).toFixed(1)).replace('.', ',')}° gerade gerückt` : 'gerade'].filter(Boolean)
+      const fakten = d.leer ? ['nur leere Notenlinien'] : d.zeilen.length ? [`${d.zeilen.length} Zeile${d.zeilen.length === 1 ? '' : 'n'}`, `${nt} Takt${nt === 1 ? '' : 'e'}`, d.zeilen.some((z) => z.staves.length === 1) ? 'auch einzeilig' : '', Math.abs(d.winkel) >= 0.1 ? `${String(Math.abs(d.winkel).toFixed(1)).replace('.', ',')}° gerade gerückt` : 'gerade'].filter(Boolean)
         : ['keine Notenlinien gefunden'];
-      inhalt = `<div class="sc-sinfo"><b>Seite ${i + 1}</b><span class="sc-fakten">${fakten.map((f) => `<span>${esc(f)}</span>`).join('')}</span>${d.hinweise.filter((x) => d.zeilen.length || !/Keine Notenlinien/.test(x)).map((x) => `<small>${esc(x)}</small>`).join('')}${d.zeilen.length ? '' : '<small>Die KI liest dann die ganze Seite auf einmal – das ist ungenauer. Besser: neues Foto, gerade und hell.</small>'}</div>`;
+      inhalt = `<div class="sc-sinfo"><b>Seite ${i + 1}</b><span class="sc-fakten">${fakten.map((f) => `<span>${esc(f)}</span>`).join('')}</span>${d.hinweise.filter((x) => d.zeilen.length || !/Keine Notenlinien/.test(x)).map((x) => `<small>${esc(x)}</small>`).join('')}${d.zeilen.length || !d.ganz || p.ohneTakte ? '' : '<small>Die KI liest dann die ganze Seite auf einmal – das ist ungenauer. Besser: neues Foto, gerade und hell.</small>'}${p.kiHinweis ? `<small class="sc-ki-hinweis">${esc(p.kiHinweis)}</small>` : ''}</div>`;
     }
     const bild = p.url ? `<button class="sc-thumb" type="button" data-tun="lupe" data-seite="${p.id}" aria-label="Seite ${i + 1} groß ansehen"><img src="${esc(p.url)}" alt="">${overlaySvg(p, true)}</button>` : `<div class="sc-thumb leer"><span class="lade-punkt"></span></div>`;
     return `<article class="sc-seite">${bild}${inhalt}<button class="sc-weg" type="button" data-tun="weg" data-seite="${p.id}" aria-label="Seite ${i + 1} entfernen"${S.job?.laeuft ? ' disabled' : ''}>${ICO.x}</button></article>`;
@@ -588,8 +636,8 @@ function zeichneKi() {
     } else {
       const b = bilanz();
       const weiter = offen || nochAuffaellig();
-      const knopfText = !fertig ? 'Noten erkennen' : weiter ? (b.s || b.m ? 'Weiter lesen' : 'Noten erkennen') : 'Alles gelesen';
-      h = `<div class="sc-ki-kopf"><span class="sc-ki-ico">${ICO.lesen}</span><div><b>Noten erkennen</b><small>${fertig && offen ? `${anzahl} Anfrage${anzahl === 1 ? '' : 'n'} an Claude – je Zeile eine` : fertig && weiter ? `${nochAuffaellig()} auffällige Takte nachlesen` : fertig ? 'fertig – unten prüfen' : 'zuerst ein Foto wählen'}</small></div></div>
+      const knopfText = !fertig ? 'Noten erkennen' : weiter ? (b.s || b.m || S.takte.some((t) => t.gruende?.length) ? 'Weiter lesen' : 'Noten erkennen') : 'Alles gelesen';
+      h = `<div class="sc-ki-kopf"><span class="sc-ki-ico">${ICO.lesen}</span><div><b>Noten erkennen</b><small>${fertig && offen ? `${anzahl} Anfrage${anzahl === 1 ? '' : 'n'} an Claude – je Zeile eine` : fertig && weiter ? `${nochAuffaellig()} auffällige Takte nachlesen` : fertig && !S.takte.length ? 'keine Noten zum Lesen – siehe Seite oben' : fertig ? 'fertig – unten prüfen' : 'zuerst ein Foto wählen'}</small></div></div>
         <button class="sc-knopf haupt" type="button" data-tun="erkennen"${fertig && weiter ? '' : ' disabled'}>${ICO.lesen}<span>${knopfText}</span></button>
         <p class="sc-klein">Jede Zeile wird einzeln und scharf an Claude geschickt. Auffällige Takte (Notenwerte passen nicht, Kopfzahl im Bild weicht ab, unleserlich) liest die App danach noch zweimal einzeln – höchstens ${MAX_NACHLESEN} Takte, je zwei Anfragen. Alles zählt zu deinem Nutzungskontingent.</p>`;
     }
