@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Koran im Faktencheck</title>
+<meta name="description" content="Der ganze Koran, Vers für Vers: Arabisch, eigene deutsche Übersetzung, Pickthall – und kritische, ehrliche Notizen zu Widersprüchen, Psychologie der Sprache, Wissenschaft, Geschichte und Parallelen.">
+<meta name="theme-color" content="#f5f1e8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e141b" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Faktencheck">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preload" href="daten/index.json" as="fetch" crossorigin="anonymous">
+<link rel="stylesheet" href="stil.css">
+<script defer src="app.js"></script>
+</head>
+<body>
+<a class="sprung" href="#ansicht">Zum Inhalt</a>
+<header class="kopf" id="kopf">
+  <button class="kopf-knopf" id="zurueck" type="button" aria-label="Zurück" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+  </button>
+  <a class="marke" id="marke" href="#/" aria-label="Koran im Faktencheck – Start">
+    <svg class="logo" viewBox="0 0 40 40" aria-hidden="true">
+      <path class="logo-buch" d="M6 11c5-2 9-2 14 1v19c-5-3-9-3-14-1z M34 11c-5-2-9-2-14 1v19c5-3 9-3 14-1z"/>
+      <circle class="logo-glas" cx="28.5" cy="27.5" r="6.2"/>
+      <path class="logo-haken" d="M25.6 27.6l2 2 3.6-4"/>
+    </svg>
+    <span class="marke-text"><b>Koran im Faktencheck</b><small>Text · Kontext · Kritik</small></span>
+  </a>
+  <h1 class="kopf-titel" id="seitentitel"></h1>
+  <a class="kopf-knopf" href="#/suche" id="knopf-suche" aria-label="Suche">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>
+  </a>
+  <a class="kopf-knopf" href="#/ueber" id="knopf-ueber" aria-label="Über diese App">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle class="voll" cx="12" cy="7.6" r="1.2"/></svg>
+  </a>
+</header>
+<main id="ansicht" tabindex="-1">
+  <div class="lade" aria-busy="true"><div class="lade-zeile breit"></div><div class="lade-zeile"></div><div class="lade-zeile"></div></div>
+  <noscript><p class="hinweis">Diese App braucht JavaScript.</p></noscript>
+</main>
+<nav class="leiste" id="leiste" aria-label="Bereiche">
+  <a href="#/" data-tab="lesen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.5c3.2-1.3 6-1.2 9 .8v13c-3-2-5.8-2.1-9-.8z M21 5.5c-3.2-1.3-6-1.2-9 .8v13c3-2 5.8-2.1 9-.8z"/></svg><span>Lesen</span></a>
+  <a href="#/themen" data-tab="themen"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="6" rx="2"/><rect x="4" y="14" width="7" height="6" rx="2"/><rect x="13" y="14" width="7" height="6" rx="2"/></svg><span>Themen</span></a>
+  <a href="#/filter" data-tab="filter"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6 7.5V19l-4-2v-4.5z"/></svg><span>Filter</span></a>
+  <a href="#/thesen" data-tab="thesen"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="2.5" width="8" height="19" rx="4"/><circle class="voll" cx="12" cy="7" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="17" r="1.7"/></svg><span>Thesen</span></a>
+  <a href="#/fahnen" data-tab="fahnen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V4"/><path d="M6 4.5c4-2 7 2 12 0v8c-5 2-8-2-12 0"/></svg><span>Fähnchen</span></a>
+</nav>
+<div class="rueck" id="rueck" hidden><button type="button" id="rueck-knopf"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span></span></button></div>
+<div class="blatt-grund" id="blatt-grund" hidden></div>
+<section class="blatt" id="blatt" role="dialog" aria-modal="true" aria-labelledby="blatt-titel" hidden>
+  <div class="blatt-griff" aria-hidden="true"></div>
+  <div class="blatt-inhalt" id="blatt-inhalt"></div>
+</section>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
