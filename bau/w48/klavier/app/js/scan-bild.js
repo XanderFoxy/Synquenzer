@@ -213,7 +213,7 @@ export function verbunden(bin, w, h, a, b) {
     for (let y = y0; y < y1; y++) { const o = y * w + x; if (bin[o] || bin[o - 1] || bin[o + 1]) s++; else if (y - y0 - s > 0.08 * hoehe) break; }
     if (s >= 0.92 * hoehe) { treffer++; x += Math.ceil(g); }
   }
-  return treffer >= 1;
+  return treffer; // Anzahl verbindender Striche (0 = nicht verbunden)
 }
 
 /** Notensysteme zu Zeilen gruppieren: verbundene gehören zusammen; sonst Paare nach Abstandsmuster (Klavier). */
@@ -225,6 +225,17 @@ export function zeilenBilden(bin, w, h, staves) {
     let akt = [0];
     verb.forEach((v, i) => { if (v) akt.push(i + 1); else { gruppen.push(akt); akt = [i + 1]; } });
     gruppen.push(akt);
+    // Klavier-Zeilen dicht untereinander: ein Hals oder Schatten kann zwei Zeilen „verbinden“. Bei 4, 6 … Systemen
+    // in Paare teilen, wenn die Verbindungen innerhalb der Paare deutlich mehr Striche haben als die zwischen ihnen.
+    gruppen = gruppen.flatMap((gr) => {
+      if (gr.length < 4 || gr.length % 2) return [gr];
+      const innen = [], zwischen = [];
+      for (let k = 0; k + 1 < gr.length; k++) (k % 2 ? zwischen : innen).push(verb[gr[k]]);
+      if (Math.min(...innen) <= Math.max(...zwischen)) return [gr];
+      const paare = [];
+      for (let k = 0; k < gr.length; k += 2) paare.push([gr[k], gr[k + 1]]);
+      return paare;
+    });
   } else if (staves.length % 2 === 0 && staves.length >= 2) {
     const l = staves.slice(1).map((s, i) => s.y[0] - staves[i].y[4]);
     const innen = l.filter((_, i) => i % 2 === 0), aussen = l.filter((_, i) => i % 2 === 1);
@@ -241,35 +252,46 @@ export function zeilenBilden(bin, w, h, staves) {
   });
 }
 
-/** Taktstriche einer Zeile: Spalten, die jedes Notensystem ganz durchziehen und darüber/darunter frei sind. */
+/** Taktstriche einer Zeile: Spalten, die jedes Notensystem ganz durchziehen und darüber/darunter frei sind.
+ *  Auch leicht schräge Striche (Foto nicht ganz von oben: senkrechte Linien laufen zusammen) – bis etwa 7°. */
+const NEIGUNGEN = [0, 0.03, -0.03, 0.06, -0.06, 0.09, -0.09, 0.12, -0.12];
 export function taktstriche(bin, w, h, z) {
-  const g = z.g;
+  const g = z.g, ym = (z.top + z.bot) / 2;
   const xa = Math.max(1, Math.round(z.x0 + 0.7 * g)), xb = Math.min(w - 2, Math.round(z.x1 + 0.6 * g));
-  const deckung = (x, y0, y1) => {
-    let s = 0;
-    for (let y = Math.max(0, Math.round(y0)); y <= Math.min(h - 1, Math.round(y1)); y++) { const o = y * w + x; if (bin[o] || bin[o - 1] || bin[o + 1]) s++; }
-    return s / Math.max(1, Math.round(y1) - Math.round(y0) + 1);
+  const deckung = (x, s, y0, y1) => {
+    let n = 0;
+    const ya = Math.max(0, Math.round(y0)), ye = Math.min(h - 1, Math.round(y1));
+    for (let y = ya; y <= ye; y++) {
+      const xx = Math.round(x + s * (y - ym));
+      if (xx < 1 || xx > w - 2) continue;
+      const o = y * w + xx; if (bin[o] || bin[o - 1] || bin[o + 1]) n++;
+    }
+    return n / Math.max(1, Math.round(y1) - Math.round(y0) + 1);
   };
   const spalten = [];
   for (let x = xa; x <= xb; x++) {
-    let ok = true;
-    for (const st of z.staves) if (deckung(x, st.y[0], st.y[4]) < 0.9) { ok = false; break; }
-    if (!ok) continue;
+    let neig = null;
+    for (const s of NEIGUNGEN) {
+      let ok = true;
+      for (const st of z.staves) if (deckung(x, s, st.y[0], st.y[4]) < 0.9) { ok = false; break; }
+      if (ok) { neig = s; break; }
+    }
+    if (neig == null) continue;
     // Taktstriche enden an den äußeren Linien, Hälse von Akkorden ragen meist darüber hinaus
-    const oben = deckung(x, z.top - 1.3 * g, z.top - 0.35 * g), unten = deckung(x, z.bot + 0.35 * g, z.bot + 1.3 * g);
+    const oben = deckung(x, neig, z.top - 1.3 * g, z.top - 0.35 * g), unten = deckung(x, neig, z.bot + 0.35 * g, z.bot + 1.3 * g);
     if (oben > 0.6 || unten > 0.6) continue;
-    spalten.push(x);
+    spalten.push({ x, s: neig });
   }
   const gruppen = [];
-  for (const x of spalten) {
+  for (const { x, s } of spalten) {
     const l = gruppen[gruppen.length - 1];
-    if (l && x - l.x1 <= 1) l.x1 = x; else gruppen.push({ x0: x, x1: x });
+    if (l && x - l.x1 <= 1) l.x1 = x; else gruppen.push({ x0: x, x1: x, s });
   }
   let schmal = gruppen.filter((q) => q.x1 - q.x0 + 1 <= Math.max(4, 0.9 * g));
   // Klavier: Taktstriche gehen meist durch die Lücke zwischen den Systemen – Hälse und Taktangaben nicht.
   if (z.staves.length === 2) {
     const a = z.staves[0].y[4] + 1, b = z.staves[1].y[0] - 1;
-    for (const q of schmal) { let m = 0; for (let x = q.x0; x <= q.x1; x++) m = Math.max(m, deckung(x, a, b)); q.luecke = m; }
+    for (const q of schmal) { let m = 0; for (let x = q.x0; x <= q.x1; x++) m = Math.max(m, deckung(x, q.s, a, b)); q.luecke = m; }
     const durch = schmal.filter((q) => q.luecke >= 0.9);
     if (durch.length >= Math.max(2, 0.6 * schmal.length)) schmal = durch;
   }
@@ -279,7 +301,7 @@ export function taktstriche(bin, w, h, z) {
     const l = striche[striche.length - 1];
     if (l && q.x0 - l.x1 <= 1.4 * g) { l.x1 = q.x1; l.n++; } else striche.push({ ...q, n: 1 });
   }
-  return striche.map((q) => ({ x: (q.x0 + q.x1) / 2, x0: q.x0, x1: q.x1, doppelt: q.n > 1 }));
+  return striche.map((q) => ({ x: (q.x0 + q.x1) / 2, x0: q.x0, x1: q.x1, doppelt: q.n > 1, neigung: q.s }));
 }
 
 /** Tinte (ohne Notenlinien) in einem Bereich einer Zeile – in Linienabstand² gemessen.
@@ -434,31 +456,39 @@ function gedreht(quelle, sw, sh, w, h, grad) {
  */
 export async function seiteVorbereiten(datei, { schritt = () => {} } = {}) {
   schritt('Bild öffnen');
-  const { img, w: W0, h: H0, frei } = await bildOeffnen(datei);
+  const geoeffnet = await bildOeffnen(datei);
+  let img = geoeffnet.img, meister = null, ana = null;
+  const { w: W0, h: H0, frei } = geoeffnet;
+  const weg = (c) => { if (c) c.width = c.height = 0; return null; };
   try {
     await ruhe();
-    // 1) Arbeitsgröße, Graustufen, Licht, Schwellwert, Schräglage
-    const aw = Math.max(200, Math.round(W0 * Math.min(1, GRENZEN.analyse / W0, (GRENZEN.analyse * 1.45) / H0))), ah = Math.round((H0 * aw) / W0);
+    // 1) Arbeitsgröße (auch bei sehr langen/schmalen Bildern begrenzt), Graustufen, Licht, Schwellwert, Schräglage
+    let fa = Math.min(1, GRENZEN.analyse / W0, (GRENZEN.analyse * 1.45) / H0);
+    if (W0 * fa < 200) fa = Math.min(200 / W0, (GRENZEN.analyse * 2.5) / H0);
+    const aw = Math.max(1, Math.round(W0 * fa)), ah = Math.max(1, Math.round(H0 * fa));
     schritt('Licht ausgleichen');
-    let ana = gedreht(img, W0, H0, aw, ah, 0);
-    let g = lichtAusgleich(grauVon(ana), aw, ah);
+    ana = gedreht(img, W0, H0, aw, ah, 0);
+    let g = lichtAusgleich(grauVon(ana), aw, ah, { staerke: 0.5 });
     let t = otsu(g);
     let bin = binaer(g, Math.min(215, Math.round((t + 255) / 2)));
     await ruhe();
     schritt('Schräglage messen');
-    const winkel = schraeglage(bin, aw, ah);
+    const winkel = schraeglage(bin, aw, ah, 12);
+    bin = null;
     await ruhe();
     // 2) Meister (scharf, ausgerichtet) und ausgerichtete Arbeitsgröße
     schritt('Ausrichten');
     const fm = Math.min(1, GRENZEN.meister / Math.max(W0, H0));
-    const MW = Math.round(W0 * fm), MH = Math.round(H0 * fm);
-    const meister = gedreht(img, W0, H0, MW, MH, winkel);
-    if (Math.abs(winkel) >= 0.05) ana = gedreht(img, W0, H0, aw, ah, winkel);
-    g = lichtAusgleich(grauVon(ana), aw, ah);
+    const MW = Math.max(1, Math.round(W0 * fm)), MH = Math.max(1, Math.round(H0 * fm));
+    meister = gedreht(img, W0, H0, MW, MH, winkel);
+    if (Math.abs(winkel) >= 0.05) { weg(ana); ana = gedreht(img, W0, H0, aw, ah, winkel); }
+    img = null; frei(); // das volle Foto wird nicht mehr gebraucht – Speicher sofort freigeben
+    g = lichtAusgleich(grauVon(ana), aw, ah, { staerke: 0.5 });
     t = otsu(g);
     const binL = binaer(g, Math.min(215, Math.round((t + 255) / 2))); // großzügig: auch blasse Linien
     const binQ = binaer(g, t); // streng: für Notenköpfe
-    ana.width = ana.height = 0;
+    g = null;
+    ana = weg(ana);
     await ruhe();
     // 3) Linien, Systeme, Zeilen, Taktstriche
     schritt('Notenlinien suchen');
@@ -473,6 +503,10 @@ export async function seiteVorbereiten(datei, { schritt = () => {} } = {}) {
     }
     for (const st of staves) Object.assign(st, ausdehnung(binL, aw, ah, st));
     staves = staves.filter((st) => st.x1 - st.x0 > 12 * st.g);
+    const hinweise = [];
+    // Heft-/Schreibpapier: gleichmäßige Linien ohne Lücken zwischen den „Systemen“ – das sind keine Notenzeilen
+    const eng = staves.filter((st, i) => i > 0 && st.y[0] - staves[i - 1].y[4] < 1.8 * st.g).length;
+    if (staves.length >= 3 && eng >= (staves.length - 1) * 0.5) { staves = []; hinweise.push('Gleichmäßige Linien wie in einem Heft – das sind keine Notenzeilen.'); }
     const zeilen = zeilenBilden(binL, aw, ah, staves);
     schritt('Takte zählen');
     for (const z of zeilen) {
@@ -480,14 +514,25 @@ export async function seiteVorbereiten(datei, { schritt = () => {} } = {}) {
       z.striche = taktstriche(binL, aw, ah, z);
       z.takte = taktGrenzen(z, z.striche, binQ, aw, ah);
       z.koepfe = koepfeFinden(binQ, aw, ah, z);
+      z.tinte = tinte(binQ, aw, ah, z, z.x0 + 0.5 * z.g, z.x1);
     }
+    // leere Notenzeilen (nur Linien, kein Schlüssel, keine Noten) nicht an die KI schicken
+    const leer = zeilen.filter((z) => z.tinte < 2.5 * z.staves.length && !z.koepfe.length);
+    const volle = zeilen.filter((z) => !leer.includes(z));
+    if (leer.length) hinweise.push(leer.length === zeilen.length ? 'Nur leere Notenlinien gefunden – keine Noten darauf.' : `${leer.length} leere Notenzeile${leer.length === 1 ? '' : 'n'} übersprungen.`);
+    // Zeilen vermutlich übersehen? Linien, die zu keinem System gehören, oder einzelne Systeme neben Klavier-Paaren
+    const benutzt = (y) => staves.some((st) => y > st.y[0] - 0.6 * st.g && y < st.y[4] + 0.6 * st.g);
+    const frei_ = linien.filter((l) => l.staerke >= 0.6 && !benutzt(l.y));
+    let haufen = 0;
+    for (let i = 0, n = 0; i < frei_.length; i++) { n = i && frei_[i].y - frei_[i - 1].y < 2.2 * masse.abstand ? n + 1 : 1; if (n === 3) haufen++; }
+    const gemischt = volle.some((z) => z.staves.length === 2) && volle.some((z) => z.staves.length === 1);
+    if (volle.length && (haufen || gemischt)) hinweise.push('Vermutlich wurde nicht jede Notenzeile sauber erkannt (Foto schräg von der Seite oder gewellt?). Schau in der Lupe nach, ob alle Zeilen umrahmt sind – sonst neues Foto, gerade von oben.');
     await ruhe();
     // 4) in Meister-Koordinaten umrechnen und zuschneiden
     const f = MW / aw;
-    const hinweise = [];
-    if (!zeilen.length) hinweise.push('Keine Notenlinien gefunden.');
-    if (zeilen.some((z) => z.zuviel)) hinweise.push('Eine Zeile hat mehr als zwei Notensysteme – gelesen werden die unteren zwei (Klavier).');
-    const mz = zeilen.map((z, i) => {
+    if (!staves.length && !hinweise.length) hinweise.push('Keine Notenlinien gefunden.');
+    if (volle.some((z) => z.zuviel)) hinweise.push('Eine Zeile hat mehr als zwei Notensysteme – gelesen werden die unteren zwei (Klavier).');
+    const mz = volle.map((z, i) => {
       const s = (v) => v * f;
       return {
         i, g: s(z.g), dicke: s(z.dicke), x0: s(z.x0), x1: s(z.x1), top: s(z.top), bot: s(z.bot),
@@ -500,8 +545,7 @@ export async function seiteVorbereiten(datei, { schritt = () => {} } = {}) {
     });
     schritt('Zeilen zuschneiden');
     // ganzes ausgerichtetes Bild einmal glätten (Licht) – daraus alle Zuschnitte
-    const mg = lichtAusgleich(grauVon(meister), MW, MH);
-    grauSchreiben(meister, mg);
+    grauSchreiben(meister, lichtAusgleich(grauVon(meister), MW, MH));
     await ruhe();
     mz.forEach((z, i) => {
       const vor = mz[i - 1], nach = mz[i + 1];
@@ -513,21 +557,21 @@ export async function seiteVorbereiten(datei, { schritt = () => {} } = {}) {
     for (const z of mz) {
       const r = z.region, c = leinwand(r.w, r.h);
       ctx2d(c).drawImage(meister, r.x, r.y, r.w, r.h, 0, 0, r.w, r.h);
-      z.quelle = await alsBlob(c, 'image/jpeg', 0.92);
-      z.ki = await kiBilderZeile(c, z);
-      c.width = c.height = 0;
+      try {
+        z.quelle = await alsBlob(c, 'image/jpeg', 0.92);
+        z.ki = await kiBilderZeile(c, z);
+      } finally { weg(c); }
       await ruhe();
     }
     // Vorschau der ganzen Seite
-    const vw = Math.min(900, MW), vh = Math.round((MH * vw) / MW);
+    const vw = Math.min(900, MW), vh = Math.max(1, Math.round((MH * vw) / MW));
     const vc = leinwand(vw, vh);
     ctx2d(vc).drawImage(meister, 0, 0, vw, vh);
     const vorschau = { blob: await alsBlob(vc, 'image/jpeg', 0.82), w: vw, h: vh, f: vw / MW };
-    vc.width = vc.height = 0;
-    const ganz = mz.length ? null : await ganzeSeiteKi(meister);
-    meister.width = meister.height = 0;
-    return { ok: mz.length > 0, w: MW, h: MH, winkel, masse: { dicke: masse.dicke * f, abstand: masse.abstand * f }, zeilen: mz, vorschau, hinweise, ganz };
-  } finally { frei(); }
+    weg(vc);
+    const ganz = mz.length || leer.length ? null : await ganzeSeiteKi(meister);
+    return { ok: mz.length > 0, w: MW, h: MH, winkel, masse: { dicke: masse.dicke * f, abstand: masse.abstand * f }, zeilen: mz, vorschau, hinweise, ganz, leer: !mz.length && leer.length > 0 };
+  } finally { weg(ana); weg(meister); frei(); }
 }
 
 /** Notfall: keine Linien gefunden → ganze Seite (wird von der KI ohnehin auf ~1,2 MP verkleinert). */
