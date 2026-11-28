@@ -165,6 +165,7 @@ function seiteWeg(id) {
   const [p] = S.seiten.splice(i, 1);
   if (p.url) setTimeout(() => URL.revokeObjectURL(p.url), 1500);
   takteNeu();
+  if (!S.takte.some((t) => t.lesung)) { S.grund = { key: null, time: null, clefs: null }; S.rueck.clear(); S.job = null; if (!S.seiten.length) { S.titel = ''; const ti = root?.querySelector('#scTitel'); if (ti) ti.value = ''; } }
   plane();
 }
 
@@ -474,7 +475,7 @@ async function uebernehmen() {
   const titel = (S.titel || '').trim() || standardTitel();
   const { alsMusicXML } = await import('./ausgeben.js');
   const xml = alsMusicXML(st, { titel });
-  const markiert = S.takte.filter(istMarkiert).map((t) => t.nr);
+  const markiert = S.takte.filter((t) => istMarkiert(t) || t.status === 'offen').map((t) => t.nr);
   await opt.uebernehmen?.({ titel, xml, scan: { gesamt: b.n, sicher: b.s, geprueft: S.takte.filter((t) => t.status === 'geprueft').length, markiert } });
 }
 
@@ -535,7 +536,7 @@ function zeichneFoto() {
       const d = p.daten, nt = d.zeilen.reduce((a, z) => a + z.takte.length, 0);
       const fakten = d.zeilen.length ? [`${d.zeilen.length} Zeile${d.zeilen.length === 1 ? '' : 'n'}`, `${nt} Takt${nt === 1 ? '' : 'e'}`, d.zeilen.some((z) => z.staves.length === 1) ? 'auch einzeilig' : '', Math.abs(d.winkel) >= 0.1 ? `${String(Math.abs(d.winkel).toFixed(1)).replace('.', ',')}° gerade gerückt` : 'gerade'].filter(Boolean)
         : ['keine Notenlinien gefunden'];
-      inhalt = `<div class="sc-sinfo"><b>Seite ${i + 1}</b><span class="sc-fakten">${fakten.map((f) => `<span>${esc(f)}</span>`).join('')}</span>${d.hinweise.map((x) => `<small>${esc(x)}</small>`).join('')}${d.zeilen.length ? '' : '<small>Die KI liest dann die ganze Seite auf einmal – das ist ungenauer. Besser: neues Foto, gerade und hell.</small>'}</div>`;
+      inhalt = `<div class="sc-sinfo"><b>Seite ${i + 1}</b><span class="sc-fakten">${fakten.map((f) => `<span>${esc(f)}</span>`).join('')}</span>${d.hinweise.filter((x) => d.zeilen.length || !/Keine Notenlinien/.test(x)).map((x) => `<small>${esc(x)}</small>`).join('')}${d.zeilen.length ? '' : '<small>Die KI liest dann die ganze Seite auf einmal – das ist ungenauer. Besser: neues Foto, gerade und hell.</small>'}</div>`;
     }
     const bild = p.url ? `<button class="sc-thumb" type="button" data-tun="lupe" data-seite="${p.id}" aria-label="Seite ${i + 1} groß ansehen"><img src="${esc(p.url)}" alt="">${overlaySvg(p, true)}</button>` : `<div class="sc-thumb leer"><span class="lade-punkt"></span></div>`;
     return `<article class="sc-seite">${bild}${inhalt}<button class="sc-weg" type="button" data-tun="weg" data-seite="${p.id}" aria-label="Seite ${i + 1} entfernen"${S.job?.laeuft ? ' disabled' : ''}>${ICO.x}</button></article>`;
