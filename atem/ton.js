@@ -3,7 +3,7 @@ const TEST = typeof location !== 'undefined' && /[?&]test=1/.test(location.searc
 const HZ = { ein: 392, ein2: 494, aus: 294, halten: 330 };
 let Z = null, zProbe = null;   // 020-klang: Zähltöne (signale.js), erst bei Bedarf geladen
 const zLade = () => (Z ? Promise.resolve(Z) : import('./signale.js').then((m) => { zProbe = m.probe; return (Z = m.signale); }, () => null));
-let ctx = null, haupt = null, einst = { art: 'klang', laut: 0.6, sekunden: false, ansage: false }, planer = null, geplant = new Map(), proto = [], wind = null, rausch = null;
+let ctx = null, haupt = null, einst = { art: 'klang', laut: 0.6, sekunden: false, ansage: false }, planer = null, geplant = new Map(), proto = [], wind = null, welle = null, rausch = null;
 // Ansage (0.1.3.1): je Lauf (starte…halt) jeder Schritt höchstens einmal (Schlüssel Schritt + Startzeit), Timer gemerkt und beim Anhalten gelöscht
 let lauf = 0, ansageT = new Map(), gesagt = new Map(), letzteU = null, glocken = new Map(), knoten = null;   // glocken: vorausgeplante Glocken je Schritt
 let uhrRef = null, planRef = null, testZeit = null, wachSeit = 0, ersatzT = -1e9, musikZ = false, ctxAb = 0, weckT = 0, zaehlK = [];
@@ -39,12 +39,24 @@ function tick(at, lautDb = -14) {
 }
 function windStart() {
   if (!ctx || wind) return;
-  if (!rausch) { rausch = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate); const d = rausch.getChannelData(0); let x = 0; for (let i = 0; i < d.length; i++) { x = 0.97 * x + 0.03 * (Math.random() * 2 - 1); d[i] = x * 3; } }
-  const s = ctx.createBufferSource(); s.buffer = rausch; s.loop = true;
+  const s = ctx.createBufferSource(); s.buffer = rauschen(); s.loop = true;
   const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 0.8; f.frequency.value = 400;
   const g = ctx.createGain(); g.gain.value = 0; s.connect(f); f.connect(g); g.connect(haupt); s.start();
   wind = { s, f, g };
 }
+// 0.2.3 „Welle“: weiches Rauschen + leiser Grundton, schwillt beim Einatmen an (Attack), trägt beim Halten (Sustain), sinkt beim Ausatmen (Release)
+function welleStart() {
+  if (!ctx || welle) return;
+  const s = ctx.createBufferSource(); s.buffer = rauschen(); s.loop = true;
+  const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.Q.value = 0.4; f.frequency.value = 380;
+  const g = ctx.createGain(); g.gain.value = 0; s.connect(f); f.connect(g); g.connect(haupt);
+  const og = ctx.createGain(); og.gain.value = 0.5; og.connect(g); const os = [];
+  for (const [hz, a] of [[110, 0.2], [164.8, 0.12]]) { const o = ctx.createOscillator(), v = ctx.createGain(); o.frequency.value = hz; v.gain.value = a; o.connect(v); v.connect(og); o.start(); os.push(o); }
+  s.start(); os.push(s);
+  welle = { f, g, os };
+}
+// 0.2.3: Rausch-/Wellen-Quellen beim Anhalten wirklich stoppen (vorher liefen sie stumm weiter, je Übungsstart eine mehr)
+function schichtWeg() { const t = ctx ? ctx.currentTime : 0; for (const q of [...(wind ? [wind.s] : []), ...(welle ? welle.os : [])]) try { q.stop(t + 0.08); } catch {} wind = null; welle = null; }
 function ansage(wort) {
   try {
     if (!einst.ansage || !window.speechSynthesis) return;
@@ -55,7 +67,10 @@ function ansage(wort) {
   } catch {}
 }
 function ansageWeg() { for (const t of ansageT.values()) clearTimeout(t); ansageT = new Map(); }
-function zaehlWeg() { for (const g of zaehlK) try { g.disconnect(); } catch {} zaehlK = []; }   // 0.2.1: Einzähltöne abhängen (Ton aus, Pause, Beenden)
+// Prüfung 0.2.3: Ton-Knoten ohne Knacken abschalten – in ≈ 50 ms ausblenden (setTargetAtTime beginnt stetig beim aktuellen Wert), dann abhängen.
+// Vorher sofort disconnect(): klang ein Einzählton (3-2-1) gerade, brach er hart ab (Pause/Ton aus mitten im Einzählen → Knacks).
+function weich0(g) { try { if (ctx && g.context === ctx) { const t = ctx.currentTime; g.gain.cancelScheduledValues(t); g.gain.setTargetAtTime(0, t, 0.012); } } catch {} setTimeout(() => { try { g.disconnect(); } catch {} }, 120); }
+function zaehlWeg() { for (const g of zaehlK) weich0(g); zaehlK = []; }   // 0.2.1: Einzähltöne abhängen (Ton aus, Pause, Beenden)
 const ANSAGE = { ein: 'Ein', ein2: 'Noch etwas', halten_voll: 'Halten', halten_leer: 'Halten', aus: 'Aus' };
 // Wort für Schritt i: ab 2 s; 0.1.5: kurzes Einatmen (ab 0,9 s) zwischen zwei gleichen Ansagen (Aus – Ein – Aus) auch – sonst hört man „Aus … Aus“
 const lang2 = (s) => s && (s.ms || 0) >= 2000 ? ANSAGE[s.art] : null;
@@ -69,6 +84,13 @@ function planeSchritt(i, at) {
   const dauer = (s.ms || 0) / 1000, schnell = planRef.technik === 'wach' || planRef.technik === 'kraft';
   if (einst.art === 'aus') return;
   const zt = !!Z && Z.nimmt(i, planRef, einst);   // 020-klang: vormerken, geplant am Ende von takt()
+  if (einst.art === 'welle' && ctx && welle) {   // 0.2.3: weiche Hülle (setTargetAtTime: stetig, auch beim Neuplanen kein Sprung)
+    const hoch = s.art === 'ein' || s.art === 'ein2', tief = s.art === 'aus' || s.art === 'stoss_aus' || s.art === 'halten_leer', tau = Math.max(0.06, dauer / 3.2);
+    const nach = planRef.schritte[i + 1], ziel = hoch ? (s.art === 'ein' && nach && nach.art === 'ein2' ? 0.42 : 0.55) : s.art === 'halten_voll' ? 0.5 : tief ? 0.07 : 0.12;
+    welle.g.gain.setTargetAtTime(ziel, at, s.art === 'halten_voll' ? 1.2 : tau);
+    welle.f.frequency.setTargetAtTime(hoch ? 1400 : s.art === 'halten_voll' ? 1100 : 380, at, s.art === 'halten_voll' ? 1.2 : tau);
+    return;
+  }
   if (einst.art === 'wind' && ctx && wind) {
     const g = wind.g.gain, f = wind.f.frequency, ende = at + Math.max(0.05, dauer);
     g.setTargetAtTime(s.art === 'ein' || s.art === 'ein2' ? 0.5 : s.art === 'aus' ? 0.35 : 0, at, 0.08);
@@ -132,7 +154,15 @@ function probeStopp() {
   g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(0, t + 0.05);
   setTimeout(() => { for (const s of q) try { s.stop(); } catch {} try { g.disconnect(); } catch {} }, 90); probeG = null; probeQ = [];
 }
-function rauschen() { if (!rausch) { rausch = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate); const d = rausch.getChannelData(0); let x = 0; for (let i = 0; i < d.length; i++) { x = 0.97 * x + 0.03 * (Math.random() * 2 - 1); d[i] = x * 3; } } return rausch; }
+// 0.2.3: nahtlose Schleife – das Ende wird in den Anfang überblendet (vorher sprang das Rauschen alle 2 s: leises Knacksen bei „Wind“)
+function rauschen() {
+  if (rausch && rausch.sampleRate === ctx.sampleRate) return rausch;
+  const n = ctx.sampleRate * 3, f = Math.round(ctx.sampleRate * 0.3), a = new Float32Array(n + f); let x = 0;
+  for (let i = 0; i < a.length; i++) { x = 0.97 * x + 0.03 * (Math.random() * 2 - 1); a[i] = x * 3; }
+  rausch = ctx.createBuffer(1, n, ctx.sampleRate); const d = rausch.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = i < f ? a[i] * Math.sin(i / f * Math.PI / 2) + a[n + i] * Math.cos(i / f * Math.PI / 2) : a[i];
+  return rausch;
+}
 // 0.1.5 Eigene Musik: Mono-Puffer (aus musik.js) läuft in Schleife UNTER der Führung – eigener Zweig Gain → Kompressor → Ausgang, ein-/ausgeblendet
 let mPuffer = null, mPegel = 1, mQuelle = null, mGain = null, mStart = 0, mPos = 0;
 function musikZweig() {
@@ -174,7 +204,7 @@ export const ton = {
       const t = performance.now();
       const geste = !navigator.userActivation || navigator.userActivation.isActive;   // neu nur im Tipp
       if (geste && haengt() && (o.neu || ctx.state === 'interrupted' || (wachSeit && t - wachSeit > 300)) && t - ersatzT > (o.neu ? 0 : 2000)) { ersatzT = t; try { ctx.close(); } catch {} ctx = null; }
-      if (!ctx || ctx.state === 'closed') { ctx = neuerKontext(); wind = null; if (planer && einst.art === 'wind') windStart(); }
+      if (!ctx || ctx.state === 'closed') { ctx = neuerKontext(); wind = null; welle = null; if (planer && einst.art === 'wind') windStart(); if (planer && einst.art === 'welle') welleStart(); }
       if (ctx && ctx.state !== 'running') { if (!wachSeit) wachSeit = t; const r = ctx.resume(); if (r && r.catch) r.catch(() => {}); still0(ctx); }
       if (haupt) haupt.gain.value = einst.laut * 0.4;
       const sprich = o.ansage != null ? o.ansage : einst.ansage;
@@ -196,14 +226,14 @@ export const ton = {
     if (!ctx || !haupt) return;
     const t = ctx.currentTime + 0.03; knoten = []; for (let k = 0; k < n; k++) glocke(t + k, HZ.halten, -12, 0.6); zaehlK = knoten; knoten = null;
   },
-  einstellen(e) { const warAus = einst.art === 'aus'; einst = { ...einst, ...e }; if (e.art === 'aus') { zaehlWeg(); if (Z && Z.still) Z.still(ctx, uhrRef && uhrRef.plan ? uhrRef.zeit() : null); for (const ks of glocken.values()) for (const g of ks) try { g.disconnect(); } catch {} glocken = new Map(); } /* 020-nb M3 + 021b: geplante Töne sofort weg */ if ('ansage' in e && !e.ansage && ton.stimme && planer) ton.stimme.halt(true); if (warAus && e.art && e.art !== 'aus') nachholen(); if (ton.stimme) ton.stimme.einstellen(einst); /* 016 */ if (haupt && ctx) haupt.gain.setTargetAtTime(einst.laut * 0.4, ctx.currentTime, 0.05); if (mQuelle && mGain && ctx && 'musikLaut' in e) mGain.gain.setTargetAtTime(musikZiel(), ctx.currentTime, 0.1); },
-  starte(uhr, plan) { uhrRef = uhr; planRef = plan; lauf++; ansageWeg(); geplant = new Map(); gesagt = new Map(); glocken = new Map(); if (ton.stimme) ton.stimme.starte(uhr); /* 016 */ if (einst.art === 'wind') windStart(); clearInterval(planer); planer = setInterval(takt, 100); takt(); if (einst.musikAn && (mPuffer || TEST)) musikAn(false); },
+  einstellen(e) { const warAus = einst.art === 'aus'; einst = { ...einst, ...e }; if (planer && ctx && e.art === 'welle') welleStart(); if (planer && ctx && e.art === 'wind') windStart(); if (ctx && e.art) for (const [x, a] of [[welle, 'welle'], [wind, 'wind']]) if (x && e.art !== a) { const g = x.g.gain, t = ctx.currentTime; g.cancelScheduledValues(t); g.setTargetAtTime(0, t, 0.15); } /* 0.2.3: Ton aus/anderer Klang → Rauschen leise (vorher rauschte „Wind“ nach „Ton aus“ weiter) */ if (e.art === 'aus') { zaehlWeg(); if (Z && Z.still) Z.still(ctx, uhrRef && uhrRef.plan ? uhrRef.zeit() : null); for (const ks of glocken.values()) for (const g of ks) weich0(g); glocken = new Map(); } /* 020-nb M3 + 021b: geplante Töne sofort weg */ if ('ansage' in e && !e.ansage && ton.stimme && planer) ton.stimme.halt(true); if (warAus && e.art && e.art !== 'aus') nachholen(); if (ton.stimme) ton.stimme.einstellen(einst); /* 016 */ if (haupt && ctx) haupt.gain.setTargetAtTime(einst.laut * 0.4, ctx.currentTime, 0.05); if (mQuelle && mGain && ctx && 'musikLaut' in e) mGain.gain.setTargetAtTime(musikZiel(), ctx.currentTime, 0.1); },
+  starte(uhr, plan) { uhrRef = uhr; planRef = plan; lauf++; ansageWeg(); geplant = new Map(); gesagt = new Map(); glocken = new Map(); if (ton.stimme) ton.stimme.starte(uhr); /* 016 */ if (einst.art === 'wind') windStart(); if (einst.art === 'welle') welleStart(); clearInterval(planer); planer = setInterval(takt, 100); takt(); if (einst.musikAn && (mPuffer || TEST)) musikAn(false); },
   neuPlanen() {   // nur Schritte, deren Startzeit sich geändert hat (Atmen-/Stopp-Knopf), neu planen – nie den gerade laufenden noch einmal
     const p = uhrRef && uhrRef.plan; if (!p) return;
     if (Z) Z.neuPlanen(p, uhrRef.zeit(), ctx);   // 020-klang
     for (const [i, st] of geplant) if (p.start[i] !== st) {
       geplant.delete(i); if (ansageT.has(i)) { gesagt.delete(i); clearTimeout(ansageT.get(i)); ansageT.delete(i); }   // schon gesprochen: nicht noch einmal
-      for (const g of glocken.get(i) || []) try { g.disconnect(); } catch {}   // Glocke zur alten Startzeit abschalten (sonst zwei Glocken)
+      for (const g of glocken.get(i) || []) weich0(g);   // Glocke zur alten Startzeit abschalten (sonst zwei Glocken); weich, falls sie schon anklingt
       glocken.delete(i);
     }
     if (ton.stimme) ton.stimme.neuPlanen(p);   // 016
@@ -213,7 +243,7 @@ export const ton = {
     clearInterval(planer); planer = null; zaehlWeg();
     if (Z) Z.halt(ctx, uhrRef && uhrRef.plan ? uhrRef.zeit() : null);   // 020-klang
     if (ctx && haupt) { const t = ctx.currentTime; haupt.gain.cancelScheduledValues(t); haupt.gain.setValueAtTime(haupt.gain.value, t); haupt.gain.linearRampToValueAtTime(0, t + 0.05); const h = haupt; setTimeout(() => { try { h.disconnect(); } catch {} }, 120); haupt = ctx.createGain(); haupt.gain.value = einst.laut * 0.4; haupt.connect(ctx.destination); }
-    wind = null; geplant = new Map(); gesagt = new Map(); glocken = new Map(); lauf++; ansageWeg(); musikAus(); if (ton.stimme) ton.stimme.halt();   // 016
+    schichtWeg(); geplant = new Map(); gesagt = new Map(); glocken = new Map(); lauf++; ansageWeg(); musikAus(); if (ton.stimme) ton.stimme.halt();   // 016
     try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch {}
   },
   zaehltoene: zLade,   // 020-klang
@@ -224,7 +254,7 @@ export const ton = {
     const t = ctx.currentTime + 0.1; glocke(t, HZ.ein); glocke(t + 1.2, HZ.halten, -8); glocke(t + 2.4, HZ.aus);
     return { ok: ctx.state === 'running', zustand: ctx.state, latenz_ms: Math.round(1000 * (ctx.outputLatency || ctx.baseLatency || 0)) };
   },
-  schliessen() { try { if (ctx) ctx.close(); } catch {} ctx = null; haupt = null; wind = null; mGain = null; mQuelle = null; mPuffer = null; probeG = null; probeQ = []; rausch = null; try { if (navigator.audioSession) navigator.audioSession.type = 'auto'; } catch {} },
+  schliessen() { try { if (ctx) ctx.close(); } catch {} ctx = null; haupt = null; wind = null; welle = null; mGain = null; mQuelle = null; mPuffer = null; probeG = null; probeQ = []; rausch = null; try { if (navigator.audioSession) navigator.audioSession.type = 'auto'; } catch {} },
   // Probe zur Klang-Wahl (≈ 2,5 s): 'klang' Ein- dann Aus-Glocke · 'wind' 1,2 s steigend + 1,2 s fallend · 'aus' still · 'glocke' eine kurze Glocke (Lautstärke)
   probe(art) {
     if (TEST) { proto.push({ art: 'probe', ton: art, t_ms: Math.round(performance.now()) }); return true; }
@@ -233,6 +263,14 @@ export const ton = {
     if (art === 'klang') { glocke(t, HZ.ein, 0, 1.2, g); glocke(t + 1.2, HZ.aus, 0, 1.2, g); }
     else if (art === 'glocke') glocke(t, HZ.ein, -4, 0.8, g);
     else if (/^(zaehlen|wechsel)/.test(art) && zProbe) zProbe(ctx, g, t, { ...einst, signale: art.replace('_kurz', '') }, art.endsWith('_kurz'));   // 020-klang
+    else if (art === 'welle') {   // 0.2.3: 1,6 s anschwellen, 1,8 s sinken
+      const s = ctx.createBufferSource(); s.buffer = rauschen(); s.loop = true; const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.Q.value = 0.4; const v = ctx.createGain();
+      s.connect(f); f.connect(v); v.connect(g); const os = [s];
+      for (const [hz, a] of [[110, 0.1], [164.8, 0.06]]) { const o = ctx.createOscillator(), w = ctx.createGain(); o.frequency.value = hz; w.gain.value = a; o.connect(w); w.connect(v); o.start(t); o.stop(t + 3.6); os.push(o); }
+      f.frequency.setValueAtTime(380, t); f.frequency.setTargetAtTime(1400, t, 0.5); f.frequency.setTargetAtTime(380, t + 1.6, 0.55);
+      v.gain.setValueAtTime(0, t); v.gain.setTargetAtTime(0.55, t, 0.5); v.gain.setTargetAtTime(0, t + 1.6, 0.55);
+      s.start(t); s.stop(t + 3.6); probeQ.push(...os);
+    }
     else if (art === 'wind') {
       const s = ctx.createBufferSource(); s.buffer = rauschen(); s.loop = true; const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 0.8; const v = ctx.createGain(); v.gain.value = 0;
       s.connect(f); f.connect(v); v.connect(g);

@@ -34,7 +34,7 @@ export const REITER = [['start', 'Heute', 'heute'], ['uebungen', 'Üben', 'ueben
 export const leisteHtml = () => REITER.map(([id, n, s]) => `<a href="#${id}" data-r="${id}">${ls(s)}<span>${n}</span>${id === 'fortschritt' && neuZeigen('fortschritt') ? '<b class="neu" data-neu="fortschritt">neu</b>' : ''}</a>`).join('');
 // Welches Ziel leuchtet: allein aus dem Hash (die alten seite(…, reiter)-Angaben bleiben unverändert stehen).
 const ZIEL_VON = { start: 'start', heute: 'start', lage: 'uebungen', uebungen: 'uebungen', uebung: 'uebungen', messen: 'uebungen', singen: 'uebungen', programm: 'uebungen', vergleich: 'uebungen',
-  meditation: 'meditation', fortschritt: 'fortschritt', training: 'fortschritt', ziel: 'fortschritt', mehr: 'mehr', wissen: 'mehr', einstellungen: 'mehr', musik: 'mehr', hinweise: 'mehr', erinnerung: 'mehr', health: 'mehr', sicherheit: 'start' };
+  meditation: 'meditation', fortschritt: 'fortschritt', training: 'fortschritt', ziel: 'fortschritt', mehr: 'mehr', wissen: 'mehr', einstellungen: 'mehr', musik: 'mehr', hinweise: 'mehr', erinnerung: 'mehr', health: 'mehr', sicherheit: 'start', klang: 'mehr' };   // 023: + klang
 export function zielFuer(hash) { const a = (hash || '').replace(/^#/, '').split(/[/?]/)[0] || 'start'; return a === 'lage' && /nicht_gut/.test(hash) ? 'start' : ZIEL_VON[a] || 'start'; }
 
 // ---------- „neu“-Marke: verschwindet nach dem ersten Antippen oder nach 14 Tagen ----------
@@ -156,7 +156,7 @@ export function zeigeFortschritt(c) {
 export function zeigeMehr(c) {
   const t = themaLesen(), z = ZIELE_MODUL;
   c.seite('Mehr', `<div class="zweispaltig"><div><span class="ueber">Beim Üben</span><div class="gruppe">${zeile('#einstellungen', 'Töne und Stimme', 'Klang, Lautstärke, Anzeige')}${zeile('#meditation', 'Sprache der Stimme')}${zeile('#musik', 'Eigene Musik')}${z ? zeile('#erinnerung', 'Erinnerung') + zeile('#health', 'Achtsamkeitsminuten') : ''}</div>
-    <span class="ueber">Wissen</span><div class="gruppe">${zeile('#wissen', 'Wie Atmen wirkt')}${zeile('#vergleich', 'Zwerchfell oder Brust?')}${zeile('#singen', 'Singen und Atemstütze')}${zeile('#wissen/quellen', 'Alle Quellen')}</div></div>
+    <span class="ueber">Wissen</span><div class="gruppe">${zeile('#klang', 'Klang &amp; Vagus', 'Klang-Atem, Beats, Summen, Selbsthypnose')}${zeile('#wissen', 'Wie Atmen wirkt')}${zeile('#vergleich', 'Zwerchfell oder Brust?')}${zeile('#singen', 'Singen und Atemstütze')}${zeile('#wissen/quellen', 'Alle Quellen')}</div></div>
     <div><span class="ueber">Darstellung</span><div class="seg" role="group" aria-label="Darstellung">${[['dunkel', 'Dunkel'], ['hell', 'Hell'], ['auto', 'Automatisch']].map(([k, n]) => `<button class="chip ${t === k ? 'an' : ''}" data-thema="${k}" aria-pressed="${t === k}">${n}</button>`).join('')}</div>
     <span class="ueber">Hilfe und Daten</span><div class="gruppe">${zeile('#lage/nicht_gut', 'Wenn es dir nicht gut geht')}${zeile('#hinweise', 'Hinweise zur Sicherheit')}${zeile('#einstellungen', 'Daten und Sicherung')}</div>
     <p class="mehr-fuss">Atemübungen ersetzen keinen ärztlichen Rat. Deine Übungsdaten bleiben auf deinem Gerät.<br>Version ${c.VERSION}</p></div></div>`, 'mehr', 1);

@@ -8,7 +8,7 @@ import { ton } from './ton.js';   // statisch: der Ton entsteht im Tipp auf Star
 import * as LAY from './layout.js';   // 020-layout: Navigation, Heute, Fortschritt, Mehr, Hinweise
 let ZM = null; const zmLade = () => import('./signale.js').then((m) => { ZM = m; if (ton.zaehltoene) ton.zaehltoene(); return m; }, () => null);   // 020-klang: Zähltöne erst bei Bedarf
 
-export const VERSION = '0.2.2';   // 022
+export const VERSION = '0.2.3';   // 023: Klang & Vagus
 const TEST = /[?&]test=1/.test(location.search);
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -33,6 +33,8 @@ const wissenModul = () => WISSEN || (WISSEN = import('./wissen.js').catch((e) =>
 // 016 Anfang: Meditation (meditation-seite.js, erst beim Öffnen geladen) + „Stimme sagt den Takt“ (stimme.js). alt=true beim Start: die frühere
 // iPhone-Ansage (ansage true) wird zur echten Stimme; ohne Sprite/Netz spricht stimme.js weiter mit der Systemstimme (Rückfall).
 const stimmeVor = (alt) => { let e = speicher.einst(); if (alt && e.ansage === true) e = speicher.setzeEinst({ ansage: 'stimme' }); if (e.ansage === 'stimme' && alt !== 'nur_umstellen') import('./stimme.js').then((S) => S.bereiteVor(ton, e)).catch(() => {}); };   // 016-nb B4: Startseite stellt nur um, Sprite erst auf der Übungsseite
+// 023: Klang & Vagus (klang.js lädt erst hier; Summ-Atmung und Selbsthypnose laden je eigene Module)
+function zeigeKlang(teil, unter) { seite('Klang & Vagus', '<p class="leise">Lädt …</p>', 'mehr', 2); import('./klang.js').then((m) => m.zeige({ seite, blatt, esc, sym, speicher, tippSperre, keinNetz }, teil, unter), keinNetz); }
 function zeigeMeditation(id) { seite('Meditation', '<p class="leise">Lädt …</p>', 'start', id ? 2 : 1); import('./meditation-seite.js').then((m) => m.zeige({ seite: (t, h, r, tf) => seite(t, h, 'start', tf), blatt, tippSperre, host: document.body, taktGeaendert: () => stimmeVor(), neuLaden: () => neuLaden }, id), keinNetz); }
 const M016 = { karte: '<a class="karte" href="#meditation"><b>Meditation</b><span>Geführte Übungen mit Stimme – Deutsch, English, <span lang="ar" dir="rtl">العربية</span></span></a>',
   schalter: (e) => `<label class="schalter"><span>Stimme sagt den Takt</span><input type="checkbox" id="stimmetakt" ${e.ansage ? 'checked' : ''}></label><p class="leise">Stimme künstlich erzeugt (neuronale Sprachsynthese).</p><a class="link" href="#meditation">Sprache der Stimme wählen</a>` };
@@ -130,6 +132,7 @@ function zeigeUebungen() {
   seite('Üben', `${LAY.lageReihe(LCTX())}<div class="chips" role="tablist">${FILTER.map(([id, n]) => `<button class="chip ${filter === id ? 'an' : ''}" data-f="${id}">${n}</button>`).join('')}</div>
     <p class="anzahl">${liste.length} Übungen</p><div class="liste2">${liste.map((T) => { const hb = hauptBeleg(T), g = TRN.gesperrt(T, { training: tr, sicherheit: si });
       return `<a class="zeile ${g ? 'grau' : ''}" href="#uebung/${T.id}"><span class="zl">${LAY.wirkSym(T)}<span><b>${esc(T.name)}</b>${RISIKO_HOCH(T) ? LAY.INTENSIV : ''}<small>${esc(g || dauerText(T))}</small></span></span><span class="rechts">${hb ? LAY.leds(hb[1], true) : ''}</span></a>`; }).join('')}
+    ${filter === 'beruhigen' || filter === 'alle' ? `<a class="zeile" href="#klang"><span class="zl">${LAY.wirkSym({ gruppe: 'beruhigen' })}<span><b>Klang &amp; Vagus</b><small>Klang-Atem, Summen mit Mikrofon, Selbsthypnose</small></span></span><span class="rechts">${sym('weiter')}</span></a>` : ''}
     ${filter === 'singen' || filter === 'alle' ? Object.values(PROGRAMME).filter((p) => p.schritte).map((p) => `<a class="zeile" href="#programm/${p.id}"><span><b>${esc(p.name)}</b><small>Programm · ${p.schritte.length} Übungen</small></span><span class="rechts">${sym('weiter')}</span></a>`).join('') : ''}</div>`, 'uebungen', 1);
   $('#inhalt').querySelectorAll('[data-f]').forEach((b) => (b.onclick = () => { filter = b.dataset.f; zeigeUebungen(); }));
 }
@@ -396,7 +399,7 @@ function zeigeEinstellungen() {
   if (!ZM) zmLade().then((m) => { if (m && location.hash.startsWith('#einstellungen')) zeigeEinstellungen(); });   // 020-klang: Zähltöne-Zeile nach dem Laden zeigen
   const e = speicher.einst(), tr = speicher.training();
   const sch = (k, n) => `<label class="schalter"><span>${n}</span><input type="checkbox" data-k="${k}" ${e[k] ? 'checked' : ''}></label>`;
-  seite('Einstellungen', `<div class="zweispaltig"><div><div class="karte"><b>Ton</b><div class="chips">${['klang', 'wind', 'aus'].map((t) => `<button class="chip ${e.ton === t ? 'an' : ''}" data-ton="${t}" aria-pressed="${e.ton === t}">${{ klang: 'Klang', wind: 'Wind', aus: 'Aus' }[t]}</button>`).join('')}</div>
+  seite('Einstellungen', `<div class="zweispaltig"><div><div class="karte"><b>Ton</b><div class="chips">${['klang', 'wind', 'welle', 'aus'].map((t) => `<button class="chip ${e.ton === t ? 'an' : ''}" data-ton="${t}" aria-pressed="${e.ton === t}">${{ klang: 'Klang', wind: 'Wind', welle: 'Welle', aus: 'Aus' }[t]}</button>`).join('')}</div>
       ${ZM ? ZM.zaehlKarte(e, sym) : '<div id="zaehltoene"></div>' /* 020-klang */}
       <p class="leise probe" id="probetext"><span class="pkreis" aria-hidden="true"></span><span id="probewort">Tippen = Probehören</span></p>
       <label class="schieber">Lautstärke <input type="range" min="0" max="1" step="0.05" value="${e.laut}" data-k="laut"></label>${sch('sekunden', 'Leises Ticken beim Halten')}${sch('musik', 'Zur eigenen Musik')}${M016.schalter(e)}
@@ -421,7 +424,7 @@ function zeigeEinstellungen() {
       const t = b.dataset.ton, e2 = speicher.setzeEinst({ ton: t });
       ton.entsperren(e2.musik); ton.einstellen({ art: t, laut: e2.laut }); const zt = ZM && t === 'klang' && ZM.stilVon(e2) !== 'aus' ? ZM.stilVon(e2) : ''; ton.probe(zt ? zt + '_kurz' : t);   // 020-klang: mit Zähltönen klingt „Klang“ so (kurz)
       i.querySelectorAll('[data-ton]').forEach((c) => { c.classList.toggle('an', c === b); c.setAttribute('aria-pressed', c === b); });
-      const pt = $('#probetext'), pw = $('#probewort'); if (pt && pw) { pw.textContent = zt ? ZM.TEXT[zt] : t === 'aus' ? 'Ohne Ton – Kreis und Figur führen allein.' : t === 'wind' ? 'Wind: rauscht beim Einatmen auf, beim Ausatmen ab.' : 'Klang: eine Glocke beim Einatmen, eine tiefere beim Ausatmen.'; pt.classList.remove('puls'); void pt.offsetWidth; pt.classList.add('puls'); }
+      const pt = $('#probetext'), pw = $('#probewort'); if (pt && pw) { pw.textContent = zt ? ZM.TEXT[zt] : t === 'aus' ? 'Ohne Ton – Kreis und Figur führen allein.' : t === 'wind' ? 'Wind: rauscht beim Einatmen auf, beim Ausatmen ab.' : t === 'welle' ? 'Welle: weiches Rauschen mit leisem Grundton – schwillt beim Einatmen an, trägt beim Halten, sinkt beim Ausatmen.' : 'Klang: eine Glocke beim Einatmen, eine tiefere beim Ausatmen.'; pt.classList.remove('puls'); void pt.offsetWidth; pt.classList.add('puls'); }
     }
     else if (b.dataset.ans) { speicher.setzeEinst({ ansicht: b.dataset.ans }); zeigeEinstellungen(); }
     else if (b.id === 'tonpruef') { ton.einstellen({ art: 'klang', laut: speicher.einst().laut }); const r = await ton.pruefen(); $('#tonerg').innerHTML = `<p>Hörst du drei Töne?</p><div class="zwei"><button class="knopf" id="tja">Ja</button><button class="knopf" id="tnein">Nein</button></div>`; $('#tonerg').dataset.zustand = r.zustand; }
@@ -457,7 +460,7 @@ async function allesLoeschen() {
 }
 
 // ---------- Router ----------
-const frei = () => $('#sitzung').hidden && !document.querySelector('.md-spieler');   // 016-nb B1: auch eine laufende Meditation nie durch Neuladen abbrechen
+const frei = () => $('#sitzung').hidden && !document.querySelector('.md-spieler, .kl-spieler');   // 023: auch Klang-Atem/Summen/Selbsthypnose   // 016-nb B1: auch eine laufende Meditation nie durch Neuladen abbrechen
 const ohneAutostart = () => { const [w, q] = location.hash.split('?'), p = new URLSearchParams(q || ''); if (p.get('s') !== '1') return; p.delete('s'); const r = p.toString(); history.replaceState(null, '', w + (r ? '?' + r : '')); };   // 021 M2: nach dem Neuladen kein stummer Autostart
 function route() {
   if (neuLaden && frei()) { ohneAutostart(); return location.reload(); }
@@ -479,6 +482,7 @@ function route() {
     case 'einstellungen': return zeigeEinstellungen();
     case 'musik': return zeigeMusik();
     case 'meditation': return zeigeMeditation(b);   // 016
+    case 'klang': return zeigeKlang(b, weg.split('/')[2]);   // 023
     case 'sicherheit': erststart(); return zeigeStart();
     default: if (LAY.zeige(a, b, LCTX())) return; return zeigeStart();   // 020-layout: fortschritt, mehr, hinweise + 020-ziele: ziel/erinnerung/health über layout.js (ZIELE_MODUL)
   }
