@@ -81,6 +81,20 @@ export function alleStimmenAus() {
   stimmen.clear();
 }
 
+/** Metronom-Klick: kurzer Holz-Ton, betont auf der Eins. */
+export function klick(wann, betont = false) {
+  const c = audioKontext();
+  wann = Math.max(wann ?? c.currentTime, c.currentTime);
+  const o = c.createOscillator(); o.type = 'triangle'; o.frequency.value = betont ? 1760 : 1180;
+  const g = c.createGain();
+  g.gain.setValueAtTime(0.0001, wann);
+  g.gain.exponentialRampToValueAtTime(betont ? 0.32 : 0.2, wann + 0.002);
+  g.gain.exponentialRampToValueAtTime(0.0001, wann + 0.045);
+  o.connect(g).connect(ausgang);
+  o.start(wann); o.stop(wann + 0.06);
+  o.onended = () => { try { g.disconnect(); } catch { /* schon getrennt */ } };
+}
+
 const taktLaenge = (t) => ((t.taktart ? t.taktart[0] : 4) * 4) / (t.taktart ? t.taktart[1] : 4);
 
 /**
@@ -110,7 +124,24 @@ export function spieler(stueck, { onNote, onZeit, onEnde } = {}) {
     alleStimmenAus();
   }
 
-  function spiele(vonTakt, bisTakt, { schleife = false, tempoFaktor = 1, nurHand = null, vorlauf = 0.12 } = {}) {
+  /** Schläge im Bereich [a, b): { v (Viertel), betont } */
+  function schlaege(a, b) {
+    const out = [];
+    const liste = takte.length ? takte : [{ start: 0, taktart: [4, 4] }];
+    liste.forEach((t, i) => {
+      const z = t.taktart ? t.taktart[0] : 4, n = t.taktart ? t.taktart[1] : 4;
+      const ende = liste[i + 1] ? liste[i + 1].start : t.start + taktLaenge(t);
+      // 6/8, 9/8, 12/8: punktierte Viertel als Schlag
+      const schlag = (n === 8 && z % 3 === 0 && z > 3) ? 1.5 : 4 / n;
+      for (let v = t.start, k = 0; v < ende - 1e-6; v += schlag, k++) {
+        if (v >= a - 1e-6 && v < b - 1e-6) out.push({ v, betont: k === 0 });
+      }
+    });
+    if (!takte.length) { out.length = 0; for (let v = Math.ceil(a), k = 0; v < b - 1e-6; v++, k++) out.push({ v, betont: k % 4 === 0 }); }
+    return out;
+  }
+
+  function spiele(vonTakt, bisTakt, { schleife = false, tempoFaktor = 1, nurHand = null, vorlauf = 0.12, metronom = false } = {}) {
     stopp();
     const c = audioKontext();
     const { a, b } = bereich(vonTakt, bisTakt);
@@ -120,6 +151,7 @@ export function spieler(stueck, { onNote, onZeit, onEnde } = {}) {
     const l = {
       a, b, L, auswahl, schleife, nurHand, faktor: tempoFaktor,
       anker: { zeit: c.currentTime + vorlauf, v: a }, idx: 0, runde: 0, offen: [], timer: 0, raf: 0,
+      metronom, schlaege: schlaege(a, b), kIdx: 0, kRunde: 0,
     };
     lauf = l;
     const spq = () => 60 / (bpm * l.faktor);
@@ -147,6 +179,19 @@ export function spieler(stueck, { onNote, onZeit, onEnde } = {}) {
         if (!stumm) ton(n.midi, wann, dauerS, n.system === 'unten' ? 0.75 : 0.85);
         l.offen.push({ zeit: wann, note: n, an: true, stumm, runde: l.runde }, { zeit: wann + dauerS, note: n, an: false, stumm, runde: l.runde });
         l.idx++;
+      }
+      // Metronom
+      const S = l.schlaege;
+      for (let schutz = 0; S.length && schutz < 500; schutz++) {
+        if (l.kIdx >= S.length) {
+          if (!schleife) break;
+          if (a + (l.kRunde + 1) * L > horizont) break;
+          l.kRunde++; l.kIdx = 0;
+        }
+        const v = S[l.kIdx].v + l.kRunde * L;
+        if (v > horizont) break;
+        if (l.metronom) klick(vZuZeit(v), S[l.kIdx].betont);
+        l.kIdx++;
       }
     }
     function bild() {
@@ -179,5 +224,8 @@ export function spieler(stueck, { onNote, onZeit, onEnde } = {}) {
     lauf.faktor = f;
   }
 
-  return { spiele, stopp, setzeTempo, get laeuft() { return !!lauf; } };
+  /** Metronom während des Spielens an/aus */
+  function setzeMetronom(an) { if (lauf) lauf.metronom = !!an; }
+
+  return { spiele, stopp, setzeTempo, setzeMetronom, get laeuft() { return !!lauf; } };
 }
