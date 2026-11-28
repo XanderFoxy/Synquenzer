@@ -148,6 +148,13 @@ export function spieler(stueck, { onNote, onZeit, onEnde } = {}) {
       const ende = liste[i + 1] ? liste[i + 1].start : t.start + taktLaenge(t);
       // 6/8, 9/8, 12/8: punktierte Viertel als Schlag
       const schlag = (n === 8 && z % 3 === 0 && z > 3) ? 1.5 : 4 / n;
+      if (i === 0 && liste[1] && ende - t.start < taktLaenge(t) - 1e-6) {
+        // Auftakt: Schläge vom Taktende her zählen und nicht betonen – die Eins kommt erst im nächsten Takt
+        const vs = [];
+        for (let v = ende - schlag; v >= t.start - 1e-6; v -= schlag) vs.unshift(v);
+        for (const v of vs) if (v >= a - 1e-6 && v < b - 1e-6) out.push({ v, betont: false });
+        return;
+      }
       for (let v = t.start, k = 0; v < ende - 1e-6; v += schlag, k++) {
         if (v >= a - 1e-6 && v < b - 1e-6) out.push({ v, betont: k === 0 });
       }

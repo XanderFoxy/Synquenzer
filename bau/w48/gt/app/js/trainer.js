@@ -309,10 +309,13 @@ export function spieler(wurzel, plan, opt = {}) {
     const nr = ++laufNr, weg = () => !laeuft || nr !== laufNr; // ein zweiter Start (oder Stopp) beendet einen noch wartenden Ablauf
     laeuft = true; ergebnisse = []; chips.replaceChildren(); ergBox.hidden = true; ergBox.replaceChildren();
     setzeStart(true); phase('Vorbereiten …');
-    try { // quer/kleine Höhe: die Tonbahn ganz ins Bild holen (nicht unter Kopf oder untere Leiste)
-      const r = rolle.getBoundingClientRect(), kopf = document.querySelector('.kopf'), lst = document.querySelector('.leiste');
-      const oben = kopf ? kopf.getBoundingClientRect().bottom : 0, unten = lst ? lst.getBoundingClientRect().top : innerHeight;
-      if (r.top < oben || r.bottom > unten) rolle.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    try { // quer/kleine Höhe: Tonbahn und Stopp-Knopf ins Bild holen (nicht unter Kopf oder untere Leiste)
+      const r = rolle.getBoundingClientRect(), s = startK.getBoundingClientRect(), kopf = document.querySelector('.kopf'), lst = document.querySelector('.leiste');
+      const oben = (kopf ? kopf.getBoundingClientRect().bottom : 0) + 8, unten = (lst && lst.offsetParent !== null ? lst.getBoundingClientRect().top : innerHeight) - 8;
+      let d = 0;
+      if (Math.max(r.bottom, s.bottom) > unten) d = Math.max(r.bottom, s.bottom) - unten;
+      if (Math.min(r.top, s.top) - d < oben) d = Math.min(r.top, s.top) - oben;
+      if (Math.abs(d) > 4) scrollBy({ top: d, behavior: 'smooth' });
     } catch (e) { /* egal */ }
     if (plan.art !== 'bewegung') {
       micOk = await mikrofon();

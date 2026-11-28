@@ -166,7 +166,7 @@ export function alsMusicXML(st, opt = {}) {
       const nots = [];
       if (n.bindung.ende) nots.push('<tied type="stop"/>');
       if (n.bindung.start) nots.push('<tied type="start"/>');
-      if (n.finger != null) nots.push(`<technical><fingering>${n.finger}</fingering></technical>`);
+      if (n.finger != null) nots.push(`<technical><fingering>${xe(n.finger)}</fingering></technical>`);
       if (nots.length) x += `<notations>${nots.join('')}</notations>`;
       return x + '</note>';
     };
@@ -187,7 +187,9 @@ export function alsMusicXML(st, opt = {}) {
       const stimmen = stimmenBilden(proTakt[i].filter((n) => n.system === sys));
       if (!stimmen.length) {
         if (geschrieben) zeilen.push(`<backup><duration>${D(dauer)}</duration></backup>`);
-        zeilen.push(`<note><rest measure="yes"/><duration>${D(dauer)}</duration><voice>${basis}</voice><staff>${staff}</staff></note>`);
+        // Ganztaktpause nur im vollen Takt – im Auftakt (oder kürzeren Takt) echte Pausenwerte
+        if (Math.abs(dauer - nenn) < EPS) zeilen.push(`<note><rest measure="yes"/><duration>${D(dauer)}</duration><voice>${basis}</voice><staff>${staff}</staff></note>`);
+        else zeilen.push(...pausen(tk.start, dauer, basis, staff));
         geschrieben = true;
         continue;
       }
