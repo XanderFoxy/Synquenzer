@@ -543,7 +543,7 @@ export async function seiteVorbereiten(datei, { schritt = () => {} } = {}) {
     // Zeilen vermutlich übersehen? Linien, die zu keinem System gehören, oder einzelne Systeme neben Klavier-Paaren
     const benutzt = (y) => staves.some((st) => y > st.y[0] - 0.6 * st.g && y < st.y[4] + 0.6 * st.g);
     // (drei kräftige freie Linien im Abstand der Notenlinien – dicke Ränder/Schattenkanten zählen nicht)
-    const frei_ = linien.filter((l) => l.staerke >= 0.6 && !benutzt(l.y));
+    const frei_ = linien.filter((l) => l.staerke >= 0.6 && !benutzt(l.y) && l.y > 4 * masse.abstand && l.y < ah - 4 * masse.abstand); // Bildrand: Tischkante
     let haufen = 0;
     for (let i = 0, n = 1; i < frei_.length; i++) {
       const d = i ? frei_[i].y - frei_[i - 1].y : 0;

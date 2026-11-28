@@ -48,7 +48,7 @@ const PRUEFEN = `Before you answer, check every measure:
 - Count every notehead: all chord tones, notes on ledger lines above and below the staff, notes squeezed close together.
 - Look closely at accidentals, augmentation dots, ties, and the number of beams or flags (1 = eighths, 2 = sixteenths, 3 = 32nds).
 
-Honesty comes first: transcribe only what is printed. Never invent, guess or complete notes. If a staff of a measure cannot be read with confidence, write ? instead of its events, e.g. "L: ?".`;
+Honesty comes first: transcribe only what is printed. Never invent, guess or complete notes. If a staff of a measure cannot be read with confidence, write ? instead of its events, e.g. "L: ?". If the image shows no printed music notation at all, reply with exactly: NO MUSIC`;
 
 /**
  * Anweisung für eine ganze Zeile (System).
@@ -116,6 +116,9 @@ export function leseEreignis(wort) {
   if (at >= 0) { finger = w.slice(at + 1).split(/[,/]/).map((x) => parseInt(x, 10)).filter((x) => x >= 0 && x <= 5); w = w.slice(0, at); }
   let bo = false;
   if (w.endsWith('~')) { bo = true; w = w.slice(0, -1); }
+  else if (/~\//.test(w)) { bo = true; w = w.replace('~/', '/'); } // „G4~/2“ statt „G4/2~“
+  const rp = w.match(/^r(\d+\.{0,3}t?)$/i); // „r4“ statt „r/4“
+  if (rp) w = 'r/' + rp[1];
   const sl = w.lastIndexOf('/');
   if (sl < 0) return null;
   const kopf = w.slice(0, sl), dm = w.slice(sl + 1).match(DAUER_RE);
@@ -124,7 +127,7 @@ export function leseEreignis(wort) {
   if (/^r$/i.test(kopf)) { ev.r = true; return ev; }
   for (const teil of kopf.split('+')) {
     const m = teil.match(NOTE_RE);
-    if (!m) return null;
+    if (!m || +m[3] < 0 || +m[3] > 8) return null; // Klavier: Oktave 0 bis 8 (sonst Lesefehler)
     const akz = { '♯': '#', '♭': 'b', '♮': 'n' }[m[2]] || m[2] || null;
     ev.n.push({ s: STAMM_AUS[m[1].toUpperCase()], a: akz, o: +m[3] });
   }
@@ -136,16 +139,25 @@ export function leseEreignis(wort) {
  * Antworttext → {clefs, key, time, takte:[{nr, koepfe:{U,L}, stimmen:{U:[…]|'?', …}, key?, time?, fehler:[]}]}
  */
 export function leseAntwort(text) {
-  const aus = { clefs: null, key: null, time: null, takte: [], keine: false };
+  const aus = { clefs: null, key: null, time: null, takte: [], keine: false, format: false };
   let akt = null, wKey = null, wTime = null;
-  for (const roh of String(text || '').replace(/```[a-z]*/gi, '').split(/\r?\n/)) {
-    const z = roh.trim();
+  // Säubern: Code-Zäune, Markdown (**fett**, Listenpunkte), mehrere Stimmen in einer Zeile („M1 3 1 U: … L: …“)
+  const zeilen = String(text || '').replace(/```[a-z]*/gi, '').replace(/[ \t]+(?=(?:U2|L2|U|L)\s*:)/g, '\n').split(/\r?\n/);
+  for (const roh of zeilen) {
+    const z = roh.replace(/\*\*|__|`/g, '').replace(/^\s*(?:[-•>#]+\s*)+/, '').trim();
     if (!z) continue;
     let m;
-    if ((m = z.match(/^CLEFS?\s+([GF])\s*([GF])?/i))) { if (!aus.clefs) aus.clefs = [m[1].toUpperCase(), (m[2] || 'F').toUpperCase()]; continue; }
-    if ((m = z.match(/^KEY\s+([+-]?\d)/i))) { const k = Math.max(-7, Math.min(7, +m[1])); if (aus.key == null && !aus.takte.length) aus.key = k; else wKey = k; continue; }
-    if ((m = z.match(/^TIME\s+(\d{1,2})\s*\/\s*(\d{1,2})/i))) { const t = `${+m[1]}/${+m[2]}`; if (aus.time == null && !aus.takte.length) aus.time = t; else wTime = t; continue; }
-    if ((m = z.match(/^M\s*(\d+)\b\s*(\d+)?\s*(\d+)?/i))) {
+    if ((m = z.match(/^CLEFS?\s*:?\s*([GF])\s*([GF])?/i))) { if (!aus.clefs) aus.clefs = [m[1].toUpperCase(), (m[2] || 'F').toUpperCase()]; continue; }
+    if ((m = z.match(/^KEY\s*:?\s*([+-]?\d)/i))) { const k = Math.max(-7, Math.min(7, +m[1])); if (aus.key == null && !aus.takte.length) aus.key = k; else wKey = k; continue; }
+    if ((m = z.match(/^TIME\s*:?\s*(?:(\d{1,2})\s*\/\s*(\d{1,2})|(C\||C)\b)/i))) {
+      const [zz, nn] = m[3] ? (m[3].includes('|') ? [2, 2] : [4, 4]) : [+m[1], +m[2]];
+      if (zz < 1 || zz > 32 || ![1, 2, 4, 8, 16, 32].includes(nn)) { aus.format = true; continue; } // „0/4“, „3/0“: verlesen
+      const t = `${zz}/${nn}`;
+      if (aus.time == null && !aus.takte.length) aus.time = t; else wTime = t;
+      continue;
+    }
+    if (/^NO[ _-]?MUSIC\b/i.test(z)) { aus.keine = true; continue; }
+    if ((m = z.match(/^(?:M|MEASURE|BAR|TAKT)\s*(\d+)\b\s*:?\s*(\d+)?\s*(\d+)?/i))) {
       akt = { nr: +m[1], koepfe: { U: m[2] != null ? +m[2] : null, L: m[3] != null ? +m[3] : null }, stimmen: {}, fehler: [] };
       if (wKey != null) { akt.key = wKey; wKey = null; }
       if (wTime != null) { akt.time = wTime; wTime = null; }
@@ -166,7 +178,8 @@ export function leseAntwort(text) {
       else akt.stimmen[key] = evs;
       continue;
     }
-    if (/<keine-noten|no (readable )?sheet music/i.test(z)) aus.keine = true;
+    if (/<keine-noten|no (readable )?(sheet )?music/i.test(z)) aus.keine = true;
+    else if (/<\/?(score-partwise|measure|note)\b/i.test(z)) aus.format = true; // MusicXML statt des verlangten Formats
   }
   return aus;
 }
@@ -350,7 +363,8 @@ export function pruefeTakt(takt, ctx) {
   const r = taktNoten(takt, { key: takt.key ?? ctx.key ?? 0, time: takt.time || ctx.time, clefs: { oben: ctx.clefs?.[0] || 'G', unten: ctx.clefs?.[1] || 'F' } });
   const fern = r.noten.filter((n) => (n.system === 'oben' ? n.midi < 33 || n.midi > 100 : n.midi < 21 || n.midi > 88));
   if (fern.length) g.push({ art: 'umfang', text: `${fern.length} Ton${fern.length > 1 ? 'e' : ''} weit außerhalb des Notensystems – Schlüssel verlesen?` });
-  if (takt.unbekannt?.length) g.push({ art: 'format', text: `Nicht verstanden: ${takt.unbekannt.slice(0, 3).join(' ')}` });
+  const unbekannt = takt.unbekannt || takt.fehler;
+  if (unbekannt?.length) g.push({ art: 'format', text: `Nicht verstanden: ${unbekannt.slice(0, 3).join(' ')}` });
   return g;
 }
 
