@@ -614,7 +614,7 @@ function zeichneErgebnis() {
   const k = S.grund.key || 0;
   const tonart = k ? `${Math.abs(k)} ${k > 0 ? '♯' : '♭'}` : 'keine Vorzeichen';
   const ersterMarkiert = S.takte.findIndex(istMarkiert);
-  $('#scErgInhalt', box).innerHTML = `<div class="sc-bilanz">${ring}<div><b>${b.s} von ${b.n} Takten sicher</b><small>${b.m ? `${b.m} markiert – bitte ansehen` : b.offen ? `${b.offen} noch nicht gelesen` : 'nichts markiert – trotzdem kurz mit dem Original vergleichen'}</small></div></div>
+  $('#scErgInhalt', box).innerHTML = `<div class="sc-bilanz">${ring}<div><b>${b.s} von ${b.n} Takten sicher</b><small>${S.job?.laeuft ? 'Lesen läuft – auffällige Takte werden nachgelesen …' : b.m ? `${b.m} markiert – bitte ansehen` : b.offen ? `${b.offen} noch nicht gelesen` : 'nichts markiert – trotzdem kurz mit dem Original vergleichen'}</small></div></div>
     <div class="sc-grund"><span>Tonart <b>${esc(tonart)}</b></span><span>Takt <b>${esc(S.grund.time || '–')}</b></span><button class="sc-mini" type="button" data-tun="grund" aria-label="Tonart und Taktart ändern">ändern</button></div>
     <div class="sc-tchips">${chips}</div>
     <div class="sc-legende"><span class="sicher">sicher</span><span class="geprueft">geprüft</span><span class="markiert">markiert</span><span class="unleserlich">unleserlich</span></div>`;
@@ -653,10 +653,13 @@ function lupe(id) {
   d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-label', 'Seite mit gefundenen Zeilen und Takten');
   d.innerHTML = `<div class="sc-lupe-kopf"><b>Gefundene Zeilen und Takte</b><button class="rund" type="button" aria-label="Schließen">${ICO.x}</button></div><div class="sc-lupe-bild"><div class="sc-lupe-rahmen"><img src="${esc(p.url)}" alt="Notenseite">${overlaySvg(p, false)}</div></div>`;
   document.body.appendChild(d);
-  const zu = () => d.remove();
+  const vorher = document.activeElement;
+  const taste = (e) => { if (e.key === 'Escape') zu(); };
+  const zu = () => { d.remove(); removeEventListener('keydown', taste); if (vorher?.focus) vorher.focus(); };
+  addEventListener('keydown', taste);
+  addEventListener('hashchange', zu, { once: true });
   d.querySelector('button').onclick = zu;
   d.querySelector('button').focus();
-  d.addEventListener('click', (e) => { const g = e.target.closest('.sc-ov-nr'); if (g) { /* Nummern sind nur Anzeige */ } });
 }
 
 function klickHaupt(ev) {
@@ -685,8 +688,7 @@ function zeichnePruefen(i, erst) {
         <div class="sp-noten"><div class="sp-svg" id="spSvgBox"><svg id="spSvg" role="img" aria-label="Erkannte Noten"></svg></div><div id="spSpuren"></div></div>
       </div>
       <div id="spGruende"></div>
-      <div class="sp-werkzeug" id="spWerkzeug"></div>
-      <div class="sp-unten" id="spUnten"></div>
+      <div class="sp-unten"><div class="sp-werkzeug" id="spWerkzeug"></div><div class="sp-nav" id="spUnten"></div></div>
     </div>`;
     const sp = $('.sp', root);
     sp.addEventListener('click', klickPruefen);
@@ -785,28 +787,32 @@ function gruendeZeigen(t) {
   const g = t.gruende || [];
   const st = `<span class="sc-pille ${t.status}"><i></i>${esc(STATUS_TEXT[t.status])}</span>`;
   const varianten = t.varianten && t.varianten.length > 1 ? `<div class="sp-var" role="group" aria-label="Lesungen">${t.varianten.map((v, j) => `<button type="button" data-tun="variante" data-j="${j}" aria-pressed="${t.wahl === j}">${esc(v.name)}</button>`).join('')}</div>` : '';
-  box.innerHTML = `<div class="sp-gruende">${st}${g.length ? `<ul>${g.map((x) => `<li class="${x.art}">${esc(x.text)}</li>`).join('')}</ul>` : '<span class="sc-klein">Keine Auffälligkeit.</span>'}${varianten}</div>`;
+  box.innerHTML = `<div class="sp-gruende">${st}${g.length ? `<ul>${g.map((x) => `<li class="${x.art}">${esc(x.text)}</li>`).join('')}</ul>` : '<span class="sc-klein">Keine Auffälligkeit.</span>'}${varianten}${t.lesung ? '<p class="sc-klein sp-tipp">Vergleiche mit dem Bild. Tippe eine Note (oder ein Kärtchen) an, um sie zu ändern.</p>' : ''}</div>`;
 }
 
 function werkzeugZeigen(t) {
   const box = $('#spWerkzeug', root);
   const ev = gewaehltesEv(t);
   const K = (tun, ico, label, an = false, extra = '') => `<button type="button" class="sp-w${an ? ' an' : ''}" data-tun="${tun}"${extra} aria-label="${esc(label)}" title="${esc(label)}"${an ? ' aria-pressed="true"' : ''}>${ico}</button>`;
-  const rueck = K('rueck', ICO.zurueckNehmen, 'Rückgängig', false, S.rueck.get(t)?.length ? '' : ' disabled');
-  if (!ev) { box.innerHTML = t.lesung ? `<div class="sp-w-reihe">${S.rueck.get(t)?.length ? rueck : ''}<p class="sc-klein sp-tipp">Tippe auf eine Note (oder ein Kärtchen) zum Ändern.</p></div>` : ''; return; }
+  const hatRueck = !!S.rueck.get(t)?.length;
+  const rueck = K('rueck', ICO.zurueckNehmen, 'Rückgängig', false, hatRueck ? '' : ' disabled');
+  box.hidden = !ev && !hatRueck;
+  if (!ev) { box.innerHTML = hatRueck ? `<div class="sp-w-reihe">${rueck}<span class="sc-klein">Tippe eine Note oder ein Kärtchen an, um es zu ändern.</span></div>` : ''; return; }
   const x = ev.n?.[S.pruef.sel.ni ?? 0];
-  box.innerHTML = `<div class="sp-w-reihe">
-      ${rueck}<span class="sp-w-trenn"></span>${K('runter', ICO.runter, 'Tiefer', false, ev.r ? ' disabled' : '')}${K('hoch', ICO.hoch, 'Höher', false, ev.r ? ' disabled' : '')}
-      <span class="sp-w-trenn"></span>
-      ${K('akz', ICO.b, 'Be', x?.a === 'b', ' data-a="b"' + (ev.r ? ' disabled' : ''))}${K('akz', ICO.aufl, 'Auflösungszeichen', x?.a === 'n', ' data-a="n"' + (ev.r ? ' disabled' : ''))}${K('akz', ICO.kreuz, 'Kreuz', x?.a === '#', ' data-a="#"' + (ev.r ? ' disabled' : ''))}
-    </div>
+  const r = ev.r ? ' disabled' : '';
+  const sel = S.pruef.sel, id = `t${S.pruef.i}-${sel.sk}-${sel.ei}-${sel.ni ?? 0}`;
+  const note = ev.r ? null : stueck().noten.find((n) => n.id === id);
+  const name = ev.r ? 'Pause' : note ? notenName(note.schreibweise) : '';
+  box.innerHTML = `<div class="sp-w-kopf"><b>${esc(name)}</b><small>${esc(wertText(ev))}</small><button class="sp-w-zu" type="button" data-tun="abwaehlen" aria-label="Auswahl schließen">${ICO.x}</button></div>
     <div class="sp-w-reihe">
+      ${rueck}<span class="sp-w-trenn"></span>${K('runter', ICO.runter, 'Tiefer', false, r)}${K('hoch', ICO.hoch, 'Höher', false, r)}
+      ${K('akz', ICO.b, 'Be', x?.a === 'b', ' data-a="b"' + r)}${K('akz', ICO.aufl, 'Auflösungszeichen', x?.a === 'n', ' data-a="n"' + r)}${K('akz', ICO.kreuz, 'Kreuz', x?.a === '#', ' data-a="#"' + r)}
+      <span class="sp-w-trenn"></span>
       ${[1, 2, 4, 8, 16].map((d) => K('dauer', wertIco(d), WERT_NAME[d], !ev.ganz && ev.d === d, ` data-d="${d}"`)).join('')}
       ${K('punkt', ICO.punkt, 'Punkt', ev.p > 0)}${K('triole', ICO.triole, 'Triole', ev.t)}
-    </div>
-    <div class="sp-w-reihe">
-      ${K('bogen', ICO.bogen, 'Haltebogen zur nächsten Note', ev.bo, ev.r ? ' disabled' : '')}${K('pause', ICO.pause, ev.r ? 'Pause zu Note' : 'Note zu Pause', ev.r)}
-      ${K('akkordton', ICO.akkord, 'Akkordton dazu', false, ev.r ? ' disabled' : '')}${K('danach', ICO.danach, 'Note danach einfügen')}
+      <span class="sp-w-trenn"></span>
+      ${K('bogen', ICO.bogen, 'Haltebogen zur nächsten Note', ev.bo, r)}${K('pause', ICO.pause, ev.r ? 'Pause zu Note' : 'Note zu Pause', ev.r)}
+      ${K('akkordton', ICO.akkord, 'Akkordton dazu', false, r)}${K('danach', ICO.danach, 'Note danach einfügen')}
       ${K('loeschen', ICO.weg, 'Löschen')}
     </div>`;
 }
@@ -911,6 +917,7 @@ async function klickPruefen(ev) {
   if (tun === 'uebernehmen') return uebernehmen();
   if (tun === 'zeile') { S.pruef.ganzeZeile = !S.pruef.ganzeZeile; return plane(); }
   if (tun === 'ev') return waehle({ sk: b.dataset.sk, ei: +b.dataset.ei, ni: 0 });
+  if (tun === 'abwaehlen') return waehle(null);
   if (tun === 'variante') { const j = +b.dataset.j, v = t.varianten[j]; if (v) { merken(t); t.lesung = KI.kopie(v.lesung); t.wahl = j; S.pruef.sel = null; S.stueck = null; const kx = kontexte(); t.gruende = pruefen(t, S.pruef.i, kx); if (t.status === 'geprueft') t.status = 'markiert'; plane(); } return; }
   if (tun === 'stimmt') { if (t.lesung) { t.status = t.status === 'geprueft' ? 'markiert' : 'geprueft'; S.stueck = null; const n = S.takte.findIndex((x, j) => j > S.pruef.i && istMarkiert(x)); plane(); if (n >= 0) setTimeout(() => { location.hash = '#scan/takt/' + (n + 1); }, ruhig() ? 0 : 180); } return; }
   if (tun === 'rueck') { const l = S.rueck.get(t); const v = l?.pop(); if (v) { t.lesung = v.lesung; t.wahl = v.wahl; S.pruef.sel = v.sel; nachBearbeiten(t); } return; }

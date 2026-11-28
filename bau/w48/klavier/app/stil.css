@@ -464,19 +464,25 @@ h2.abschnitt { font-size: 13px; text-transform: uppercase; letter-spacing: .08em
 .sp-var { display: inline-flex; flex-wrap: wrap; background: var(--flaeche2); border-radius: 24px; padding: 3px; gap: 2px; }
 .sp-var button { min-height: 44px; padding: 0 12px; border: 0; border-radius: 21px; background: none; font-size: 13px; font-weight: 700; color: var(--leise); }
 .sp-var button[aria-pressed="true"] { background: var(--flaeche); color: var(--text); box-shadow: var(--schatten); }
-.sp-werkzeug { margin: 10px max(var(--rand-x), env(safe-area-inset-right)) 0 max(var(--rand-x), env(safe-area-inset-left)); display: grid; gap: 6px; }
-.sp-tipp { padding: 4px 2px; }
-.sp-w-reihe { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.sp-w { width: 48px; height: 48px; border-radius: 14px; border: 1px solid var(--rand); background: var(--flaeche); display: grid; place-items: center; color: var(--text); box-shadow: var(--schatten); transition: transform .1s ease, background-color .15s ease; }
+.sp-werkzeug { display: grid; gap: 6px; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--rand); animation: tipp .2s ease both; }
+.sp-werkzeug[hidden] { display: none; }
+.sp-w-kopf { display: flex; align-items: center; gap: 8px; min-height: 28px; }
+.sp-w-kopf b { font-size: 16px; }
+.sp-w-kopf small { color: var(--leise); font-size: 13px; flex: 1; }
+.sp-w-zu { width: 44px; height: 44px; margin: -8px -6px -8px 0; border: 0; border-radius: 50%; background: none; color: var(--leise); display: grid; place-items: center; }
+.sp-tipp { flex: 1 1 100%; }
+.sp-w-reihe { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.sp-w { width: 46px; height: 46px; border-radius: 13px; border: 1px solid var(--rand); background: var(--flaeche); display: grid; place-items: center; color: var(--text); transition: transform .1s ease, background-color .15s ease; }
 .sp-w:active { transform: scale(.92); }
 .sp-w.an { background: var(--akzent); color: var(--akzent-text); border-color: var(--akzent); }
-.sp-w:disabled { opacity: .32; box-shadow: none; }
-.sp-w-trenn { width: 6px; }
-.sp-unten { position: sticky; bottom: 0; margin-top: auto; display: flex; flex-wrap: wrap; gap: 8px; padding: 10px max(var(--rand-x), env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(var(--rand-x), env(safe-area-inset-left)); background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: saturate(1.6) blur(14px); -webkit-backdrop-filter: saturate(1.6) blur(14px); border-top: 1px solid var(--rand); z-index: 4; }
-.sp-unten .sc-knopf { flex: 1 1 0; min-width: 0; padding: 0 12px; font-size: 15px; white-space: nowrap; }
-.sp-unten .sc-knopf span { overflow: hidden; text-overflow: ellipsis; }
-.sp-unten .rundk { flex: none; width: 50px; padding: 0; }
-.sp-unten .sc-meldung { flex: 1 1 100%; }
+.sp-w:disabled { opacity: .3; }
+.sp-w-trenn { width: 1px; height: 30px; background: var(--rand); margin: 0 2px; }
+.sp-nav { display: flex; gap: 8px; flex-wrap: wrap; }
+.sp-unten { position: sticky; bottom: 0; margin-top: auto; padding: 10px max(var(--rand-x), env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(var(--rand-x), env(safe-area-inset-left)); background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: saturate(1.6) blur(14px); -webkit-backdrop-filter: saturate(1.6) blur(14px); border-top: 1px solid var(--rand); z-index: 4; }
+.sp-nav .sc-knopf { flex: 1 1 0; min-width: 0; padding: 0 12px; font-size: 15px; white-space: nowrap; }
+.sp-nav .sc-knopf span { overflow: hidden; text-overflow: ellipsis; }
+.sp-nav .rundk { flex: none; width: 50px; padding: 0; }
+.sp-nav .sc-meldung { flex: 1 1 100%; }
 .sp-mitte + #spGruende:empty { display: none; }
 .lade-punkt.klein { width: 10px; height: 10px; }
 @media (min-width: 700px), (orientation: landscape) {
@@ -487,7 +493,9 @@ h2.abschnitt { font-size: 13px; text-transform: uppercase; letter-spacing: .08em
   .sp-leiste { padding-bottom: 6px; }
   .sp-bild canvas { max-height: 52vh; max-height: 52dvh; }
   .sp-unten { padding-top: 6px; padding-bottom: calc(6px + env(safe-area-inset-bottom)); }
-  .sp-unten .sc-knopf { min-height: 44px; }
+  .sp-nav .sc-knopf { min-height: 44px; }
+  .sp-w { width: 44px; height: 44px; }
+  .sp-w-kopf { display: none; }
 }
 .scan-quelle { background: color-mix(in srgb, var(--r3) 14%, var(--flaeche)); }
 .scan-quelle .q-marke { background: var(--r3); color: #1b1300; }
