@@ -400,6 +400,21 @@ function stimmKarte(st) {
     h('p', { class: 'sk-hinweis klein' }, ic('hinweis'), h('span', null, 'Die Tagesform schwankt: morgens, müde oder ohne Aufwärmen liegt die Grenze oft 1–2 Halbtöne anders. Mehrere Aufnahmen von verschiedenen Tagen machen die Schätzung genauer.')));
 }
 
+// ================================================================ Führung: Übungs-Spieler + Pläne – erst bei Bedarf geladen
+let trVersprechen = null;
+const ladeTrainer = () => (trVersprechen = trVersprechen || Promise.all([import('./trainer.js'), import('./uebungsplan.js')])
+  .then(([t, p]) => ({ t, p })).catch((e) => { trVersprechen = null; throw e; }));
+/** Verlauf: {art:'einheit'|'uebung'|'zeile', titel, uebung?, liedId?, zeile?, schritt?, prozent|null, teile?, datum} – nur lokal. */
+function merkeVerlauf(e) {
+  const v = speicher.hole('verlauf', []) || [];
+  v.push({ ...e, datum: Date.now() });
+  speicher.merke('verlauf', v.slice(-400));
+}
+const verlauf = () => (speicher.hole('verlauf', []) || []).filter((x) => x && x.datum);
+const tagSchluessel = (d) => { const x = new Date(d); return `${x.getFullYear()}-${x.getMonth() + 1}-${x.getDate()}`; };
+const teileKurz = (e) => (e && e.teile ? Object.fromEntries(e.teile.filter((t) => t.wert != null).map((t) => [t.id, Math.round(t.wert * 100)])) : null);
+const prozentVon = (e) => (e && e.gueltig && isFinite(e.gesamt) ? e.gesamt : null);
+
 // ================================================================ Router
 let aufraeumen = [];
 function raeumeAuf() { for (const f of aufraeumen.splice(0)) try { f(); } catch (e) { /* egal */ } stoppeKlang(); }
@@ -446,9 +461,13 @@ async function zeige() {
     if (seite === 'lied' && a && b === 'teil' && c) inhalt = await seiteTeil(a, c);
     else if (seite === 'lied' && a && b === 'zeile' && c) inhalt = await seiteZeile(a, c, d === 'bau');
     else if (seite === 'lied' && a && b === 'weg') inhalt = await seiteWeg(a);
+    else if (seite === 'lied' && a && b === 'ueben') inhalt = await seiteLiedUeben(a, c, d);
+    else if (seite === 'einsingen') inhalt = await seiteEinsingen(a);
+    else if (seite === 'uebung' && a) inhalt = await seiteUebung(a, b);
+    else if (seite === 'verlauf') inhalt = seiteVerlauf();
     else if (seite === 'lied' && a) inhalt = await seiteLied(a);
     else if (seite === 'mitsingen') inhalt = await seiteMitsingen(a || speicher.hole('letztesLied', 'the-wall'));
-    else if (seite === 'warmup') inhalt = await seiteWarmup(a || speicher.hole('letztesLied', 'the-wall'));
+    else if (seite === 'warmup') inhalt = await seiteWarmup(a || speicher.hole('letztesLied', 'the-wall'));   // Warm-up mit Uhr (ohne Mikrofon)
     else if (seite === 'stimme') inhalt = seiteStimme();
     else if (seite === 'neu') inhalt = seiteNeu();
     else if (seite === 'uebungen') inhalt = seiteUebungen();
@@ -473,12 +492,30 @@ async function seiteStart() {
   const wall = lieder[0];
   const ersteZeile = wall && wall.zeilen.find((z) => z.text);
   const deko = ersteZeile ? silbenVon(ersteZeile.text, ersteZeile.sprache).slice(0, 6) : [];
+  setTimeout(() => ladeTrainer().catch(() => {}), 900); // Übungs-Spieler schon einmal laden: „Einsingen starten“ reagiert sofort
 
-  const held = h('section', { class: 'held' },
+  // heutiger Stand aus dem Verlauf
+  const v = verlauf(), heute = tagSchluessel(Date.now());
+  const heuteE = v.filter((x) => x.art === 'einheit' && tagSchluessel(x.datum) === heute);
+  const tage = new Set(v.map((x) => tagSchluessel(x.datum)));
+  let folge = 0; for (let d = new Date(); tage.has(tagSchluessel(d)); d.setDate(d.getDate() - 1)) folge++;
+  const letzteE = heuteE[heuteE.length - 1];
+  const standText = letzteE ? (letzteE.prozent != null ? `Heute eingesungen: ${letzteE.prozent} %${letzteE.prozent >= 70 ? ' – du bist warm.' : ''}` : 'Heute schon eingesungen.')
+    : folge ? `${folge === 1 ? 'Gestern' : `${folge} Tage in Folge`} geübt – heute noch nicht eingesungen.` : '7 kurze Übungen im Takt – mit Vorsingen, Nachsingen und Rückmeldung in Prozent.';
+  const lid = lieder.find((l) => l.id === letzt) ? letzt : 'the-wall';
+  const lt = (lieder.find((l) => l.id === lid) || {}).titel || 'The Wall';
+
+  const held = h('section', { class: 'held start-held' },
     h('h1', null, `${gruss}, ${name}`),
-    h('p', null, 'Was singen wir heute?'),
+    h('p', null, letzteE ? 'Schön, dass du da bist.' : 'Bereit zum Einsingen?'),
     h('div', { class: 'held-kugeln', 'aria-hidden': 'true' }, deko.map((s) => kugel(s, 'mini'))),
-    h('a', { class: 'knopf weiss breit', href: `#warmup/${enc(letzt)}`, style: { marginTop: '16px', minHeight: '56px' } }, ic('play'), 'Warm-up für heute'));
+    h('a', { class: 'knopf weiss breit einsingen', href: `#einsingen/${enc(lid)}`, style: { marginTop: '16px' } }, ic('play'), letzteE ? 'Nochmal einsingen' : 'Einsingen starten'),
+    h('p', { class: 'start-stand' }, ic('warm'), h('span', null, standText)));
+
+  const wege = h('div', { class: 'wege' },
+    h('a', { class: 'weg-kachel v-o', href: `#lied/${enc(lid)}/ueben` }, h('span', { class: 'kachel-ic' }, ic('lieder')), h('b', null, 'Lied üben'), h('small', null, `„${kurz(lt, 22)}“ Zeile für Zeile`)),
+    h('a', { class: 'weg-kachel v-i', href: '#uebungen' }, h('span', { class: 'kachel-ic' }, ic('uebungen')), h('b', null, 'Freie Übungen'), h('small', null, `${uebungsListe().length || 34} Übungen im Takt`)),
+    h('a', { class: 'weg-kachel v-a', href: '#verlauf' }, h('span', { class: 'kachel-ic' }, ic('verlauf')), h('b', null, 'Verlauf'), h('small', null, v.length ? `${tage.size} ${tage.size === 1 ? 'Tag' : 'Tage'} geübt` : 'noch leer – leg los')));
 
   const stimmKarte = st && st.kern ? h('a', { class: 'karte', href: '#stimme' },
     h('div', { class: 'ueb-kopf' }, h('span', { class: 'ueb-symbol', style: { background: `linear-gradient(145deg, ${BAND_KERN.f1}, ${BAND_KERN.f2})` } }, ic('stimme')),
@@ -486,7 +523,7 @@ async function seiteStart() {
       h('span', { class: 'pfeil' }, ic('weiter'))))
     : h('a', { class: 'karte', href: '#stimme' },
       h('div', { class: 'ueb-kopf' }, h('span', { class: 'ueb-symbol', style: { background: `linear-gradient(145deg, ${BAND_KERN.f1}, ${BAND_KERN.f2})` } }, ic('stimme')),
-        h('div', null, h('h3', null, 'Stimmlage ermitteln'), h('p', { class: 'leise klein' }, 'Einmal kurz singen – danach passen Warm-up und Lernweg genau zu dir.')),
+        h('div', null, h('h3', null, 'Stimmlage ermitteln'), h('p', { class: 'leise klein' }, 'Einmal kurz singen – danach passen Starttöne und Übungen genau zu dir.')),
         h('span', { class: 'pfeil' }, ic('weiter'))));
 
   const karten = lieder.map((l) => {
@@ -494,7 +531,7 @@ async function seiteStart() {
     const fertig = teile.filter((t) => f.teile && f.teile[t.id]).length;
     const z = l.zeilen.find((x) => x.text);
     const vk = z ? silbenVon(z.text, z.sprache).slice(0, 8) : [];
-    const farben = [...new Set(vk.map((s) => vNorm(s.vokal)))].slice(0, 3).map((v) => VFARBE[v]);
+    const farben = [...new Set(vk.map((s) => vNorm(s.vokal)))].slice(0, 3).map((x) => VFARBE[x]);
     return h('a', { class: 'karte lied-karte', href: `#lied/${enc(l.id)}` },
       h('span', { class: 'band', style: { background: `linear-gradient(90deg, ${(farben.length > 1 ? farben : ['#ffb057', '#ff4f8b']).join(', ')})` } }),
       h('div', { class: 'zeile1' },
@@ -505,12 +542,12 @@ async function seiteStart() {
       teile.length ? h('div', { class: 'fortschritt-balken', title: `${fertig} von ${teile.length} Teilen geschafft` }, h('i', { style: { transform: `scaleX(${teile.length ? fertig / teile.length : 0})` } })) : null);
   });
 
-  return [held, stimmKarte,
+  return [held, wege, stimmKarte,
     h('h2', null, 'Meine Lieder'), ...karten,
     h('div', { class: 'kacheln', style: { marginTop: '18px' } },
       kachel('#neu', 'plus', 'Lied hinzufügen', 'a'),
       kachel('#stimme', 'stimme', 'Meine Stimmlage', 'o'),
-      kachel('#uebungen', 'uebungen', 'Übungen', 'i'))];
+      kachel(`#mitsingen/${enc(lid)}`, 'welle', 'Mitsingen', 'i'))];
 }
 function kachel(href, icon, text, v) {
   return h('a', { class: 'kachel', href }, h('span', { class: `kachel-ic ${VKL[v]}`, style: { background: 'linear-gradient(145deg, var(--v1), var(--v2))' } }, ic(icon)), h('span', null, text));
@@ -531,9 +568,10 @@ async function seiteLied(id) {
   const kopf = h('section', { class: 'held' },
     h('h1', null, lied.titel || 'Ohne Titel'),
     h('p', null, [lied.kuenstler, lied.bpm ? `${lied.bpm} BPM` : null, lied.tonart].filter(Boolean).join(' · ')),
-    h('a', { class: 'knopf weiss breit', href: `#mitsingen/${enc(id)}`, style: { marginTop: '16px', minHeight: '56px' } }, ic('play'), 'Mitsingen mit Instrumental'),
+    h('a', { class: 'knopf weiss breit', href: `#lied/${enc(id)}/ueben`, style: { marginTop: '16px', minHeight: '56px' } }, ic('play'), 'Lied üben – Zeile für Zeile'),
     h('div', { class: 'knopf-reihe', style: { marginTop: '10px' } },
-      h('a', { class: 'knopf weiss', href: `#warmup/${enc(id)}` }, ic('warm'), 'Warm-up für dieses Lied'),
+      h('a', { class: 'knopf weiss', href: `#einsingen/${enc(id)}` }, ic('warm'), 'Einsingen für dieses Lied'),
+      h('a', { class: 'knopf weiss', href: `#mitsingen/${enc(id)}` }, ic('welle'), 'Mitsingen'),
       naechster ? h('a', { class: 'knopf weiss', href: `#lied/${enc(id)}/teil/${enc(naechster.id)}` }, ic('pfad'), 'Lernweg') : null));
 
   let umfKarte;
@@ -718,8 +756,9 @@ function uebungsDetails(u, extra) {
       h('span', { class: 'pfeil' }, ic('weiter'))),
     h('div', { class: 'ueb-inhalt' }, u.ziel ? h('p', { class: 'leise' }, u.ziel) : null,
       u.anleitung && u.anleitung.length ? h('ol', { class: 'anleitung' }, u.anleitung.map((a) => h('li', null, a))) : null,
-      folge && folge.length ? h('button', { class: 'knopf breit', style: { marginTop: '10px' }, onclick: () => spieleUebung(u, folge, extra && extra.gleiten != null ? extra.gleiten : u.gleiten) }, ic('play'),
-        `Vorspielen (${nName(Math.min(...folge))}–${nName(Math.max(...folge))})`) : null));
+      h('a', { class: 'knopf haupt breit', style: { marginTop: '12px' }, href: `#uebung/${enc(u.id)}${folge && folge.length && extra && extra.folge ? '/' + Math.min(...folge) : ''}` }, ic('play'), 'Üben – im Takt mit Rückmeldung'),
+      folge && folge.length ? h('button', { class: 'knopf klein breit', style: { marginTop: '8px' }, onclick: () => spieleUebung(u, folge, extra && extra.gleiten != null ? extra.gleiten : u.gleiten) }, ic('klavier'),
+        `Nur anhören (${nName(Math.min(...folge))}–${nName(Math.max(...folge))})`) : null));
 }
 
 async function seiteWeg(id) {
@@ -1076,7 +1115,10 @@ async function seiteZeile(id, zid, bauZiel = false) {
   const ganz = () => { abIdx = 0; bauKnoepfe.forEach((x) => x.classList.remove('an')); baueKette(); };
   playKnopf.addEventListener('dblclick', ganz);
 
-  return [h('div', { class: 'zwei-spalten' },
+  const gefuehrt = noten.length && !noten[0].ohneMelodie ? h('a', { class: 'karte hinweis-karte', href: `#lied/${enc(id)}/ueben/${enc(zid)}` },
+    h('span', { class: 'ueb-symbol', style: { background: 'var(--verlauf)', width: '44px', height: '44px' } }, ic('play')),
+    h('div', null, h('h3', null, 'Geführt üben'), h('p', { class: 'leise klein' }, 'Vorsingen → Einzählen → Nachsingen, mit Klick, Begleitung und Rückmeldung in Prozent.')), h('span', { class: 'pfeil' }, ic('weiter'))) : null;
+  return [gefuehrt, h('div', { class: 'zwei-spalten' },
     h('div', null, buehne, h('div', { style: { marginTop: '12px' } }, leinwand),
       h('p', { class: 'leise klein', style: { marginTop: '8px', textAlign: 'center' } }, 'Mikrofon an: deine Linie gegen die Notenbalken – nur zur Orientierung.')),
     h('div', null, regler, bauKarte,
