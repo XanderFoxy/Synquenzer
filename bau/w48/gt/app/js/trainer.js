@@ -103,10 +103,15 @@ export function beendeSitzung() {
 
 // ================================================================ Aufnahmen (eigene Stimme, Original-Instrumental) – erst bei Bedarf
 const PUFFER = new Map();
-function dekodiere(ab) {
+/** Dekodieren und auf Mono bringen (spart auf dem iPhone die Hälfte des Speichers; zum Üben reicht Mono). */
+async function dekodiere(ab, sr = 44100) {
   const O = window.OfflineAudioContext || window.webkitOfflineAudioContext;
-  const off = new O(1, 1, 44100);
-  return new Promise((ok, f) => { const p = off.decodeAudioData(ab, ok, f); if (p && p.then) p.then(ok, f); });
+  const off = new O(1, 1, sr);
+  const b = await new Promise((ok, f) => { const p = off.decodeAudioData(ab, ok, f); if (p && p.then) p.then(ok, f); });
+  if (b.numberOfChannels < 2) return b;
+  const m = off.createBuffer(1, b.length, b.sampleRate), d = m.getChannelData(0), k = b.numberOfChannels;
+  for (let c = 0; c < k; c++) { const x = b.getChannelData(c); for (let i = 0; i < d.length; i++) d[i] += x[i] / k; }
+  return m;
 }
 async function liedAudioPfad(art) {
   const cfg = await (await fetch(new URL('../daten/the-wall-audio.json', import.meta.url))).json();
@@ -119,7 +124,7 @@ function holePuffer(liedId, art) {
       if (liedId === 'the-wall') {
         const r = await fetch(await liedAudioPfad(art));
         if (!r.ok) throw new Error(`${art === 'stimme' ? 'Vokal-Spur' : 'Instrumental'} nicht gefunden (${r.status})`);
-        return dekodiere(await r.arrayBuffer());
+        return dekodiere(await r.arrayBuffer(), art === 'stimme' ? 32000 : 44100);
       }
       const blob = await speicher.ladeAudio(art === 'stimme' ? liedId : liedId + '#instrumental');
       if (!blob) throw new Error(art === 'stimme' ? 'Keine Aufnahme gespeichert' : 'Kein Instrumental gespeichert');
@@ -214,7 +219,8 @@ export function spieler(wurzel, plan, opt = {}) {
   const phasePill = h('span', { class: 'tr-phase' }, 'Bereit');
   const durchText = h('span', { class: 'tr-durch' }, `${plan.durchgaenge.length} ${plan.durchgaenge.length === 1 ? 'Durchgang' : 'Durchgänge'}`);
   const micPunkt = h('span', { class: 'tr-mic', title: 'Mikrofon' }, ic('stimme'));
-  const jetztK = h('div', { class: 'tr-jetzt-k' });
+  const n0 = plan.durchgaenge[0] && plan.durchgaenge[0].noten[0];
+  const jetztK = h('div', { class: 'tr-jetzt-k' }, n0 ? h('span', { class: `kugel ${VKL[vNorm(n0.vokal)] || 'v-a'} ${String(n0.silbe).length > 3 ? 'lang' : ''}` }, SILBE_ANZ(n0.silbe)) : null);
   const jetztT = h('div', { class: 'tr-jetzt-t' }, h('b', null, plan.durchgaenge[0] ? `Start: ${plan.durchgaenge[0].name}` : ''), h('span', { class: 'leise klein' }, singt ? 'Tippe auf Start – erst höre zu, dann sing nach.' : 'Tippe auf Start – der Klick führt dich.'));
   const atemKreis = h('div', { class: 'tr-atemkreis', 'aria-hidden': 'true' }, h('i'));
   const jetzt = h('div', { class: `tr-jetzt ${singt ? '' : 'atem'}` }, singt ? jetztK : atemKreis, jetztT);
@@ -518,8 +524,9 @@ export function spieler(wurzel, plan, opt = {}) {
         g.strokeStyle = fr; g.lineWidth = 2.5;
         if (n.bis == null) { const x1 = x(n.b) - 2, bw = Math.max(8, x(n.b + n.d) - x(n.b) + 2); g.beginPath(); if (g.roundRect) g.roundRect(x1, y(n.midi) - 9, bw, 18, 9); else g.rect(x1, y(n.midi) - 9, bw, 18); g.stroke(); }
       }
-      // Silbe über dem Ton (nur, wenn Platz ist)
-      if (x(n.b + n.d) - x(n.b) > 16 || D.noten.length <= 12) {
+      // Silbe über dem Ton (nur wenn sie wechselt und Platz ist – „brr brr brr“ wäre nur Lärm)
+      const vorS = i ? D.noten[i - 1].silbe : null;
+      if ((n.silbe !== vorS || an) && (x(n.b + n.d) - x(n.b) > 16 || D.noten.length <= 12)) {
         g.fillStyle = dunkel ? 'rgba(255,255,255,.8)' : 'rgba(43,29,36,.8)'; g.font = `${an ? 800 : 650} 11px system-ui, sans-serif`; g.textAlign = 'left';
         g.fillText(SILBE_ANZ(n.silbe).slice(0, 8), x(n.b) + 1, y(n.midi) - 10);
       }
@@ -556,7 +563,7 @@ export function spieler(wurzel, plan, opt = {}) {
     const pos = s.phase === 'singen' ? s.pos : -1;
     for (const p of D.phasen || []) {
       const an = pos >= p.b && pos < p.b + p.d;
-      g.globalAlpha = an ? 0.95 : 0.45; g.fillStyle = PHASE_FARBE[p.art] || '#ffb057';
+      g.globalAlpha = an ? 1 : 0.72; g.fillStyle = PHASE_FARBE[p.art] || '#ffb057';
       const x1 = x(p.b) + 1, bw = Math.max(6, x(p.b + p.d) - x(p.b) - 2);
       g.beginPath(); if (g.roundRect) g.roundRect(x1, 26, bw, hh - 52, 14); else g.rect(x1, 26, bw, hh - 52); g.fill();
       g.globalAlpha = 1; g.fillStyle = '#2b1d24'; g.font = `${an ? 800 : 700} 12px system-ui, sans-serif`; g.textAlign = 'center';

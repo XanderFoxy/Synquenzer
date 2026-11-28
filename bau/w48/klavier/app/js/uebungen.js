@@ -5,11 +5,12 @@ import {
   STAMM, tonName, oktavName, midiAus, notenName, ortImSystem, systemPosition, intervallName,
   rollenFarbe, akkordAusMidis, ROLLEN_NAME,
 } from './akkorde.js';
+import { intervall as ivBerechnen, langText, nachHalbtoenen } from './intervalle.js';
 
 export const UEBUNGEN = [
   { id: 'lesen', titel: 'Noten lesen', text: 'Note im Bassschlüssel sehen – Taste finden' },
   { id: 'akkord', titel: 'Umkehrungen', text: 'Grundstellung oder Umkehrung? Dann greifen' },
-  { id: 'intervall', titel: 'Intervalle', text: 'Abstand sehen und hören' },
+  { id: 'intervall', titel: 'Intervalle', text: 'Abstand sehen, hören und auf der Tastatur finden' },
 ];
 export const MERKSAETZE = {
   linien: { toene: 'G · H · D · F · A', satz: '„Geh Heim, Du Fauler Affe"' },
@@ -354,10 +355,38 @@ export function uebungen(el, opt = {}) {
   }
 
   // ----- 3. Intervalle -----
-  const IV_STUFEN = [{ id: 'sehen', titel: 'Sehen & hören' }, { id: 'hoeren', titel: 'Nur hören' }];
+  const IV_STUFEN = [{ id: 'sehen', titel: 'Sehen & hören' }, { id: 'hoeren', titel: 'Nur hören' }, { id: 'finden-leicht', titel: 'Finden: leicht' }, { id: 'finden', titel: 'Finden: alle' }];
+  // Finden: Bezugston (weiße Taste im Bassschlüssel) + Abstand in Halbtönen → gesuchter Ton darüber
+  const FINDEN_LEICHT = [3, 4, 5, 7, 12], FINDEN_ALLE = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+  const BEZUG_TASTEN = [41, 43, 45, 47, 48, 50, 52];
+  const ZAHL_AUS_HALB = [1, 2, 2, 3, 3, 4, 4, 5, 6, 6, 7, 7, 8];
+  const swAusMidi = (m) => { const d = [['C', 0], ['C', 1], ['D', 0], ['E', -1], ['E', 0], ['F', 0], ['F', 1], ['G', 0], ['A', -1], ['A', 0], ['H', -1], ['H', 0]][((m % 12) + 12) % 12]; return { stamm: d[0], vorz: d[1], oktave: Math.floor(m / 12) - 1 }; };
+  const zielSchreibweise = (bezug, h) => {
+    const d = bezug.oktave * 7 + STAMM.indexOf(bezug.stamm) + ZAHL_AUS_HALB[h] - 1;
+    const t = { stamm: STAMM[d % 7], vorz: 0, oktave: Math.floor(d / 7) };
+    t.vorz = midiAus(bezug) + h - midiAus(t);
+    return Math.abs(t.vorz) > 1 ? swAusMidi(midiAus(bezug) + h) : t;
+  };
   function intervall() {
     let stufe = 'sehen', p1 = 0, schritt = 2, s1 = null, s2 = null, fertig = false, versuche = 0;
+    const findet = () => stufe.startsWith('finden');
+    let halb = 0; // Finden: gesuchter Abstand in Halbtönen
+    const neuFinden = () => {
+      const pool = stufe === 'finden' ? FINDEN_ALLE : FINDEN_LEICHT;
+      let h; do h = zufall(pool); while (h === halb && pool.length > 1);
+      halb = h;
+      s1 = swAusMidi(zufall(BEZUG_TASTEN)); s2 = zielSchreibweise(s1, halb);
+      fertig = false; versuche = 0;
+      const m1 = midiAus(s1);
+      tast.zeige([m1], { [m1]: 'grundton' }, { [m1]: '1' }); tast.intervalle(null, m1); tast.scrolleZuBereich(m1, m1 + 12);
+      zeichne(true); antworten.textContent = '';
+      frage.textContent = 'Hör zu – und finde den zweiten Ton auf der Tastatur.';
+      sage(`Bezugston: ${notenName(s1)} (rot). Der gesuchte Ton liegt darüber.`); erkl.textContent = '';
+      if (audioKontextBereit()) spaeter(() => api.hoeren(), 250);
+    };
     const neu = () => {
+      if (findet()) return neuFinden();
+      tast.intervalle(null, null);
       schritt = 1 + Math.floor(Math.random() * 7);
       p1 = Math.floor(Math.random() * Math.max(1, 11 - schritt));
       s1 = ausPos(p1); s2 = ausPos(p1 + schritt); fertig = false; versuche = 0;
@@ -367,12 +396,43 @@ export function uebungen(el, opt = {}) {
       if (audioKontextBereit()) spaeter(() => api.hoeren(), 250);
     };
     const zeichne = (ein = false) => {
+      if (findet()) {
+        zeichneBassSystem(svg, [{ s: s1, x: 150, ein, farbe: rollenFarbe('grundton') }, ...(fertig ? [{ s: s2, x: 240, ein: true, farbe: rollenFarbe('septime') }] : [])], { namen });
+        return;
+      }
       const verdeckt = stufe === 'hoeren' && !fertig;
       if (verdeckt) { zeichneBassSystem(svg, [], { namen }); return; }
       zeichneBassSystem(svg, [
         { s: s1, x: 150, ein, farbe: fertig ? rollenFarbe('grundton') : null },
         { s: s2, x: 240, ein, farbe: fertig ? rollenFarbe('septime') : null },
       ], { namen });
+    };
+    const tippFinden = (m) => {
+      if (fertig) return;
+      const m1 = midiAus(s1), m2 = midiAus(s2);
+      const bezug = { midi: m1, schreibweise: s1 };
+      if (m === m2) {
+        fertig = true;
+        const iv = ivBerechnen(bezug, { midi: m2, schreibweise: s2 });
+        tast.zeige([m1, m2], { [m1]: 'grundton', [m2]: 'septime' }, { [m1]: '1', [m2]: '' });
+        tast.intervalle(new Map([[m2, iv.kurz]]), m1); tast.leuchte(m2, 'quinte', 900);
+        zeichne();
+        sage(`Richtig! ${langText(iv)}.`, 'gut');
+        erkl.textContent = iv.zusatz ? `${iv.zusatz[0].toUpperCase()}${iv.zusatz.slice(1)}.` : 'Tippe „Weiter“ für das nächste Intervall.';
+        spaeter(() => { const c = audioKontext(), t = c.currentTime + 0.05; ton(m1, t, 1.2); ton(m2, t, 1.2); }, 450);
+        return;
+      }
+      versuche++;
+      tast.leuchte(m, 'fremd', 500);
+      if (m === m1) sage('Das ist der Bezugston selbst. Der gesuchte Ton liegt höher.', 'hinweis');
+      else if (m < m1) sage(`${notenName(m)} liegt unter dem Bezugston – der gesuchte Ton liegt darüber.`, 'hinweis');
+      else {
+        const iv = ivBerechnen(bezug, { midi: m });
+        tast.intervalle(new Map([[m, iv.kurz]]), m1);
+        sage(`Das war ${iv.lang === 'Tritonus' ? 'ein Tritonus' : 'eine ' + iv.lang} (${m - m1} ${m - m1 === 1 ? 'Halbton' : 'Halbtöne'}). Gesucht ist ein ${m > m2 ? 'kleinerer' : 'größerer'} Abstand.`, 'hinweis');
+      }
+      if (versuche >= 2) erkl.textContent = `Tipp: Gesucht ist ${halb === 6 ? 'der Tritonus' : 'die ' + nachHalbtoenen(halb).lang} – ${halb} ${halb === 1 ? 'Halbton' : 'Halbtöne'} über ${notenName(s1)}.`;
+      if (versuche >= 3) { tast.zeige([m1, m2], { [m1]: 'grundton', [m2]: 'septime' }, { [m1]: '1', [m2]: '?' }); erkl.textContent += ' Die Taste ist markiert.'; }
     };
     const zeigeAntworten = () => {
       antworten.textContent = '';
@@ -402,15 +462,16 @@ export function uebungen(el, opt = {}) {
     };
     const api = {
       titel: 'Intervalle', stufen: IV_STUFEN, stufe: () => stufe,
-      setzeStufe(id) { stufe = id; neu(); },
+      setzeStufe(id) { stufe = IV_STUFEN.some((x) => x.id === id) ? id : stufe; neu(); },
       hilfe: () => `<div class="ue-merk"><b>Zählen</b><i>Der untere Ton ist 1. Jede Linie und jeder Zwischenraum zählt einen Schritt.</i></div>
-        <div class="ue-merk"><b>Gerade oder ungerade?</b><i>Terz, Quinte, Septime: Linie → Linie (oder Raum → Raum). Sekunde, Quarte, Sexte: Linie → Raum.</i></div>`,
+        <div class="ue-merk"><b>Gerade oder ungerade?</b><i>Terz, Quinte, Septime: Linie → Linie (oder Raum → Raum). Sekunde, Quarte, Sexte: Linie → Raum.</i></div>
+        <div class="ue-merk"><b>Finden: Halbtöne zählen</b><i>Jede Taste (schwarz oder weiß) ist ein Halbton. Kleine Terz 3 · große Terz 4 · Quarte 5 · Quinte 7 · Oktave 12.</i></div>`,
       legende: [], neu, zeichne: () => zeichne(),
       hoeren() {
         const c = audioKontext(), m1 = midiAus(s1), m2 = midiAus(s2), t = c.currentTime + 0.05;
         ton(m1, t, 0.55); ton(m2, t + 0.6, 0.55); ton(m1, t + 1.3, 1); ton(m2, t + 1.3, 1);
       },
-      tipp(m) { ton(m, undefined, 0.7); },
+      tipp(m) { ton(m, undefined, 0.7); if (findet()) tippFinden(m); },
     };
     return api;
   }
@@ -439,6 +500,7 @@ export function uebungen(el, opt = {}) {
   function zeige(id) {
     clearTimeout(warte);
     akt = cache[id] || (cache[id] = FABRIK[id]());
+    tast.intervalle(null, null);
     [...tabs.children].forEach((b) => b.setAttribute('aria-selected', String(b.dataset.id === id)));
     titel.textContent = akt.titel;
     hilfe.innerHTML = akt.hilfe();
@@ -454,6 +516,7 @@ export function uebungen(el, opt = {}) {
   weiterKnopf.addEventListener('click', () => { akt && akt.neu(); });
 
   zeige(opt.start || 'lesen');
+  if (opt.stufe && akt.stufen.some((x) => x.id === opt.stufe)) { akt.setzeStufe(opt.stufe); baueStufen(); }
   return {
     zeige,
     tastatur: tast,

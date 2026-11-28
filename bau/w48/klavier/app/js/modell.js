@@ -7,7 +7,9 @@
 //   noten: [{ id, t (Viertel ab Beginn), dauer (Viertel), midi, system:'oben'|'unten', stimme, takt (nr),
 //             schreibweise:{stamm:'C'..'H', vorz:-2..2, oktave (wissenschaftlich: 4 = c1 = MIDI 60)},
 //             finger?, bindung?:{start?:true, ende?:true}, typ?, punkte? }],
-//   pausen?: [{ t, dauer, system, stimme, takt, ganzTakt? }]
+//   pausen?: [{ t, dauer, system, stimme, takt, ganzTakt? }],
+//   tempi?: [{ t (Viertel), bpm }]   – nur bei Tempowechseln; tempo = Anfangstempo
+//   quelle?: { art:'midi', … }       – Angaben zum Einlesen (Raster gerundet?, Hände-Zuordnung, Spuren)
 // }
 // Hinweis zu Haltebögen: Eine gebundene Folgenote (bindung.ende) wird NICHT neu angeschlagen.
 // klingendeNoten(stück) fasst Bogenketten zu je einem klingenden Ton zusammen (für Wiedergabe/Analyse).
@@ -119,6 +121,35 @@ export function klingendeNoten(stück) {
     }
     if (n.bindung?.start) offen.set(key, k);
     else offen.delete(key);
+  }
+  return aus;
+}
+
+// ───────── Notenwerte: darstellbare Dauern (für MIDI-Einlesen und Export) ─────────
+const NW_GERADE = [[6, 'whole', 1], [4, 'whole', 0], [3, 'half', 1], [2, 'half', 0], [1.5, 'quarter', 1], [1, 'quarter', 0], [0.75, 'eighth', 1],
+  [0.5, 'eighth', 0], [0.375, '16th', 1], [0.25, '16th', 0], [0.1875, '32nd', 1], [0.125, '32nd', 0], [0.0625, '64th', 0]];
+const NW_TRIOLE = [4 / 3, 2 / 3, 1 / 3, 1 / 6, 1 / 12]; // Halbe-, Viertel-, Achtel-, 16tel-, 32tel-Triole
+const fast = (a, b) => Math.abs(a - b) < 1e-6;
+
+/** Notenwert einer Dauer (Viertel) → {typ, punkte, tupel?} oder null, wenn sie nicht als ein Wert schreibbar ist. */
+export function notenwert(d) {
+  for (const [v, typ, punkte] of NW_GERADE) if (fast(v, d)) return { typ, punkte };
+  for (const v of NW_TRIOLE) if (fast(v, d)) { const g = NW_GERADE.find((w) => fast(w[0], v * 1.5) && !w[2]); if (g) return { typ: g[1], punkte: 0, tupel: [3, 2] }; }
+  return null;
+}
+
+/** Zerlegt eine Dauer in schreibbare Notenwerte (werden mit Haltebogen verbunden), z. B. 2.5 → [2, 0.5], 5/3 → [4/3, 1/3]. */
+export function zerlegeDauer(d) {
+  const aus = [];
+  let rest = d;
+  const vielfach = (x, n) => Math.abs(x * n - Math.round(x * n)) < 1e-6;
+  const gerade = NW_GERADE.map((w) => w[0]);
+  for (let schutz = 0; rest > 1e-6 && schutz < 40; schutz++) {
+    const liste = vielfach(rest, 16) ? gerade : vielfach(rest, 12) ? [4, 3, 2, ...NW_TRIOLE, 1].sort((a, b) => b - a) : [...gerade, ...NW_TRIOLE].sort((a, b) => b - a);
+    const v = liste.find((x) => x <= rest + 1e-6);
+    if (!v) { if (aus.length) aus[aus.length - 1] += rest; else aus.push(rest); break; }
+    aus.push(v);
+    rest -= v;
   }
   return aus;
 }

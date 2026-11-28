@@ -160,10 +160,11 @@ h2.abschnitt { font-size: 13px; text-transform: uppercase; letter-spacing: .08em
 
 .steuer {
   grid-area: steuer; display: grid; gap: 8px; padding: 8px max(10px, env(safe-area-inset-right)) 6px max(10px, env(safe-area-inset-left));
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  grid-template-areas: "spiel bereich schleife" "spiel tempo hand";
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-areas: "spiel bereich schleife speichern" "spiel tempo hand hand";
   align-items: center;
 }
+.speichern-k { grid-area: speichern; justify-self: end; }
 .spielen {
   grid-area: spiel; width: 64px; height: 64px; border-radius: 50%; border: 0; display: grid; place-items: center;
   background: linear-gradient(135deg, var(--akzent2), var(--akzent)); color: var(--akzent-text);
@@ -206,7 +207,8 @@ h2.abschnitt { font-size: 13px; text-transform: uppercase; letter-spacing: .08em
   .akkordkarte .gross { font-size: 22px; }
   .akkordkarte .hoer { grid-column: 2; grid-row: 1; justify-self: end; }
   .akkordkarte .erkl { font-size: 12px; }
-  .steuer { padding: 6px max(8px, env(safe-area-inset-right)) 6px 8px; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "spiel bereich" "spiel tempo" "hand hand"; gap: 4px 8px; }
+  .steuer { padding: 6px max(8px, env(safe-area-inset-right)) 6px 8px; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "spiel bereich bereich" "spiel tempo tempo" "hand hand speichern"; gap: 4px 8px; }
+  .speichern-k { min-height: 36px; height: 36px; width: 44px; }
   .schleife-k { display: none; }
   .spielen { width: 54px; height: 54px; }
   .tempo input { height: 36px; }
@@ -220,7 +222,7 @@ h2.abschnitt { font-size: 13px; text-transform: uppercase; letter-spacing: .08em
   .notenflaeche { margin-right: 0; }
   .akkordkarte { margin: 0 16px 0 10px; align-self: stretch; align-content: start; grid-template-columns: auto minmax(0, 1fr); }
   .akkordkarte .hoer { grid-column: 2; grid-row: 1; justify-self: end; }
-  .steuer { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "spiel bereich" "spiel tempo" "hand hand"; padding: 10px 16px 10px 10px; }
+  .steuer { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "spiel bereich bereich" "spiel tempo tempo" "hand hand speichern"; padding: 10px 16px 10px 10px; }
   .schleife-k { display: none; }
   .tastenflaeche .kl-tastatur { --kl-h: 170px; --kl-w: 48px; }
 }
@@ -229,7 +231,7 @@ h2.abschnitt { font-size: 13px; text-transform: uppercase; letter-spacing: .08em
 .ueben { max-width: 760px; margin: 0 auto; padding: 0 max(var(--rand-x), env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) max(var(--rand-x), env(safe-area-inset-left)); }
 
 /* ── Hinweis-Blatt, Toast ─────────────────────── */
-.hinweis { position: fixed; inset: 0; z-index: 20; display: grid; align-items: end; justify-items: center; background: rgba(10,12,20,.45); animation: blende .2s ease both; }
+#hinweis { position: fixed; inset: 0; z-index: 20; display: grid; align-items: end; justify-items: center; background: rgba(10,12,20,.45); animation: blende .2s ease both; }
 @keyframes blende { from { opacity: 0; } }
 .blatt {
   width: min(560px, 100%); background: var(--flaeche); border-radius: 26px 26px 0 0; padding: 22px 20px calc(20px + env(safe-area-inset-bottom));
@@ -241,7 +243,7 @@ h2.abschnitt { font-size: 13px; text-transform: uppercase; letter-spacing: .08em
 .blatt p { margin: 0 0 10px; color: var(--leise); font-size: 15px; }
 .blatt p b { color: var(--text); }
 .blatt .ok { width: 100%; min-height: 50px; border: 0; border-radius: 16px; background: var(--akzent); color: var(--akzent-text); font-weight: 700; font-size: 16px; margin-top: 6px; }
-@media (min-width: 700px) { .hinweis { align-items: center; } .blatt { border-radius: 26px; } }
+@media (min-width: 700px) { #hinweis { align-items: center; } .blatt { border-radius: 26px; } }
 .toast {
   position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); z-index: 30; transform: translate(-50%, 20px); opacity: 0;
   background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 14px; font-size: 14px; font-weight: 600; pointer-events: none;
@@ -253,3 +255,65 @@ h2.abschnitt { font-size: 13px; text-transform: uppercase; letter-spacing: .08em
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
 }
 .schalter.nur-ico { width: 44px; min-width: 44px; padding: 0; justify-content: center; flex: none; }
+
+/* ── Intervalle in der Akkordkarte ────────────── */
+.akkordkarte { max-height: 42vh; max-height: 42dvh; overflow-y: auto; overscroll-behavior: contain; }
+.akkordkarte.nur-iv { grid-template-columns: minmax(0, 1fr); }
+.iv { grid-column: 1 / -1; display: grid; gap: 6px; margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--rand); }
+.iv-kopf { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; font-weight: 600; color: var(--leise); }
+.iv-kopf b { color: var(--text); font-size: 16px; }
+.iv-weg { width: 44px; height: 44px; margin: -8px -6px -8px 0; border: 0; border-radius: 50%; background: none; color: var(--leise); display: grid; place-items: center; flex: none; }
+.iv-weg:active { background: var(--flaeche2); }
+.iv-liste { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+.iv-liste li { display: flex; align-items: baseline; gap: 8px; font-size: 14px; font-weight: 600; line-height: 1.35; animation: tipp .22s ease both; }
+.iv-liste small { color: var(--leise); font-weight: 500; }
+.iv-k { flex: none; min-width: 52px; text-align: center; font-size: 12px; font-weight: 800; padding: 2px 7px; border-radius: 10px; background: var(--akzent); color: var(--akzent-text); }
+.iv-leer { margin: 0; font-size: 13px; color: var(--leise); }
+.iv-basis { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; font-size: 13px; }
+.iv-bl { font-size: 12px; font-weight: 700; color: var(--leise); margin-right: 2px; }
+.iv-chip { display: inline-flex; gap: 4px; align-items: baseline; padding: 2px 8px; border-radius: 10px; background: var(--flaeche2); font-weight: 600; }
+.iv-chip b { color: var(--akzent); font-weight: 800; }
+/* Marken im Notenblatt */
+.iv-marken { pointer-events: none; animation: blende .2s ease both; }
+.iv-marke rect { fill: var(--akzent); opacity: .92; }
+.iv-marke text { font: 800 10px system-ui, -apple-system, sans-serif; fill: var(--akzent-text); }
+.iv-ring { fill: none; stroke: var(--akzent); stroke-width: 2.2; }
+
+/* ── MIDI-Herkunft (über dem Notenblatt) ──────── */
+.quelle { margin: 2px 6px 6px; padding: 8px 10px; border-radius: 14px; background: var(--flaeche2); font-size: 12.5px; line-height: 1.4; color: var(--leise); display: grid; gap: 6px; }
+.quelle p { margin: 0; }
+.quelle b { color: var(--text); }
+.q-marke { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: .04em; padding: 1px 7px; border-radius: 8px; background: var(--akzent); color: var(--akzent-text); }
+.q-haende { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+.q-haende > span { font-weight: 700; color: var(--text); margin-right: 4px; }
+.q-haende button { min-height: 44px; padding: 0 12px; border: 1px solid var(--rand); border-radius: 22px; background: var(--flaeche); font-size: 13px; font-weight: 700; color: var(--leise); transition: background-color .15s ease, color .15s ease; }
+.q-haende button[aria-pressed="true"] { background: var(--akzent); border-color: var(--akzent); color: var(--akzent-text); }
+
+/* ── Speichern-Blatt ──────────────────────────── */
+.format-wahl { display: grid; gap: 10px; margin: 4px 0 12px; }
+.format-knopf { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 64px; padding: 10px 14px; border: 1px solid var(--rand); border-radius: 18px; background: var(--flaeche); text-align: left; transition: transform .12s ease, background-color .15s ease; }
+.format-knopf:active { transform: scale(.98); background: var(--flaeche2); }
+.format-knopf b { display: block; font-size: 17px; }
+.format-knopf small { display: block; font-size: 13px; color: var(--leise); }
+.fk-ico { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; flex: none; background: color-mix(in srgb, var(--akzent) 16%, var(--flaeche)); color: var(--akzent); }
+.blatt p.klein { font-size: 13px; }
+
+/* ── Noten-Scanner-Hinweis (nur wenn SCANNER_URL gesetzt) ── */
+.scanner-hinweis { display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 10px 12px; min-height: 52px; border-radius: 16px; background: var(--flaeche); box-shadow: var(--schatten); color: var(--text); text-decoration: none; font-size: 15px; transition: transform .12s ease; }
+.scanner-hinweis:active { transform: scale(.98); }
+.scanner-hinweis .kreis { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; background: var(--flaeche2); color: var(--akzent); flex: none; }
+.scanner-hinweis > span:nth-child(2) { flex: 1; }
+.scanner-knopf { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; margin: 0 0 12px; border-radius: 16px; background: var(--flaeche2); color: var(--akzent); font-weight: 700; text-decoration: none; }
+
+/* ── Faltbares iPhone aufgeklappt / Tablet hochkant: Karte und Steuerung nebeneinander,
+      damit das Notenblatt die volle Breite und mehr Höhe bekommt ── */
+@media (min-width: 700px) and (max-width: 899px) and (orientation: portrait) {
+  .stueck {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    grid-template-areas: "kopf kopf" "noten noten" "akkord steuer" "tasten tasten";
+  }
+  .akkordkarte { margin-right: 0; align-self: stretch; align-content: start; max-height: 30vh; max-height: 30dvh; }
+  .steuer { align-self: center; padding-top: 8px; }
+  .tastenflaeche .kl-tastatur { --kl-h: 150px; --kl-w: 46px; }
+}

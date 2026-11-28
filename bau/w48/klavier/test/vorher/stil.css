@@ -1,0 +1,255 @@
+/* Klavier-Lernhilfe – Aussehen. Hell/dunkel automatisch, sanfte Bewegung nur mit transform/opacity. */
+:root {
+  --bg: #f5f6fb; --flaeche: #ffffff; --flaeche2: #eef0f7; --rand: #e2e5ee;
+  --text: #171a26; --leise: #5f6577; --akzent: #5b5bd6; --akzent2: #7c6cf2; --akzent-text: #fff;
+  --schatten: 0 1px 2px rgba(20,24,40,.06), 0 6px 20px rgba(20,24,40,.07);
+  --r1: #e5484d; --r3: #f59e0b; --r5: #22a06b; --r7: #3b82f6; --ro: #9b5de5; --rf: #9aa0a6;
+  --rad: 18px; --rand-x: 16px;
+  --ns-markiert: #ffb020; --ns-schleife: #5b5bd6;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1117; --flaeche: #171b24; --flaeche2: #20252f; --rand: #2a303c;
+    --text: #eef0f6; --leise: #9aa2b4; --akzent: #8b8bff; --akzent2: #a99bff; --akzent-text: #0e1117;
+    --schatten: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+    --r1: #ff6b6f; --r3: #ffb83d; --r5: #3dd68c; --r7: #6ea8ff; --ro: #b98cff; --rf: #7d838a;
+    --ns-markiert: #ffc24d; --ns-schleife: #8b8bff;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1117; --flaeche: #171b24; --flaeche2: #20252f; --rand: #2a303c;
+  --text: #eef0f6; --leise: #9aa2b4; --akzent: #8b8bff; --akzent2: #a99bff; --akzent-text: #0e1117;
+  --r1: #ff6b6f; --r3: #ffb83d; --r5: #3dd68c; --r7: #6ea8ff; --ro: #b98cff; --rf: #7d838a;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg); color: var(--text);
+  font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+}
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+svg { flex: none; }
+.ico { width: 24px; height: 24px; display: block; }
+.ico-k { width: 20px; height: 20px; display: block; }
+[hidden] { display: none !important; }
+
+#app { min-height: 100%; }
+.lade { display: grid; place-items: center; height: 100vh; }
+.lade-punkt { width: 14px; height: 14px; border-radius: 50%; background: var(--akzent); animation: puls 1s ease-in-out infinite; }
+@keyframes puls { 50% { transform: scale(1.6); opacity: .4; } }
+
+.seite { animation: rein .28s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes rein { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* ── Kopfleiste ───────────────────────────────── */
+.kopf {
+  position: sticky; top: 0; z-index: 5;
+  display: flex; align-items: center; gap: 8px;
+  padding: calc(env(safe-area-inset-top) + 6px) max(var(--rand-x), env(safe-area-inset-right)) 6px max(var(--rand-x), env(safe-area-inset-left));
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: saturate(1.6) blur(14px); -webkit-backdrop-filter: saturate(1.6) blur(14px);
+  min-height: 56px;
+}
+.kopf h1 { font-size: 17px; font-weight: 700; margin: 0; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kopf h1 small { display: block; font-size: 12px; font-weight: 500; color: var(--leise); }
+.rund {
+  width: 44px; height: 44px; border-radius: 50%; border: 0; display: grid; place-items: center;
+  background: var(--flaeche); box-shadow: var(--schatten); color: var(--text); flex: none;
+  transition: transform .12s ease;
+}
+.rund:active { transform: scale(.92); }
+.schalter {
+  min-height: 44px; padding: 0 12px; border-radius: 22px; border: 1px solid var(--rand);
+  background: var(--flaeche); display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: var(--leise);
+  transition: background-color .15s ease, color .15s ease, transform .12s ease;
+}
+.schalter:active { transform: scale(.95); }
+.schalter[aria-pressed="true"] { background: var(--akzent); border-color: var(--akzent); color: var(--akzent-text); }
+.schalter .regen { display: inline-flex; gap: 2px; }
+.schalter .regen i { width: 6px; height: 14px; border-radius: 3px; display: block; }
+
+/* ── Startseite ───────────────────────────────── */
+.start { max-width: 760px; margin: 0 auto; padding: 0 max(var(--rand-x), env(safe-area-inset-right)) calc(28px + env(safe-area-inset-bottom)) max(var(--rand-x), env(safe-area-inset-left)); }
+.held { display: flex; align-items: center; gap: 14px; padding: calc(env(safe-area-inset-top) + 22px) 0 18px; }
+.held img { width: 56px; height: 56px; border-radius: 15px; box-shadow: var(--schatten); }
+.held h1 { margin: 0; font-size: 26px; letter-spacing: -.02em; }
+.held p { margin: 2px 0 0; color: var(--leise); font-size: 14px; }
+
+.laden {
+  width: 100%; border: 0; border-radius: 22px; padding: 20px; display: flex; align-items: center; gap: 16px; text-align: left;
+  color: #fff; background: linear-gradient(135deg, #6e6af0, #4743c9 60%, #3b3ab0);
+  box-shadow: 0 10px 30px rgba(71,67,201,.35); transition: transform .15s ease;
+}
+.laden:active { transform: scale(.98); }
+.laden .kreis { width: 56px; height: 56px; border-radius: 18px; background: rgba(255,255,255,.18); display: grid; place-items: center; flex: none; }
+.laden b { display: block; font-size: 20px; }
+.laden span { display: block; font-size: 14px; opacity: .85; }
+.laden.zieh { outline: 3px dashed rgba(255,255,255,.8); outline-offset: -8px; }
+.formate { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 2px 0; }
+.formate span { font-size: 12px; font-weight: 600; padding: 4px 9px; border-radius: 10px; background: var(--flaeche2); color: var(--leise); }
+.formate .ok { color: var(--r5); }
+
+h2.abschnitt { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--leise); margin: 28px 4px 10px; }
+.liste { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); }
+.karte {
+  display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: var(--rad); background: var(--flaeche);
+  box-shadow: var(--schatten); text-decoration: none; color: inherit; min-height: 72px; position: relative;
+  transition: transform .15s ease;
+}
+.karte:active { transform: scale(.98); }
+.karte .bild { width: 48px; height: 48px; border-radius: 14px; background: var(--flaeche2); display: grid; place-items: center; flex: none; }
+.karte .txt { flex: 1; min-width: 0; }
+.karte b { display: block; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.karte small { display: block; color: var(--leise); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.karte .marke { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 8px; background: var(--flaeche2); color: var(--leise); flex: none; }
+.karte .weg { width: 44px; height: 44px; border: 0; background: none; color: var(--leise); border-radius: 12px; display: grid; place-items: center; flex: none; }
+.leer { color: var(--leise); font-size: 14px; padding: 6px 4px; }
+
+.legende { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px 5px 5px; border-radius: 14px; background: var(--flaeche); font-size: 13px; font-weight: 600; box-shadow: var(--schatten); }
+.chip i { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; color: #fff; font: 700 11px/1 system-ui, sans-serif; font-style: normal; }
+
+/* ── Stück-Ansicht ────────────────────────────── */
+.stueck {
+  height: 100vh; height: 100dvh; display: grid; overflow: hidden;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+  grid-template-areas: "kopf" "noten" "akkord" "steuer" "tasten";
+}
+.stueck > .kopf { grid-area: kopf; position: relative; }
+.notenflaeche {
+  grid-area: noten; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+  margin: 0 max(8px, env(safe-area-inset-right)) 0 max(8px, env(safe-area-inset-left));
+  background: var(--flaeche); border-radius: var(--rad); box-shadow: var(--schatten); padding: 6px 4px; color: var(--text);
+  position: relative;
+}
+.notenflaeche svg { margin: 0 auto; }
+.ak-name { cursor: pointer; }
+.ak-name text { font-family: system-ui, -apple-system, sans-serif; fill: currentColor; }
+.ak-name .ak-k { font-weight: 800; }
+.ak-name .ak-u { font-weight: 600; opacity: .6; }
+.ak-name rect { fill: var(--flaeche2); transition: fill .15s ease; }
+.ak-name.akt rect { fill: color-mix(in srgb, var(--akzent) 26%, var(--flaeche)); }
+.ak-name.gewaehlt rect { fill: var(--akzent); }
+.ak-name.gewaehlt text { fill: var(--akzent-text); opacity: 1; }
+.zeiger { fill: var(--akzent); opacity: .85; pointer-events: none; }
+.bereich-tipp { position: absolute; right: 10px; top: 8px; font-size: 12px; font-weight: 700; padding: 6px 10px; border-radius: 12px; background: var(--akzent); color: var(--akzent-text); pointer-events: none; animation: rein .2s ease both; }
+
+.akkordkarte {
+  grid-area: akkord; margin: 8px max(8px, env(safe-area-inset-right)) 0 max(8px, env(safe-area-inset-left));
+  background: var(--flaeche); border-radius: var(--rad); box-shadow: var(--schatten); padding: 10px 12px;
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; min-height: 72px;
+}
+.akkordkarte .gross { font-size: 28px; font-weight: 800; letter-spacing: -.02em; line-height: 1; min-width: 56px; }
+.akkordkarte .gross small { display: block; font-size: 12px; font-weight: 600; color: var(--leise); letter-spacing: 0; margin-top: 4px; }
+.akkordkarte .umk { display: inline-block; font-size: 13px; font-weight: 700; padding: 3px 9px; border-radius: 10px; background: var(--flaeche2); }
+.akkordkarte .toene { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.ton { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 700; padding: 2px 8px 2px 2px; border-radius: 12px; background: var(--flaeche2); }
+.ton i { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; color: #fff; font: 700 11px/1 system-ui, sans-serif; font-style: normal; }
+.ton.getippt { outline: 2px solid var(--text); outline-offset: 1px; }
+.akkordkarte .erkl { grid-column: 1 / -1; font-size: 13px; color: var(--leise); margin: 2px 0 0; }
+.akkordkarte .erkl b { color: var(--text); }
+.akkordkarte.leer-k { grid-template-columns: 1fr; color: var(--leise); font-size: 14px; }
+.akkordkarte.neu { animation: tipp .25s ease both; }
+@keyframes tipp { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+.steuer {
+  grid-area: steuer; display: grid; gap: 8px; padding: 8px max(10px, env(safe-area-inset-right)) 6px max(10px, env(safe-area-inset-left));
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: "spiel bereich schleife" "spiel tempo hand";
+  align-items: center;
+}
+.spielen {
+  grid-area: spiel; width: 64px; height: 64px; border-radius: 50%; border: 0; display: grid; place-items: center;
+  background: linear-gradient(135deg, var(--akzent2), var(--akzent)); color: var(--akzent-text);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--akzent) 45%, transparent); transition: transform .12s ease;
+}
+.spielen:active { transform: scale(.93); }
+.spielen .ico { width: 30px; height: 30px; }
+.bereich { grid-area: bereich; display: flex; align-items: center; gap: 6px; min-width: 0; }
+.bereich .pille {
+  flex: 1; min-width: 0; min-height: 44px; border-radius: 22px; border: 1px solid var(--rand); background: var(--flaeche);
+  display: flex; align-items: center; gap: 8px; padding: 0 6px 0 12px; font-size: 14px; font-weight: 700; text-align: left;
+}
+.bereich .pille span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bereich .pille small { color: var(--leise); font-weight: 500; }
+.pille .x { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--flaeche2); flex: none; }
+.schleife-k { grid-area: schleife; justify-self: end; width: 52px; justify-content: center; padding: 0; }
+.tempo { grid-area: tempo; display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 13px; font-weight: 700; color: var(--leise); }
+.tempo input { flex: 1; min-width: 60px; height: 44px; accent-color: var(--akzent); }
+.tempo output { min-width: 40px; text-align: right; color: var(--text); }
+.hand { grid-area: hand; display: inline-flex; background: var(--flaeche2); border-radius: 22px; padding: 3px; }
+.hand button { min-height: 38px; min-width: 44px; padding: 0 8px; border: 0; border-radius: 19px; background: none; font-size: 13px; font-weight: 700; color: var(--leise); transition: background-color .15s ease, color .15s ease; }
+.hand button[aria-pressed="true"] { background: var(--flaeche); color: var(--text); box-shadow: var(--schatten); }
+
+.tastenflaeche {
+  grid-area: tasten; padding: 0 0 env(safe-area-inset-bottom);
+  background: color-mix(in srgb, var(--flaeche2) 70%, var(--bg)); border-top: 1px solid var(--rand);
+}
+.tastenflaeche .kl-tastatur { --kl-h: 128px; border-radius: 0; padding: 0 max(4px, env(safe-area-inset-left)); }
+
+/* Quer (iPhone liegend): Noten links, Akkord + Steuerung rechts, Tastatur unten */
+@media (orientation: landscape) and (max-height: 600px) {
+  .kopf { min-height: 46px; padding-top: 3px; padding-bottom: 3px; }
+  .stueck {
+    grid-template-columns: minmax(0, 1fr) 300px;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    grid-template-areas: "kopf kopf" "noten akkord" "noten steuer" "tasten tasten";
+  }
+  .notenflaeche { margin-right: 0; }
+  .akkordkarte { margin: 0 max(8px, env(safe-area-inset-right)) 0 8px; align-self: stretch; overflow-y: auto; grid-template-columns: auto minmax(0, 1fr); align-content: start; padding: 8px 10px; }
+  .akkordkarte .gross { font-size: 22px; }
+  .akkordkarte .hoer { grid-column: 2; grid-row: 1; justify-self: end; }
+  .akkordkarte .erkl { font-size: 12px; }
+  .steuer { padding: 6px max(8px, env(safe-area-inset-right)) 6px 8px; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "spiel bereich" "spiel tempo" "hand hand"; gap: 4px 8px; }
+  .schleife-k { display: none; }
+  .spielen { width: 54px; height: 54px; }
+  .tempo input { height: 36px; }
+  .hand { justify-self: stretch; }
+  .hand button { flex: 1; min-height: 36px; }
+  .tastenflaeche .kl-tastatur { --kl-h: 88px; --kl-w: 40px; }
+  .tastenflaeche .kl-tasten { margin-top: 14px; }
+}
+@media (min-width: 900px) and (min-height: 700px) {
+  .stueck { grid-template-columns: minmax(0, 1fr) 340px; grid-template-rows: auto minmax(0, 1fr) auto auto; grid-template-areas: "kopf kopf" "noten akkord" "noten steuer" "tasten tasten"; }
+  .notenflaeche { margin-right: 0; }
+  .akkordkarte { margin: 0 16px 0 10px; align-self: stretch; align-content: start; grid-template-columns: auto minmax(0, 1fr); }
+  .akkordkarte .hoer { grid-column: 2; grid-row: 1; justify-self: end; }
+  .steuer { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "spiel bereich" "spiel tempo" "hand hand"; padding: 10px 16px 10px 10px; }
+  .schleife-k { display: none; }
+  .tastenflaeche .kl-tastatur { --kl-h: 170px; --kl-w: 48px; }
+}
+
+/* ── Üben ─────────────────────────────────────── */
+.ueben { max-width: 760px; margin: 0 auto; padding: 0 max(var(--rand-x), env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) max(var(--rand-x), env(safe-area-inset-left)); }
+
+/* ── Hinweis-Blatt, Toast ─────────────────────── */
+.hinweis { position: fixed; inset: 0; z-index: 20; display: grid; align-items: end; justify-items: center; background: rgba(10,12,20,.45); animation: blende .2s ease both; }
+@keyframes blende { from { opacity: 0; } }
+.blatt {
+  width: min(560px, 100%); background: var(--flaeche); border-radius: 26px 26px 0 0; padding: 22px 20px calc(20px + env(safe-area-inset-bottom));
+  box-shadow: 0 -10px 40px rgba(0,0,0,.25); animation: hoch .3s cubic-bezier(.2,.8,.2,1) both;
+}
+@keyframes hoch { from { transform: translateY(40px); opacity: 0; } }
+.blatt .bild { width: 56px; height: 56px; border-radius: 18px; display: grid; place-items: center; background: var(--flaeche2); color: var(--akzent); margin-bottom: 10px; }
+.blatt h3 { margin: 0 0 6px; font-size: 20px; }
+.blatt p { margin: 0 0 10px; color: var(--leise); font-size: 15px; }
+.blatt p b { color: var(--text); }
+.blatt .ok { width: 100%; min-height: 50px; border: 0; border-radius: 16px; background: var(--akzent); color: var(--akzent-text); font-weight: 700; font-size: 16px; margin-top: 6px; }
+@media (min-width: 700px) { .hinweis { align-items: center; } .blatt { border-radius: 26px; } }
+.toast {
+  position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); z-index: 30; transform: translate(-50%, 20px); opacity: 0;
+  background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 14px; font-size: 14px; font-weight: 600; pointer-events: none;
+  transition: opacity .2s ease, transform .2s ease; max-width: calc(100% - 32px);
+}
+.toast.an { opacity: 1; transform: translate(-50%, 0); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+}
+.schalter.nur-ico { width: 44px; min-width: 44px; padding: 0; justify-content: center; flex: none; }

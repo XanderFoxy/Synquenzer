@@ -6,7 +6,7 @@
 // noteBox(noteId[, svgEl]) → {x, y, b, h, zeile, takt}  (SVG-Einheiten = CSS-Pixel ab linker oberer Ecke des SVG)
 // Schnell ohne Neuzeichnen: faerbe(svgEl, farben), markiere(svgEl, set), positionBei(t[, svgEl]) → {x, y1, y2, zeile}
 // setze(stück, {breite, …}) → {svg: Text, layout} – reine Funktion (auch in Node testbar).
-import { stufe, tonartVorz, taktDauer } from './modell.js';
+import { stufe, tonartVorz, taktDauer, notenwert } from './modell.js';
 
 const EPS = 1e-6;
 const WERTE = [[4, 'whole', 0], [3, 'half', 1], [2, 'half', 0], [1.5, 'quarter', 1], [1, 'quarter', 0], [0.75, 'eighth', 1], [0.5, 'eighth', 0], [0.375, '16th', 1], [0.25, '16th', 0], [0.125, '32nd', 0]];
@@ -29,7 +29,10 @@ const STIL = `.ns-l{stroke:currentColor;stroke-opacity:.45;stroke-width:1}
 .ns-z{font:800 21px system-ui,-apple-system,"Helvetica Neue",sans-serif;fill:currentColor}
 @media (prefers-reduced-motion:reduce){.ns-halo,.ns-k{transition:none}}`;
 
+const istTriole = (d) => Math.abs(d * 12 - Math.round(d * 12)) < EPS && Math.abs(d * 16 - Math.round(d * 16)) > EPS;
 function wertVon(d) {
+  const w = notenwert(d); // genau schreibbar (auch punktierte Ganze, 16tel-Triolen)
+  if (w) return { typ: w.typ, punkte: w.punkte };
   if (Math.abs(d * 3 - Math.round(d * 3)) < EPS && !WERTE.some((w) => Math.abs(w[0] - d) < EPS)) d *= 1.5; // Triole
   for (const [v, typ, punkte] of WERTE) if (v <= d + EPS) return { typ, punkte };
   return { typ: '32nd', punkte: 0 };
@@ -372,6 +375,11 @@ export function setze(stück, opts = {}) {
           F.push(`<path d="M${r1(xa)},${r1(ya)} L${r1(xb)},${r1(yb)} L${r1(xb)},${r1(yb + d2)} L${r1(xa)},${r1(ya + d2)} Z"/>`);
         };
         balken(s0.hx, s1.hx, 0);
+        // Triolen-Zahl über/unter dem Balken (aus MIDI ohne Klammer-Angabe, oder MusicXML mit time-modification)
+        if (g.every((a) => istTriole(a.dauer) || a.noten.some((n) => n.tupel))) {
+          const xm = (s0.hx + s1.hx) / 2, ym = yBeam(xm) - dir * SP * 1.15 + (hoch ? 0 : SP * 0.35);
+          F.push(`<text class="ns-fi" text-anchor="middle" x="${r1(xm)}" y="${r1(ym)}">3</text>`);
+        }
         const maxE = Math.max(...g.map((a) => FAEHNCHEN[a.typ] || 1));
         for (let e = 2; e <= maxE; e++) {
           for (let k = 0; k < g.length; k++) {

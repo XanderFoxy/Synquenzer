@@ -1,19 +1,20 @@
 // einlesen.js – MusicXML (.musicxml/.xml), komprimiertes MusicXML (.mxl) und MIDI (.mid) → Stück.
 // Alles lokal im Gerät, nichts wird gesendet. Läuft im Browser und in Node (≥ 18).
-import { midiAus, schreibweiseAus, taktDauer } from './modell.js';
+import { midiAus, schreibweiseAus, taktDauer, zerlegeDauer } from './modell.js';
 
 const fehler = (art, text) => Object.assign(new Error(text), { art, text });
 
 /** PDF/Foto: ehrlich – keine erfundene Erkennung. */
 export async function bildErkennen() {
-  throw fehler('nicht-verfuegbar', 'Notenerkennung aus Bildern kommt über Claude: Datei über die Ton-Post schicken');
+  throw fehler('nicht-verfuegbar', 'Noten aus einem Bild oder PDF kann diese Seite nicht selbst lesen');
 }
 
 /**
  * @param {File|Blob|ArrayBuffer|Uint8Array|string} quelle
  * @param {string} [name] Dateiname (für die Endung)
+ * @param {{haende?:'spur'|'tonhoehe'|'auto'}} [opt] nur MIDI: wie die Noten auf die Hände verteilt werden
  */
-export async function einlesen(quelle, name = '') {
+export async function einlesen(quelle, name = '', opt = {}) {
   if (!name && quelle && typeof quelle === 'object' && 'name' in quelle) name = quelle.name;
   const endung = (name.match(/\.([a-z0-9]+)$/i)?.[1] || '').toLowerCase();
   let bytes = null, text = null;
@@ -26,7 +27,7 @@ export async function einlesen(quelle, name = '') {
   const titelAusName = name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim();
   if (bytes) {
     const b0 = bytes[0], b1 = bytes[1], b2 = bytes[2], b3 = bytes[3];
-    if (b0 === 0x4d && b1 === 0x54 && b2 === 0x68 && b3 === 0x64) return ausMidi(bytes, titelAusName); // MThd
+    if (b0 === 0x4d && b1 === 0x54 && b2 === 0x68 && b3 === 0x64) return ausMidi(bytes, titelAusName, opt); // MThd
     if (b0 === 0x50 && b1 === 0x4b) return ausMusicXML(await mxlEntpacken(bytes), titelAusName); // PK (ZIP)
     if (b0 === 0x25 && b1 === 0x50 && b2 === 0x44 && b3 === 0x46) return bildErkennen(); // %PDF
     if ((b0 === 0xff && b1 === 0xd8) || (b0 === 0x89 && b1 === 0x50) || ['jpg', 'jpeg', 'png', 'heic', 'webp', 'pdf'].includes(endung)) return bildErkennen();
@@ -98,8 +99,8 @@ export function ausMusicXML(text, titelAusName = '') {
 
   // Systemzuordnung je Teil: 2 Systeme → oben/unten; 1 System → nach Schlüssel
   const takte = [];
-  let start = 0, tempo = 0;
-  const roh = [];
+  let start = 0;
+  const roh = [], tempiRoh = [];
   for (let i = 0; i < anzahlTakte; i++) {
     const ref = teile[0].takte[i] || teile.find((t) => t.takte[i])?.takte[i];
     const taktart = ref.taktart, tonart = ref.tonart;
@@ -114,7 +115,7 @@ export function ausMusicXML(text, titelAusName = '') {
     for (const teil of teile) {
       const tk = teil.takte[i];
       if (!tk) continue;
-      if (!tempo && tk.tempo) tempo = tk.tempo;
+      for (const tp of tk.tempi) tempiRoh.push({ t: rund(start + tp.pos), bpm: tp.bpm });
       const sys = (staff) => {
         if (teil.staves >= 2) return staff >= 2 ? 'unten' : 'oben';
         return tk.schluessel[1] === 'F' ? 'unten' : 'oben';
@@ -127,7 +128,24 @@ export function ausMusicXML(text, titelAusName = '') {
     }
     start += dauer;
   }
-  return fertig({ titel, tempo: tempo || 80, takte }, roh);
+  const tempi = tempoListe(tempiRoh);
+  const kopf = { titel, tempo: tempi[0]?.bpm || 80, takte };
+  if (tempi.length > 1) kopf.tempi = tempi;
+  return fertig(kopf, roh);
+}
+
+/** Tempo-Angaben sortieren, doppelte und gleichbleibende entfernen; erste gilt ab 0. */
+function tempoListe(roh) {
+  const aus = [];
+  for (const x of [...roh].filter((x) => x.bpm > 0 && Number.isFinite(x.bpm)).sort((a, b) => a.t - b.t)) {
+    const bpm = Math.round(Math.min(400, Math.max(10, x.bpm)) * 100) / 100;
+    const v = aus[aus.length - 1];
+    if (v && Math.abs(v.t - x.t) < 1e-6) continue;
+    if (v && Math.abs(v.bpm - bpm) < 0.01) continue;
+    aus.push({ t: x.t, bpm });
+  }
+  if (aus.length) aus[0].t = 0;
+  return aus;
 }
 
 function teilLesen(part) {
@@ -135,8 +153,8 @@ function teilLesen(part) {
   const schl = {}; // aktueller Schlüssel je System des Teils (bleibt bis zum Wechsel)
   const takte = [];
   for (const m of alle(part, 'measure')) {
-    let pos = 0, maxPos = 0, letzterStart = 0, tempo = 0;
-    const ereignisse = [];
+    let pos = 0, maxPos = 0, letzterStart = 0;
+    const ereignisse = [], tempi = [];
     for (const el of m.kinder) {
       if (el.name === 'attributes') {
         if (kind(el, 'divisions')) div = zahl(el, 'divisions', 1) || 1;
@@ -153,13 +171,14 @@ function teilLesen(part) {
         maxPos = Math.max(maxPos, pos);
       } else if (el.name === 'direction' || el.name === 'sound') {
         const snd = el.name === 'sound' ? el : kind(el, 'sound');
-        if (snd?.attrs.tempo) tempo = tempo || parseFloat(snd.attrs.tempo);
+        let bpm = snd?.attrs.tempo ? parseFloat(snd.attrs.tempo) : 0;
         const met = kind(kind(el, 'direction-type'), 'metronome');
-        if (met && !tempo) {
+        if (met && !bpm) {
           const pm = zahl(met, 'per-minute', 0);
-          const bu = { half: 2, quarter: 1, eighth: 0.5 }[txt(met, 'beat-unit')] || 1;
-          if (pm) tempo = pm * bu * (kind(met, 'beat-unit-dot') ? 1.5 : 1);
+          const bu = { whole: 4, half: 2, quarter: 1, eighth: 0.5, '16th': 0.25 }[txt(met, 'beat-unit')] || 1;
+          if (pm) bpm = pm * bu * (kind(met, 'beat-unit-dot') ? 1.5 : 1);
         }
+        if (bpm > 0) tempi.push({ pos: Math.max(0, pos + zahl(el, 'offset', 0) / div), bpm });
       } else if (el.name === 'note') {
         if (kind(el, 'grace') || kind(el, 'cue')) continue;
         const dauer = zahl(el, 'duration') / div;
@@ -193,7 +212,7 @@ function teilLesen(part) {
         });
       }
     }
-    takte.push({ nummer: m.attrs.number, implizit: m.attrs.implicit === 'yes', laenge: maxPos, taktart, tonart, schluessel: { ...schl }, ereignisse, tempo, div });
+    takte.push({ nummer: m.attrs.number, implizit: m.attrs.implicit === 'yes', laenge: maxPos, taktart, tonart, schluessel: { ...schl }, ereignisse, tempi, div });
   }
   return { id: part.attrs.id, staves, takte };
 }
@@ -268,104 +287,234 @@ async function mxlEntpacken(bytes) {
 }
 
 // ───────────────────────── MIDI ─────────────────────────
-export function ausMidi(bytes, titelAusName = '') {
+const istLinks = (n) => /links|linke|left|\bbass|\bl\.?\s*h\b/i.test(n || '');
+const istRechts = (n) => /rechts|rechte|right|\br\.?\s*h\b|melod|treble|sopran/i.test(n || '');
+const taktLaenge = (ta) => (ta[0] * 4) / ta[1];
+const textAus = (d) => { try { return new TextDecoder('utf-8', { fatal: true }).decode(d); } catch { return String.fromCharCode(...d); } };
+
+/**
+ * MIDI (Format 0 und 1) → Stück. Ehrlich: stück.quelle sagt, was gerundet (quantisiert), gekürzt oder weggelassen wurde.
+ * opt.haende: 'spur' (nach Spuren/Spurnamen) | 'tonhoehe' (ab c1 rechts) | 'auto' (spielbare Griffe). Ohne Angabe:
+ * nach Spur, wenn es mehrere Spuren (oder eine benannte Hand) gibt, sonst nach Tonhöhe.
+ */
+export function ausMidi(bytes, titelAusName = '', opt = {}) {
+  if (bytes.length < 14) throw fehler('format', 'Die MIDI-Datei ist zu kurz.');
   const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  const ntrks = dv.getUint16(10), division = dv.getUint16(12);
+  const kopfLaenge = dv.getUint32(4), format = dv.getUint16(8), ntrks = dv.getUint16(10), division = dv.getUint16(12);
   if (division & 0x8000) throw fehler('format', 'Diese MIDI-Datei nutzt SMPTE-Zeit – wird nicht unterstützt.');
-  let p = 8 + dv.getUint32(4);
+  if (!division) throw fehler('format', 'Die MIDI-Datei hat keine Zeitbasis.');
+  const meta = { tempi: [], taktarten: [], tonarten: [] };
   const spuren = [];
-  const meta = { tempo: 0, taktarten: [], tonart: null, titel: '' };
-  for (let s = 0; s < ntrks && p + 8 <= bytes.length; s++) {
-    const len = dv.getUint32(p + 4);
-    if (dv.getUint32(p) !== 0x4d54726b) { p += 8 + len; continue; } // MTrk
+  let schlagzeug = 0, ohneEnde = 0, titel = '', spurNr = 0;
+  let p = 8 + kopfLaenge;
+  while (spurNr < ntrks && p + 8 <= bytes.length) {
+    const id = dv.getUint32(p), len = dv.getUint32(p + 4);
     let q = p + 8;
     const ende = Math.min(bytes.length, q + len);
     p = q + len;
-    let tick = 0, status = 0;
-    const offen = new Map();
-    const spur = { name: '', noten: [] };
-    const vlq = () => { let v = 0, b; do { b = bytes[q++]; v = (v << 7) | (b & 0x7f); } while (b & 0x80 && q < ende); return v; };
+    if (id !== 0x4d54726b) continue; // fremder Block: überspringen (erlaubt)
+    const nr = spurNr++;
+    let tick = 0, status = 0, name = '';
+    const offen = new Map(), proKanal = new Map();
+    const notiere = (kanal, von, bis, midi, vel) => {
+      if (kanal === 9) { schlagzeug++; return; } // Kanal 10 = Schlagzeug: kein Klavier
+      if (!proKanal.has(kanal)) proKanal.set(kanal, []);
+      proKanal.get(kanal).push({ von, bis, midi, vel });
+    };
+    const vlq = () => { let v = 0, b; do { b = bytes[q++]; v = v * 128 + (b & 0x7f); } while (b & 0x80 && q < ende); return v; };
     while (q < ende) {
       tick += vlq();
-      let b = bytes[q];
-      if (b & 0x80) { status = b; q++; } else if (!status) break;
-      const typ = status & 0xf0, kanal = status & 0x0f;
-      if (status === 0xff) {
-        const mt = bytes[q++], ml = vlq(), d = bytes.subarray(q, q + ml);
+      if (q >= ende) break;
+      const b = bytes[q];
+      if (b === 0xff) {
+        const mt = bytes[q + 1];
+        q += 2;
+        const ml = vlq(), d = bytes.subarray(q, Math.min(ende, q + ml));
         q += ml;
-        if (mt === 0x51 && !meta.tempo) meta.tempo = Math.round(60000000 / ((d[0] << 16) | (d[1] << 8) | d[2]));
-        else if (mt === 0x58) meta.taktarten.push({ tick, taktart: [d[0], 2 ** d[1]] });
-        else if (mt === 0x59 && !meta.tonart) meta.tonart = { quinten: (d[0] << 24) >> 24, modus: d[1] ? 'moll' : 'dur' };
-        else if (mt === 0x03) spur.name = new TextDecoder().decode(d);
-        status = 0;
-      } else if (status === 0xf0 || status === 0xf7) { q += vlq(); status = 0; }
-      else if (typ === 0x90 || typ === 0x80) {
-        const ton = bytes[q++], vel = bytes[q++];
+        if (mt === 0x2f) break;
+        if (mt === 0x51 && d.length >= 3) { const us = (d[0] << 16) | (d[1] << 8) | d[2]; if (us > 0) meta.tempi.push({ tick, bpm: 60000000 / us }); }
+        else if (mt === 0x58 && d.length >= 2 && d[0] > 0 && d[1] < 7) meta.taktarten.push({ tick, taktart: [d[0], 2 ** d[1]] });
+        else if (mt === 0x59 && d.length >= 2) meta.tonarten.push({ tick, tonart: { quinten: Math.max(-7, Math.min(7, (d[0] << 24) >> 24)), modus: d[1] ? 'moll' : 'dur' } });
+        else if (mt === 0x03 && !name) name = textAus(d).replace(/\0/g, '').trim();
+        continue; // Laufstatus bleibt bestehen (nachsichtig – manche Programme verlassen sich darauf)
+      }
+      if (b === 0xf0 || b === 0xf7) { q++; const l = vlq(); q += l; continue; } // Sysex (Achtung: erst Länge lesen, dann springen)
+      let st = status;
+      if (b & 0x80) { st = b; q++; if (b < 0xf0) status = b; }
+      else if (!status) { q++; continue; } // Datenbyte ohne Status: überspringen
+      if (st >= 0xf0) { q += { 0xf1: 1, 0xf2: 2, 0xf3: 1 }[st] || 0; continue; }
+      const typ = st & 0xf0, kanal = st & 0x0f;
+      if (typ === 0x90 || typ === 0x80) {
+        const ton = bytes[q++] & 0x7f, vel = bytes[q++] & 0x7f;
         const k = kanal * 128 + ton;
-        if (typ === 0x90 && vel > 0) {
-          if (!offen.has(k)) offen.set(k, []);
-          offen.get(k).push({ tick, vel });
-        } else {
-          const a = offen.get(k)?.shift();
-          if (a && kanal !== 9) spur.noten.push({ von: a.tick, bis: tick, midi: ton, vel: a.vel });
-        }
+        if (typ === 0x90 && vel > 0) { if (!offen.has(k)) offen.set(k, []); offen.get(k).push({ tick, vel }); }
+        else { const a = offen.get(k)?.shift(); if (a) notiere(kanal, a.tick, tick, ton, a.vel); } // Note-On mit Stärke 0 = Note-Off
       } else if (typ === 0xc0 || typ === 0xd0) q += 1;
       else q += 2;
     }
-    if (spur.noten.length) spuren.push(spur);
+    // Noten ohne Note-Off: bis zum Spurende klingen lassen (und melden)
+    for (const [k, liste] of offen) for (const a of liste) { ohneEnde++; notiere(k >> 7, a.tick, Math.max(tick, a.tick + division / 4), k & 127, a.vel); }
+    if (nr === 0 && name && (format === 0 || !proKanal.size)) titel = name;
+    for (const [kanal, noten] of [...proKanal].sort((a, b) => a[0] - b[0])) if (noten.length) spuren.push({ name, kanal, noten, nr });
   }
-  if (!spuren.length) throw fehler('format', 'In der MIDI-Datei sind keine Noten.');
-  if (!meta.titel && spuren.length === 1 && spuren[0].name) meta.titel = spuren[0].name;
-  const tonart = meta.tonart || { quinten: 0, modus: 'dur' };
+  if (!spuren.length) throw fehler('format', schlagzeug ? 'In der MIDI-Datei ist nur Schlagzeug (Kanal 10) – keine Klaviernoten.' : 'In der MIDI-Datei sind keine Noten.');
+  const Q = (tk) => tk / division;
+  const jeZeitpunkt = (liste) => { const m = new Map(); for (const x of [...liste].sort((a, b) => a.tick - b.tick)) m.set(x.tick, x); return [...m.values()]; };
 
-  // Raster: Sechzehntel oder Triole, je nachdem was besser passt
-  const quant = (tick) => {
-    const x = tick / division, a = Math.round(x * 4) / 4, b = Math.round(x * 3) / 3;
-    return Math.abs(x - b) < Math.abs(x - a) - 0.02 ? b : a;
-  };
-  // Hände: nach Spurnamen, sonst nach Tonhöhe der Spur; eine Spur → nach Spielbarkeit
-  let alleNoten = [];
-  const istLinks = (n) => /links|left|\blh\b|bass|l\.?\s*h/i.test(n), istRechts = (n) => /rechts|right|\brh\b|r\.?\s*h|melod/i.test(n);
-  if (spuren.length >= 2) {
+  // Taktarten (+ Auftakt: kurze erste Taktart, die genau einen Takt dauert, z. B. 1/4 vor 4/4)
+  let tas = jeZeitpunkt(meta.taktarten);
+  if (!tas.length || tas[0].tick > 0) tas.unshift({ tick: 0, taktart: [4, 4] });
+  let auftakt = 0;
+  if (tas.length >= 2) {
+    const L0 = taktLaenge(tas[0].taktart), L1 = taktLaenge(tas[1].taktart);
+    if (Math.abs(Q(tas[1].tick) - L0) < 1e-6 && L0 < L1 - 1e-6) { auftakt = L0; tas = [{ tick: 0, taktart: tas[1].taktart }, ...tas.slice(1)]; }
+  }
+  const tasQ = tas.map((x) => ({ q: Q(x.tick), taktart: x.taktart }));
+  const tons = jeZeitpunkt(meta.tonarten).map((x) => ({ q: Q(x.tick), tonart: x.tonart }));
+  const tonartBei = (q) => { let t = { quinten: 0, modus: 'dur' }; for (const x of tons) if (x.q <= q + 1e-6) t = x.tonart; return t; };
+  const tempi = tempoListe(meta.tempi.map((x) => ({ t: rund(Q(x.tick)), bpm: x.bpm })));
+
+  // Hände
+  const benannt = spuren.map((s) => (istLinks(s.name) ? 'unten' : istRechts(s.name) ? 'oben' : null));
+  if (spuren.length === 2 && !!benannt[0] !== !!benannt[1]) { const i = benannt[0] ? 1 : 0; benannt[i] = benannt[1 - i] === 'oben' ? 'unten' : 'oben'; }
+  const modi = [...(spuren.length >= 2 || benannt[0] ? ['spur'] : []), 'tonhoehe', 'auto'];
+  const modus = modi.includes(opt.haende) ? opt.haende : modi[0];
+  let alle = [];
+  if (modus === 'spur') {
     const schnitt = spuren.map((s) => s.noten.reduce((a, n) => a + n.midi, 0) / s.noten.length);
     const hoechste = schnitt.indexOf(Math.max(...schnitt));
     spuren.forEach((s, i) => {
-      const sys = istLinks(s.name) ? 'unten' : istRechts(s.name) ? 'oben' : spuren.length === 2 ? (i === hoechste ? 'oben' : 'unten') : schnitt[i] >= 60 ? 'oben' : 'unten';
-      for (const n of s.noten) alleNoten.push({ ...n, system: sys });
+      s.system = benannt[i] || (spuren.length === 2 ? (i === hoechste ? 'oben' : 'unten') : schnitt[i] >= 60 ? 'oben' : 'unten');
+      for (const n of s.noten) alle.push({ ...n, system: s.system });
     });
-  } else {
-    alleNoten = haendeTeilen(spuren[0].noten);
+  } else if (modus === 'tonhoehe') {
+    for (const s of spuren) for (const n of s.noten) alle.push({ ...n, system: n.midi >= 60 ? 'oben' : 'unten' });
+  } else alle = haendeTeilen(spuren.flatMap((s) => s.noten));
+
+  // Raster: liegt alles exakt auf Sechzehntel/Triolen (oder 32stel/16tel-Triolen)? Sonst eingespielt → schätzen.
+  const tol = Math.max(1, division / 96);
+  const SAETZE = [[1 / 4, 1 / 3], [1 / 4, 1 / 3, 1 / 8, 1 / 6]];
+  const nahe = (tk, satz) => satz.some((s) => { const x = Q(tk) / s; return Math.abs(x - Math.round(x)) * s * division <= tol; });
+  const satzNr = SAETZE.findIndex((satz) => alle.every((n) => nahe(n.von, satz)));
+  const geschaetzt = satzNr < 0;
+  const satz = SAETZE[geschaetzt ? 0 : satzNr];
+  const quant = (tk) => {
+    const x = Q(tk);
+    if (geschaetzt) { const a = Math.round(x * 4) / 4, b = Math.round(x * 3) / 3; return Math.abs(x - b) < Math.abs(x - a) - 0.02 ? b : a; }
+    let best = null;
+    for (const s of satz) { const r = Math.round(x / s) * s, e = Math.abs(x - r); if (!best || e < best.e - 1e-9) best = { r, e }; }
+    return best.r;
+  };
+  const minDauer = geschaetzt || satzNr === 0 ? 0.25 : 0.125;
+  // Etwas früher losgelassen (z. B. 85 % der Länge, typisch beim Einspielen)? Dann bis zum nächsten Einsatz der Hand
+  // verlängern, statt eine zu kurze Note + winzige Pause zu schreiben. Liegt das Ende genau im Raster, bleibt es.
+  const einsaetze = { oben: [], unten: [] };
+  for (const n of alle) einsaetze[n.system].push(n.von);
+  for (const k in einsaetze) einsaetze[k] = [...new Set(einsaetze[k])].sort((a, b) => a - b);
+  const naechsterEinsatz = (sys, von) => {
+    const l = einsaetze[sys];
+    let lo = 0, hi = l.length;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (l[m] > von + tol) hi = m; else lo = m + 1; }
+    return l[lo];
+  };
+  const rohEnde = Math.max(...alle.map((n) => n.bis));
+  let anfaenge = 0, enden = 0, maxV = 0, verlaengert = 0;
+  const einmal = new Map();
+  let doppelt = 0;
+  for (const n of alle) {
+    const t = rund(quant(n.von));
+    let rohBis = n.bis;
+    const nx = naechsterEinsatz(n.system, n.von) ?? (geschaetzt ? rohEnde : undefined); // Schlusston: bis zum Ende
+    const laenge = rohBis - n.von;
+    const grenze = geschaetzt ? Math.max(division / 4, Math.min(division, 0.35 * laenge)) : Math.min(division / 4, 0.3 * laenge);
+    if (nx != null && rohBis < nx - tol && (geschaetzt || !nahe(rohBis, satz)) && nx - rohBis < grenze) { rohBis = nx; verlaengert++; }
+    let bis = rund(quant(rohBis));
+    if (bis < t + minDauer - 1e-6) bis = t + minDauer;
+    const abw = Math.abs(t - Q(n.von));
+    if (abw * division > tol) anfaenge++;
+    if (Math.abs(bis - Q(n.bis)) * division > tol) enden++;
+    maxV = Math.max(maxV, abw);
+    const k = n.system + '|' + n.midi + '|' + t;
+    const v = einmal.get(k);
+    if (v) { doppelt++; v.bis = Math.max(v.bis, bis); } else einmal.set(k, { t, bis, midi: n.midi, system: n.system });
+  }
+  // Gleiche Taste in einer Hand nochmals angeschlagen, bevor sie losgelassen wurde: wie am Klavier – die erste endet dort.
+  const noten = [...einmal.values()].sort((a, b) => a.t - b.t);
+  let gekuerzt = 0;
+  const letzte = new Map();
+  for (const n of noten) {
+    const k = n.system + '|' + n.midi, v = letzte.get(k);
+    if (v && v.bis > n.t + 1e-6) { v.bis = n.t; gekuerzt++; }
+    letzte.set(k, n);
   }
 
   // Takte
-  const tas = meta.taktarten.length ? meta.taktarten : [{ tick: 0, taktart: [4, 4] }];
-  const ende = Math.max(...alleNoten.map((n) => quant(n.bis)));
+  const ende = Math.max(...noten.map((n) => n.bis));
   const takte = [];
-  let start = 0, ti = 0;
+  let start = 0, ti = 0, nr = auftakt ? 0 : 1;
   while (start < ende - 1e-6 || !takte.length) {
-    while (ti + 1 < tas.length && quant(tas[ti + 1].tick) <= start + 1e-6) ti++;
-    const taktart = tas[ti].taktart;
-    const dauer = (taktart[0] * 4) / taktart[1];
-    takte.push({ nr: takte.length + 1, taktart, tonart, start, dauer, schluessel: { oben: 'G', unten: 'F' } });
-    start += dauer;
+    while (ti + 1 < tasQ.length && tasQ[ti + 1].q <= start + 1e-6) ti++;
+    const taktart = tasQ[ti].taktart;
+    let dauer = auftakt && !takte.length ? auftakt : taktLaenge(taktart);
+    const naechst = tasQ[ti + 1]?.q;
+    if (naechst != null && naechst > start + 1e-6 && naechst < start + dauer - 1e-6) dauer = naechst - start; // Wechsel mitten im Takt
+    takte.push({ nr: nr++, taktart, tonart: tonartBei(start), start: rund(start), dauer: rund(dauer), schluessel: { oben: 'G', unten: 'F' } });
+    start = rund(start + dauer);
+    if (takte.length > 20000) break;
   }
-  // Noten quantisieren und an Taktstrichen mit Haltebogen teilen
-  const roh = [];
-  for (const n of alleNoten) {
-    let t = quant(n.von), bis = Math.max(quant(n.bis), t + 0.25);
-    const sw = schreibweiseAus(n.midi, tonart);
-    let erst = true;
-    while (bis - t > 1e-6) {
-      const tk = takte.find((k) => k.start <= t + 1e-6 && t < k.start + k.dauer - 1e-6) || takte[takte.length - 1];
-      const stueck = Math.min(bis, tk.start + tk.dauer) - t;
-      const weiter = bis - (t + stueck) > 1e-6;
-      const bindung = erst && !weiter ? undefined : { ...(erst ? {} : { ende: true }), ...(weiter ? { start: true } : {}) };
-      roh.push({ art: 'note', t, dauer: stueck, midi: n.midi, schreibweise: sw, system: n.system, stimme: n.system === 'oben' ? 1 : 5, takt: tk.nr, bindung });
-      t += stueck;
-      erst = false;
+  const taktBei = (t) => {
+    let lo = 0, hi = takte.length - 1;
+    while (lo < hi) { const m = (lo + hi + 1) >> 1; if (takte[m].start <= t + 1e-6) lo = m; else hi = m - 1; }
+    return takte[lo];
+  };
+
+  // Stimmen: hält eine Hand einen Ton, während sie weiterspielt → zweite Stimme (ruhigeres Notenbild)
+  for (const sys of ['oben', 'unten']) {
+    const basis = sys === 'oben' ? 1 : 5;
+    const st = [];
+    for (const n of noten.filter((x) => x.system === sys).sort((a, b) => a.t - b.t || b.midi - a.midi)) {
+      let k = st.findIndex((v) => Math.abs(v.t - n.t) < 1e-6 && Math.abs(v.bis - n.bis) < 1e-6);
+      if (k < 0) k = st.findIndex((v) => v.ende <= n.t + 1e-6);
+      if (k < 0) k = st.length < 2 ? st.push({ ende: 0 }) - 1 : (st[0].ende <= st[1].ende ? 0 : 1);
+      st[k] = { ende: Math.max(st[k].ende, n.bis), t: n.t, bis: n.bis };
+      n.stimme = basis + k;
     }
   }
-  return { ...fertig({ titel: meta.titel || titelAusName || 'MIDI-Stück', tempo: meta.tempo || 100, takte }, roh), pausen: undefined };
+
+  // An Taktstrichen teilen und in schreibbare Notenwerte zerlegen (mit Haltebögen)
+  const roh = [];
+  for (const n of noten) {
+    if (!(n.bis - n.t > 1e-6)) continue;
+    const sw = schreibweiseAus(n.midi, tonartBei(n.t));
+    const teile = [];
+    let t = n.t;
+    while (n.bis - t > 1e-6) {
+      const tk = taktBei(t);
+      const bis = Math.min(n.bis, rund(tk.start + tk.dauer));
+      let u = t;
+      for (const d of zerlegeDauer(bis - t)) { teile.push({ t: rund(u), dauer: rund(d), takt: tk.nr }); u += d; }
+      t = bis;
+    }
+    teile.forEach((x, i) => {
+      const bindung = teile.length === 1 ? undefined : { ...(i > 0 ? { ende: true } : {}), ...(i < teile.length - 1 ? { start: true } : {}) };
+      roh.push({ art: 'note', t: x.t, dauer: x.dauer, midi: n.midi, schreibweise: sw, system: n.system, stimme: n.stimme, takt: x.takt, bindung });
+    });
+  }
+
+  const kopf = { titel: titel || titelAusName || 'MIDI-Stück', tempo: tempi[0]?.bpm || 120, takte };
+  if (tempi.length > 1) kopf.tempi = tempi;
+  const stueck = fertig(kopf, roh);
+  stueck.pausen = undefined;
+  let taktartWechsel = 0;
+  for (let i = 1; i < takte.length; i++) if (takte[i].taktart.join('/') !== takte[i - 1].taktart.join('/')) taktartWechsel++;
+  stueck.quelle = {
+    art: 'midi', format, division,
+    spuren: spuren.map((s) => ({ name: s.name, kanal: s.kanal + 1, noten: s.noten.length, system: s.system || null })),
+    haende: modus, haendeModi: modi,
+    raster: { art: geschaetzt ? 'geschaetzt' : satzNr === 0 ? 'sechzehntel' : 'fein', anfaenge, enden, gesamt: alle.length, maxVerschiebung: Math.round(maxV * 1000) / 1000 },
+    schlagzeug, ohneEnde, doppelt, gekuerzt, verlaengert, auftakt: auftakt > 0, tempoWechsel: Math.max(0, tempi.length - 1), taktartWechsel,
+  };
+  return stueck;
 }
 
 /** Eine Spur → zwei Hände: Akkorde am Stück so trennen, dass jede Hand spielbar bleibt (≤ Dezime), mit geglätteten Handlagen. */

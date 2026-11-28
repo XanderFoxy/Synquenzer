@@ -486,7 +486,7 @@ async function zeige() {
     console.error(e);
     setzeKopf('Hoppla'); inhalt = h('div', { class: 'karte leer' }, h('p', null, 'Diese Seite ließ sich gerade nicht öffnen.'), h('p', { class: 'klein' }, String(e && e.message || e)), h('a', { class: 'knopf', href: '#start', style: { marginTop: '14px' } }, 'Zur Startseite'));
   }
-  v.replaceChildren(...[].concat(inhalt));
+  v.replaceChildren(...[].concat(inhalt).flat(Infinity).filter((x) => x != null && x !== false));
   v.classList.remove('rein'); void v.offsetWidth; v.classList.add('rein');
   window.scrollTo(0, 0);
 }
@@ -1660,7 +1660,7 @@ function seiteUebungen() {
       ...zuerst.map(karte), zuerst.length && rest.length ? h('h2', null, 'Alle weiteren') : null, ...rest.map(karte));
   }
   male();
-  return [h('section', { class: 'held' }, h('h1', null, 'Übungen'), h('p', null, `${liste.length} bewährte Übungen – tippe eine an für Anleitung und Vorspielen.`)),
+  return [h('section', { class: 'held' }, h('h1', null, 'Übungen'), h('p', null, `${liste.length} bewährte Übungen – tippe eine an und übe sie im Takt, mit Vorsingen und Rückmeldung.`)),
     st && st.kern ? null : h('a', { class: 'karte hinweis-karte', href: '#stimme' }, h('span', { class: 'pfeil' }, ic('hinweis')), h('p', { class: 'klein' }, 'Stimmlage ermitteln – dann sortiert sich die Bibliothek nach deiner Stimme und jede Übung bekommt deinen Startton.')),
     chips, karten];
 }
@@ -1723,11 +1723,13 @@ async function seiteEinsingen(id) {
     const warmGesungen = avg != null && avg >= 70 && gemacht >= Math.ceil(n * 0.6);
     const ohneMikro = avg == null && gemacht > 0;
     const schwach = plaene.map((p, k) => [p, erg[k]]).filter(([, e]) => e && e.gueltig).sort((a, b) => a[1].gesamt - b[1].gesamt)[0];
-    const titel = warmGesungen ? 'Du bist warm gesungen' : ohneMikro ? 'Alle Übungen im Takt gemacht' : !gemacht ? 'Heute noch nichts gesungen' : avg != null ? 'Fast warm' : 'Gut angefangen';
+    const genug = gemacht >= Math.ceil(n * 0.6);
+    const titel = warmGesungen ? 'Du bist warm gesungen' : !gemacht ? 'Heute noch nichts gesungen' : !genug ? 'Gut angefangen' : ohneMikro ? 'Alle Übungen im Takt gemacht' : avg >= 55 ? 'Fast warm' : 'Noch nicht ganz warm';
     const text = warmGesungen ? `Im Schnitt ${avg} % – deine Stimme ist bereit${lied0 ? ` für „${lied0.titel}“` : ''}.`
-      : ohneMikro ? 'Ohne Mikrofon kann ich keinen Prozentwert zeigen – bewegt hast du die Stimme trotzdem.'
-        : !gemacht ? 'Mach ein paar Übungen, dann zeige ich dir hier, wie warm du bist.'
-          : avg != null ? `Im Schnitt ${avg} %${schwach ? ` – wiederhole „${schwach[0].titel}“ noch einmal locker` : ''}, dann bist du warm.` : 'Weiter so.';
+      : !gemacht ? 'Mach ein paar Übungen, dann zeige ich dir hier, wie warm du bist.'
+        : !genug ? `${gemacht} von ${n} Übungen gemacht${avg != null ? ` (im Schnitt ${avg} %)` : ''} – für „warm gesungen“ brauchst du mindestens ${Math.ceil(n * 0.6)} Übungen und 70 % im Schnitt.`
+          : ohneMikro ? 'Ohne Mikrofon kann ich keinen Prozentwert zeigen – bewegt hast du die Stimme trotzdem.'
+            : `Im Schnitt ${avg} %${schwach ? ` – wiederhole „${schwach[0].titel}“ noch einmal locker` : ''}, dann bist du warm (ab 70 %).`;
     kopf.classList.add('eh-ende');
     fuelle(kopf, h('div', null, h('span', { class: 'eh-schritt' }, 'Abschluss'), h('h1', null, titel), h('p', { class: 'eh-kurz' }, text)),
       T.t.ring(avg != null ? avg / 100 : warm(), { text: avg != null ? 'Prozent' : 'warm' }));
@@ -1820,8 +1822,10 @@ async function seiteLiedUeben(id, zid, nrRoh) {
       h('div', { class: 'station-kopf' }, h('p', { class: 'lm-text' }, x.text),
         x.mitMelodie ? h('span', { class: `lm-badge ${x.hoch >= S.ue ? '' : 'ruhig'}` }, x.hoch >= S.ue ? `bis ${nName(x.hoch, ton)}` : 'bequem') : h('span', { class: 'lm-badge ruhig' }, 'gesprochen')),
       h('div', { class: 'lm-kette', 'aria-label': `Vokale: ${x.kette.map((k) => k.anzeige).join(' ')}` }, x.kette.map((k) => kugel(k))),
-      x.gruende.length ? h('ul', { class: 'lm-gruende' }, x.gruende.slice(0, 3).map((g) => h('li', null, g.text, g.uebung && uebungVon(g.uebung) ? h('b', null, ` → ${uebungVon(g.uebung).titel}`) : null)))
-        : h('p', { class: 'leise klein' }, 'Keine besondere Hürde – gut zum Festigen.'),
+      x.gruende.length ? h('p', { class: 'lm-grund' }, ic('hinweis'), h('span', null, x.gruende[0].text.split(' – ')[0],
+        x.gruende[0].uebung && uebungVon(x.gruende[0].uebung) ? h('b', null, ` → ${uebungVon(x.gruende[0].uebung).titel}`) : null,
+        x.gruende.length > 1 ? h('span', null, ` (+${x.gruende.length - 1})`) : null))
+        : h('p', { class: 'lm-grund' }, ic('haken'), h('span', null, 'Keine besondere Hürde – gut zum Festigen.')),
       h('div', { class: 'lm-schritte' }, schritteVon(x).map((s) => { const b = bestes(x.zid, s.nr); return h('a', { class: 'lm-schritt', href: `#lied/${enc(id)}/ueben/${enc(x.zid)}/${s.nr}` }, h('span', { class: 'nr' }, String(s.nr)), h('span', null, s.titel), b != null ? h('span', { class: 'p' }, `${b} %`) : null); })))));
   }
   male();
@@ -1838,7 +1842,7 @@ async function seiteLiedUeben(id, zid, nrRoh) {
     const texte = [...new Set(e.zeilen.map((z) => kurz(z.text, 30)))];
     return h('a', { class: 'karte hinweis-karte', href: `#uebung/${enc(uid)}` }, uebSymbol(u),
       h('div', null, h('h3', null, u.titel), h('p', { class: 'leise klein', style: { marginTop: '2px' } }, `${e.zeilen.length === 1 ? '1 Zeile' : `${e.zeilen.length} Zeilen`}: ${texte.slice(0, 3).map((t) => `„${t}“`).join(', ')}${texte.length > 3 ? ' …' : ''}`),
-        h('p', { class: 'klein', style: { marginTop: '4px' } }, h('b', null, 'Warum: '), e.text)), h('span', { class: 'pfeil' }, ic('weiter')));
+        h('p', { class: 'klein', style: { marginTop: '4px' } }, h('b', null, 'Warum: '), e.text.split(' – ')[0] + '.')), h('span', { class: 'pfeil' }, ic('weiter')));
   });
   return [h('section', { class: 'held' }, h('h1', null, `${lied0.titel || 'Lied'} üben`),
     h('p', null, 'Zeile für Zeile: erst die reinen Vokale, dann mit Text und Begleitung, dann der Weg in die Höhe.'),
