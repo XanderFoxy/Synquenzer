@@ -126,9 +126,11 @@ function toast(text) {
 }
 
 // ───────── Datei laden ─────────
+const MAX_DATEI = 30 * 1024 * 1024; // größer ist kein Klavierstück mehr – und würde das Gerät lange blockieren
 async function dateiLaden(datei) {
   if (!datei) return;
   try {
+    if (datei.size > MAX_DATEI) throw Object.assign(new Error('gross'), { text: `Die Datei ist zu groß (${(datei.size / 1048576).toFixed(0)} MB, bis ${MAX_DATEI / 1048576} MB gehen). Teile das Stück in kürzere Abschnitte.` });
     const daten = await datei.arrayBuffer();
     const st = await einlesen(daten, datei.name);
     if (!st.noten || !st.noten.length) throw Object.assign(new Error('leer'), { text: 'In dieser Datei habe ich keine Noten gefunden.' });
@@ -162,7 +164,8 @@ function quelleHtml(q) {
   else teile.push('Rhythmus genau übernommen' + (r.enden ? `, ${r.enden} Notenlängen leicht angepasst.` : ' – nichts gerundet.'));
   if (q.gekuerzt) teile.push(`${q.gekuerzt}× gleiche Taste neu angeschlagen, bevor sie losgelassen war – der erste Ton endet dort.`);
   if (q.doppelt) teile.push(`${q.doppelt} doppelte Töne zusammengefasst.`);
-  if (q.ohneEnde) teile.push(`${q.ohneEnde} Töne ohne Ende in der Datei – bis zum Schluss gehalten.`);
+  if (q.ohneEnde) teile.push(`${q.ohneEnde} Töne ohne Ende in der Datei – bis zum Schluss gehalten (höchstens 8 Viertel über den letzten Ton hinaus).`);
+  if (q.abgeschnitten) teile.push(`<b>Sehr lang:</b> nur die ersten ${q.abgeschnitten.takte} Takte geladen – ${q.abgeschnitten.noten} ${q.abgeschnitten.noten === 1 ? 'Ton' : 'Töne'} danach weggelassen.`);
   if (q.schlagzeug) teile.push('Schlagzeug (Kanal 10) ausgeblendet.');
   if (q.auftakt) teile.push('Auftakt erkannt.');
   if (q.tempoWechsel) teile.push(`${q.tempoWechsel} Tempowechsel – die Wiedergabe folgt ihnen.`);

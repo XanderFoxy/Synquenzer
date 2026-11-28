@@ -309,6 +309,11 @@ export function spieler(wurzel, plan, opt = {}) {
     const nr = ++laufNr, weg = () => !laeuft || nr !== laufNr; // ein zweiter Start (oder Stopp) beendet einen noch wartenden Ablauf
     laeuft = true; ergebnisse = []; chips.replaceChildren(); ergBox.hidden = true; ergBox.replaceChildren();
     setzeStart(true); phase('Vorbereiten …');
+    try { // quer/kleine Höhe: die Tonbahn ganz ins Bild holen (nicht unter Kopf oder untere Leiste)
+      const r = rolle.getBoundingClientRect(), kopf = document.querySelector('.kopf'), lst = document.querySelector('.leiste');
+      const oben = kopf ? kopf.getBoundingClientRect().bottom : 0, unten = lst ? lst.getBoundingClientRect().top : innerHeight;
+      if (r.top < oben || r.bottom > unten) rolle.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch (e) { /* egal */ }
     if (plan.art !== 'bewegung') {
       micOk = await mikrofon();
       if (nr !== laufNr) return;

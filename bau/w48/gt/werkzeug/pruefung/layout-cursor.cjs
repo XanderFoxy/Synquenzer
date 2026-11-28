@@ -77,7 +77,7 @@ const pruefeLayout = (p, name) => p.evaluate((name) => {
         if (pos == null) return { phase: document.querySelector('.tr-phase').textContent };
         const y = Math.round(12 * dpr), d = g.getImageData(0, y, cv.width, 1).data;
         const xs = [];
-        for (let x = 0; x < cv.width; x++) { const R = d[x * 4], Gn = d[x * 4 + 1], B = d[x * 4 + 2]; if (farbe === 'pink' ? R > 230 && Gn < 120 && B > 110 && B < 170 : R > 150 && Gn > 150 && B > 150) xs.push(x / dpr); }
+        for (let x = Math.round(38 * dpr); x < cv.width; x++) { const R = d[x * 4], Gn = d[x * 4 + 1], B = d[x * 4 + 2]; if (d[x * 4 + 3] > 120 && (farbe === 'pink' ? R > 230 && Gn < 120 && B > 110 && B < 170 : R > 150 && Gn > 150 && B > 150)) xs.push(x / dpr); }
         if (!xs.length) return { phase: document.querySelector('.tr-phase').textContent, pos, fehlt: true };
         const xc = xs.reduce((a, b) => a + b, 0) / xs.length, erw = links + (pos / L) * (w - links - rechts);
         return { phase: document.querySelector('.tr-phase').textContent, pos, dx: xc - erw, beatPx: (w - links - rechts) / L, farbe };
