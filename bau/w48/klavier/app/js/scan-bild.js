@@ -273,15 +273,18 @@ export function taktstriche(bin, w, h, z) {
   const dick = Math.max(1, Math.round(z.dicke || 1));
   const mitKopf = (x, s) => {
     let n = 0, breit = 0;
-    const grenze = 0.65 * g, weit = Math.ceil(g);
+    // „breit“ = deutlich breiter als ein Strich: bei fetten Strichen (vergrößertes Bild) nach der gemessenen Strichdicke
+    const grenze = Math.max(0.65 * g, 1.6 * (z.strich || 0)), weit = Math.ceil(2.2 * g), lang = 2 * g;
     for (const st of z.staves) for (let y = Math.round(st.y[0]); y <= Math.round(st.y[4]); y++) {
       if (st.y.some((ly) => Math.abs(y - ly) <= dick)) continue; // Zeilen der Notenlinien selbst nicht
       const xx = Math.round(x + s * (y - ym)), o = y * w;
       if (xx < 1 || xx > w - 2 || !(bin[o + xx] || bin[o + xx - 1] || bin[o + xx + 1])) continue;
-      n++;
       let l = xx, r = xx;
       while (l > xx - weit && l > 0 && bin[o + l - 1]) l--;
       while (r < xx + weit && r < w - 1 && bin[o + r + 1]) r++;
+      // weit nach beiden Seiten schwarz: eine (leicht schräge, dicke) Notenlinie oder ein Balken – sagt nichts über einen Kopf
+      if (xx - l >= lang && r - xx >= lang) continue;
+      n++;
       if (r - l + 1 > grenze) breit++;
     }
     return n > 0 && breit / n > 0.15;
@@ -544,7 +547,9 @@ export async function seiteVorbereiten(datei, { schritt = () => {}, pruef = null
     const zeilen = zeilenBilden(binL, aw, ah, staves);
     schritt('Takte zählen');
     for (const z of zeilen) {
-      z.dicke = masse.dicke;
+      // sehr dicke Linien (enger Abstand, vergrößert, großzügiger Schwellwert) nicht überbewerten: höchstens 0,3 Abstände
+      z.dicke = Math.min(masse.dicke, Math.max(1, Math.round(0.3 * z.g)));
+      z.strich = masse.dicke;
       z.striche = taktstriche(binL, aw, ah, z);
       z.takte = taktGrenzen(z, z.striche, binQ, aw, ah);
       z.koepfe = koepfeFinden(binQ, aw, ah, z);
