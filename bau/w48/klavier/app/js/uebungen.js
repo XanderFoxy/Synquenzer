@@ -378,7 +378,8 @@ export function uebungen(el, opt = {}) {
       s1 = swAusMidi(zufall(BEZUG_TASTEN)); s2 = zielSchreibweise(s1, halb);
       fertig = false; versuche = 0;
       const m1 = midiAus(s1);
-      tast.zeige([m1], { [m1]: 'grundton' }, { [m1]: '1' }); tast.intervalle(null, m1); tast.scrolleZuBereich(m1, m1 + 12);
+      tast.zeige([m1], { [m1]: 'grundton' }, { [m1]: '1' }); tast.intervalle(null, m1);
+      requestAnimationFrame(() => requestAnimationFrame(() => tast.scrolleZuBereich(m1, m1 + 12))); // nach dem Start-Bildlauf der Übung
       zeichne(true); antworten.textContent = '';
       frage.textContent = 'Hör zu – und finde den zweiten Ton auf der Tastatur.';
       sage(`Bezugston: ${notenName(s1)} (rot). Der gesuchte Ton liegt darüber.`); erkl.textContent = '';

@@ -234,6 +234,7 @@ function speichernBlatt(e) {
 let aufraeumen = null;
 function route() {
   if (aufraeumen) { try { aufraeumen(); } catch { /* egal */ } aufraeumen = null; }
+  if ($('#hinweis .speichern-blatt')) { const h = $('#hinweis'); h.hidden = true; h.innerHTML = ''; } // Speichern-Blatt gehört zur alten Seite
   const h = location.hash.replace(/^#/, '') || 'start';
   const [seite, arg] = h.split('/');
   if (seite === 'stueck' && arg) return seiteStueck(decodeURIComponent(arg));

@@ -227,7 +227,11 @@ function vlq(n) {
   while ((n = Math.floor(n / 128)) > 0) b.unshift((n & 0x7f) | 0x80);
   return b;
 }
-const utf8 = (s) => Array.from(new TextEncoder().encode(s));
+// MIDI-Texte: klassisch Latin-1 (ä, ö, ü, ß lesen so auch ältere Programme richtig); nur wenn nötig UTF-8.
+const utf8 = (s) => {
+  const t = String(s).replace(/[–—]/g, '-').replace(/[„“”]/g, '"').replace(/[‚‘’]/g, "'");
+  return [...t].every((c) => c.charCodeAt(0) <= 0xff) ? [...t].map((c) => c.charCodeAt(0)) : Array.from(new TextEncoder().encode(t));
+};
 function spurBytes(ereignisse) {
   // ereignisse: [{tick, rang, bytes}] – rang ordnet gleichzeitige Ereignisse (Meta < Note-Off < Note-On)
   ereignisse.sort((a, b) => a.tick - b.tick || a.rang - b.rang);

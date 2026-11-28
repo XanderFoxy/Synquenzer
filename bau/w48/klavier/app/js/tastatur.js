@@ -32,7 +32,7 @@ const STIL = `
 .kl-iv{position:absolute;left:3px;right:3px;bottom:5px;height:17px;border-radius:9px;background:var(--kl-ivf,#5b5bd6);color:#fff;
  font:700 10px/17px system-ui,-apple-system,sans-serif;text-align:center;white-space:nowrap;overflow:hidden;letter-spacing:-.01em;pointer-events:none;
  opacity:0;transform:translateY(5px);transition:opacity .2s ease,transform .2s ease;box-shadow:0 1px 3px rgba(0,0,0,.25)}
-.kl-s .kl-iv{left:1px;right:1px;bottom:34px;height:15px;font-size:8.5px;line-height:15px;border-radius:7px}
+.kl-s .kl-iv{left:-8px;right:-8px;bottom:34px;height:15px;font-size:9px;line-height:15px;border-radius:7px;overflow:visible}
 .kl-iv.kl-zeigt{opacity:1;transform:none}
 .kl-mit-iv .kl-name{opacity:0}
 .kl-bezug{box-shadow:inset 0 0 0 3px var(--kl-ivf,#5b5bd6)}

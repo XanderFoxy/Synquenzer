@@ -58,7 +58,8 @@ export async function mikrofon() {
     SZ.strom = null; return false;
   }
   const ctx = SZ.ctx || sitzung();
-  if (ctx.state !== 'running') { try { await ctx.resume(); } catch (e) { /* egal */ } }
+  // iOS: nach der Mikrofon-Freigabe kann der Ton kurz „unterbrochen“ sein – wecken, aber nie ewig warten
+  if (ctx.state !== 'running') { try { await Promise.race([ctx.resume(), new Promise((r) => setTimeout(r, 1500))]); } catch (e) { /* egal */ } }
   SZ.quelle = ctx.createMediaStreamSource(SZ.strom);
   SZ.ana = ctx.createAnalyser(); SZ.ana.fftSize = 2048; SZ.ana.smoothingTimeConstant = 0;
   SZ.still = ctx.createGain(); SZ.still.gain.value = 0; // Safari rechnet Analyser nur, wenn sie am Ausgang hängen
@@ -276,18 +277,26 @@ export function spieler(wurzel, plan, opt = {}) {
     if (laeuft) return;
     const ctx = sitzung(), D = plan.durchgaenge[0]; if (!D) return;
     const pl = neuerPlan(ctx), t = ctx.currentTime + 0.05, n0 = D.noten[0];
+    const ausblenden = () => setTimeout(() => { if (!laeuft) pl.stopp(); }, 2600);
+    if (w === 'original' || w === 'vor:aufnahme') { // Aufnahme erst laden – die Probe klingt, sobald sie da ist (nicht vorher abschalten)
+      phasePill.textContent = 'Aufnahme wird geladen …';
+      holePuffer(plan.aufnahme.liedId, w === 'original' ? 'inst' : 'stimme').then((b) => {
+        if (laeuft) { pl.stopp(); return; }
+        phasePill.textContent = 'Bereit'; pl.puffer(b, ctx.currentTime + 0.05, D.liedAb || 0, 2, 0.9); ausblenden();
+      }).catch((e) => { pl.stopp(); if (!laeuft) phasePill.textContent = 'Bereit'; meld('Aufnahme nicht verfügbar: ' + (e && e.message || e)); });
+      return;
+    }
     if (w === 'akkord' && D.akkorde[0]) pl.akkord(pl.instrument(klavier(ctx, { ziel: pl.bus, lautstaerke: 0.35 })), [D.akkorde[0].bass, ...D.akkorde[0].toene], t, 1.2);
     else if (w === 'bordun' && D.bordun.length) pl.bordun(D.bordun, t, t + 1.4, 0.6);
     else if (w === 'vor:klavier' && n0) pl.instrument(klavier(ctx, { ziel: pl.bus })).spiele(n0.midi, t, 0.8);
     else if (w === 'vor:stimme' && n0) pl.instrument(vokalStimme(ctx, { ziel: pl.bus })).singe(vokalFuer(n0), n0.midi, t, 0.9, n0.gleit || '');
-    else if (w === 'original' || w === 'vor:aufnahme') { phasePill.textContent = 'Aufnahme wird geladen …'; holePuffer(plan.aufnahme.liedId, w === 'original' ? 'inst' : 'stimme').then((b) => { phasePill.textContent = 'Bereit'; if (!laeuft) pl.puffer(b, ctx.currentTime + 0.05, D.liedAb || 0, 2, 0.9); }).catch((e) => { phasePill.textContent = 'Bereit'; meld('Aufnahme nicht verfügbar: ' + (e && e.message || e)); }); }
-    setTimeout(() => { if (!laeuft) pl.stopp(); }, 2600);
+    ausblenden();
   }
   const meld = (t) => (opt.meldung ? opt.meldung(t) : null);
   const vokalFuer = (n) => { const v = String(n.vokal || 'a').toLowerCase(); return /^[aeiouäöü]/.test(v) ? v : 'u'; };
 
   // ---- Ablauf
-  let laeuft = false, aktiv = null, timer = 0, raf = 0, ergebnisse = [], letzteZahl = 0, letztePhase = '';
+  let laeuft = false, aktiv = null, timer = 0, raf = 0, ergebnisse = [], letzteZahl = 0, letztePhase = '', laufNr = 0;
   let micOk = false, FORM = null;
   function setzeStart(an) {
     startIc.replaceChildren(ic(an ? 'stop' : 'play'));
@@ -297,18 +306,24 @@ export function spieler(wurzel, plan, opt = {}) {
   }
   async function start() {
     sitzung();                         // synchron im Tipp (iOS)
+    const nr = ++laufNr, weg = () => !laeuft || nr !== laufNr; // ein zweiter Start (oder Stopp) beendet einen noch wartenden Ablauf
     laeuft = true; ergebnisse = []; chips.replaceChildren(); ergBox.hidden = true; ergBox.replaceChildren();
     setzeStart(true); phase('Vorbereiten …');
     if (plan.art !== 'bewegung') {
       micOk = await mikrofon();
+      if (nr !== laufNr) return;
       micPunkt.classList.toggle('an', micOk); micPunkt.classList.toggle('aus', !micOk);
       if (!micOk) hinweis.textContent = `${SZ.fehler || 'Ohne Mikrofon.'} Die Übung läuft trotzdem im Takt – nur ohne Rückmeldung.`;
-      else if (!speicher.hole('kopfhoererGesagt', false)) { hinweis.textContent = 'Tipp: Mit Kopfhörern misst die App genauer – dann kommt die Begleitung nicht ins Mikrofon.'; speicher.merke('kopfhoererGesagt', true); }
+      else if (!speicher.hole('kopfhoererGesagt', false)) { hinweis.textContent = 'Tipp: Mit Kopfhörern misst die App genauer – dann kommt die Begleitung nicht ins Mikrofon. Kabel-Kopfhörer sind am pünktlichsten; Bluetooth-Kopfhörer hängen etwas nach, dann wirkt dein Einsatz ein wenig später.'; speicher.merke('kopfhoererGesagt', true); }
     }
-    if (!laeuft) return;
+    if (weg()) return;
+    if (SZ.ctx && SZ.ctx.state !== 'running') { // iOS hat den Ton noch gesperrt: ehrlich sagen statt stumm weiterlaufen
+      stopp(); hinweis.textContent = 'Der Ton ist auf diesem Gerät noch gesperrt – tippe bitte noch einmal auf Start. (Stummschalter und Lautstärke prüfen.)'; return;
+    }
     if (plan.vokale && micOk) {
       try { const vf = await import('./vokalfilter.js'); SZ.vf = vf; FORM = vf.VOKAL_FORMANTEN; } catch (e) { FORM = null; }
     }
+    if (weg()) return;
     SZ.formanten = !!(plan.vokale && FORM);
     if (singt && (vorsingen === 'aufnahme' || begleitung === 'original') && plan.aufnahme) {
       phase('Aufnahme wird geladen …');
