@@ -788,11 +788,12 @@ function gruendeZeigen(t) {
 function werkzeugZeigen(t) {
   const box = $('#spWerkzeug', root);
   const ev = gewaehltesEv(t);
-  if (!ev) { box.innerHTML = t.lesung ? '<p class="sc-klein sp-tipp">Tippe auf eine Note (oder ein Kärtchen) zum Ändern.</p>' : ''; return; }
-  const x = ev.n?.[S.pruef.sel.ni ?? 0];
   const K = (tun, ico, label, an = false, extra = '') => `<button type="button" class="sp-w${an ? ' an' : ''}" data-tun="${tun}"${extra} aria-label="${esc(label)}" title="${esc(label)}"${an ? ' aria-pressed="true"' : ''}>${ico}</button>`;
+  const rueck = K('rueck', ICO.zurueckNehmen, 'Rückgängig', false, S.rueck.get(t)?.length ? '' : ' disabled');
+  if (!ev) { box.innerHTML = t.lesung ? `<div class="sp-w-reihe">${S.rueck.get(t)?.length ? rueck : ''}<p class="sc-klein sp-tipp">Tippe auf eine Note (oder ein Kärtchen) zum Ändern.</p></div>` : ''; return; }
+  const x = ev.n?.[S.pruef.sel.ni ?? 0];
   box.innerHTML = `<div class="sp-w-reihe">
-      ${K('runter', ICO.runter, 'Tiefer', false, ev.r ? ' disabled' : '')}${K('hoch', ICO.hoch, 'Höher', false, ev.r ? ' disabled' : '')}
+      ${rueck}<span class="sp-w-trenn"></span>${K('runter', ICO.runter, 'Tiefer', false, ev.r ? ' disabled' : '')}${K('hoch', ICO.hoch, 'Höher', false, ev.r ? ' disabled' : '')}
       <span class="sp-w-trenn"></span>
       ${K('akz', ICO.b, 'Be', x?.a === 'b', ' data-a="b"' + (ev.r ? ' disabled' : ''))}${K('akz', ICO.aufl, 'Auflösungszeichen', x?.a === 'n', ' data-a="n"' + (ev.r ? ' disabled' : ''))}${K('akz', ICO.kreuz, 'Kreuz', x?.a === '#', ' data-a="#"' + (ev.r ? ' disabled' : ''))}
     </div>
@@ -812,8 +813,7 @@ function untenZeigen(t, i) {
   const kannKi = S.ki.zustand === 'da' && hatBild(t) && !S.job?.laeuft;
   const lauf = S.job?.laeuft;
   box.innerHTML = `<a class="sc-knopf zweit rundk" ${i > 0 ? `href="#scan/takt/${i}"` : 'aria-disabled="true"'} aria-label="Voriger Takt">${ICO.links}</a>
-    <button class="sc-knopf zweit" type="button" data-tun="rueck"${S.rueck.get(t)?.length ? '' : ' disabled'} aria-label="Rückgängig">${ICO.zurueckNehmen}</button>
-    ${S.ki.zustand === 'da' && hatBild(t) ? `<button class="sc-knopf zweit" type="button" data-tun="neulesen"${kannKi ? '' : ' disabled'}>${lauf ? '<span class="lade-punkt klein"></span>' : ICO.neu}<span>${lauf ? 'liest …' : 'Takt neu lesen'}</span></button>` : ''}
+    ${S.ki.zustand === 'da' && hatBild(t) ? `<button class="sc-knopf zweit" type="button" data-tun="neulesen"${kannKi ? '' : ' disabled'}>${lauf ? '<span class="lade-punkt klein"></span>' : ICO.neu}<span>${lauf ? 'liest …' : 'Neu lesen'}</span></button>` : ''}
     <button class="sc-knopf ${t.status === 'geprueft' ? 'gut' : 'haupt'}" type="button" data-tun="stimmt"${t.lesung ? '' : ' disabled'}>${ICO.ok}<span>${t.status === 'geprueft' ? 'Geprüft' : 'Stimmt so'}</span></button>
     <a class="sc-knopf zweit rundk" ${i < S.takte.length - 1 ? `href="#scan/takt/${i + 2}"` : 'aria-disabled="true"'} aria-label="Nächster Takt">${ICO.rechts}</a>
     ${S.job?.fehler ? `<p class="sc-meldung rot">${ICO.warn}<span>${esc(S.job.fehler)}</span></p>` : ''}`;
