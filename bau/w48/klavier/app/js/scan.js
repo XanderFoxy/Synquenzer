@@ -294,15 +294,17 @@ async function leseZeile(e, job) {
   plane();
   try {
     const blobs = z ? z.ki.map((k) => k.blob) : [p.daten.ganz.blob];
-    const teile = z && z.ki.length > 1 ? z.ki.map((k) => ({ von: von + k.takte[0], bis: von + k.takte[k.takte.length - 1] })) : null;
+    const teile = z && z.ki.length > 1 ? z.ki.map((k) => ({ von: 1 + k.takte[0], bis: 1 + k.takte[k.takte.length - 1] })) : null; // blaue Nummern je Zeile (1 …)
     const maxN = S.ki.limits?.images?.maxCount || 1;
-    const gruppen = blobs.length <= maxN ? [{ blobs, teile, von, bis }] : z.ki.map((k, j) => ({ blobs: [k.blob], teile: null, von: teile[j].von, bis: teile[j].bis }));
+    const gruppen = blobs.length <= maxN ? [{ blobs, teile, von, bis, erst: 1 }] : z.ki.map((k, j) => ({ blobs: [k.blob], teile: null, von: von + teile[j].von - 1, bis: von + teile[j].bis - 1, erst: teile[j].von }));
     const antworten = [];
     for (const gr of gruppen) {
       const prompt = KI.zeilenAnweisung({ zeile: z ? zi + 1 : 1, zeilen: zeilenAufSeite || 1, von: gr.von, bis: gr.bis, staves: z ? z.staves.length : 2, kontext: antworten.length ? { ...kontext, key: antworten[0].key ?? kontext?.key, time: antworten[0].time ?? kontext?.time, clefs: antworten[0].clefs ?? kontext?.clefs } : kontext, teile: gr.teile, ganzeSeite: !z });
       const r = await frage(prompt, gr.blobs, { job, onText: ({ text }) => { fort.takte = (text.match(/^\s*M\s*\d+/gm) || []).length; fort.text = fort.takte ? `${fort.takte} Takt${fort.takte === 1 ? '' : 'e'} …` : 'schreibt …'; plane(); } });
       const a = KI.leseAntwort(r.text);
       a.abgeschnitten = r.truncated;
+      // Nummern der Antwort (blau, je Bild ab 1 … bzw. ab dem ersten Takt des Teils) → Nummer innerhalb der Zeile
+      if (gr.erst > 1 && a.takte.length && a.takte[0].nr === 1) for (const t of a.takte) t.nr += gr.erst - 1;
       antworten.push(a);
     }
     zeileEintragen(p, zi, z, antworten, eigene, von);
@@ -331,11 +333,12 @@ function zeileEintragen(p, zi, z, antworten, eigene, vonGesendet) {
   }
   const N = eigene.length, M = gelesen.length;
   let zuordnung = gelesen.slice(0, N);
-  const von = vonGesendet ?? eigene[0].nr;
+  void vonGesendet;
   if (M !== N) {
+    // die KI schreibt die blauen Nummern der Zeile (1 … N): danach zuordnen, wenn sie eindeutig passen
     const nrs = gelesen.map((g) => g.nr);
-    const passend = nrs.every((n) => n >= von && n <= von + N - 1) && new Set(nrs).size === nrs.length;
-    if (passend) { zuordnung = Array(N).fill(null); for (const g of gelesen) zuordnung[g.nr - von] = g; }
+    const passend = nrs.every((n) => n >= 1 && n <= N) && new Set(nrs).size === nrs.length;
+    if (passend) { zuordnung = Array(N).fill(null); for (const g of gelesen) zuordnung[g.nr - 1] = g; }
   }
   eigene.forEach((t, j) => { t.lesung = zuordnung[j] || null; t.lesungen = 1; t.zeilenGrund = null; t.zeilenKopf = null; });
   eigene[0].zeilenKopf = { key: a0.key, time: a0.time, clefs: a0.clefs };

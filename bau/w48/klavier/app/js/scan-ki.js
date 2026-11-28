@@ -62,8 +62,8 @@ export function zeilenAnweisung(o) {
     L.push(`The image shows ONE line (system) of printed piano sheet music: line ${o.zeile} of ${o.zeilen} on the page. The app cut it out of the page and evened out the light.`);
     L.push(`It has ${o.staves === 1 ? 'one staff' : 'two staves (upper and lower staff of the piano, joined by a brace)'}.`);
     const n = o.bis - o.von + 1;
-    L.push(`The small blue numbers in the white band above the music were added by the app: they mark the ${n} measure${n === 1 ? '' : 's'} it found between the barlines, measures ${o.von} to ${o.bis}. Use these numbers for your M lines. If the printed music clearly has a different number of measures, follow the printed music.`);
-    if (o.teile && o.teile.length > 1) L.push(`The line comes as ${o.teile.length} images so that it stays sharp: ${o.teile.map((t, i) => `image ${i + 1} = measures ${t.von} to ${t.bis}`).join(', ')}. Read them as one continuous line.`);
+    L.push(`The small blue numbers 1 to ${n} in the white band above the music were added by the app: they mark the ${n} measure${n === 1 ? '' : 's'} it found between the barlines of this line (measures ${o.von} to ${o.bis} of the whole piece${n > 1 ? '' : ''}). Write your M lines with these blue numbers: M1${n > 1 ? ` to M${n}` : ''}. Ignore any measure numbers printed in the score. If the printed music clearly has a different number of measures, follow the printed music and number them in order.`);
+    if (o.teile && o.teile.length > 1) L.push(`The line comes as ${o.teile.length} images so that it stays sharp: ${o.teile.map((t, i) => `image ${i + 1} = blue measures ${t.von} to ${t.bis}`).join(', ')}. Read them as one continuous line.`);
   }
   if (o.kontext) {
     const k = o.kontext;
