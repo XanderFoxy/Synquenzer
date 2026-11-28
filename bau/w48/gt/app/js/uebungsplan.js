@@ -215,12 +215,12 @@ export function zeilenInfo(lied, stimme) {
     const top = roh.find((n) => n.midi === info.hoch);
     const ueber = info.hoch - S.ue;
     if (ueber >= 0) {
-      info.hart += 2 + ueber;
+      info.hart += 2 + Math.min(4, ueber);
       info.gruende.push({ art: 'hoehe', uebung: 'register-ausgleich', midi: info.hoch,
         text: `Höchster Ton ${nn(info.hoch, ton)} auf „${top.text || top.wort}“ liegt ${ueber === 0 ? 'genau auf' : `${ueber} ${ueber === 1 ? 'Halbton' : 'Halbtöne'} über`} deinem Übergang (${nn(S.ue, ton)}) – Register-Ausgleich: Schritt für Schritt hinauf, ${hoehenHinweis(top.vokal)}.` });
     }
     if (info.hoch > S.hoch) info.gruende.push({ art: 'rand', uebung: 'naeh', text: `${nn(info.hoch, ton)} liegt über deinem höchsten sicheren Ton (${nn(S.hoch, ton)}) – leicht und eher leise singen, notfalls transponieren.` });
-    const dipOben = roh.filter((n) => n.gleit && n.midi >= S.ue);
+    const dipOben = roh.filter((n) => (n.gleit || String(n.vokal || '').length > 1) && n.midi >= S.ue);
     if (dipOben.length) {
       info.hart += 1;
       const d = dipOben[0];
@@ -248,7 +248,11 @@ export function zeilenInfo(lied, stimme) {
 export function schwersteZeile(lied, stimme) {
   const info = zeilenInfo(lied, stimme).filter((x) => x.mitMelodie);
   if (!info.length) return null;
-  const best = info.slice().sort((a, b) => b.hart - a.hart)[0];
+  // oft gesungene Zeilen (Refrain) zählen mehr – für das Einsingen lohnt die Zeile, die am häufigsten kommt
+  const norm = (t) => String(t || '').toLowerCase().replace(/[^a-z\u00e0-\u024f]+/g, ' ').trim();
+  const zahl = {}; for (const z of lied.zeilen) zahl[norm(z.text)] = (zahl[norm(z.text)] || 0) + 1;
+  const wert = (x) => x.hart + Math.min(2, (zahl[norm(x.text)] || 1) - 1);
+  const best = info.slice().sort((a, b) => wert(b) - wert(a))[0];
   return lied.zeilen.find((z) => z.id === best.zid) || null;
 }
 
@@ -298,13 +302,13 @@ export function spielplan(id, opt = {}) {
       durchgaenge: reiheVon(3, Math.min(S.kern[1], oben - 1), 1, (g) => durchgang(noten([[0, 3, 0, 'ha', { bis: -7 }]], g, 'ha'), g - 7, { laenge: 4, name: `${nn(g, ton)} ↘`, ton }), oben + 2) });
     case 'lippenflattern': case 'summen': case 'naeh': case 'schnelle-silben': {
       const silbe = { lippenflattern: 'brr', summen: 'mm', naeh: 'nä', 'schnelle-silben': ['ma', 'me', 'mi', 'mo', 'mu', 'mo', 'mi', 'me', 'ma'] }[id];
-      const start = id === 'naeh' ? Math.min(S.ue - 2, oben - 7) : id === 'lippenflattern' ? S.kern[0] + 1 : S.mitte - 3;
+      const start = id === 'naeh' ? Math.min(S.ue - 2, oben - 9) : id === 'lippenflattern' ? S.kern[0] + 1 : S.mitte - 3;
       const bpm = { lippenflattern: 90, summen: 80, naeh: 88, 'schnelle-silben': 104 }[id];
       return mk({ bpm, bpmMin: 56, bpmMax: 140,
         durchgaenge: reiheVon(3, start, 1, (g) => durchgang(noten(id === 'summen' ? viertel(LEITER) : achtel(LEITER), g, silbe), g, { ton })) });
     }
     case 'strohhalm': return mk({ bpm: 66, bpmMin: 48, bpmMax: 96, begleitung: 'bordun',
-      durchgaenge: reiheVon(3, S.mitte - 3, 2, (g) => durchgang(noten([[0, 1, 0], [1, 3, 0, 'u', { bis: 7 }], [4, 3, 7, 'u', { bis: 0 }]], g, 'u'), g, { laenge: 8, ton })) });
+      durchgaenge: reiheVon(3, Math.min(S.mitte - 3, oben - 9), 1, (g) => durchgang(noten([[0, 1, 0], [1, 3, 0, 'u', { bis: 7 }], [4, 3, 7, 'u', { bis: 0 }]], g, 'u'), g, { laenge: 8, ton })) });
     case 'ng-sirene': {
       let lo = S.kern[0], hi = Math.min(S.hoch + 3, S.kern[1] + 3);
       if (mitLied && lied.umfang && isFinite(lied.umfang.tief)) { lo = Math.max(S.tief, Math.min(lo, lied.umfang.tief)); hi = Math.min(S.hoch + 3, lied.umfang.hoch + 1); }
@@ -359,9 +363,9 @@ export function spielplan(id, opt = {}) {
         durchgaenge: reiheVon(3, start, 1, (g) => durchgang(noten(viertel(LEITER), g, 'a').map((n) => (n.midi >= S.ue ? { ...n, hinweis: hoehenHinweis('a') } : n)), g, { ton })) });
     }
     case 'spruenge': return mk({ bpm: 80, bpmMin: 56, bpmMax: 120,
-      durchgaenge: reiheVon(3, S.mitte - 4, 1, (g) => durchgang(noten([[0, 0.92, 0], [1, 0.92, 7], [2, 0.92, 0], [3, 0.92, 9], [4, 3, 0]], g, 'a'), g, { laenge: 8, ton }), oben) });
+      durchgaenge: reiheVon(3, Math.max(S.tief, Math.min(S.mitte - 4, oben - 11)), 1, (g) => durchgang(noten([[0, 0.92, 0], [1, 0.92, 7], [2, 0.92, 0], [3, 0.92, 9], [4, 3, 0]], g, 'a'), g, { laenge: 8, ton }), oben) });
     case 'arpeggio': return mk({ bpm: 84, bpmMin: 56, bpmMax: 132,
-      durchgaenge: reiheVon(3, S.kern[0] + 1, 1, (g) => durchgang(noten([[0, 0.92, 0], [1, 0.92, 4], [2, 0.92, 7], [3, 0.92, 12], [4, 0.92, 7], [5, 0.92, 4], [6, 2, 0]], g, ['nu', 'no']), g, { laenge: 8, ton })) });
+      durchgaenge: reiheVon(3, Math.max(S.tief, Math.min(S.kern[0] + 1, oben - 14)), 1, (g) => durchgang(noten([[0, 0.92, 0], [1, 0.92, 4], [2, 0.92, 7], [3, 0.92, 12], [4, 0.92, 7], [5, 0.92, 4], [6, 2, 0]], g, ['nu', 'no']), g, { laenge: 8, ton })) });
     case 'konsonanten': return mk({ bpm: 92, bpmMin: 60, bpmMax: 132,
       durchgaenge: reiheVon(2, S.mitte - 2, 1, (g) => durchgang(noten([...['pa', 'ta', 'ka', 'pa', 'ta', 'ka', 'pa', 'ta', 'ka'].map((s, i) => [i * 0.5, 0.4, 0, s, { einsatz: i === 0 ? undefined : false }]), [4.5, 3.5, 0, 'a', { einsatz: false }]], g), g, { laenge: 8, ton })) });
     case 'tiefe-locker': return mk({ bpm: 76, bpmMin: 52, bpmMax: 108, begleitung: 'bordun',
