@@ -184,9 +184,16 @@ export async function zeige(el, lied, { stimme } = {}) {
         const blob = await speicher.ladeAudio(lied.id);
         if (!blob) { meld('Für dieses Lied ist keine Aufnahme gespeichert – Mitsingen braucht Audio.'); return; }
         meld('Aufnahme wird geladen …');
-        bufInst = await dekodiere(await blob.arrayBuffer()); basisIstMix = true;
-        const ks = []; for (let c = 0; c < Math.min(2, bufInst.numberOfChannels); c++) ks.push(bufInst.getChannelData(c).slice());
-        vokalQuelle = { ks, sr: bufInst.sampleRate };
+        const inst = lied.audioArt === 'getrennt' ? await speicher.ladeAudio(lied.id + '#instrumental') : null;
+        if (inst) { // Gesang und Instrumental getrennt geladen: echtes Instrumental, Vokal-Spur aus der Gesangsspur
+          bufInst = await dekodiere(await inst.arrayBuffer()); basisIstMix = false;
+          const g = await dekodiere(await blob.arrayBuffer());
+          vokalQuelle = { ks: [g.getChannelData(0).slice()], sr: g.sampleRate };
+        } else {
+          bufInst = await dekodiere(await blob.arrayBuffer()); basisIstMix = true;
+          const ks = []; for (let c = 0; c < Math.min(2, bufInst.numberOfChannels); c++) ks.push(bufInst.getChannelData(c).slice());
+          vokalQuelle = { ks, sr: bufInst.sampleRate };
+        }
         await baueVokale('echt');
       }
       playKnopf.disabled = false;

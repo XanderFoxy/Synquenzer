@@ -69,10 +69,11 @@ export async function speichereLied(l) {
 }
 
 export async function loescheLied(id) {
-  ersatz.lieder.delete(id); ersatz.audio.delete(id);
+  ersatz.lieder.delete(id); ersatz.audio.delete(id); ersatz.audio.delete(id + '#instrumental');
   try {
     await vorgang('lieder', 'readwrite', (st) => st && st.delete(id));
     await vorgang('audio', 'readwrite', (st) => st && st.delete(id));
+    await vorgang('audio', 'readwrite', (st) => st && st.delete(id + '#instrumental'));
   } catch (e) { /* nichts */ }
 }
 
