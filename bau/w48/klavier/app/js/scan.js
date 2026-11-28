@@ -254,7 +254,7 @@ function pixelKoepfe(t, ctx, i) {
 
 function pruefen(t, i, kx, { ohneZeile = false } = {}) {
   const ctx = kx[i];
-  if (!t.lesung) return [{ art: 'leer', text: 'Für diesen Takt gibt es noch keine Lesung.' }];
+  if (!t.lesung) return [{ art: 'leer', text: 'Für diesen Takt gibt es noch keine Lesung.' }, ...(t.zeilenGrund && !ohneZeile ? [t.zeilenGrund] : [])];
   const g = KI.pruefeTakt(t.lesung, { ...ctx, erster: i === 0, letzter: i === S.takte.length - 1, pixel: pixelKoepfe(t, ctx, i) });
   if (t.zeilenGrund && !ohneZeile) g.push(t.zeilenGrund);
   return g;
