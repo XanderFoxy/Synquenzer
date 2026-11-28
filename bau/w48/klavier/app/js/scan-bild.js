@@ -282,8 +282,9 @@ export function taktstriche(bin, w, h, z) {
       let l = xx, r = xx;
       while (l > xx - weit && l > 0 && bin[o + l - 1]) l--;
       while (r < xx + weit && r < w - 1 && bin[o + r + 1]) r++;
-      // weit nach beiden Seiten schwarz: eine (leicht schräge, dicke) Notenlinie oder ein Balken – sagt nichts über einen Kopf
-      if (xx - l >= lang && r - xx >= lang) continue;
+      // weit zu einer Seite schwarz: eine (leicht schräge, dicke) Notenlinie, ihr Ende am Schlussstrich oder ein Balken –
+      // sagt nichts über einen Kopf (Köpfe ragen höchstens ~1,5 Abstände neben den Hals)
+      if (xx - l >= lang || r - xx >= lang) continue;
       n++;
       if (r - l + 1 > grenze) breit++;
     }
