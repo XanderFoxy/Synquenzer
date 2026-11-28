@@ -163,9 +163,9 @@ function quelleHtml(q) {
   else if (r.anfaenge) teile.push(`${r.anfaenge} von ${r.gesamt} Notenanfängen gerundet.`);
   else teile.push('Rhythmus genau übernommen' + (r.enden ? `, ${r.enden} Notenlängen leicht angepasst.` : ' – nichts gerundet.'));
   if (q.gekuerzt) teile.push(`${q.gekuerzt}× gleiche Taste neu angeschlagen, bevor sie losgelassen war – der erste Ton endet dort.`);
-  if (q.doppelt) teile.push(`${q.doppelt} doppelte Töne zusammengefasst.`);
-  if (q.ohneEnde) teile.push(`${q.ohneEnde} Töne ohne Ende in der Datei – bis zum Schluss gehalten (höchstens 8 Viertel über den letzten Ton hinaus).`);
-  if (q.abgeschnitten) teile.push(`<b>Sehr lang:</b> nur die ersten ${q.abgeschnitten.takte} Takte geladen – ${q.abgeschnitten.noten} ${q.abgeschnitten.noten === 1 ? 'Ton' : 'Töne'} danach weggelassen.`);
+  if (q.doppelt) teile.push(`${q.doppelt} ${q.doppelt === 1 ? 'doppelter Ton' : 'doppelte Töne'} zusammengefasst.`);
+  if (q.ohneEnde) teile.push(`${q.ohneEnde} ${q.ohneEnde === 1 ? 'Ton' : 'Töne'} ohne Ende in der Datei – bis zum Schluss gehalten (höchstens 8 Viertel über den letzten Ton hinaus).`);
+  if (q.abgeschnitten) teile.push(`<b>${q.abgeschnitten.noten} ${q.abgeschnitten.noten === 1 ? 'Ton' : 'Töne'} nach Takt ${q.abgeschnitten.takte} weggelassen</b> – so lange Stücke kann diese Seite nicht zeigen.`);
   if (q.schlagzeug) teile.push('Schlagzeug (Kanal 10) ausgeblendet.');
   if (q.auftakt) teile.push('Auftakt erkannt.');
   if (q.tempoWechsel) teile.push(`${q.tempoWechsel} Tempowechsel – die Wiedergabe folgt ihnen.`);
