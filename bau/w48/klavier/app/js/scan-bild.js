@@ -268,6 +268,22 @@ export function taktstriche(bin, w, h, z) {
     }
     return n / Math.max(1, Math.round(y1) - Math.round(y0) + 1);
   };
+  const dick = Math.max(1, Math.round(z.dicke || 1));
+  const mitKopf = (x, s) => {
+    let n = 0, breit = 0;
+    const grenze = 0.65 * g, weit = Math.ceil(g);
+    for (const st of z.staves) for (let y = Math.round(st.y[0]); y <= Math.round(st.y[4]); y++) {
+      if (st.y.some((ly) => Math.abs(y - ly) <= dick)) continue; // Zeilen der Notenlinien selbst nicht
+      const xx = Math.round(x + s * (y - ym)), o = y * w;
+      if (xx < 1 || xx > w - 2 || !(bin[o + xx] || bin[o + xx - 1] || bin[o + xx + 1])) continue;
+      n++;
+      let l = xx, r = xx;
+      while (l > xx - weit && l > 0 && bin[o + l - 1]) l--;
+      while (r < xx + weit && r < w - 1 && bin[o + r + 1]) r++;
+      if (r - l + 1 > grenze) breit++;
+    }
+    return n > 0 && breit / n > 0.15;
+  };
   const spalten = [];
   for (let x = xa; x <= xb; x++) {
     let neig = null;
@@ -280,6 +296,8 @@ export function taktstriche(bin, w, h, z) {
     // Taktstriche enden an den äußeren Linien, Hälse von Akkorden ragen meist darüber hinaus
     const oben = deckung(x, neig, z.top - 1.3 * g, z.top - 0.35 * g), unten = deckung(x, neig, z.bot + 0.35 * g, z.bot + 1.3 * g);
     if (oben > 0.6 || unten > 0.6) continue;
+    // ein Hals hat einen Notenkopf: dort ist die Tinte quer viel breiter als ein Strich (wichtig bei einzelnen Systemen)
+    if (mitKopf(x, neig)) continue;
     spalten.push({ x, s: neig });
   }
   const gruppen = [];
@@ -325,7 +343,7 @@ export function tinte(bin, w, h, z, xa, xb) {
 
 /** Takt-Grenzen aus den Taktstrichen. Hinter dem letzten Strich zählt ein Takt nur, wenn dort Noten stehen. */
 export function taktGrenzen(z, striche, bin, w, h) { // bin: strenger Schwellwert (Rauschen zählt nicht als Tinte)
-  const g = z.g, xs = striche.map((s) => s.x).filter((x) => x > z.x0 + 1.5 * g);
+  const g = z.g, xs = striche.map((s) => s.x).filter((x) => x > z.x0 + 3 * g); // davor steht höchstens der Anfangsstrich (Schlüssel braucht Platz)
   const grenzen = [z.x0, ...xs];
   const letzt = grenzen[grenzen.length - 1];
   z.restTinte = z.x1 - letzt > 4 * g && bin ? tinte(bin, w, h, z, letzt + 0.6 * g, z.x1 - 0.3 * g) : null;
