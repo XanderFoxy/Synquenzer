@@ -392,7 +392,8 @@ export function spielplan(id, opt = {}) {
     }
     const bpm0 = lied.bpm || 100;
     const faktor = id === 'halbtempo' ? 0.5 : id === 'originaltempo' || id === 'mit-musik' ? 1 : modus === 'vokale' ? 1 : 0.8;
-    const aufnahme = lied.id === 'the-wall' || lied.mitAudio ? { liedId: lied.id, ab: d0.liedAb } : null;
+    // eigene Aufnahme nur in Originaltonart (transponiert würde sie falsch klingen)
+    const aufnahme = (lied.id === 'the-wall' || lied.mitAudio) && !lied.transponiert ? { liedId: lied.id, ab: d0.liedAb } : null;
     let durch = [d0, { ...d0, name: d0.name + ' (2)' }];
     if (id === 'rueckwaerts') {
       const roh = zeilenNotenRoh(lied, z);
