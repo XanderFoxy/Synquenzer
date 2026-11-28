@@ -362,7 +362,7 @@ async function seiteScan() {
 function scanHtml(scan) {
   if (!scan) return '';
   const m = scan.markiert || [];
-  return `<div class="quelle scan-quelle"><p><span class="q-marke">Foto</span> Aus einem Foto erkannt: <b>${scan.sicher} von ${scan.gesamt} Takten sicher</b>${m.length ? ` · markiert: Takt ${m.slice(0, 12).join(', ')}${m.length > 12 ? ' …' : ''}` : ''}. Bitte mit dem Original vergleichen, bevor du übst.</p></div>`;
+  return `<div class="quelle scan-quelle"><p><span class="q-marke">Foto</span> Aus einem Foto erkannt: <b>${scan.sicher} von ${scan.gesamt} Takten sicher</b>${scan.geprueft ? ` (${scan.geprueft} von dir geprüft)` : ''}${m.length ? ` · markiert: Takt ${m.slice(0, 12).join(', ')}${m.length > 12 ? ' …' : ''}` : ''}. Bitte mit dem Original vergleichen, bevor du übst.</p></div>`;
 }
 
 // ───────── Stück ─────────

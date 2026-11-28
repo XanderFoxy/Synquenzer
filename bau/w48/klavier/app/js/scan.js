@@ -366,7 +366,8 @@ function bewerten(liste, info) {
     const hart = harteGruende(t.gruende);
     void hart;
     t.status = t.gruende.some((g) => g.art === 'unleserlich') ? 'unleserlich' : t.gruende.length ? 'auffaellig' : 'sicher';
-    t.varianten = t.lesung ? [{ name: 'Lesung 1', lesung: t.lesung }] : [];
+    t.varianten = t.lesung ? [{ name: 'Lesung 1', lesung: KI.kopie(t.lesung) }] : [];
+    t.wahl = 0;
   }
   S.stueck = null;
 }
@@ -431,7 +432,9 @@ function entscheiden(t, A, B) {
     if (eindeutig.length > 1) t.gruende.push({ art: 'verschieden', text: `Die Lesungen sind verschieden (${eindeutig.length} Fassungen) – bitte mit dem Bild vergleichen.` });
     t.status = beste && !unl(beste.lesung) ? 'markiert' : 'unleserlich';
   }
-  t.varianten = eindeutig;
+  t.varianten = eindeutig.map((k) => ({ name: k.name, lesung: KI.kopie(k.lesung) }));
+  t.wahl = eindeutig.findIndex((k) => KI.vergleiche(k.lesung, t.lesung, ctx).gleich);
+  t.lesung = KI.kopie(t.lesung);
   S.stueck = null;
 }
 
@@ -468,7 +471,7 @@ async function uebernehmen() {
   const { alsMusicXML } = await import('./ausgeben.js');
   const xml = alsMusicXML(st, { titel });
   const markiert = S.takte.filter(istMarkiert).map((t) => t.nr);
-  await opt.uebernehmen?.({ titel, xml, scan: { gesamt: b.n, sicher: b.s, markiert } });
+  await opt.uebernehmen?.({ titel, xml, scan: { gesamt: b.n, sicher: b.s, geprueft: S.takte.filter((t) => t.status === 'geprueft').length, markiert } });
 }
 
 // ───────── Darstellung: Hauptseite ─────────
@@ -781,7 +784,7 @@ function gruendeZeigen(t) {
   const box = $('#spGruende', root);
   const g = t.gruende || [];
   const st = `<span class="sc-pille ${t.status}"><i></i>${esc(STATUS_TEXT[t.status])}</span>`;
-  const varianten = t.varianten && t.varianten.length > 1 ? `<div class="sp-var" role="group" aria-label="Lesungen">${t.varianten.map((v, j) => `<button type="button" data-tun="variante" data-j="${j}" aria-pressed="${v.lesung === t.lesung}">${esc(v.name)}</button>`).join('')}</div>` : '';
+  const varianten = t.varianten && t.varianten.length > 1 ? `<div class="sp-var" role="group" aria-label="Lesungen">${t.varianten.map((v, j) => `<button type="button" data-tun="variante" data-j="${j}" aria-pressed="${t.wahl === j}">${esc(v.name)}</button>`).join('')}</div>` : '';
   box.innerHTML = `<div class="sp-gruende">${st}${g.length ? `<ul>${g.map((x) => `<li class="${x.art}">${esc(x.text)}</li>`).join('')}</ul>` : '<span class="sc-klein">Keine Auffälligkeit.</span>'}${varianten}</div>`;
 }
 
@@ -837,9 +840,12 @@ function schritt(x, d) {
 
 function merken(t) {
   const l = S.rueck.get(t) || [];
-  l.push(KI.kopie({ lesung: t.lesung, sel: S.pruef.sel }));
+  l.push(KI.kopie({ lesung: t.lesung, sel: S.pruef.sel, wahl: t.wahl }));
   if (l.length > 40) l.shift();
   S.rueck.set(t, l);
+  // eigene Arbeitskopie: die gespeicherten Lesungen (Varianten) bleiben unverändert
+  t.lesung = KI.kopie(t.lesung);
+  t.wahl = -1;
 }
 function nachBearbeiten(t) {
   if (t) { t.bearbeitet = true; if (t.status === 'geprueft' || t.status === 'sicher') t.status = 'markiert'; }
@@ -853,13 +859,13 @@ function nachBearbeiten(t) {
 }
 
 function bearbeite(t, tun, b) {
-  if (!t.lesung) return;
+  if (!t.lesung || tun === 'leer') return;
+  if (tun !== 'anhaengen' && tun !== 'stimme2' && !gewaehltesEv(t)) return;
+  merken(t); // ab hier wird die frische Arbeitskopie geändert
   const s = S.pruef.sel;
   const evs = s ? t.lesung.stimmen[s.sk] : null;
   const ev = gewaehltesEv(t);
-  const kx = kontexte()[S.pruef.i];
   if (tun === 'anhaengen') {
-    merken(t);
     const sk = b.dataset.sk;
     if (!Array.isArray(t.lesung.stimmen[sk])) t.lesung.stimmen[sk] = [];
     const liste = t.lesung.stimmen[sk];
@@ -872,10 +878,7 @@ function bearbeite(t, tun, b) {
     S.pruef.sel = { sk, ei: liste.length - 1, ni: 0 };
     return nachBearbeiten(t);
   }
-  if (tun === 'stimme2') { merken(t); t.lesung.stimmen.U2 = [{ n: [], d: 1, p: 0, t: false, r: true, ganz: true, bo: false }]; return nachBearbeiten(t); }
-  if (tun === 'leer') return;
-  if (!ev) return;
-  merken(t);
+  if (tun === 'stimme2') { t.lesung.stimmen.U2 = [{ n: [], d: 1, p: 0, t: false, r: true, ganz: true, bo: false }]; return nachBearbeiten(t); }
   const ni = s.ni ?? 0;
   if (tun === 'hoch' || tun === 'runter') { if (!ev.r) ev.n[ni] = schritt(ev.n[ni], tun === 'hoch' ? 1 : -1); }
   else if (tun === 'akz') { const a = b.dataset.a; if (!ev.r) ev.n[ni].a = ev.n[ni].a === a ? null : a; }
@@ -897,7 +900,6 @@ function bearbeite(t, tun, b) {
     if (!ev.r && ev.n.length > 1) { ev.n.splice(ni, 1); S.pruef.sel = { ...s, ni: 0 }; }
     else { evs.splice(s.ei, 1); S.pruef.sel = evs.length ? { sk: s.sk, ei: Math.min(s.ei, evs.length - 1), ni: 0 } : null; }
   }
-  void kx;
   nachBearbeiten(t);
 }
 
@@ -909,9 +911,9 @@ async function klickPruefen(ev) {
   if (tun === 'uebernehmen') return uebernehmen();
   if (tun === 'zeile') { S.pruef.ganzeZeile = !S.pruef.ganzeZeile; return plane(); }
   if (tun === 'ev') return waehle({ sk: b.dataset.sk, ei: +b.dataset.ei, ni: 0 });
-  if (tun === 'variante') { const v = t.varianten[+b.dataset.j]; if (v) { merken(t); t.lesung = v.lesung; S.pruef.sel = null; S.stueck = null; const kx = kontexte(); t.gruende = pruefen(t, S.pruef.i, kx); plane(); } return; }
+  if (tun === 'variante') { const j = +b.dataset.j, v = t.varianten[j]; if (v) { merken(t); t.lesung = KI.kopie(v.lesung); t.wahl = j; S.pruef.sel = null; S.stueck = null; const kx = kontexte(); t.gruende = pruefen(t, S.pruef.i, kx); if (t.status === 'geprueft') t.status = 'markiert'; plane(); } return; }
   if (tun === 'stimmt') { if (t.lesung) { t.status = t.status === 'geprueft' ? 'markiert' : 'geprueft'; S.stueck = null; const n = S.takte.findIndex((x, j) => j > S.pruef.i && istMarkiert(x)); plane(); if (n >= 0) setTimeout(() => { location.hash = '#scan/takt/' + (n + 1); }, ruhig() ? 0 : 180); } return; }
-  if (tun === 'rueck') { const l = S.rueck.get(t); const v = l?.pop(); if (v) { t.lesung = v.lesung; S.pruef.sel = v.sel; nachBearbeiten(t); } return; }
+  if (tun === 'rueck') { const l = S.rueck.get(t); const v = l?.pop(); if (v) { t.lesung = v.lesung; t.wahl = v.wahl; S.pruef.sel = v.sel; nachBearbeiten(t); } return; }
   if (tun === 'neulesen') return taktNeuLesen(t);
   bearbeite(t, tun, b);
 }

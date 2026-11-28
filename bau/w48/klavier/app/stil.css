@@ -461,8 +461,8 @@ h2.abschnitt { font-size: 13px; text-transform: uppercase; letter-spacing: .08em
 .sp-gruende ul { flex: 1 1 100%; margin: 0; padding-left: 18px; color: var(--leise); display: grid; gap: 2px; }
 .sp-gruende li.summe, .sp-gruende li.unleserlich, .sp-gruende li.leer, .sp-gruende li.verschieden, .sp-gruende li.taktzahl { color: var(--text); }
 .sp-gruende li.info { list-style: none; margin-left: -18px; color: var(--r5); font-weight: 600; }
-.sp-var { display: inline-flex; flex-wrap: wrap; background: var(--flaeche2); border-radius: 22px; padding: 3px; gap: 2px; }
-.sp-var button { min-height: 40px; padding: 0 12px; border: 0; border-radius: 19px; background: none; font-size: 13px; font-weight: 700; color: var(--leise); }
+.sp-var { display: inline-flex; flex-wrap: wrap; background: var(--flaeche2); border-radius: 24px; padding: 3px; gap: 2px; }
+.sp-var button { min-height: 44px; padding: 0 12px; border: 0; border-radius: 21px; background: none; font-size: 13px; font-weight: 700; color: var(--leise); }
 .sp-var button[aria-pressed="true"] { background: var(--flaeche); color: var(--text); box-shadow: var(--schatten); }
 .sp-werkzeug { margin: 10px max(var(--rand-x), env(safe-area-inset-right)) 0 max(var(--rand-x), env(safe-area-inset-left)); display: grid; gap: 6px; }
 .sp-tipp { padding: 4px 2px; }

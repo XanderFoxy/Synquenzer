@@ -380,6 +380,13 @@ function grauSchreiben(c, g) {
   ctx.putImageData(id, 0, 0);
 }
 const alsBlob = (c, typ = 'image/png', q) => new Promise((ok, nein) => c.toBlob((b) => (b ? ok(b) : nein(new Error('Bild ließ sich nicht speichern'))), typ, q));
+/** Für die KI: PNG (scharf); bei verrauschten Fotos wird PNG groß → dann JPEG hoher Qualität (schneller hochgeladen). */
+async function kiBlob(c) {
+  const png = await alsBlob(c, 'image/png');
+  if (png.size <= 450 * 1024) return png;
+  const jpg = await alsBlob(c, 'image/jpeg', 0.9);
+  return jpg.size < png.size ? jpg : png;
+}
 
 export async function bildOeffnen(datei) {
   const url = URL.createObjectURL(datei);
@@ -509,7 +516,7 @@ async function ganzeSeiteKi(meister) {
   const s = Math.min(1, Math.sqrt(GRENZEN.kiPixel / (meister.width * meister.height)));
   const c = leinwand(meister.width * s, meister.height * s);
   ctx2d(c).drawImage(meister, 0, 0, c.width, c.height);
-  const blob = await alsBlob(c, 'image/png');
+  const blob = await kiBlob(c);
   const aus = { blob, w: c.width, h: c.height };
   c.width = c.height = 0;
   return aus;
@@ -557,7 +564,7 @@ async function kiBilderZeile(c, z) {
       ctx.fillStyle = '#1d4ed8';
       for (const xg of [tk.x0, tk.x1]) { const x = (xg - t.sx) * s; if (x > 1 && x < W - 1) ctx.fillRect(x - 1, band * s * 0.78, 2, band * s * 0.22); }
     }
-    aus.push({ blob: await alsBlob(k, 'image/png'), w: W, h: H, takte: t.takte.map((x) => x.k), s, sx: t.sx });
+    aus.push({ blob: await kiBlob(k), w: W, h: H, takte: t.takte.map((x) => x.k), s, sx: t.sx });
     k.width = k.height = 0;
   }
   return aus;
@@ -599,7 +606,7 @@ export async function taktFuerKi(z, k, { quinten = 0, variante = 0 } = {}) {
     for (let y = 0; y < H; y += 10) ctx.fillRect(x - luecke * s * 0.5 - 1, y, 2, 5);
   }
   ctx.drawImage(bm, mx0, 0, mx1 - mx0, r.h, x, 0, (mx1 - mx0) * s, H);
-  const blob = await alsBlob(c, 'image/png');
+  const blob = await kiBlob(c);
   c.width = c.height = 0;
   return { blob, w: W, h: H, mitKopf: !!kopf };
 }
