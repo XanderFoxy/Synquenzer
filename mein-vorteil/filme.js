@@ -14,15 +14,21 @@
   const URL_STANDARD = 'https://raw.githubusercontent.com/XanderFoxy/Synquenzer/vorteile-daten/vorteile/data/filme.json';
   const SPEICHER = 'mein-vorteil-daten-filme'; // wie die anderen Daten: { d, holZeit }
   const CHIP_SPEICHER = 'mein-vorteil-filme-chip';
+  const KG_SPEICHER = 'mein-vorteil-filme-auswahl'; // gewähltes Genre in „Alle 3,99 €“/„Staffeln 4,99 €“, Alben/Songs in „Musik“
   const GESEHEN = 'mein-vorteil-filme-wunsch-gesehen'; // welche Wunsch-Angebote schon einmal gezeigt wurden
+  const GESEHEN_MW = 'mein-vorteil-filme-most-gesehen', GESEHEN_ADVENT = 'mein-vorteil-filme-advent-gesehen';
   const ALT_STUNDEN = 36; // Stand älter -> rot
   // Bereiche nach Xanders Wunsch (14./15.11.2026): Wunschliste · Für 3,99 € · Action & Thriller · Comedy · 80er & Kult · Neu ·
   // Serien · Disney. Chart-Titel nur bekannt und gut bewertet (Vorteils-Radar: Wikidata/Rotten Tomatoes), nie Horror.
   const HINWEIS_STUNDEN = 6; // Stand älter -> kleiner Hinweis (kein Alarm)
   const CHIPS = [
     ['wunsch', 'Wunschliste', 'Deine Filme – sobald einer günstig ist, kommt eine Nachricht.'],
+    // ab 28.11.2026 (nur mit neuen Daten, die „mostWanted“ kennen): Most Wanted, Advent, Alle 3,99 €, Staffeln 4,99 €, Musik, Sammlung
+    ['most', 'Most Wanted', 'Deine festen Reihen und Serien: im Store? Preis, Tiefstpreis, Alarm – unter der Schwelle kommt sofort eine Nachricht.'],
+    ['advent', 'Advent', 'Apples Tagesangebot im Dezember – jeden Tag ein Türchen, sobald der Radar es sieht.'],
     // Xander 16.11.2026: „nur die 3,99-€-Filme als eigene Auswahl“ – einzelne Filme bis 3,99 €; Sets/Collections stehen unter Boxen
     ['fuer399', 'Für 3,99 €', 'Einzelne Filme zum Kaufen für 3,99 € (oder weniger) – deine Listen zuerst, dann die bekanntesten und bestbewerteten. Sets stehen unter „Boxen im Angebot“.'],
+    ['alle399', 'Alle 3,99 €', 'Jeder Film für 3,99 €, den der Radar im Store kennt – je Genre, auch außerhalb der Apple-Angebote.'],
     // Xander 16.11.2026: „Bei den Filmen geht es mir nur um die 3,99-€-Sachen, teurere müssen nicht rein“ – alle Film-Bereiche
     // zeigen nur noch Filme bis 3,99 € (80er/Disney: deine Liste darunter eingeklappt), Neu nur, wenn dort einer 3,99 € kostet
     ['action', 'Action & Thriller', 'Action, Thriller und Sci-Fi zum Kaufen für 3,99 € – die besten zuerst.'],
@@ -30,13 +36,17 @@
     ['achtziger', '80er & Kult', 'Klassiker und Kultfilme für 3,99 € – der Rest deiner Liste eingeklappt darunter.'],
     ['neu', 'Neu', 'Neue Filme aus Komödie, Action und Thriller für 3,99 €.'],
     ['serien', 'Serien', 'Rick and Morty und Star Trek oben, darunter alle anderen Staffeln im Angebot – Preisknüller zuerst.'],
+    ['staffeln', 'Staffeln 4,99 €', 'Jede Staffel für 4,99 € oder weniger, die der Radar im Store kennt – je Genre.'],
     // Film-Boxen (Vorteils-Radar ab 15.11.2026); Chip nur, wenn die Daten „boxen“ kennen. Xander 16.11.2026: nur Boxen, die gerade
     // deutlich reduziert sind (echter Unterschied zum Originalpreis) – Tipps ohne Vergleichspreis eingeklappt darunter
     ['boxen', 'Boxen im Angebot', 'Film- und Serien-Boxen, die gerade deutlich reduziert sind: mindestens 20 % unter dem üblichen Preis oder dem Vergleichspreis.'],
     ['disney', 'Disney', 'Disney und Pixar für 3,99 € – der Rest deiner Liste eingeklappt darunter.'],
+    ['musik', 'Musik', 'Alben und Songs deiner Künstler in der günstigsten Preisstufe – und was der Radar gesenkt gesehen hat.'],
     ['weitere', 'Angebote', 'Weitere Filme für 3,99 €, die in keinem anderen Bereich stehen.'], // Chip nur, wenn hier etwas steht
+    ['sammlung', 'Sammlung', 'Was du schon hast und was dir noch fehlt – die Liste bleibt nur auf diesem Gerät.'],
   ];
-  const GRUPPEN = [...CHIPS.map(([k]) => k).filter(k => k !== 'weitere'), 'angebot']; // „angebot“ = alle Angebote des Radars
+  const NEU_CHIPS = new Set(['most', 'advent', 'alle399', 'staffeln', 'musik', 'sammlung']); // eigene Ansichten, keine Radar-Gruppen
+  const GRUPPEN = [...CHIPS.map(([k]) => k).filter(k => k !== 'weitere' && !NEU_CHIPS.has(k)), 'angebot']; // „angebot“ = alle Angebote des Radars
   const ALT_CHIPS = { angebot: 'fuer399' }; // gemerkter Bereich der Fassung vor dem 15.11.2026 („Angebote“ war der Start)
   const LEER = {
     wunsch: 'Deine Wunschliste ist gerade leer.',
@@ -49,6 +59,9 @@
     serien: 'Gerade keine Staffeln von Rick and Morty oder Star Trek gefunden.',
     boxen: 'Gerade keine Box deutlich reduziert – der Radar prüft alle paar Stunden neu.',
     disney: 'Gerade kein Disney-Film für 3,99 €.',
+    alle399: 'Gerade kein Film für 3,99 € im Katalog.',
+    staffeln: 'Gerade keine Staffel für 4,99 € im Katalog.',
+    musik: 'Gerade kein Album und kein Song deiner Künstler in der günstigsten Stufe.',
   };
   const QUELLE = { 'apple-suche': 'Apple-Store', apple: 'Apple-Store', itunes: 'Apple-Store', 'apple-charts': 'Apple-Charts', charts: 'Apple-Charts', mydealz: 'mydealz', 'apple-preise': 'Apple-Preise', 'apple-tv-raeume': 'Apple-TV-Angebote (Räume der TV-App)', qualitaet: 'Wikidata (Bekanntheit, Kritik, Horror)', 'apple-boxen': 'Apple-Boxen', 'apple-serien': 'Apple-Serien-Charts', 'apple-breit': 'Apple-Charts je Genre', 'wikidata-details': 'Wikidata (Studio, Einspielergebnis, Besetzung)' };
 
@@ -147,6 +160,10 @@
       // mydealz-Tipp, den der Radar einem Apple-Film zuordnen konnte (Link = TV-App), bzw. Hinweis bei einem Tipp ohne Zuordnung
       tipp: t.tipp && typeof t.tipp === 'object' && sicher(t.tipp.link) ? { link: sicher(t.tipp.link) } : null,
       hinweis: typeof t.hinweis === 'string' && t.hinweis.trim() ? t.hinweis.trim().slice(0, 80) : '',
+      // Most Wanted / Reihen / Katalog (Vorteils-Radar ab 28.11.2026)
+      imStore: t.imStore === true ? true : t.imStore === false ? false : null, unterAlarm: t.unterAlarm === true, alarm: preisVon(t.alarm),
+      reihe: typeof t.reihe === 'string' && t.reihe.trim() ? t.reihe.trim().slice(0, 60) : null, nr: zahl(t.nr) > 0 ? Math.round(zahl(t.nr)) : null,
+      genres: Array.isArray(t.genres) ? t.genres.filter(g => Number.isInteger(g)).slice(0, 8) : [], box: typeof t.box === 'string' ? t.box : null,
     };
   }
   // „6 Filme in 4K …“ von mydealz: Preis je Film (wie preisJeFilm im Scanner) – erklärt, warum ein Set unter „Für 3,99 €“ steht
@@ -232,7 +249,36 @@
     gruppen.weitere = gruppen.angebot.filter(t => !sonst.has(t.id) && !doppelt.has(t.id) && bis399(t) && !set(t));
     const status = d && typeof d.status === 'object' && d.status ? d.status : {};
     const boxenOhneUeblich = 'boxen' in g && !liste(g.boxen).some(t => t && t.quelle !== 'mydealz' && zahl(t.ueblich) > 0);
-    return { aktualisiert: typeof d?.aktualisiert === 'string' ? d.aktualisiert : null, gruppen, status, mitBoxen: 'boxen' in g, boxenOhneUeblich };
+    // ab 28.11.2026: Most Wanted, Reihen, Advent, Zahlen von Katalog/Musik – nur mit Daten, die „mostWanted“ kennen
+    const neuD = !!(d && d.mostWanted && typeof d.mostWanted === 'object');
+    return { aktualisiert: typeof d?.aktualisiert === 'string' ? d.aktualisiert : null, gruppen, status, mitBoxen: 'boxen' in g, boxenOhneUeblich,
+      neu: neuD, most: neuD ? mostNorm(d.mostWanted) : null, reihen: neuD ? liste(d.reihen).map(reiheNorm).filter(Boolean) : [],
+      advent: neuD ? adventNorm(d.advent) : null, zusatz: neuD && d.zusatz && typeof d.zusatz === 'object' ? d.zusatz : {} };
+  }
+  function reiheNorm(r) {
+    if (!r || typeof r !== 'object' || typeof r.name !== 'string' || !r.name.trim()) return null;
+    const filme = liste(r.filme).map(t => (t && typeof t === 'object' ? titelNorm({ ...t, reihe: t.reihe || r.name }) : null)).filter(Boolean);
+    return filme.length ? { name: r.name.trim().slice(0, 60), alarm: preisVon(r.alarm), hinweis: typeof r.hinweis === 'string' ? r.hinweis.slice(0, 200) : '', filme } : null;
+  }
+  function mostNorm(m) {
+    const serien = liste(m.serien).filter(x => x && typeof x.titel === 'string' && x.titel.trim()).map(x => ({
+      titel: x.titel.trim().slice(0, 80), jahr: zahl(x.jahr), bis: zahl(x.bis), alarm: preisVon(x.alarm), imStore: x.imStore === true ? true : x.imStore === false ? false : null,
+      staffeln: liste(x.staffeln).map(t => (t && typeof t === 'object' ? titelNorm({ ...t, typ: 'staffel' }) : null)).filter(Boolean),
+      tiefst: x.tiefst && preisVon(x.tiefst.p) != null ? { p: preisVon(x.tiefst.p), tag: datum(x.tiefst.tag), nr: zahl(x.tiefst.nr) } : null,
+      unterAlarm: x.unterAlarm === true, ausgeblendet: zahl(x.ausgeblendet) > 0 ? Math.round(zahl(x.ausgeblendet)) : 0,
+      hinweis: typeof x.hinweis === 'string' ? x.hinweis.slice(0, 200) : '',
+    }));
+    return { alarm: preisVon(m.alarm) ?? 3.99, staffelAlarm: preisVon(m.staffelAlarm) ?? 4.99, reihen: liste(m.reihen).map(reiheNorm).filter(Boolean), serien };
+  }
+  function adventNorm(a) {
+    if (!a || typeof a !== 'object' || !/^\d{4}$/.test(String(a.jahr || ''))) return null;
+    const tage = {};
+    for (const [k, l] of Object.entries(a.tage && typeof a.tage === 'object' ? a.tage : {})) {
+      if (!new RegExp(`^${a.jahr}-12-(0[1-9]|[12]\\d|3[01])$`).test(k)) continue;
+      const arr = liste(l).map(x => (x && typeof x === 'object' ? titelNorm({ ...x, typ: 'film', angebot: true }) : null)).filter(Boolean).slice(0, 4);
+      if (arr.length) tage[k] = arr;
+    }
+    return { jahr: String(a.jahr), tage, quelle: typeof a.quelle === 'string' ? a.quelle.slice(0, 160) : '' };
   }
   // Stand eines Scanners vor dem 14.11.2026, 23:39 (Prüfer-Befund MV8 9): ohne „Für 3,99 €“/Action/Comedy, „Angebote“ noch ohne
   // Horror- und Qualitätsfilter (Midsommar, Longlegs …). Der wird nicht aus dem Gerätespeicher gezeigt – lieber kurz „Lade Filme …“.
@@ -241,7 +287,12 @@
     if (!('fuer399' in g)) return true;
     return !liste(g.fuer399).length && !liste(g.action).length && !liste(g.comedy).length && liste(g.angebot).length > 0;
   }
-  const sichtbar = n => CHIPS.filter(([k]) => (k !== 'weitere' || n.gruppen.weitere.length) && (k !== 'neu' || n.gruppen.neu.length) && (k !== 'boxen' || n.mitBoxen || n.gruppen.boxen.length || n.gruppen.boxenTipps.length));
+  // neue Bereiche (28.11.2026) nur mit Daten, die „mostWanted“ kennen; Advent im Dezember (oder wenn der Radar Tage kennt);
+  // Sammlung auch mit alten Daten, sobald etwas eingetragen ist
+  const neuSichtbar = (k, n) => !NEU_CHIPS.has(k) || (k === 'sammlung' ? n.neu || S.b.roh.length > 0
+    : n.neu && (k !== 'most' || !!(n.most && (n.most.reihen.length || n.most.serien.length)))
+      && (k !== 'advent' || (!!n.advent && (istDezember() || Object.keys(n.advent.tage).length > 0))));
+  const sichtbar = n => CHIPS.filter(([k]) => (k !== 'weitere' || n.gruppen.weitere.length) && (k !== 'neu' || n.gruppen.neu.length) && (k !== 'boxen' || n.mitBoxen || n.gruppen.boxen.length || n.gruppen.boxenTipps.length) && neuSichtbar(k, n));
 
   // --- Filter (Xander 16.11.2026: „Filter, um Indie-Produktionen auszublenden – nur bekannte große Produktionen/Kinohits; nach
   // Schauspieler filtern; Möglichkeiten, die die Apple-TV-Seite nicht hat“): nur bekannte, Genre, Jahrzehnt, Schauspieler,
@@ -282,7 +333,7 @@
     const by = { kino: t => -(t.einspiel ?? -1), neu: t => -(t.jahr ?? 0), alt: t => t.jahr ?? 9999, kritik: t => -(t.rt ?? -1) }[sort];
     return by ? arr.map((t, i) => [t, i]).sort((a, b) => by(a[0]) - by(b[0]) || a[1] - b[1]).map(x => x[0]) : arr;
   }
-  const gefiltert = (k, f = S.f) => (FILTER_CHIPS.has(k) ? sortiere(filtere(S.n.gruppen[k] || [], f), f.sort) : S.n.gruppen[k] || []);
+  const gefiltert = (k, f = S.f) => (FILTER_CHIPS.has(k) ? sortiere(filtere(S.n.gruppen[k] || [], f), f.sort) : S.n.gruppen[k] || []).filter(t => !versteckt(k, t));
   /** Schauspieler der Liste mit Zahl der Filme (die anderen Filter gelten) – meiste Filme zuerst */
   function schauspielerListe(arr, f, suche = '') {
     const z = new Map();
@@ -292,6 +343,13 @@
   }
   // Start: Wunschliste, wenn dort ein (neues) Angebot ist – sonst der zuletzt gewählte Bereich, sonst „Für 3,99 €“
   function startChip(n) {
+    // neu (28.11.2026): Most Wanted unter Alarm bzw. heutiges Advent-Türchen holen ihren Bereich einmal nach vorn
+    if (n.neu) {
+      const mwSig = n.most ? [...n.most.reihen.flatMap(r => r.filme), ...n.most.serien.flatMap(x => x.staffeln)].filter(t => t.unterAlarm).map(t => `${t.id}@${t.preis}`).sort().join('|') : '';
+      if (mwSig && mwSig !== lies(GESEHEN_MW, '')) { merk(GESEHEN_MW, mwSig); return 'most'; }
+      const heute = tagKey(Date.now());
+      if (n.advent && n.advent.tage[heute] && lies(GESEHEN_ADVENT, '') !== heute && sichtbar(n).some(([k]) => k === 'advent')) { merk(GESEHEN_ADVENT, heute); return 'advent'; }
+    }
     const sig = n.gruppen.wunsch.filter(t => t.angebot || t.unterZiel).map(t => `${t.id}@${t.preis}`).sort().join('|');
     const g0 = lies(CHIP_SPEICHER, null);
     const gemerkt = ALT_CHIPS[g0] || g0;
@@ -328,7 +386,7 @@
     return teile;
   }
   function initialen(s) { return s.split(/[\s:–-]+/).filter(w => /^[\p{L}\d]/u.test(w)).slice(0, 2).map(w => w[0].toUpperCase()).join(''); }
-  function karte(t, staffel, chip) {
+  function karte(t, staffel, chip, mitHaken = false) {
     // andere Serien stehen ohne Serien-Überschrift: dort der volle Name („Breaking Bad, Staffel 2“); mydealz-Tipps und
     // Komplett-Boxen ebenso („Staffel 1 bis 7 je 9,99 €“ ist nicht „Staffel 1“)
     const name = staffel && chip !== 'andere' && !/mydealz/i.test(t.quelle) && !t.komplett && staffelNr(t) != null ? `Staffel ${staffelNr(t)}` : t.titel;
@@ -344,6 +402,10 @@
     if (t.angebot && !t.fehlt && !tipp) marken.push('<span class="fi-marke">Angebot</span>');
     if (t.unterZiel && !t.fehlt) marken.push('<span class="fi-marke fi-warm">unter deinem Ziel</span>');
     if (t.raum && !t.fehlt) marken.push(`<span class="fi-marke">Apple TV: ${esc(t.raum)}</span>`);
+    // Most Wanted (28.11.2026): Status im Store und Alarm; Sammlung: „habe ich“ (mit Haken nebenan steht es am Haken)
+    if (chip === 'most' && !t.fehlt && STATUS(t)) marken.push(`<span class="fi-marke fi-grau">${esc(STATUS(t))}</span>`);
+    if (t.unterAlarm && !t.fehlt) marken.push('<span class="fi-marke fi-warm">unter Alarm</span>');
+    if (!mitHaken && chip !== 'sammlung' && besitzt(t)) marken.push('<span class="fi-marke fi-grau">habe ich</span>');
     const preis = t.fehlt ? ''
       : t.preis != null ? `<span class="fi-preis">${esc(euro(t.preis))}</span>`
       : `<span class="fi-preis fi-ohnepreis">${t.leihe != null ? `nur leihen: ${esc(euro(t.leihe))}` : 'gerade nicht zu kaufen'}</span>`;
@@ -366,6 +428,13 @@
     klein.push(...tt);
     if (t.typ === 'box' && !t.fehlt && t.filme && t.preis != null) klein.push(esc(`${t.filme} Filme, je ${euro(t.jeFilm ?? t.preis / t.filme)}`));
     if (t.ziel != null && !t.fehlt && !t.unterZiel) klein.push(esc(`dein Ziel: ${euro(t.ziel)}`));
+    if (chip === 'most' && t.alarm != null && !t.unterAlarm && !t.fehlt) klein.push(esc(`Alarm bis ${euro(t.alarm)}`));
+    // Box: einzelne Teile aus dem Katalog (sobald geladen) – „du hast 2 von 7“
+    const inhalt = t.typ === 'box' && S.x.katalog && S.x.katalog.d && S.x.katalog.d.boxInhalt ? liste(S.x.katalog.d.boxInhalt[t.id]).filter(x => x && x.titel) : [];
+    if (inhalt.length) {
+      const billig = inhalt.filter(x => preisVon(x.preis) != null && preisVon(x.preis) <= FUER399 + 0.004).length, hab = inhalt.filter(x => besitzt({ ...x, typ: 'film' })).length;
+      klein.push(esc(`einzeln: ${inhalt.length} Filme bekannt${billig ? `, ${billig} je 3,99 €` : ''}${hab ? `, ${hab} hast du` : ''}`));
+    }
     const set = Number(SET.exec(t.titel)?.[1]);
     // kurz, damit die Zeile auch bei 375 px einzeilig bleibt (Prüfer-Befund MV8 2): „4 Filme, je 3,75 € · mydealz-Tipp“
     if (/mydealz/i.test(t.quelle) && set >= 2 && t.preis != null) klein.push(esc(`${set} Filme, je ${euro(t.preis / set)}`));
@@ -433,6 +502,11 @@
     return oben + unten + hinweis;
   }
   function listeHtml(k) {
+    if (k === 'most') return mostHtml();
+    if (k === 'advent') return adventHtml();
+    if (k === 'alle399' || k === 'staffeln') return katalogHtml(k);
+    if (k === 'musik') return musikHtml();
+    if (k === 'sammlung') return sammlungHtml();
     const roh = S.n.gruppen[k] || [];
     if (k === 'boxen') return boxenHtml(roh);
     const arr = gefiltert(k);
@@ -443,6 +517,7 @@
         + `<ul class="fi-karten">${teuer.map(t => karte(t, false, k)).join('')}</ul></details>`
       : '';
     if (!arr.length) {
+      if (roh.length && roh.every(t => versteckt(k, t))) return `<p class="fi-leer">Alles hier hast du schon – ausgeblendet (Sammlung).</p>${teuerHtml}`;
       if (roh.length) return `<p class="fi-leer">Kein Film passt zu deinen Filtern. <button type="button" class="fi-link" data-fi-f="reset">Filter zurücksetzen</button></p>${teuerHtml}`;
       const st = Object.values(S.n.status).some(q => q && q.ok === false) ? ' Eine Quelle ist gerade gestört.' : '';
       return `<p class="fi-leer">${esc(LEER[k] + st)}</p>${teuerHtml}`;
@@ -490,8 +565,330 @@
       + (filterAktiv(f) ? `<p class="fi-treffer">${n} von ${alle} ${alle === 1 ? 'Film' : 'Filmen'} · <button type="button" class="fi-link" data-fi-f="reset">Filter zurücksetzen</button></p>` : '');
   }
 
+  // --- Sammlung: „Habe ich schon / Brauche ich noch“ (Xander 28.11.2026) -------------------------------------------------------
+  // Liste nur im Gerät (localStorage), Import per Link-Fragment …/mein-vorteil/#besitz=Titel 1|Titel 2 (1993)|… wie beim Krypto-
+  // Import: das Skript im <head> von index.html nimmt das Fragment sofort aus der Adresse und legt die Titel hier ab. Nie im Repo,
+  // nie an einen Server. Vergleich über den Titel (klein, ohne Satzzeichen/Artikel, römische Zahlen als Ziffer, Jahr in Klammern
+  // als Jahr ±1) – ein Untertitel zählt nur, wenn auch das Jahr passt („Ghostbusters (1984)“ = „Ghostbusters – Die Geisterjäger“).
+  const BESITZ = 'mein-vorteil-filme-besitz', BESITZ_NEU = 'mein-vorteil-filme-besitz-neu';
+  const ROEM = { ii: '2', iii: '3', iv: '4', v: '5', vi: '6', vii: '7', viii: '8', ix: '9', x: '10' };
+  function besitzKey(s) {
+    const w = String(s || '').toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
+      .normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\((?:1[89]|20)\d\d\)/g, ' ').replace(/&/g, ' und ')
+      .replace(/[^a-z0-9]+/g, ' ').trim().split(' ').filter(Boolean).map(x => ROEM[x] ?? x);
+    return (['der', 'die', 'das', 'the'].includes(w[0]) && w.length > 1 ? w.slice(1) : w).join(' ');
+  }
+  const hauptKey = s => besitzKey(String(s || '').split(/\s[–—-]\s|:\s/)[0]);
+  /** Zeile („Jurassic Park (1993)“) -> { roh, k, h, j } */
+  function besitzEintrag(roh) {
+    const r = String(roh || '').trim().slice(0, 120);
+    const j = /\((1[89]\d\d|20\d\d)\)\s*$/.exec(r);
+    return r ? { roh: r, k: besitzKey(r), h: hauptKey(r), j: j ? Number(j[1]) : null } : null;
+  }
+  const besitzZeilen = text => String(text || '').split(/\r?\n|\||;/).map(x => x.trim()).filter(Boolean).slice(0, 3000);
+  function besitzLesen() {
+    const d = lies(BESITZ, null);
+    const roh = d && d.v === 1 && Array.isArray(d.roh) ? d.roh.filter(x => typeof x === 'string' && x.trim()).slice(0, 3000) : [];
+    return { roh, modus: d && d.modus === 'ausblenden' ? 'ausblenden' : 'markieren', liste: roh.map(besitzEintrag).filter(Boolean) };
+  }
+  function besitzSchreiben(b) { merk(BESITZ, { v: 1, roh: b.roh, modus: b.modus }); S.b = besitzLesen(); }
+  function besitzDazu(zeilen) {
+    const b = besitzLesen(), da = new Set(b.roh.map(x => x.toLowerCase()));
+    let n = 0;
+    for (const z of zeilen) { const r = String(z).trim().slice(0, 120); if (r && !da.has(r.toLowerCase())) { b.roh.push(r); da.add(r.toLowerCase()); n++; } }
+    besitzSchreiben(b);
+    return n;
+  }
+  /** Hat Xander diesen Titel schon? (Film, Staffel; nicht Boxen) */
+  function besitzt(t, b = S.b) {
+    if (!b || !b.liste.length || !t || !t.titel || t.typ === 'box') return false;
+    const k = besitzKey(t.titel), h = hauptKey(t.titel);
+    const jahrOk = (e, streng) => (e.j == null || t.jahr == null ? !streng : Math.abs(e.j - t.jahr) <= 1);
+    return b.liste.some(e => (e.k === k && jahrOk(e, false)) || (e.k === h && h.length >= 4 && jahrOk(e, true)) || (e.h === k && e.h.length >= 4 && jahrOk(e, true)));
+  }
+  const eintragText = t => `${t.titel}${t.jahr && !/\((?:1[89]|20)\d\d\)/.test(t.titel) ? ` (${t.jahr})` : ''}`;
+  function besitzWeg(t) {
+    const b = besitzLesen();
+    b.roh = b.roh.filter(r => !besitzt(t, { liste: [besitzEintrag(r)].filter(Boolean) }));
+    besitzSchreiben(b);
+  }
+  const versteckt = (k, t) => S.b.modus === 'ausblenden' && !['wunsch', 'most', 'sammlung', 'advent', 'musik'].includes(k) && besitzt(t);
+  const HAKEN_SVG = '<svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><circle cx="10" cy="10" r="8.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path class="fi-hk" d="M6 10.4l2.7 2.7L14.2 7.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const ohneLi = html => html.replace(/^<li>/, '').replace(/<\/li>$/, ''); // karte() liefert <li>…</li>; neben dem Haken ohne
+  const hakenHtml = t => {
+    const an = besitzt(t);
+    return `<button type="button" class="fi-haken${an ? ' fi-an' : ''}" data-fi-haben="${esc(eintragText(t))}" data-fi-haben-titel="${esc(t.titel)}" aria-pressed="${an}" aria-label="${esc(t.titel)}: habe ich">${HAKEN_SVG}</button>`;
+  };
+
+  // --- Zusatz-Dateien (Katalog, Musik): erst beim ersten Öffnen ihres Bereichs, letzter Stand im Gerät -------------------------
+  const EXTRA = {
+    katalog: { datei: 'filmkatalog.json', speicher: 'mein-vorteil-daten-filmkatalog', chips: ['alle399', 'staffeln'] },
+    musik: { datei: 'musikstore.json', speicher: 'mein-vorteil-daten-musik', chips: ['musik'] },
+  };
+  const extraFuer = k => (k === 'alle399' || k === 'staffeln' || k === 'boxen' ? 'katalog' : k === 'musik' ? 'musik' : null);
+  const extraUrl = art => S.url.replace(/[^/]+$/, EXTRA[art].datei);
+  function extraAusSpeicher(art) {
+    const a = lies(EXTRA[art].speicher, null);
+    if (a && a.d && typeof a.d === 'object') S.x[art] = { d: a.d, holZeit: a.holZeit || 0, laedt: false, gestoert: false, nichtDa: false };
+  }
+  function ladeExtra(art, immer = false) {
+    const x = S.x[art] || (S.x[art] = { d: null, holZeit: 0, laedt: false, gestoert: false, nichtDa: false });
+    if (x.laedt || (!immer && x.d && x.frisch)) return;
+    x.laedt = true;
+    hol(extraUrl(art)).then(text => {
+      const d = JSON.parse(text);
+      x.d = d; x.holZeit = Date.now(); x.frisch = true; x.gestoert = false; x.nichtDa = false; x.cache = null;
+      merk(EXTRA[art].speicher, { d, holZeit: x.holZeit });
+    }).catch(e => { x.gestoert = true; x.nichtDa = !!(e && e.status === 404); x.frisch = true; })
+      .then(() => { x.laedt = false; if (S.n && (EXTRA[art].chips.includes(S.chip) || (art === 'katalog' && S.chip === 'boxen'))) neuZeichnenListe(); zaehlerNeu(); });
+  }
+  const katalogArr = art => {
+    const x = S.x.katalog;
+    if (!x || !x.d) return null;
+    x.cache ||= {};
+    if (!x.cache[art]) {
+      const namen = new Map(liste(x.d.genres).filter(g => g && g.art === art && Number.isInteger(g.id)).map(g => [g.id, String(g.name || '').slice(0, 40)]));
+      x.cache[art] = liste(art === 'film' ? x.d.filme : x.d.staffeln).map(t => {
+        const n = t && typeof t === 'object' ? titelNorm({ ...t, typ: art === 'film' ? 'film' : 'staffel', angebot: false }) : null;
+        if (n && !n.genre) n.genre = n.genres.map(g => namen.get(g)).filter(Boolean)[0] || '';
+        return n;
+      }).filter(Boolean);
+    }
+    return x.cache[art];
+  };
+  const musikArr = art => {
+    const x = S.x.musik;
+    if (!x || !x.d) return null;
+    return liste(art === 'songs' ? x.d.songs : x.d.alben).filter(m => m && typeof m.titel === 'string' && m.titel.trim() && preisVon(m.preis) != null);
+  };
+  const istDezember = () => /-12-\d\d$/.test(tagKey(Date.now()));
+  function zahlFuer(k) {
+    const n = S.n;
+    if (k === 'most') return n.most ? n.most.reihen.reduce((a, r) => a + r.filme.length, 0) + n.most.serien.length : 0;
+    if (k === 'advent') return n.advent ? Object.keys(n.advent.tage).length : 0;
+    if (k === 'sammlung') return S.b.roh.length;
+    if (k === 'alle399' || k === 'staffeln') {
+      const arr = katalogArr(k === 'alle399' ? 'film' : 'staffel');
+      if (arr) return arr.filter(t => !versteckt(k, t)).length;
+      const z = n.zusatz && n.zusatz.katalog ? zahl(n.zusatz.katalog[k === 'alle399' ? 'filme399' : 'staffeln499']) : null;
+      return z != null && z >= 0 ? z : null;
+    }
+    if (k === 'musik') {
+      const a = musikArr('alben'), s = musikArr('songs');
+      if (a) return a.length + s.length;
+      const z = n.zusatz && n.zusatz.musik ? [zahl(n.zusatz.musik.alben), zahl(n.zusatz.musik.songs)] : [null, null];
+      return z[0] != null ? z[0] + (z[1] || 0) : null;
+    }
+    return gefiltert(k).length;
+  }
+
+  // --- Most Wanted ---------------------------------------------------------------------------------------------------------------
+  const STATUS = t => (t.imStore === true || t.preis != null || t.leihe != null ? '' : t.imStore === false || t.fehlt ? 'nicht im Apple-Store' : 'wird gerade gesucht');
+  function mostHtml() {
+    const mw = S.n.most;
+    if (!mw) return `<p class="fi-leer">${esc('Most Wanted kommt mit dem nächsten Lauf des Radars.')}</p>`;
+    const filme = mw.reihen.flatMap(r => r.filme);
+    const unter = filme.filter(t => t.unterAlarm).length + mw.serien.filter(s => s.unterAlarm).length;
+    const kopf = `<p class="fi-mw-kopf">${unter ? `<b>${unter} unter deiner Alarm-Schwelle</b>` : 'Gerade nichts unter deiner Alarm-Schwelle'} · Alarm: Filme bis ${esc(euro(mw.alarm))}, Staffeln bis ${esc(euro(mw.staffelAlarm))}</p>`;
+    const reihen = mw.reihen.map(r => {
+      const im = r.filme.filter(t => !STATUS(t)).length, hab = r.filme.filter(t => besitzt(t)).length;
+      const reihe = zuerst(r.filme.map((t, i) => [t, i]).sort((a, b) => a[1] - b[1]).map(x => x[0]), t => t.unterAlarm);
+      return `<h3 class="fi-gruppe">${esc(r.name)} <small>${im} von ${r.filme.length} im Store${hab ? ` · ${hab} hast du` : ''}</small></h3>`
+        + `<ul class="fi-karten">${reihe.map(t => `<li class="fi-mwz">${ohneLi(karte(t, false, 'most', true))}${hakenHtml(t)}</li>`).join('')}</ul>`;
+    }).join('');
+    const serien = mw.serien.length ? `<h3 class="fi-gruppe">Serien <small>${mw.serien.filter(s => s.imStore).length} von ${mw.serien.length} im Store</small></h3>`
+      + `<ul class="fi-karten">${zuerst(mw.serien, s => s.unterAlarm).map(serieKarte).join('')}</ul>` : '';
+    return kopf + reihen + serien
+      + '<p class="fi-fuss">Im Store = im deutschen iTunes Store gefunden. „Nicht im Apple-Store“: alle Suchwege waren leer – der Radar sucht nach einer Woche erneut. Tiefst = niedrigster Preis, den der Radar selbst gesehen hat. Den Haken setzt du, wenn du den Film schon hast (bleibt nur auf diesem Gerät).</p>';
+  }
+  function serieKarte(s) {
+    const st = s.staffeln, mitPreis = st.filter(t => t.preis != null);
+    const ab = mitPreis.reduce((a, b) => (!a || b.preis < a.preis ? b : a), null);
+    const status = s.imStore === true ? '' : s.imStore === false ? 'nicht im Apple-Store' : 'wird gerade gesucht';
+    const jahre = s.jahr ? ` <span class="fi-jahr">(${s.jahr}${s.bis && s.bis !== s.jahr ? `–${s.bis}` : ''})</span>` : '';
+    const bild = (st.find(t => t.bild) || {}).bild;
+    const marken = [];
+    if (status) marken.push(`<span class="fi-marke fi-grau">${esc(status)}</span>`);
+    if (s.unterAlarm) marken.push('<span class="fi-marke fi-warm">unter Alarm</span>');
+    const klein = [];
+    if (ab) klein.push(esc(`${ab.komplett ? 'Komplett-Box' : ab.nr ? `Staffel ${ab.nr}` : 'eine Staffel'} für ${euro(ab.preis)}`));
+    if (s.tiefst) klein.push(esc(`Tiefst ${euro(s.tiefst.p)}${s.tiefst.nr ? ` (Staffel ${s.tiefst.nr}` : ' ('}${s.tiefst.tag ? `${s.tiefst.nr ? ', ' : ''}${tagMonat(s.tiefst.tag)}` : ''})`.replace(' ()', '')));
+    const ueblich = mitPreis.map(t => t.ueblich).filter(v => v != null);
+    if (ueblich.length) klein.push(esc(`üblich ${euro(Math.min(...ueblich))}${Math.max(...ueblich) > Math.min(...ueblich) ? `–${euro(Math.max(...ueblich))}` : ''} je Staffel`));
+    klein.push(esc(`Alarm bis ${euro(s.alarm ?? S.n.most.staffelAlarm)}`));
+    if (s.ausgeblendet) klein.push(esc(`${s.ausgeblendet} gleichnamige Staffel${s.ausgeblendet === 1 ? '' : 'n'} aus anderen Jahren ausgeblendet`));
+    if (s.hinweis && !st.length) klein.push(esc(s.hinweis));
+    const preis = ab ? `<span class="fi-preis">${st.length > 1 ? '<small class="fi-ab">ab </small>' : ''}${esc(euro(ab.preis))}</span>` : '';
+    const kopf = `<div class="fi-karte fi-quadrat${s.unterAlarm ? ' fi-deal' : ''}">${bild ? `<img class="fi-bild" src="${esc(bild)}" alt="" width="84" height="84" loading="lazy" decoding="async">` : `<span class="fi-bild fi-ohnebild" aria-hidden="true">${esc(initialen(s.titel))}</span>`}`
+      + `<span class="fi-text"><span class="fi-titel">${esc(s.titel)}${jahre}</span>`
+      + `<span class="fi-info">${esc(st.length ? `${st.length} ${st.length === 1 ? 'Staffel' : 'Staffeln'} im Store` : 'Serie')}</span>`
+      + `<span class="fi-preiszeile">${preis}${marken.join('')}</span>${klein.length ? `<span class="fi-klein">${klein.join(' · ')}</span>` : ''}</span></div>`;
+    const offen = st.length ? `<details class="fi-tipps"><summary>${st.length === 1 ? 'Staffel ansehen' : `${st.length} Staffeln ansehen`}</summary><ul class="fi-karten">${st.map(t => karte(t, true, 'most')).join('')}</ul></details>` : '';
+    return `<li class="fi-serie">${kopf}${offen}</li>`;
+  }
+
+  // --- Advent: Kalender 1.–31. Dezember ------------------------------------------------------------------------------------------
+  const KALENDER_SVG = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="2" y="3" width="12" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M2 6.5h12M5 1.8v2.6M11 1.8v2.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
+  function adventHtml() {
+    const a = S.n.advent || { jahr: tagKey(Date.now()).slice(0, 4), tage: {}, quelle: '' };
+    const heute = tagKey(Date.now()), j = a.jahr;
+    const pad = d => String(d).padStart(2, '0');
+    const mit = Object.keys(a.tage).sort();
+    const sel = S.adventTag && S.adventTag.startsWith(`${j}-12-`) ? S.adventTag : heute.startsWith(`${j}-12-`) ? heute : (mit.at(-1) || `${j}-12-01`);
+    S.adventTag = sel;
+    let tueren = '';
+    for (let d = 1; d <= 31; d++) {
+      const k = `${j}-12-${pad(d)}`, hat = a.tage[k] && a.tage[k].length, zu = k > heute;
+      const kl = `fi-tuer${hat ? ' fi-hat' : ''}${k === heute ? ' fi-heute' : ''}${zu ? ' fi-zu' : ''}`;
+      const was = hat ? `${a.tage[k][0].titel}${a.tage[k][0].preis != null ? ` für ${euro(a.tage[k][0].preis)}` : ''}` : zu ? 'noch zu' : 'kein Tagesangebot gesehen';
+      tueren += `<button type="button" class="${kl}" data-fi-tuer="${k}" aria-pressed="${k === sel}" aria-label="${d}. Dezember: ${esc(was)}"><span class="fi-tz">${d}</span>${hat ? '<span class="fi-tp" aria-hidden="true"></span>' : ''}</button>`;
+    }
+    const tag = Number(sel.slice(8, 10));
+    const liste0 = a.tage[sel] || [];
+    const detail = liste0.length ? `<ul class="fi-karten">${liste0.map(t => karte(t, false, 'advent')).join('')}</ul>`
+      : `<p class="fi-leer">${esc(sel > heute ? `Das ${tag}. Türchen ist noch zu – ab 8 Uhr schaut der Radar nach.` : `Für den ${tag}. Dezember hat der Radar kein Tagesangebot gesehen.`)}</p>`;
+    return `<div class="fi-advent" role="group" aria-label="Adventskalender ${esc(j)}">${tueren}</div>`
+      + `<h3 class="fi-gruppe"><span class="fi-gk">${KALENDER_SVG}${tag}. Dezember</span> <small>${sel === heute ? 'heute' : sel > heute ? 'noch zu' : `${liste0.length ? liste0.length + ' Angebot' + (liste0.length === 1 ? '' : 'e') : 'nichts gesehen'}`}</small></h3>`
+      + detail
+      + '<p class="fi-fuss">Apple zeigt den Countdown nur in der TV-App. Der Radar liest die Tipps von mydealz (Gruppe Apple TV) und sieht nur, was dort gemeldet wird – ein leeres Türchen heißt: an dem Tag nichts gefunden, nicht: kein Angebot. Jeden Morgen ab 8 Uhr kommt der Film des Tages auch als Nachricht.</p>';
+  }
+
+  // --- Alle 3,99 € / Staffeln 4,99 € (Katalog) ------------------------------------------------------------------------------------
+  const MEHR_SCHRITT = 40;
+  function ladeHinweis(art) {
+    const x = S.x[art];
+    if (x && x.laedt && !x.d) return `<p class="fi-leer">${art === 'musik' ? 'Lade Musik …' : 'Lade den Katalog …'}</p>`;
+    if (x && x.nichtDa) return '<p class="fi-leer">Diese Liste erstellt der Radar gerade zum ersten Mal – schau nach seinem nächsten Lauf noch einmal rein.</p>';
+    if (x && x.gestoert && !x.d) return `<p class="fi-leer">${navigator.onLine === false ? 'Keine Verbindung – die Liste erscheint, sobald du wieder Netz hast.' : 'Gerade nicht erreichbar. Später noch einmal auf ↻ tippen.'}</p>`;
+    return `<p class="fi-leer">${art === 'musik' ? 'Lade Musik …' : 'Lade den Katalog …'}</p>`;
+  }
+  function subChips(art, aktiv, optionen) {
+    return `<div class="fi-filter fi-sub" role="group" aria-label="Auswahl">${optionen.map(([v, name, n]) => `<button type="button" class="fi-chip${v === aktiv ? ' fi-an' : ''}" data-fi-sub="${esc(v)}" data-fi-subart="${art}" aria-pressed="${v === aktiv}">${esc(name)}${n != null ? `<span class="fi-n">${n}</span>` : ''}</button>`).join('')}</div>`;
+  }
+  function mehrKnopf(k, gezeigt, alle) {
+    return alle > gezeigt ? `<button type="button" class="fi-mehr" data-fi-mehr="${k}">${Math.min(MEHR_SCHRITT, alle - gezeigt)} weitere zeigen <small>(${gezeigt} von ${alle})</small></button>` : '';
+  }
+  function katalogHtml(k) {
+    const art = k === 'alle399' ? 'film' : 'staffel';
+    const roh = katalogArr(art);
+    if (!roh) return ladeHinweis('katalog');
+    const d = S.x.katalog.d, z = d.zahlen && typeof d.zahlen === 'object' ? d.zahlen : {};
+    const sichtbar0 = roh.filter(t => !versteckt(k, t));
+    const genres = liste(d.genres).filter(g => g && g.art === art && Number.isInteger(g.id))
+      .map(g => [String(g.id), String(g.name || g.id).slice(0, 40), sichtbar0.filter(t => t.genres.includes(g.id)).length]).filter(g => g[2] > 0)
+      .sort((a, b) => b[2] - a[2]);
+    let gw = S.kg[k] || '';
+    if (gw && !genres.some(g => g[0] === gw)) gw = '';
+    const arr = gw ? sichtbar0.filter(t => t.genres.includes(Number(gw))) : sichtbar0;
+    const zeig = S.mehr[k] || MEHR_SCHRITT;
+    const bekannt = art === 'film' ? zahl(z.filmeBekannt) : zahl(z.staffelnBekannt), geprueft = art === 'film' ? zahl(z.filmeGeprueft) : zahl(z.staffelnGeprueft);
+    const versteckteN = roh.length - sichtbar0.length;
+    const kopf = `<p class="fi-mw-kopf"><b>${roh.length} ${art === 'film' ? (roh.length === 1 ? 'Film' : 'Filme') + ' für 3,99 €' : (roh.length === 1 ? 'Staffel' : 'Staffeln') + ' für 4,99 €'}</b>${bekannt != null ? ` · der Radar kennt ${bekannt.toLocaleString('de-DE')} ${art === 'film' ? 'Filme' : 'Staffeln'}${geprueft != null ? `, ${geprueft.toLocaleString('de-DE')} frisch geprüft` : ''}` : ''}${versteckteN ? ` · ${versteckteN} hast du schon (ausgeblendet)` : ''}</p>`;
+    const stand = standText(d.aktualisiert);
+    return kopf + subChips(k, gw, [['', 'Alle', sichtbar0.length], ...genres])
+      + (arr.length ? `<ul class="fi-karten">${arr.slice(0, zeig).map(t => karte(t, art === 'staffel', art === 'staffel' ? 'andere' : k)).join('')}</ul>${mehrKnopf(k, Math.min(zeig, arr.length), arr.length)}`
+        : `<p class="fi-leer">${esc(LEER[k])}</p>`)
+      + `<p class="fi-fuss">Vollständig ist das nur so weit, wie Apple einen Titel irgendwann zeigt: Apple listet je Genre nur die 100 meistgekauften. Der Radar merkt sich jeden Titel, den er dort (oder in einer Box) einmal gesehen hat, und prüft dessen Preis reihum nach – so bleiben auch Titel drin, die aus den Top 100 gefallen sind. Gezeigt wird nur, was höchstens zwei Tage alt geprüft ist${stand ? ` (Stand ${esc(stand)})` : ''}.</p>`;
+  }
+
+  // --- Musik -------------------------------------------------------------------------------------------------------------------------
+  function musikKarte(m) {
+    const preis = preisVon(m.preis), vorher = preisVon(m.vorher);
+    const bild = bildUrl(m.bild), link = sicher(m.link);
+    const marken = [];
+    if (m.gesenkt === true && vorher) marken.push('<span class="fi-marke fi-stark">gesenkt</span>');
+    const klein = [];
+    if (vorher && vorher > preis) klein.push(`statt <s>${esc(euro(vorher))}</s>`);
+    const tp = m.tiefst && preisVon(m.tiefst.p);
+    // ehrlich: „so günstig wie nie“ nur, wenn der Radar das Album schon teurer gesehen hat; sonst „Preis unverändert seit …“
+    if (tp && tp < preis - 0.004) klein.push(esc(`Tiefst ${euro(tp)}${m.tiefst.tag ? ` am ${tagMonat(datum(m.tiefst.tag))}` : ''}`));
+    else if (m.nieSoGuenstig === true) klein.push('so günstig wie nie gesehen');
+    else if (datum(m.seit) && datum(m.seit) !== tagKey(Date.now())) klein.push(esc(`Preis unverändert seit ${tagMonat(datum(m.seit))}`));
+    if (m.typ === 'album' && zahl(m.titelZahl) > 0) klein.push(esc(`${Math.round(zahl(m.titelZahl))} Titel`));
+    if (m.typ === 'song' && typeof m.album === 'string' && m.album) klein.push(esc(`aus „${m.album.slice(0, 50)}“`));
+    const info = [typeof m.kuenstler === 'string' ? m.kuenstler.slice(0, 50) : '', zahl(m.jahr) ? String(Math.round(zahl(m.jahr))) : ''].filter(Boolean).join(' · ');
+    const titel = String(m.titel).slice(0, 120);
+    const innen = `${bild ? `<img class="fi-bild" src="${esc(bild)}" alt="" width="84" height="84" loading="lazy" decoding="async">` : `<span class="fi-bild fi-ohnebild" aria-hidden="true">${esc(initialen(titel))}</span>`}`
+      + `<span class="fi-text"><span class="fi-titel">${esc(titel)}</span>${info ? `<span class="fi-info">${esc(info)}</span>` : ''}`
+      + `<span class="fi-preiszeile"><span class="fi-preis">${esc(euro(preis))}</span>${marken.join('')}</span>${klein.length ? `<span class="fi-klein">${klein.join(' · ')}</span>` : ''}</span>`;
+    const kl = `fi-karte fi-quadrat${m.gesenkt === true ? ' fi-deal' : ''}`;
+    return link ? `<li><a class="${kl}" href="${esc(link)}" target="_blank" rel="noopener">${innen}</a></li>` : `<li><div class="${kl}">${innen}</div></li>`;
+  }
+  function musikHtml() {
+    const alben = musikArr('alben');
+    if (!alben) return ladeHinweis('musik');
+    const songs = musikArr('songs'), d = S.x.musik.d;
+    const art = S.kg.musikArt === 'songs' ? 'songs' : 'alben';
+    const basis = art === 'songs' ? songs : alben;
+    const genres = [...new Set(basis.map(m => (typeof m.genre === 'string' ? m.genre : '')).filter(Boolean))];
+    let g = S.kg.musikGenre || '';
+    if (g && !genres.includes(g)) g = '';
+    const arr = g ? basis.filter(m => m.genre === g) : basis;
+    const zeig = S.mehr.musik || MEHR_SCHRITT;
+    const gr = d.grenzen && typeof d.grenzen === 'object' ? d.grenzen : {};
+    const kuenstler = liste(d.kuenstler).filter(k => k && typeof k.name === 'string');
+    const fehlen = kuenstler.filter(k => k.gefunden === false).map(k => k.name.slice(0, 40));
+    const stand = standText(d.aktualisiert);
+    return subChips('musikArt', art, [['alben', 'Alben', alben.length], ['songs', 'Songs', songs.length]])
+      + (genres.length > 1 ? subChips('musikGenre', g, [['', 'Alle', basis.length], ...genres.map(x => [x, x, basis.filter(m => m.genre === x).length])]) : '')
+      + (arr.length ? `<ul class="fi-karten">${arr.slice(0, zeig).map(musikKarte).join('')}</ul>${mehrKnopf('musik', Math.min(zeig, arr.length), arr.length)}` : `<p class="fi-leer">${esc(LEER.musik)}</p>`)
+      + `<p class="fi-fuss">${esc(`Günstigste Stufe: Alben bis ${euro(preisVon(gr.album) ?? 4.99)}, Songs ${euro(preisVon(gr.song) ?? 0.69)}; „gesenkt“ = mindestens ${zahl(gr.gesenktPct) ?? 20} % unter dem Preis, den der Radar vorher selbst gesehen hat. ${kuenstler.length} Künstler, je Lauf einige reihum; nur die vorderen Alben in Apples Reihenfolge.`)}${fehlen.length ? ` Bei Apple (noch) nicht gefunden: ${esc(fehlen.slice(0, 8).join(', '))}${fehlen.length > 8 ? ' …' : ''}.` : ''}${stand ? ` Stand ${esc(stand)}.` : ''} Tippen öffnet die Musik-App.</p>`;
+  }
+
+  // --- Sammlung ------------------------------------------------------------------------------------------------------------------
+  /** alle Titel, die die Seite kennt (für „Hinzufügen“): Gruppen, Most Wanted, Reihen, Katalog (falls geladen) */
+  function alleTitel() {
+    const m = new Map();
+    const dazu = t => { if (t && t.titel && t.typ !== 'box') { const k = besitzKey(t.titel) + '|' + (t.jahr || ''); if (!m.has(k)) m.set(k, t); } };
+    for (const k of GRUPPEN) for (const t of S.n.gruppen[k] || []) dazu(t);
+    for (const k of ['achtzigerTeurer', 'disneyTeurer']) for (const t of S.n.gruppen[k] || []) dazu(t);
+    if (S.n.most) for (const r of S.n.most.reihen) r.filme.forEach(dazu);
+    for (const r of S.n.reihen) r.filme.forEach(dazu);
+    for (const t of katalogArr('film') || []) dazu(t);
+    return [...m.values()];
+  }
+  function reihenFortschritt() {
+    const reihen = [...(S.n.most ? S.n.most.reihen : []), ...S.n.reihen];
+    if (!reihen.length) return '';
+    return `<h3 class="fi-gruppe">Reihen <small>was dir noch fehlt</small></h3><ul class="fi-reihen">${reihen.map(r => {
+      const hab = r.filme.filter(t => besitzt(t)), fehlt = r.filme.filter(t => !besitzt(t));
+      const p = r.filme.length ? hab.length / r.filme.length : 0;
+      const billig = fehlt.filter(t => t.preis != null).sort((a, b) => a.preis - b.preis)[0];
+      const text = !fehlt.length ? 'komplett' : `es fehlen: ${fehlt.slice(0, 4).map(t => t.titel).join(', ')}${fehlt.length > 4 ? ` und ${fehlt.length - 4} weitere` : ''}`;
+      return `<li class="fi-reihe"><span class="fi-reihe-kopf"><b>${esc(r.name)}</b><span>${hab.length} von ${r.filme.length}</span></span>`
+        + `<span class="fi-balken" aria-hidden="true"><span style="transform:scaleX(${p.toFixed(3)})"></span></span>`
+        + `<span class="fi-klein">${esc(text)}${billig ? ` · günstigster fehlender: ${esc(billig.titel)} für ${esc(euro(billig.preis))}` : ''}</span></li>`;
+    }).join('')}</ul>`;
+  }
+  function sucheTreffer() {
+    const q = besitzKey(S.besitzSuche || '');
+    if (q.length < 2) return '';
+    const treffer = alleTitel().filter(t => besitzKey(t.titel).includes(q)).slice(0, 12);
+    if (!treffer.length) return `<p class="fi-fuss">Kein bekannter Titel – trag ihn unten als Zeile ein.</p>`;
+    return `<ul class="fi-karten fi-treffer-liste">${treffer.map(t => `<li class="fi-mwz">${ohneLi(karte(t, t.typ === 'staffel', 'sammlung', true))}${hakenHtml(t)}</li>`).join('')}</ul>`;
+  }
+  function sammlungHtml() {
+    const b = S.b;
+    const hinweis = S.besitzHinweis ? `<p class="fi-ok" role="status">${esc(S.besitzHinweis)}</p>` : '';
+    const modus = `<div class="fi-filter fi-sub" role="group" aria-label="Was du schon hast"><span class="fi-sub-text">Was du hast:</span>`
+      + [['markieren', 'markieren'], ['ausblenden', 'ausblenden']].map(([v, n]) => `<button type="button" class="fi-chip${b.modus === v ? ' fi-an' : ''}" data-fi-besitz="modus:${v}" aria-pressed="${b.modus === v}">${n}</button>`).join('') + '</div>';
+    const liste0 = b.roh.length
+      ? `<details class="fi-tipps"${b.roh.length <= 12 ? ' open' : ''}><summary>${b.roh.length} ${b.roh.length === 1 ? 'Titel' : 'Titel'} in deiner Sammlung</summary><div class="fi-vorschlaege">${b.roh.map((r, i) => `<button type="button" class="fi-chip fi-weg" data-fi-besitz="weg:${i}" aria-label="${esc(r)} entfernen">${esc(r)}${X_SVG}</button>`).join('')}</div>`
+        + '<button type="button" class="fi-link" data-fi-besitz="leeren">Ganze Liste löschen</button></details>'
+      : '<p class="fi-leer">Noch nichts eingetragen. Such unten einen Film, setz bei Most Wanted den Haken – oder schick die Liste als Link.</p>';
+    return hinweis + modus + reihenFortschritt()
+      + `<h3 class="fi-gruppe">Hinzufügen</h3><div class="fi-suche"><input type="search" class="fi-eingabe" data-fi-besitz-suche placeholder="Film suchen, z. B. Jurassic" value="${esc(S.besitzSuche || '')}" autocomplete="off" enterkeyhint="search" aria-label="Film für die Sammlung suchen">`
+      + `<div id="fi-besitz-treffer">${sucheTreffer()}</div></div>`
+      + `<details class="fi-tipps"><summary>Liste einfügen</summary><textarea class="fi-eingabe fi-feld" rows="5" data-fi-besitz-feld placeholder="Ein Film je Zeile, z. B.&#10;Jurassic Park (1993)&#10;Go Trabi Go"></textarea>`
+      + '<button type="button" class="fi-chip fi-an" data-fi-besitz="uebernehmen">Übernehmen</button></details>'
+      + liste0
+      + '<p class="fi-fuss">Die Liste bleibt nur auf diesem Gerät (nicht im Netz, nicht beim Radar). Per Link übernehmen: …/mein-vorteil/#besitz=Titel 1|Titel 2 (1993)|… – Titel mit | trennen, Jahr in Klammern hilft bei gleichen Namen. Was du hast, wird in den Listen markiert oder ausgeblendet; Most Wanted und Reihen zeigen, was noch fehlt.</p>';
+  }
+
   // --- Zeichnen -----------------------------------------------------------------------------------------------------------
-  const S = { el: null, url: URL_STANDARD, d: null, n: null, roh: '', laedt: false, gestoert: false, nichtDa: false, chip: null, f: filterLesen(), suche: false, sucheText: '' };
+  const S = { el: null, url: URL_STANDARD, d: null, n: null, roh: '', laedt: false, gestoert: false, nichtDa: false, chip: null, f: filterLesen(), suche: false, sucheText: '',
+    // ab 28.11.2026: Zusatz-Dateien (x), Auswahl in Katalog/Musik (kg), „weitere zeigen“ (mehr), Advent-Tag, Sammlung (b)
+    x: {}, kg: lies(KG_SPEICHER, null) || {}, mehr: {}, adventTag: null, b: besitzLesen(), besitzSuche: '', besitzHinweis: '' };
 
   function standHtml() {
     const st = standText(S.n.aktualisiert);
@@ -523,8 +920,32 @@
   }
   function chipHtml([k, name]) {
     const an = k === S.chip;
+    const z = NEU_CHIPS.has(k) ? zahlFuer(k) : gefiltert(k).length;
     return `<button type="button" class="fi-chip" role="tab" id="fi-c-${k}" data-fi-chip="${k}" aria-controls="fi-liste" aria-selected="${an}" tabindex="${an ? 0 : -1}">`
-      + `${esc(name)}<span class="fi-n">${gefiltert(k).length}</span></button>`;
+      + `${esc(name)}${z != null ? `<span class="fi-n">${z}</span>` : ''}</button>`;
+  }
+  // nur Liste bzw. Zähler neu (Zusatz-Datei geladen, Haken gesetzt …) – Leiste und Filter bleiben stehen, die Seite springt nicht
+  function neuZeichnenListe() {
+    const l = S.el && S.el.querySelector('#fi-liste');
+    if (!l) return;
+    const fokus = document.activeElement && l.contains(document.activeElement) && document.activeElement.matches('[data-fi-besitz-suche]');
+    const pos = fokus ? document.activeElement.selectionStart : null;
+    l.innerHTML = listeHtml(S.chip);
+    if (fokus) { const i = l.querySelector('[data-fi-besitz-suche]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
+  }
+  function zaehlerNeu() {
+    if (!S.el || !S.n) return;
+    const leiste = S.el.querySelector('.fi-chips');
+    if (!leiste) return;
+    const da = sichtbar(S.n).map(([k]) => k), jetzt = [...leiste.querySelectorAll('[data-fi-chip]')].map(c => c.dataset.fiChip);
+    if (da.join() !== jetzt.join()) { const links = leiste.scrollLeft; leiste.innerHTML = sichtbar(S.n).map(chipHtml).join(''); leiste.scrollLeft = links; return; }
+    for (const c of leiste.querySelectorAll('[data-fi-chip]')) {
+      const k = c.dataset.fiChip, z = NEU_CHIPS.has(k) ? zahlFuer(k) : gefiltert(k).length;
+      let n = c.querySelector('.fi-n');
+      if (z == null) { if (n) n.remove(); continue; }
+      if (!n) { n = document.createElement('span'); n.className = 'fi-n'; c.appendChild(n); }
+      if (n.textContent !== String(z)) n.textContent = String(z);
+    }
   }
   function zeichne() {
     const el = S.el;
@@ -536,6 +957,8 @@
       return;
     }
     if (!S.chip || !sichtbar(S.n).some(([k]) => k === S.chip)) S.chip = startChip(S.n);
+    const art = S.n.neu ? extraFuer(S.chip) : null;
+    if (art) ladeExtra(art);
     const alt = el.querySelector('.fi-chips');
     const links = alt ? alt.scrollLeft : null;
     const altF = el.querySelector('.fi-filter');
@@ -580,6 +1003,9 @@
     el.querySelector('#fi-filterbox').innerHTML = filterHtml(k);
     const l = el.querySelector('#fi-liste');
     l.setAttribute('aria-labelledby', `fi-c-${k}`);
+    if (k !== 'sammlung') S.besitzHinweis = '';
+    const art = S.n.neu ? extraFuer(k) : null;
+    if (art) ladeExtra(art); // Katalog/Musik erst beim ersten Öffnen ihres Bereichs (Boxen: Inhalt der Boxen)
     l.innerHTML = listeHtml(k);
     const leiste = el.querySelector('.fi-chips');
     zeigeChip(leiste, k);
@@ -616,7 +1042,65 @@
       S.laedt = false;
       if (was === 'neu') zeichne();
       else { const p = S.el.querySelector('.fi-stand'); if (p) p.outerHTML = standHtml(); }
+      // Zusatz-Dateien, die schon einmal offen waren (bzw. deren Bereich offen ist), frisch holen
+      if (S.n && S.n.neu) for (const art of Object.keys(EXTRA)) if ((S.x[art] && S.x[art].frisch) || extraFuer(S.chip) === art) ladeExtra(art, true);
     });
+  }
+
+  /** Klicks der neuen Bereiche (28.11.2026) – true = erledigt */
+  function neuKlick(ev) {
+    const sub = ev.target.closest('[data-fi-sub]');
+    if (sub) {
+      const was = sub.dataset.fiSubart, wert = sub.dataset.fiSub;
+      if (was === 'musikArt') { S.kg.musikArt = wert; S.kg.musikGenre = ''; S.mehr.musik = 0; } else if (was === 'musikGenre') { S.kg.musikGenre = wert; S.mehr.musik = 0; } else { S.kg[was] = wert; S.mehr[was] = 0; }
+      merk(KG_SPEICHER, S.kg);
+      const leiste = sub.closest('.fi-sub'), links = leiste ? leiste.scrollLeft : 0;
+      neuZeichnenListe();
+      const neuL = S.el.querySelector(`.fi-sub [data-fi-subart="${was}"]`)?.closest('.fi-sub');
+      if (neuL) neuL.scrollLeft = links;
+      return true;
+    }
+    const mehr = ev.target.closest('[data-fi-mehr]');
+    if (mehr) {
+      const k = mehr.dataset.fiMehr;
+      S.mehr[k] = (S.mehr[k] || MEHR_SCHRITT) + MEHR_SCHRITT;
+      const y = window.scrollY;
+      neuZeichnenListe();
+      window.scrollTo(0, y); // die Seite springt nicht
+      return true;
+    }
+    const tuer = ev.target.closest('[data-fi-tuer]');
+    if (tuer) { S.adventTag = tuer.dataset.fiTuer; neuZeichnenListe(); const t = S.el.querySelector(`[data-fi-tuer="${S.adventTag}"]`); if (t) t.focus(); return true; }
+    const hab = ev.target.closest('[data-fi-haben]');
+    if (hab) {
+      ev.preventDefault();
+      const t = { titel: hab.dataset.fiHabenTitel || hab.dataset.fiHaben, jahr: Number((/\((1[89]\d\d|20\d\d)\)\s*$/.exec(hab.dataset.fiHaben) || [])[1]) || null, typ: 'film' };
+      if (besitzt(t)) besitzWeg(t); else besitzDazu([hab.dataset.fiHaben]);
+      const an = besitzt(t);
+      // nur diesen Haken umschalten (die Liste bleibt stehen); Zähler und Reihen-Zeile folgen
+      for (const h of S.el.querySelectorAll('[data-fi-haben]')) if (h.dataset.fiHaben === hab.dataset.fiHaben) { h.classList.toggle('fi-an', an); h.setAttribute('aria-pressed', String(an)); }
+      if (S.chip === 'sammlung' || S.chip === 'most') neuZeichnenListe(); // Zähler „x hast du“ und Reihen-Fortschritt
+      zaehlerNeu();
+      return true;
+    }
+    const b = ev.target.closest('[data-fi-besitz]');
+    if (b) {
+      const was = b.dataset.fiBesitz;
+      const bs = besitzLesen();
+      if (was.startsWith('modus:')) { bs.modus = was.slice(6) === 'ausblenden' ? 'ausblenden' : 'markieren'; besitzSchreiben(bs); }
+      else if (was.startsWith('weg:')) { const i = Number(was.slice(4)); if (Number.isInteger(i) && i >= 0 && i < bs.roh.length) { bs.roh.splice(i, 1); besitzSchreiben(bs); } }
+      else if (was === 'leeren') { if (typeof confirm === 'function' && !confirm('Ganze Sammlung auf diesem Gerät löschen?')) return true; bs.roh = []; besitzSchreiben(bs); }
+      else if (was === 'uebernehmen') {
+        const f = S.el.querySelector('[data-fi-besitz-feld]');
+        const n = besitzDazu(besitzZeilen(f ? f.value : ''));
+        S.besitzHinweis = n ? `${n} ${n === 1 ? 'Titel' : 'Titel'} übernommen – jetzt ${S.b.roh.length} in deiner Sammlung.` : 'Nichts Neues – diese Titel standen schon in deiner Sammlung.';
+      } else return false;
+      S.b = besitzLesen();
+      neuZeichnenListe();
+      zaehlerNeu();
+      return true;
+    }
+    return false;
   }
 
   function start(el, opt) {
@@ -632,11 +1116,21 @@
     }
     const alt = lies(SPEICHER, null);
     if (alt && alt.d && typeof alt.d === 'object' && !altFormat(alt.d)) { S.d = alt.d; S.roh = JSON.stringify(alt.d); S.n = normalisiere(alt.d); }
+    for (const art of Object.keys(EXTRA)) extraAusSpeicher(art);
+    // Sammlung per Link übernommen (#besitz=…, im <head> von index.html): Bestätigung und gleich der Bereich „Sammlung“
+    const imp = lies(BESITZ_NEU, null);
+    if (imp && typeof imp === 'object') {
+      try { localStorage.removeItem(BESITZ_NEU); } catch {}
+      S.b = besitzLesen();
+      S.besitzHinweis = zahl(imp.n) > 0 ? `${imp.n} ${imp.n === 1 ? 'Titel' : 'Titel'} übernommen – jetzt ${S.b.roh.length} in deiner Sammlung. Sie bleibt nur auf diesem Gerät.` : 'Diese Titel standen schon in deiner Sammlung.';
+      S.chip = 'sammlung';
+    }
     el.addEventListener('click', ev => {
       const c = ev.target.closest('[data-fi-chip]');
       if (c && c.dataset.fiChip !== S.chip) { waehle(c.dataset.fiChip); return; }
       const v = ev.target.closest('[data-fi-actor]');
       if (v) { S.f.schauspieler = v.dataset.fiActor; S.suche = false; S.sucheText = ''; filterNeu(); return; }
+      if (neuKlick(ev)) return;
       const b = ev.target.closest('button[data-fi-f]');
       if (!b) return;
       const was = b.dataset.fiF;
@@ -652,6 +1146,13 @@
       if (!sel || !['genre', 'jahrzehnt', 'sort'].includes(sel.dataset.fiF)) return;
       S.f[sel.dataset.fiF] = sel.value;
       filterNeu();
+    });
+    // Tippen in der Sammlungs-Suche: nur die Treffer neu (Fokus und Tastatur bleiben)
+    el.addEventListener('input', ev => {
+      if (!ev.target.matches || !ev.target.matches('[data-fi-besitz-suche]')) return;
+      S.besitzSuche = ev.target.value.slice(0, 60);
+      const box = el.querySelector('#fi-besitz-treffer');
+      if (box) box.innerHTML = sucheTreffer();
     });
     // Tippen in der Schauspieler-Suche: nur die Vorschläge neu (Fokus und Tastatur bleiben)
     el.addEventListener('input', ev => {
@@ -778,6 +1279,50 @@ a.fi-karte:active { background: var(--flaeche); }
 .fi-vorschlaege .fi-fuss { margin: 4px; }
 .fi-treffer { margin: 0 4px 10px; font-size: 14px; color: var(--leise); display: flex; flex-wrap: wrap; align-items: center; gap: 0 6px; }
 .fi-link { min-height: 44px; padding: 0 4px; border: 0; background: none; color: var(--akzent); font: inherit; font-weight: 650; cursor: pointer; }
+/* ab 28.11.2026: Most Wanted, Advent, Katalog, Musik, Sammlung – Animation nur über transform/opacity */
+.fi-mw-kopf { margin: 0 4px 10px; font-size: 14px; line-height: 1.45; color: var(--leise); }
+.fi-mw-kopf b { color: var(--text); font-weight: 650; }
+.fi-mwz { display: flex; gap: 8px; align-items: stretch; }
+.fi-mwz > .fi-karte { flex: 1; min-width: 0; }
+.fi-haken {
+  flex: none; width: 48px; min-height: 48px; border-radius: 14px; border: 1px solid var(--linie); background: var(--karte); color: var(--leise);
+  display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;
+}
+.fi-haken .fi-hk { opacity: 0; transition: opacity .15s ease; }
+.fi-haken.fi-an { background: var(--akzent); border-color: var(--akzent); color: var(--akzent-text); }
+.fi-haken.fi-an .fi-hk { opacity: 1; }
+.fi-serie { margin-bottom: 8px; }
+.fi-serie > .fi-tipps { margin: 2px 0 0 10px; }
+.fi-ab { font-size: 14px; font-weight: 600; letter-spacing: 0; }
+.fi-gk { display: inline-flex; align-items: center; gap: 6px; }
+.fi-advent { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; max-width: 560px; margin: 2px 0 8px; }
+.fi-tuer {
+  position: relative; min-height: 48px; border-radius: 12px; border: 1px solid var(--linie); background: var(--karte); color: var(--text);
+  font: inherit; font-size: 17px; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;
+  font-variant-numeric: tabular-nums;
+}
+.fi-tuer.fi-hat { background: var(--akzent-hell); border-color: var(--akzent); color: var(--akzent); }
+.fi-tuer.fi-zu { opacity: .45; }
+.fi-tuer.fi-heute { box-shadow: inset 0 0 0 2px var(--warm); }
+.fi-tuer[aria-pressed="true"] { background: var(--akzent); border-color: var(--akzent); color: var(--akzent-text); opacity: 1; }
+.fi-tp { position: absolute; bottom: 6px; left: 50%; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%; background: currentColor; }
+.fi-sub { margin-top: 0; }
+.fi-sub-text { flex: none; align-self: center; font-size: 14px; color: var(--leise); }
+.fi-mehr {
+  width: 100%; min-height: 48px; border-radius: 14px; border: 1px dashed var(--linie); background: none; color: var(--akzent);
+  font: inherit; font-size: 15px; font-weight: 650; cursor: pointer; margin: 4px 0 8px;
+}
+.fi-mehr small { color: var(--leise); font-weight: 400; }
+.fi-ok { margin: 4px 4px 10px; padding: 10px 14px; border-radius: 12px; background: var(--akzent-hell); color: var(--akzent); font-size: 15px; font-weight: 600; }
+.fi-reihen { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.fi-reihe { background: var(--karte); border: 1px solid var(--linie); border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.fi-reihe-kopf { display: flex; justify-content: space-between; gap: 8px; font-size: 16px; }
+.fi-reihe-kopf span { color: var(--leise); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fi-balken { display: block; height: 8px; border-radius: 999px; background: var(--flaeche); overflow: hidden; }
+.fi-balken > span { display: block; height: 100%; background: var(--akzent); transform-origin: left center; transition: transform .3s ease; }
+.fi-feld { min-height: 110px; padding: 10px 14px; resize: vertical; margin: 4px 0 8px; line-height: 1.4; }
+.fi-weg { font-size: 14px; font-weight: 600; padding: 0 12px; white-space: normal; text-align: left; max-width: 100%; }
+.fi-treffer-liste { margin-top: 8px; }
 `;
 
   window.MeinVorteilFilme = {
@@ -785,6 +1330,7 @@ a.fi-karte:active { background: var(--flaeche); }
     get gestartet() { return !!S.el; },
     // für Tests (ohne Browser): reine Funktionen
     _intern: { normalisiere, altFormat, ohneDoppelTipp, titelNorm, serieVon, staffelNr, bildUrl, startChip, standText, karte, zeigeTiefst, tiefstTeile, sichtbar, CHIPS, CSS: () => CSS,
-      filtere, sortiere, istBekannt, genreVon, jahrzehntVon, schauspielerListe, filterLesen, FILTER_SPEICHER },
+      filtere, sortiere, istBekannt, genreVon, jahrzehntVon, schauspielerListe, filterLesen, FILTER_SPEICHER,
+      besitzKey, besitzEintrag, besitzZeilen, besitzt, NEU_CHIPS, BESITZ },
   };
 })();

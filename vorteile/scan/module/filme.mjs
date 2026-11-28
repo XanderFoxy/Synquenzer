@@ -836,16 +836,24 @@ export async function ladeListen(pfad = LISTEN_PFAD) {
 
 const gueltig = x => x && typeof x === 'object' && typeof x.titel === 'string' && x.titel.trim();
 
-/** Alle Listen-Einträge in Such-Reihenfolge: Wunsch, Serien, dann 80er und Disney abwechselnd. */
+/** Alle Listen-Einträge in Such-Reihenfolge: Wunsch, Most-Wanted-Filme, Serien, Most-Wanted-Serien, dann 80er und Disney
+ *  abwechselnd, zuletzt die Reihen (filme.json „reihen“). Gleicher Titel in zwei Listen = gleicher Schlüssel (eine Apple-Nummer). */
 export function postenListe(listen) {
-  const film = (x, gruppe) => ({ key: `film:${slug(x.titel)}-${x.jahr ?? ''}`, gruppe, item: x, serie: false });
+  const film = (x, gruppe, extra = {}) => ({ key: `film:${slug(x.titel)}-${x.jahr ?? ''}`, gruppe, item: x, serie: false, ...extra });
+  const serie = (x, gruppe) => ({ key: `serie:${slug(x.titel)}`, gruppe, item: x, serie: true });
   const wunsch = liste(listen?.wunschliste).filter(gueltig).map(x => film(x, 'wunsch'));
-  const serien = liste(listen?.serien).filter(gueltig).map(x => ({ key: `serie:${slug(x.titel)}`, gruppe: 'serien', item: x, serie: true }));
+  const serien = liste(listen?.serien).filter(gueltig).map(x => serie(x, 'serien'));
   const a = liste(listen?.achtziger).filter(gueltig).map(x => film(x, 'achtziger'));
   const d = liste(listen?.disney).filter(gueltig).map(x => film(x, 'disney'));
   const misch = [];
   for (let i = 0; i < Math.max(a.length, d.length); i++) { if (a[i]) misch.push(a[i]); if (d[i]) misch.push(d[i]); }
-  return [...wunsch, ...serien, ...misch];
+  // Most Wanted (Xander 28.11.2026) und Reihen: Filme je Reihe, Serien wie die Liste „serien“
+  const mw = listen?.mostWanted && typeof listen.mostWanted === 'object' ? listen.mostWanted : null;
+  const reiheFilme = (r, gruppe) => (r && typeof r.name === 'string' && r.name.trim() ? liste(r.filme).filter(gueltig).map(x => film(x, gruppe, { reihe: r.name.trim() })) : []);
+  const mostFilme = mw ? liste(mw.reihen).flatMap(r => reiheFilme(r, 'most')) : [];
+  const mostSerien = mw ? liste(mw.serien).filter(gueltig).map(x => serie(x, 'most')) : [];
+  const reihen = listen?.reihen && typeof listen.reihen === 'object' ? liste(listen.reihen.liste).flatMap(r => reiheFilme(r, 'reihe')) : [];
+  return [...wunsch, ...mostFilme, ...serien, ...mostSerien, ...misch, ...reihen];
 }
 
 /** Suchbegriffe eines Eintrags: suche, Titel, „auch“, „en“ – ohne Doppelte, höchstens 3. */
@@ -1223,7 +1231,7 @@ export default async function filme(ctx) {
   };
   // Reihenfolge innerhalb gleicher Stufe: Wunschliste und nie Versuchte zuerst, dann die am längsten nicht Versuchten.
   // Sonst blockieren dauerhaft offene Titel (Wikidata/Lookup gestört -> „weiter“) für immer die ersten maxNeueTitel Plätze.
-  const versucht = p => (p.gruppe === 'wunsch' ? '' : String(zf.ids[p.key]?.versucht || ''));
+  const versucht = p => (p.gruppe === 'wunsch' || p.gruppe === 'most' ? '' : String(zf.ids[p.key]?.versucht || ''));
   const runde = []; // dieser Lauf: höchstens maxNeueTitel Titel (gleicher Film in zwei Listen nur einmal)
   for (const { p } of posten.map(p => ({ p, f: faellig(p) })).filter(x => x.f).sort((a, b) => a.f - b.f || (versucht(a.p) < versucht(b.p) ? -1 : versucht(a.p) > versucht(b.p) ? 1 : 0))) {
     if (runde.length >= m.maxNeueTitel) break;
@@ -1860,11 +1868,12 @@ export default async function filme(ctx) {
     gruppen[g].sort(nachPreis);
   }
   // Serien: je Staffel ein Eintrag (günstigste Fassung), Angebote zuerst
+  // nur die Liste „serien“ (Most-Wanted-Serien haben ihren eigenen Bereich, Schritt 5d)
   const serienReihe = new Map();
-  posten.filter(x => x.serie).forEach((p, i) => serienReihe.set(p.item.titel, i));
+  posten.filter(x => x.serie && x.gruppe === 'serien').forEach((p, i) => serienReihe.set(p.item.titel, i));
   const staffeln = new Map();
   const wunschStaffeln = new Set(); // alle Staffel-Nummern deiner Serien (auch die doppelten, die nicht gezeigt werden)
-  for (const p of posten.filter(x => x.serie)) {
+  for (const p of posten.filter(x => x.serie && x.gruppe === 'serien')) {
     const eigene = liste(zf.ids[p.key]?.ids);
     const ausCharts = Object.keys(zf.staffelPool).filter(id => daten.get(id)?.wunschKey === p.key && !eigene.includes(id));
     ss.deineAusCharts += ausCharts.length;
@@ -1949,8 +1958,17 @@ export default async function filme(ctx) {
   // Angebote: Filme ≤ 3,99 € (≤ 4,99 € bei Tiefstpreis oder laufender Apple-Aktion) – nur Kuratiertes oder Chart-Titel
   const kandidaten = new Map();
   for (const t of [...gruppen.wunsch, ...gruppen.achtziger, ...gruppen.disney]) if (t.id?.startsWith('itunes:')) kandidaten.set(t.id, t);
+  // Most Wanted wie die Wunschliste, Reihen wie die 80er-Liste (Xander 28.11.2026)
+  const mostIds = new Set(), reiheIds = new Set();
+  for (const p of posten.filter(x => !x.serie && (x.gruppe === 'most' || x.gruppe === 'reihe'))) {
+    const id = zf.ids[p.key]?.id;
+    const t = id ? baue(id) : null;
+    if (!t || t._horror || t.typ !== 'film') continue;
+    (p.gruppe === 'most' ? mostIds : reiheIds).add(id);
+    if (id.startsWith('itunes:')) kandidaten.set(id, t);
+  }
   for (const id of chartTreffer.keys()) { const t = baue(id); if (t) kandidaten.set(id, t); }
-  const rang = t => (wunschIds.has(t.id) ? 0 : kuratiert.has(t.id) ? 1 : 2);
+  const rang = t => (wunschIds.has(t.id) || mostIds.has(t.id) ? 0 : kuratiert.has(t.id) || reiheIds.has(t.id) ? 1 : 2);
   // Qualität: deine Listen immer; Chart-Titel nur, wenn bekannt/gut bewertet und kein Horror (Genre, Wikidata, Beschreibung)
   // Beschreibung: klares Horror-Wort immer raus; zwei schwache Zeichen raus, wenn Wikidata den Film nicht kennt oder gestört ist
   const gut = t => {
@@ -2137,6 +2155,66 @@ export default async function filme(ctx) {
   const in80 = new Set(gruppen.achtziger.map(t => t.id));
   const klassiker = pool.filter(t => !in80.has(t.id) && !kuratiert.has(t.id) && !wunschIds.has(t.id) && t.jahr != null && (jahrImTitel(t.titel) ?? t.jahr) <= 1999 && istAngebotGenre(t));
   gruppen.achtziger = [...gruppen.achtziger, ...klassiker].sort(nachPreis);
+  // 5d) Most Wanted und Reihen (Xander 28.11.2026): je Titel im Store vorhanden? aktueller Preis, Tiefstpreis (eigene Beobachtung),
+  //     Alarm-Schwelle. imStore: true = gefunden, false = alle Suchwege leer („fehlt“), null = noch nicht geprüft (nächster Lauf).
+  const mwCfg = listen.mostWanted && typeof listen.mostWanted === 'object' ? listen.mostWanted : null;
+  const mwAlarm = preisWert(mwCfg?.alarm) ?? m.angebotPreis, mwStaffelAlarm = preisWert(mwCfg?.staffelAlarm) ?? m.angebotPreisAktion;
+  const reiheFilm = (x, reihe, alarm) => {
+    const key = `film:${slug(x.titel)}-${x.jahr ?? ''}`, s = zf.ids[key];
+    const t = s?.id ? baue(s.id) : null;
+    const extra = { reihe, ...(alarm != null ? { alarm } : {}) };
+    if (t && t.typ === 'film' && !t._horror) {
+      if (!t._alt) anreichern(t);
+      return { ...t, ...extra, imStore: true, ...(alarm != null ? { unterAlarm: t.preis != null && t.preis <= alarm + 0.004 } : {}) };
+    }
+    return { id: `liste:${slug(x.titel)}-${x.jahr ?? ''}`, typ: 'film', titel: x.titel, jahr: x.jahr ?? null, ...NULL_TITEL, quelle: 'Apple', ...extra,
+      imStore: s?.fehlt ? false : null, ...(alarm != null ? { unterAlarm: false } : {}), ...(s?.fehlt ? { fehlt: true } : {}) };
+  };
+  const serieMw = x => {
+    const key = `serie:${slug(x.titel)}`, s = zf.ids[key] || {};
+    const alarm = preisWert(x.alarm) ?? mwStaffelAlarm;
+    const von = Number.isInteger(x.jahr) ? x.jahr - 1 : null, bis = Number.isInteger(x.bis) ? x.bis + 1 : von != null ? von + 2 : null;
+    const ziel = new Set(namen(x).filter(n => n.faktor === 1).map(n => normTitel(n.n)));
+    const ids = new Set([...liste(s.ids), ...Object.keys(zf.staffelPool).filter(id => daten.get(id)?.wunschKey === key)]);
+    for (const [id, d] of daten) {
+      if (d?.typ !== 'staffel' || ids.has(id)) continue;
+      const info = (d.komplett && komplettInfo(d.titel)) || staffelInfo(d.titel) || komplettInfo(d.titel);
+      if (ziel.has(normTitel(info?.serie || d.kuenstler || ''))) ids.add(id);
+    }
+    const jeNr = new Map();
+    let ausgeblendet = 0;
+    for (const id of ids) {
+      const t = baue(id);
+      if (!t || t._horror || t.typ !== 'staffel') continue;
+      if (von != null && t.jahr != null && (t.jahr < von || t.jahr > bis)) { ausgeblendet++; continue; } // gleichnamige Neuauflage
+      const nr = t.nr ?? staffelInfo(t.titel)?.nr ?? null;
+      const k = t.komplett ? `k:${normTitel(t.titel)}` : nr != null ? `n:${nr}` : `t:${normTitel(t.titel)}`;
+      const vor = jeNr.get(k);
+      if (!vor || (t.preis ?? Infinity) < (vor.preis ?? Infinity)) jeNr.set(k, { ...t, nr });
+    }
+    const staffeln = [...jeNr.values()].sort((a, b) => (!!a.komplett - !!b.komplett) || ((a.nr ?? 99) - (b.nr ?? 99)))
+      .map(t => ({ ...t, serie: x.titel, unterAlarm: t.preis != null && t.preis <= alarm + 0.004 }));
+    const mitPreis = staffeln.filter(t => t.preis != null);
+    const guenstig = mitPreis.reduce((a, b) => (!a || b.preis < a.preis ? b : a), null);
+    const tief = staffeln.filter(t => t.tiefst).reduce((a, b) => (!a || b.tiefst.p < a.tiefst.p ? b : a), null);
+    return {
+      titel: x.titel, jahr: x.jahr ?? null, bis: x.bis ?? null, alarm, imStore: staffeln.length ? true : s.fehlt ? false : null,
+      staffeln, guenstigste: guenstig ? { id: guenstig.id, nr: guenstig.nr ?? null, preis: guenstig.preis } : null,
+      tiefst: tief ? { p: tief.tiefst.p, tag: tief.tiefst.tag, nr: tief.nr ?? null } : null, unterAlarm: staffeln.some(t => t.unterAlarm),
+      ...(ausgeblendet ? { ausgeblendet } : {}), ...(typeof x._hinweis === 'string' && x._hinweis ? { hinweis: x._hinweis.slice(0, 200) } : {}),
+    };
+  };
+  const mostWanted = mwCfg ? {
+    stand: tag, alarm: mwAlarm, staffelAlarm: mwStaffelAlarm,
+    reihen: liste(mwCfg.reihen).filter(r => r && typeof r.name === 'string' && r.name.trim()).map(r => {
+      const alarm = preisWert(r.alarm) ?? mwAlarm;
+      return { name: r.name.trim(), alarm, ...(typeof r._hinweis === 'string' && r._hinweis ? { hinweis: r._hinweis.slice(0, 200) } : {}), filme: liste(r.filme).filter(gueltig).map(x => reiheFilm(x, r.name.trim(), alarm)) };
+    }),
+    serien: liste(mwCfg.serien).filter(gueltig).map(serieMw),
+  } : null;
+  const reihenAus = listen.reihen && typeof listen.reihen === 'object' ? liste(listen.reihen.liste).filter(r => r && typeof r.name === 'string' && r.name.trim())
+    .map(r => ({ name: r.name.trim(), filme: liste(r.filme).filter(gueltig).map(x => reiheFilm(x, r.name.trim(), null)) })) : [];
+
   // Zahl auf der Kachel: echte Angebote – Für 3,99 €, Gesenktes, deine Wunschfilme unter Ziel; nicht der Normalpreis bis 7,99 €
   // aus Action/Comedy (Dune 7,99 €, Iron Man 4,99 €; Prüfer-Befund MV8 8 / MV7 11)
   const echt = t => t.angebot || (t.preis != null && t.preis <= m.angebotPreis);
@@ -2181,6 +2259,17 @@ export default async function filme(ctx) {
     gemeldet.add(t.id);
     if (t.unterZiel) neuerEintrag(t, { grund: 'Wunschfilm zum Zielpreis', wert: 95, sofort: true, gruppe: 'wunsch', zusatz: ['auf deiner Wunschliste'] });
     else if (neueTiefst.has(t.id)) neuerEintrag(t, { grund: 'Wunschfilm: neuer Tiefstpreis', wert: 88, sofort: true, gruppe: 'wunsch', zusatz: ['neuer Tiefstpreis', 'auf deiner Wunschliste'] });
+  }
+  // Most Wanted: Alarm-Preis erreicht -> sofort (Film höchstens „alarm“, Staffel höchstens „staffelAlarm“)
+  for (const r of mostWanted?.reihen || []) for (const t of r.filme) {
+    if (!t.unterAlarm || !mitPreis(t) || gemeldet.has(t.id)) continue;
+    gemeldet.add(t.id);
+    neuerEintrag(t, { grund: 'Most Wanted zum Alarm-Preis', wert: 93, sofort: true, gruppe: 'most', zusatz: [`Most Wanted: ${r.name}`] });
+  }
+  for (const s of mostWanted?.serien || []) for (const t of s.staffeln) {
+    if (!t.unterAlarm || !mitPreis(t) || gemeldet.has(t.id)) continue;
+    gemeldet.add(t.id);
+    neuerEintrag(t, { grund: 'Most Wanted: Staffel zum Alarm-Preis', wert: 91, sofort: true, gruppe: 'most', zusatz: [`Most Wanted: ${s.titel}`] });
   }
   for (const t of gruppen.serien) {
     if (t.wunsch !== true || !mitPreis(t) || gemeldet.has(t.id) || !t._gesenkt) continue; // Regel wie bisher: nur deine Serien
@@ -2276,12 +2365,37 @@ export default async function filme(ctx) {
   status['apple-preise'].abrufe = appleAbrufe;
 
   const sauber = t => Object.fromEntries(Object.entries(t).filter(([k, v]) => !k.startsWith('_') && v !== undefined));
+  // Advent (Xander 28.11.2026: „1.–31. Dezember: tägliche Weihnachts-/Tagesangebote spiegeln, jeden Tag aktualisiert“): jedes
+  // Tagesangebot, das der Radar sieht (Countdown aus mydealz-Tipps und Countdown-Räumen, Tag = Tag des Beitrags), bleibt für den
+  // ganzen Dezember im Zustand (zf.adventTage) – die Seite zeigt den Kalender 1.–31. Kein Tagesangebot gesehen = Tag bleibt leer.
+  const jahrJetzt = tag.slice(0, 4);
+  if (!zf.adventTage || zf.adventTage.jahr !== jahrJetzt) zf.adventTage = { jahr: jahrJetzt, tage: {} };
+  for (const c of countdown) {
+    if (typeof c.tag !== 'string' || !c.tag.startsWith(`${jahrJetzt}-12-`) || c.tag > tag) continue; // nie ein Tag aus der Zukunft
+    const l = (zf.adventTage.tage[c.tag] ||= []);
+    const neu = { id: c.id, titel: c.titel, jahr: c.jahr ?? null, preis: c.preis ?? null, link: c.link, bild: c.bild ?? null, quelle: c.quelle, ...(c.raum ? { raum: c.raum } : {}) };
+    const i = l.findIndex(x => x.id === c.id);
+    if (i >= 0) l[i] = neu; else if (l.length < 4) l.push(neu);
+  }
+  const adventTage = zf.adventTage.tage;
+  const advent = /-12-\d\d$/.test(tag) || Object.keys(adventTage).length ? { jahr: jahrJetzt, tage: adventTage, quelle: 'mydealz-Tipps (Gruppe Apple TV) und Countdown-Räume der TV-App, sobald die Web-Seite sie zeigt' } : null;
+  // Übersicht der Zusatz-Dateien (Module „filmkatalog“ und „musikstore“, letzter Lauf): Zahlen für die Chips der Seite
+  const kd = ctx.katalogDatei && typeof ctx.katalogDatei === 'object' ? ctx.katalogDatei : null;
+  const musikD = ctx.musikDatei && typeof ctx.musikDatei === 'object' ? ctx.musikDatei : null;
   const datei = {
     version: 1,
     aktualisiert: new Date(jetzt).toISOString(),
     gruppen: Object.fromEntries(GRUPPEN_REIHE.filter(k => gruppen[k]).map(k => [k, gruppen[k].map(sauber)])),
     kurz,
     ...(countdown.length ? { countdown } : {}), // Dezember: Apples Tagesangebot (Countdown/Adventskalender), für den Tages-Push
+    // ab 28.11.2026 (ältere Seiten lassen die Felder weg): Most Wanted, Reihen, Advent-Kalender, Übersicht Katalog/Musik
+    ...(mostWanted ? { mostWanted: { ...mostWanted, reihen: mostWanted.reihen.map(r => ({ ...r, filme: r.filme.map(sauber) })), serien: mostWanted.serien.map(x => ({ ...x, staffeln: x.staffeln.map(sauber) })) } } : {}),
+    ...(reihenAus.length ? { reihen: reihenAus.map(r => ({ ...r, filme: r.filme.map(sauber) })) } : {}),
+    ...(advent ? { advent } : {}),
+    zusatz: {
+      katalog: kd ? { datei: 'filmkatalog.json', filme399: kd.zahlen?.filme399 ?? null, staffeln499: kd.zahlen?.staffeln499 ?? null, bekannt: kd.zahlen?.filmeBekannt ?? null, stand: kd.aktualisiert ?? null } : { datei: 'filmkatalog.json' },
+      musik: musikD ? { datei: 'musikstore.json', alben: musikD.zahlen?.alben ?? null, songs: musikD.zahlen?.songs ?? null, stand: musikD.aktualisiert ?? null } : { datei: 'musikstore.json' },
+    },
     status,
     hinweis: "Tiefstpreis = niedrigster Preis seit Beobachtungsbeginn (Datum in 'seit'), kein Allzeit-Tiefst (tiefstQuelle 'eigen'; extern nur mit Quelle).",
   };

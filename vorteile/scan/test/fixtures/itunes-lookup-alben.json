@@ -1,0 +1,77 @@
+{
+ "_hinweis": "Ausgedachte Antwort im Format der iTunes-API (Modul musikstore, Kurzprüfung 28.11.2026) – Künstlernummer, Alben, Songs und Preise sind erfunden.",
+ "resultCount": 5,
+ "results": [
+  {
+   "wrapperType": "artist",
+   "artistType": "Artist",
+   "artistName": "Depeche Mode",
+   "artistId": 1990400001,
+   "primaryGenreName": "Pop"
+  },
+  {
+   "wrapperType": "collection",
+   "collectionType": "Album",
+   "artistId": 1990400001,
+   "collectionId": 19904000011,
+   "artistName": "Depeche Mode",
+   "collectionName": "Beispielalbum (nachgebaut)",
+   "collectionPrice": 4.99,
+   "trackCount": 12,
+   "country": "DEU",
+   "currency": "EUR",
+   "releaseDate": "1990-03-19T08:00:00Z",
+   "primaryGenreName": "Pop",
+   "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music/v4/19904000011/100x100bb.jpg",
+   "collectionViewUrl": "https://music.apple.com/de/album/beispiel/19904000011?uo=4"
+  },
+  {
+   "wrapperType": "collection",
+   "collectionType": "Album",
+   "artistId": 1990400001,
+   "collectionId": 19904000012,
+   "artistName": "Depeche Mode",
+   "collectionName": "Zweites Beispielalbum",
+   "collectionPrice": 9.99,
+   "trackCount": 10,
+   "country": "DEU",
+   "currency": "EUR",
+   "releaseDate": "1990-03-19T08:00:00Z",
+   "primaryGenreName": "Pop",
+   "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music/v4/19904000012/100x100bb.jpg",
+   "collectionViewUrl": "https://music.apple.com/de/album/beispiel/19904000012?uo=4"
+  },
+  {
+   "wrapperType": "collection",
+   "collectionType": "Album",
+   "artistId": 1990400001,
+   "collectionId": 19904000013,
+   "artistName": "Depeche Mode",
+   "collectionName": "Beispiel - Single",
+   "collectionPrice": 1.29,
+   "trackCount": 2,
+   "country": "DEU",
+   "currency": "EUR",
+   "releaseDate": "1990-03-19T08:00:00Z",
+   "primaryGenreName": "Pop",
+   "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music/v4/19904000013/100x100bb.jpg",
+   "collectionViewUrl": "https://music.apple.com/de/album/beispiel/19904000013?uo=4"
+  },
+  {
+   "wrapperType": "collection",
+   "collectionType": "Album",
+   "artistId": 42,
+   "collectionId": 19904000014,
+   "artistName": "Various Artists",
+   "collectionName": "Sampler",
+   "collectionPrice": 3.99,
+   "trackCount": 20,
+   "country": "DEU",
+   "currency": "EUR",
+   "releaseDate": "1990-03-19T08:00:00Z",
+   "primaryGenreName": "Pop",
+   "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music/v4/19904000014/100x100bb.jpg",
+   "collectionViewUrl": "https://music.apple.com/de/album/beispiel/19904000014?uo=4"
+  }
+ ]
+}

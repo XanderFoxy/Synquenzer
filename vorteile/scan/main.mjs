@@ -21,6 +21,8 @@ import nebenverdienst from './module/nebenverdienst.mjs';
 import tests from './module/tests.mjs';
 import praemien from './module/praemien.mjs';
 import filme from './module/filme.mjs';
+import filmkatalog from './module/filmkatalog.mjs';
+import musikstore from './module/musikstore.mjs';
 import remix from './module/remix.mjs';
 import auftritte from './module/auftritte.mjs';
 import unterricht from './module/unterricht.mjs';
@@ -34,9 +36,11 @@ import { holeMerkliste, faelligeErinnerungen, erinnerungNachricht, verbucheErinn
 
 const HIER = dirname(fileURLToPath(import.meta.url));
 // filialen vor knaller: der Knaller nimmt die frische Filial-Liste (nächste Filiale je Markt von Döbeln, wenn kaufDA keine nennt)
-export const MODULE = { deals, erleben, reisen, musik, nebenverdienst, tests, praemien, filme, remix, auftritte, unterricht, filialen, knaller, essen, events, auftraege };
+// filmkatalog/musikstore (28.11.2026) nach filme: die Chart-Adressen, die „filme“ schon geholt hat, sind im Lauf gemerkt (kein
+// zweiter Abruf), und „filme“ hat seine Suchen vor ihnen (gemeinsame Obergrenze der Apple-Schnittstelle je Lauf)
+export const MODULE = { deals, erleben, reisen, musik, nebenverdienst, tests, praemien, filme, musikstore, filmkatalog, remix, auftritte, unterricht, filialen, knaller, essen, events, auftraege };
 // Fundorte (Remix/Auftritte/Unterricht) haben kein Datum und bleiben immer stehen
-const MAX_ALTER_TAGE = { filialen: 30, essen: 1, knaller: 7, deals: 7, erleben: 21, reisen: 5, musik: 30, nebenverdienst: 21, tests: 21, praemien: 14, filme: 3, remix: 45, auftritte: 60, unterricht: 30, events: 14, auftraege: 21 };
+const MAX_ALTER_TAGE = { filialen: 30, essen: 1, knaller: 7, deals: 7, erleben: 21, reisen: 5, musik: 30, nebenverdienst: 21, tests: 21, praemien: 14, filme: 3, musikstore: 3, filmkatalog: 3, remix: 45, auftritte: 60, unterricht: 30, events: 14, auftraege: 21 };
 
 const mitZeitlimit = (p, ms, name) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(`${name}: Zeitlimit`)), ms).unref())]);
 
@@ -48,7 +52,7 @@ const mitZeitlimit = (p, ms, name) => Promise.race([p, new Promise((_, rej) => s
  */
 // schnittstellenCache: gemerkte Antworten der Programm-Schnittstellen nutzen (lib/schnittstellen.mjs) – nur echte Läufe (main),
 // nicht Roh-Läufe (die sollen jede Antwort frisch mitschneiden) und nicht Tests
-export async function lauf({ cfg, wunschliste, filmListen = null, essenListen = null, dateienVorher = {}, vorher, zustand, holeText: holeRoh, env = {}, jetzt = new Date(), alle = false, log = () => {}, regelWache = true, schnittstellenCache = false, schnittstellen = undefined }) {
+export async function lauf({ cfg, wunschliste, filmListen = null, essenListen = null, musikListe = null, dateienVorher = {}, vorher, zustand, holeText: holeRoh, env = {}, jetzt = new Date(), alle = false, log = () => {}, regelWache = true, schnittstellenCache = false, schnittstellen = undefined }) {
   const jetztMs = new Date(jetzt).getTime();
   zustand ||= {};
   if (!zustand.lauf || typeof zustand.lauf !== 'object' || Array.isArray(zustand.lauf)) zustand.lauf = {};
@@ -129,7 +133,11 @@ export async function lauf({ cfg, wunschliste, filmListen = null, essenListen = 
     const nieGelaufen = !zustand.lauf[name] && (!nv || nv.neu === true);
     try {
       const filialenDatei = dateien.filialen || dateienVorher?.filialen || null;
-      const r = await mitZeitlimit(fn({ holeText: holeModul, cfg, wunschliste, zustand, env, jetzt, filmListen, essenListen, filialenDatei, vorherDatei: dateienVorher?.[name] ?? null }), 240000, name);
+      // Filme (28.11.2026): filme.json nennt die Zahlen von Katalog und Musik (letzter Stand), der Katalog liest die Boxen aus filme.json
+      const filmeDatei = dateien.filme || dateienVorher?.filme || null;
+      const katalogDatei = dateien.filmkatalog || dateienVorher?.filmkatalog || null;
+      const musikDatei = dateien.musikstore || dateienVorher?.musikstore || null;
+      const r = await mitZeitlimit(fn({ holeText: holeModul, cfg, wunschliste, zustand, env, jetzt, filmListen, essenListen, musikListe, filialenDatei, filmeDatei, katalogDatei, musikDatei, vorherDatei: dateienVorher?.[name] ?? null }), 240000, name);
       if (r.datei) dateien[name] = r.datei;
       // Regel-Sperren (AGB/robots.txt) sind keine Störung: aus den Fehlern in die Hinweise, je Host ein Satz
       const gesperrt = [...(wache?.jeModul.get(name)?.values() || [])].map(g => `${g.regel === 'agb' ? 'Nutzungsbedingungen' : 'robots.txt'} von ${g.host}: nicht gelesen – ${g.grund}`);
@@ -235,10 +243,11 @@ export async function main(args = process.argv.slice(2), env = process.env, test
   if (env.NTFY_TOPIC) cfg.ntfy.topic = env.NTFY_TOPIC;
   const wunschliste = JSON.parse(await readFile(join(basis, 'wunschliste.json'), 'utf8'));
   const filmListen = await leseJson(join(basis, 'filme.json'), null);
+  const musikListe = await leseJson(join(basis, 'musik.json'), null); // Modul musikstore (28.11.2026)
   // Essen: gepflegte Lokale/Ketten (vorteile/essen.json) + Einträge der Seite (mein-vorteil/essen.json, für gemerkte AYCE-Tage)
   const essenListen = { liste: await leseJson(join(basis, 'essen.json'), null), seite: await leseJson(join(basis, '..', 'mein-vorteil', 'essen.json'), null) };
   const vorher = await leseJson(join(daten, 'aktuell.json'), null);
-  const dateienVorher = { filme: await leseJson(join(daten, 'filme.json'), null), knaller: await leseJson(join(daten, 'knaller.json'), null), essen: await leseJson(join(daten, 'essen.json'), null), filialen: await leseJson(join(daten, 'filialen.json'), null), events: await leseJson(join(daten, 'events.json'), null) };
+  const dateienVorher = { filme: await leseJson(join(daten, 'filme.json'), null), knaller: await leseJson(join(daten, 'knaller.json'), null), essen: await leseJson(join(daten, 'essen.json'), null), filialen: await leseJson(join(daten, 'filialen.json'), null), events: await leseJson(join(daten, 'events.json'), null), filmkatalog: await leseJson(join(daten, 'filmkatalog.json'), null), musikstore: await leseJson(join(daten, 'musikstore.json'), null) };
   const zustand = await leseJson(join(daten, 'zustand.json'), {});
   const fetchImpl = roh ? roh.fetch(test.fetchImpl) : test.fetchImpl;
   // Abstände der Programm-Schnittstellen (lib/schnittstellen.mjs) gelten zusätzlich zu abruf.pauseMsJeHost (größerer gewinnt)
@@ -247,7 +256,7 @@ export async function main(args = process.argv.slice(2), env = process.env, test
   const modus = arg(args, '--modus') || env.MODUS || 'auto';
 
   let r;
-  try { r = await lauf({ cfg, wunschliste, filmListen, essenListen, dateienVorher, vorher, zustand, holeText, env, jetzt, alle: fixtures || !!rohDir || args.includes('--alle'), log: console.log, schnittstellenCache: !fixtures && !rohDir }); }
+  try { r = await lauf({ cfg, wunschliste, filmListen, essenListen, musikListe, dateienVorher, vorher, zustand, holeText, env, jetzt, alle: fixtures || !!rohDir || args.includes('--alle'), log: console.log, schnittstellenCache: !fixtures && !rohDir }); }
   catch (e) { roh?.abschluss({ absturz: String(e?.message || e) }); throw e; }
   // Runde 9: Hosts, die 429 meldeten und bei denen der Radar im Lauf selbst langsamer wurde (nur Protokoll, keine Daten)
   if (holeText.bremse?.size) console.log(`nach HTTP 429 gebremst: ${[...holeText.bremse].map(([h, ms]) => `${h} ${Math.round(ms / 1000)} s Abstand`).join(', ')}`);

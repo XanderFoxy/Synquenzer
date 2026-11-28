@@ -6,6 +6,7 @@ export const KATEGORIEN = {
   deals: 'Deals', erleben: 'Erleben', reisen: 'Reisen', musik: 'Musik', nebenverdienst: 'Nebenverdienst', tests: 'Tests & Gewinnspiele',
   praemien: 'Prämien & Freunde werben', filme: 'Filme & Serien', remix: 'Remix-Contests', auftritte: 'Auftritte', unterricht: 'Deutschunterricht', auftraege: 'Nebenverdienst', essen: 'Essen',
   events: 'Ausflüge & Aktionen', knaller: 'Wochen-Knaller', filialen: 'Filialen (OpenStreetMap)',
+  filmkatalog: 'Filme für 3,99 € (Katalog)', musikstore: 'Musik im Angebot',
 };
 
 export function berlin(jetzt) {

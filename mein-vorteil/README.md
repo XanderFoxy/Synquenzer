@@ -40,7 +40,7 @@ Sprungmarken: `#start`, `#deals` (`#produkte`, `#cashback`, `#snacks` = Ziel im 
 | **Start „Heute für dich“** | „Heute wichtig“ (höchstens 4 Zeilen) + je Bereich eine Kachel mit 1–3 besten Treffern; Tippen öffnet den Bereich | jede Kachel nennt den nächstbesten Treffer bzw. den Grund |
 | **Deals** | Meine Produkte (Jetzt/Bald/Weitere, kaufDA-Region mit „in Döbeln prüfen“), Musik-Technik, Cashback, andere Snacks | ohne Angebot steht die Liste „zuletzt gesehen 0,99 € (225 g) bei Penny, Okt. 2026“ offen; beginnen alle Angebote erst später (Sonntag), nennt die Start-Kachel sie („ab morgen · 0,66 € bei Netto“, „11 Angebote starten bald“) statt „gerade kein Angebot“ |
 | **Preisfehler** | nur krasse (Regel unverändert) | sonst: wo sie zuerst auftauchen (mydealz-Gruppe Preisfehler, heiße Deals) |
-| **Filme** | Reiter aus `filme.js` (faul geladen): Wunschliste · Für 3,99 € · Action & Thriller · Comedy · 80er & Kult · Neu · Serien · Disney, mit Apple-TV-Angebotsräumen („Filme für 3,99 €“) | Start-Kachel: Push-Treffer aus `aktuell.json` → `filme`, dann die Übersicht `status.filme.kurz` (Zahl echter Angebote + beste Titel, höchstens 2 Zeilen) |
+| **Filme** | Reiter aus `filme.js` (faul geladen): Wunschliste · Most Wanted · Advent (Dezember) · Für 3,99 € · Alle 3,99 € · Action & Thriller · Comedy · 80er & Kult · Neu · Serien · Staffeln 4,99 € · Boxen · Disney · Musik · Sammlung, mit Apple-TV-Angebotsräumen („Filme für 3,99 €“) | Start-Kachel: Push-Treffer aus `aktuell.json` → `filme`, dann die Übersicht `status.filme.kurz` (Zahl echter Angebote + beste Titel, höchstens 2 Zeilen) |
 | **Auftritte** | frische Ausschreibungen (nah + bald zuerst) mit **Bewerben**, darunter feste Adressen (Döbeln, Leipzig, Dresden, Chemnitz, deutschlandweit) | feste Adressen immer (gigmit nur noch die Startseite, Zeile „Link prüfen“); ältere Daten: dieselben Adressen aus der Seite (`FUNDORTE`, Test gegen `vorteile/config.json`) |
 | **Remix** | laufende Contests (was zuerst endet, oben) mit **Mitmachen** (Frist, Stems, Text) | Fundorte mit laufenden Contests weltweit |
 | **Unterricht** | oben **Gesuche im Netz** (neueste zuerst, mit Auszug; Reddit und Freelancer.com seit 16.11.2026 nur als fertige Suche – robots.txt/AGB), darunter Stellen (Döbeln + online zuerst) – alles mit **Melden** als „Deutsch mit Xander“ | Jobbörse-Live-Suche, italki, Preply, Lingoda, BAMF; Gesuche: Upwork, Fiverr, Kleinanzeigen, Freelancer, Reddit |
@@ -201,7 +201,8 @@ Die Daten kommen nur stündlich (Konzerte alle 3 h). Deshalb blendet die Seite s
   Ohne Netz bleibt er stehen (Stand-Zeile: „offline“). Ist nur eine Quelle gestört, steht „letzter Stand von
   17:35 Uhr – Quelle gerade gestört“ (auch oben im Reiter). Konzerte und Neuerscheinungen laden unabhängig.
 - `sw.js` (nur `/mein-vorteil/`): Seite erst aus dem Netz, nach 3 s oder ohne Netz die letzte Kopie; Daten von
-  `raw.githubusercontent.com` gehen nie durch den Worker. Cache-Stufe `mein-vorteil-13` (22.11.2026: Merkliste, Produkt-Treffer an Wortgrenzen).
+  `raw.githubusercontent.com` gehen nie durch den Worker. Cache-Stufe `mein-vorteil-14` (28.11.2026: Filme – Most Wanted, Advent,
+  Alle 3,99 €, Staffeln 4,99 €, Musik, Sammlung).
 - „Quellen & Hinweise (Vorteile)“ (unter „Mehr“): je Bereich Zahl und Stand, darunter klein je Quelle die Regel aus
   `status.<bereich>.quellen` des Radars – „Schnittstelle“ (Programm-Schnittstelle trotz robots.txt, Xanders Entscheidung
   vom 16.11.2026, siehe `vorteile/README.md`) bzw. „gesperrt (Regeln)“ (robots.txt/Nutzungsbedingungen). Ältere Daten
@@ -277,3 +278,30 @@ ein 40-px-Bild, sobald der Radar `bild` mitliefert. Nur https, nur als Link (wie
 „Boxen im Angebot“: oben nur Film-/Serien-Boxen, die deutlich reduziert sind (≥ 20 % unter dem üblichen Preis bzw. dem
 Vergleichspreis von mydealz); Tipps ohne (oder mit kleinem) Vergleichspreis eingeklappt darunter, ohne Rahmen.
 Beides nur mit Daten, die „boxen“ kennen – eine alte Datei bleibt wie vorher.
+
+**Filme – neue Bereiche (28.11.2026, Xanders Auftrag „Filme/Serien/Musik vollständig und persönlich“):** nur mit Daten des neuen
+Radars (`filme.json` kennt `mostWanted`); eine alte Datei zeigt alles wie vorher.
+- **Most Wanted** (nach der Wunschliste): je Reihe (Jurassic Park, Go Trabi Go 1 + 2, Star-Trek-Kinofilme) jeder Teil mit
+  „im Store“ / „nicht im Apple-Store“ / „wird gerade gesucht“, Preis, Tiefst, „Alarm bis 3,99 €“ bzw. „unter Alarm“; rechts ein
+  Haken „habe ich“ (48 px). Serien (Raumschiff Enterprise, MacGyver, Knight Rider …) als Karte mit „ab“-Preis, Tiefst, üblichem
+  Preis, Alarm, ausgeblendeten gleichnamigen Neuauflagen; die Staffeln aufklappbar. Neuer Alarm holt den Bereich einmal nach vorn.
+- **Advent** (nur im Dezember bzw. wenn der Radar Tage kennt): 31 Türchen (je ≥ 48 px), heute umrandet, Tage mit Angebot farbig
+  mit Punkt; Tippen zeigt das Angebot des Tages. Ehrlich: Apple zeigt den Countdown nur in der TV-App, der Radar liest mydealz-Tipps.
+- **Alle 3,99 €** / **Staffeln 4,99 €**: Katalog des Radars (`filmkatalog.json`, erst beim Öffnen geladen, letzter Stand im
+  Gerät): Genre-Spalten als Chips mit Zahl, 40 Karten und „40 weitere zeigen“, Zahlen „der Radar kennt … / frisch geprüft“ und
+  der Hinweis, warum das nur so vollständig ist, wie Apple Titel zeigt. „Boxen“ zeigt mit Katalog „einzeln: 7 Filme bekannt,
+  2 je 3,99 €, 1 hast du“.
+- **Musik** (`musikstore.json`, erst beim Öffnen): Alben / Songs, Genre-Spalten (Synthpop, Heavy Metal …), gesenkte zuerst,
+  „so günstig wie nie gesehen“ nur, wenn der Radar das Album schon teurer gesehen hat; nicht gefundene Künstler stehen im Fuß.
+- **Sammlung** („Habe ich schon / Brauche ich noch“): Liste nur im Gerät (`localStorage` `mein-vorteil-filme-besitz`), Modus
+  „markieren“ (Marke „habe ich“) oder „ausblenden“ (in allen Film-Listen außer Wunschliste/Most Wanted), Reihen-Fortschritt mit
+  Balken („Police Academy 2 von 7 – es fehlen … · günstigster fehlender …“), Suche über alle bekannten Titel, „Liste einfügen“
+  (eine Zeile je Film). Vergleich über den Titel (ohne Artikel/Satzzeichen, römische Zahlen = Ziffern), Jahr in Klammern ±1;
+  ein Untertitel zählt nur mit passendem Jahr („Ghostbusters (1984)“ = „Ghostbusters – Die Geisterjäger“, nicht „Star Trek“ =
+  „Star Trek: Nemesis“).
+
+**Sammlung per Link:** `…/mein-vorteil/#besitz=Titel 1|Titel 2 (1993)|…` (Titel URL-kodiert, getrennt mit `|`, `;` oder
+Zeilenumbruch) – das Skript im `<head>` nimmt das Fragment sofort aus der Adresse (`history.replaceState`, danach `#filme`),
+führt die Titel mit der vorhandenen Liste zusammen (nur `localStorage`, nie senden, nie loggen) und der Reiter Filme zeigt
+„… Titel übernommen“ im Bereich Sammlung. Tests: `test/filme-neu.test.mjs` (Fixtures `test/fixtures/filme-neu/`, mit den echten
+Radar-Modulen aus nachgebauten Apple-Antworten erzeugt; 428 × 926, 926 × 428 und 760 × 1000).

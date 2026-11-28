@@ -1,0 +1,47 @@
+{
+ "_hinweis": "Ausgedachte Antwort im Format der iTunes-API (Modul musikstore, Kurzprüfung 28.11.2026) – Künstlernummer, Alben, Songs und Preise sind erfunden.",
+ "resultCount": 3,
+ "results": [
+  {
+   "wrapperType": "artist",
+   "artistType": "Artist",
+   "artistName": "Depeche Mode",
+   "artistId": 1990400001,
+   "primaryGenreName": "Pop"
+  },
+  {
+   "wrapperType": "track",
+   "kind": "song",
+   "artistId": 1990400001,
+   "collectionId": 19904000011,
+   "trackId": 199040000101,
+   "artistName": "Depeche Mode",
+   "collectionName": "Beispielalbum (nachgebaut)",
+   "trackName": "Beispielsong",
+   "trackPrice": 0.69,
+   "country": "DEU",
+   "currency": "EUR",
+   "releaseDate": "1990-03-19T08:00:00Z",
+   "primaryGenreName": "Pop",
+   "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music/v4/199040000101/100x100bb.jpg",
+   "trackViewUrl": "https://music.apple.com/de/album/beispiel/19904000011?i=199040000101&uo=4"
+  },
+  {
+   "wrapperType": "track",
+   "kind": "song",
+   "artistId": 1990400001,
+   "collectionId": 19904000011,
+   "trackId": 199040000102,
+   "artistName": "Depeche Mode",
+   "collectionName": "Beispielalbum (nachgebaut)",
+   "trackName": "Zweiter Beispielsong",
+   "trackPrice": 1.29,
+   "country": "DEU",
+   "currency": "EUR",
+   "releaseDate": "1990-03-19T08:00:00Z",
+   "primaryGenreName": "Pop",
+   "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music/v4/199040000102/100x100bb.jpg",
+   "trackViewUrl": "https://music.apple.com/de/album/beispiel/19904000011?i=199040000102&uo=4"
+  }
+ ]
+}

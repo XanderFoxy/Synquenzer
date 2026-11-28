@@ -62,6 +62,11 @@ export const FIXTURE_KARTE = [
   ['rss/gruppe/strom-gas', '!fehler'],
   // Modul filme (Apple/iTunes): Suche je Titel (DE, für die Ausweichwege auch US), Lookup, Charts je Genre, Wikidata,
   // mydealz-Gruppe apple-tv. Ohne eigene US-Fixture antwortet der US-Store wie im echten Lauf: leer.
+  // Modul musikstore (Kurzprüfung 28.11.2026): ausgedachte Antworten im iTunes-Format – die Künstlersuche findet nur „Depeche Mode“
+  // (erfundene Nummer), Alben/Songs dazu; die übrigen Künstler bleiben „nicht gefunden“ (Ausweichweg Wikidata ohne Treffer)
+  ['entity=musicArtist', 'itunes-search-kuenstler.json'],
+  ['entity=album', 'itunes-lookup-alben.json'],
+  ['entity=song', 'itunes-lookup-songs.json'],
   ['query.wikidata.org/sparql', 'wikidata-filme.json'],
   ['country=us', 'echt-0711/itunes-search-film-leer.json'],
   ['itunes.apple.com/search?term=Mallrats', 'itunes-search-mallrats.json'],

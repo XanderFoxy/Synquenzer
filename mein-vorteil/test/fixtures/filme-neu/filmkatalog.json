@@ -1,0 +1,1713 @@
+{
+ "version": 1,
+ "aktualisiert": "2026-12-04T09:00:00.000Z",
+ "grenzen": {
+  "film": 3.99,
+  "staffel": 4.99,
+  "frischTage": 2
+ },
+ "genres": [
+  {
+   "id": 4401,
+   "name": "Action & Abenteuer",
+   "art": "film",
+   "n": 22,
+   "bekannt": 25,
+   "stand": "2026-12-04T09:00:00.000Z"
+  },
+  {
+   "id": 4404,
+   "name": "Komödie",
+   "art": "film",
+   "n": 18,
+   "bekannt": 21,
+   "stand": "2026-12-04T09:00:00.000Z"
+  },
+  {
+   "id": 4410,
+   "name": "Kinder & Familie",
+   "art": "film",
+   "n": 12,
+   "bekannt": 15,
+   "stand": "2026-12-04T09:00:00.000Z"
+  },
+  {
+   "id": 4416,
+   "name": "Thriller",
+   "art": "film",
+   "n": 8,
+   "bekannt": 11,
+   "stand": "2026-12-04T09:00:00.000Z"
+  },
+  {
+   "id": 4406,
+   "name": "Drama",
+   "art": "film",
+   "n": 6,
+   "bekannt": 9,
+   "stand": "2026-12-04T09:00:00.000Z"
+  },
+  {
+   "id": 4001,
+   "name": "Drama",
+   "art": "staffel",
+   "n": 6,
+   "bekannt": 8,
+   "stand": "2026-12-04T09:00:00.000Z"
+  }
+ ],
+ "filme": [
+  {
+   "id": "itunes:1992000001",
+   "typ": "film",
+   "titel": "Sturm Action 1",
+   "jahr": 1981,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000001/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000001",
+   "genres": [
+    4401
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 1,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000073",
+   "typ": "film",
+   "titel": "Sturm Drama 1",
+   "jahr": 2013,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000073/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000073",
+   "genres": [
+    4406
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 1,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000047",
+   "typ": "film",
+   "titel": "Sturm Kinder 1",
+   "jahr": 1987,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000047/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000047",
+   "genres": [
+    4410
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 1,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000026",
+   "typ": "film",
+   "titel": "Sturm Komödie 1",
+   "jahr": 2006,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000026/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000026",
+   "genres": [
+    4404
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 1,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000062",
+   "typ": "film",
+   "titel": "Sturm Thriller 1",
+   "jahr": 2002,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000062/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000062",
+   "genres": [
+    4416
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 1,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000002",
+   "typ": "film",
+   "titel": "Nacht Action 2",
+   "jahr": 1982,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000002/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000002",
+   "genres": [
+    4401
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 2,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000074",
+   "typ": "film",
+   "titel": "Nacht Drama 2",
+   "jahr": 2014,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000074/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000074",
+   "genres": [
+    4406
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 2,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000048",
+   "typ": "film",
+   "titel": "Nacht Kinder 2",
+   "jahr": 1988,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000048/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000048",
+   "genres": [
+    4410
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 2,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000027",
+   "typ": "film",
+   "titel": "Nacht Komödie 2",
+   "jahr": 2007,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000027/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000027",
+   "genres": [
+    4404
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 2,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000063",
+   "typ": "film",
+   "titel": "Nacht Thriller 2",
+   "jahr": 2003,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000063/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000063",
+   "genres": [
+    4416
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 2,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000003",
+   "typ": "film",
+   "titel": "Flucht Action 3",
+   "jahr": 1983,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000003/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000003",
+   "genres": [
+    4401
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 3,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000075",
+   "typ": "film",
+   "titel": "Flucht Drama 3",
+   "jahr": 2015,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000075/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000075",
+   "genres": [
+    4406
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 3,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000049",
+   "typ": "film",
+   "titel": "Flucht Kinder 3",
+   "jahr": 1989,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000049/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000049",
+   "genres": [
+    4410
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 3,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000028",
+   "typ": "film",
+   "titel": "Flucht Komödie 3",
+   "jahr": 2008,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000028/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000028",
+   "genres": [
+    4404
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 3,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000064",
+   "typ": "film",
+   "titel": "Flucht Thriller 3",
+   "jahr": 2004,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000064/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000064",
+   "genres": [
+    4416
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 3,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000004",
+   "typ": "film",
+   "titel": "Spur Action 4",
+   "jahr": 1984,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000004/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000004",
+   "genres": [
+    4401
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 4,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000076",
+   "typ": "film",
+   "titel": "Spur Drama 4",
+   "jahr": 2016,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000076/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000076",
+   "genres": [
+    4406
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 4,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000050",
+   "typ": "film",
+   "titel": "Spur Kinder 4",
+   "jahr": 1990,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000050/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000050",
+   "genres": [
+    4410
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 4,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000029",
+   "typ": "film",
+   "titel": "Spur Komödie 4",
+   "jahr": 2009,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000029/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000029",
+   "genres": [
+    4404
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 4,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000065",
+   "typ": "film",
+   "titel": "Spur Thriller 4",
+   "jahr": 2005,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000065/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000065",
+   "genres": [
+    4416
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 4,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000005",
+   "typ": "film",
+   "titel": "Insel Action 5",
+   "jahr": 1985,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000005/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000005",
+   "genres": [
+    4401
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 5,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000077",
+   "typ": "film",
+   "titel": "Insel Drama 5",
+   "jahr": 2017,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000077/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000077",
+   "genres": [
+    4406
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 5,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000051",
+   "typ": "film",
+   "titel": "Insel Kinder 5",
+   "jahr": 1991,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000051/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000051",
+   "genres": [
+    4410
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 5,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000030",
+   "typ": "film",
+   "titel": "Insel Komödie 5",
+   "jahr": 2010,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000030/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000030",
+   "genres": [
+    4404
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 5,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000066",
+   "typ": "film",
+   "titel": "Insel Thriller 5",
+   "jahr": 2006,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000066/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000066",
+   "genres": [
+    4416
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 5,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000006",
+   "typ": "film",
+   "titel": "Jagd Action 6",
+   "jahr": 1986,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000006/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000006",
+   "genres": [
+    4401
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 6,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000078",
+   "typ": "film",
+   "titel": "Jagd Drama 6",
+   "jahr": 2018,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000078/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000078",
+   "genres": [
+    4406
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 6,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000052",
+   "typ": "film",
+   "titel": "Jagd Kinder 6",
+   "jahr": 1992,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000052/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000052",
+   "genres": [
+    4410
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 6,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000031",
+   "typ": "film",
+   "titel": "Jagd Komödie 6",
+   "jahr": 2011,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000031/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000031",
+   "genres": [
+    4404
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 6,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000067",
+   "typ": "film",
+   "titel": "Jagd Thriller 6",
+   "jahr": 2007,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000067/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000067",
+   "genres": [
+    4416
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 6,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000007",
+   "typ": "film",
+   "titel": "Code Action 7",
+   "jahr": 1987,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000007/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000007",
+   "genres": [
+    4401
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 7,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000053",
+   "typ": "film",
+   "titel": "Code Kinder 7",
+   "jahr": 1993,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000053/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000053",
+   "genres": [
+    4410
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 7,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000032",
+   "typ": "film",
+   "titel": "Code Komödie 7",
+   "jahr": 2012,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000032/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000032",
+   "genres": [
+    4404
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 7,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000068",
+   "typ": "film",
+   "titel": "Code Thriller 7",
+   "jahr": 2008,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000068/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000068",
+   "genres": [
+    4416
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 7,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000008",
+   "typ": "film",
+   "titel": "Grenze Action 8",
+   "jahr": 1988,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000008/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000008",
+   "genres": [
+    4401
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 8,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000054",
+   "typ": "film",
+   "titel": "Grenze Kinder 8",
+   "jahr": 1994,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000054/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000054",
+   "genres": [
+    4410
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 8,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000033",
+   "typ": "film",
+   "titel": "Grenze Komödie 8",
+   "jahr": 2013,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000033/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000033",
+   "genres": [
+    4404
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 8,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000069",
+   "typ": "film",
+   "titel": "Grenze Thriller 8",
+   "jahr": 2009,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000069/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000069",
+   "genres": [
+    4416
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 8,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000009",
+   "typ": "film",
+   "titel": "Stadt Action 9",
+   "jahr": 1989,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000009/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000009",
+   "genres": [
+    4401
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 9,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000055",
+   "typ": "film",
+   "titel": "Stadt Kinder 9",
+   "jahr": 1995,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000055/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000055",
+   "genres": [
+    4410
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 9,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000034",
+   "typ": "film",
+   "titel": "Stadt Komödie 9",
+   "jahr": 2014,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000034/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000034",
+   "genres": [
+    4404
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 9,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000010",
+   "typ": "film",
+   "titel": "Fluss Action 10",
+   "jahr": 1990,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000010/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000010",
+   "genres": [
+    4401
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 10,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000056",
+   "typ": "film",
+   "titel": "Fluss Kinder 10",
+   "jahr": 1996,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000056/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000056",
+   "genres": [
+    4410
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 10,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000035",
+   "typ": "film",
+   "titel": "Fluss Komödie 10",
+   "jahr": 2015,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000035/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000035",
+   "genres": [
+    4404
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 10,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000011",
+   "typ": "film",
+   "titel": "Funke Action 11",
+   "jahr": 1991,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000011/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000011",
+   "genres": [
+    4401
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 11,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000057",
+   "typ": "film",
+   "titel": "Funke Kinder 11",
+   "jahr": 1997,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000057/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000057",
+   "genres": [
+    4410
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 11,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000036",
+   "typ": "film",
+   "titel": "Funke Komödie 11",
+   "jahr": 2016,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000036/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000036",
+   "genres": [
+    4404
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 11,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000012",
+   "typ": "film",
+   "titel": "Echo Action 12",
+   "jahr": 1992,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000012/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000012",
+   "genres": [
+    4401
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 12,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000058",
+   "typ": "film",
+   "titel": "Echo Kinder 12",
+   "jahr": 1998,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000058/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000058",
+   "genres": [
+    4410
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 12,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000037",
+   "typ": "film",
+   "titel": "Echo Komödie 12",
+   "jahr": 2017,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000037/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000037",
+   "genres": [
+    4404
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 12,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000013",
+   "typ": "film",
+   "titel": "Sturm Action 13",
+   "jahr": 1993,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000013/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000013",
+   "genres": [
+    4401
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 13,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000038",
+   "typ": "film",
+   "titel": "Sturm Komödie 13",
+   "jahr": 2018,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000038/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000038",
+   "genres": [
+    4404
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 13,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000014",
+   "typ": "film",
+   "titel": "Nacht Action 14",
+   "jahr": 1994,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000014/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000014",
+   "genres": [
+    4401
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 14,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000039",
+   "typ": "film",
+   "titel": "Nacht Komödie 14",
+   "jahr": 2019,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000039/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000039",
+   "genres": [
+    4404
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 14,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000015",
+   "typ": "film",
+   "titel": "Flucht Action 15",
+   "jahr": 1995,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000015/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000015",
+   "genres": [
+    4401
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 15,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000040",
+   "typ": "film",
+   "titel": "Flucht Komödie 15",
+   "jahr": 1980,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000040/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000040",
+   "genres": [
+    4404
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 15,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000016",
+   "typ": "film",
+   "titel": "Spur Action 16",
+   "jahr": 1996,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000016/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000016",
+   "genres": [
+    4401
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 16,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000041",
+   "typ": "film",
+   "titel": "Spur Komödie 16",
+   "jahr": 1981,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000041/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000041",
+   "genres": [
+    4404
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 16,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000017",
+   "typ": "film",
+   "titel": "Insel Action 17",
+   "jahr": 1997,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000017/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000017",
+   "genres": [
+    4401
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 17,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000042",
+   "typ": "film",
+   "titel": "Insel Komödie 17",
+   "jahr": 1982,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000042/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000042",
+   "genres": [
+    4404
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 17,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000018",
+   "typ": "film",
+   "titel": "Jagd Action 18",
+   "jahr": 1998,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000018/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000018",
+   "genres": [
+    4401
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 18,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000043",
+   "typ": "film",
+   "titel": "Jagd Komödie 18",
+   "jahr": 1983,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000043/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000043",
+   "genres": [
+    4404
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 18,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000019",
+   "typ": "film",
+   "titel": "Code Action 19",
+   "jahr": 1999,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000019/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000019",
+   "genres": [
+    4401
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 19,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000020",
+   "typ": "film",
+   "titel": "Grenze Action 20",
+   "jahr": 2000,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000020/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000020",
+   "genres": [
+    4401
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 20,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000021",
+   "typ": "film",
+   "titel": "Stadt Action 21",
+   "jahr": 2001,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000021/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000021",
+   "genres": [
+    4401
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 21,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1992000022",
+   "typ": "film",
+   "titel": "Fluss Action 22",
+   "jahr": 2002,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000022/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1992000022",
+   "genres": [
+    4401
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 22,
+   "quelle": "Apple"
+  },
+  {
+   "id": "itunes:1991000001",
+   "typ": "film",
+   "titel": "Dino-Park",
+   "jahr": 1993,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1991000001/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1991000001",
+   "genres": [],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": null,
+   "quelle": "Apple",
+   "box": "itunes:1991000900"
+  },
+  {
+   "id": "itunes:1991000003",
+   "typ": "film",
+   "titel": "Dino-Park III",
+   "jahr": 2001,
+   "preis": 3.99,
+   "leihe": 1.99,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1991000003/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/movie/x/id1991000003",
+   "genres": [],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 3.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": null,
+   "quelle": "Apple",
+   "box": "itunes:1991000900"
+  }
+ ],
+ "staffeln": [
+  {
+   "id": "itunes:1992000082",
+   "typ": "staffel",
+   "titel": "Serie Sturm, Staffel 1",
+   "jahr": 2015,
+   "preis": 4.99,
+   "leihe": null,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000082/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/tv-season/x/id1992000082",
+   "genres": [
+    4001
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 4.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 1,
+   "quelle": "Apple",
+   "serie": "Serie Sturm",
+   "nr": 1
+  },
+  {
+   "id": "itunes:1992000083",
+   "typ": "staffel",
+   "titel": "Serie Nacht, Staffel 2",
+   "jahr": 2015,
+   "preis": 4.99,
+   "leihe": null,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000083/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/tv-season/x/id1992000083",
+   "genres": [
+    4001
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 4.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 2,
+   "quelle": "Apple",
+   "serie": "Serie Nacht",
+   "nr": 2
+  },
+  {
+   "id": "itunes:1992000084",
+   "typ": "staffel",
+   "titel": "Serie Flucht, Staffel 3",
+   "jahr": 2015,
+   "preis": 4.99,
+   "leihe": null,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000084/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/tv-season/x/id1992000084",
+   "genres": [
+    4001
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 4.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 3,
+   "quelle": "Apple",
+   "serie": "Serie Flucht",
+   "nr": 3
+  },
+  {
+   "id": "itunes:1992000085",
+   "typ": "staffel",
+   "titel": "Serie Spur, Staffel 1",
+   "jahr": 2015,
+   "preis": 4.99,
+   "leihe": null,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000085/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/tv-season/x/id1992000085",
+   "genres": [
+    4001
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 4.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 4,
+   "quelle": "Apple",
+   "serie": "Serie Spur",
+   "nr": 1
+  },
+  {
+   "id": "itunes:1992000086",
+   "typ": "staffel",
+   "titel": "Serie Insel, Staffel 2",
+   "jahr": 2015,
+   "preis": 4.99,
+   "leihe": null,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000086/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/tv-season/x/id1992000086",
+   "genres": [
+    4001
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 4.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 5,
+   "quelle": "Apple",
+   "serie": "Serie Insel",
+   "nr": 2
+  },
+  {
+   "id": "itunes:1992000087",
+   "typ": "staffel",
+   "titel": "Serie Jagd, Staffel 3",
+   "jahr": 2015,
+   "preis": 4.99,
+   "leihe": null,
+   "bild": "https://is1-ssl.mzstatic.com/image/thumb/Video/v4/1992000087/200x200bb.jpg",
+   "link": "https://itunes.apple.com/de/tv-season/x/id1992000087",
+   "genres": [
+    4001
+   ],
+   "seit": "2026-12-04",
+   "tiefst": {
+    "p": 4.99,
+    "tag": "2026-12-04"
+   },
+   "vorher": null,
+   "pos": 6,
+   "quelle": "Apple",
+   "serie": "Serie Jagd",
+   "nr": 3
+  }
+ ],
+ "boxInhalt": {
+  "itunes:1991000900": [
+   {
+    "id": "itunes:1991000001",
+    "titel": "Dino-Park",
+    "jahr": 1993,
+    "preis": 3.99
+   },
+   {
+    "id": "itunes:1991000002",
+    "titel": "Dino-Park II: Die Insel",
+    "jahr": 1997,
+    "preis": 9.99
+   },
+   {
+    "id": "itunes:1991000003",
+    "titel": "Dino-Park III",
+    "jahr": 2001,
+    "preis": 3.99
+   }
+  ]
+ },
+ "zahlen": {
+  "filmeBekannt": 84,
+  "filmeGeprueft": 84,
+  "filme399": 68,
+  "staffelnBekannt": 8,
+  "staffelnGeprueft": 8,
+  "staffeln499": 6,
+  "boxen": 1
+ },
+ "status": {
+  "katalog": {
+   "ok": true,
+   "anzahl": 74,
+   "fehler": [],
+   "charts": 6,
+   "chartsNeu": 3,
+   "chartsGemerkt": 3,
+   "lookups": 2,
+   "geprueft": 11,
+   "fehlen": 0,
+   "entfernt": 0,
+   "boxenNeu": 1,
+   "boxInhalte": 1,
+   "genres": [
+    {
+     "id": 4401,
+     "name": "Action & Abenteuer",
+     "art": "film",
+     "eintraege": 25
+    },
+    {
+     "id": 4404,
+     "name": "Komödie",
+     "art": "film",
+     "eintraege": 21
+    },
+    {
+     "id": 4410,
+     "name": "Kinder & Familie",
+     "art": "film",
+     "eintraege": 15
+    },
+    {
+     "id": 4416,
+     "name": "Thriller",
+     "art": "film",
+     "eintraege": 11
+    },
+    {
+     "id": 4406,
+     "name": "Drama",
+     "art": "film",
+     "eintraege": 9
+    },
+    {
+     "id": 4001,
+     "name": "Drama",
+     "art": "staffel",
+     "eintraege": 8
+    }
+   ]
+  }
+ },
+ "hinweis": "Katalog des Radars: jeder Film/jede Staffel, die er je in einem Apple-Chart (je Genre höchstens 100) oder in einer Box gesehen hat, mit frischem Preis über die iTunes-Lookup-Schnittstelle. Vollständig nur so weit, wie Apple die Titel irgendwann zeigt. Tiefst = eigene Beobachtung."
+}

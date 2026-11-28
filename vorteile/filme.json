@@ -220,6 +220,71 @@
     {"titel": "Erkan & Stefan", "jahr": 2000},
     {"titel": "Schtonk!", "jahr": 1992}
   ],
+  "mostWanted": {
+    "_hinweis": "Most Wanted (Xander 28.11.2026): fest eingetragene Reihen und Serien. Der Radar sucht jeden Titel im deutschen iTunes Store (gleiche Wege wie die Wunschliste) und zeigt: im Store vorhanden? aktueller Preis, Tiefstpreis (eigene Beobachtung), Alarm-Schwelle. Alarm = sofort eine Nachricht, sobald ein Film höchstens „alarm“ bzw. eine Staffel höchstens „staffelAlarm“ kostet (pro Reihe/Serie änderbar). Serien: „jahr“/„bis“ = Laufzeit der gemeinten Serie (Staffeln aus anderen Jahren, z. B. Neuauflagen gleichen Namens, zählen nicht); ohne Jahre zählen alle Staffeln dieses Namens.",
+    "alarm": 3.99,
+    "staffelAlarm": 4.99,
+    "_staffelAlarm": "Xander: „Staffeln im Angebot für 4,99 € (9,99 € lohnt nicht)“.",
+    "reihen": [
+      {"name": "Jurassic Park", "_hinweis": "alle Teile", "filme": [
+        {"titel": "Jurassic Park", "jahr": 1993, "en": "Jurassic Park"},
+        {"titel": "Vergessene Welt: Jurassic Park", "jahr": 1997, "en": "The Lost World: Jurassic Park", "auch": ["The Lost World: Jurassic Park", "Jurassic Park 2"]},
+        {"titel": "Jurassic Park III", "jahr": 2001, "en": "Jurassic Park III"},
+        {"titel": "Jurassic World", "jahr": 2015, "en": "Jurassic World"},
+        {"titel": "Jurassic World: Das gefallene Königreich", "jahr": 2018, "en": "Jurassic World: Fallen Kingdom", "auch": ["Jurassic World: Fallen Kingdom"]},
+        {"titel": "Jurassic World: Ein neues Zeitalter", "jahr": 2022, "en": "Jurassic World Dominion", "auch": ["Jurassic World Dominion"]},
+        {"titel": "Jurassic World: Die Wiedergeburt", "jahr": 2025, "en": "Jurassic World Rebirth", "auch": ["Jurassic World Rebirth"]}
+      ]},
+      {"name": "Go Trabi Go", "_hinweis": "Teil 2 gibt es: „Go Trabi Go 2 – Das war der wilde Osten“ (1992). Ob beide im deutschen iTunes Store sind, prüft der Radar (Stand 08.11.2026: Teil 1 dort nicht gefunden).", "filme": [
+        {"titel": "Go Trabi Go", "jahr": 1991},
+        {"titel": "Go Trabi Go 2 – Das war der wilde Osten", "jahr": 1992, "auch": ["Go Trabi Go 2", "Das war der wilde Osten"]}
+      ]},
+      {"name": "Star Trek – Kinofilme", "_hinweis": "nur Alarm, wenn wirklich günstig (alarm)", "alarm": 3.99, "filme": [
+        {"titel": "Star Trek: Der Film", "jahr": 1979, "en": "Star Trek: The Motion Picture", "auch": ["Star Trek – Der Film", "Star Trek: The Motion Picture"]},
+        {"titel": "Star Trek II: Der Zorn des Khan", "jahr": 1982, "en": "Star Trek II: The Wrath of Khan", "auch": ["Star Trek II: The Wrath of Khan"]},
+        {"titel": "Star Trek III: Auf der Suche nach Mr. Spock", "jahr": 1984, "en": "Star Trek III: The Search for Spock", "auch": ["Star Trek III: The Search for Spock"]},
+        {"titel": "Star Trek IV: Zurück in die Gegenwart", "jahr": 1986, "en": "Star Trek IV: The Voyage Home", "auch": ["Star Trek IV: The Voyage Home"]},
+        {"titel": "Star Trek V: Am Rande des Universums", "jahr": 1989, "en": "Star Trek V: The Final Frontier", "auch": ["Star Trek V: The Final Frontier"]},
+        {"titel": "Star Trek VI: Das unentdeckte Land", "jahr": 1991, "en": "Star Trek VI: The Undiscovered Country", "auch": ["Star Trek VI: The Undiscovered Country"]},
+        {"titel": "Star Trek: Treffen der Generationen", "jahr": 1994, "en": "Star Trek Generations", "auch": ["Star Trek Generations", "Star Trek VII: Treffen der Generationen"]},
+        {"titel": "Star Trek: Der erste Kontakt", "jahr": 1996, "en": "Star Trek: First Contact", "auch": ["Star Trek: First Contact", "Star Trek VIII: Der erste Kontakt"]},
+        {"titel": "Star Trek: Der Aufstand", "jahr": 1998, "en": "Star Trek: Insurrection", "auch": ["Star Trek: Insurrection", "Star Trek IX: Der Aufstand"]},
+        {"titel": "Star Trek: Nemesis", "jahr": 2002, "en": "Star Trek: Nemesis", "auch": ["Star Trek X: Nemesis"]},
+        {"titel": "Star Trek", "jahr": 2009, "en": "Star Trek"},
+        {"titel": "Star Trek Into Darkness", "jahr": 2013, "en": "Star Trek Into Darkness"},
+        {"titel": "Star Trek Beyond", "jahr": 2016, "en": "Star Trek Beyond"}
+      ]}
+    ],
+    "serien": [
+      {"titel": "Star Trek: Raumschiff Enterprise", "en": "Star Trek: The Original Series", "auch": ["Star Trek: The Original Series", "Raumschiff Enterprise"], "jahr": 1966, "bis": 1969, "_hinweis": "Dauertiefstpreis: niedrigster Preis, den der Radar je Staffel selbst gesehen hat, und der übliche Preis"},
+      {"titel": "Parker Lewis – Der Coole von der Schule", "en": "Parker Lewis Can't Lose", "auch": ["Parker Lewis"], "jahr": 1990, "bis": 1993},
+      {"titel": "MacGyver", "en": "MacGyver", "jahr": 1985, "bis": 1992, "_hinweis": "die Originalserie (die Neuauflage von 2016 heißt genauso und zählt nicht)"},
+      {"titel": "Knight Rider", "en": "Knight Rider", "jahr": 1982, "bis": 1986, "_hinweis": "die Originalserie (nicht die Neuauflage von 2008)"},
+      {"titel": "Ein Trio mit vier Fäusten", "en": "Riptide", "auch": ["Riptide"], "jahr": 1984, "bis": 1986},
+      {"titel": "Ein Colt für alle Fälle", "en": "The Fall Guy", "auch": ["The Fall Guy"], "jahr": 1981, "bis": 1986},
+      {"titel": "Saber Rider und die Star Sheriffs", "en": "Saber Rider and the Star Sheriffs", "auch": ["Saber Rider"], "jahr": 1987, "bis": 1988},
+      {"titel": "He-Man und die Masters of the Universe", "en": "He-Man and the Masters of the Universe", "auch": ["He-Man"], "jahr": 1983, "bis": 1985, "_hinweis": "die Serie von 1983 (nicht die Neuauflagen von 2002 und 2021)"},
+      {"titel": "BraveStarr", "en": "BraveStarr", "auch": ["Bravestarr"], "jahr": 1987, "bis": 1988},
+      {"titel": "Stingray", "en": "Stingray", "_hinweis": "unklar, welche gemeint ist (US-Serie 1985–1987 oder Gerry Andersons Puppenserie 1964) – der Radar zeigt beide, wenn Apple sie führt"},
+      {"titel": "Dark Skies – Tödliche Bedrohung", "en": "Dark Skies", "auch": ["Dark Skies"], "jahr": 1996, "bis": 1997},
+      {"titel": "Earth 2", "en": "Earth 2", "jahr": 1994, "bis": 1995},
+      {"titel": "Outer Limits – Die unbekannte Dimension", "en": "The Outer Limits", "auch": ["Outer Limits"], "_hinweis": "Neuauflage 1995–2002 und Original 1963–1965 – beide, wenn Apple sie führt"}
+    ]
+  },
+  "reihen": {
+    "_hinweis": "Reihen für „Habe ich schon / Brauche ich noch“ und für Boxen (Xander 28.11.2026: „Police-Academy-Box mit 7 Filmen günstig; einzelne Teile auch“). Der Radar sucht jeden Teil wie die 80er-Liste; der Lookup eines Teils nennt die Box (collectionId), so kommt die Box in „Boxen im Angebot“. Keine eigene Nachricht – nur, wenn ein Teil für 3,99 € zu haben ist (wie die 80er-Liste).",
+    "liste": [
+      {"name": "Police Academy", "filme": [
+        {"titel": "Police Academy – Dümmer als die Polizei erlaubt", "jahr": 1984, "en": "Police Academy", "auch": ["Police Academy"]},
+        {"titel": "Police Academy 2 – Jetzt geht's erst richtig los", "jahr": 1985, "en": "Police Academy 2: Their First Assignment", "auch": ["Police Academy 2"]},
+        {"titel": "Police Academy 3 – ... und keiner kann sie bremsen", "jahr": 1986, "en": "Police Academy 3: Back in Training", "auch": ["Police Academy 3"]},
+        {"titel": "Police Academy 4 – Und jetzt geht's rund", "jahr": 1987, "en": "Police Academy 4: Citizens on Patrol", "auch": ["Police Academy 4"]},
+        {"titel": "Police Academy 5 – Auftrag Miami Beach", "jahr": 1988, "en": "Police Academy 5: Assignment Miami Beach", "auch": ["Police Academy 5"]},
+        {"titel": "Police Academy 6 – Widerstand zwecklos", "jahr": 1989, "en": "Police Academy 6: City Under Siege", "auch": ["Police Academy 6"]},
+        {"titel": "Police Academy 7 – Mission in Moskau", "jahr": 1994, "en": "Police Academy: Mission to Moscow", "auch": ["Police Academy 7"]}
+      ]}
+    ]
+  },
   "charts": {
     "_hinweis": "Apple-Charts (Top 100 je Genre). neu = neue Filme (höchstens neuMonate alt), angebot = nur für Angebote. Horror (4408) ist immer raus.",
     "neu": [

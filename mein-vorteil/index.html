@@ -619,6 +619,29 @@ const NTFY_IMPORT = (() => {
   if (!/^[A-Za-z0-9_-]{1,64}$/.test(t)) return { ok: false };
   try { localStorage.setItem('mein-vorteil-krypto-thema', JSON.stringify(t)); return { ok: true }; } catch { return { ok: false, speicher: true }; }
 })();
+
+// Film-Sammlung per Link (von Claude, 28.11.2026): …/mein-vorteil/#besitz=Titel 1|Titel 2 (1993)|… – wie oben sofort aus der
+// Adresse, nur in localStorage (nie senden, nie loggen); danach öffnet die Seite den Reiter Filme (filme.js zeigt „übernommen“).
+// Titel mit | ; oder Zeilenumbruch getrennt, höchstens 3000, je höchstens 120 Zeichen; schon Eingetragenes bleibt (zusammengeführt).
+const BESITZ_IMPORT = (() => {
+  if (!/^#besitz=/i.test(location.hash)) return null;
+  let roh = location.hash.replace(/^#besitz=/i, '');
+  history.replaceState(history.state, '', location.pathname + location.search + '#filme');
+  try { roh = decodeURIComponent(roh.replace(/\+/g, ' ')); } catch {}
+  const neu = roh.split(/\r?\n|\||;/).map(x => x.trim().slice(0, 120)).filter(Boolean).slice(0, 3000);
+  if (!neu.length) return { ok: false };
+  try {
+    let d = null;
+    try { d = JSON.parse(localStorage.getItem('mein-vorteil-filme-besitz')); } catch {}
+    if (!d || d.v !== 1 || !Array.isArray(d.roh)) d = { v: 1, roh: [], modus: 'markieren' };
+    const da = new Set(d.roh.map(x => String(x).toLowerCase()));
+    let n = 0;
+    for (const x of neu) if (!da.has(x.toLowerCase()) && d.roh.length < 3000) { d.roh.push(x); da.add(x.toLowerCase()); n++; }
+    localStorage.setItem('mein-vorteil-filme-besitz', JSON.stringify(d));
+    localStorage.setItem('mein-vorteil-filme-besitz-neu', JSON.stringify({ n }));
+    return { ok: true, n };
+  } catch { return { ok: false, speicher: true }; }
+})();
 </script>
 </head>
 <body>

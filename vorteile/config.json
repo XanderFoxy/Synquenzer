@@ -337,6 +337,16 @@
       "intervallStunden": 3,
       "_hinweis": "Filme & Serien bei Apple TV: Wunschfilme, Angebote (3,99 €), neue Filme, 80er/Kult, Rick and Morty/Star Trek, Disney – mit Tiefstpreis. Die Listen stehen in filme.json. Seite: <data>/filme.json."
     },
+    "filmkatalog": {
+      "aktiv": true,
+      "intervallStunden": 3,
+      "_hinweis": "Alle Filme für 3,99 € und alle Staffeln für 4,99 € je Genre (Xander 28.11.2026). Katalog aus allen Apple-Charts je Genre (dieselben Adressen wie „filme“, im Lauf gemerkt) + reihum frische Preise per iTunes-Lookup; jede gefundene Box kommt in die Box-Liste von „filme“. Grenzen und Budgets: scan/module/filmkatalog.mjs (KATALOG), hier änderbar. Seite: <data>/filmkatalog.json."
+    },
+    "musikstore": {
+      "aktiv": true,
+      "intervallStunden": 6,
+      "_hinweis": "Musik im iTunes Store (Xander 28.11.2026): Alben bis 4,99 € und Songs für 0,69 € deiner Künstler (Heavy Metal, Synthpop …), Liste in musik.json. Je Lauf einige Künstler reihum (Alben + bekannteste Songs per Lookup), Künstler-Nummer einmal per Suche. Seite: <data>/musikstore.json."
+    },
     "auftraege": {
       "aktiv": true,
       "intervallStunden": 3,

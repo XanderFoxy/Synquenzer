@@ -22,7 +22,9 @@ import filme, {
 const HIER = dirname(fileURLToPath(import.meta.url));
 const FIX = join(HIER, 'fixtures');
 const cfg = JSON.parse(await readFile(join(HIER, '..', '..', 'config.json'), 'utf8'));
-const listen = JSON.parse(await readFile(join(HIER, '..', '..', 'filme.json'), 'utf8'));
+// Most Wanted und Reihen (28.11.2026) prüft filme-most.test.mjs – die Zahlen hier (Suchen, Abrufe, Reihenfolge) gelten für die
+// Listen davor (Wunschliste, Serien, 80er, Disney), darum ohne die beiden neuen Abschnitte
+const listen = (({ mostWanted, reihen, ...rest }) => rest)(JSON.parse(await readFile(join(HIER, '..', '..', 'filme.json'), 'utf8')));
 const fix = async n => readFile(join(FIX, n), 'utf8');
 const ergebnisse = async n => leseErgebnisse(await fix(n));
 const JETZT = new Date('2026-11-07T12:00:00Z');
