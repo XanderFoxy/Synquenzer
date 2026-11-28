@@ -495,6 +495,8 @@ h2.abschnitt { font-size: 13px; text-transform: uppercase; letter-spacing: .08em
   .sp-unten { padding-top: 6px; padding-bottom: calc(6px + env(safe-area-inset-bottom)); }
   .sp-nav .sc-knopf { min-height: 44px; }
   .sp-w { width: 44px; height: 44px; }
+  .sp-w-reihe { gap: 3px; }
+  .sp-w-trenn { margin: 0 1px; }
   .sp-w-kopf { display: none; }
 }
 .scan-quelle { background: color-mix(in srgb, var(--r3) 14%, var(--flaeche)); }
