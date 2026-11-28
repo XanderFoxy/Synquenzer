@@ -1,0 +1,42 @@
+{
+ "zip": "/tmp/claude-0/-home-user-Deutsch-Mit-Xander/9f6e2ea9-5438-5564-bb39-64bc754f0143/scratchpad/wall-v13/out/v13b/The-Wall-v13b-Projekt.zip",
+ "zip_mb": 50.5,
+ "clips": {
+  "VOX Haupt": 1,
+  "VOX Doppel": 1,
+  "VOX Chor 1": 1,
+  "VOX Chor 2": 1,
+  "VOX Chor 3": 1,
+  "VOX KI Oberterz": 27,
+  "VOX KI Unterterz": 21
+ },
+ "pegel": {
+  "VOX Haupt": {
+   "spitze_dbfs": -6.27,
+   "faktor_db": 0.0
+  },
+  "VOX Doppel": {
+   "spitze_dbfs": -5.64,
+   "faktor_db": 0.0
+  },
+  "VOX Chor 1": {
+   "spitze_dbfs": -8.92,
+   "faktor_db": 0.0
+  },
+  "VOX Chor 2": {
+   "spitze_dbfs": -10.73,
+   "faktor_db": 0.0
+  },
+  "VOX Chor 3": {
+   "spitze_dbfs": -1.11,
+   "faktor_db": 0.0
+  }
+ },
+ "rueckweg_max_abw_dbfs": {
+  "VOX Haupt": -90.3,
+  "VOX Doppel": -90.3,
+  "VOX Chor 1": -90.3,
+  "VOX Chor 2": -90.3,
+  "VOX Chor 3": -90.3
+ }
+}
