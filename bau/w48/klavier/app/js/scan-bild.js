@@ -116,37 +116,33 @@ export function notenlinien(bin, w, h, { dicke, abstand }) {
   const x0 = Math.floor(w * 0.18), x1 = Math.ceil(w * 0.82), band = Math.max(1, x1 - x0);
   const P = new Float32Array(h);
   for (let y = 0; y < h; y++) { let s = 0; const o = y * w; for (let x = x0; x < x1; x++) s += bin[o + x]; P[y] = s / band; }
-  const fen = Math.max(1, Math.ceil(dicke / 2) + 1);
+  // Stärke: Deckung einer Zeile – eine leicht schräge/krumme Linie verteilt sich auf zwei Zeilen
   const Q = new Float32Array(h);
-  for (let y = 0; y < h; y++) { let s = 0; for (let d = -fen; d <= fen; d++) { const yy = y + d; if (yy >= 0 && yy < h) s += P[yy]; } Q[y] = Math.min(1.2, s); }
-  const S = (y) => (P[y - 1] || 0) * 0.5 + P[y] + (P[y + 1] || 0) * 0.5;
+  for (let y = 0; y < h; y++) Q[y] = Math.min(1, Math.max(P[y], P[y] + (P[y - 1] || 0) * 0.8, P[y] + (P[y + 1] || 0) * 0.8));
   const kand = [];
-  for (let y = 1; y < h - 1; y++) if (Q[y] >= 0.3 && S(y) >= S(y - 1) && S(y) > S(y + 1)) kand.push(y);
+  for (let y = 0; y < h; y++) if (Q[y] >= 0.42 && Q[y] >= (Q[y - 1] || 0) && Q[y] > (Q[y + 1] || 0)) kand.push(y);
   const radius = Math.max(2, abstand * 0.42);
-  kand.sort((a, b) => S(b) - S(a));
+  kand.sort((a, b) => Q[b] - Q[a]);
   const genommen = [];
   for (const y of kand) if (!genommen.some((z) => Math.abs(z - y) < radius)) genommen.push(y);
+  const fen = Math.max(1, Math.ceil(dicke / 2) + 1);
   return genommen.sort((a, b) => a - b).map((y) => {
     let s = 0, m = 0;
-    for (let d = -fen; d <= fen; d++) { const yy = y + d; if (yy >= 0 && yy < h) { s += P[yy]; m += P[yy] * yy; } }
+    for (let d = -fen; d <= fen; d++) { const yy = y + d; if (yy >= 0 && yy < h && P[yy] > 0.25) { s += P[yy]; m += P[yy] * yy; } }
     return { y: s ? m / s : y, staerke: Q[y] };
   });
 }
 
-/** Je fünf gleich weit entfernte Linien = ein Notensystem. */
+/** Je fünf gleich weit entfernte Linien = ein Notensystem. Gibt es mehrere Möglichkeiten, gewinnen die kräftigsten Linien. */
 export function fuenferGruppen(linien, abstand) {
-  const ys = linien.map((l) => l.y);
-  const benutzt = new Set(), aus = [];
+  const ys = linien.map((l) => l.y), st = linien.map((l) => l.staerke ?? 1);
+  const kand = [];
   for (let i = 0; i < ys.length; i++) {
-    if (benutzt.has(i)) continue;
     let g = abstand, liste = [i], ok = true;
     for (let k = 1; k <= 4; k++) {
       const ziel = ys[i] + k * g;
       let bj = -1, bd = Infinity;
-      for (let j = liste[liste.length - 1] + 1; j < ys.length && ys[j] < ziel + 0.4 * g; j++) {
-        if (benutzt.has(j)) continue;
-        const d = Math.abs(ys[j] - ziel); if (d < bd) { bd = d; bj = j; }
-      }
+      for (let j = liste[liste.length - 1] + 1; j < ys.length && ys[j] < ziel + 0.4 * g; j++) { const d = Math.abs(ys[j] - ziel); if (d < bd) { bd = d; bj = j; } }
       if (bj < 0 || bd > 0.26 * g) { ok = false; break; }
       liste.push(bj); g = (ys[bj] - ys[i]) / k;
     }
@@ -154,10 +150,19 @@ export function fuenferGruppen(linien, abstand) {
     const luecken = liste.slice(1).map((j, k) => ys[j] - ys[liste[k]]);
     const mittel = luecken.reduce((a, b) => a + b, 0) / 4;
     if (luecken.some((x) => Math.abs(x - mittel) > 0.22 * mittel)) continue;
-    liste.forEach((j) => benutzt.add(j));
-    aus.push({ y: liste.map((j) => ys[j]), g: mittel });
+    const staerke = Math.min(...liste.map((j) => st[j])) + liste.reduce((a, j) => a + st[j], 0) / 50;
+    kand.push({ liste, mittel, staerke });
   }
-  return aus;
+  kand.sort((a, b) => b.staerke - a.staerke);
+  const aus = [], benutzt = new Set();
+  for (const k of kand) {
+    if (k.liste.some((j) => benutzt.has(j))) continue;
+    const y0 = ys[k.liste[0]], y4 = ys[k.liste[4]];
+    if (aus.some((a) => a.y[0] < y4 + 0.5 * k.mittel && y0 < a.y[4] + 0.5 * k.mittel)) continue;
+    k.liste.forEach((j) => benutzt.add(j));
+    aus.push({ y: k.liste.map((j) => ys[j]), g: k.mittel });
+  }
+  return aus.sort((a, b) => a.y[0] - b.y[0]);
 }
 
 const schwarzBei = (bin, w, h, x, y) => x >= 0 && x < w && y >= 0 && y < h && bin[y * w + x] === 1;
@@ -249,7 +254,14 @@ export function taktstriche(bin, w, h, z) {
     const l = gruppen[gruppen.length - 1];
     if (l && x - l.x1 <= 1) l.x1 = x; else gruppen.push({ x0: x, x1: x });
   }
-  const schmal = gruppen.filter((q) => q.x1 - q.x0 + 1 <= Math.max(4, 0.9 * g));
+  let schmal = gruppen.filter((q) => q.x1 - q.x0 + 1 <= Math.max(4, 0.9 * g));
+  // Klavier: Taktstriche gehen meist durch die Lücke zwischen den Systemen – Hälse und Taktangaben nicht.
+  if (z.staves.length === 2) {
+    const a = z.staves[0].y[4] + 1, b = z.staves[1].y[0] - 1;
+    for (const q of schmal) { let m = 0; for (let x = q.x0; x <= q.x1; x++) m = Math.max(m, deckung(x, a, b)); q.luecke = m; }
+    const durch = schmal.filter((q) => q.luecke >= 0.9);
+    if (durch.length >= Math.max(2, 0.6 * schmal.length)) schmal = durch;
+  }
   // doppelte Striche, Schluss- und Wiederholungsstriche zu einem zusammenfassen
   const striche = [];
   for (const q of schmal) {
@@ -259,11 +271,22 @@ export function taktstriche(bin, w, h, z) {
   return striche.map((q) => ({ x: (q.x0 + q.x1) / 2, x0: q.x0, x1: q.x1, doppelt: q.n > 1 }));
 }
 
-/** Takt-Grenzen aus den Taktstrichen. */
-export function taktGrenzen(z, striche) {
+/** Tinte (ohne Notenlinien) in einem Bereich einer Zeile – in Linienabstand² gemessen. */
+export function tinte(bin, w, h, z, xa, xb) {
+  let n = 0;
+  const linie = new Set();
+  for (const st of z.staves) for (const y of st.y) for (let d = -Math.ceil((z.dicke || 1) / 2) - 1; d <= Math.ceil((z.dicke || 1) / 2) + 1; d++) linie.add(Math.round(y) + d);
+  const y0 = Math.max(0, Math.round(z.top - 3 * z.g)), y1 = Math.min(h - 1, Math.round(z.bot + 3 * z.g));
+  for (let y = y0; y <= y1; y++) { if (linie.has(y)) continue; const o = y * w; for (let x = Math.max(0, Math.round(xa)); x <= Math.min(w - 1, Math.round(xb)); x++) n += bin[o + x]; }
+  return n / (z.g * z.g);
+}
+
+/** Takt-Grenzen aus den Taktstrichen. Hinter dem letzten Strich zählt ein Takt nur, wenn dort Noten stehen. */
+export function taktGrenzen(z, striche, bin, w, h) { // bin: strenger Schwellwert (Rauschen zählt nicht als Tinte)
   const g = z.g, xs = striche.map((s) => s.x).filter((x) => x > z.x0 + 1.5 * g);
   const grenzen = [z.x0, ...xs];
-  if (z.x1 - grenzen[grenzen.length - 1] > 4 * g) grenzen.push(z.x1);
+  const letzt = grenzen[grenzen.length - 1];
+  if (z.x1 - letzt > 4 * g && (!bin || tinte(bin, w, h, z, letzt + 0.6 * g, z.x1 - 0.3 * g) > 2.5)) grenzen.push(z.x1);
   const takte = [];
   for (let i = 0; i + 1 < grenzen.length; i++) if (grenzen[i + 1] - grenzen[i] > 1.5 * g) takte.push({ x0: grenzen[i], x1: grenzen[i + 1] });
   if (!takte.length) takte.push({ x0: z.x0, x1: z.x1 });
@@ -325,10 +348,13 @@ export function koepfeFinden(binQ, w, h, z) {
     }
   });
   // typische Fläche eines einzelnen Kopfes → Köpfe je Fleck
-  const einzeln = aus.filter((f) => f.b <= 1.3 * g && f.h <= 0.9 * g).map((f) => f.flaeche).sort((a, b) => a - b);
-  const A1 = einzeln.length >= 3 ? einzeln[einzeln.length >> 1] : Math.max(2, (1.15 * g - k) * (0.95 * g - k));
-  for (const f of aus) f.n = Math.max(1, Math.round(f.flaeche / A1));
-  return aus;
+  // typische Fläche eines einzelnen Kopfes (Ellipse ~1,3 × 1,0 Linienabstände, abgetragen um k)
+  const theorie = Math.max(2, (1.3 * g - k) * (1.0 * g - k) * 0.8);
+  const einzeln = aus.filter((f) => f.b >= 0.35 * g && f.b <= 1.15 * g && f.h >= 0.2 * g && f.h <= 0.8 * g).map((f) => f.flaeche).sort((a, b) => a - b);
+  const A1 = einzeln.length >= 5 ? Math.min(theorie * 1.6, Math.max(theorie * 0.6, einzeln[einzeln.length >> 1])) : theorie;
+  const echt = aus.filter((f) => f.flaeche >= 0.35 * A1);
+  for (const f of echt) f.n = Math.max(1, Math.round(f.flaeche / A1));
+  return echt;
 }
 
 // ───────── Browser: Bild laden, ausrichten, zuschneiden ─────────
@@ -418,7 +444,7 @@ export async function seiteVorbereiten(datei, { schritt = () => {} } = {}) {
     for (const z of zeilen) {
       z.dicke = masse.dicke;
       z.striche = taktstriche(binL, aw, ah, z);
-      z.takte = taktGrenzen(z, z.striche);
+      z.takte = taktGrenzen(z, z.striche, binQ, aw, ah);
       z.koepfe = koepfeFinden(binQ, aw, ah, z);
     }
     await ruhe();
