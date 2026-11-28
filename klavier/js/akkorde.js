@@ -267,7 +267,7 @@ function baueSegment(f, vorl = 0) {
     erklaerung += ` Der Basston ${bassVoll} steht im ${schl} ${ortImSystem(bassS, bass.system === 'oben' ? 'violin' : 'bass')}.`;
   }
   return {
-    von: a, bis: b, takt: f.takt, name, kurz, grundton: g, grundtonPc: r, art: einzel ? 'einzelton' : v.art,
+    von: a, bis: b, takt: f.takt, name, kurz, grundton: g, grundtonPc: r, grundtonSw: gs, art: einzel ? 'einzelton' : v.art,
     artText: einzel ? 'Einzelton' : v.text, umkehrung, umkehrungText, bassFremd, bass: bassTon, bassVoll, bassMidi: bass.midi,
     rollen, neu, noten: drin, intervalle, lage, spanne, erklaerung, sicherheit: Math.max(0, Math.min(1, best.s)),
     unvollstaendig: !einzel && v.iv.some((i) => f.w[(r + i) % 12] < 0.02),

@@ -29,11 +29,18 @@ const STIL = `
 .kl-s .kl-name{bottom:auto;top:6px;color:#c9ced6;font-size:9px;line-height:1.15;font-weight:500}
 .kl-tastatur[data-namen="aus"] .kl-name,.kl-tastatur[data-namen="c"] .kl-name:not(.kl-c),.kl-tastatur[data-namen="c"] .kl-s .kl-name{display:none}
 .kl-mitte .kl-name{color:#3b82f6}
+.kl-iv{position:absolute;left:3px;right:3px;bottom:5px;height:17px;border-radius:9px;background:var(--kl-ivf,#5b5bd6);color:#fff;
+ font:700 10px/17px system-ui,-apple-system,sans-serif;text-align:center;white-space:nowrap;overflow:hidden;letter-spacing:-.01em;pointer-events:none;
+ opacity:0;transform:translateY(5px);transition:opacity .2s ease,transform .2s ease;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.kl-s .kl-iv{left:-8px;right:-8px;bottom:34px;height:15px;font-size:9px;line-height:15px;border-radius:7px;overflow:visible}
+.kl-iv.kl-zeigt{opacity:1;transform:none}
+.kl-mit-iv .kl-name{opacity:0}
+.kl-bezug{box-shadow:inset 0 0 0 3px var(--kl-ivf,#5b5bd6)}
 .kl-band{position:absolute;top:-16px;height:12px;border-radius:6px;background:var(--kl-bf,#3b82f6);opacity:.22;pointer-events:none}
 .kl-bandtext{position:absolute;top:-17px;font:600 10px/14px system-ui,-apple-system,sans-serif;color:var(--kl-name);white-space:nowrap;pointer-events:none;padding-left:6px}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]):not([data-theme="hell"]) .kl-tastatur{--kl-weiss1:#e9ebee;--kl-weiss2:#d4d8de;--kl-rand:#8b929c;--kl-schwarz1:#2a2e35;--kl-schwarz2:#07080a;--kl-name:#5b626c}}
 :root[data-theme="dark"] .kl-tastatur,:root[data-theme="dunkel"] .kl-tastatur{--kl-weiss1:#e9ebee;--kl-weiss2:#d4d8de;--kl-rand:#8b929c;--kl-schwarz1:#2a2e35;--kl-schwarz2:#07080a;--kl-name:#5b626c}
-@media (prefers-reduced-motion:reduce){.kl-taste,.kl-taste::before,.kl-taste::after,.kl-punkt{transition:none!important}.kl-gedrueckt,.kl-leuchtet{transform:none}}
+@media (prefers-reduced-motion:reduce){.kl-taste,.kl-taste::before,.kl-taste::after,.kl-punkt,.kl-iv{transition:none!important}.kl-gedrueckt,.kl-leuchtet{transform:none}}
 `;
 function stilEinfuegen() {
   if (typeof document === 'undefined' || document.getElementById('kl-tastatur-stil')) return;
@@ -72,7 +79,8 @@ export function tastatur(el, opt = {}) {
     n.className = 'kl-name' + (pc === 0 ? ' kl-c' : '');
     if (s) n.innerHTML = SCHWARZ_NAME[pc].join('<br>'); else n.textContent = notenName(m);
     const p = document.createElement('span'); p.className = 'kl-punkt';
-    t.append(n, p);
+    const iv = document.createElement('span'); iv.className = 'kl-iv'; iv.setAttribute('aria-hidden', 'true');
+    t.append(n, p, iv);
     frag.appendChild(t);
     tasten.set(m, t);
   }
@@ -102,7 +110,7 @@ export function tastatur(el, opt = {}) {
   innen.addEventListener('pointerleave', (e) => ende(e, false));
   innen.addEventListener('contextmenu', (e) => e.preventDefault());
 
-  const an = new Set();
+  const an = new Set(), ivAn = new Set();
   const timer = new Map();
   let band = [];
 
@@ -152,6 +160,18 @@ export function tastatur(el, opt = {}) {
       d.style.setProperty('--kl-bf', farbe);
       const s = document.createElement('div'); s.className = 'kl-bandtext'; s.textContent = text; s.style.left = ta.offsetLeft + 'px';
       innen.append(d, s); band = [d, s];
+    },
+    /** Intervall-Schilder: texte = Map midi → kurzer Text (z. B. „gr. 3“), bezug = midi des Bezugstons (Rahmen + „Bezug“). */
+    intervalle(texte, bezug) {
+      for (const m of ivAn) { const t = tasten.get(m); if (!t) continue; t.querySelector('.kl-iv').classList.remove('kl-zeigt'); t.classList.remove('kl-bezug', 'kl-mit-iv'); }
+      ivAn.clear();
+      const setze = (m, txt) => {
+        const t = tasten.get(m); if (!t) return;
+        const s = t.querySelector('.kl-iv'); s.textContent = txt; s.classList.add('kl-zeigt'); t.classList.add('kl-mit-iv');
+        ivAn.add(m);
+      };
+      if (texte) for (const [m, txt] of (texte.entries ? texte.entries() : Object.entries(texte))) setze(+m, txt);
+      if (bezug != null && tasten.get(bezug)) { setze(bezug, 'Bezug'); tasten.get(bezug).classList.add('kl-bezug'); }
     },
     setNamen(modus) { el.dataset.namen = modus; },
     taste: (midi) => tasten.get(midi),

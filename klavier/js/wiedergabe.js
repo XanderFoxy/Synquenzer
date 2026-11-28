@@ -97,6 +97,20 @@ export function klick(wann, betont = false) {
 
 const taktLaenge = (t) => ((t.taktart ? t.taktart[0] : 4) * 4) / (t.taktart ? t.taktart[1] : 4);
 
+/** Tempo-Karte: Viertel ↔ Sekunden (beim Grundtempo), auch mit Tempowechseln (stück.tempi). */
+export function tempoKarte(stueck) {
+  const grund = stueck.tempo || 90;
+  const liste = (stueck.tempi && stueck.tempi.length ? stueck.tempi : [{ t: 0, bpm: grund }])
+    .map((x) => ({ t: x.t, bpm: Math.min(400, Math.max(10, x.bpm || grund)) })).sort((a, b) => a.t - b.t);
+  if (liste[0].t > 0) liste.unshift({ t: 0, bpm: grund });
+  const pkt = [];
+  let s = 0;
+  liste.forEach((x, i) => { if (i) s += (x.t - liste[i - 1].t) * 60 / liste[i - 1].bpm; pkt.push({ v: x.t, s, spq: 60 / x.bpm }); });
+  const sek = (v) => { let i = pkt.length - 1; while (i > 0 && pkt[i].v > v) i--; return pkt[i].s + (v - pkt[i].v) * pkt[i].spq; };
+  const viertel = (sk) => { let i = pkt.length - 1; while (i > 0 && pkt[i].s > sk) i--; return pkt[i].v + (sk - pkt[i].s) / pkt[i].spq; };
+  return { sek, viertel };
+}
+
 /**
  * @param {object} stueck  Stück laut modell.js
  * @param {{onNote?:(note, info:{an:boolean, stumm:boolean, runde:number})=>void, onZeit?:(q:number)=>void, onEnde?:()=>void}} cb
@@ -104,6 +118,7 @@ const taktLaenge = (t) => ((t.taktart ? t.taktart[0] : 4) * 4) / (t.taktart ? t.
 export function spieler(stueck, { onNote, onZeit, onEnde } = {}) {
   const noten = [...(stueck.noten || [])].sort((a, b) => a.t - b.t || a.midi - b.midi);
   const takte = stueck.takte || [];
+  const karte = tempoKarte(stueck);
   let lauf = null;
 
   function bereich(vonTakt, bisTakt) {
@@ -133,6 +148,13 @@ export function spieler(stueck, { onNote, onZeit, onEnde } = {}) {
       const ende = liste[i + 1] ? liste[i + 1].start : t.start + taktLaenge(t);
       // 6/8, 9/8, 12/8: punktierte Viertel als Schlag
       const schlag = (n === 8 && z % 3 === 0 && z > 3) ? 1.5 : 4 / n;
+      if (i === 0 && liste[1] && ende - t.start < taktLaenge(t) - 1e-6) {
+        // Auftakt: Schläge vom Taktende her zählen und nicht betonen – die Eins kommt erst im nächsten Takt
+        const vs = [];
+        for (let v = ende - schlag; v >= t.start - 1e-6; v -= schlag) vs.unshift(v);
+        for (const v of vs) if (v >= a - 1e-6 && v < b - 1e-6) out.push({ v, betont: false });
+        return;
+      }
       for (let v = t.start, k = 0; v < ende - 1e-6; v += schlag, k++) {
         if (v >= a - 1e-6 && v < b - 1e-6) out.push({ v, betont: k === 0 });
       }
@@ -147,16 +169,26 @@ export function spieler(stueck, { onNote, onZeit, onEnde } = {}) {
     const { a, b } = bereich(vonTakt, bisTakt);
     const L = b - a;
     const auswahl = noten.filter((n) => n.t >= a - 1e-6 && n.t < b - 1e-6);
-    const bpm = stueck.tempo || 90;
     const l = {
       a, b, L, auswahl, schleife, nurHand, faktor: tempoFaktor,
       anker: { zeit: c.currentTime + vorlauf, v: a }, idx: 0, runde: 0, offen: [], timer: 0, raf: 0,
       metronom, schlaege: schlaege(a, b), kIdx: 0, kRunde: 0,
     };
     lauf = l;
-    const spq = () => 60 / (bpm * l.faktor);
-    const vZuZeit = (v) => l.anker.zeit + (v - l.anker.v) * spq();
-    const zeitZuV = (t) => l.anker.v + (t - l.anker.zeit) / spq();
+    // Zeitachse in Sekunden (Grundtempo, mit Tempowechseln); in der Schleife wird sie Runde für Runde fortgesetzt
+    const SA = karte.sek(a), SL = Math.max(1e-6, karte.sek(b) - SA);
+    const S = (v) => {
+      if (!schleife) return karte.sek(v) - SA;
+      const r = Math.floor((v - a) / L + 1e-9);
+      return r * SL + karte.sek(v - r * L) - SA;
+    };
+    const Sinv = (sk) => {
+      if (!schleife) return karte.viertel(sk + SA);
+      const r = Math.floor(sk / SL + 1e-9);
+      return r * L + karte.viertel(sk - r * SL + SA);
+    };
+    const vZuZeit = (v) => l.anker.zeit + (S(v) - S(l.anker.v)) / l.faktor;
+    const zeitZuV = (t) => Sinv(S(l.anker.v) + (t - l.anker.zeit) * l.faktor);
     l.zeitZuV = zeitZuV;
     const hoerbar = (n) => !nurHand || (nurHand === 'links' ? n.system === 'unten' : n.system === 'oben');
 
@@ -174,7 +206,7 @@ export function spieler(stueck, { onNote, onZeit, onEnde } = {}) {
         if (v > horizont) break;
         const wann = vZuZeit(v);
         const dq = Math.min(n.dauer, b - n.t);
-        const dauerS = Math.max(0.05, dq * spq() * 0.97);
+        const dauerS = Math.max(0.05, (vZuZeit(v + dq) - wann) * 0.97);
         const stumm = !hoerbar(n);
         if (!stumm) ton(n.midi, wann, dauerS, n.system === 'unten' ? 0.75 : 0.85);
         l.offen.push({ zeit: wann, note: n, an: true, stumm, runde: l.runde }, { zeit: wann + dauerS, note: n, an: false, stumm, runde: l.runde });
