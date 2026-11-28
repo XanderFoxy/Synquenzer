@@ -1,3 +1,181 @@
+## 4.96.1 — Song-Loop: Gesang mit Vorlauf-Fähnchen in jedem Durchgang vollständig · 28.11.2026
+
+- **Song mit Loop:** Ein Gesang-Clip mit Vorlauf-Fähnchen beginnt jetzt auch nach jedem Rücksprung am Vorlauf-Fähnchen, wie in jeder anderen Runde. Vorher fehlte dort der Vorlauf. Lief die Gesang-Spur über das Loop-Ende hinaus weiter, war nach dem Rücksprung sogar die ganze erste Runde stumm – nur der Vorlauf klang kurz an und brach kurz vor der 1 ab.
+- **Nachklang am Rücksprung:** Die letzte Runde vor dem Rücksprung klingt bis zum Ende-Fähnchen aus, statt am Loop-Ende abgeschnitten zu werden – genau wie zwischen den Runden in der Matrix.
+- **Song mitten im Gesang starten:** Die Runde beginnt sauber an der 1. Vorher klang kurz davor ein Schnipsel Vorlauf an (etwa 50 ms).
+- Unverändert: Matrix, Song ohne Loop, ▶ im Gesang-Editor, Clip-WAV, alle Klänge (MS 2000 und die anderen Engines).
+
+### Für Prüfer (adversariale Kurzprüfung 4.94–4.96)
+
+**Bau:** `python3 scratchpad/adv496/fix4961.py <eingang 4.96.0, md5 8ff1ac8bf60e94cc50feb442e8a2dd68> <ausgang>`, zweimal bitgleich, md5 0b54465f2356e5f4977fd6f342bbdbb4, 7 388 597 B (+1,9 KB). Worklet- und MS-2000-Block (`sq-worklet-src`, `sq-mk-src`) unverändert.
+
+**Ursache:** Den Vorlauf der Runde am Loop-Ende legte `vrnSched` noch mit dem alten Bezug an. Der Rücksprung steht im Takt-Raster erst ≈ 0,1 s vorher fest. Er schnitt diese Quelle ab, ihr Schlüssel blieb belegt, und die neue erste Runde wurde nicht mehr angelegt. Ohne weiterlaufende Spur fehlte nur der Vorlauf (`g3Entry` ist am Rücksprung bewusst gesperrt).
+
+**Änderung (nur VRN-Weg):**
+- `vrnLoopEnd()`: Loop-Ende, wenn der Song dort zurückspringt (dieselbe Regel wie `songTickInner`, auch `R.loopX`).
+- `vl2Continues`: keine Runde am oder hinter diesem Loop-Ende.
+- `g3SongTick` → `vrnWrap`: am Rücksprung `g3Exit` (Nachklang bis zum Ende-Fähnchen) und vorab `g3Entry` für die erste Runde (gleicher Schlüssel wie die Runde, nur wenn dort eine Runde beginnt).
+- `vrnSched`: Lag der Vorlauf vor dem Start der Wiedergabe (`G3.run.b0`), beginnt die Runde an der 1.
+
+**Messungen** (Chromium, Mitschrift aller AudioBufferSource-Starts; Skripte `scratchpad/adv496/t/`):
+
+| Fall | Ergebnis |
+|---|---|
+| Song-Loop Takt 0–4, Spur bis Takt 4 bzw. bis Takt 8 (`adv2`) | Runden ab −1, 7, 15, 23, 31 – alle ab dem Vorlauf (Aufnahme 1,5 s), Nachklang je Rücksprung bis 18,6 bzw. 34,6. Vorher: Runde 16 ohne Vorlauf bzw. stumm |
+| Song ab Takt 2 | Runde ab der 1 (Aufnahme 2,0 s), Nachklang der Vorrunde läuft weiter; vorher Start bei −0,11 mit Aufnahme 1,946 s |
+| Song ohne Loop, Start hinter dem Loop, Song-Ende, Spur stoppt (`adv2`, `probe2`) | wie 4.96.0 |
+| Matrix `test494` | 24/24 hochkant Touch, 24/24 quer Maus |
+| Tempo 120 → 90 mitten in Runde 1 (`adv1`) | nächste Runden ab 7,25 und 15,25 (= 8 − 0,5 s), je eine Quelle, Ende-Fähnchen 15,96 |
+| Clip-Wechsel während / vor dem Vorlauf, Clip-Länge 2 → 4 Takte | Vorlauf weich beendet bzw. gar nicht angelegt; neuer Clip ab der 1; nächste Runde ab 15 |
+| MS 2000, Node-Offline (`dsp1`) | 4.94 → 4.96 60 Zufallsklänge max \|Δ\| 0; `normMk` mit kaputten Feldern ohne Fehler; Fuzz 120 Klänge mit allen neuen Feldern: NaN 0, Denormale 0, Spitze 1,39; Sprünge F2-CUTOFF/RESO, F-BALANCE, DRIVE (alle Typen), F2-HK-INT mit EG 3, PATCH EG 3, STEUER 1: M-KLICK ≤ 4,1 dB (Bezug F1-CUTOFF 2,8 dB); DRIVE-Pegel mit Säge-Akkord +0,0 … +1,9 dB gegen aus; Strukturwechsel ≤ 2,7 dB |
+| CPU neutraler Klang 4.94 : 4.96 (`cpu`) | 1,05 (Minimum) / 0,89 (Median), Streuung der Maschine ±20 % |
+| Rauchtest 428 × 926, 926 × 428, 760 × 1000 (`rauch`, `ui12`) | ▶/■ per Touch, Menü, MS-2000-Platte, alle MK12/MK13-Bedienwege: keine Konsolenfehler |
+
+**Pflicht:** „MS 2000“ genau 1× (`MK_LABEL`), „  live: true,“ genau 1×, Gerätewörter 0, Markenwörter im AM-Teil 0, Worklet ASCII, 38 Skript-Blöcke `node --check` ohne Fehler, `sw.js` unverändert (kein Versionszähler).
+
+**Offen (unverändert aus 4.95/4.96):** Falter +37 % CPU je Stimme (Grenze +10 %); iPhone-Werte der Leistungs-Probe „8 Stimmen“ und „+Filter 2/Drive“.
+
+## 4.96.0 — MS 2000: dritte Hüllkurve, Formant-Oszillator und bis zu 8 Stimmen (Pakete MK12 und MK13) · 28.11.2026
+
+- **Formant – ein Oszillator, der Vokale singt:** Auf Seite **05 OSC 1** gibt es bei **WELLE** jetzt **Formant**. **STEUER 1** formt den Mund stufenlos von **a** über **e**, **i**, **o** bis **u**. Die Kopfzeile zeigt, wo man gerade ist, z. B. „STEUER 1 (VOKAL) 041 · VOKAL e→i“. **STEUER 2** lässt LFO 1 den Vokal bewegen („wah-wah“). Der Formant klingt in allen Lagen etwa gleich laut wie eine Säge. Sehr hohe Töne werden etwas offener, wie bei einer Sängerin. Er geht auch als **Träger im Vocoder**.
+- **HK 3 – eine dritte Hüllkurve je Timbre:** Seite **10 EG 1** hat ab **10F** die Ebene 2 mit **HK 3**. Die Anzeige schreibt „10F EB2 EG 3“, die Regler sind ATTACK, DECAY, SUSTAIN, RELEASE und NEUSTART. HK 3 bewegt nur, was man ihr zuweist:
+  - im **VIRTUAL PATCH** als Quelle **EG 3** (die EG-1-LED blinkt dann, weil die Platte keine eigene LED hat),
+  - als Hüllkurve von **Filter 2**: **08M F2-HK** schaltet jetzt zwischen EG 1 und EG 3,
+  - im **Mod-Sequenzer** über vier neue Ziele: HK 3 ATTACK, DECAY, SUSTAIN und RELEASE, auch mit „Bewegung aufnehmen“.
+- **STIMMEN-ZAHL – 4 oder 8 Stimmen je Spur:** Seite **03 VOICE**, Eintrag **03E** (Ebene 2): 4 wie das Original oder 8.
+  - Bei 8 teilt **01 COMMON → STIMMEN** die zwei Timbres in **2+6, 4+4 oder 6+2**.
+  - Unison stapelt bei 8 alle 8 Stimmen, gleichmäßig verstimmt und etwas leiser je Stimme, damit es nicht lauter wird.
+  - Umschalten bei gehaltenen Tönen blendet weich über.
+  - Die **SPIEL-Anzeige** der Platte zeigt „8St“. Ist es wegen viel Rechenlast gerade nur 4, steht dort „4St!“.
+  - Wo im Kopf Platz ist (quer, Kopfzeile sichtbar), steht dort zusätzlich „8 St“ bzw. „4 St (Begrenzer)“.
+- **Schutz für das iPhone:** Bei viel Rechenlast (Begrenzer-Stufe 1) spielen neue Noten wieder mit höchstens 4 Stimmen, bis die Last sinkt. Gespeichert wird dabei nichts anders.
+  - Die **Leistungs-Probe** (Menü → Info) hat den neuen Fall **„8 Stimmen“**: 4 Spuren mit je 8 Stimmen, Akkorde mit 8 Tönen.
+  - Zeigt die Probe auf dem Gerät mehr als 0,40 Last oder Aussetzer, merkt sich die App das **für dieses Gerät**. Dann klingen 8 Stimmen nur auf höchstens 2 MS-2000-Spuren gleichzeitig, weitere Spuren spielen mit 4. Ihre Anzeige sagt „4St!“.
+- **Würfel 🎲** kann jetzt auch den Formant-Oszillator wählen.
+- **Hilfe** (Menü → Hilfe): neue Zeilen HK 3, FORMANT und STIMMEN-ZAHL. Beim ersten Antippen der neuen Werte erscheint ein kurzer Hinweis in der Kopfzeile.
+- **Alte Klänge und Projekte** klingen bitgleich. Die neuen Felder sind neutral (HK 3 ohne Zuweisung, `vmax` 4), das Speicherformat bleibt 5.
+  - **Achtung, ältere Fassungen:** Wer einen Klang mit Formant, HK 3 oder 8 Stimmen in 4.95 oder älter öffnet, verliert dort diese Einstellungen. Dort wird z. B. Formant zur Säge und HK 3 fällt weg. Solche Projekte bitte nur in 4.96 oder neuer öffnen.
+
+### Für Prüfer (MK12 und MK13, Nachtrag 3)
+
+**Bau:** `apply.py <eingang 4.95.0, md5 f1be0950356cb182a044a56af5c2068d> <ausgang>` mit den Teilen `wk_fmt.js`, `wk_osc8.js`, `apply_main.py` und `apply_ui.py`.
+- Zweimal bitgleich gebaut. Ausgang 7 386 661 B, also **+13,2 KB** (Budget MK12 +22 KB, MK13 +10 KB).
+- Pflichtprüfungen bestanden:
+  - „MS 2000“ genau 1× (nur `MK_LABEL`), „  live: true,“ genau 1×.
+  - Gerätewörter 0, Markenwörter im AM-Teil (`sq-mk-src`, Worklet) 0.
+  - Worklet nur ASCII.
+  - Alle 38 Skript-Blöcke `node --check` ohne Fehler.
+  - Keine neue `@font-face`, keine neuen Bild-Daten.
+  - `sw.js` unverändert (kein Versionszähler).
+
+**DSP (Worklet `eng 3`):**
+- **EG 3** (`t[].e3` {a, d, s, r, rst}, neutral wie EG 1):
+  - Derselbe Hüllkurven-Kern wie EG 1/EG 2 (W-06), gerechnet je Stimme und 128er-Block.
+  - Patch-Quelle s 8, `f2.egs` 3.
+  - Seq-Ziele 37–40 (`MKW.SQT`). `MK_SQN` geht von 37 auf 41, die Sonder-Stelle der Speicherwellen-Wahl wandert mit.
+  - Eigene Seq-Hüllkurve je Stimme (`sqEnv3`).
+- **Formant** (OSZ 1 Welle 8, W-44):
+  - Quelle ist der Glottis-Puls der Stimmwelle (Rosenberg, polyBLAMP an der Schließecke, Öffnungsquotient `vowOQ` 0,6, unter C4 mit der Tonhöhe kleiner).
+  - Er läuft in **4 parallele TPT-SVF-Bandpässe** F1–F4. Bandbreiten 80/90/120/150 Hz (`MKW.fmtB`), Vorzeichen abwechselnd, damit zwischen den Formanten keine Kerben entstehen. g kommt aus `GTAN`.
+  - g, a1 und der Pegel werden je Sample über den 128er-Block interpoliert.
+  - STEUER 1 morpht a → e → i → o → u, logarithmisch in Hz (MK7-Tabelle `MKW.VOW`, Peterson & Barney). STEUER 2 ist die LFO-1-Tiefe über `MKW.form`.
+  - Pegel der Formanten zueinander: wie eine Kaskade der Resonatoren mit Lippen-Abstrahlung (+6 dB/Okt).
+  - Liegt der Grundton über der doppelten Bandbreite eines Formanten, wird diese Bandbreite auf f0/2 verbreitert (`fmtBw` 0,5). Sonst schwankt der Pegel bei hohen Tönen je Vokal um ±15 dB.
+  - **Pegelausgleich:** Eine Tabelle Morph × Tonhöhe (33 × 7, C1–C7) wird beim Laden des Worklet-Moduls einmal gerechnet (≈ 4,6 ms auf dem Prüfrechner, nicht im Audio-Takt). Damit klingt der Formant gegen die Säge bei −2,7 … −1,9 dB, über C2–C6 und alle Vokale innerhalb ±0,8 dB. Ausnahme ist u bei C7 (−5,8 dB), dort greift die Obergrenze des Ausgleichs (+12 dB).
+  - Zustände werden am Blockende unter 1e-15 auf 0 gesetzt. Kein Rechnen in `process()` außer den Filtern.
+- **STIMMEN-ZAHL** (`vmax` 4 | 8, Pfad `vmax`, Umschalten über `MkCore.recap` → `reassign`, die Engine-Blende der Umverteilung):
+  - Einzeln 8. Dual/Split 2+6, 4+4, 6+2. Mono daneben 1, Poly daneben 7, Unison daneben 4. Unison mit 8 nach W-15 gleichmäßig über ±d/2, Pegel je Stimme 0,354 statt 0,5.
+  - Begrenzer Stufe 1 (`mkLim` ≥ 1): wieder 4 für neue Noten. Regel MK13-05 je Gerät (`mk8off`, `localStorage` „sq-mk8cap“, gesetzt von der Leistungs-Probe): 4 ab der dritten Spur mit 8.
+  - `MK_POOL` bleibt 12.
+
+**Messungen** (Node-Offline mit dem App-Worklet aus der neuen Datei; Chromium mit `mkRender`/`perfProbe`; Skripte in `scratchpad/mk12/t/`):
+
+| Punkt | Ergebnis |
+|---|---|
+| MK12-01 / MK13-01 neutral = bitgleich | 140 Zufallsklänge alt/neu max \|Δ\| 0 (MK1–MK11-Felder: Filter 2, ROUTING, DRIVE, Seq-Ziele 1–36, Dual/Split/Vocoder, Unison, `vmax` 4). In Chromium: 256 MS-2000-Werksklänge und 64 VA/FM/WT-Werksklänge SHA-256-gleich. Im Endlauf 319 von 320 gleich. Die Ausnahme ist „Nass-Quietsch“ (VA), der schon in 4.94/4.95 bei jedem Lauf anders ist. In einem früheren Lauf unter Parallel-Last war „Wellenchor“ einmal stumm (Speicherwelle noch nicht geladen); im Endlauf und einzeln 3× nachgerendert ist er bitgleich |
+| MK12-02 EG 3 | Verlauf = EG 1 bei gleichen Werten (\|Δ\| 0). Attack 152 ms (W-06 154 ms, 1,4 %), Decay 587 ms (584, 0,5 %), Release 392 ms (409, 4,2 %; Raster 2,7 ms). PATCH EG 3 → CUTOFF gleicht EG 1 → CUTOFF bitgleich und wirkt. F2-HK EG 3 gleicht F2-HK EG 1 bei gleichen Werten und wirkt |
+| MK12-03 Vokale | Hülle des Formant-Filters = Teiltöne des Ausgangs ÷ Teiltöne der Glottis-Quelle, dicht abgetastet aus 16 Grundtönen um C2 bzw. C3 (±2 HT, Fein ±50 ct). Spitzen bei F1 ≤ 3,0 %, F2 ≤ 1,5 %, F3 ≤ 0,6 % (Grenzen 7/7/10 %). Nur an den Teiltönen von genau C3 (131 Hz Abstand) lassen sich F1/F2 von o nicht trennen. Eine LPC-Hülle (10 Pole, 9,6 kHz, Vorbetonung ab 50 Hz) liegt bei F1 von i/u um bis zu 15 % höher. Das ist die bekannte Schwäche von LPC bei tiefem F1, keine Verschiebung im Klang |
+| MK12-04 Morph | Zug STEUER 1 0 → 127 in 1 s (Bruchwerte je 128 Samples), C3: größter F2-Schritt je Block 1,5 % (≤ 5 %). M-KLICK als 2-ms-HF-Energie (Hochpass 4 kHz) gegen die ruhenden Nachbar-Vokale: 0,8 dB (≤ 6), C2 0,5 dB, C4 1,6 dB |
+| MK12-05 Alias C6 | gefaltete Energie (B.6 Nr. 12) a/e/i/o/u −63,9 / −65,3 / −66,4 / −63,9 / −63,9 dB (≤ −50); C2–C7 überall ≤ −63,9 dB |
+| MK12-06 Vocoder-Träger | Formant als Träger (Halten, kein Mikrofon): hörbar, Pegel wie Säge/Stimmwelle (±4 dB). Akkord C-E-G-H: alle 4 Tonhöhen im Spektrum (7–10 von 10 Teiltönen je Ton ≥ 10 dB über Grund) |
+| Formant sauber / Wechsel | 15 Fälle C1–C8, LFO schnell, Reso 100: NaN 0, Denormale 0, Spitze 0,09. Welle 0↔8 und 4↔8 bei klingender Note (SXF): M-KLICK ≤ 3,7 dB, M-EINBRUCH ≥ −0,9 dB |
+| MK12-07 CPU | Node-Offline, alt/neu abwechselnd im selben Prozess, 10 Runden × 10 s, 4 Stimmen: Formant 1,17 × Säge (Median; Minimum 1,12 ×; Grenze 1,5). EG 3 nicht messbar: Minimum +1,9 %, Median −14 % bei ±20 % Streuung dieser Maschine (Grenze +2 %; EG 3 ist ein Funktionsaufruf je Stimme und 128er-Block) |
+| MK12-08 / MK13-06 Oberfläche | per Touch in 428 × 926, 926 × 428, 760 × 1000, jeweils mit ↶: 05A WELLE Formant, STEUER 1 per Anzeige-Zug mit „VOKAL e→i“, 10F „10F EB2 EG 3“ bis 10J NEUSTART, 08M F2-HK EG 1 ↔ EG 3 (+/YES, −/NO), PATCH 1 QUELLE EG 3, 03E „03E EB2 VOICE“ STIMMEN-ZAHL 4 → 8, SPIEL-Anzeige „EINZ. 8St ♩=112“. Keine Konsolenfehler. Die Platte selbst ist unverändert (keine neue Taste, keine neue Zone) |
+| MK13-01 Stimmen | 8 Tasten = 8 Stimmen, die 9. stiehlt (bleibt 8), M-KLICK beim Stehlen 5,0 dB. `vmax` 4 = 4 Stimmen. 4 → 8 bei 6 gehaltenen Tasten: 6 Stimmen, M-KLICK 4,2 dB, M-EINBRUCH −1,8 dB. 8 → 4: 4 Stimmen, M-KLICK 3,9 dB, M-EINBRUCH −3,3 dB (dieselbe Blende wie ein PRIORITÄT-Wechsel, dort schon −3,9 dB). Unison mit 8: Verstimmung −20 … +20 ct in gleichen Schritten |
+| MK13-02 Teilung | 2+6 / 4+4 / 6+2 mit 8 Tasten: T1 2/4/6, T2 6/4/2. T1 Mono + T2 Poly: 1 + 7. T1 Unison + T2 Mono: 4 gestapelt + 1. 4+4 mit T1 Unison: 4 + 4 |
+| MK13-03 CPU | 8 Stimmen 1,98 × 4 Stimmen (Median; Minimum 1,95 ×; Grenze 2,1). Chromium-Leistungs-Probe (Gegenprobe, Σ 4 Engines): „Kern“ 0,066, „+Filter 2/Drive“ 0,116, „8 Stimmen“ 0,140, `frames_ok` |
+| MK13-04 Begrenzer | Node: `mkLim` 1 + `vmax` 8, 8 Tasten → 4 Stimmen. `mk8off` → 4. Chromium mit simulierter Last 0,5: Begrenzer-Stufe 1, 8 Tasten im Studio-Klang → 4 Stimmen (vorher 8), Sound und Clip-Zustand deep-equal, Anzeige „4 St (Begrenzer)“ bzw. „4St!“ |
+| MK13-05 iPhone | **fehlt noch:** Xanders Leistungs-Probe „8 Stimmen“. Die Regel greift von selbst, wenn die Probe auf dem Gerät > 0,40 oder Aussetzer meldet |
+
+**Offen:**
+- iPhone-Werte der Leistungs-Probe („8 Stimmen“, dazu weiter „+Filter 2/Drive“ aus 4.95).
+- Kopf-Anzeige: Hochkant hat die Kopfzeile auf dem iPhone keinen Platz, wie beim ECO-Hinweis. Die Stimmenzahl steht deshalb in der SPIEL-Anzeige der Platte („8St“/„4St!“) und auf 03E.
+- HK 3 und STIMMEN-ZAHL sind nicht lock-bar (Klangschule-Locks; die Lock-Liste des Worklets ist fest). Das App-Mod-System kennt sie erst mit V5d.
+- ECO-Klang (ohne AudioWorklet): Formant spielt dort als Säge, HK 3 wirkt nicht, es bleiben 4 Stimmen.
+- Geräte-Abgleich entfällt (kein RADIAS vorhanden). Die Vokal-Tabelle stammt aus der Sprachforschung, nicht vom Gerät.
+
+**iPhone (Xander):**
+1. EDIT → Seite 05 → WELLE mit +/YES bis „Formant“ → ▶ 05B → auf der Anzeige langsam hochziehen. Man hört a-e-i-o-u.
+2. Seite 14 PATCH 1 → QUELLE „EG 3“, ZIEL „OSZ 1 STEUER 1“, INTENSITÄT +40 → Seite 10 → ▶ bis 10F (HK 3) → DECAY verstellen. Der Vokal wandert bei jedem Anschlag.
+3. Seite 03 → ▶ 03E STIMMEN-ZAHL → +/YES (8) → EXIT: die Anzeige zeigt „EINZ. 8St“. Volle Akkorde spielen. Danach Menü → Info → Leistungs-Probe → Ergebnis schicken.
+
+## 4.95.0 — MS 2000: zweites Filter, Routing und Verzerrer (Paket MK11) · 28.11.2026
+
+- **Filter 2 für jedes Timbre:** Seite **08 FILTER** hat ab **08G** ein zweites Filter: **F2-TYP** (aus, 24LPF, 12LPF, 12BPF, 12HPF), **F2-CUTOFF**, **F2-RESO.**, **F2-HK-INT** (Filter-Hüllkurve EG 1), dahinter **F2-KEYTR.**, **F2-ANSCHL.** und **F2-HK** (zeigt EG 1; Hüllkurve 3 kommt mit einem späteren Paket). Filter 2 klingt mit denselben Kurven wie Filter 1 (Cutoff, Steilheit, Resonanz bis zum Pfeifen).
+- **ROUTING (07F)** legt fest, wie die zwei Filter verschaltet sind: **einzeln** (nur Filter 1, wie bisher), **seriell** (Filter 1 → Filter 2), **parallel** (beide hören den Mixer, **F-BALANCE 07G** mischt: 0 = nur Filter 1, 127 = nur Filter 2) oder **individuell** (OSZ 1 → Filter 1, OSZ 2 und Rauschen → Filter 2). Wer F2-TYP einschaltet, während ROUTING noch auf „einzeln“ steht, bekommt im selben Schritt „seriell“ – sonst hörte man Filter 2 nicht; die Anzeige sagt es, ein ↶ nimmt beides zurück.
+- **DRIVE – Verzerrer zwischen Mixer und Filter 1 (07D, 07E):** **DRIVE-TYP** aus, weich, hart oder Falter, **DRIVE** = Stärke. Der Pegel bleibt beim Aufdrehen etwa gleich (± 0,1 dB mit einem Sinus). Beim **Falter** faltet die erste Hälfte des Wegs die Welle (bis zur ersten vollen Falte), die zweite Hälfte drückt die gefaltete Welle zusätzlich zusammen – so wird der Klang beim Aufdrehen immer heller und nie zwischendurch dumpfer. Die DISTORTION-Taste im AMP bleibt wie bisher.
+- **Ebenen auf der Platte:** Die neuen Werte liegen als zweite und dritte Ebene auf den Seiten der Sektion: In EDIT zeigt die Anzeige „**07E EB2 MIXER**“, „**08H EB2 FILTER**“ bzw. „**08K EB3 FILTER**“. Die Platte selbst ist unverändert (keine neue Taste, kein neuer Regler).
+- **Auf der Anzeige senkrecht ziehen ändert den Wert** unter dem Cursor (EDIT und GLOBAL), wie ein Regler: nach oben mehr, seitlich weg fein. Das hilft bei allen Werten, die nur auf den Seiten stehen (z. B. F2-CUTOFF), statt 100-mal +/YES. Tippen öffnet wie bisher die Liste.
+- **Modulation:** VIRTUAL PATCH kann jetzt auch **CUTOFF 2** und **VERZERRER** bewegen (bei CUTOFF 2 blinkt die CUTOFF-LED). Der Mod-Sequenzer hat sechs neue Ziele: FILTER 2 CUTOFF, FILTER 2 RESONANZ, FILTER 2 HK-INT, FILTER 2 KEYTRACK, DRIVE, F-BALANCE – auch für „Bewegung aufnehmen“ (REC).
+- **Leistungs-Probe** (Menü → Info) hat den Fall **„+Filter 2/Drive“** (Filter 2 seriell bzw. parallel, Verzerrer weich bzw. hart).
+- **Hilfe** (Menü → Hilfe): neue Zeilen FILTER 2 und DRIVE; beim ersten Antippen der neuen Werte ein kurzer Hinweis in der Kopfzeile.
+- **Alte Klänge und Projekte:** klingen bitgleich. Neue Felder je Timbre mit neutralen Werten (`f2.type` 0 = aus, `fr` 0, `fbal` 64, `drv.typ` 0); das Speicherformat bleibt 5. **Achtung, ältere Fassungen:** Wer einen Klang mit Filter 2 oder DRIVE in 4.94 oder älter öffnet, verliert dort diese Einstellungen (ältere Fassungen kennen die Felder nicht) – Projekte mit den neuen Reglern bitte nur in 4.95 oder neuer öffnen.
+- **Regel „MS 2000“ genau einmal:** Ein Hinweistext der Klang-Prüfung schrieb den Namen noch zusätzlich mit Bindestrich; er setzt ihn jetzt aus der einen Konstante zusammen.
+
+### Für Prüfer (MK11, Nachtrag 3)
+
+**Bau:** `apply.py <eingang 4.94.0, md5 4d34e84dbcf6b9dc3d0c8ef8c92777a6> <ausgang>` (Teile `wk_top.js`, `wk_f2.js`, `apply_main.py`, `apply_ui.py`), zweimal bitgleich; Ausgang md5 f1be0950356cb182a044a56af5c2068d, 7 373 473 B (**+14,1 KB**, Budget +25 KB). Pflicht: „MS 2000“ 1× (nur `MK_LABEL`), „  live: true,“ 1×, Gerätewörter 0, AM-Teil Markenwörter 0, Worklet ASCII, alle 38 Skript-Blöcke `node --check` ohne Fehler, `sw.js` unverändert (kein Versionszähler).
+
+**DSP (Worklet `eng 3`):**
+- **Filter 2** = zweite Ladder je Stimme mit linearen Stufen und sättigender Rückkopplung (die Eingangs-Stufe wie bei Filter 1, `tg`), g aus `GTAN`, g/k über den 16er-Block interpoliert; Cutoff nach W-01, Keytrack W-03, EG1 W-04, Anschlag W-05. Bei kleinem Pegel gleicht die Antwort Filter 1 (Abstand ≤ 0,00 dB bei fc/4 … 4 fc); bei sehr lautem Eingang sättigt sie weniger als Filter 1 (die vier Stufen sind linear) – das spart ≈ ⅔ der Rechenzeit einer zweiten vollen Ladder (die volle zweite Ladder lag im ersten Bau bei rund +70 % je Stimme, Grenze +40 %).
+- **ROUTING** wechselt über die 30-ms-Stimmenblende (SXF), ebenso F2-TYP und DRIVE-TYP (`MK_STRUCT` um `f2.type`, `fr`, `drv.typ` erweitert). „F2-TYP aus“ heißt: ROUTING wirkt nicht (bitgleich zu „einzeln“).
+- **Verzerrer (W-45, Festlegungen dieses Pakets):** 2× Überabtastung mit dem vorhandenen Halbband-Allpass (`MK_HB`, auf und ab) und ADAA 1. Ordnung bei allen Typen. **weich** = kubische Sättigung u − u³/3 (|u| ≤ 1, darüber ±⅔) statt tanh: Kurve fast gleich, die Stammfunktion braucht aber keinen Logarithmus (tanh mit ADAA lag im ersten Bau bei rund +60 % je Stimme). **hart** = Klemme von g·x auf ±1 (am Eingang also ±1/g). **Falter** = sin(g·x) mit g 1 → 3,8 über DRIVE 0–64, danach Klemme ×1 → ×16 auf die gefaltete Welle (zwei ADAA-Stufen hintereinander), davor ein 12-kHz-Tiefpass (TPT-SVF). Grund: ein reiner Sinus-Falter bis g = 16 wird wegen der Bessel-Nullstellen beim Aufdrehen stellenweise dunkler (gemessen: Schwerpunkt fällt an 5 Stellen um bis zu 13 %), MK11-06 verlangt aber „steigt monoton“. g sonst 1 + 15 · DRIVE/127. **Pegelausgleich** für alle Typen: Faktor so, dass ein Vollaussteuerungs-Sinus den Effektivwert behält (Tabelle 3 × 129 beim Laden des Moduls).
+- Bei ROUTING individuell sitzt der Verzerrer nur im Weg zu Filter 1 (OSZ 1), wörtlich „zwischen Mixer und Filter 1“.
+- Patch-Ziele d 8 (Cutoff 2, ±127 Cutoff-Einheiten) und d 9 (Verzerrer, ±127 STÄRKE-Einheiten), W-18. Seq-Ziele 31–36 (`MKW.SQT`), `MK_SQN` 31 → 37, die Sonder-Stelle der Speicherwellen-Wahl liegt jetzt auf `MK_SQN`.
+- Neue Zustände je Stimme werden am Blockende unter 1e-15 auf 0 gesetzt; Puffer im Konstruktor, nichts wird in `process()` angelegt.
+- **Werksklänge:** Die Programme A–H und die Sammlung Micro sind als Abweichung von INIT in Blatt-Reihenfolge kodiert; die neuen Felder sind aus dieser Liste ausgenommen (sonst verschöbe sich jede Stelle).
+
+**Messungen (Node-Offline mit dem App-Worklet, Chromium mit `mkRender`):**
+
+| Punkt | Ergebnis |
+|---|---|
+| MK11-01 aus = bitgleich | 60 Zufallsklänge (Seq, Dual, Patches, DIST) alt/neu max \|Δ\| 0; 256 MS-2000-Werksklänge (A–H und Micro) und 64 VA/FM/WT-Werksklänge in Chromium: 319/320 SHA-256-gleich, der eine („Nass-Quietsch“, VA) ist schon in 4.94 bei jedem Lauf anders (Zufall) |
+| MK11-02 Filter 2 allein | 24LPF −12,02/−12,02/−11,96 dB bei Cutoff 32/64/96 (an W-01), 12LPF −6,05/−6,01/−5,94, 12HPF −6,21/−6,03/−5,95; Steilheit 24,2 · 12,0 · 5,8/5,6 · 11,5 dB/Okt; Reso 127 Spitze 52 dB; Selbstoszillation 650 Hz (W-01 650 Hz), −20,5 dBFS, nach 110 ms |
+| MK11-03 seriell | −12,00 dB bei 983 Hz (Pol 1004 Hz), −6,24 dB bei 210 Hz (Pol 196 Hz), dazwischen ein Durchlass (444 Hz: −4,6 dB, über beiden Polwerten) |
+| MK11-04 parallel | Summe der Einzel-Renders max \|Δ\| 1,5e-8; Balance 0 = nur F1 (bitgleich), 127 = nur F2 |
+| MK11-05 individuell | OSZ 1 mit F2 zu: 0,00 dB; OSZ 2 nur durch F2: −0,06 dB; OSZ 2 mit F2 zu: −69,9 dB |
+| MK11-06 Verzerrer | aus: 3. Teilton −67,5 dB · weich 64: −9,6 dB · hart 64: Plateau 0,11 dB von der Klemmgrenze · Falter: Schwerpunkt 263 → 1255 Hz, in 4er-Schritten monoton · Pegel gegen aus ≤ 0,04 dB (alle Typen, 0/64/127) · Säge C5, gefaltete Energie (B.6 Nr. 12): ohne −55,5 · hart −51,6 · Falter −50,3/−47,1 · weich −51,6 dB |
+| MK11-07 Ziele | Patch MOD-RAD → CUTOFF 2 (+63) = F2-CUTOFF 127 (\|Δ\| 6e-8), → VERZERRER = DRIVE 127 (5e-8); Seq FILTER 2 CUTOFF +50 = statisch (0) |
+| MK11-08 Umschalten | 22 Wechsel (ROUTING, F2-TYP, DRIVE-TYP bei D5+G5 und C3): M-KLICK schlechtester 5,2 dB (≤ 6), M-EINBRUCH schlechtester −0,8 dB |
+| Sauberkeit | 48 Kombinationen mit Reso 127 und DRIVE 127: NaN 0, Denormale 0, Spitze 0,91 |
+| MK11-09 CPU | Node-Offline, jede Einstellung in eigenem Prozess, 4 Stimmen × 10 s, Minimum aus 5 Läufen: MS 2000 ohne Filter 2/Drive 0,74 × VA-Stimme; **Filter 2** seriell +12,7 %, parallel +17,2 %, individuell +17,6 % (Grenze +40 %) · **Verzerrer** weich +5,1 %, hart +7,9 % (Grenze +10 %), **Falter +37 % – über der Grenze** (zwei Sinus-Faltungen und zwei Klemmen je Abtastwert bei 2× Überabtastung; eine Falter-Stimme kostet damit 1,02 × VA, das Budget „4 Stimmen ≤ 4,8 × VA“ bleibt). Die Messwerte dieser Maschine streuen um bis zu ±20 %. |
+| Leistungs-Probe (Chromium, Gegenprobe) | Fall „Kern“ load_med 0,098, „+Filter 2/Drive“ 0,155 (Σ 4 Engines), frames_ok |
+| MK11-10 Oberfläche | per Touch in 428 × 926, 926 × 428, 760 × 1000: EDIT → Seite 08 → 08G „08G EB2 FILTER“, +/YES schaltet F2-TYP und ROUTING (ein ↶), Anzeige-Zug F2-CUTOFF 64 → 115 (ein ↶), 08K „EB3“, 07D DRIVE-TYP Falter, DRIVE per Zug, ROUTING individuell; keine Konsolenfehler. Die Platte hat keine neuen Elemente (Trefferflächen wie 4.94) |
+
+**Offen:** Der Falter kostet mehr als +10 % je Stimme (siehe CPU); falls die Leistungs-Probe am iPhone knapp wird, kann er ohne 2× Überabtastung laufen (gefaltete Energie dann ≈ −32 dB statt −47 dB, Grenze −30 dB). Klangschule-Locks gibt es für die neuen Regler noch nicht (die Lock-Liste des Worklets ist fest; sie stehen als „nicht lock-bar“ in der Liste). ECO-Klang (ohne AudioWorklet) spielt Filter 2 und DRIVE nicht, wie die Effekte. Das App-Mod-System (Halten → Mod) kennt die neuen Regler erst mit V5d. iPhone-Wert der Leistungs-Probe „+Filter 2/Drive“ fehlt noch. Geräte-Abgleich entfällt (kein RADIAS vorhanden).
+
+**iPhone (Xander):** EDIT → SELECT 6 (FILTER) → CURSOR ▶ bis 08G → +/YES viermal (12HPF) → ▶ 08H: auf der Anzeige langsam nach unten ziehen, bis eine Säge dünn klingt. Dann PAGE − (07 MIXER) → ▶ bis 07D → +/YES dreimal (Falter) → ▶ 07E: auf der Anzeige langsam hochziehen. ↶ nimmt jeden Schritt zurück.
+
+## 4.94.0 — Gesang-Fähnchen auch beim großen ▶: jede Runde vom Vorlauf- bis zum Ende-Fähnchen · 28.11.2026
+
+- **▶ oben spielt den Gesang so, wie die Fähnchen es zeigen (Matrix, Loop, Song, Mixdown/Export):** Ein Gesang-Clip mit Vorlauf-Fähnchen klingt in jeder Runde genau vom Vorlauf-Fähnchen bis zum Ende-Fähnchen. Der Vorlauf kommt in jeder Runde wieder – nicht mehr nur beim ersten Durchlauf. Die Runde bleibt so lang wie der Clip, damit der Gesang im Takt mit den anderen Spuren bleibt: Der Vorlauf der nächsten Runde beginnt bei „Loop-Ende minus Vorlauf“. Steht das Ende-Fähnchen weiter hinten (z. B. am Ende der Wellenform), klingt der Nachklang in die nächste Runde hinein; steht es früher, ist bis zum nächsten Vorlauf Pause.
+- **„↻ gefaltet“ ist jetzt Standard für Clips mit gesetztem Vorlauf** (Vorlauf-Fähnchen gezogen oder erkannt, oder Gesang vor der 1). „▸ einmal“ und „aus“ bleiben wählbar (Vorlauf-Fähnchen antippen oder im Takes-Blatt) und werden mitgespeichert – auch „▸ einmal“.
+- **▶ oben bei offenem Gesang-Editor spielt genau diesen Clip:** Lief in seiner Spur ein anderer Clip oder gar keiner, wird dieser gestartet. Beim Start klingt der Vorlauf vor der 1 ganz – bis zu 2 Takte, wenn das Vorlauf-Fähnchen so weit vorn steht.
+- **Abspielmarke immer im Bereich der Fähnchen:** Im Gesang-Editor läuft sie durch den Vorlauf, springt beim Vorlauf der nächsten Runde dorthin zurück und wartet in einer Pause am Ende-Fähnchen – nie dahinter, nie woanders. Sie rechnet mit derselben Audio-Uhr wie der Klang (Ton = Bild).
+- **Neuer Magnet für das Ende-Fähnchen: „Loop-Ende minus Vorlauf“.** Beim Ziehen zeigt eine gestrichelte Linie „↻ nächste Runde“, wo der Vorlauf der nächsten Runde beginnt; dort rastet das Fähnchen fest ein (wie an Loop-Ende und Wellenform-Ende). Dann endet jede Runde genau dort, wo die nächste beginnt – lückenlos, ohne Überlappung, taktgleich – und ▶ im Gesang-Editor klingt genauso wie ▶ oben.
+- **Song:** Endet der Clip im Song, klingt die letzte Runde bis zum Ende-Fähnchen aus.
+- **Alte Projekte:** Es ändern sich nur Gesang-Clips mit Vorlauf-Fähnchen: Sie spielen jetzt „↻ gefaltet“ (Vorlauf in jeder Runde, Nachklang bis zum Ende-Fähnchen), außer „aus“ war gewählt. Eine frühere Wahl „▸ einmal“ war nicht gespeichert – dort „▸ einmal“ bitte einmal neu antippen. Clips ohne Vorlauf, Synth- und Drum-Spuren, ▶ im Gesang-Editor und Clip-WAV („Mit Vorlauf“ / „Loop rund“) klingen wie vorher.
+
 ## 4.93.0 — Gesang-Fähnchen: Ende bis ans Ende der Wellenform, ▶ spielt genau den Bereich in Schleife · 28.11.2026
 
 - **Ende-Fähnchen bis ganz ans Ende der Wellenform (Gesang-Editor):** Das Fähnchen **„Ende“** lässt sich jetzt bis ans Ende der sichtbaren Wellenform ziehen – auch über den Nachlauf hinter dem Loop-Ende. Zieht man weiter (auch über den Bildrand hinaus), bleibt es am Ende stehen und rastet dort ein. Magnete: Ende der Wellenform, Loop-Ende und jede Taktgrenze (dazwischen das Raster, z. B. 1/16).
