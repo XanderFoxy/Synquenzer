@@ -5,6 +5,7 @@ import { midiAus, schreibweiseAus, taktDauer, zerlegeDauer } from './modell.js';
 const fehler = (art, text) => Object.assign(new Error(text), { art, text });
 // Grenzen, damit eine riesige oder kaputte Datei die Seite nicht einfriert
 export const MAX_NOTEN = 40000, MAX_TAKTE = 3000, MAX_ENTPACKT = 64 * 1024 * 1024;
+const MAX_TAKTLAENGE = 256; // Viertel – längere „Takte“ gibt es nur in kaputten Dateien
 
 /** PDF/Foto: ehrlich – keine erfundene Erkennung. */
 export async function bildErkennen() {
@@ -176,17 +177,21 @@ function teilLesen(part) {
     const ereignisse = [], tempi = [];
     for (const el of m.kinder) {
       if (el.name === 'attributes') {
-        if (kind(el, 'divisions')) div = zahl(el, 'divisions', 1) || 1;
+        if (kind(el, 'divisions')) div = zahl(el, 'divisions', 1) > 0 ? zahl(el, 'divisions', 1) : 1;
         if (kind(el, 'staves')) staves = zahl(el, 'staves', 1);
         const key = kind(el, 'key');
-        if (key && kind(key, 'fifths')) tonart = { quinten: zahl(key, 'fifths', 0), modus: txt(key, 'mode') === 'minor' ? 'moll' : 'dur' };
+        if (key && kind(key, 'fifths')) tonart = { quinten: Math.max(-7, Math.min(7, Math.round(zahl(key, 'fifths', 0)))), modus: txt(key, 'mode') === 'minor' ? 'moll' : 'dur' };
         const time = kind(el, 'time');
-        if (time && kind(time, 'beats')) taktart = [parseInt(txt(time, 'beats'), 10) || 4, zahl(time, 'beat-type', 4)];
+        if (time && kind(time, 'beats')) {
+          // „3+2“ = 5 Schläge; unsinnige Angaben (0, Nenner keine Zweierpotenz) übergehen
+          const z = txt(time, 'beats').split('+').reduce((a, x) => a + (parseInt(x, 10) || 0), 0), nn = zahl(time, 'beat-type', 4);
+          if (z >= 1 && z <= 64 && [1, 2, 4, 8, 16, 32, 64].includes(nn)) taktart = [z, nn];
+        }
         for (const c of alle(el, 'clef')) schl[c.attrs.number || '1'] = txt(c, 'sign');
       } else if (el.name === 'backup') {
-        pos -= zahl(el, 'duration') / div;
+        pos = Math.max(0, pos - Math.max(0, zahl(el, 'duration') / div));
       } else if (el.name === 'forward') {
-        pos += zahl(el, 'duration') / div;
+        pos = Math.min(MAX_TAKTLAENGE, pos + Math.max(0, zahl(el, 'duration') / div));
         maxPos = Math.max(maxPos, pos);
       } else if (el.name === 'direction' || el.name === 'sound') {
         const snd = el.name === 'sound' ? el : kind(el, 'sound');
@@ -200,10 +205,10 @@ function teilLesen(part) {
         if (bpm > 0) tempi.push({ pos: Math.max(0, pos + zahl(el, 'offset', 0) / div), bpm });
       } else if (el.name === 'note') {
         if (kind(el, 'grace') || kind(el, 'cue')) continue;
-        const dauer = zahl(el, 'duration') / div;
+        const dauer = Math.min(MAX_TAKTLAENGE, Math.max(0, zahl(el, 'duration') / div));
         const akkord = !!kind(el, 'chord');
         const beginn = akkord ? letzterStart : pos;
-        if (!akkord) { letzterStart = pos; pos += dauer; maxPos = Math.max(maxPos, pos); }
+        if (!akkord) { letzterStart = pos; pos = Math.min(MAX_TAKTLAENGE, pos + dauer); maxPos = Math.max(maxPos, pos); }
         const staff = zahl(el, 'staff', 1);
         const stimme = parseInt(txt(el, 'voice', '1'), 10) || 1;
         const typ = txt(el, 'type') || undefined;
@@ -216,7 +221,7 @@ function teilLesen(part) {
         }
         const p = kind(el, 'pitch');
         if (!p) continue;
-        const sw = { stamm: STEP[txt(p, 'step')] || 'C', vorz: Math.round(zahl(p, 'alter', 0)), oktave: zahl(p, 'octave', 4) };
+        const sw = { stamm: STEP[txt(p, 'step')] || 'C', vorz: Math.max(-2, Math.min(2, Math.round(zahl(p, 'alter', 0)))), oktave: Math.max(-1, Math.min(9, Math.round(zahl(p, 'octave', 4)))) };
         const nots = kind(el, 'notations');
         const bindung = {};
         for (const t of [...alle(el, 'tie'), ...alle(nots, 'tied')]) {

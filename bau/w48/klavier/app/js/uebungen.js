@@ -2,7 +2,7 @@
 import { tastatur } from './tastatur.js';
 import { ton, klinge, audioKontext } from './wiedergabe.js';
 import {
-  STAMM, tonName, oktavName, midiAus, notenName, ortImSystem, systemPosition, intervallName,
+  STAMM, tonName, oktavName, midiAus, notenName, ortImSystem, systemPosition,
   rollenFarbe, akkordAusMidis, ROLLEN_NAME,
 } from './akkorde.js';
 import { intervall as ivBerechnen, langText, nachHalbtoenen } from './intervalle.js';
@@ -452,7 +452,9 @@ export function uebungen(el, opt = {}) {
         zeichne();
         const art = schritt === 7 ? 'gleicher Ton, eine Oktave höher' : schritt % 2 === 0 ? 'Linie → Linie oder Raum → Raum' : 'Linie → Raum oder Raum → Linie';
         sage(`Richtig: ${STUFEN_NAME[schritt]}.`, 'gut');
-        erkl.textContent = `Genau: ${intervallName(m2 - m1)} (${m2 - m1} Halbtöne) · ${art}.`;
+        // nach Notennamen benennen (H → F = verminderte Quinte, F → H = übermäßige Quarte), nicht nur nach Halbtönen
+        const ivS = ivBerechnen({ midi: m1, schreibweise: s1 }, { midi: m2, schreibweise: s2 });
+        erkl.textContent = `Genau: ${ivS.lang} (${m2 - m1} Halbtöne${ivS.zusatz === 'Tritonus' ? ', Tritonus' : ''}) · ${art}.`;
         tast.zeige([m1, m2], { [m1]: 'grundton', [m2]: 'septime' }, { [m1]: '1', [m2]: String(schritt + 1) });
         tast.scrolleZuBereich(m1, m2);
         klinge([m1, m2], { dauer: 1.2 });

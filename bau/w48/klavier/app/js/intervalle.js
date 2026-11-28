@@ -7,7 +7,10 @@ const PC = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, H: 11 };
 const BASIS = [0, 0, 2, 4, 5, 7, 9, 11]; // Halbtöne der reinen/großen Intervalle, Index = Zahl 1..7
 const REIN = new Set([1, 4, 5]);
 const ZAHL = ['', 'Prime', 'Sekunde', 'Terz', 'Quarte', 'Quinte', 'Sexte', 'Septime', 'Oktave', 'None', 'Dezime', 'Undezime', 'Duodezime', 'Tredezime', 'Quartdezime', 'Doppeloktave'];
-const ART = { rein: ['reine', 'r.'], gross: ['große', 'gr.'], klein: ['kleine', 'kl.'], ueber: ['übermäßige', 'übm.'], vermindert: ['verminderte', 'verm.'] };
+const ART = {
+  rein: ['reine', 'r.'], gross: ['große', 'gr.'], klein: ['kleine', 'kl.'], ueber: ['übermäßige', 'übm.'], vermindert: ['verminderte', 'verm.'],
+  dueber: ['doppelt übermäßige', 'dpl. übm.'], dvermindert: ['doppelt verminderte', 'dpl. verm.'],
+};
 
 // Nach Halbtönen (ohne Schreibweise): 0 … 12
 const HALB = [
@@ -48,8 +51,9 @@ function ausSchreibweise(sw1, sw2, h) {
   const red = ((zahl - 1) % 7) + 1, okt = Math.floor((zahl - 1) / 7);
   const diff = h - (BASIS[red] + 12 * okt);
   let art;
-  if (REIN.has(red)) art = diff === 0 ? 'rein' : diff === 1 ? 'ueber' : diff === -1 ? 'vermindert' : null;
-  else art = diff === 0 ? 'gross' : diff === -1 ? 'klein' : diff === 1 ? 'ueber' : diff === -2 ? 'vermindert' : null;
+  // auch doppelt übermäßig/vermindert (Eis → Ges, C → Fisis), damit Name und Notennamen immer zusammenpassen
+  if (REIN.has(red)) art = { 0: 'rein', 1: 'ueber', '-1': 'vermindert', 2: 'dueber', '-2': 'dvermindert' }[diff] || null;
+  else art = { 0: 'gross', '-1': 'klein', 1: 'ueber', '-2': 'vermindert', 2: 'dueber', '-3': 'dvermindert' }[diff] || null;
   if (!art) return null;
   let lang, kurz;
   if (red === 1 && art === 'rein') {
@@ -61,7 +65,7 @@ function ausSchreibweise(sw1, sw2, h) {
   }
   let zusatz = '';
   if (h % 12 === 6 && (red === 4 || red === 5)) zusatz = 'Tritonus';
-  else if (art === 'ueber' || art === 'vermindert') zusatz = 'klingt wie ' + nachHalbtoenen(h).lang;
+  else if (art !== 'rein' && art !== 'gross' && art !== 'klein') zusatz = 'klingt wie ' + nachHalbtoenen(Math.max(0, h)).lang;
   return { lang, kurz, zahl, halbtoene: h, zusatz };
 }
 
@@ -94,7 +98,8 @@ export function intervall(a, b) {
   let abwaerts = b.midi < a.midi || (b.midi === a.midi && stufe(swB) < stufe(swA));
   const [t, ho] = abwaerts ? [{ ...b, sw: swB }, { ...a, sw: swA }] : [{ ...a, sw: swA }, { ...b, sw: swB }];
   const h = ho.midi - t.midi;
-  const iv = ausSchreibweise(t.sw, ho.sw, h) || nachHalbtoenen(h);
+  // Sehr ungewöhnliche Schreibweise (z. B. Ces über His): ehrlich nach Halbtönen benennen
+  const iv = ausSchreibweise(t.sw, ho.sw, h) || { ...nachHalbtoenen(h), zusatz: 'ungewöhnliche Schreibweise – nach Halbtönen benannt' };
   if (h === 0) abwaerts = false;
   return { ...iv, abwaerts, tief: t, hoch: ho };
 }

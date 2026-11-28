@@ -465,7 +465,7 @@ async function seiteStueck(id) {
     const bassIv = liste.slice(1).map((n) => ({ n, iv: intervall(bass, n) }));
     const vomBass = bassIv.map(({ n, iv }) => ivChip(notenName(n.schreibweise || n.midi), iv));
     const wurzelNote = liste.find((n) => ((n.midi % 12) + 12) % 12 === s.grundtonPc);
-    const wurzelSw = wurzelNote?.schreibweise || schreibweiseAus(s.grundtonPc + 60);
+    const wurzelSw = wurzelNote?.schreibweise || s.grundtonSw || schreibweiseAus(s.grundtonPc + 60); // wie im Akkordnamen geschrieben
     const proKlasse = new Map();
     for (const n of liste) { const pc = ((n.midi % 12) + 12) % 12; if (pc !== s.grundtonPc && !proKlasse.has(pc)) proKlasse.set(pc, n); }
     const grundIv = [...proKlasse.values()].map((n) => ({ n, iv: vomGrundton(wurzelSw, n.schreibweise || schreibweiseAus(n.midi)) }))
