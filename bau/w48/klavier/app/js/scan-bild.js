@@ -4,7 +4,9 @@
 // → scharfe Zuschnitte je Zeile für die KI (unter der 1,2-Megapixel-Grenze, ab der die KI verkleinert).
 // Die reinen Rechen-Funktionen arbeiten auf Uint8Array (auch in Node testbar).
 
-export const GRENZEN = { analyse: 1600, meister: 3400, kiPixel: 1150000, kiKante: 2000, taktKante: 1600, minAbstandKi: 12 };
+// engAbstand/zielAbstand: Notenlinien enger als 8 px (kleines Foto, Liederbuch-Seite) → vor dem Schwellwert glatt auf ~11 px
+// vergrößern; analysePixel begrenzt dann die Arbeitsgröße (Speicher im iPhone).
+export const GRENZEN = { analyse: 1600, meister: 3400, kiPixel: 1150000, kiKante: 2000, taktKante: 1600, minAbstandKi: 12, engAbstand: 8, zielAbstand: 11, analysePixel: 4200000 };
 const ruhe = () => new Promise((r) => setTimeout(r, 0));
 
 // ───────── Grundbausteine (rein) ─────────
@@ -474,7 +476,7 @@ function gedreht(quelle, sw, sh, w, h, grad) {
  * Ganze Seite vorbereiten.
  * @returns {Promise<{ok, w, h, winkel, masse, zeilen:[…], vorschau:{blob,w,h}, hinweise:string[]}>}
  */
-export async function seiteVorbereiten(datei, { schritt = () => {} } = {}) {
+export async function seiteVorbereiten(datei, { schritt = () => {}, pruef = null } = {}) {
   schritt('Bild öffnen');
   const geoeffnet = await bildOeffnen(datei);
   let img = geoeffnet.img, meister = null, ana = null;
@@ -485,7 +487,7 @@ export async function seiteVorbereiten(datei, { schritt = () => {} } = {}) {
     // 1) Arbeitsgröße (auch bei sehr langen/schmalen Bildern begrenzt), Graustufen, Licht, Schwellwert, Schräglage
     let fa = Math.min(1, GRENZEN.analyse / W0, (GRENZEN.analyse * 1.45) / H0);
     if (W0 * fa < 200) fa = Math.min(200 / W0, (GRENZEN.analyse * 2.5) / H0);
-    const aw = Math.max(1, Math.round(W0 * fa)), ah = Math.max(1, Math.round(H0 * fa));
+    let aw = Math.max(1, Math.round(W0 * fa)), ah = Math.max(1, Math.round(H0 * fa));
     schritt('Licht ausgleichen');
     ana = gedreht(img, W0, H0, aw, ah, 0);
     let g = lichtAusgleich(grauVon(ana), aw, ah, { staerke: 0.5 });
@@ -494,14 +496,26 @@ export async function seiteVorbereiten(datei, { schritt = () => {} } = {}) {
     await ruhe();
     schritt('Schräglage messen');
     const winkel = schraeglage(bin, aw, ah, 12);
+    // Sehr enge Notenlinien (kleines Bild, Liederbuch, Seite aus der Entfernung): bei 4–6 px verschmelzen Linien und
+    // Notenköpfe im Schwellwert. Dann das Bild erst glatt vergrößern (Linienabstand ~11 px) und danach neu binarisieren.
+    const grob = linienMasse(bin, aw, ah);
+    const abstandFoto = grob.abstand / fa; // Linienabstand im Originalbild (grob)
+    let zoom = 1;
+    if (grob.abstand < GRENZEN.engAbstand) {
+      const z = Math.min(GRENZEN.zielAbstand / grob.abstand, Math.sqrt(GRENZEN.analysePixel / (aw * ah)), 4);
+      if (z > 1.2) zoom = z;
+    }
     bin = null;
     await ruhe();
     // 2) Meister (scharf, ausgerichtet) und ausgerichtete Arbeitsgröße
     schritt('Ausrichten');
-    const fm = Math.min(1, GRENZEN.meister / Math.max(W0, H0));
+    let fm = Math.min(1, GRENZEN.meister / Math.max(W0, H0));
+    // Zuschnitte für die KI aus einem vergrößerten, geglätteten Meister: Linienabstand mindestens GRENZEN.minAbstandKi
+    if (zoom > 1 && abstandFoto * fm < GRENZEN.minAbstandKi * 1.1) fm = Math.max(fm, Math.min(GRENZEN.meister / Math.max(W0, H0), (GRENZEN.minAbstandKi * 1.15) / abstandFoto));
     const MW = Math.max(1, Math.round(W0 * fm)), MH = Math.max(1, Math.round(H0 * fm));
     meister = gedreht(img, W0, H0, MW, MH, winkel);
-    if (Math.abs(winkel) >= 0.05) { weg(ana); ana = gedreht(img, W0, H0, aw, ah, winkel); }
+    if (zoom > 1) { aw = Math.max(1, Math.round(aw * zoom)); ah = Math.max(1, Math.round(ah * zoom)); fa = aw / W0; }
+    if (Math.abs(winkel) >= 0.05 || zoom > 1) { weg(ana); ana = gedreht(img, W0, H0, aw, ah, winkel); }
     img = null; frei(); // das volle Foto wird nicht mehr gebraucht – Speicher sofort freigeben
     g = lichtAusgleich(grauVon(ana), aw, ah, { staerke: 0.5 });
     t = otsu(g);
@@ -536,6 +550,7 @@ export async function seiteVorbereiten(datei, { schritt = () => {} } = {}) {
       z.koepfe = koepfeFinden(binQ, aw, ah, z);
       z.tinte = tinte(binQ, aw, ah, z, z.x0 + 0.5 * z.g, z.x1);
     }
+    if (pruef) Object.assign(pruef, { aw, ah, fa, zoom, fm, grob, masse, masseQ: linienMasse(binQ, aw, ah), t, binL, binQ, linien, staves, verb: staves.slice(1).map((s, i) => verbunden(binL, aw, ah, staves[i], s)), zeilen });
     // leere Notenzeilen (nur Linien, kein Schlüssel, keine Noten) nicht an die KI schicken
     const leer = zeilen.filter((z) => z.tinte < 2.5 * z.staves.length && !z.koepfe.length);
     const volle = zeilen.filter((z) => !leer.includes(z));
